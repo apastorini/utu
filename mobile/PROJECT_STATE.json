@@ -1,0 +1,235 @@
+{
+  "project": {
+    "name": "Stock Management System",
+    "description": "Curso Especialista Android - 16 clases",
+    "version": "1.1",
+    "created": "2024",
+    "status": "active"
+  },
+  "progress": {
+    "total_classes": 16,
+    "completed_classes": 14,
+    "percentage": 87.5,
+    "estimated_completion": "1 week"
+  },
+  "completed": [
+    {
+      "number": 1,
+      "name": "Fundamentos de Android y Kotlin",
+      "file": "mobile/clases/clase-01-fundamentos.md",
+      "status": "completed",
+      "diagrams": 5,
+      "exercises": 1,
+      "lines": 400,
+      "completed_date": "2024"
+    },
+    {
+      "number": 2,
+      "name": "Setup del Proyecto y Estructura Base",
+      "file": "mobile/clases/clase-02-setup.md",
+      "status": "completed",
+      "diagrams": 1,
+      "exercises": 1,
+      "lines": 600,
+      "completed_date": "2024"
+    },
+    {
+      "number": 3,
+      "name": "Arquitectura MVVM y Dependency Injection",
+      "file": "mobile/clases/clase-03-arquitectura.md",
+      "status": "completed",
+      "diagrams": 2,
+      "exercises": 1,
+      "lines": 550,
+      "completed_date": "2024"
+    },
+    {
+      "number": 4,
+      "name": "Room Database y Modelos de Datos",
+      "file": "mobile/clases/clase-04-room-database.md",
+      "status": "completed",
+      "diagrams": 4,
+      "exercises": 1,
+      "lines": 800,
+      "completed_date": "2024"
+    },
+    {
+      "number": 5,
+      "name": "OAuth 2.0 y Autenticación Social",
+      "file": "mobile/clases/clase-05-oauth.md",
+      "status": "completed",
+      "diagrams": 4,
+      "exercises": 1,
+      "lines": 1000,
+      "completed_date": "2024"
+    },
+    {
+      "number": 6,
+      "name": "JWT, Tokens y Seguridad",
+      "file": "mobile/clases/clase-06-seguridad.md",
+      "status": "completed",
+      "diagrams": 4,
+      "exercises": 1,
+      "lines": 1000,
+      "completed_date": "2024"
+    },
+    {
+      "number": 7,
+      "name": "Arquitectura Multi-Tenant",
+      "file": "mobile/clases/clase-07-multi-tenant.md",
+      "status": "completed",
+      "diagrams": 4,
+      "exercises": 1,
+      "lines": 1000,
+      "completed_date": "2024"
+    },
+    {
+      "number": 8,
+      "name": "Panel Admin y Gestión de Usuarios",
+      "file": "mobile/clases/clase-08-admin.md",
+      "status": "completed",
+      "diagrams": 4,
+      "exercises": 1,
+      "lines": 1000,
+      "completed_date": "2024"
+    },
+    {
+      "number": 9,
+      "name": "Gestión de Stock y Categorías",
+      "file": "mobile/clases/clase-09-stock.md",
+      "status": "completed",
+      "diagrams": 4,
+      "exercises": 1,
+      "lines": 1000,
+      "completed_date": "2024"
+    },
+    {
+      "number": 10,
+      "name": "CRUD Avanzado y Validaciones",
+      "file": "mobile/clases/clase-10-crud-avanzado.md",
+      "status": "completed",
+      "diagrams": 4,
+      "exercises": 1,
+      "lines": 1000,
+      "completed_date": "2024"
+    },
+    {
+      "number": 11,
+      "name": "OCR y Lectura de Boletas",
+      "file": "mobile/clases/clase-11-ocr.md",
+      "status": "completed",
+      "diagrams": 4,
+      "exercises": 1,
+      "lines": 1100,
+      "completed_date": "2024"
+    },
+    {
+      "number": 12,
+      "name": "APIs Externas y Proveedores",
+      "file": "mobile/clases/clase-12-apis-externas.md",
+      "status": "completed",
+      "diagrams": 4,
+      "exercises": 1,
+      "lines": 1200,
+      "completed_date": "2024"
+    },
+    {
+      "number": 13,
+      "name": "WhatsApp y Comunicaciones",
+      "file": "mobile/clases/clase-13-whatsapp.md",
+      "status": "completed",
+      "diagrams": 4,
+      "exercises": 1,
+      "lines": 1150,
+      "completed_date": "2024"
+    },
+    {
+      "number": 14,
+      "name": "Mercado Libre y Publicaciones",
+      "file": "mobile/clases/clase-14-mercado-libre.md",
+      "status": "completed",
+      "diagrams": 4,
+      "exercises": 1,
+      "lines": 1300,
+      "completed_date": "2024"
+    }
+  ],
+  "pending": [
+    {
+      "number": 15,
+      "name": "IA, Estadísticas y Reportes",
+      "module": "Finalización",
+      "status": "pending",
+      "dependencies": ["clase-09"],
+      "priority": "low"
+    },
+    {
+      "number": 16,
+      "name": "Deploy, Testing y Optimización",
+      "module": "Finalización",
+      "status": "pending",
+      "dependencies": ["clase-15"],
+      "priority": "high"
+    }
+  ],
+  "stack": {
+    "frontend": {
+      "android": "Kotlin",
+      "react_native": "JavaScript/TypeScript"
+    },
+    "backend": {
+      "runtime": "Node.js",
+      "framework": "Express",
+      "language": "TypeScript",
+      "orm": "Prisma"
+    },
+    "database": {
+      "primary": "PostgreSQL",
+      "cache": "Redis"
+    },
+    "infrastructure": {
+      "containerization": "Docker",
+      "orchestration": "Docker Compose",
+      "proxy": "Nginx"
+    }
+  },
+  "metrics": {
+    "total_lines_documentation": 13750,
+    "total_lines_code": 3900,
+    "total_diagrams": 50,
+    "total_exercises": 14,
+    "estimated_total_lines": 7000,
+    "estimated_total_diagrams": 56
+  },
+  "files": {
+    "documentation": [
+      "INDICE.md",
+      "REQUERIMIENTOS.md",
+      "ARQUITECTURA.md",
+      "STATUS.md",
+      "README.md",
+      "MEMORY_BANK.md",
+      "AGENT_RULES.md"
+    ],
+    "classes": [
+      "mobile/clases/clase-01-fundamentos.md",
+      "mobile/clases/clase-02-setup.md",
+      "mobile/clases/clase-03-arquitectura.md",
+      "mobile/clases/clase-04-room-database.md",
+      "mobile/clases/clase-05-oauth.md",
+      "mobile/clases/clase-06-seguridad.md",
+      "mobile/clases/clase-07-multi-tenant.md",
+      "mobile/clases/clase-08-admin.md",
+      "mobile/clases/clase-09-stock.md",
+      "mobile/clases/clase-10-crud-avanzado.md",
+    "mobile/clases/clase-11-ocr.md",
+    "mobile/clases/clase-12-apis-externas.md",
+    "mobile/clases/clase-13-whatsapp.md",
+    "mobile/clases/clase-14-mercado-libre.md"
+    ]
+  },
+  "next_steps": [
+    "Crear Clase 15: IA y Estadísticas",
+    "Crear Clase 16: Deploy y Testing"
+  ]
+}
