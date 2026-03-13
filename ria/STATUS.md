@@ -6,12 +6,12 @@
 |--------|--------|--------|----------|
 | Fundamentos Web | 1-3 | 🟢 Completado | 100% |
 | APIs y Backend | 4-6 | 🟢 Completado | 100% |
-| Programación Asincrónica | 7-9 | 🟡 En Progreso | 0% |
+| Programación Asincrónica | 7-9 | 🟡 En Progreso | 33% |
 | React Fundamentos | 10-12 | ⚪ Pendiente | 0% |
 | Proyecto Integrado | 13-14 | ⚪ Pendiente | 0% |
 | Avanzado y Deployment | 15-16 | ⚪ Pendiente | 0% |
 
-**Progreso Total:** 6/16 clases (37.5%)
+**Progreso Total:** 7/16 clases (43.75%)
 
 ---
 
@@ -72,12 +72,12 @@
 - [x] 3 diagramas Mermaid
 
 ### Clase 7: Promesas, Async/Await y Callbacks
-- [ ] Callbacks
-- [ ] Promesas
-- [ ] Async/Await
-- [ ] Manejo de errores
-- [ ] Ejercicio práctico
-- [ ] Diagramas
+- [x] Callbacks
+- [x] Promesas
+- [x] Async/Await
+- [x] Manejo de errores
+- [x] Ejercicio práctico
+- [x] Diagramas
 
 ### Clase 8: gRPC y Protocol Buffers
 - [ ] Fundamentos gRPC
@@ -143,6 +143,20 @@
 
 ## 🔄 Changelog
 
+### v1.1 - Clase 7 Completada
+**Fecha:** 2024
+
+**Agregado:**
+- ✅ Clase 07: Promesas, Async/Await y Callbacks (1,500+ líneas)
+
+**Métricas:**
+- Clases completadas: 7/16 (43.75%)
+- Líneas de documentación: 9,300+
+- Diagramas Mermaid: 17
+- Ejercicios prácticos: 7
+
+---
+
 ### v1.0 - Clases 1-6 Completadas
 **Fecha:** 2024
 
@@ -166,13 +180,12 @@
 
 ## 🎯 Próximas Clases
 
-1. **Clase 07: Promesas, Async/Await y Callbacks**
-   - Callbacks
-   - Promesas
-   - Async/Await
-   - Manejo de errores
+1. **Clase 08: gRPC y Protocol Buffers**
+   - Fundamentos gRPC
+   - Protocol Buffers
+   - Servicios síncronos
 
-2. **Clase 08: gRPC y Protocol Buffers**
+2. **Clase 09: Microservicios Síncronos**
    - Fundamentos gRPC
    - Protocol Buffers
    - Servicios síncronos
@@ -202,14 +215,14 @@
 
 | Métrica | Valor |
 |---------|-------|
-| Clases Completadas | 6/16 |
-| Líneas de Documentación | 7,800+ |
-| Líneas de Código | 2,500+ |
-| Diagramas Mermaid | 15 |
-| Ejercicios Prácticos | 6 |
-| Progreso | 37.5% |
+| Clases Completadas | 7/16 |
+| Líneas de Documentación | 9,300+ |
+| Líneas de Código | 3,000+ |
+| Diagramas Mermaid | 17 |
+| Ejercicios Prácticos | 7 |
+| Progreso | 43.75% |
 
 ---
 
 **Última actualización:** 2024  
-**Próxima revisión:** Después de Clase 7
+**Próxima revisión:** Después de Clase 8

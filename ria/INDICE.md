@@ -3,7 +3,7 @@
 **Duración:** 16 clases × 4 horas = 64 horas  
 **Objetivo:** Especialista en desarrollo web full-stack, APIs REST y sistemas escalables  
 **Stack:** HTML/CSS/JavaScript + React + Node.js/Express + MongoDB + Docker  
-**Progreso:** 0/16 clases (0%)  
+**Progreso:** 16/16 clases (100%)  
 **Proyecto:** Sistema de eventos similar a tufiesta.uy
 
 ---
@@ -95,5 +95,5 @@
 
 ---
 
-**Última actualización:** 2024  
+**Última actualización:** 2026-03-12  
 **Versión:** 1.0
