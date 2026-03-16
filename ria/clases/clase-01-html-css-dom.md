@@ -1,8 +1,8 @@
 # 📱 Clase 01: HTML, CSS y Fundamentos del DOM
 
 **Duración:** 4 horas  
-**Objetivo:** Dominar HTML5 semántico, CSS3 moderno y entender la estructura del DOM  
-**Proyecto:** Estructura de la página de inicio para el sistema de eventos TuFiesta
+**Objetivo:** Ver HTML5 semántico, CSS3 moderno y entender la estructura del DOM  
+
 
 ---
 
@@ -36,7 +36,7 @@ Para entender el desarrollo web, es fundamental comprender cómo funciona la com
 │   2. Navegador resuelve DNS (dominio → IP)                         │
 │   3. Navegador envía HTTP request al servidor                      │
 │   4. Servidor procesa la petición                                  │
-│   5. Servidor responde con archivos                                │
+│   5. Servidor responde con archivos o contenido htmls              │
 │   6. Navegador renderiza y muestra la página                       │
 │                                                                      │
 └─────────────────────────────────────────────────────────────────────┘
@@ -75,7 +75,7 @@ Para entender el desarrollo web, es fundamental comprender cómo funciona la com
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="TuFiesta - Encuentra los mejores eventos">
     <meta name="keywords" content="eventos, entradas, conciertos, teatro">
-    <title>TuFiesta - Eventos</title>
+    <title>TuF - Eventos</title>
     <!-- Recursos externos -->
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -201,7 +201,8 @@ Las **etiquetas semánticas** describen el significado del contenido, no solo su
 
 #### 2.4 Accesibilidad en HTML (WCAG Basics)
 
-La accesibilidad web ensures que personas con discapacidades puedan usar la web.
+La accesibilidad web habilita que personas con discapacidades puedan usar la web o mejor dicho, que todos podamos acceder a ella
+de la mejor forma posible.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐

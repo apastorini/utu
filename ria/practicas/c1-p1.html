@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="TuF - Encuentra y compra entradas para los mejores eventos en Uruguay">
+    <title>Tu - Tu Plataforma de Eventos</title>
+
+     <!-- Recursos externos -->
+    <link rel="stylesheet" href="./css-c1-p1.css">
+</head>
+<body>
+    <!-- Encabezado principal -->
+    <header role="banner">
+        <nav role="navigation" aria-label="Navegación principal">
+            <a href="/" class="logo">🎉 TuFiesta</a>
+            <ul>
+                <li><a href="/eventos">Eventos</a></li>
+                <li><a href="/categorias">Categorías</a></li>
+                <li><a href="/login">Iniciar Sesión</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Contenido principal -->
+    <main role="main">
+        <!-- Sección Hero -->
+        <section id="hero" aria-labelledby="hero-title">
+            <h1 id="hero-title">Descubre Eventos Increíbles</h1>
+            <p>Encuentra los mejores eventos cerca de ti</p>
+        </section>
+
+        <!-- Lista de eventos destacados -->
+        <section id="eventos-destacados" aria-labelledby="destacados-title">
+            <h2 id="destacados-title">Eventos Destacados</h2>
+            
+            <!-- Cada evento es un article independiente -->
+            <article class="evento-card" aria-labelledby="evento-1-titulo">
+                <img src="/img/concierto.jpg" alt="Concierto de Rock">
+                <h3 id="evento-1-titulo">Concierto de Rock</h3>
+                <p><time datetime="2024-12-15">15 de Diciembre, 2024</time></p>
+                <p>Estadio Centenario</p>
+                <span class="precio">$1.500</span>
+                <button>Comprar Entrada</button>
+            </article>
+            
+            <article class="evento-card" aria-labelledby="evento-2-titulo">
+                <img src="/img/festival.jpg" alt="Festival de Jazz">
+                <h3 id="evento-2-titulo">Festival de Jazz</h3>
+                <p><time datetime="2024-12-20">20 de Diciembre, 2024</time></p>
+                <p>Teatro Solís</p>
+                <span class="precio">$800</span>
+                <button>Comprar Entrada</button>
+            </article>
+        </section>
+        
+        <!-- Barra lateral con eventos relacionados -->
+        <aside role="complementary" aria-label="Próximos eventos">
+            <h3>Próximamente</h3>
+            <ul>
+                <li>Tech Conference 2024</li>
+                <li>Stand Up Comedy Night</li>
+                <li>Festival de Arte</li>
+            </ul>
+        </aside>
+    </main>
+
+    <!-- Pie de página -->
+    <footer role="contentinfo">
+        <p>&copy; 2024 TuF. Todos los derechos reservados.</p>
+        <address>contacto@tuf.uy</address>
+    </footer>
+</body>
+</html>

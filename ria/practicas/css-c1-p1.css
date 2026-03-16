@@ -1,0 +1,25 @@
+/* Elemento */
+p { color: blue; }
+
+/* Clase */
+.evento-card { border: 1px solid #ddd; }
+
+/* ID */
+#header { background: white; }
+
+/* Atributo */
+input[type="email"] { border: 1px solid blue; }
+
+/* Descendiente */
+nav a { text-decoration: none; }
+
+/* Hijo */
+ul > li { display: inline; }
+
+/* Pseudo-clase */
+a:hover { color: red; }
+a:active { color: orange; }
+input:focus { border-color: blue; }
+
+/* Pseudo-elemento */
+p::first-line { font-weight: bold; }
