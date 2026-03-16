@@ -38,7 +38,7 @@
 
 **Demo práctica:**
 - Crackear hashes con John the Ripper / Hashcat
-- Demonstrar слабость de algoritmos MD5/SHA1
+- Demostrar algoritmos MD5/SHA1
 - Configurar SSL correctamente con test de SSL Labs
 
 **Entregables:**

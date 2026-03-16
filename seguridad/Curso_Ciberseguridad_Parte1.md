@@ -20,6 +20,78 @@ La ciberseguridad es una disciplina crítica en el mundo digital actual. Cada d�
 - Cumplimiento normativo obligatorio
 - Defensa de derechos fundamentales (privacidad)
 
+
+Hablar de los dominios de seguridad informática es, en esencia, hablar de cómo hemos intentado poner orden al caos digital. No surgieron de la nada; son el resultado de décadas de aprendizaje (a veces por las malas) sobre cómo proteger la información.
+
+Aquí te explico qué son, de dónde vienen y cómo se organizan hoy en día.
+
+---
+
+## ¿Cómo surgen los dominios de seguridad?
+
+Originalmente, la "seguridad" era simplemente ponerle una contraseña a una terminal. Sin embargo, a medida que las empresas se digitalizaron, se dieron cuenta de que no bastaba con tecnología. Surgieron hitos clave:
+
+1. **La Necesidad de Estándares:** En los años 90 y principios de los 2000, las organizaciones necesitaban un lenguaje común. De ahí nacieron marcos como la **ISO/IEC 27001**, que estructuró la seguridad en "pedazos" manejables.
+2. **El Modelo de ISC²:** La organización tras la certificación CISSP popularizó los **8 Dominios del CBK** (Common Body of Knowledge), que hoy son el estándar de oro para entender esta disciplina.
+3. **Evolución de las Amenazas:** Los dominios pasaron de ser puramente técnicos (cifrado) a ser humanos y legales (privacidad, leyes internacionales).
+
+---
+
+## Los 8 Dominios Principales (Modelo CISSP)
+
+Para que una empresa sea segura, debe cubrir estos frentes:
+
+### 1. Gestión de Seguridad y Riesgos
+
+Es el "cerebro" de la operación. Aquí se definen las políticas, el cumplimiento legal (como el GDPR) y se decide cuánto dinero se va a gastar basándose en qué tan probable es que algo salga mal.
+
+### 2. Seguridad de Activos
+
+No puedes proteger lo que no sabes que tienes. Este dominio se encarga de clasificar la información (¿es pública o secreta?) y asegurar que los datos se manejen correctamente durante todo su ciclo de vida.
+
+### 3. Arquitectura e Ingeniería de Seguridad
+
+Aquí es donde entra la ciencia. Se diseñan sistemas resistentes desde la base utilizando modelos matemáticos y principios de ingeniería.
+
+### 4. Seguridad de Redes y Comunicaciones
+
+Se enfoca en los canales por los que viajan los datos. Incluye la protección de firewalls, redes Wi-Fi, segmentación de redes y protocolos de comunicación segura.
+
+### 5. Gestión de Identidad y Acceso (IAM)
+
+El principio de "quién eres y a qué tienes permiso". Controla que solo las personas correctas entren a los sistemas correctos, usando biometría, tarjetas inteligentes o autenticación de múltiples factores (MFA).
+
+### 6. Evaluación y Pruebas de Seguridad
+
+Es el control de calidad. Aquí se hacen **Pentesting** (hackeo ético) y escaneos de vulnerabilidades para encontrar grietas antes de que lo haga un atacante real.
+
+### 7. Operaciones de Seguridad
+
+Es el "día a día". Incluye la detección de intrusos, la respuesta ante incidentes (qué hacer si nos hackean hoy) y el mantenimiento de las copias de seguridad.
+
+### 8. Seguridad en el Desarrollo de Software (AppSec)
+
+Asegura que las aplicaciones que usamos no tengan errores de seguridad desde que se escriben las primeras líneas de código.
+
+---
+
+## Resumen de los Dominios
+
+| Dominio | Foco Principal |
+| --- | --- |
+| **Riesgos** | Estrategia y Leyes |
+| **Activos** | Datos y Clasificación |
+| **Arquitectura** | Diseño de Sistemas |
+| **Redes** | Conectividad Segura |
+| **Identidad** | Usuarios y Permisos |
+| **Pruebas** | Auditoría y Pentesting |
+| **Operaciones** | Monitoreo y Respuesta |
+| **Software** | Código Seguro |
+
+---
+
+
+
 ---
 
 ### 1.2 Definiciones Fundamentales: La Tríada CIA
