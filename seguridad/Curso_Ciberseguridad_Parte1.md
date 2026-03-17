@@ -1,5 +1,5 @@
-# CURSO COMPLETO DE CIBERSEGURIDAD
-## De Cero a Profesional
+# CURSO : Introducción a la seguridad informática
+
 
 ---
 
@@ -7,15 +7,15 @@
 
 ### 1.1 Motivación
 
-La ciberseguridad es una disciplina crítica en el mundo digital actual. Cada día se producen millones de ataques cibernéticos que comprometen datos personales, financieros y corporativos.
+La ciberseguridad es una disciplina crítica en el mundo digital actual. Cada día se producen ataques cibernéticos que comprometen datos personales, financieros y corporativos.
 
 **Estadísticas relevantes:**
-- El 95% de las brechas de seguridad son causadas por error humano
-- El costo promedio de una brecha de datos es de $4.35 millones USD
+- Gran parte de las brechas de seguridad son causadas por error humano
+- El costo alto de solucionar brechas
 - El ransomware ataca a una empresa cada 11 segundos
 
 **¿Por qué estudiar ciberseguridad?**
-- Alta demanda laboral (3.5 millones de puestos sin cubrir globalmente)
+- Alta demanda laboral
 - Protección de activos críticos
 - Cumplimiento normativo obligatorio
 - Defensa de derechos fundamentales (privacidad)
@@ -23,7 +23,6 @@ La ciberseguridad es una disciplina crítica en el mundo digital actual. Cada d�
 
 Hablar de los dominios de seguridad informática es, en esencia, hablar de cómo hemos intentado poner orden al caos digital. No surgieron de la nada; son el resultado de décadas de aprendizaje (a veces por las malas) sobre cómo proteger la información.
 
-Aquí te explico qué son, de dónde vienen y cómo se organizan hoy en día.
 
 ---
 
@@ -332,7 +331,7 @@ Banco Uruguay
 **Protección:**
 - Antivirus/EDR actualizado
 - Parches de seguridad
-- Backups offline (regla 3-2-1)
+- Backups offline (regla 3-2-1) (3-2-2-1-0)
 - Segmentación de red
 - Principio de mínimo privilegio
 
@@ -455,6 +454,7 @@ cursor.execute(query, (usuario, password))
 - Prepared statements / Parametrized queries
 - ORM (Object-Relational Mapping)
 - Validación de entrada
+- Validación de campos obtenidos de bases de datos u otras fuentes
 - Principio de mínimo privilegio en BD
 - WAF
 
@@ -500,7 +500,7 @@ http://sitio.com/bienvenida.php?nombre=<script>alert(document.cookie)</script>
 
 #### 1.4.1 ¿Qué es un Dato Personal?
 
-**Definición:** Cualquier información relacionada con una persona física identificada o identificable.
+**Definición:** Cualquier información relacionada con una persona física que sirve para identificarla.
 
 **Ejemplos:**
 - **Directos:** Nombre, CI, pasaporte, email
@@ -545,7 +545,7 @@ Aunque es europeo, afecta a cualquier empresa que trate datos de ciudadanos de l
 4. **Data Protection Officer (DPO):** Responsable de privacidad
 
 **Sanciones:**
-- Hasta €20 millones o 4% de facturación global anual
+- Ecónomicas o 4% de facturación global anual
 - Lo que sea mayor
 
 #### 1.4.4 Ejemplo Práctico: Registro de Actividades de Tratamiento (RAT)
@@ -657,4 +657,152 @@ aws s3api put-public-access-block \
   --public-access-block-configuration \
     "BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true"
 ```
+
+# Detalle de los Ataques DDoS
+1. Volumétricos (Fuerza Bruta de Red)
+Su objetivo es enviar tantos datos que "atiborran" la tubería de entrada de internet de la víctima.
+
+UDP Flood: El atacante envía una avalancha de paquetes UDP a puertos aleatorios del servidor. El servidor intenta verificar si hay una aplicación escuchando en ese puerto y, al no encontrarla, responde con un paquete "ICMP Destination Unreachable". Multiplica esto por millones y el servidor se agota respondiendo que "no hay nadie en casa".
+
+ICMP Flood (Ping Flood): Se satura el ancho de banda enviando paquetes de "eco" (ping) lo más rápido posible sin esperar respuesta.
+
+DNS Amplification: Es un ataque de reflexión. El atacante envía pequeñas peticiones DNS a servidores públicos falsificando la IP de la víctima (spoofing). El servidor DNS responde con mucha información a la IP de la víctima.
+
+Una petición de 60 bytes puede generar una respuesta de 3000 bytes. ¡El atacante multiplica su fuerza x50!
+
+2. De Protocolo (Agotamiento de Recursos)
+No buscan llenar la tubería, sino consumir la memoria o la capacidad de procesamiento del equipo (firewalls, balanceadores).
+
+SYN Flood: Explota el "saludo de tres vías" de TCP. El atacante envía peticiones de conexión (SYN), el servidor responde (SYN-ACK) y reserva memoria esperando la confirmación final del cliente, que nunca llega. El servidor se queda con miles de conexiones "a medias" hasta que se bloquea.
+
+Ping of Death: Se envían paquetes IP malformados o más grandes que el máximo permitido (65,535 bytes). Al intentar reensamblarlos, el sistema operativo de la víctima se desborda y se congela (BSOD).
+
+3. De Aplicación (Capa 7)
+Son los más sofisticados porque imitan el comportamiento humano y son difíciles de detectar.
+
+HTTP Flood: Consiste en solicitar repetidamente páginas web o archivos pesados. Obliga al servidor a realizar consultas a la base de datos y renderizar páginas hasta que colapsa.
+
+Slowloris: El atacante abre muchas conexiones HTTP pero envía los datos extremadamente lento (byte a byte). Mantiene las líneas ocupadas el mayor tiempo posible, impidiendo que usuarios reales puedan entrar.
+
+🔐 Seguridad: Validación, Sanitización y Escapado
+Aquí es donde solemos confundirnos. Vamos a diferenciarlos con una analogía de una carta:
+
+Concepto	Analogía	Definición Técnica
+Validación	¿Es esto una carta?	Comprobar si el dato cumple el formato esperado (ej. ¿es un email?, ¿es un número?). Si no cumple, se rechaza.
+Sanitización	Quitar el polvo o veneno	Limpiar la entrada eliminando partes peligrosas (ej. borrar etiquetas <script>).
+Escapado	Poner la carta tras un vidrio	Convertir caracteres especiales en texto inofensivo para que el navegador no los ejecute (ej. transformar < en &lt;).
+Conceptos Específicos:
+Escapar salida HTML: Es la defensa número 1 contra XSS (Cross-Site Scripting). Si un usuario comenta: <script>alert(1)</script>, el escapado lo muestra literalmente en pantalla en lugar de ejecutar la ventana de alerta.
+
+Validación de entrada: Ocurre en el "lado del servidor". Es asegurar que si pides una "Edad", el usuario no te envíe una palabra o un código SQL.
+
+Sanitización de datos: Se usa cuando necesitas permitir algo de formato (como negritas en un post) pero quieres eliminar scripts maliciosos.
+
+HTTPOnly Cookies: Una bandera de seguridad para las cookies. Si está activa, el código JavaScript del navegador no puede leer la cookie. Esto evita que un atacante robe tu sesión mediante un script.
+
+Content Security Policy (CSP): Una capa de seguridad adicional que le dice al navegador: "Solo confía en scripts que vengan de mi propio dominio o de Google Analytics". Bloquea cualquier script malicioso externo que intente ejecutarse.
+
+
+
+## Ejemplo Práctico: Registro de Usuario (Python/FastAPI)
+Imagina que recibes el nombre de un usuario. Aquí aplicamos las capas de seguridad:
+
+Python
+from fastapi import FastAPI, HTTPException
+import html
+
+app = FastAPI()
+
+@app.post("/registro")
+async def registrar_usuario(nombre: str):
+    # 1. VALIDACIÓN: ¿El nombre tiene un largo razonable y no tiene caracteres raros?
+    if len(nombre) > 50 or not nombre.isalnum():
+        raise HTTPException(status_code=400, detail="Nombre inválido")
+
+    # 2. SANITIZACIÓN: Limpiamos espacios extra o normalizamos
+    nombre_limpio = nombre.strip().capitalize()
+
+    # 3. ESCAPADO (Al mostrarlo en el HTML):
+    # Si el usuario mandó algo como <script>, se convierte en &lt;script&gt;
+    nombre_seguro = html.escape(nombre_limpio)
+    
+    return {"mensaje": f"Hola {nombre_seguro}, bienvenido!"}
+⚡ ¿Cómo se hace un DoS desde una sola máquina?
+Un ataque DoS (Denial of Service) desde una sola computadora busca agotar los recursos del servidor mediante la eficiencia, no necesariamente mediante el ancho de banda. Como no tienes una botnet de 10,000 PCs, tienes que ser "inteligente" para que tu pequeña capacidad de procesamiento venza a la del servidor.
+
+Aquí tienes las técnicas más comunes:
+
+1. Slowloris (El ataque de "bajo y lento")
+Es el más efectivo desde una sola máquina. En lugar de enviar muchos datos, abres cientos de conexiones HTTP al servidor y las dejas abiertas.
+
+Cómo funciona: Envías cabeceras HTTP incompletas. El servidor mantiene la conexión abierta esperando el resto de la petición.
+
+El efecto: Cada servidor tiene un límite máximo de conexiones simultáneas (ej. 200). Si tú ocupas las 200 con tu laptop, nadie más puede entrar.
+
+2. Fork Bomb (Ataque local)
+Este no es contra un servidor remoto, sino contra la propia máquina donde se ejecuta. Es una función que se llama a sí misma dos veces, creando procesos infinitos hasta que el CPU y la RAM se agotan en segundos.
+
+Ejemplo en Bash: :(){ :|:& };: (No lo ejecutes, bloqueará tu PC).
+
+3. SYN Flood (Si el servidor es débil)
+Si tienes una conexión rápida, puedes usar herramientas como hping3 para enviar paquetes SYN con una IP de origen falsa (spoofing).
+
+Comando educativo: sudo hping3 -S --flood -V -p 80 [IP_DESTINO]
+
+El servidor se queda esperando confirmaciones de IPs que no existen hasta agotar su tabla de conexiones.
+
+4. ReDoS (Regular Expression DoS)
+Este es un ataque de capa de aplicación. Envías una cadena de texto muy específica a un formulario que use una "Expresión Regular" mal diseñada en el servidor.
+
+El efecto: El servidor entra en un bucle de cálculo exponencial intentando validar tu texto, llevando el uso de CPU al 100% con un solo envío.
+
+⚠️ Nota de Seguridad
+Como profesional , recuerda que realizar estos ataques contra sistemas ajenos sin autorización es ilegal. La mejor forma de aprender es montando tu propio servidor local (en una VM o Docker) y tratar de "tumbarlo" para ver cómo reaccionan los logs y el firewall.
+
+
+Configuración de Defensa en Nginx
+1. Limitar Conexiones y Peticiones
+Esto evita que una sola IP sature el servidor. Si alguien intenta abrir 500 conexiones, Nginx simplemente las rechazará.
+
+Nginx
+http {
+    # Creamos una zona en memoria para rastrear IPs (10MB alcanzan para 160,000 IPs)
+    limit_conn_zone $binary_remote_addr zone=addr:10m;
+    limit_req_zone $binary_remote_addr zone=one:10m rate=5r/s;
+
+    server {
+        location / {
+            # Máximo 10 conexiones simultáneas por IP
+            limit_conn addr 10;
+            
+            # Máximo 5 peticiones por segundo, con un "margen" (burst) de 10
+            limit_req zone=one burst=10 nodelay;
+        }
+    }
+}
+2. Combatir el Slowloris (Ajuste de Timeouts)
+El Slowloris gana porque el servidor espera "eternamente" a que el cliente termine de hablar. Vamos a acortar esa paciencia.
+
+Nginx
+# Tiempo máximo para leer el cuerpo de la petición (si es muy lento, se corta)
+client_body_timeout 5s;
+
+# Tiempo máximo para leer las cabeceras (headers)
+client_header_timeout 5s;
+
+# Tiempo que una conexión puede estar "viva" sin hacer nada
+keepalive_timeout 5s;
+
+# Tiempo máximo para enviar la respuesta al cliente
+send_timeout 5s;
+🧱 El WAF (Web Application Firewall)
+Mientras que Nginx detiene el tráfico "pesado", un WAF (como Cloudflare o AWS WAF) analiza el "contenido" del tráfico.
+
+Un WAF puede detectar patrones:
+
+Reputación de IP: Si la IP de la máquina atacante ya ha sido reportada por otros ataques, el WAF la bloquea antes de que llegue a tu servidor.
+
+Geofencing: Si tu aplicación es solo para Uruguay y recibes un ataque desde una IP de otro continente, puedes bloquear ese país entero con un clic.
+
+Reglas de Capa 7: Puede identificar si una petición HTTP tiene cabeceras malformadas típicas de herramientas de ataque automático.
 
