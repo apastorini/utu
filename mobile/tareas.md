@@ -1,11 +1,17 @@
-# 📋 Tareas para Grupos - Curso Especialista Android
+# 📋 Tareas para Grupos - Curso Mobile
 
 **Duración de cada presentación:** 40 minutos  
-**Objetivo:** Profundizar en temas no cubiertos en clase, exponer conocimiento y desarrollar implementaciones prácticas
+**Objetivo:** Profundizar en temas no cubiertos en clase, investigar, exponer conocimiento y desarrollar implementaciones prácticas
 
 ---
 
 ## Tarea 1: Flutter vs React Native - Comparativa y Migración
+
+Fecha 15/4
+
+Asignado: 
+Nicolás Hernández 
+Leonardo Giménez 
 
 **Tema del curso relacionado:** Clase 1-2 (Fundamentos y Setup)
 
@@ -24,6 +30,8 @@
 
 ## Tarea 2: Jetpack Compose - UI Moderna en Android
 
+Fecha 15/4
+
 **Tema del curso relacionado:** Clase 3 (Arquitectura MVVM)
 
 **Objetivos:**
@@ -40,6 +48,8 @@
 ---
 
 ## Tarea 3: Firebase - Backend como Servicio
+
+Fecha 22/4
 
 **Tema del curso relacionado:** Clase 12 (APIs Externas)
 
@@ -58,6 +68,8 @@
 
 ## Tarea 4: Testing Automatizado - Unit e Instrumented Tests
 
+Fecha 22/4
+
 **Tema del curso relacionado:** Clase 16 (Deploy, Testing y Optimización)
 
 **Objetivos:**
@@ -74,6 +86,8 @@
 ---
 
 ## Tarea 5: Kotlin Multiplatform - Shared Code
+
+Fecha 29/4
 
 **Tema del curso relacionado:** Clase 1-2 (Kotlin)
 
@@ -92,6 +106,10 @@
 
 ## Tarefa 6: GraphQL - Alternative a REST
 
+Fecha 29/4
+
+Asignado: Mauro Mascheroni 
+
 **Tema del curso relacionado:** Clase 12 (APIs Externas)
 
 **Objetivos:**
@@ -108,6 +126,8 @@
 ---
 
 ## Tarea 7: Push Notifications - FCM Advanced
+
+Fecha 6/5
 
 **Tema del curso relacionado:** Clase 13 (WhatsApp y Comunicaciones)
 
@@ -126,6 +146,8 @@
 
 ## Tarea 8: CI/CD con GitHub Actions y Fastlane
 
+Fecha 6/5
+
 **Tema del curso relacionado:** Clase 16 (Deploy y Optimización)
 
 **Objetivos:**
@@ -143,6 +165,8 @@
 
 ## Tarea 9: Machine Learning en Android - ML Kit
 
+Fecha 13/5
+
 **Tema del curso relacionado:** Clase 11 (OCR)
 
 **Objetivos:**
@@ -159,6 +183,12 @@
 ---
 
 ## Tarea 10: Seguridad Avanzada - Proguard, R8 y Anti-Reverse Engineering
+
+Fecha 13/5
+
+Nazarena Valiero 
+Federico Laco 
+Simón Corvo 
 
 **Tema del curso relacionado:** Clase 6 (Seguridad)
 

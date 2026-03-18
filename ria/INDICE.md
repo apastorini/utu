@@ -1,9 +1,9 @@
 # 🌐 Curso Desarrollo Web y APIs - De Cero a Experto
 
-**Duración:** 16 clases × 4 horas = 64 horas  
-**Objetivo:** Especialista en desarrollo web full-stack, APIs REST y sistemas escalables  
-**Stack:** HTML/CSS/JavaScript + React + Node.js/Express + MongoDB + Docker  
-**Progreso:** 16/16 clases (100%)  
+**Duración:** 25 clases × 4 horas = 100 horas  
+**Objetivo:** Especialista en desarrollo web full-stack con React, Vue 3 y Angular  
+**Stack:** HTML/CSS/JavaScript + React + Vue 3 + Angular + Node.js/Express + MongoDB + Docker  
+**Progreso:** 25/25 clases (100%)  
 **Proyecto:** Sistema de eventos similar a tufiesta.uy
 
 ---
@@ -37,6 +37,21 @@
 ### **Módulo 6: Avanzado y Deployment (Clases 15-16)**
 - [Clase 15: Docker, Configuración y Microservicios](./clases/clase-15-docker-config.md)
 - [Clase 16: Accesibilidad, i18n, Deploy y Optimización](./clases/clase-16-a11y-deploy.md)
+
+### **Módulo 7: React Avanzado (Clases 17-19)**
+- [Clase 17: React Hooks Avanzados](./clases/clase-17-react-hooks-avanzados.md)
+- [Clase 18: React Routing y Estado Global](./clases/clase-18-react-routing-estado-global.md)
+- [Clase 19: React con TypeScript - Proyecto Completo](./clases/clase-19-react-proyecto-typescript.md)
+
+### **Módulo 8: Vue 3 (Clases 20-22)**
+- [Clase 20: Vue 3 Fundamentos](./clases/clase-20-vue3-fundamentos.md)
+- [Clase 21: Vue 3 Componentes y Pinia](./clases/clase-21-vue3-componentes-pinia.md)
+- [Clase 22: Vue 3 Proyecto Completo](./clases/clase-22-vue3-proyecto-completo.md)
+
+### **Módulo 9: Angular (Clases 23-25)**
+- [Clase 23: Angular Fundamentos](./clases/clase-23-angular-fundamentos.md)
+- [Clase 24: Angular Servicios, RxJS y Estado](./clases/clase-24-angular-servicios-rxjs.md)
+- [Clase 25: Angular Proyecto Completo](./clases/clase-25-angular-proyecto-completo.md)
 
 ---
 
@@ -95,5 +110,5 @@
 
 ---
 
-**Última actualización:** 2026-03-12  
-**Versión:** 1.0
+**Última actualización:** 2026-03-17  
+**Versión:** 2.0
