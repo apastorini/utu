@@ -147,6 +147,9 @@ Fecha 6/5
 ## Tarea 8: CI/CD con GitHub Actions y Fastlane
 
 Fecha 6/5
+Asignado:
+Paola Benedictti
+Bibiana Fariello
 
 **Tema del curso relacionado:** Clase 16 (Deploy y Optimización)
 
