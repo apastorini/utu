@@ -70,6 +70,10 @@ Fecha 22/4
 
 Fecha 22/4
 
+Asignado:
+Brian Machado 
+Mauricio Wiedermann 
+
 **Tema del curso relacionado:** Clase 16 (Deploy, Testing y Optimización)
 
 **Objetivos:**

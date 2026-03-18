@@ -689,3 +689,22 @@ curl -u usuario:password123 http://localhost:8000
 tcpdump -r http-login.pcap -A | grep -i "authorization"
 ```
 
+## Instalación metasploitable
+
+https://github.com/rapid7/metasploitable3
+
+
+Windows
+mkdir metasploitable3-workspace
+cd metasploitable3-workspace
+Invoke-WebRequest -Uri "https://raw.githubusercontent.com/rapid7/metasploitable3/master/Vagrantfile" -OutFile "Vagrantfile"
+vagrant up
+
+Linux
+
+mkdir metasploitable3-workspace
+cd metasploitable3-workspace
+curl -O https://raw.githubusercontent.com/rapid7/metasploitable3/master/Vagrantfile && vagrant up
+
+Sin vagrant
+https://eaglepubs.erau.edu/mastering-enterprise-networks-labs/chapter/metasploitable-2/
