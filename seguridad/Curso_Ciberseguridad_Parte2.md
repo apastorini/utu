@@ -76,6 +76,49 @@ mensaje_original = mensaje_descifrado[:-padding_length]
 print(f"Mensaje descifrado: {mensaje_original}")
 ```
 
+
+
+---
+
+### 1. El Vector (IV - Initialization Vector)
+El **Vector de Inicialización** es un número aleatorio que se utiliza junto con la clave para iniciar el proceso de cifrado. 
+
+* **¿Para qué sirve?** Su función principal es la **variabilidad**. Si cifras el mismo mensaje ("Hola") dos veces con la misma clave, el resultado sería idéntico, lo que permitiría a un atacante adivinar patrones. Al añadir un `iv` diferente cada vez, el resultado (ciphertext) será totalmente distinto aunque el mensaje y la clave sean los mismos.
+* **Dato clave:** El `iv` no tiene que ser secreto (se suele enviar junto al mensaje cifrado), pero **nunca** debe repetirse con la misma clave.
+
+
+
+---
+
+### 2. El Mode (Modo de Operación)
+Los algoritmos como AES son "cifradores de bloque", lo que significa que procesan la información en trozos de tamaño fijo (por ejemplo, 128 bits). El **Mode** es la estrategia que define cómo se van encadenando esos bloques.
+
+En tu código usas `modes.CBC(iv)` (**Cipher Block Chaining**):
+* **¿Cómo funciona?** Cada bloque de texto plano se mezcla (XOR) con el bloque cifrado anterior antes de ser cifrado. El primer bloque se mezcla con el **Vector de Inicialización (IV)**.
+* **Importancia:** Esto asegura que si un bit cambia al principio del mensaje, todo el resto del mensaje cifrado cambie, haciendo el cifrado mucho más robusto frente a ataques de análisis de frecuencia.
+
+
+
+---
+
+### 3. El Backend
+En el mundo de la programación y librerías como `cryptography` en Python, el **Backend** es el motor interno que realiza los cálculos matemáticos pesados.
+
+* **¿Qué hace?** Es la interfaz que conecta tu código Python con las implementaciones de bajo nivel (generalmente escritas en lenguaje C o ensamblador) que manejan la lógica del procesador para cifrar rápido y seguro.
+* **En tu código:** `default_backend()` simplemente le dice a la librería: *"Usa la implementación estándar y segura que viene por defecto en mi sistema (como OpenSSL)"*. Es una capa de abstracción para que no tengas que preocuparte por cómo interactúa el software con el hardware.
+
+---
+
+### Resumen rápido
+
+| Componente | Analogía | Función Real |
+| :--- | :--- | :--- |
+| **Vector (IV)** | La semilla aleatoria | Evita que mensajes idénticos generen cifrados idénticos. |
+| **Mode (CBC)** | La técnica de tejido | Define cómo se conectan los bloques de datos entre sí. |
+| **Backend** | El motor del coche | La maquinaria interna que ejecuta las fórmulas matemáticas. |
+
+
+
 #### Ejemplo en PowerShell (Windows)
 
 ```powershell

@@ -4,9 +4,25 @@
 **Objetivo:** Profundizar en cada vulnerabilidad OWASP, mostrando variantes, explotación, detección y protección  
 **Herramienta sugerida:** OWASP Juice Shop para prácticas
 
+Se deben formar grupos de dos personas y enviar un correo a apastorini@gmail.com
+con Asunto Grupos ISI 2026, con copia a todos los integrantes del grupo.
+Indicando nombre completo de cada uno de ellos y en orden de prioridad,
+tres opciones de tarea.
+
+
+Referencias:
+
+https://hub.docker.com/r/bkimminich/juice-shop
+https://keepcoding.io/blog/como-instalar-dvwa-en-kali-linux/
+https://hub.docker.com/r/vulnerables/web-dvwa
+
+
+
 ---
 
 ## Tarea 1: A01 - Broken Access Control (Variantes y Defensa en Profundidad)
+
+Fecha 14/4
 
 **Presentación requerida:**
 - IDOR (Insecure Direct Object Reference) - horizontal y vertical
@@ -18,7 +34,7 @@
 **Demo práctica:**
 - Usar Juice Shop para encontrar vulnerabilidades de IDOR
 - Demo de Path Traversal con DVWA o similar
-- Mostrar bypass de controles con Burp Suite
+- Mostrar bypass de controles con Burp Suite o OWASP Zap
 
 **Entregables:**
 - Presentación de 40 min
@@ -28,6 +44,10 @@
 ---
 
 ## Tarea 2: A02 - Cryptographic Failures (Criptografía Aplicada)
+
+Fecha 14/4
+Asignado
+Fernando Rodríguez
 
 **Presentación requerida:**
 - Contraseñas sin hash (MD5, SHA1 vulnerabilities)
@@ -49,6 +69,12 @@
 ---
 
 ## Tarea 3: A03 - Injection (SQL, NoSQL, Command, LDAP, XML)
+
+Fecha 16/4
+
+Asignado 
+Paola Benedictti
+Bibiana Fariello
 
 **Presentación requerida:**
 - SQL Injection (In-band, Blind, Out-of-band, Second-order)
@@ -72,6 +98,11 @@
 
 ## Tarea 4: A04 - Insecure Design (Diseño de Seguridad)
 
+Fecha 16/4
+
+Asignado
+Mauro Mascheroni
+
 **Presentación requerida:**
 - Falta de rate limiting
 - Ausencia de threat modeling
@@ -93,6 +124,12 @@
 ---
 
 ## Tarea 5: A05 - Security Misconfiguration (Hardening Completo)
+
+Fecha 21/4
+
+Asignado
+Felipe Queirolo
+Renzo Rampoldi
 
 **Presentación requerida:**
 - Headers de seguridad faltantes (CSP, X-Frame-Options, etc.)
@@ -116,6 +153,12 @@
 
 ## Tarea 6: A06 - Vulnerable and Outdated Components (Gestión de Dependencias)
 
+Fecha 21/4
+
+Asignado
+Leonardo Giménez
+Luis Andrada
+
 **Presentación requerida:**
 - Libraries y frameworks desactualizados
 - Dependencias con vulnerabilidades conocidas (Log4j, Spring4Shell)
@@ -136,6 +179,8 @@
 ---
 
 ## Tarea 7: A07 - Identification and Authentication Failures (Auth Security)
+
+Fecha 23/4
 
 **Presentación requerida:**
 - Credential stuffing
@@ -159,6 +204,8 @@
 
 ## Tarea 8: A08 - Software and Data Integrity Failures (Supply Chain Security)
 
+Fecha 23/4
+
 **Presentación requerida:**
 - Deserialización insegura
 - CI/CD pipeline attacks
@@ -181,6 +228,12 @@
 
 ## Tarea 9: A09 - Security Logging and Monitoring Failures (Blue Team)
 
+Fecha 28/4
+
+Asignado
+María Nazarena Valiero 
+Simón Corvo 
+
 **Presentación requerida:**
 - Falta de logging
 - Logs sin auditoría
@@ -202,6 +255,8 @@
 ---
 
 ## Tarea 10: A10 - Server-Side Request Forgery (SSRF) (Red Team)
+
+Fecha 28/4
 
 **Presentación requerida:**
 - SSRF básico y avanzado
