@@ -31,6 +31,8 @@ Leonardo Giménez
 ## Tarea 2: Jetpack Compose - UI Moderna en Android
 
 Fecha 15/4
+Asignado
+Dámaso Tor
 
 **Tema del curso relacionado:** Clase 3 (Arquitectura MVVM)
 
@@ -132,6 +134,9 @@ Asignado: Mauro Mascheroni
 ## Tarea 7: Push Notifications - FCM Advanced
 
 Fecha 6/5
+
+Asignado
+Nicolás Márquez 
 
 **Tema del curso relacionado:** Clase 13 (WhatsApp y Comunicaciones)
 
