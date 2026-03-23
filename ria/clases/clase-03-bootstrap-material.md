@@ -58,7 +58,8 @@ Este tag es **esencial** para que el diseño responsive funcione en dispositivos
 #### 2.1 ¿Qué es Bootstrap?
 
 **Bootstrap** es el framework CSS más popular para crear interfaces responsive y mobile-first.
-
+https://getbootstrap.com/
+https://getbootstrap.com/docs/4.1/getting-started/introduction/
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                    BOOTSTRAP 5 - CARACTERÍSTICAS                     │
@@ -190,6 +191,151 @@ El grid de Bootstrap tiene 12 columnas:
 </form>
 ```
 
+El concepto de responsividad en Bootstrap es lo que suele costar más al principio. Para entenderlo, no hay que pensar en "tamaños de pantalla", sino en "puntos de quiebre" (Breakpoints).Aquí tienes la guía definitiva paso a paso para dominar el Grid de Bootstrap 5.
+
+
+📐 1. Teoría de los Breakpoints: El "Cerebro" de BootstrapBootstrap divide la pantalla en 12 columnas invisibles. La resolución se detecta mediante Breakpoints. Un breakpoint es simplemente un ancho de pantalla (en píxeles) donde el diseño "salta" a una nueva configuración.SiglaNombreResolución (Ancho)Dispositivo comúnxsExtra Small< 576pxMóviles verticalessmSmall≥ 576pxMóviles horizontalesmdMedium≥ 768pxTabletslgLarge≥ 992pxLaptops / DesktopsxlX-Large≥ 1200pxMonitores grandesxxlXX-Large≥ 1400pxMonitores Ultra-wideLa Regla de Oro: "Mobile First"Bootstrap funciona de forma ascendente. Si tú escribes col-md-6, significa:"Desde el tamaño Medium en adelante, ocupa 6 columnas".¿Y en tamaños más pequeños (xs)? Ocupará el 100% (12 columnas) por defecto.
+
+🏗️ 2. Anatomía de una Fila (The Row)Para que el grid funcione, siempre debes seguir esta jerarquía:.container: El colchón exterior (centra el contenido)..row: El contenedor de columnas (usa Flexbox)..col-*: Los hijos directos donde va el contenido.
+
+
+💡 3. Ejemplos Prácticos paso a pasoVamos a ver cómo se ve el mismo código en diferentes dispositivos.Ejemplo A: El "Espejo" (Mitad y Mitad)Queremos 2 columnas que se pongan una debajo de otra en móvil, pero una al lado de la otra en Tablet.HTML<div class="container">
+  <div class="row">
+    <div class="col-12 col-md-6 bg-primary text-white"> Columna A </div>
+    <div class="col-12 col-md-6 bg-success text-white"> Columna B </div>
+  </div>
+</div>
+
+
+En móvil (<768px): Verás dos bloques largos (12/12).En Tablet (>=768px): Verás dos bloques de 50% de ancho (6/12 + 6/12).Ejemplo B: El Complejo (Cambio en 3 niveles)Este es el ejemplo más real. Queremos:Móvil: 1 columna (toda la pantalla).Tablet: 2 columnas.Desktop: 4 columnas.HTML<div class="row">
+  <div class="col-12 col-md-6 col-lg-3"> Elemento 1 </div>
+  <div class="col-12 col-md-6 col-lg-3"> Elemento 2 </div>
+  <div class="col-12 col-md-6 col-lg-3"> Elemento 3 </div>
+  <div class="col-12 col-md-6 col-lg-3"> Elemento 4 </div>
+</div>
+
+
+¿Cómo lo interpreta Bootstrap?¿Pantalla > 992px (lg)? Ok, leo col-lg-3. Como 12 / 3 = 4, entran 4 columnas exactas.¿Pantalla entre 768px y 991px (md)? Ignoro el lg y leo col-md-6. Como 12 / 6 = 2, se ven 2 filas con 2 columnas cada una.¿Pantalla < 768px? Ignoro todo y leo col-12. Se ve 1 columna por fila.Ejemplo C: Columnas con "Offset" (Espacios vacíos)A veces quieres centrar una columna pero que no ocupe todo el ancho.HTML<div class="row">
+  <div class="col-md-6 offset-md-3 bg-warning">
+    Estoy centrado en Desktop
+  </div>
+</div>
+
+
+🛠️ 4. ¿Cómo probarlo tú mismo? No necesitas 5 dispositivos físicos para probar esto. Sigue estos pasos:Abre tu archivo HTML con Bootstrap en Chrome.Presiona F12 (Herramientas de Desarrollador).Haz clic en el icono de "Dispositivos" (un icono de un móvil y una tablet arriba a la izquierda de la consola).
+
+Arriba verás una barra de píxeles. Arrastra el borde de la pantalla lentamente:Verás cómo al pasar los 768px o los 992px, tus columnas "saltan" .
+
+
+📝 Resumen de Clases Útiles:g-* (Gutter): Para cambiar el espacio entre columnas (ej: g-3).align-items-center: Para centrar columnas verticalmente dentro de una fila.justify-content-center: Para centrar columnas horizontalmente si sobran espacios de las 12 disponibles.
+
+
+🔍 1. La anatomía de la clase (El secreto está en el medio)Una clase de Bootstrap se divide en tres partes:col - [breakpoint] - [número]col: Le dice al navegador "esto es una columna".[breakpoint]: Le dice "CUÁNDO" debe aplicarse (sm, md, lg...).[número]: Le dice "CUÁNTO" espacio ocupar (del 1 al 12).
+
+
+🚦 2. ¿Por qué se ve distinto? (La Cascada)Imagina que el navegador es un inspector que mide el ancho de la pantalla cada milisegundo. Supongamos que tienes esta clase:class="col-12 col-md-6 col-lg-3"Si la pantalla mide...El navegador dice...Resultado visual400px (Móvil)"Es menor a 768px, ignoro md y lg. Solo veo col-12".1 columna (toda la pantalla)800px (Tablet)" Ya pasamos los 768px. Activo col-md-6".2 columnas (6 + 6 = 12)1200px (PC)"Superamos los 992px. Activo col-lg-3".4 columnas (3+3+3+3 = 12)
+
+🎨 3. Comparativa visual de nombresMira la diferencia sutil en los nombres y cómo cambia el diseño:Caso 1: Diseño Fijo (No cambia nunca)HTML<div class="col-6">Contenido</div>
+Nombre: No tiene "apellido" (md, lg).Efecto: Siempre ocupará el 50% de la pantalla, ya sea en un reloj inteligente o en un cine. No es responsivo.Caso 2: Diseño Adaptable (El "Salto")HTML<div class="col-12 col-md-6">Contenido</div>
+Nombre: Tiene el "apellido" md.Efecto:En pantallas pequeñas se ve gigante (12).En pantallas medianas "salta" a la mitad (6).
+
+📐 4. El sistema de las 12 columnas (Matemática simple)Bootstrap siempre suma 12. Para saber cuántas cosas verás en una fila, divide 12 entre tu número:col-md-12 $\rightarrow 12 / 12 = \mathbf{1}$ elemento por fila.col-md-6  $\rightarrow 12 / 6 = \mathbf{2}$ elementos por fila.col-md-4  $\rightarrow 12 / 4 = \mathbf{3}$ elementos por fila.col-md-3  $\rightarrow 12 / 3 = \mathbf{4}$ elementos por fila.🛠️ Hagamos el ejercicio de la GaleríaPara que tus alumnos lo entiendan, pídeles que creen una galería de fotos que se comporte así:Móvil: 1 foto por fila (para verla bien grande).Tablet: 2 fotos por fila.PC: 3 fotos por fila.El código que deben escribir:HTML<div class="container">
+  <div class="row">
+    <div class="col-12 col-md-6 col-lg-4 border p-3"> Foto 1 </div>
+    <div class="col-12 col-md-6 col-lg-4 border p-3"> Foto 2 </div>
+    <div class="col-12 col-md-6 col-lg-4 border p-3"> Foto 3 </div>
+  </div>
+</div>
+
+
+🛠️ Ejercicio: Construcción de una Galería de Carteleras
+Objetivo
+Crear una página que muestre 3 tarjetas de eventos. El diseño debe adaptarse automáticamente:
+
+Móvil: 1 tarjeta por fila (ocupa las 12 columnas).
+
+Tablet: 2 tarjetas por fila (ocupa 6 columnas cada una).
+
+Desktop: 3 tarjetas por fila (ocupa 4 columnas cada una).
+
+Paso 1: Estructura Base (HTML)
+Primero, prepara el documento e incluye Bootstrap 5 mediante el CDN en el <head>.
+
+HTML
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Ejercicio de Grid Bootstrap</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="text-center mb-4">Próximos Eventos</h2>
+        <div class="row g-4" id="contenedor-eventos">
+            </div>
+    </div>
+</body>
+</html>
+
+
+Paso 2: Crear las Columnas Responsivas
+Dentro del <div class="row">, añade tres bloques div. Para lograr el cambio de diseño según la resolución, usa los nombres de clase con los "apellidos" de resolución (md para tablet y lg para desktop).
+
+El código para cada columna:
+
+HTML
+<div class="col-12 col-md-6 col-lg-4">
+    </div>
+Paso 3: Agregar el Contenido (Bootstrap Cards)
+Inserta una tarjeta dentro de cada columna. Utiliza las clases card, card-body y btn.
+
+Código completo de una tarjeta:
+
+HTML
+<div class="col-12 col-md-6 col-lg-4">
+    <div class="card h-100">
+        <div class="card-body">
+            <h5 class="card-title">Concierto de Rock</h5>
+            <p class="card-text">Fecha: 25 de Octubre</p>
+            <p class="text-muted">Ubicación: Estadio Central</p>
+            <button class="btn btn-primary w-100">Ver Detalles</button>
+        </div>
+    </div>
+</div>
+Paso 4: Prueba de Resolución
+Para verificar que las clases funcionan, los estudiantes deben realizar lo siguiente:
+
+Abrir el archivo en el navegador Chrome.
+
+Presionar F12 para abrir las herramientas de desarrollo.
+
+Activar el modo dispositivo (icono de móvil/tablet).
+
+Cambiar el ancho de la ventana manualmente:
+
+Al reducir a menos de 768px, las tarjetas deben apilarse una sobre otra.
+
+Entre 768px y 991px, deben aparecer dos por fila.
+
+Al superar los 992px, deben aparecer las tres en la misma línea.
+
+📝 Guía de Clases Utilizadas
+Explica a los alumnos qué significa cada parte del nombre de la clase en este ejercicio:
+
+container: Centra el contenido y añade márgenes laterales.
+
+row: Activa el sistema de filas basado en Flexbox.
+
+g-4: (Gutter) Añade una separación de nivel 4 entre las columnas para que no se peguen.
+
+col-12: Orden para pantallas de menos de 768px (ocupa todo el ancho).
+
+col-md-6: Orden para tablets (ocupa la mitad, entran 2).
+
+col-lg-4: Orden para computadoras (ocupa un tercio, entran 3).
+
+h-100: Hace que todas las tarjetas tengan la misma altura, aunque el texto sea diferente.
 ---
 
 ### 3. Material Design
@@ -197,6 +343,8 @@ El grid de Bootstrap tiene 12 columnas:
 #### 3.1 ¿Qué es Material Design?
 
 **Material Design** es el lenguaje de diseño de Google, caracterizado por superficies, sombras y movimiento.
+
+https://m3.material.io/
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐

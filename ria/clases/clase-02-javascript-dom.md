@@ -14,6 +14,12 @@
 
 **JavaScript** es el lenguaje de programación de la web. Permite agregar interactividad a las páginas HTML.
 
+https://playcode.io/javascript
+
+https://jsfiddle.net/
+
+https://www.typescriptlang.org/play
+
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                    JAVASCRIPT EN LA WEB                             │
@@ -215,6 +221,130 @@ function EventoArrow() {
 }
 ```
 
+
+### Comparar
+
+== (Igualdad Débil): Compara solo el valor. Si los tipos son diferentes, JavaScript intenta convertirlos automáticamente (esto se llama coerción).
+
+=== (Igualdad Estricta): Compara el valor Y el tipo de dato. No hace conversiones. Es el estándar que debes usar siempre en Angular.
+
+1. Datos Simples (Primitivos)
+Aquí es donde ocurre la la coerción de tipos.
+
+JavaScript
+// Comparando número con string
+console.log(5 == "5");  // true  (JS convierte el string a número antes de comparar)
+console.log(5 === "5"); // false (Uno es Number, el otro es String)
+
+// Comparando valores booleanos
+console.log(1 == true);  // true
+console.log(1 === true); // false
+
+// Valores "especiales"
+console.log(null == undefined);  // true
+console.log(null === undefined); // false
+2. Arreglos (Arrays)
+Con los arreglos, la cosa cambia. JavaScript no compara el contenido del arreglo, sino la referencia en memoria (la dirección donde está guardado).
+
+JavaScript
+let a = [1, 2, 3];
+let b = [1, 2, 3];
+let c = a;
+
+// Aunque tienen los mismos números...
+console.log(a == b);  // false (son cajas diferentes en la memoria)
+console.log(a === b); // false (siguen siendo cajas diferentes)
+
+// Pero si apuntan al mismo lugar...
+console.log(a === c); // true (es exactamente la misma instancia)
+3. Objetos
+Al igual que los arreglos, los objetos se comparan por referencia, no por sus propiedades.
+
+JavaScript
+let user1 = { id: 1 };
+let user2 = { id: 1 };
+
+console.log(user1 == user2);  // false
+console.log(user1 === user2); // false
+
+// ¿Cómo comparar si son iguales de verdad?
+// Tendrías que comparar propiedad por propiedad o convertir a JSON:
+console.log(JSON.stringify(user1) === JSON.stringify(user2)); // true
+
+
+💡 ¿Por qué es importante?
+En Angular por ejemplo, los Detectores de Cambios (Change Detection) y los Pipes a menudo usan comparaciones de referencia.
+
+Si usas OnPush, Angular solo reacciona si la referencia del objeto cambia (===).
+
+Si solo cambias una propiedad interna (user.name = 'Juan'), la referencia sigue siendo la misma y Angular podría no actualizar la vista. Por eso en Angular preferimos la inmutabilidad (crear un objeto nuevo cada vez).
+
+✅ Conclusión
+Como regla general en TypeScript: Usa siempre ===. El uso de == se considera una mala práctica porque introduce resultados impredecibles que el compilador no siempre puede atrapar.
+
+Comparar objetos grandes  mediante JSON.stringify es ineficaz a nivel de rendimiento, porque esa función recorre todo el objeto, crea un string masivo en memoria y luego compara caracteres. Si tu objeto tiene miles de líneas o referencias circulares, tu app se congelará.
+
+Aquí tienes 3 estrategias  para comparar objetos de forma eficiente:
+
+1. Comparación Superficial (Shallow Compare)
+Es la que usa Angular internamente en los inputs. Solo revisa las propiedades del primer nivel. Si las propiedades son otros objetos, solo compara sus referencias.
+
+JavaScript
+function shallowEqual(obj1, obj2) {
+  const keys1 = Object.keys(obj1);
+  const keys2 = Object.keys(obj2);
+
+  if (keys1.length !== keys2.length) return false;
+
+  for (let key of keys1) {
+    if (obj1[key] !== obj2[key]) return false; // Aquí usa !== estricto
+  }
+
+  return true;
+}
+
+const userA = { id: 1, info: { age: 25 } };
+const userB = { id: 1, info: { age: 25 } };
+
+console.log(shallowEqual(userA, userB)); // false, porque 'info' es una referencia distinta
+2. Comparación Profunda (Deep Equal) - El estándar Pro
+Si necesitas saber si el contenido es idéntico sin importar la memoria, lo ideal es usar una librería optimizada como Lodash (_.isEqual) o la nativa moderna structuredClone para comparar copias.
+
+Implementación recursiva:
+
+JavaScript
+function deepEqual(obj1, obj2) {
+  if (obj1 === obj2) return true;
+
+  if (typeof obj1 !== 'object' || obj1 === null || typeof obj2 !== 'object' || obj2 === null) {
+    return false;
+  }
+
+  const keys1 = Object.keys(obj1);
+  const keys2 = Object.keys(obj2);
+
+  if (keys1.length !== keys2.length) return false;
+
+  for (let key of keys1) {
+    if (!keys2.includes(key) || !deepEqual(obj1[key], obj2[key])) return false;
+  }
+
+  return true;
+}
+3. La técnica de "Inmutabilidad + Referencia" 
+Esta es la técnica que hace que aplicaciones como Facebook o Spotify sean rápidas. En lugar de comparar el contenido, forzamos que si el contenido cambia, la referencia también cambie.
+
+En lugar de hacer: user.name = 'Pedro' (La referencia no cambia, hay que hacer Deep Equal).
+
+Haces esto: user = { ...user, name: 'Pedro' } (Creas un objeto nuevo).
+
+¿Por qué es mejor?
+Porque para saber si el objeto cambió, solo haces:
+if (oldUser === newUser) // O(1) - Instantáneo
+
+
+
+
 #### 2.5 Métodos de Arrays
 
 ```javascript
@@ -239,7 +369,7 @@ const conIVA = eventos.map(e => ({
 const eventosMusicales = eventos.filter(e => e.categoria === 'musica');
 const eventosBaratos = eventos.filter(e => e.precio < 600);
 
-// find - Encontrar primer elemento
+// find - Encontrar primer coincidencia
 const eventoEncontrado = eventos.find(e => e.id === 3);
 // { id: 3, titulo: 'Tech Conference', ... }
 
@@ -265,6 +395,125 @@ const titulosBaratos = eventos
     .map(e => e.titulo);
 // ["Concierto Rock", "Stand Up Comedy", "Festival Arte"]
 ```
+
+El método .reduce() es un método de arreglos en JavaScript. Su función es tomar un arreglo de muchos valores y "reducirlo" a un solo valor único (que puede ser un número, un string, un objeto o incluso otro arreglo).
+
+Imagina que .reduce() es una procesadora de alimentos: echas varios ingredientes y al final sale un solo producto (un batido).
+
+🛠️ La Sintaxis y sus Parámetros
+El método recibe dos: una función callback y un valor inicial (opcional).
+
+JavaScript
+arreglo.reduce((acumulador, valorActual, indice, arregloOriginal) => {
+  // Lógica de la reducción
+}, valorInicial);
+
+
+Los 4 parámetros de la función callback:
+acumulador (El "totalizador"): Es la variable que guarda el resultado de las vueltas anteriores. Si el valor inicial es 10 y en la primera vuelta sumas 5, en la segunda vuelta el acumulador valdrá 15.
+
+valorActual (El elemento de turno): Es el elemento del arreglo que se está procesando en ese momento.
+
+indice (Opcional): La posición del elemento actual (0, 1, 2...).
+
+arregloOriginal (Opcional): El arreglo completo sobre el que estás iterando.
+
+El parámetro externo:
+valorInicial: Es el valor con el que empezará el acumulador. Si no lo pones, el reduce tomará el primer elemento del arreglo como valor inicial y empezará a iterar desde el segundo.
+
+📖 Ejemplo 1: Sumar números (El uso más común)
+JavaScript
+const numeros = [10, 20, 30];
+
+const sumaTotal = numeros.reduce((acc, curr) => {
+  return acc + curr;
+}, 0); // Empezamos en 0
+
+console.log(sumaTotal); // 60
+¿Qué pasó paso a paso?
+
+Vuelta 1: acc es 0 (valor inicial), curr es 10. Retorna 10.
+
+Vuelta 2: acc ahora es 10, curr es 20. Retorna 30.
+
+Vuelta 3: acc ahora es 30, curr es 30. Retorna 60.
+
+🚀 Ejemplo 2: 
+Contar elementos
+reduce no solo sirve para sumar. Mira cómo podemos contar cuántas veces aparece cada fruta en un arreglo y devolver un objeto:
+
+JavaScript
+const frutas = ['manzana', 'pera', 'manzana', 'platano', 'pera', 'manzana'];
+
+const conteo = frutas.reduce((acc, fruta) => {
+  // Si la fruta ya existe en el objeto, sumamos 1, si no, empezamos en 1
+  acc[fruta] = (acc[fruta] || 0) + 1;
+  return acc;
+}, {}); // ¡El valor inicial es un objeto vacío!
+
+console.log(conteo); 
+// Resultado: { manzana: 3, pera: 2, platano: 1 }
+💡 Tips para tu clase:
+El peligro de no poner valor inicial: Si el arreglo está vacío y no pones un valorInicial, JavaScript lanzará un error (TypeError). Siempre es mejor ponerlo.
+
+Inmutabilidad: Recuérdales que .reduce() no modifica el arreglo original, sino que genera un resultado nuevo.
+
+Diferencia con forEach: Con forEach tendrías que crear una variable externa (let total = 0) e ir modificándola. Con reduce, esa variable vive dentro de la propia función, lo que hace el código más limpio y funcional.
+
+🛒 Reto: Calculando la Factura de Compra
+El escenario: Tienes un carrito de compras con varios productos. Cada producto tiene un precio y una cantidad. Debes calcular el Total Bruto, el IVA (21%) y el Total Final usando .reduce().
+
+1. Estructura de datos (El Carrito)
+Pídeles que copien este arreglo en su consola:
+
+JavaScript
+const carrito = [
+    { nombre: 'Laptop', precio: 1000, cantidad: 1 },
+    { nombre: 'Mouse', precio: 25, cantidad: 2 },
+    { nombre: 'Monitor', precio: 200, cantidad: 2 },
+    { nombre: 'Teclado', precio: 50, cantidad: 1 }
+];
+2. Resolución con .reduce()
+Aquí está el código que deben escribir. Explícales que el acumulador empieza en 0.
+
+JavaScript
+// Calculamos el subtotal (precio * cantidad de cada item)
+const subtotal = carrito.reduce((acc, producto) => {
+    const totalProducto = producto.precio * producto.cantidad;
+    return acc + totalProducto;
+}, 0);
+
+// Cálculos adicionales
+const impuestoIVA = subtotal * 0.21;
+const totalFinal = subtotal + impuestoIVA;
+
+// Mostramos los resultados prolijos
+console.log(`Subtotal: $${subtotal}`);
+console.log(`IVA (21%): $${impuestoIVA}`);
+console.log(`Total a pagar: $${totalFinal}`);
+🧐 ¿Por qué esto es mejor que un for? (Para la clase)
+Legibilidad: El código dice exactamente lo que hace: "reduce este carrito a un total".
+
+Ámbito (Scope): No necesitas crear una variable let total = 0; fuera del bucle que cualquiera pueda modificar por error. Todo sucede dentro de la función.
+
+Encadenamiento: Podrías hacer cosas locas como filtrar los productos caros y luego sumarlos en una sola línea:
+const totalCaros = carrito.filter(p => p.precio > 100).reduce(...)
+
+🔥  "¿Podrían usar un solo .reduce() para devolver un objeto que ya contenga el subtotal y el total con IVA?"
+
+La solución:
+
+JavaScript
+const facturaCompleta = carrito.reduce((acc, p) => {
+    const neto = p.precio * p.cantidad;
+    acc.subtotal += neto;
+    acc.totalConIVA += neto * 1.21;
+    return acc;
+}, { subtotal: 0, totalConIVA: 0 });
+
+console.log(facturaCompleta); 
+// { subtotal: 1450, totalConIVA: 1754.5 }
+
 
 #### 2.6 Spread y Rest Operators
 
@@ -323,6 +572,104 @@ const valor3 = 0 ?? 'default';    // 0
 const valor4 = 0 || 'default';    // "default"
 ```
 
+
+La comparación entre el Operador OR lógico (||) y el Operador Nullish Coalescing (??) (Unión nula).
+
+Es un concepto de JavaScript moderno (ES2020) porque resuelve un problema histórico de "falsos positivos".
+
+1. El Operador OR (||)
+Este operador mira si el valor de la izquierda es "falsy". En JavaScript, hay varios valores que se consideran falsos aunque no sean false:
+
+0 (número cero)
+
+"" (string vacío)
+
+null
+
+undefined
+
+NaN
+
+El problema: Si tú quieres que el usuario pueda elegir el número 0 como una opción válida, el operador || lo ignorará y saltará al valor por defecto, porque para él 0 es "mentira".
+
+2. El Operador Nullish Coalescing (??)
+Este operador es mucho más "estricto". Solo salta al valor por defecto si el valor de la izquierda es exactamente:
+
+null
+
+undefined
+
+Para el operador ??, un string vacío "" o un número 0 son datos reales y válidos.
+
+🛠️ Ejemplo visual para tu clase
+Imagina que estás configurando las opciones de un videojuego:
+
+JavaScript
+let configuracion = {
+   volumen: 0,        // El usuario quiere silencio total
+   nombreUsuario: "", // El usuario borró su nombre
+   dificultad: null   // El usuario no eligió nada
+};
+
+// USANDO || (Mal resultado)
+const vol1 = configuracion.volumen || 50; 
+// Resultado: 50 (¡Mal! El usuario quería 0, pero || lo vio como "falsy")
+
+const nick1 = configuracion.nombreUsuario || "Invitado";
+// Resultado: "Invitado" (¡Mal! El usuario quería un nombre vacío)
+
+// USANDO ?? (Resultado Correcto)
+const vol2 = configuracion.volumen ?? 50;
+// Resultado: 0 (¡Correcto! Respeta el 0 del usuario)
+
+const nick2 = configuracion.nombreUsuario ?? "Invitado";
+// Resultado: "" (¡Correcto! Respeta el string vacío)
+
+const dif = configuracion.dificultad ?? "Media";
+// Resultado: "Media" (¡Correcto! Como era null, aplica el defecto)
+🧐 Resumen de Arquitecto
+Usa || cuando quieras un valor por defecto para cualquier cosa que no sea contenido real (muy útil para strings que no deben estar vacíos).
+
+Usa ?? cuando estés manejando números o booleanos, donde el 0 o el false son valores de entrada válidos y no quieres que se sobreescriban por error.
+
+
+
+En JavaScript, un valor "Falsy" (falso por naturaleza) es un valor que se traduce como false cuando se evalúa en un contexto booleano (como un if o un bucle).Es decir, no son el valor booleano false propiamente dicho, pero actúan como él.
+
+
+📋 Los 8 valores "Falsy" en JavaScriptPara 
+son los únicos que dispararán el "lado falso" de un condicional:ValorDescripciónfalse
+
+El valor booleano falso original.0El número cero (incluyendo -0).0nEl cero en formato BigInt.""Un string vacío (sin espacios).nullLa ausencia total de valor.undefinedUna variable declarada pero no asignada.NaN"Not a Number" (resultado de una operación matemática fallida).document.all
+
+
+El único objeto falsy (por razones históricas de navegadores antiguos).
+
+
+⚠️ El peligro en la práctica
+. 
+
+Es el error más común en el desarrollo de aplicaciones:JavaScriptlet stock = 0;
+
+// Queremos ver si el producto existe en la bodega
+if (stock) {
+    console.log("Hay productos disponibles");
+} else {
+    console.log("Agotado"); // Se ejecuta esto
+}
+El problema: El producto existe (el stock es 0, no es null), pero como 0 es falsy, el código nos dice que está "Agotado" o que no existe. Aquí es donde el operador ?? que vimos antes salva el día.
+
+
+
+✅ ¿Qué es "Truthy"?
+
+Básicamente, todo lo que no esté en la lista anterior es "Truthy".Esto incluye cosas que a veces confunden a los alumnos:'0' (El string "0" con contenido es true).'false' (El string "false" es true).[] (Un arreglo vacío es true).{} (Un objeto vacío es true).
+
+
+🛠️  El operador !!Si alguna vez quieren saber si algo es falsy o truthy rápidamente en la consola,  usen la doble negación:JavaScriptconsole.log(!!0);  
+ // false
+console.log(!!"Hola");    // true
+console.log(!![]);        // true (¡Ojo con este!)
 ---
 
 ### 3. Programación Orientada a Objetos
@@ -519,129 +866,97 @@ boton.removeEventListener('click', handleClick);
 ```
 
 ---
+📄 Archivo: index.html
+Copia este código y guárdalo. Puedes abrirlo directamente en el navegador.
 
-### 5. Proyecto: Funcionalidad de Eventos
+HTML
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clase de DOM - Gestión de Eventos</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; line-height: 1.6; background-color: #f4f4f9; padding: 20px; }
+        #header { background: #333; color: white; padding: 1rem; border-radius: 8px; margin-bottom: 20px; }
+        .contenido { font-size: 0.9rem; color: #ccc; }
+        
+        .eventos-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
+            gap: 20px; 
+        }
 
-```javascript
-// app.js - JavaScript para TuFiesta
+        .evento-card { 
+            background: white; 
+            padding: 15px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            transition: transform 0.3s;
+        }
 
-// Datos de ejemplo
-const eventos = [
-    { id: 1, titulo: 'Concierto de Rock', precio: 500, categoria: 'musica', imagen: 'rock.jpg', fecha: '15 Dic', ubicacion: 'Estadio Centenario' },
-    { id: 2, titulo: 'Festival de Jazz', precio: 800, categoria: 'musica', imagen: 'jazz.jpg', fecha: '20 Dic', ubicacion: 'Teatro Solís' },
-    { id: 3, titulo: 'Tech Conference', precio: 2500, categoria: 'tecnologia', imagen: 'tech.jpg', fecha: '10 Ene', ubicacion: 'Punta del Este' },
-    { id: 4, titulo: 'Stand Up Comedy', precio: 350, categoria: 'comedia', imagen: 'comedy.jpg', fecha: '28 Dic', ubicacion: 'La Casa de la Comedy' }
-];
+        .destacado { 
+            border: 2px solid #ff9800; 
+            background-color: #fff3e0; 
+            transform: scale(1.05);
+        }
 
-// Estado de la aplicación
-let filtros = {
-    buscar: '',
-    categoria: 'todas'
-};
+        .activo { box-shadow: 0 0 15px rgba(76, 175, 80, 0.5); }
+        .oculto { display: none; }
 
-// Inicializar
-document.addEventListener('DOMContentLoaded', () => {
-    renderizarEventos(eventos);
-    configurarFiltros();
-    configurarBusqueda();
-});
+        button { 
+            padding: 10px 15px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            margin-top: 10px;
+        }
 
-// Renderizar eventos
-function renderizarEventos(listaEventos) {
-    const grid = document.getElementById('eventos-grid');
-    
-    if (listaEventos.length === 0) {
-        grid.innerHTML = '<p class="no-eventos">No se encontraron eventos</p>';
-        return;
-    }
-    
-    grid.innerHTML = listaEventos.map(evento => crearHTMLEvento(evento)).join('');
-    
-    // Agregar event listeners a los botones
-    grid.querySelectorAll('.btn-comprar').forEach(boton => {
-        boton.addEventListener('click', manejarCompra);
-    });
-}
+        .primary { background-color: #007bff; color: white; }
+        .btn-comprar { background-color: #28a745; color: white; width: 100%; }
+        
+        pre { background: #272822; color: #f8f8f2; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
 
-// Crear HTML de una tarjeta
-function crearHTMLEvento(evento) {
-    return `
-        <article class="evento-card" data-id="${evento.id}">
-            <div class="evento-imagen">
-                <img src="/images/${evento.imagen}" alt="${evento.titulo}">
-                <span class="categoria-badge">${evento.categoria}</span>
-            </div>
-            <div class="evento-contenido">
-                <h3>${evento.titulo}</h3>
-                <p class="evento-fecha">📅 ${evento.fecha}</p>
-                <p class="evento-ubicacion">📍 ${evento.ubicacion}</p>
-                <div class="evento-footer">
-                    <span class="precio">$${evento.precio}</span>
-                    <button class="btn btn-primary btn-comprar" data-id="${evento.id}">
-                        Comprar
-                    </button>
-                </div>
-            </div>
+    <header id="header">
+        <h1>Cartelera de Eventos</h1>
+        <div class="contenido">Bienvenido a la plataforma de gestión de tickets.</div>
+    </header>
+
+    <div style="margin-bottom: 20px;">
+        <button class="primary">Botón Principal</button>
+        <button>Otro Botón</button>
+    </div>
+
+    <main class="eventos-grid">
+        
+        <article class="evento-card" data-id="1">
+            <h3>Concierto Rock</h3>
+            <p>Sábado 20 de Mayo</p>
+            <p class="precio">$150</p>
+            <button class="btn-comprar" data-id="1">Comprar Ticket</button>
         </article>
-    `;
-}
 
-// Manejar compra
-function manejarCompra(e) {
-    const boton = e.target;
-    const eventoId = boton.dataset.id;
-    const evento = eventos.find(ev => ev.id === parseInt(eventoId));
-    
-    if (evento) {
-        alert(`¡Excelente! Has seleccionado: ${evento.titulo}\nPrecio: $${evento.precio}`);
-    }
-}
+        <article class="evento-card" data-id="2">
+            <h3>Obra de Teatro</h3>
+            <p>Domingo 21 de Mayo</p>
+            <p class="precio">$80</p>
+            <button class="btn-comprar" data-id="2">Comprar Ticket</button>
+        </article>
 
-// Configurar filtros de categoría
-function configurarFiltros() {
-    const select = document.getElementById('filtro-categoria');
-    
-    select.addEventListener('change', (e) => {
-        filtros.categoria = e.target.value;
-        filtrarEventos();
-    });
-}
+    </main>
 
-// Configurar búsqueda
-function configurarBusqueda() {
-    const input = document.getElementById('buscar');
-    
-    input.addEventListener('input', (e) => {
-        filtros.buscar = e.target.value.toLowerCase();
-        filtrarEventos();
-    });
-}
+    <hr style="margin: 40px 0;">
+    <p><small>Abre la consola (F12) para probar tus scripts de JavaScript.</small></p>
 
-// Filtrar eventos
-function filtrarEventos() {
-    const eventosFiltrados = eventos.filter(evento => {
-        const coincideBuscar = evento.titulo.toLowerCase().includes(filtros.buscar);
-        const coincideCategoria = filtros.categoria === 'todas' || 
-            evento.categoria === filtros.categoria;
-        return coincideBuscar && coincideCategoria;
-    });
-    
-    renderizarEventos(eventosFiltrados);
-}
-
-// Ejemplo: agregar evento dinámicamente
-function agregarEvento(nuevoEvento) {
-    eventos.push(nuevoEvento);
-    renderizarEventos(eventos);
-}
-
-// Ejemplo: filtrar por precio
-function filtrarPorPrecio(precioMax) {
-    const eventosFiltrados = eventos.filter(e => e.precio <= precioMax);
-    renderizarEventos(eventosFiltrados);
-}
-```
-
+    <script>
+        // Aquí los alumnos pueden empezar a escribir el código que les diste
+        console.log("DOM Cargado. Listo para manipular.");
+    </script>
+</body>
+</html>
 ---
 
 ## 🛠️ Ejercicios Prácticos

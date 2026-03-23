@@ -182,6 +182,9 @@ Luis Andrada
 
 Fecha 23/4
 
+Asingado: 
+Christian Busquets Pereyra
+
 **Presentación requerida:**
 - Credential stuffing
 - Session fixation/hijacking
