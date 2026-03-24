@@ -22,3 +22,5 @@ http://localhost:3001/#/score-board?highlightChallenge=directoryListingChallenge
 http://localhost:3001/#/score-board
 
 https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
+
+vagrant up win2k8
