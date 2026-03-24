@@ -401,7 +401,7 @@ Presiona el botón de Play (triángulo verde) o Shift + F10.
 
 ¡Listo! Se abrirá una ventana con un teléfono funcional donde aparecerá tu "Hello World".
 
-⚡ Tip de Pro: Simular en un teléfono real
+⚡ Tip: Simular en un teléfono real
 Si tu PC va lento con el emulador, puedes usar tu propio móvil:
 
 Ve a Ajustes > Acerca del teléfono y toca 7 veces el Número de compilación para activar las "Opciones de desarrollador".
