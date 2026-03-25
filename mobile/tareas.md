@@ -95,6 +95,10 @@ Mauricio Wiedermann
 
 Fecha 29/4
 
+Asignado
+- Eliana Garcia Garcia
+- Serafín Julián González Rovascio
+
 **Tema del curso relacionado:** Clase 1-2 (Kotlin)
 
 **Objetivos:**
