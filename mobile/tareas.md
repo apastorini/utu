@@ -33,6 +33,7 @@ Leonardo Giménez
 Fecha 15/4
 Asignado
 Dámaso Tor
+Nicolas Caputto
 
 **Tema del curso relacionado:** Clase 3 (Arquitectura MVVM)
 
@@ -118,7 +119,8 @@ Asignado
 
 Fecha 29/4
 
-Asignado: Mauro Mascheroni 
+Asignado: 
+Mauro Mascheroni 
 
 **Tema del curso relacionado:** Clase 12 (APIs Externas)
 

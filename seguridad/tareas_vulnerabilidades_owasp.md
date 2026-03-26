@@ -20,9 +20,15 @@ https://hub.docker.com/r/vulnerables/web-dvwa
 
 ---
 
-## Tarea 1: A01 - Broken Access Control (Variantes y Defensa en Profundidad)
+## Tema 1: A01 - Broken Access Control (Variantes y Defensa en Profundidad)
 
 Fecha 14/4
+
+## Asignado
+Ignacio Gonzalez
+Sebastián Di Loreto
+Mathias Pessaj
+
 
 **Presentación requerida:**
 - IDOR (Insecure Direct Object Reference) - horizontal y vertical
@@ -43,11 +49,13 @@ Fecha 14/4
 
 ---
 
-## Tarea 2: A02 - Cryptographic Failures (Criptografía Aplicada)
+## Tema 2: A02 - Cryptographic Failures (Criptografía Aplicada)
 
 Fecha 14/4
-Asignado
+
+### Asignado
 Fernando Rodríguez
+Serafín González
 
 **Presentación requerida:**
 - Contraseñas sin hash (MD5, SHA1 vulnerabilities)
@@ -68,7 +76,7 @@ Fernando Rodríguez
 
 ---
 
-## Tarea 3: A03 - Injection (SQL, NoSQL, Command, LDAP, XML)
+## Tema 3: A03 - Injection (SQL, NoSQL, Command, LDAP, XML)
 
 Fecha 16/4
 
@@ -96,12 +104,13 @@ Bibiana Fariello
 
 ---
 
-## Tarea 4: A04 - Insecure Design (Diseño de Seguridad)
+## Tema 4: A04 - Insecure Design (Diseño de Seguridad)
 
 Fecha 16/4
 
 Asignado
 Mauro Mascheroni
+Ximena González
 
 **Presentación requerida:**
 - Falta de rate limiting
@@ -123,7 +132,7 @@ Mauro Mascheroni
 
 ---
 
-## Tarea 5: A05 - Security Misconfiguration (Hardening Completo)
+## Tema 5: A05 - Security Misconfiguration (Hardening Completo)
 
 Fecha 21/4
 
@@ -151,7 +160,7 @@ Renzo Rampoldi
 
 ---
 
-## Tarea 6: A06 - Vulnerable and Outdated Components (Gestión de Dependencias)
+## Tema 6: A06 - Vulnerable and Outdated Components (Gestión de Dependencias)
 
 Fecha 21/4
 
@@ -178,12 +187,13 @@ Luis Andrada
 
 ---
 
-## Tarea 7: A07 - Identification and Authentication Failures (Auth Security)
+## Tema 7: A07 - Identification and Authentication Failures (Auth Security)
 
 Fecha 23/4
 
 Asingado: 
 Christian Busquets Pereyra
+Mateo Sparano
 
 **Presentación requerida:**
 - Credential stuffing
@@ -205,9 +215,13 @@ Christian Busquets Pereyra
 
 ---
 
-## Tarea 8: A08 - Software and Data Integrity Failures (Supply Chain Security)
+## Tema 8: A08 - Software and Data Integrity Failures (Supply Chain Security)
 
 Fecha 23/4
+
+Asignado
+Tiago Vescovi
+Agustín Díaz
 
 **Presentación requerida:**
 - Deserialización insegura
@@ -229,7 +243,7 @@ Fecha 23/4
 
 ---
 
-## Tarea 9: A09 - Security Logging and Monitoring Failures (Blue Team)
+## Tema 9: A09 - Security Logging and Monitoring Failures (Blue Team)
 
 Fecha 28/4
 
@@ -257,9 +271,13 @@ Simón Corvo
 
 ---
 
-## Tarea 10: A10 - Server-Side Request Forgery (SSRF) (Red Team)
+## Tema 10: A10 - Server-Side Request Forgery (SSRF) (Red Team)
 
 Fecha 28/4
+
+Asignado
+Damaso Tor
+Diego Koci
 
 **Presentación requerida:**
 - SSRF básico y avanzado
