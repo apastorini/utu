@@ -12,6 +12,7 @@ Fecha 15/4
 Asignado: 
 Nicolás Hernández 
 Leonardo Giménez 
+Christian Busquets
 
 **Tema del curso relacionado:** Clase 1-2 (Fundamentos y Setup)
 
@@ -91,6 +92,36 @@ Mauricio Wiedermann
 - Reporte de coverage
 
 ---
+
+## Tarea 4 B **On-Device AI: El cambio de paradigma hacia la IA local**
+
+22/4
+
+Asignado
+Ximena González
+Manuel Sainz
+
+
+Este tema aborda cómo la inteligencia artificial está dejando de ser una simple llamada a una API en la nube para convertirse en una capacidad integrada directamente en el hardware del dispositivo.
+
+---
+
+### **Puntos clave a abordar:**
+
+* **Evolución del Hardware (NPUs):** Cómo los procesadores actuales en iOS y Android incluyen núcleos dedicados exclusivamente a IA, permitiendo ejecución local sin drenar la batería.
+* **Modelos de Lenguaje Pequeños (SLMs):** Introducción a modelos optimizados (como **Gemini Nano** o Llama-3 1B/3B) y el concepto de **cuantización** para que la IA quepa en la RAM del teléfono.
+* **Privacidad y Latencia Cero:** El valor de procesar datos sensibles sin que salgan del dispositivo (cumplimiento de GDPR) y la ventaja de funcionar sin conexión a internet.
+* **Casos de Uso Prácticos:**
+    * **Generación de texto:** Resúmenes de hilos de chat y respuestas inteligentes.
+    * **Visión computacional:** Clasificación de objetos y edición de fotos avanzada en tiempo real.
+    * **Audio:** Transcripción y traducción de voz a texto offline.
+* **Frameworks de Implementación:** Breve repaso de las herramientas actuales como **TensorFlow Lite**, **CoreML** y **Google AI Edge SDK**.
+* **Desafíos Técnicos:** El impacto en el tamaño final del archivo de la app (Bundle Size) y la fragmentación de potencia entre dispositivos de gama alta y baja.
+
+
+---
+
+
 
 ## Tarea 5: Kotlin Multiplatform - Shared Code
 
@@ -184,6 +215,9 @@ Bibiana Fariello
 ## Tarea 9: Machine Learning en Android - ML Kit
 
 Fecha 13/5
+Asignado
+
+
 
 **Tema del curso relacionado:** Clase 11 (OCR)
 
@@ -223,6 +257,24 @@ Simón Corvo
 - Documentación de seguridad
 
 ---
+
+
+
+
+
+## Tema 11 - **Arquitecturas Modulares: Super Apps y Micro-Frontends en Mobile**
+
+20/5
+Asignado
+-Ignacio Gonzalez
+-Sebastián Di Loreto
+
+* **Del Monolito a la Modularización:** Por qué las apps grandes fallan al crecer y cómo la arquitectura de micro-frontends permite separar responsabilidades por equipo.
+* **Estrategias de Inyección de Dependencias:** El reto de compartir recursos (sesión, red, diseño) entre módulos que deben ser independientes.
+* **Server-Driven UI (SDUI):** Cómo diseñar interfaces que se controlan desde el backend para actualizar la experiencia de usuario sin pasar por los tiempos de revisión de la App Store o Play Store.
+* **Dynamic Delivery y On-Demand Modules:** Técnicas para que el usuario solo descargue las funciones que necesita (ej. un módulo de "Seguros" dentro de una App de "Banco"), reduciendo el peso inicial de la aplicación.
+* **Comunicación entre Micro-Apps:** Implementación de "Buses de Eventos" o "Deep Linking" interno para que los módulos hablen entre sí de forma desacoplada.
+* **Gestión de Equipos y Propiedad (Ownership):** Cómo organizar las tribus de desarrollo para que cada una sea dueña de su propio ciclo de vida dentro de la Super App.
 
 ## Distribución Sugerida
 

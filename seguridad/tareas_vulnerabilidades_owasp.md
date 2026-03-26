@@ -298,7 +298,49 @@ Diego Koci
 
 ---
 
-## Distribución Sugerida
+Tema 11: BOLA (Broken Object Level Authorization) - 
+Fecha: 30/4
+
+Asingado
+Pablo Morales
+Andrés Varela
+
+Justificación Técnica
+BOLA (anteriormente conocido como IDOR en APIs) es la vulnerabilidad #1 en el OWASP API Security Top 10. A diferencia de los ataques tradicionales, aquí el atacante está autenticado legalmente, pero manipula los IDs de los recursos en las peticiones REST para acceder a datos de otros usuarios. Es extremadamente común en aplicaciones móviles y SPAs (Single Page Applications).
+
+## Presentación requerida:
+
+Diferencia entre BOLA y Broken Access Control: Por qué el enfoque en objetos es distinto al enfoque en funciones.
+
+Mass Assignment (Asignación masiva): Cómo enviar propiedades adicionales en un JSON (ej. {"isAdmin": true}) puede elevar privilegios.
+
+Exploración de Endpoints: Uso de herramientas para descubrir rutas de API no documentadas (/api/v1/users/123 vs /api/v2/admin/users/123).
+
+Inmuebles e Identificadores: El peligro de usar IDs secuenciales frente a UUIDs/GUIDs.
+
+API Drift: Riesgos de seguridad cuando la documentación (Swagger/OpenAPI) no coincide con la implementación real.
+
+## Demo práctica:
+
+Juice Shop: Explotar un endpoint de la API para ver pedidos de otros usuarios cambiando el BasketID o el UserId en la petición capturada.
+
+Burp Suite (Repeater/Intruder): Automatizar el descubrimiento de objetos mediante la iteración de IDs en una petición GET o PUT de la API.
+
+Postman/Insomnia: Mostrar cómo realizar pruebas de seguridad directamente sobre los endpoints REST.
+
+## Entregables:
+
+Presentación de 40 min.
+
+Documentación OpenAPI (Swagger) del endpoint vulnerable y su versión corregida.
+
+Checklist de Seguridad en APIs: (Validación de tokens JWT, scopes de autorización y validación de propiedad del objeto).
+
+
+---
+
+
+## Distribución
 
 | Grupo | Vulnerabilidad |OWASP Code |
 |-------|----------------|------------|
