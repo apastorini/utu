@@ -1,0 +1,47 @@
+body {
+width: 1000px;
+height: 800px; background: white; margin: 0 auto;
+}
+header {
+width: 800px; background: red; margin: 0 auto;;
+}
+nav {
+width: 800px; height: 50px;
+background: grey;
+margin: 0 auto;
+}
+
+main {
+width: 800px;
+height: 300px; 
+background: rgb(225, 255, 0); 
+margin: 0 auto;
+
+}
+
+article {
+width: 100px;
+height: 100px; background: blue; margin: 0 auto; margin-top: 8px;
+}
+
+section {
+width: 225px;
+height: 250px; background: orange; position: relative; float: left; margin-top: 25px; 
+margin-left:38px;
+}
+
+aside {
+width: 200px;
+height: 250px; background: green;
+ position: relative; 
+ float: left; 
+ margin-top: 25px; 
+ margin-left: 38px;
+}
+footer {
+width: 800px; height: 150px; background: brown; margin: 0 auto;
+}
+
+hgroup{
+text-align:center; color: brown;
+}
