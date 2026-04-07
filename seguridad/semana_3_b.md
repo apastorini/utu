@@ -1,4 +1,4 @@
-# SEMANA 2: Fundamentos de Hacking Ético, Virtualización y Laboratorio de Pentesting
+# SEMANA 3: Fundamentos de Hacking Ético, Virtualización y Laboratorio de Pentesting
 
 ---
 
