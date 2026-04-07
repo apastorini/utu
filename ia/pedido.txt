@@ -1,0 +1,108 @@
+[cite_start]A continuación, presento la estructura formal de los cuatro cursos propuestos siguiendo el formato oficial de la Facultad de Ingeniería (FING - UDELAR) para el Tecnólogo en Informática[cite: 1, 70]. [cite_start]Estos programas mantienen la carga horaria de **8 créditos** (8 horas semanales totales) para ser consistentes con el modelo de referencia[cite: 9, 21].
+
+---
+
+# 📗 Curso 1: IA para la Ingeniería de Software (Fundamentos)
+
+**1. NOMBRE DE LA UNIDAD CURRICULAR**
+[cite_start]IA para la Ingeniería de Software[cite: 4, 7].
+
+**2. CRÉDITOS**
+[cite_start]8 créditos[cite: 9].
+
+**3. OBJETIVOS**
+* Adquirir los conceptos fundamentales de la IA, desde redes neuronales básicas hasta arquitecturas Transformer.
+* Implementar el patrón **Memory Bank** para la gestión de contexto en proyectos de software.
+* Dominar herramientas de desarrollo asistido (Cursor, Roo Code) y orquestadores básicos (LangChain).
+
+**4. TEMARIO (CRONOGRAMA TENTATIVO)**
+* **Semanas 1-4:** Historia de la IA (Simbólica vs. Conexionista). Perceptrón y Funciones de Activación. Algoritmos de búsqueda ($A^*$).
+* **Semanas 5-8:** Redes Neuronales Profundas. Mecanismo de **Atención** y Arquitectura Transformer.
+* **Semanas 9-12:** Programación de Agentes. Patrones **ReAct**. Introducción a orquestadores de código abierto.
+* **Semanas 13-16:** Ingeniería de Contexto. Patrón **Memory Bank** (`.ai_context`). Automatización de requisitos y pruebas unitarias.
+
+**5. EVALUACIÓN**
+* [cite_start]**Parcial 1 (Semana 8):** Presentación grupal (25 min) sobre un tema de fundamentos con demostración técnica[cite: 27, 122].
+* [cite_start]**Evaluación Final (Semana 15):** Proyecto integrador de desarrollo asistido por IA aplicando el patrón de memoria de contexto[cite: 28, 114, 122].
+
+---
+
+# 📙 Curso 2: Sistemas Cognitivos, RAG y Grafos de Conocimiento
+
+**1. NOMBRE DE LA UNIDAD CURRICULAR**
+[cite_start]Sistemas Cognitivos, RAG y Grafos de Conocimiento[cite: 7].
+
+**2. CRÉDITOS**
+[cite_start]8 créditos[cite: 9].
+
+**3. OBJETIVOS**
+* Diseñar arquitecturas de Generación Aumentada por Recuperación (RAG) para reducir alucinaciones.
+* Modelar dominios de conocimiento mediante Ontologías (OWL/RDF) y Bases de Datos de Grafos.
+* Implementar medidas de seguridad avanzada para modelos de lenguaje (OWASP for LLMs).
+
+**4. TEMARIO (CRONOGRAMA TENTATIVO)**
+* **Semanas 1-4:** Percepción Computacional (YOLO). MLOps: monitoreo de degradación y latencia.
+* **Semanas 5-8:** Arquitectura RAG. **Chunking** semántico y bases vectoriales. Búsqueda híbrida.
+* **Semanas 9-12:** Semántica y Grafos. Modelado OWL. **GraphRAG** y razonamiento de múltiples saltos en Neo4j.
+* **Semanas 13-16:** Orquestación Multi-Agente. Seguridad: Prevención de *Prompt Injection* y auditoría de decisiones.
+
+**5. EVALUACIÓN**
+* [cite_start]**Parcial 1 (Semana 8):** Presentación grupal con demostración práctica de una arquitectura RAG o de Grafos[cite: 122].
+* [cite_start]**Evaluación Final (Semana 15):** Defensa de un "Cerebro Cognitivo" que integre recuperación vectorial y reglas ontológicas[cite: 122].
+
+---
+
+# 🏢 Curso 3: IA para Líderes y Dueños de PYME (No-Code)
+
+**1. NOMBRE DE LA UNIDAD CURRICULAR**
+[cite_start]IA para Líderes y Dueños de PYME[cite: 7].
+
+**2. CRÉDITOS**
+[cite_start]8 créditos[cite: 9].
+
+**3. OBJETIVOS**
+* Identificar oportunidades de automatización agéntica para reducir costos marginales en PYMEs.
+* Orquestar flujos de trabajo de ventas, marketing y administración mediante herramientas visuales (No-Code).
+* Establecer protocolos de gobernanza y "Human-in-the-loop" para la supervisión de agentes.
+
+**4. TEMARIO (CRONOGRAMA TENTATIVO)**
+* **Semanas 1-4:** Economía de la IA. Mapeo de flujos de valor. Automatización con herramientas visuales (n8n/Make).
+* **Semanas 5-8:** Agentes de Front-Office. Vendedores autónomos 24/7 y marketing de respuesta directa.
+* **Semanas 9-12:** Administración Virtual. Lectura de facturas, gestión automática de CRM y conciliación.
+* **Semanas 13-16:** Dashboards de Mando. Control de salud de agentes y métricas de ROI.
+
+**5. EVALUACIÓN**
+* [cite_start]**Parcial 1 (Semana 8):** Seminario sobre la automatización de una unidad de negocio específica[cite: 122].
+* [cite_start]**Evaluación Final (Semana 15):** Defensa de una "Empresa Autónoma" operando un flujo real de punta a punta[cite: 122].
+
+---
+
+# ⚙️ Curso 4: Ingeniería de Organizaciones Autónomas (Deep Tech)
+
+**1. NOMBRE DE LA UNIDAD CURRICULAR**
+[cite_start]Ingeniería de Organizaciones Autónomas[cite: 7].
+
+**2. CRÉDITOS**
+[cite_start]8 créditos[cite: 9].
+
+**3. OBJETIVOS**
+* Construir infraestructuras industriales de agentes con persistencia de memoria a largo plazo.
+* Desplegar sistemas multi-agente escalables mediante contenedores y orquestadores.
+* Optimizar modelos pequeños (SLMs) mediante fine-tuning para tareas empresariales específicas.
+
+**4. TEMARIO (CRONOGRAMA TENTATIVO)**
+* **Semanas 1-4:** Workflows Agénticos Industriales. Persistencia de estado y gestión de memoria (Redis).
+* **Semanas 5-8:** Integración con Sistemas Legacy (ERP/CRM). Capas de abstracción para agentes.
+* **Semanas 9-12:** Agent-Ops y Observabilidad. Tracing de pensamientos y "Kill-Switches" semánticos.
+* **Semanas 13-16:** Escalamiento Horizontal. Contenerización de enjambres de agentes y fine-tuning de SLMs.
+
+**5. EVALUACIÓN**
+* [cite_start]**Parcial 1 (Semana 8):** Presentación técnica de una arquitectura de orquestación de agentes persistentes[cite: 122].
+* [cite_start]**Evaluación Final (Semana 15):** Defensa de una infraestructura "Company-in-a-Box" desplegable y escalable[cite: 122].
+
+---
+
+### **Disposiciones Comunes (Para todos los cursos)**
+* [cite_start]**Metodología:** 2 horas de Teórico, 2 horas de Laboratorio Asistido y 4 horas de trabajo personal[cite: 18, 21].
+* [cite_start]**Aprobación:** Promedio ponderado mínimo de 60% en las tres instancias (Parcial 1, Final y Participación)[cite: 125].
+* [cite_start]**Participación:** 20% de la nota final basada en la asistencia y participación activa en laboratorios[cite: 122].
