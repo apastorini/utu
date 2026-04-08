@@ -41,7 +41,7 @@ Diego Koci
 
 **Objetivos:**
 - Estudiar Jetpack Compose como alternativa a Views tradicionales
-- Comparar con el enfoque actual del curso
+- Comparar con distitnos enfoques
 - Explicar conceptos de estado y recomposición
 - **Implementación:** Migrar una pantalla del proyecto a Compose con ViewModels
 
@@ -333,15 +333,29 @@ Asignado
 Mateo Sparano
 Nahuel Leguisamon -
 
-Objetivos:
+# Objetivos:
 
 Implementar bases de datos locales: Comparar Room (SQLite en Android) frente a alternativas en React Native (como SQLite o MMKV).
 
 Estrategias de Sincronización: Cómo manejar el estado de la app cuando no hay conexión (Offline-first).
 
 Consumo de API: Comparar el manejo de peticiones asíncronas (Retrofit + Coroutines en Kotlin vs. Axios/Fetch en RN).
+Dominar el almacenamiento local seguro.
 
-Implementación: "Task-Sync App"
+Configurar sincronización en segundo plano con WorkManager.
+
+
+
+Entregables:
+
+Presentación de 40 min sobre el flujo de datos Offline-first.
+
+Proyecto con persistencia configurada y funcional.
+
+Documentación sobre la estrategia de sincronización elegida.
+
+
+# Implementación: Sugerencia "Task-Sync App"
 Una aplicación de lista de tareas (To-Do) pero con esteroides técnicos:
 
 Persistencia: Las tareas se guardan localmente para que funcionen sin internet.
@@ -355,23 +369,9 @@ Lógica de filtrado: Un algoritmo que priorice tareas basado en fecha de vencimi
 Estructura de la entrega (Siguiendo tu formato):
 Tema del curso relacionado: Clase 13 (Persistencia y Red).
 
-Objetivos:
 
-Dominar el almacenamiento local seguro.
 
-Implementar patrones de diseño para el manejo de estado (MVI/MVVM).
 
-Configurar sincronización en segundo plano con WorkManager.
-
-Analizar el impacto del "Bridge" en el intercambio de grandes volúmenes de datos en RN.
-
-Entregables:
-
-Presentación de 40 min sobre el flujo de datos Offline-first.
-
-Proyecto con persistencia configurada y funcional.
-
-Documentación sobre la estrategia de sincronización elegida.
 
 ## Distribución Sugerida
 
