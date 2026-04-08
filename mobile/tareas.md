@@ -35,6 +35,7 @@ Fecha 15/4
 Asignado
 Dámaso Tor
 Nicolas Caputto
+Diego Koci
 
 **Tema del curso relacionado:** Clase 3 (Arquitectura MVVM)
 
@@ -216,7 +217,8 @@ Bibiana Fariello
 
 Fecha 13/5
 Asignado
-
+Tiago Vescovi
+Nicolàs Dìas
 
 
 **Tema del curso relacionado:** Clase 11 (OCR)
@@ -268,6 +270,7 @@ Simón Corvo
 Asignado
 -Ignacio Gonzalez
 -Sebastián Di Loreto
+-Alan Pibeti
 
 * **Del Monolito a la Modularización:** Por qué las apps grandes fallan al crecer y cómo la arquitectura de micro-frontends permite separar responsabilidades por equipo.
 * **Estrategias de Inyección de Dependencias:** El reto de compartir recursos (sesión, red, diseño) entre módulos que deben ser independientes.
@@ -275,6 +278,100 @@ Asignado
 * **Dynamic Delivery y On-Demand Modules:** Técnicas para que el usuario solo descargue las funciones que necesita (ej. un módulo de "Seguros" dentro de una App de "Banco"), reduciendo el peso inicial de la aplicación.
 * **Comunicación entre Micro-Apps:** Implementación de "Buses de Eventos" o "Deep Linking" interno para que los módulos hablen entre sí de forma desacoplada.
 * **Gestión de Equipos y Propiedad (Ownership):** Cómo organizar las tribus de desarrollo para que cada una sea dueña de su propio ciclo de vida dentro de la Super App.
+
+## Tema 12-  Desarrollo Multiplataforma vs. Nativo Moderno
+20/5
+Asignado
+Gabriel Fiumarelli Santana
+Francisco Ancheta
+
+
+Objetivos
+Contrastar arquitecturas: Analizar el ciclo de vida y renderizado de Jetpack Compose frente al Bridge/JSI de React Native.
+
+Gestionar comunicación del SO: Implementar y comparar el uso de Intents y Servicios en ambos entornos.
+
+Evaluar procesamiento de datos: Analizar el rendimiento de algoritmos de filtrado/lógica de negocio (en lugar de Backpropagation complejo) ejecutados en hilos de fondo.
+
+Temas a abordar (40 min)
+Paradigmas de UI: Declarative UI en Kotlin vs. JSX en React Native.
+
+Interoperabilidad con Android: Manejo de Context, Intents implícitos/explícitos y permisos.
+
+Lógica en Background: Implementación de WorkManager (Kotlin) frente a Headless JS o Native Modules (RN).
+
+Performance Check: Comparativa de consumo de memoria y CPU al procesar listas de datos extensas.
+
+App para la comparación: "Stock-Manager"
+Una app sencilla de gestión de inventario que permite ver cómo cada tecnología toca el sistema operativo.
+
+Funcionalidad principal: Lista de productos con búsqueda local.
+
+Uso de Intents: Botón para "Llamar al Proveedor" (Intent de marcado) o "Ubicación del Depósito" (Intent de Mapas).
+
+Uso de Servicios: Un servicio que simula una sincronización de stock en segundo plano y lanza una notificación si un item se agota.
+
+Procesamiento (Simulacro de lógica pesada): Un algoritmo de ordenamiento que clasifica 5.000 productos por "Prioridad de Reposición" basándose en múltiples variables (precio, stock, fecha), ideal para ver la diferencia de velocidad entre la JVM y el motor de JS.
+
+Entregables
+Presentación de 40 min: Comparativa técnica de arquitectura y casos de uso.
+
+Proyecto Dual: Un repositorio con dos carpetas (/compose y /react-native) que resuelven el mismo problema de "Stock-Manager".
+
+Cuadro Comparativo: Documentación técnica detallando pros/contras en:
+
+Tiempo de compilación.
+
+Facilidad de acceso a APIs nativas.
+
+Peso final del APK.
+
+## Tema 13  Gestión de Estado y Persistencia Offline
+
+21/05
+Asignado
+Mateo Sparano
+Nahuel Leguisamon -
+
+Objetivos:
+
+Implementar bases de datos locales: Comparar Room (SQLite en Android) frente a alternativas en React Native (como SQLite o MMKV).
+
+Estrategias de Sincronización: Cómo manejar el estado de la app cuando no hay conexión (Offline-first).
+
+Consumo de API: Comparar el manejo de peticiones asíncronas (Retrofit + Coroutines en Kotlin vs. Axios/Fetch en RN).
+
+Implementación: "Task-Sync App"
+Una aplicación de lista de tareas (To-Do) pero con esteroides técnicos:
+
+Persistencia: Las tareas se guardan localmente para que funcionen sin internet.
+
+Servicios/Intents: * Un Servicio de Background que intente subir las tareas pendientes apenas detecte conexión.
+
+Un Intent para que otra app pueda "enviar" un texto y crearlo como tarea automáticamente.
+
+Lógica de filtrado: Un algoritmo que priorice tareas basado en fecha de vencimiento y etiquetas (aquí pueden aplicar el concepto de lógica pesada que querías).
+
+Estructura de la entrega (Siguiendo tu formato):
+Tema del curso relacionado: Clase 13 (Persistencia y Red).
+
+Objetivos:
+
+Dominar el almacenamiento local seguro.
+
+Implementar patrones de diseño para el manejo de estado (MVI/MVVM).
+
+Configurar sincronización en segundo plano con WorkManager.
+
+Analizar el impacto del "Bridge" en el intercambio de grandes volúmenes de datos en RN.
+
+Entregables:
+
+Presentación de 40 min sobre el flujo de datos Offline-first.
+
+Proyecto con persistencia configurada y funcional.
+
+Documentación sobre la estrategia de sincronización elegida.
 
 ## Distribución Sugerida
 
