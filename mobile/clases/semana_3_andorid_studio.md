@@ -1,13 +1,5 @@
 # SETUP ANDROID STUDIO
 
-## Tu Primera App Android Desde Cero
-
----
-
-Esto es una guía práctica. Vas a instalar Android Studio, crear un proyecto real, entender cómo funciona internamente y ejecutarlo en un simulador. 
-
----
-
 ## PARTE 1: INSTALACIÓN
 
 ### 1.1 Descarga
@@ -231,7 +223,7 @@ class MainActivity : AppCompatActivity() {
 
 ---
 
-## PARTE 4: ENTENDER EL CICLO DE VIDA
+## PARTE 4: Repaso CICLO DE VIDA
 
 ### 4.1 Qué es el Ciclo de Vida
 
@@ -1371,7 +1363,7 @@ MiPrimeraApp/
 | **Service** | Tareas en segundo plano | `onCreate()`, `onStartCommand()` |
 | **BroadcastReceiver** | Escuchar eventos del sistema | `onReceive()` |
 
-### Ciclo de vida que dominas
+### Ciclo de vida 
 
 ```
 Creación:      onCreate() → onStart() → onResume()
@@ -1406,8 +1398,4 @@ MainActivity
 
 ---
 
-## SIGUIENTE PASO
 
-Lo que viene es aprender a guardar datos (SharedPreferences, Room Database), conectar con APIs REST (Retrofit), y usar arquitecturas como MVVM. Pero eso es material para otro documento.
-
-Por ahora, practica con lo que tienes. Crea más Activities, navega entre ellas, modifica los layouts, cambia colores y textos. La mejor forma de aprender es rompiendo cosas y viendo qué pasa.

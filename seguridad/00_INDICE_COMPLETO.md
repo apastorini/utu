@@ -64,6 +64,46 @@
 - GDPR (implementación técnica)
 - Proceso de auditoría
 
+### ✅ **CLASE 4: Fuerza Bruta y John the Ripper** (`clase_4_fuerza_bruta_john_rainbow.md`)
+- Conceptos de hash y contraseñas
+- Ataques de fuerza bruta, diccionario y rainbow tables
+- John the Ripper: uso completo
+- Hydra: ataques a servicios (SSH, FTP, HTTP, MySQL, SMB)
+- Hashcat: aceleración GPU
+- Laboratorio práctico completo
+
+### ✅ **CLASE 5: Explotación con Metasploitable** (`clase_5_explotacion_metasploitable.md`)
+- Metasploitable 2 y 3: introducción
+- Reconocimiento y enumeración de servicios
+- Metasploit Framework: uso avanzado
+- Explotación de vsftpd, distcc, UnrealIRCd, PHP CGI, Samba
+- Explotación manual de vulnerabilidades
+- Post-explotación básica
+
+### ✅ **CLASE 6: Buffer Overflow** (`clase_6_buffer_overflow.md`)
+- Fundamentos de memoria y arquitectura x86/x64
+- Stack overflow: teoría y práctica
+- Explotación de buffer overflow paso a paso
+- Herramientas: gdb, pwndbg, radare2, Ghidra
+- Shellcoding básico
+- Técnicas de bypass: ASLR, NX, PIE, canaries
+- Laboratorio práctico completo
+
+### ✅ **CLASE 7: Escalada de Privilegios** (`clase_7_escalada_privilegios.md`)
+- Modelo de privilegios en Linux y Windows
+- Escalada de privilegios en Linux: SUID, sudo, kernel exploits
+- Escalada de privilegios en Windows: servicios, alwaysinstallelevated
+- GTFOBins, LOLBAS: binarios explotables
+- Herramientas: LinPEAS, WinPEAS, PowerUp
+- Pass-the-Hash, Pass-the-Ticket
+- Laboratorio práctico: Metasploitable y Windows
+- Contramedidas y hardening
+- ISO/IEC 27001:2022 (93 controles)
+- PCI-DSS v4.0
+- SOC 2 (Trust Service Criteria)
+- GDPR (implementación técnica)
+- Proceso de auditoría
+
 ### ✅ **DIAGRAMAS VISUALES** (`Diagramas_Visuales.md`)
 - 10 diagramas pedagógicos en ASCII art
 - Defensa en profundidad, JWT, MITM, Zero Trust, CI/CD
@@ -73,13 +113,13 @@
 
 ## 📊 ESTADÍSTICAS DEL CURSO
 
-- **Módulos:** 14 completos
-- **Archivos:** 11 documentos
-- **Ejemplos de código:** 150+
-- **Herramientas:** 30+
+- **Módulos:** 18 completos (10 teóricos + 7 clases prácticas)
+- **Archivos:** 15 documentos
+- **Ejemplos de código:** 200+
+- **Herramientas:** 40+
 - **Diagramas:** 25+
-- **Laboratorios:** 8 completos
-- **Lenguajes:** Python, Java, JavaScript, Bash, SQL, YAML
+- **Laboratorios:** 10 completos
+- **Lenguajes:** Python, Java, JavaScript, Bash, SQL, YAML, Assembly
 
 ---
 
@@ -105,6 +145,12 @@
 - Parte 9: Incident Response
 - Parte 10: Compliance
 
+### **Nivel 5: Hacking Ético Práctico (4 semanas)**
+- Clase 4: Fuerza Bruta y John the Ripper
+- Clase 5: Explotación con Metasploitable
+- Clase 6: Buffer Overflow
+- Clase 7: Escalada de Privilegios
+
 ---
 
 ## 🛠️ LABORATORIOS PRÁCTICOS
@@ -117,6 +163,10 @@
 6. **Simulación de Phishing** (Parte 8)
 7. **Respuesta a Incidente** (Parte 9)
 8. **Preparación para Auditoría** (Parte 10)
+9. **Fuerza Bruta y Crackeo de Contraseñas** (Clase 4)
+10. **Explotación con Metasploitable** (Clase 5)
+11. **Buffer Overflow y Desarrollo de Exploits** (Clase 6)
+12. **Escalada de Privilegios Linux y Windows** (Clase 7)
 
 ---
 
@@ -126,11 +176,17 @@
 - Pentesting, Metasploit, Burp Suite
 - SQL Injection, XSS, SSRF
 - Ingeniería social
+- Buffer Overflow y exploit development
+- Escalada de privilegios (Linux y Windows)
+- Fuerza bruta y crackeo de contraseñas
+- Shellcoding y ROP
 
 ### Seguridad Defensiva
 - Firewalls, IDS/IPS, WAF
 - SIEM, EDR, Análisis forense
 - Incident Response
+- Hardening de sistemas
+- Monitoreo y detección
 
 ### Seguridad en Desarrollo
 - DevSecOps, CI/CD seguro
@@ -154,6 +210,7 @@
 Este curso te prepara para:
 - **CompTIA Security+**
 - **CEH (Certified Ethical Hacker)**
+- **OSCP (Offensive Security Certified Professional)**
 - **CISSP** (dominios cubiertos)
 - **ISO 27001 Lead Implementer**
 - **AWS/Azure Security Specialty**
@@ -164,7 +221,12 @@ Este curso te prepara para:
 
 ### Herramientas Mencionadas
 - Nmap, Wireshark, Metasploit
-- Trivy, SonarQube, OWASP ZAP
+- John the Ripper, Hashcat, Hydra
+- Burp Suite, OWASP ZAP
+- gdb, pwndbg, radare2, Ghidra
+- LinPEAS, WinPEAS, PowerUp
+- Mimikatz, impacket
+- Trivy, SonarQube
 - Jenkins, Docker, Kubernetes
 - Gophish, Volatility, Autopsy
 
@@ -176,8 +238,8 @@ Este curso te prepara para:
 
 ---
 
-**Versión:** 2.0 (Completa)  
-**Última actualización:** 2024  
-**Total de páginas:** ~200  
-**Tiempo estimado:** 16 semanas (4 meses)
+**Versión:** 3.0 (Completa con Hacking Ético Práctico)  
+**Última actualización:** 2026  
+**Total de páginas:** ~300  
+**Tiempo estimado:** 20 semanas (5 meses)
 

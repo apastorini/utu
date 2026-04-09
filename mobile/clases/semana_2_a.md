@@ -1,8 +1,7 @@
 # 📱 Clase 02: Fundamentos del Desarrollo Mobile (Cont)
 
-**Duración:** 6 horas  
 **Objetivo:** Dominar fundamentos de Android, iOS, ciclos de vida, componentes, APIs y arquitectura  
-**Proyecto:** Documento de referencia y primer proyecto Android funcionando
+
 
 ---
 
@@ -2477,18 +2476,6 @@ class MiAplicacion : Application() {
 | **Arquitectura** | MVVM + Clean Architecture |
 | **Android Studio** | IDE oficial para desarrollo Android |
 
-### Próximos Pasos
 
-1. ✅ Instalar Android Studio
-2. ✅ Crear primer proyecto
-3. ✅ Entender ciclo de vida
-4. ⬜ Explorar Fragments
-5. ⬜ Implementar Navigation
-6. ⬜ Agregar Room Database
-7. ⬜ Conectar con API REST
-8. ⬜ Implementar MVVM completo
 
----
 
-**Última actualización:** 2024  
-**Tiempo estimado:** 6 horas

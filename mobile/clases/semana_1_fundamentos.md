@@ -1,6 +1,5 @@
 # 📱 Clase 01: Fundamentos de Android y Kotlin
 
-**Duración:** 4 horas  
 **Objetivo:** Entender Android, Kotlin y prepararse para desarrollo profesional  
 **Proyecto:** Crear primera Activity con ciclo de vida
 
@@ -399,7 +398,7 @@ En la barra superior de Android Studio, selecciona tu dispositivo en el menú de
 
 Presiona el botón de Play (triángulo verde) o Shift + F10.
 
-¡Listo! Se abrirá una ventana con un teléfono funcional donde aparecerá tu "Hello World".
+ Se abrirá una ventana con un teléfono funcional donde aparecerá tu "Hello World".
 
 ⚡ Tip: Simular en un teléfono real
 Si tu PC va lento con el emulador, puedes usar tu propio móvil:
@@ -462,7 +461,7 @@ boton.setOnClickListener {
 ```
 Nota: Si ves letras en rojo, pon el cursor sobre ellas y presiona Alt + Enter para que Android Studio importe automáticamente las librerías necesarias (import android.widget.Button, etc.).
 
-🏃‍♂️ Paso 3: ¡A correr!
+🏃‍♂️ Paso 3: 
 Asegúrate de que tu Emulador esté seleccionado en la barra superior.
 
 Presiona el botón Play (Triángulo Verde).
@@ -797,11 +796,4 @@ fun main() = runBlocking {
 
 ---
 
-## 🚀 Próxima Clase
 
-Clase 02: Setup del Proyecto - Crearemos la estructura completa del proyecto, backend con Node.js y Docker Compose.
-
----
-
-**Última actualización:** 2024  
-**Tiempo estimado:** 4 horas

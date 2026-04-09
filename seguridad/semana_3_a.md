@@ -183,6 +183,131 @@ El reconocimiento es la fase más crítica del pentesting. Estadísticamente, el
 | Recon-ng | Framework de reconocimiento | `recon-cli` |
 | Google Dorking | Búsquedas avanzadas | `site:empresa.com filetype:pdf` |
 
+
+1. Objetivos Seguros (Targets)
+Nunca hagas pruebas contra empresas reales sin autorización escrita. Dominios creados para estudiantes de ciberseguridad:
+
+zonetransfer.me: Es el objetivo estándar para pruebas de DNS. Está configurado para permitir que "juegues" con él.
+
+hackthissite.org o testasp.vulnweb.com: Sitios diseñados para ser vulnerables.
+
+2. Cómo ejecutar WHOIS (y por qué no funciona a veces)
+El comando whois suele venir instalado en Kali. Si no, lo instalas rápid con sudo apt update && sudo apt install whois.
+
+Ejemplo de uso:
+
+Bash
+whois zonetransfer.me
+Lo que verás: Información sobre quién registró el dominio, servidores de nombres (NS) y fechas de expiración.
+
+Nota: Muchos dominios modernos usan "Privacy Protection", por lo que verás datos genéricos de una empresa de privacidad en lugar del nombre del dueño. 
+
+3. Práctica Paso a Paso 
+
+
+A. DNSenum (Enumeración DNS)
+Esta herramienta  intenta hacer una "transferencia de zona" (copiar todo el mapa del sitio).
+
+Bash
+dnsenum zonetransfer.me
+B. theHarvester (Recopilación de OSINT)
+Intentemos buscar correos y subdominios asociados. Como zonetransfer.me es pequeño, usemos solo para ver qué sale, ya que buscar info pública no es delito, pero no lo ataques.
+
+Bash
+theHarvester -d microsoft.com -l 500 -b google
+(El parámetro -l limita los resultados y -b elige la fuente, en este caso Google).
+
+C. Google Dorking (Desde tu Windows o Kali)
+ Prueba esto en Google para encontrar archivos PDF expuestos de un dominio (ejemplo educativo):
+site:edu.uy filetype:pdf "confidencial"
+
+
+
+
+
+---
+# REcon-ng
+
+## 1. El Concepto: "The Workspace"
+Antes de tirar comandos, entiende que Recon-ng guarda todo en una base de datos. Si investigas "Empresa A", no quieres que sus datos se mezclen con "Empresa B".
+
+**Comando inicial:**
+```bash
+recon-ng
+```
+
+Una vez dentro del prompt `[recon-ng][default] >`, crea un entorno de trabajo:
+```bash
+workspaces create clase_practica
+```
+
+---
+
+## 2. Instalación de Módulos
+A diferencia de versiones anteriores, ahora Recon-ng viene "vacío". Necesitas instalar lo que vas a usar desde su propio "Marketplace".
+
+1. **Buscar módulos de dominios:** `marketplace search domains`
+2. **Instalar uno básico (Brute force de hosts):** ```bash
+   marketplace install recon/domains-hosts/brute_hosts
+   ```
+3. **Instalar uno de búsqueda en buscadores (Bing):** ```bash
+   marketplace install recon/domains-hosts/bing_domain_web
+   ```
+
+---
+
+## 3. Configurando el Objetivo (Seed)
+Para que los módulos funcionen, debes decirle a la base de datos qué dominio estamos investigando. Usaremos nuestro objetivo seguro: `zonetransfer.me`.
+
+```bash
+db insert domains
+# Te pedirá el dominio: zonetransfer.me
+# Te pedirá notas: Objetivo de práctica
+```
+
+Verifica que se guardó: `show domains`
+
+---
+
+## 4. Ejecución de Módulos 
+Ahora vamos a "cargar" un módulo y ejecutarlo. El flujo siempre es: **Cargar -> Configurar -> Ejecutar**.
+
+### Ejemplo: Fuerza bruta de subdominios
+```bash
+modules load recon/domains-hosts/brute_hosts
+run
+```
+*Recon-ng empezará a probar nombres comunes (www, mail, dev, ftp) contra zonetransfer.me y guardará lo que encuentre en la tabla de **hosts**.*
+
+### Ver los resultados:
+```bash
+show hosts
+```
+
+---
+
+## 5. El Dashboard de Resultados
+Al final de tu sesión, puedes ver un resumen de cuánta información has recolectado (IPs, correos, subdominios):
+```bash
+dashboard
+```
+
+---
+
+### 💡 API Keys
+Muchos módulos potentes (como los de LinkedIn, Shodan o Censys) requieren **API Keys**. 
+* Para ver qué llaves te faltan: `keys list`
+* Para añadir una: `keys add shodan_api <tu_llave>`
+
+### Tarea para tu laboratorio:
+Intenta instalar y correr el módulo `recon/domains-hosts/google_site_web`. 
+
+**Pregunta de seguridad:** ¿Ves la diferencia entre hacer un `traceroute` (que toca la red del objetivo) y usar `Recon-ng` para buscar subdominios en Google/Bing? 
+
+*(Pista: Uno es reconocimiento **activo** y el otro es **pasivo**. En gobierno digital, el pasivo es para ver qué está exponiendo la institución sin "hacer ruido" en los logs).*
+
+¿Lograste ver algún host con el comando `show hosts`?
+
 #### FASE 2: ESCANEO (Scanning)
 
 **Objetivo:** Identificar puertos abiertos, servicios activos y vulnerabilidades potenciales en los sistemas objetivo.
