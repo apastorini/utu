@@ -1,7 +1,7 @@
 # 🏗️ Clase 03: Arquitectura MVVM y Dependency Injection
 
 **Duración:** 4 horas  
-**Objetivo:** Implementar MVVM + Hilt para arquitectura profesional  
+**Objetivo:** Implementar MVVM + Hilt   
 **Proyecto:** Refactorizar MainActivity con ViewModel
 
 ---
