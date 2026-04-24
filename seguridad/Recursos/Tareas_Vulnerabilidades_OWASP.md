@@ -180,7 +180,10 @@ Mateo Sparano
 - OAuth/OpenID vulnerabilities
 
 **Demo práctica:**
-- Hydra para credential stuffing
+- Hydra para credential 
+- Ffuf para Json
+- Zap
+- Burp suite
 - Session hijacking con Burp Suite
 - Testing de MFA
 

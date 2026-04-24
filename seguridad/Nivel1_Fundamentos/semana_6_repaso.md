@@ -629,5 +629,5 @@ INDICADORES DE PHISHING:
 ✓ Contactar directamente a la empresa
 ```
 
-Estos diagramas pueden ser renderizados en Markdown viewers o convertidos a imágenes para presentaciones.
+
 
