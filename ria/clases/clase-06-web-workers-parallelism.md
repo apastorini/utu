@@ -45,10 +45,10 @@ TCP es un protocolo **orientado a conexión** que garantiza la entrega ordenada 
 4. Cierre ordenado de la conexión
 ```
 
-**¿Por Qué Surge?**
+**¿Por qué surge?**
 Los protocolos anteriores a TCP no garantizaban que los datos llegaran correctamente. TCP resolvió el problema de la fiabilidad en redes.
 
-**¿Para Qué Serving?**
+**¿Para qué sirve?**
 - Navegación web (HTTP/HTTPS)
 - Correo electrónico (SMTP, IMAP)
 - Transferencia de archivos (FTP, SFTP)
@@ -59,7 +59,7 @@ Los protocolos anteriores a TCP no garantizaban que los datos llegaran correctam
 **¿Qué es?**
 UDP es un protocolo **sin conexión** que envía datos sin garantía de entrega ni orden.
 
-**¿Cómo Funciona?**
+**¿Cómo funciona?**
 ```
 1. Sin handshake - enviar directamente
 2. Sin números de secuencia
@@ -67,10 +67,10 @@ UDP es un protocolo **sin conexión** que envía datos sin garantía de entrega 
 4. Si se pierde un paquete, no se reenvía automáticamente
 ```
 
-**¿Por Qué Existe?**
+**¿Por qué existe?**
 TCP tiene overhead: más bytes por paquete, reintentos, esperas. UDP es mucho más rápido cuando la velocidad prima sobre la perfección.
 
-**¿Para Qué Serving?**
+**¿Para qué sirve?**
 - Streaming de video/audio en vivo
 - Gaming online
 - DNS queries (muy rápidas)
@@ -97,7 +97,7 @@ TCP tiene overhead: más bytes por paquete, reintentos, esperas. UDP es mucho m�
 - **Pipelining**: varios requests sin esperar respuesta
 - **Hosting virtual**: múltiples sitios en un servidor
 
-**¿Por Qué Surge?**
+**¿Por qué surge?**
 HTTP/1.0 era muy lento. Cada archivo requería una conexión nueva.
 
 **Limitación:** Los responses deben venir en orden (head-of-line blocking)
@@ -110,10 +110,10 @@ HTTP/1.0 era muy lento. Cada archivo requería una conexión nueva.
 - **Header Compression** (HPACK)
 - **Binary frames**: más eficiente que texto
 
-**¿Por Qué Surge?**
+**¿Por qué surge?**
 HTTP/1.1 aún tenía limitaciones. Cargar una página con 100 recursos = 100 requests o pocas conexiones paralelas.
 
-**¿Para Qué Serving?**
+**¿Para qué sirve?**
 - Aplicaciones web modernas
 - APIs con muchas llamadas
 
@@ -140,10 +140,10 @@ TCP tiene problemas en redes móviles. QUIC fue diseñado específicamente para 
 **¿Qué es?**
 WebSockets es un protocolo que permite comunicación **bidireccional full-duplex** entre cliente y servidor sobre una única conexión TCP.
 
-**¿Por Qué Surge?**
+**¿Por qué surge?**
 HTTP es request-response: el cliente siempre inicia la comunicación. Para chat, gaming, o apps en tiempo real, necesitamos que el servidor inicie mensajes.
 
-**¿Para Qué Serving?**
+**¿Para qué sirve?**
 - Chat en tiempo real
 - Juegos multiplayer
 --notificaciones en vivo
@@ -154,10 +154,10 @@ HTTP es request-response: el cliente siempre inicia la comunicación. Para chat,
 **¿Qué es?**
 gRPC es un framework de Remote Procedure Call (RPC) que usa **Protocol Buffers** para codificar datos de manera binaria y eficiente.
 
-**¿Por Qué Surge?**
+**¿Por qué surge?**
 REST usa JSON que es texto y verboso. Para microservicios donde la velocidad importa, JSON añade overhead significativo.
 
-**¿Para Qué Serving?**
+**¿Para qué Sirve?**
 - Microservicios internos
 - APIs de alto rendimiento
 - Comunicación entre servicios
@@ -183,10 +183,10 @@ service EventoService {
 **¿Qué es?**
 SSE permite que un servidor envíe actualizaciones a un cliente a través de una conexión HTTP estándar.
 
-**¿Por Qué Surge?**
+**¿Por qué surge?**
 WebSockets bidireccionales son complejos. Para casos donde solo el servidor necesita enviar datos, SSE es más simple.
 
-**¿Para Qué Serving?**
+**¿Para qué servicio?**
 - Notificaciones
 - Actualizaciones de precios en tiempo real
 - monitoring de sistemas
@@ -196,10 +196,10 @@ WebSockets bidireccionales son complejos. Para casos donde solo el servidor nece
 **¿Qué es?**
 WebRTC (Web Real-Time Communication) permite comunicación **P2P directa** entre navegadores sin pasar por un servidor.
 
-**¿Por Qué Surge?**
+**¿Por qué surge?**
 Para videollamadas, si todo pasara por servidor, el costo en servidor sería enorme. P2P reduce costos drásticamente.
 
-**¿Para Qué Serving?**
+**¿Para qué sirve?**
 - Videollamadas
 - Transferencia de archivos P2P
 - Gaming P2P
@@ -209,7 +209,7 @@ Para videollamadas, si todo pasara por servidor, el costo en servidor sería eno
 
 | Protocolo | Bidireccional | Tipo | Cuando Usar |
 |----------|---------------|------|-------------|
-| HTTP/REST | No | Request/Response | APIs CRUD |
+|  |  | | |
 | WebSockets | Sí | Stream | Chat, Games |
 | gRPC | Método | RPC | Microservicios |
 | SSE | No | Push | Updates |
@@ -223,10 +223,10 @@ Para videollamadas, si todo pasara por servidor, el costo en servidor sería eno
 
 Un **stream** es una secuencia de datos que se transmite progresivamente, pedazo por pedazo, en lugar de esperar a tener todos los datos disponibles.
 
-**¿Por Qué Surge?**
+**¿Por qué surge?**
 En aplicaciones antiguas, primero descargabas todo el archivo a memoria, luego procesabas. Si el archivo era huge (GBs), el programa colapsaba. Stream permite procesar mientras llegan los datos.
 
-**¿Para Qué Serving?**
+**¿Para qué sirve?**
 - Procesar archivos huge sin memory overflow
 - Procesamiento en tiempo real (video, audio)
 - Transferencia de datos eficiente
@@ -286,7 +286,7 @@ Permite lectura y escritura.
 **¿Qué es?**
 Ocurre cuando el consumidor no puede procesar tan rápido como el Producer genera datos. Sin control, la memoria se satura.
 
-**¿Cómo se Resuelve?**
+**¿Cómo se resuelve?**
 El consumidor indica al Producer que reduzca la velocidad.
 
 ```javascript
@@ -380,10 +380,10 @@ lines.pipeTo(writableStream);
 **¿Qué es Project Reactor?**
 Reactor es una biblioteca reactiva para Java que implementa Streams asíncronos. Es la base de Spring WebFlux.
 
-**¿Por Qué Surge?**
+**¿Por qué surge?**
 Los streams síncronos de Java bloquean el thread. Reactor permite procesamiento no-bloqueante, ideal para sistemas de alta concurrencia.
 
-**¿Para Qué Serving?**
+**¿Para qué sirve?**
 - Aplicaciones Spring WebFlux
 - Microservicios reactivos
 - Procesamiento asíncrono de alto rendimiento
@@ -425,10 +425,10 @@ Mono<Evento> evento = Mono.fromCallable(() -> buscarEvento(1))
 **¿Qué es asyncio?**
 asyncio es una biblioteca de Python para escribir código concurrente usando async/await. Es la base de frameworks como aiohttp.
 
-**¿Por Qué Surge?**
+**¿Por qué surge?**
 Python tradicional es single-threaded. asyncio permite manejar miles de conexiones simultáneas sin crear un thread por cada una.
 
-**¿Para Qué Serving?**
+**¿Para qué sirve?**
 - Servidores web de alto rendimiento (aiohttp, FastAPI)
 - scrapersweb
 - APIs asíncronas
@@ -491,13 +491,13 @@ async def procesar_archivo():
 **¿Qué es?**
 Transferencia peer-to-peer (P2P) directa significa que los datos van directamente de un usuario a otro sin pasar por un servidor de almacenamiento.
 
-**¿Por Qué Surge?**
-Los servidores de almacenamiento tienen problemas:
+**¿Por qué surge?**
+Los servidores de almacenamiento:
 - Costo de almacenamiento en la nube
 - Privacy: terceros tienen acceso
 - Velocidad depende del servidor
 
-**¿Para Qué Serving?**
+**¿Para qué sirven?**
 - Compartir archivos grandes sin costo de almacenamiento
 - Privacidad extrema (nunca toca servidor)
 - Transferencia en tiempo real
@@ -537,10 +537,10 @@ Los servidores de almacenamiento tienen problemas:
 **¿Qué es?**
 RTCDataChannel es una API que permite transferir datos arbitrarios entre peers directamente.
 
-**¿Por Qué Surge?**
-WebRTC originalmente solo soportaba audio/video. DataChannel permite datos arbitrary P2P.
+**¿Por qué surge?**
+WebRTC originalmente solo soportaba audio/video. DataChannel permite otro tipo de datos.
 
-**¿Para Qué Serving?**
+**¿Para qué sirve?**
 - Transferencia de archivos
 - Chat P2P
 - Gaming P2P
@@ -568,15 +568,15 @@ dataChannel.onmessage = (event) => {
 
 ---
 
-### 3.3 Sistema de Transfer con Chunked Upload
+### 3.3 Sistema de Transferencia con Chunked Upload
 
 **¿Qué es?**
 Subir archivos en chunks pequeños, procesando cada chunk inmediatamente sin almacenar el archivo completo.
 
-**¿Por Qué Surge?**
+**¿Por qué surge?**
 Si subimos un archivo de 1GB, esperar a que termine para procesarlo es ineficiente. Procesando chunk por chunk es más rápido.
 
-**¿Para Qué Serving?**
+**¿Para qué sirve?**
 - Procesamiento de video
 - Validación progresiva
 - Compresión en tiempo real
@@ -608,10 +608,10 @@ async function processChunk(chunkData, chunkIndex, sessionId) {
 
 Un **Web Worker** es un script JavaScript que se ejecuta en un thread separado en segundo plano, independiente del thread principal del navegador.
 
-**¿Por Qué Surge?**
+**¿Por qué surge?**
 JavaScript en el navegador es single-threaded. Si haces cálculos pesados, la UI se congela. Workers permiten procesamiento paralelo sin congelar la UI.
 
-**¿Para Qué Serving?**
+**¿Para qué sirve?**
 - Cálculos pesados
 - Procesamiento de imágenes/video
 - Parseo de grandes archivos JSON
@@ -696,7 +696,7 @@ self.onmessage = function(event) {
 **¿Qué es?**
 MessageChannel crea un canal de comunicación bidireccional entre contextos.
 
-**¿Por Qué Surge?**
+**¿Por qué surge?**
 postMessage envía mensajes a un worker específico. MessageChannel permite que el worker responda por un canal dedicado.
 
 ```javascript
@@ -729,10 +729,10 @@ self.onmessage = function(event) {
 **¿Qué es?**
 Un transferable object es un objeto cuyo ownership se transfiere entre contexts, no se copia (mucho más rápido).
 
-**¿Por Qué Surge?**
+**¿Por qué surge?**
 Enviar datos grandes por postMessage copia los datos, lo cual toma tiempo. Transfer ownership es instantáneo.
 
-**¿Para Qué Serving?**
+**¿Para qué sirve?**
 - Arrays grandes
 - Buffers de imágenes
 - Cualquier dato >1MB
@@ -756,10 +756,10 @@ worker.postMessage({ data: buffer }, [buffer]);
 
 SharedArrayBuffer es un ArrayBuffer que puede ser compartido entre multiple workers y el main thread.
 
-**¿Por Qué Surge?**
+**¿Por qué surge?**
 postMessage tiene overhead de copia. Shared memory permite acceso directo a datos compartidos sin copiar.
 
-**¿Para Qué Serving?**
+**¿Para qué sirve?**
 - Contadores concurrentes
 - Estado compartido entre workers
 - Sincronización de datos
@@ -778,10 +778,10 @@ Cross-Origin-Embedder-Policy: require-corp
 **¿Qué son Atomics?**
 Atomics es un objeto que proporciona operaciones atómicas para SharedArrayBuffer.
 
-**¿Por Qué Surge?**
+**¿Por qué surge?**
 Sin operaciones atómicas, múltiples workers escribiendo al mismo tiempo = datos corruptos (race conditions).
 
-**¿Para Qué Serving?**
+**¿Para qué sirve?**
 - Crear mutexes
 - Contadores thread-safe
 - Sincronización entre workers
@@ -970,7 +970,7 @@ async function parallelCount(text, numWorkers = 4) {
 ## 📚 PARTE 7: Ejercicios Prácticos
 
 ### Ejercicio 1: Chat P2P
-- Objetivo: Crear chat sin servidor中间
+- Objetivo: Crear chat sin servidor
 - Pistas: RTCPeerConnection, RTCDataChannel
 
 ### Ejercicio 2: Image Processor
