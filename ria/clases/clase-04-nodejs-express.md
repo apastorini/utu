@@ -2,7 +2,7 @@
 
 **Duración:** 4 horas  
 **Objetivo:** Crear servidor backend con Node.js y Express, implementar APIs REST  
-**Proyecto:** API REST para el sistema de eventos TuFiesta
+**Proyecto:** API REST para el sistema de eventos 
 
 ---
 

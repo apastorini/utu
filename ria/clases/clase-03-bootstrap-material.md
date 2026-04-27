@@ -199,7 +199,7 @@ El concepto de responsividad en Bootstrap es lo que suele costar más al princip
 🏗️ 2. Anatomía de una Fila (The Row)Para que el grid funcione, siempre debes seguir esta jerarquía:.container: El colchón exterior (centra el contenido)..row: El contenedor de columnas (usa Flexbox)..col-*: Los hijos directos donde va el contenido.
 
 
-💡 3. Ejemplos Prácticos paso a pasoVamos a ver cómo se ve el mismo código en diferentes dispositivos.Ejemplo A: El "Espejo" (Mitad y Mitad)Queremos 2 columnas que se pongan una debajo de otra en móvil, pero una al lado de la otra en Tablet.HTML<div class="container">
+💡 3. Ejemplos Prácticos paso a paso. Vamos a ver cómo se ve el mismo código en diferentes dispositivos.Ejemplo A: El "Espejo" (Mitad y Mitad)Queremos 2 columnas que se pongan una debajo de otra en móvil, pero una al lado de la otra en Tablet.HTML<div class="container">
   <div class="row">
     <div class="col-12 col-md-6 bg-primary text-white"> Columna A </div>
     <div class="col-12 col-md-6 bg-success text-white"> Columna B </div>
@@ -321,7 +321,7 @@ Entre 768px y 991px, deben aparecer dos por fila.
 Al superar los 992px, deben aparecer las tres en la misma línea.
 
 📝 Guía de Clases Utilizadas
-Explica a los alumnos qué significa cada parte del nombre de la clase en este ejercicio:
+qué significa cada parte del nombre de la clase en este ejercicio:
 
 container: Centra el contenido y añade márgenes laterales.
 
