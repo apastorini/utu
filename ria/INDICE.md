@@ -1,9 +1,9 @@
 # 🌐 Curso Desarrollo Web y APIs - De Cero a Experto
 
-**Duración:** 26 clases × 4 horas = 104 horas  
-**Objetivo:** Especialista en desarrollo web full-stack con React, Vue 3, Angular y Seguridad  
-**Stack:** HTML/CSS/JavaScript + React + Vue 3 + Angular + FastAPI + Nginx + MongoDB + Docker  
-**Progreso:** 26/26 clases (100%)  
+**Duración:** 27 clases × 4 horas = 108 horas  
+**Objetivo:** Especialista en desarrollo web full-stack con React, Vue 3, Angular, Seguridad y JS Avanzado  
+**Stack:** HTML/CSS/JavaScript + React + Vue 3 + Angular + FastAPI + Nginx + MongoDB + Docker + Web Workers  
+**Progreso:** 27/27 clases (100%)  
 **Proyecto:** Sistema de eventos similar a tufiesta.uy
 
 ---
@@ -55,6 +55,9 @@
 
 ### **Módulo 10: Seguridad Avanzada (Clase S-01)**
 - [Clase S-01: Seguridad Web con FastAPI y Nginx](./clases/seguridad/clase-S01-seguridad-nginx-fastapi.md)
+
+### **Módulo 11: JavaScript Avanzado (JS-06)**
+- [JS-06: Web Workers, Streams y Parallelism](./clases/clase-06-web-workers-parallelism.md)
 
 ---
 
