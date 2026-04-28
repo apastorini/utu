@@ -1,9 +1,14 @@
 # 📋 Tareas de Análisis de Riesgos y Modelado de Amenazas
 
-**Duración estimada:** 2-3 horas por escenario  
+**Duración de la presentación:** 10-15 minutos por grupo  
 **Objetivo:** Aplicar metodologías de análisis de riesgos y threat modeling a escenarios reales  
 **Metodologías sugeridas:** STRIDE, DREAD, MITRE ATT&CK, NIST, ISO 27001
 
+Cada grupo debe seleccionar un tema y enviar un correo a apastorini@gmail.com
+Con:
+Asunto: Tarea 2 ISI 2026
+Copia a todos los integrantes
+Tres escenarios, ordenados por preferencia.
 ---
 
 ## Escenario 1: Sistema de Banking Digital
@@ -39,7 +44,10 @@ Una fintech está desarrollando una aplicación móvil de banca que permite a us
 
 ---
 
-## Escenario 2: Plataforma de E-Commerce
+## Escenario 2: Plataforma de E-C
+
+Asingado:
+Andres Varela, Pablo Morales y Horacio Duarte
 
 **Contexto:**
 Una tienda online con las siguientes funcionalidades:
@@ -75,6 +83,10 @@ Una tienda online con las siguientes funcionalidades:
 
 ## Escenario 3: Sistema de Salud - Historias Clínicas Electrónicas
 
+Asingado
+Bibiana Fariello, Paola Benedictti
+
+
 **Contexto:**
 Un hospital implementa un sistema de HCE con:
 - Registro de pacientes
@@ -107,6 +119,9 @@ Un hospital implementa un sistema de HCE con:
 ---
 
 ## Escenario 4: Plataforma de Educación Online (LMS)
+Asingado
+Nazarena Valiero, Simon Corvo
+
 
 **Contexto:**
 Una plataforma de e-learning con:
@@ -139,7 +154,10 @@ Una plataforma de e-learning con:
 
 ---
 
-## Escenario 5: IoT - Sistema de Domótica Smart Home
+## Escenario 5: IoT - Sistema de Domótica Smart 
+
+Asingado
+Renzo Rampoldi , Felipe Queirolo
 
 **Contexto:**
 Sistema de automatización del hogar:
@@ -173,6 +191,9 @@ Sistema de automatización del hogar:
 ---
 
 ## Escenario 6: Sistema de Recursos Humanos (HRIS)
+
+Asingado
+Luis Andrada, Leonardo Gimenez
 
 **Contexto:**
 Plataforma de gestión de RRHH:
@@ -239,6 +260,11 @@ Arquitectura de microservicios con:
 ---
 
 ## Escenario 8: Sistema de Votación Electrónica
+Asingado
+Francisco Ancheta
+Damazo Tor
+Diego Koci
+
 
 **Contexto:**
 Plataforma de votación digital para elecciones organizacionales:
@@ -270,7 +296,7 @@ Plataforma de votación digital para elecciones organizacionales:
 
 ---
 
-## Escenario 9: Plataforma de分享rides (Ridesharing)
+## Escenario 9: Plataforma drides (Ridesharing)
 
 **Contexto:**
 Aplicación tipo Uber con:
@@ -372,19 +398,3 @@ Sistema de control industrial para planta manufacturera:
 5. **Plan de mitigación** (20%): Controles viables y priorizados
 6. **Calidad de documentación** (10%): Claro y profesional
 
----
-
-## Conexión con el Curso
-
-| Escenario | Temas relacionados |
-|-----------|-------------------|
-| 1 - Banking | Parte 5 (OWASP), Parte 6 (APIs) |
-| 2 - E-Commerce | Parte 5 (Seguridad web) |
-| 3 - Salud | Parte 10 (Compliance), Privacidad |
-| 4 - LMS | Parte 8 (Ingeniería social), Privacidad |
-| 5 - IoT | Parte 7 (Kubernetes), Redes |
-| 6 - HRIS | Parte 9 (Incident Response), Compliance |
-| 7 - Microservicios | Parte 6 (APIs), Parte 7 |
-| 8 - Votación | Criptografía avanzada, Integridad |
-| 9 - Ridesharing | Parte 8, Privacidad |
-| 10 - ICS/SCADA | Parte 7, Redes industriales |
