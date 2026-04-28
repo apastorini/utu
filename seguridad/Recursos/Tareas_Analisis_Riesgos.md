@@ -398,3 +398,146 @@ Sistema de control industrial para planta manufacturera:
 5. **Plan de mitigación** (20%): Controles viables y priorizados
 6. **Calidad de documentación** (10%): Claro y profesional
 
+--
+
+
+He corregido todos los enlaces para que apunten directamente a las secciones de descarga, documentos PDF o repositorios oficiales de las organizaciones correspondientes (Agesic, NIST, OWASP y Microsoft).
+
+---
+
+## 📋 Repositorio de Documentación Técnica Corregido
+
+### 1. Gestión de Riesgos y Activos (Agesic & NIST)
+Documentación para el inventario de activos y la matriz de riesgos según normativas locales e internacionales.
+
+*   **Agesic - Metodología de Gestión de Riesgos (MGR):** [https://www.gub.uy/agencia-gobierno-electronico-sociedad-informacion-conocimiento/comunicacion/publicaciones/metodologia-gestion-riesgos-v20](https://www.gub.uy/agencia-gobierno-electronico-sociedad-informacion-conocimiento/comunicacion/publicaciones/metodologia-gestion-riesgos-v20)
+    *   *Nota:* En la sección "Descargas" de ese link están las planillas Excel para la Matriz de Riesgos.
+*   **NIST SP 800-30 Rev. 1 (PDF):** [https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-30r1.pdf](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-30r1.pdf)
+*   **NIST SP 800-53 Rev. 5 (Controles):** [https://csrc.nist.gov/pubs/sp/800/53/r5/final](https://csrc.nist.gov/pubs/sp/800/53/r5/final)
+
+### 2. Modelado de Amenazas (STRIDE / DREAD)
+Herramientas para identificar y categorizar amenazas en los flujos de datos.
+
+*   **Microsoft Threat Modeling Tool (Download):** [https://aka.ms/threatmodelingtool](https://aka.ms/threatmodelingtool)
+*   **OWASP Threat Dragon (App):** [https://threatdragon.org/](https://threatdragon.org/)
+*   **MITRE ATT&CK Navigator:** [https://mitre-attack.github.io/attack-navigator/](https://mitre-attack.github.io/attack-navigator/)
+
+### 3. Privacidad y Arquitectura
+Recursos para cumplimiento de HIPAA/PHI (Escenario 3) y diseño de diagramas.
+
+*   **Agesic - Guía de Evaluación de Impacto (Protección de Datos):** [https://www.gub.uy/unidad-reguladora-control-datos-personales/comunicacion/publicaciones/guia-evaluacion-impacto-proteccion-datos-personales](https://www.gub.uy/unidad-reguladora-control-datos-personales/comunicacion/publicaciones/guia-evaluacion-impacto-proteccion-datos-personales)
+*   **NIST SP 800-66 (HIPAA/Salud):** [https://csrc.nist.gov/pubs/sp/800/66/r2/final](https://csrc.nist.gov/pubs/sp/800/66/r2/final)
+*   **Plantilla de Arquitectura de Seguridad (SABSA/ISO):** [https://www.pro-academic.co.uk/wp-content/uploads/2018/11/Security-Architecture-Document-SAD-Template.docx](https://www.pro-academic.co.uk/wp-content/uploads/2018/11/Security-Architecture-Document-SAD-Template.docx)
+
+---
+
+## 🔍 Detalle del Diseño: Trust Boundaries y Flujos de Datos
+
+En el contexto de esta tarea, un diagrama de arquitectura no es meramente funcional, sino que debe servir como base para el análisis de seguridad. La clave está en la identificación de los **Trust Boundaries** (Fronteras de Confianza).
+
+### Implementación Técnica de Fronteras
+Una frontera de confianza ocurre en cualquier punto donde el nivel de confianza de los datos cambia. En la práctica, esto implica:
+
+1.  **Segmentación por Interfaz:** Cada vez que un dato pasa de una red externa (Internet) a una red interna (VLAN de Aplicación), debe haber una frontera de confianza. Esto es crítico para identificar amenazas de **Spoofing** y **Information Disclosure**.
+2.  **Aislamiento de Persistencia:** Las bases de datos nunca deben estar en la misma zona que el servidor web. Dibujar una frontera entre el Backend y la DB permite justificar controles como el cifrado en reposo y el uso de cuentas de servicio con privilegios mínimos.
+3.  **Actores y Roles:** El diagrama debe diferenciar claramente el acceso de un "Usuario Final" frente a un "Administrador". Cada uno tiene una frontera de confianza distinta hacia el sistema.
+
+Al presentar el análisis, el error común es listar amenazas genéricas. Para evitarlo, vincula cada amenaza de tu lista STRIDE con una frontera específica del diagrama. Por ejemplo: *"Amenaza T1 (Tampering) en la frontera entre App Móvil y API Gateway: Mitigada mediante validación de firmas JWT y mTLS"*.
+
+
+--
+A continuación, se detalla el procedimiento técnico para ejecutar cada actividad de la tarea, junto con la estructura de los documentos solicitados y las instrucciones para completarlos.
+
+---
+
+## 1. Identificación de Activos Críticos
+**Procedimiento:**
+Elabora un inventario tabulado de todos los elementos con valor para el negocio. Debes dividirlos en:
+*   **Activos de Información:** Bases de datos de clientes, saldos, historias clínicas.
+*   **Activos de Software:** Microservicios, código de la App, lógica de negocio.
+*   **Activos de Infraestructura:** Servidores cloud, bases de datos PostgreSQL/MongoDB.
+
+**Por qué:**
+Establece el alcance de la protección. Sin un inventario, el análisis de riesgos es incompleto porque no se conoce qué se está intentando proteger ni qué impacto tendría su pérdida.
+
+**Estructura del Template:**
+| ID | Activo | Tipo | C (Confidencialidad) | I (Integridad) | A (Disponibilidad) | Criticidad |
+|----|--------|------|----------------------|----------------|-------------------|------------|
+| A1 | DB Usuarios | Datos | Alta | Alta | Media | Crítica |
+
+**Cómo llenarlo:** Asigna valores (Baja/Media/Alta) según el daño que causaría la filtración (C), la alteración (I) o la caída (A) del activo.
+
+---
+
+## 2. Diagrama de Arquitectura y Trust Boundaries
+**Procedimiento:**
+Dibuja los componentes del sistema y traza líneas de flujo de datos. Sobre este dibujo, añade perímetros de seguridad:
+1.  **Zona Externa:** Todo lo que no controlas (Internet).
+2.  **Zona Perimetral:** El punto de entrada (API Gateway/WAF).
+3.  **Zona Interna:** Servidores de aplicación y bases de datos.
+4.  **Trust Boundaries:** Líneas que marcan el paso entre estas zonas.
+
+**Por qué:**
+Las vulnerabilidades suelen concentrarse en los puntos donde los datos cruzan de una zona con poco control a una zona protegida. Visualizar estas fronteras permite identificar dónde aplicar validaciones.
+
+---
+
+## 3. Identificación de Amenazas (STRIDE)
+**Procedimiento:**
+Analiza cada flujo que atraviesa una frontera de confianza usando las categorías STRIDE:
+*   **Spoofing:** ¿Puede alguien hacerse pasar por un usuario o servicio?
+*   **Tampering:** ¿Se pueden modificar los datos en tránsito o en la base de datos?
+*   **Repudiation:** ¿Puede un usuario negar que realizó una transferencia o pago?
+*   **Information Disclosure:** ¿Hay datos sensibles expuestos en logs o mensajes de error?
+*   **Denial of Service:** ¿Se puede saturar el backend para dejarlo inoperativo?
+*   **Elevation of Privilege:** ¿Puede un usuario normal acceder a funciones de administrador?
+
+**Por qué:**
+Asegura que el análisis sea sistemático y no dependa únicamente de la intuición del analista, cubriendo vectores de ataque lógicos y técnicos.
+
+---
+
+## 4. Priorización de Amenazas (DREAD)
+**Procedimiento:**
+Evalúa cada amenaza detectada asignando un puntaje del 1 al 10 en:
+*   **Damage:** Qué tan grave es el daño.
+*   **Reproducibility:** Qué tan fácil es repetir el ataque.
+*   **Exploitability:** Qué tanto esfuerzo técnico requiere el ataque.
+*   **Affected Users:** A cuántos usuarios impacta.
+*   **Discoverability:** Qué tan fácil es encontrar la vulnerabilidad.
+
+**Por qué:**
+Permite gestionar los recursos de forma eficiente, enfocando el trabajo en las amenazas que representan un riesgo real y alto para la organización.
+
+---
+
+## 5. Matriz de Controles de Seguridad
+**Procedimiento:**
+Por cada amenaza de alta prioridad, define una contramedida específica.
+
+**Estructura del Template:**
+| ID Amenaza | Descripción STRIDE | Control Propuesto | Estándar Referencia |
+|------------|--------------------|-------------------|---------------------|
+| T1 | Modificación de saldos en tránsito | Implementación de TLS 1.3 y firmas digitales | ISO 27001 A.10.1 |
+
+**Cómo llenarlo:** En la columna "Control Propuesto", describe la solución técnica (ej. Hashing para integridad, MFA para autenticación).
+
+---
+
+## 6. Documento de Análisis de Riesgos (NIST SP 800-30)
+**Procedimiento:**
+Este es el entregable final que consolida los pasos anteriores en un informe formal.
+
+**Estructura del Template:**
+1.  **Introducción:** Alcance del sistema analizado.
+2.  **Identificación de Riesgos:** Listado de amenazas (STRIDE) y activos asociados.
+3.  **Análisis de Impacto y Probabilidad:** Resultados de la evaluación DREAD.
+4.  **Recomendaciones de Mitigación:** La matriz de controles.
+5.  **Riesgo Residual:** Evaluación del nivel de riesgo que permanece tras aplicar las soluciones.
+
+**Cómo llenarlo:**
+*   **Riesgo Inherente:** Es el riesgo inicial (Impacto x Probabilidad).
+*   **Riesgo Residual:** Debes justificar por qué el control sugerido baja el puntaje inicial a un nivel aceptable para la empresa.
+
+**Por qué:**
+Es el estándar internacional para comunicar hallazgos técnicos a la dirección de la empresa de manera que puedan tomar decisiones informadas sobre la inversión en seguridad.
