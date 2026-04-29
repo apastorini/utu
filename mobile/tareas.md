@@ -153,6 +153,7 @@ Fecha 29/4
 
 Asignado: 
 Mauro Mascheroni 
+(abandonó)
 
 **Tema del curso relacionado:** Clase 12 (APIs Externas)
 

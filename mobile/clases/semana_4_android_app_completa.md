@@ -44,7 +44,7 @@ Tu código → KAPT/KSP → Código generado → Compilación final
 | Estado | Mantenido | Recomendado |
 | Ejemplo de uso | `kapt("androidx.room:room-compiler:2.6.1")` | `ksp("androidx.room:room-compiler:2.6.1")` |
 
-** Recomendación: Usar KSP porque es más rápido y es el futuro. **
+** Recomendación: Usar KSP porque es más rápido y moderno. **
 
 ### ¿Qué es Room?
 
