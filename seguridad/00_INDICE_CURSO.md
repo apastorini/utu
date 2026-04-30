@@ -36,6 +36,7 @@ C:\utu\utu\seguridad\
 | `semana_2.md` | Criptografía, hash, certificados, PKI |
 | `Firma_Digital.md` | Firma digital completa: RSA, ECDSA, certificados, no-repudio |
 | `Diagramas_Visuales.md` | Diagramas pedagógicos de conceptos |
+| `semana_8-creacion-malware.md` | Creación de malware educativo, pruebas VT, ANY.RUN, YARA |
 
 ---
 
@@ -133,6 +134,7 @@ Carpeta: `Temas_Complementarios/`
 | `Parte9_Compliance.md` | ISO 27001, PCI-DSS, SOC 2, GDPR |
 | `Parte10_Roles.md` | Roles en ciberseguridad, profesiones |
 | `Clase_Seguridad_Nginx_FastAPI.md` | Seguridad en Nginx y FastAPI |
+| `Clase_IAM_Errores_Diseño.md` | Errores críticos de diseño IAM, MFA, mínimo privilegio, monitoreo |
 
 ---
 
@@ -174,6 +176,12 @@ Carpeta: `Recursos/`
 │     - Criptografía simétrica y asimétrica                      │
 │     - Funciones hash                                            │
 │     - Certificados digitales                                    │
+│                                                                 │
+│  3. semana_7-analisis-phishing-malware.md → Phishing y Malware  │
+│     - Análisis de phishing (Epieos, MHA)                        │
+│     - Herramientas online (VirusTotal, ANY.RUN)                 │
+│     - Laboratorio sandbox                                       │
+│     - IOC y respuesta a incidentes                              │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
