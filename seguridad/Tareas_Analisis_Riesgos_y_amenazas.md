@@ -302,6 +302,10 @@ Plataforma de votación digital para elecciones organizacionales:
 
 ## Escenario 9: Plataforma drides (Ridesharing)
 
+Ignacio González 
+Mathias Pessaj
+Sebastián Di Loreto
+
 **Contexto:**
 Aplicación tipo Uber con:
 - Geolocalización en tiempo real

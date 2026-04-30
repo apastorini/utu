@@ -134,6 +134,7 @@ Carpeta: `Temas_Complementarios/`
 | `Parte9_Compliance.md` | ISO 27001, PCI-DSS, SOC 2, GDPR |
 | `Parte10_Roles.md` | Roles en ciberseguridad, profesiones |
 | `Clase_Seguridad_Nginx_FastAPI.md` | Seguridad en Nginx y FastAPI |
+| `Clase_Diseño_Arquitectura_4C.md` | Arquitectura de seguridad con modelo 4C: Cloud, Cluster, Container, Code |
 | `Clase_IAM_Errores_Diseño.md` | Errores críticos de diseño IAM, MFA, mínimo privilegio, monitoreo |
 
 ---
