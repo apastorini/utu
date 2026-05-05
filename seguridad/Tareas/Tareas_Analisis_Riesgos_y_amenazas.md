@@ -338,6 +338,8 @@ Aplicación tipo Uber con:
 ---
 
 ## Escenario 10: Industrial Control System (SCADA/ICS)
+Mateo Sparano
+Christian Busquets
 
 **Contexto:**
 Sistema de control industrial para planta manufacturera:
