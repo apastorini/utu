@@ -59,6 +59,22 @@
 ### **Módulo 11: JavaScript Avanzado (JS-06)**
 - [JS-06: Web Workers, Streams y Parallelism](./clases/clase-06-web-workers-parallelism.md)
 
+### **Tarea 2: Análisis de Riesgos y Modelado (Área Seguridad)**
+- [Tarea 2: Análisis de Riesgos y Modelado de Amenazas](./seguridad/areas/Tarea-2-Riesgos-Modelado-Amenazas.md)
+
+---
+
+## 🔐 Área de Seguridad (Tareas)
+
+### Tarea 2: Análisis de Riesgos (Mayo-Junio 2026)
+- **Fechas de presentación:** 26-28 Mayo (1ra instancia), 16-18 Junio (2da instancia)
+- **Duración:** 4 horas por grupo
+- **Escenarios:** 10 escenarios reales (Banking, E-Commerce, Salud, Educación, IoT, RRHH, API Gateway, Votación, Ridesharing, Industrial)
+- **Metodologías:** STRIDE, DREAD, MITRE ATT&CK, NIST, ISO 27001
+- **Estructura Git:** `mi-grupo-riesgos/` con prompts/, docs/, diagrams/, templates/
+- **Uso de IA:** Obligatorio registrar prompts en `prompts/` y crear `00-memory-bank.md`
+- **Entregables:** Mockups, análisis STRIDE, diagramas, tests, video demo 30 seg, PPT
+
 ---
 
 ## 🎯 Características del Curso

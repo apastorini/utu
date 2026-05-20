@@ -1,6 +1,5 @@
 # 🚀 Clase 02: Setup del Proyecto y Estructura Base
 
-**Duración:** 4 horas  
 **Objetivo:** Crear estructura completa del proyecto (Android, React Native, Backend)  
 **Proyecto:** Proyecto base funcionando con Docker
 
@@ -632,5 +631,4 @@ Clase 03: Arquitectura MVVM - Implementaremos ViewModel, LiveData y Dependency I
 
 ---
 
-**Última actualización:** 2024  
-**Tiempo estimado:** 4 horas
+

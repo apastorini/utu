@@ -1,6 +1,5 @@
 # 📱 Clase 04: Room Database y Persistencia Local
 
-**Duración:** 4 horas  
 **Objetivo:** Implementar persistencia local con Room Database, crear entidades, DAOs y relaciones  
 **Proyecto:** Integrar Room en Stock Management System para almacenar productos, categorías y movimientos
 
@@ -643,6 +642,4 @@ Implementaremos autenticación con Google, LinkedIn y Facebook usando OAuth 2.0,
 
 ---
 
-**Última actualización:** 2024  
-**Tiempo estimado:** 4 horas  
-**Complejidad:** ⭐⭐⭐ (Intermedia)
+

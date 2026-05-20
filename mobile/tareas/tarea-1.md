@@ -329,7 +329,7 @@ Peso final del APK.
 
 ## Tema 13  Gestión de Estado y Persistencia Offline
 
-21/05
+20/05
 Asignado
 Mateo Sparano
 Nahuel Leguisamon -
@@ -368,26 +368,10 @@ Un Intent para que otra app pueda "enviar" un texto y crearlo como tarea automá
 Lógica de filtrado: Un algoritmo que priorice tareas basado en fecha de vencimiento y etiquetas (aquí pueden aplicar el concepto de lógica pesada que querías).
 
 Estructura de la entrega (Siguiendo tu formato):
-Tema del curso relacionado: Clase 13 (Persistencia y Red).
+Tema del curso relacionado: Clase Persistencia y Red.
 
 
 
-
-
-## Distribución Sugerida
-
-| Grupo | Tarea | Clase relacionada |
-|-------|-------|-------------------|
-| Grupo 1 | Tarea 1: Flutter vs React Native | Clases 1-2 |
-| Grupo 2 | Tarea 2: Jetpack Compose | Clase 3 |
-| Grupo 3 | Tarea 3: Firebase | Clase 12 |
-| Grupo 4 | Tarea 4: Testing | Clase 16 |
-| Grupo 5 | Tarea 5: KMM | Clases 1-2 |
-| Grupo 6 | Tarea 6: GraphQL | Clase 12 |
-| Grupo 7 | Tarea 7: Push Notifications | Clase 13 |
-| Grupo 8 | Tarea 8: CI/CD | Clase 16 |
-| Grupo 9 | Tarea 9: ML Kit | Clase 11 |
-| Grupo 10 | Tarea 10: Seguridad Avanzada | Clase 6 |
 
 ---
 

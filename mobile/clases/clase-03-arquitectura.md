@@ -1,6 +1,5 @@
 # 🏗️ Clase 03: Arquitectura MVVM y Dependency Injection
 
-**Duración:** 4 horas  
 **Objetivo:** Implementar MVVM + Hilt   
 **Proyecto:** Refactorizar MainActivity con ViewModel
 
@@ -350,5 +349,3 @@ Clase 04: Room Database - Implementaremos persistencia local con Room.
 
 ---
 
-**Última actualización:** 2024  
-**Tiempo estimado:** 4 horas

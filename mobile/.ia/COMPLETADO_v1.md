@@ -73,6 +73,4 @@ Ejercicios resueltos: 3
 
 ---
 
-**Fecha:** 2024  
-**Iteración:** v1  
-**Estado:** ✅ COMPLETADO
+

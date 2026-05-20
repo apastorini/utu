@@ -1,7 +1,7 @@
-# 📋 Tareas de Análisis de Riesgos y Modelado de Amenazas
+# 📋 Tarea 2: Análisis de Riesgos y Modelado de Amenazas
 
 **Duración de la presentación:** 10-15 minutos por grupo  
-**Objetivo:** Aplicar metodologías de análisis de riesgos y threat modeling a escenarios reales. Fomentar la propuesta de trabajo de los estudiantes y el intercambio con el docente.
+**Objetivo:** Aplicar metodologías de análisis de riesgos y threat modeling a escenarios reales. Fomentar la propuesta de trabajo de los estudiantes y el intercambio con el docente.  
 **Metodologías sugeridas:** STRIDE, DREAD, MITRE ATT&CK, NIST, ISO 27001
 
 ---
@@ -20,7 +20,7 @@ Cada grupo debe seleccionar un tema y enviar un correo a **apastorini@gmail.com*
 
 | Fecha | Actividad |
 |-------|-----------|
-| Mayo | Monitoreo en clase - avances, dudas y discusión de opciones con el docente |
+| Mayo (fechas por definir) | Monitoreo en clase - avances, dudas y discusión de opciones con el docente |
 | 26 y 28 de mayo | Primera instancia de presentación |
 | 16 y 18 de junio | Segunda instancia (solo si el docente lo considera necesario) |
 
@@ -70,7 +70,7 @@ Si el grupo decide utilizar herramientas de IA (Copilot, ChatGPT, Claude, Cursor
 
 ### 1. Registro de Prompts
 Todos los prompts utilizados deben almacenarse en la carpeta `prompts/` del repositorio.
-- Formato sugerido: `01-description.txt` o `01-description.md`
+- Formato sugerido: `01-descripcion.txt` o `01-descripcion.md`
 - Deben incluir: fecha, herramienta utilizada y el texto exacto del prompt.
 
 ### 2. Memory Bank (Enfoque Sugerido)
@@ -103,15 +103,13 @@ En el `README.md` del repositorio, incluir una sección:
 ## 📋 Plantillas y Documentación Requerida
 
 Todos los grupos deben basarse en la **Plantilla de Análisis de Riesgos** ubicada en:
-`Recursos/Plantilla_Analisis_Riesgos.md`
+`C:\utu\utu\seguridad\Recursos\Plantilla_Analisis_Riesgos.md`
 
 ### Enlaces a Plantillas Oficiales:
 | Recurso | Enlace |
 |---------|--------|
-| **Plantilla Local (Curso)** | `Campus: Plantilla_Analisis_Riesgos.md` |
-| **Agesic - Riesgos ** | [Descargar desde Agesic](https://www.gub.uy/agencia-gobierno-electronico-sociedad-informacion-conocimiento/sites/agencia-gobierno-electronico-sociedad-informacion-conocimiento/files/documentos/publicaciones/Matriz%20RACI%20Ejemplo.xlsx) |
-
-| **Guía de implementación del Marco de ciberseguridad 5.0** | [Adoptar una metodología de evaluación de riesgo](https://www.gub.uy/agencia-gobierno-electronico-sociedad-informacion-conocimiento/comunicacion/publicaciones/guia-implementacion-del-mcu-50/gestion-riesgos/gr1-adoptar-metodologia) |
+| **Plantilla Local (Curso)** | `C:\utu\utu\seguridad\Recursos\Plantilla_Analisis_Riesgos.md` |
+| **Agesic - Matriz de Riesgos (Excel)** | [Descargar desde Agesic](https://www.gub.uy/agencia-gobierno-electronico-sociedad-informacion-conocimiento/comunicacion/publicaciones/metodologia-gestion-riesgos-v20) |
 | **NIST SP 800-30 Rev. 1** | [PDF Nacional (NIST)](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-30r1.pdf) |
 | **NIST SP 800-53 Rev. 5 (Controles)** | [Controles de Seguridad](https://csrc.nist.gov/pubs/sp/800/53/r5/final) |
 | **NIST SP 800-66 (Guía HIPAA)** | [Seguridad en Salud](https://csrc.nist.gov/pubs/sp/800/66/r2/final) |
@@ -122,7 +120,6 @@ Todos los grupos deben basarse en la **Plantilla de Análisis de Riesgos** ubica
 
 ### Escenario 1: Sistema de Banking Digital
 **Asignado:** Mauro Mascheroni, Ximena Gonzalez
-Presentación: martes 26 de mayo
 
 **Contexto:**
 Una fintech está desarrollando una aplicación móvil de banca que permite a usuarios:
@@ -162,7 +159,6 @@ Una fintech está desarrollando una aplicación móvil de banca que permite a us
 
 ### Escenario 2: Plataforma de E-Commerce
 **Asignado:** Andres Varela, Pablo Morales y Horacio Duarte
-Presentación: jueves 28 de mayo
 
 **Contexto:**
 Una tienda online con las siguientes funcionalidades:
@@ -202,8 +198,7 @@ Una tienda online con las siguientes funcionalidades:
 ---
 
 ### Escenario 3: Sistema de Salud - Historias Clínicas Electrónicas
-**Asignado:** Bibiana Fariello, Paola Benedictti
-Presentación: 28 de mayo
+**Asignado:** Bibiana Fariello, Paola Benedicti
 
 **Contexto:**
 Un hospital implementa un sistema de HCE con:
@@ -223,7 +218,7 @@ Un hospital implementa un sistema de HCE con:
 
 **Plantillas y Enlaces de Ayuda:**
 - **HIPAA / Salud:** [NIST SP 800-66 Rev. 2](https://csrc.nist.gov/pubs/sp/800/66/r2/final)
-- **Privacidad (URCDP):** [Guía Evaluación de Impacto - Agesic](https://www.gub.uy/agencia-gobierno-electronico-sociedad-informacion-conocimiento/comunicacion/publicaciones/recomendaciones-sobre-transparencia-algoritmica/recomendaciones-2)
+- **Privacidad (URCDP):** [Guía Evaluación de Impacto - Agesic](https://www.gub.uy/unidad-reguladora-control-datos-personales/comunicacion/publicaciones/guia-evaluacion-impacto-proteccion-datos-personales)
 - **FHIR Security:** [HL7 FHIR Security](https://www.hl7.org/fhir/security.html)
 - **ISO 27799:** Gestión de seguridad de la información en salud
 
@@ -244,7 +239,6 @@ Un hospital implementa un sistema de HCE con:
 
 ### Escenario 4: Plataforma de Educación Online (LMS)
 **Asignado:** Nazarena Valiero, Simon Corvo
-Presentación: jueves 28 de mayo
 
 **Contexto:**
 Una plataforma de e-learning con:
@@ -284,7 +278,6 @@ Una plataforma de e-learning con:
 
 ### Escenario 5: IoT - Sistema de Domótica Smart
 **Asignado:** Renzo Rampoldi, Felipe Queirolo
-Presentación: martes 26 de mayo
 
 **Contexto:**
 Sistema de automatización del hogar:
@@ -304,8 +297,8 @@ Sistema de automatización del hogar:
 
 **Plantillas y Enlaces de Ayuda:**
 - **OWASP IoT Top 10:** [OWASP IoT Project](https://owasp.org/www-project-internet-of-things/)
-- **IoT Attack Surface:** [MITRE ATT&CK for ICS](https://attack.mitre.org/matrices/ics/)
-- **Protocolos (Zigbee/Z-Wave):** [Zigbee Security](https://csa-iot.org/zigbee/)
+- **IoT Attack Surface:** [MITRE ATT&CK for ICS](https://collaborate.mitre.org/attackics/index.php/Main_Page)
+- **Protocolos (Zigbee/Z-Wave):** [Zigbee Security](https://zigbeealliance.org/solution/zigbee-security/)
 
 **Actividades requeridas:**
 1. Mapear superficie de ataque IoT
@@ -324,7 +317,6 @@ Sistema de automatización del hogar:
 
 ### Escenario 6: Sistema de Recursos Humanos (HRIS)
 **Asignado:** Luis Andrada, Leonardo Gimenez
-Presentación: martes 26 de mayo
 
 **Contexto:**
 Plataforma de gestión de RRHH:
@@ -345,7 +337,7 @@ Plataforma de gestión de RRHH:
 **Plantillas y Enlaces de Ayuda:**
 - **OWASP Top 10:** [2021 Edition](https://owasp.org/Top10/)
 - **Insider Threat:** [NIST SP 800-53 (Familia SI)](https://csrc.nist.gov/pubs/sp/800/53/r5/final)
-- **ISO 27001 (HR Security):** [ISO/IEC 27001 A.7](https://www.iso.org/isoiec-27001-information-security.html)
+- **ISO 27001 (HR Security):** [ISO/IEC 27001 A.7](https://www.iso.org/iso-iec-27001-information-security.html)
 
 **Actividades requeridas:**
 1. Identificar datos de alta sensibilidad (salarios, beneficios)
@@ -363,8 +355,7 @@ Plataforma de gestión de RRHH:
 ---
 
 ### Escenario 7: API Gateway para Microservicios
-**Asignado:**  Juan Lamolle, Serafín González, Fernando Rodríguez
-Presentación: martes 26 de mayo
+**Asignado:** [Por asignar]
 
 **Contexto:**
 Arquitectura de microservicios con:
@@ -405,7 +396,6 @@ Arquitectura de microservicios con:
 
 ### Escenario 8: Sistema de Votación Electrónica
 **Asignado:** Francisco Ancheta, Damazo Tor, Diego Koci
-Presentación: martes 26 de mayo
 
 **Contexto:**
 Plataforma de votación digital para elecciones organizacionales:
@@ -444,8 +434,6 @@ Plataforma de votación digital para elecciones organizacionales:
 
 ### Escenario 9: Plataforma Ridesharing (Tipo Uber)
 **Asignado:** Ignacio González, Mathias Pessaj, Sebastián Di Loreto
-Presentación: Jueves 28 de mayo
-
 
 **Contexto:**
 Aplicación tipo Uber con:
@@ -485,7 +473,6 @@ Aplicación tipo Uber con:
 
 ### Escenario 10: Industrial Control System (SCADA/ICS)
 **Asignado:** Mateo Sparano, Christian Busquets
-Presentación: martes 26 de mayo
 
 **Contexto:**
 Sistema de control industrial para planta manufacturera:
@@ -504,9 +491,9 @@ Sistema de control industrial para planta manufacturera:
 - Integración con corporate network
 
 **Plantillas y Enlaces de Ayuda:**
-- **MITRE ATT&CK for ICS:** [ICS Matrix](https://attack.mitre.org/matrices/ics/)
+- **MITRE ATT&CK for ICS:** [ICS Matrix](https://collaborate.mitre.org/attackics/index.php/Main_Page)
 - **NIST SP 800-82:** [Guide to ICS Security](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-82r3.pdf)
-- **ISA/IEC 62443:** [Industrial Automation Security](https://www.isa.org/standards-and-publications/isa-standards/isa-iec-62443-series-of-standards)
+- **ISA/IEC 62443:** [Industrial Automation Security](https://www.isa.org/standards-and-publications/isa-standards/isa-iec-62443-series)
 
 **Actividades requeridas:**
 1. Análisis de amenazas a entornos OT/ICS
@@ -541,12 +528,12 @@ Sistema de control industrial para planta manufacturera:
 
 | Herramienta | Tipo | Descripción | Enlace |
 |-------------|------|-------------|--------|
-| **OWASP Threat Dragon** | Diagramación | Código abierto para threat modeling | [threatdragon.org](https://www.gub.uy/agencia-gobierno-electronico-sociedad-informacion-conocimiento/comunicacion/publicaciones/guia-implantacion-sistema-gestion-seguridad-informacion-sgsi/anexo-i-0) |
+| **OWASP Threat Dragon** | Diagramación | Código abierto para threat modeling | [threatdragon.org](https://threatdragon.org/) |
 | **Microsoft TMT** | Desktop app | Threat Modeling Tool | [Download](https://aka.ms/threatmodelingtool) |
 | **draw.io** | Diagramación | Diagramas de arquitectura | [app.diagrams.net](https://app.diagrams.net/) |
 | **MITRE ATT&CK Navigator** | Visualización | Mapeo de amenazas | [attack-navigator](https://mitre-attack.github.io/attack-navigator/) |
 | **Risk Radar** | Gestión | Risk register | - |
-| **OWASP Risk Rating** | Metodología | Plantilla de riesgos | [OWASP Guide](https://owasp.org/www-community/OWASP_Risk_Rating_Methodology) |
+| **OWASP Risk Rating** | Metodología | Plantilla de riesgos | [OWASP Guide](https://owasp.org/www-project-risk-rating-management/) |
 
 ---
 
@@ -573,7 +560,10 @@ Sistema de control industrial para planta manufacturera:
 | NIST SP 800-30 Rev. 1 | [https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-30r1.pdf](https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-30r1.pdf) |
 | NIST SP 800-53 Rev. 5 | [https://csrc.nist.gov/pubs/sp/800/53/r5/final](https://csrc.nist.gov/pubs/sp/800/53/r5/final) |
 | MITRE ATT&CK | [https://attack.mitre.org/](https://attack.mitre.org/) |
-| ISO 27001 | [https://www.iso.org/isoiec-27001-information-security.html](https://www.iso.org/isoiec-27001-information-security.html)
-| Plantilla Local | `Plantilla_Analisis_Riesgos.md` |
+| ISO 27001 | [https://www.iso.org/iso-iec-27001-information-security.html](https://www.iso.org/iso-iec-27001-information-security.html) |
+| Agesic - Gestión de Riesgos | [https://www.gub.uy/agencia-gobierno-electronico-sociedad-informacion-conocimiento/comunicacion/publicaciones/metodologia-gestion-riesgos-v20](https://www.gub.uy/agencia-gobierno-electronico-sociedad-informacion-conocimiento/comunicacion/publicaciones/metodologia-gestion-riesgos-v20) |
+| Plantilla Local | `C:\utu\utu\seguridad\Recursos\Plantilla_Analisis_Riesgos.md` |
 
 ---
+
+*Documento actualizado: Mayo 2026 - Curso de Ciberseguridad ISI*

@@ -2,7 +2,7 @@
 
 ## Tutorial Completo: Dos Enfoques, Una App
 
-En esta clase vas a construir la misma aplicacion de notas **dos veces**: primero con el enfoque clasico **XML/Views** y luego con **Jetpack Compose**. Veras las diferencias lado a lado, entenderas por que Google migró a Compose, y tendras el codigo completo de ambos enfoques.
+En esta clase vamos a construir la misma aplicacion de notas **dos veces**: primero con el enfoque clasico **XML/Views** y luego con **Jetpack Compose**. Veras las diferencias lado a lado, entenderas por que Google migró a Compose, y tendras el codigo completo de ambos enfoques.
 
 Tambien aprenderas a configurar el JDK, crear emuladores, debugear, y usar todos los componentes de Android (Activity, Service, BroadcastReceiver, ContentProvider, Fragment). Al final, integraremos Google Maps y Google Calendar **sin necesidad de API keys**.
 
@@ -395,7 +395,7 @@ MiAppNotas/
 
 ---
 
-## PARTE 2: XML/Views VS JETPACK COMPOSE — LA GRAN DIFERENCIA
+## PARTE 2: XML/Views VS JETPACK COMPOSE — DIFERENCIA
 
 ### 2.1 ¿Cual es la diferencia fundamental?
 
