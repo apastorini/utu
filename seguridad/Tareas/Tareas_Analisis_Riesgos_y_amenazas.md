@@ -28,7 +28,7 @@ Cada grupo debe seleccionar un tema y enviar un correo a **apastorini@gmail.com*
 
 ---
 
-## 📂 Estructura Git Recomendada (para todos los grupos)
+## 📂 Estructura Git Recomendada (cada escenario puede tener distintos entregables)
 
 Todo el material generado debe almacenarse en un repositorio Git **público**. Se sugiere la siguiente estructura de carpetas:
 
@@ -61,6 +61,30 @@ mi-grupo-riesgos/
 ```
 
 > **Nota:** Revisar el archivo `Recursos/Plantilla_Analisis_Riesgos.md` para el formato de documentación.
+
+
+## Cada escenario tiene una serie de entregables opcionales que se indican
+en cada caso. A continuación se enumeran los entregables generales:
+
+## Checklist de Entregables
+Cada grupo tiene la posibilidad de justificadamenteno proponer
+no hacer alguno de estos entregables, pero debe ser planteado y aprobado por  el docente.
+
+| Entregable | Descripción | Estado |
+| --- | --- | --- |
+| ☐ | Diagrama de arquitectura con trust boundaries |  |
+| ☐ | Inventario de activos (información y tecnológico) |  |
+| ☐ | Matriz STRIDE completa |  |
+| ☐ | Análisis DREAD de amenazas prioritarias |  |
+| ☐ | Mapa de técnicas ATT&CK |  |
+| ☐ | Plan de mitigación priorizado |  |
+| ☐ | Controles documentados (NIST/ISO) |  |
+| ☐ | Riesgos residuales identificados |  |
+| ☐ | Conclusiones y recomendaciones |  |
+
+---
+
+
 
 ---
 
@@ -144,7 +168,7 @@ Una fintech está desarrollando una aplicación móvil de banca que permite a us
 - **Riesgos Financieros:** [OWASP Top 10 for Financial](https://owasp.org/www-project-top-ten/)
 - **Controles:** [NIST SP 800-53 (Familia AC - Access Control)](https://csrc.nist.gov/pubs/sp/800/53/r5/final)
 
-**Actividades requeridas:**
+**Actividades sugeridas:**
 1. Identificar y documentar todos los activos críticos (`docs/01-inventario-activos.md`)
 2. Crear diagrama de arquitectura con actores y trust boundaries (`diagrams/`)
 3. Aplicar STRIDE para identificar amenazas (`docs/03-analisis-stride.md`)
@@ -152,7 +176,7 @@ Una fintech está desarrollando una aplicación móvil de banca que permite a us
 5. Crear matriz de controles de seguridad (`docs/06-plan-mitigacion.md`)
 6. Documentar riesgos residuales (`docs/07-riesgos-residuales.md`)
 
-**Entregables:**
+**Entregables extra sugeridos**
 - Documento de análisis de riesgos (basado en `Plantilla_Analisis_Riesgos.md`)
 - Diagrama de arquitectura con trust boundaries
 - Lista de amenazas priorizadas
@@ -186,14 +210,14 @@ Una tienda online con las siguientes funcionalidades:
 - **OWASP E-Commerce:** [Guidelines](https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html)
 - **Fraud Detection:** [MITRE ATT&CK - Impact](https://attack.mitre.org/tactics/TA0040/)
 
-**Actividades requeridas:**
+**Actividades sugeridas:**
 1. Modelar amenazas con STRIDE
 2. Identificar attack surfaces
 3. Analizar flujos de datos sensibles
 4. Evaluar riesgos de integración con procesadores de pago
 5. Documentar amenazas específicas de e-commerce (fraud detection, inventory manipulation)
 
-**Entregables:**
+**Entregables extra sugeridos**
 - Diagrama de data flow
 - Inventario de amenazas por categoría STRIDE
 - Risk assessment report
@@ -227,14 +251,14 @@ Un hospital implementa un sistema de HCE con:
 - **FHIR Security:** [HL7 FHIR Security](https://www.hl7.org/fhir/security.html)
 - **ISO 27799:** Gestión de seguridad de la información en salud
 
-**Actividades requeridas:**
+**Actividades sugeridas:**
 1. Identificar activos de alta criticidad (datos de salud = PHI)
 2. Cumplir con consideraciones de HIPAA/GDPR
 3. Threat modeling para datos médicos
 4. Analizar riesgos de interoperabilidad
 5. Evaluar controles de acceso a datos sensibles
 
-**Entregables:**
+**Entregables extra sugeridos**
 - Risk assessment conforme a NIST SP 800-66
 - Análisis de compliance (HIPAA, GDPR)
 - Matriz de controles de seguridad
@@ -267,14 +291,14 @@ Una plataforma de e-learning con:
 - **Academic Integrity:** [Cheating Detection - OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html)
 - **DRM / Content Protection:** [OWASP Content Security Policy](https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html)
 
-**Actividades requeridas:**
+**Actividades sugeridas:**
 1. Threat modeling del flujo de certificación
 2. Analizar riesgos de cheating en exámenes
 3. Evaluar protección de contenido intelectual
 4. Identificar amenazas en interacción social (foros)
 5. Assessment de privacidad de datos de menores (COPPA)
 
-**Entregables:**
+**Entregables extra sugeridos**
 - Documento de análisis de amenazas
 - Evaluación de privacidad
 - Controles para integridad académica
@@ -307,14 +331,14 @@ Sistema de automatización del hogar:
 - **IoT Attack Surface:** [MITRE ATT&CK for ICS](https://attack.mitre.org/matrices/ics/)
 - **Protocolos (Zigbee/Z-Wave):** [Zigbee Security](https://csa-iot.org/zigbee/)
 
-**Actividades requeridas:**
+**Actividades sugeridas:**
 1. Mapear superficie de ataque IoT
 2. Analizar protocolos (Zigbee, Z-Wave, WiFi)
 3. Threat modeling de dispositivos críticos (cerraduras)
 4. Evaluar riesgos de integración con asistentes
 5. Analizar amenazas de firmware
 
-**Entregables:**
+**Entregables extra sugeridos**
 - Inventario de activos IoT
 - Análisis de amenazas por dispositivo
 - Evaluación de riesgos de comunicaciones
@@ -347,14 +371,14 @@ Plataforma de gestión de RRHH:
 - **Insider Threat:** [NIST SP 800-53 (Familia SI)](https://csrc.nist.gov/pubs/sp/800/53/r5/final)
 - **ISO 27001 (HR Security):** [ISO/IEC 27001 A.7](https://www.iso.org/isoiec-27001-information-security.html)
 
-**Actividades requeridas:**
+**Actividades sugeridas:**
 1. Identificar datos de alta sensibilidad (salarios, beneficios)
 2. Threat modeling con STRIDE
 3. Analizar riesgos de insider threats
 4. Evaluar controles de acceso basados en roles
 5. Assessment de continuidad de negocio
 
-**Entregables:**
+**Entregables extra sugeridos**
 - Risk register
 - Análisis de amenazas internas
 - Controles de acceso documentados
@@ -388,14 +412,14 @@ Arquitectura de microservicios con:
 - **Service Mesh (Istio):** [Istio Security](https://istio.io/latest/docs/concepts/security/)
 - **Zero Trust:** [NIST SP 800-207](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-207.pdf)
 
-**Actividades requeridas:**
+**Actividades sugeridas:**
 1. Modelar amenazas de arquitectura de microservicios
 2. Analizar riesgos de API Gateway
 3. Evaluar comunicación entre servicios
 4. Threat modeling de service mesh
 5. Analizar riesgos de configuración de Kubernetes
 
-**Entregables:**
+**Entregables extra sugeridos**
 - Arquitectura de seguridad documentada
 - Amenazas por componente
 - Controles de seguridad en gateway
@@ -427,14 +451,14 @@ Plataforma de votación digital para elecciones organizacionales:
 - **Blockchain Security:** [MITRE ATT&CK - Blockchain](https://attack.mitre.org/)
 - **Anonimalidad:** [RFC 6973 - Privacy Considerations](https://www.rfc-editor.org/rfc/rfc6973)
 
-**Actividades requeridas:**
+**Actividades sugeridas:**
 1. Análisis de amenazas específico para sistemas de votación
 2. Modelar requisitos de seguridad (integridad, anonimalidad, verificabilidad)
 3. Threat modeling con enfoque en manipulación de resultados
 4. Evaluar riesgos de coerción/voto coercion
 5. Análisis de privacidad del votante
 
-**Entregables:**
+**Entregables extra sugeridos**
 - Documento de requisitos de seguridad
 - Análisis de amenazas específicas
 - Matriz de controles de integridad
@@ -468,14 +492,14 @@ Aplicación tipo Uber con:
 - **Geolocation Privacy:** [OWASP Location Privacy](https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Security_Cheat_Sheet.html)
 - **Fraud in Ridesharing:** [MITRE ATT&CK - Impact](https://attack.mitre.org/tactics/TA0007/)
 
-**Actividades requeridas:**
+**Actividades sugeridas:**
 1. Threat modeling de datos de ubicación
 2. Analizar riesgos de privacidad GPS
 3. Evaluar seguridad de pagos
 4. Assessment de comunicación en tiempo real
 5. Análisis de fraude en transacciones
 
-**Entregables:**
+**Entregables extra sugeridos**
 - Privacy impact assessment (ubicación)
 - Análisis de amenazas de geolocalización
 - Controles de seguridad en pagos
@@ -508,14 +532,14 @@ Sistema de control industrial para planta manufacturera:
 - **NIST SP 800-82:** [Guide to ICS Security](https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-82r3.pdf)
 - **ISA/IEC 62443:** [Industrial Automation Security](https://www.isa.org/standards-and-publications/isa-standards/isa-iec-62443-series-of-standards)
 
-**Actividades requeridas:**
+**Actividades sugeridas:**
 1. Análisis de amenazas a entornos OT/ICS
 2. Identificar activos críticos de planta
 3. Modelar amenazas con enfoque IT/OT
 4. Evaluar riesgos de acceso remoto
 5. Assessment de segmentación de red
 
-**Entregables:**
+**Entregables extra sugeridos**
 - Risk assessment OT
 - Inventario de activos ICS
 - Análisis de amenazas IT/OT

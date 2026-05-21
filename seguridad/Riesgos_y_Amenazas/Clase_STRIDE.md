@@ -193,7 +193,7 @@ STRIDE fue desarrollado en la década de 1990 por Lorenzo Martignoni y Praerit G
 **Ejemplos:**
 - Usuario niega haber enviado una transacción
 - Administrador niega haber modificado configuraciones
-- Sistema否认 haber enviado un mensaje
+- Sistema haber enviado un mensaje
 
 **Contramedidas:**
 

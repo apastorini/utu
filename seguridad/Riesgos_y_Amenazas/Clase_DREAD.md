@@ -302,7 +302,7 @@ DREAD Score = (Damage + Reproducibility + Exploitability + Affected Users + Disc
 | Dimensión | Consideraciones bancarias |
 |-----------|--------------------------|
 | **Damage** | Incluir impacto regulatorio, multas BCU, pérdida de license |
-| **Reproducibility** | Considerar季節性 (Black Friday, fin de mes) |
+| **Reproducibility** | Consideraciones (Black Friday, fin de mes) |
 | **Exploitability** | Incluir disponibilidad de exploits en underground |
 | **Affected Users** | Considerar usuarios B2B (empresas) además de retail |
 | **Discoverability** | Incluir exposure a internet, scanners Shodan |
