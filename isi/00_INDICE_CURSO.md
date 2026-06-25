@@ -86,8 +86,9 @@ Carpeta: `Seguridad_Bancaria/`
 | `Plantilla_SGSI.md` | Sistema de Gestión de Seguridad de la Información - Plantilla integral |
 | `Mapa_Riesgos_Bancario.md` | Mapa de riesgos de seguridad bancaria, matriz de probabilidad/impacto |
 | `Plantilla_Incidentes_Bancarios.md` | Plantilla para gestión de incidentes de seguridad bancaria |
+| `Informe_Seguridad_Mobile_SDLC.md` | Estrategia integral: BFF, Discovery, PKCE/DPoP, App Attest, Nexus, SCA pipeline |
 
-> **Enfoque:** Normativa BCU, gestión de riesgos en instituciones financieras, planes de continuidad bancaria.
+> **Enfoque:** Normativa BCU, gestión de riesgos en instituciones financieras, planes de continuidad bancaria, seguridad mobile y SDLC.
 
 ---
 

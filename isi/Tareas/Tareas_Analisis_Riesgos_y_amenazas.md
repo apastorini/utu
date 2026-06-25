@@ -227,7 +227,7 @@ Una tienda online con las siguientes funcionalidades:
 
 ### Escenario 3: Sistema de Salud - Historias Clínicas Electrónicas
 **Asignado:** Bibiana Fariello, Paola Benedictti
-Presentación: 28 de mayo
+Presentación: 26 de mayo
 
 **Contexto:**
 Un hospital implementa un sistema de HCE con:
@@ -429,7 +429,7 @@ Arquitectura de microservicios con:
 
 ### Escenario 8: Sistema de Votación Electrónica
 **Asignado:** Francisco Ancheta, Damazo Tor, Diego Koci
-Presentación: martes 26 de mayo
+Presentación: jueves 11 de Junio
 
 **Contexto:**
 Plataforma de votación digital para elecciones organizacionales:
@@ -508,8 +508,8 @@ Aplicación tipo Uber con:
 ---
 
 ### Escenario 10: Industrial Control System (SCADA/ICS)
-**Asignado:** Mateo Sparano, Christian Busquets
-Presentación: martes 26 de mayo
+**Asignado:** Christian Busquets
+Presentación: martes 28 de mayo (revisar)
 
 **Contexto:**
 Sistema de control industrial para planta manufacturera:
