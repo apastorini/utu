@@ -1,11 +1,11 @@
 # Programa de
-# Introducción a la IA para Desarrolladores (IIAD)
+# Introducción a la Inteligencia Artificial (IIA)
 
 ---
 
 ## 1. NOMBRE DE LA UNIDAD CURRICULAR
 
-Introducción a la IA para Desarrolladores (IIAD)
+Introducción a la Inteligencia Artificial (IIA)
 
 ---
 

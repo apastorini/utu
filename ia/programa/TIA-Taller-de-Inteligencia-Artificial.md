@@ -17,11 +17,11 @@ Taller de Inteligencia Artificial (TIA)
 
 ## 3. OBJETIVOS DE LA UNIDAD CURRICULAR
 
-- Construir infraestructuras industriales de agentes inteligentes con persistencia de memoria a largo plazo, capaces de mantener estado y contexto a través de múltiples sesiones de interacción.
-- Desplegar sistemas multi-agente escalables mediante plataformas de contenerización y orquestación de contenedores, aplicando patrones de arquitecturas distribuidas.
-- Optimizar modelos de lenguaje de tamaño reducido (SLMs) mediante técnicas de ajuste fino para tareas empresariales específicas, comprendiendo los principios de eficiencia computacional.
-- Implementar sistemas de observabilidad (Agent-Ops) que permitan el trazado de decisiones, la detección de anomalías y la aplicación de mecanismos de control (kill-switches semánticos) en sistemas autónomos.
-- Diseñar arquitecturas de escalamiento horizontal para enjambres de agentes, integrando patrones de tolerancia a fallos, balanceo de carga y recuperación ante desastres.
+- Diseñar arquitecturas de Generación Aumentada por Recuperación (RAG) para reducir alucinaciones y mejorar la fundamentación de respuestas en sistemas basados en modelos de lenguaje.
+- Modelar dominios de conocimiento mediante representaciones semánticas estructuradas (ontologías) y sistemas de almacenamiento basados en grafos.
+- Implementar medidas de seguridad avanzada para sistemas basados en modelos de lenguaje, siguiendo estándares reconocidos de la industria.
+- Integrar sistemas de percepción computacional con pipelines de recuperación semántica y generación aumentada.
+- Construir sistemas multi-agente con orquestación avanzada, incluyendo mecanismos de auditoría de decisiones y trazabilidad.
 
 ---
 
@@ -29,9 +29,9 @@ Taller de Inteligencia Artificial (TIA)
 
 **Participación de los Estudiantes:**
 
-- **Demostraciones Prácticas:** El instructor realizará demostraciones en el laboratorio de despliegue de sistemas multi-agente, estrategias de persistencia de estado, configuración de observabilidad y técnicas de ajuste fino de modelos, durante las horas de clase.
-- **Presentaciones Técnicas (Parcial 1):** Los estudiantes realizarán presentaciones técnicas grupales de 25 minutos sobre una arquitectura de orquestación de agentes persistentes, incluyendo diagramas de flujo, estrategias de memoria y planes de contingencia.
-- **Proyecto Final (Evaluación Final):** Defensa de una infraestructura "organización autónoma" completa, desplegable y escalable, que integre agentes con sistemas externos, con monitoreo, mecanismos de control y documentación completa de la arquitectura.
+- **Demostraciones Prácticas:** El instructor realizará demostraciones en el laboratorio de implementación de arquitecturas de generación aumentada por recuperación, modelado ontológico y sistemas de orquestación multi-agente.
+- **Presentaciones Grupales (Parcial 1):** Los estudiantes realizarán presentaciones de 25 minutos en grupos, demostrando una arquitectura de RAG, modelado ontológico o sistema de orquestación funcional.
+- **Proyecto Integrador (Evaluación Final):** Defensa de un "sistema cognitivo" integral que combine recuperación semántica, conocimiento estructurado (ontologías/grafos) y orquestación multi-agente con mecanismos de seguridad y auditoría.
 
 ---
 
@@ -39,10 +39,10 @@ Taller de Inteligencia Artificial (TIA)
 
 | Semanas | Unidad | Contenidos |
 |---|---|---|
-| 1-4 | **Workflows Agénticos Industriales** | Arquitecturas de agentes industriales. Diferencias con sistemas conversacionales. Gestión de estados y transiciones. Persistencia de estado. Patrones de diseño para agentes con memoria. |
-| 5-8 | **Integración con Sistemas Externos** | Conexión con sistemas empresariales (ERP, CRM). Patrones de adaptación y capas de abstracción. Mensajería asíncrona y colas. Patrones de transacciones distribuidas (Saga). |
-| 9-12 | **Agent-Ops y Observabilidad** | Trazado de decisiones y pensamientos. Métricas y monitoreo de agentes. Mecanismos de control y seguridad (circuit breakers, kill-switches). Alertas y procedimientos de respuesta. |
-| 13-16 | **Escalamiento y Optimización** | Contenerización de agentes. Orquestación de contenedores y auto-escalado. Modelos de lenguaje pequeños (SLMs): selección, ajuste fino y despliegue. Infraestructura como código. |
+| 1-4 | **Sistemas de Percepción y MLops** | Percepción computacional. Detección y clasificación de objetos. Ciclo de vida de modelos de aprendizaje automático. Versionado, monitoreo de degradación y latencia. |
+| 5-8 | **Generación Aumentada por Recuperación (RAG)** | Arquitectura RAG: ingesta, indexación y recuperación. Fragmentación semántica de documentos. Bases de datos vectoriales y búsqueda semántica. Estrategias de búsqueda híbrida (semántica + lexical). |
+| 9-12 | **Semántica y Grafos de Conocimiento** | Modelado ontológico (OWL/RDF). Lenguajes de consulta sobre grafos. Integración de conocimiento estructurado con sistemas RAG (GraphRAG). Razonamiento de múltiples saltos. |
+| 13-16 | **Orquestación Multi-Agente y Seguridad** | Protocolos de comunicación entre agentes. Orquestación y coordinación. Seguridad en sistemas LLM: prevención de inyección de prompts, control de acceso y auditoría de decisiones. Evaluación de calidad de sistemas RAG. |
 
 ---
 
@@ -50,16 +50,15 @@ Taller de Inteligencia Artificial (TIA)
 
 ### 6.1 Básica
 
-- Sutton, R., Barto, A. (2018). *Reinforcement Learning: An Introduction*. 2nd Edition. MIT Press.
-- Wooldridge, M. (2009). *An Introduction to MultiAgent Systems*. 2nd Edition. Wiley.
+- Gao, Y. et al. (2024). "Retrieval-Augmented Generation for Large Language Models: A Survey". *arXiv:2312.10997*.
+- Hogan, A. et al. (2021). *Knowledge Graphs*. Morgan & Claypool Publishers.
 
 ### 6.2 Complementaria
 
-- Hu, E. et al. (2021). "LoRA: Low-Rank Adaptation of Large Language Models". Disponible en: https://arxiv.org/abs/2106.09685
-- Microsoft. *Azure Well-Architected Framework*. Disponible en: https://learn.microsoft.com/es-es/azure/well-architected/
-- Microsoft Learn. *Formación para ingenieros de IA*. Disponible en: https://learn.microsoft.com/es-es/training/career-paths/ai-engineer
+- Lewis, P. et al. (2020). "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks". Disponible en: https://arxiv.org/abs/2005.11401
+- Microsoft Reactor. *Python + IA (serie en español)*. Disponible en: https://developer.microsoft.com/es-es/reactor/series/s-1492/
 - OWASP Foundation. (Última versión). *OWASP Top 10 for LLM Applications*. Disponible en: https://owasp.org/www-project-top-10-for-llm-applications/
-- Burns, T. et al. (2024). "The Shift from Models to Compound AI Systems". Disponible en: https://bair.berkeley.edu/blog/2024/02/18/compound-ai-systems/
+- Microsoft Learn. *Formación para ingenieros de IA*. Disponible en: https://learn.microsoft.com/es-es/training/career-paths/ai-engineer
 
 ---
 
@@ -67,11 +66,11 @@ Taller de Inteligencia Artificial (TIA)
 
 ### 7.1 Conocimientos Previos Exigidos
 
-Se requieren conocimientos de Introducción a la IA para Desarrolladores (o equivalente), programación avanzada y sistemas operativos.
+Se requieren conocimientos de Introducción a la Inteligencia Artificial (o equivalente) y programación avanzada.
 
 ### 7.2 Conocimientos Previos Recomendados
 
-Conocimientos básicos de bases de datos, redes de computadoras y arquitecturas distribuidas.
+Conocimientos básicos de bases de datos, sistemas operativos y redes de computadoras.
 
 No incluye la información de previaturas. Las unidades curriculares previas serán definidas por cada carrera que tome la unidad curricular y serán incluidas en el anexo B.
 
@@ -95,20 +94,20 @@ Comisión Nacional de Carrera del Tecnólogo en Informática (UTU-UTEC-UDELAR)
 
 | Semana | Actividad |
 |---|---|
-| 1 | Arquitecturas de agentes industriales. Estados y transiciones |
-| 2 | Persistencia de estado. Almacenes en memoria |
-| 3 | Gestión de memoria: semántica, episódica, procedural |
-| 4 | Tolerancia a fallos y máquinas de estado |
-| 5 | Integración con sistemas empresariales (ERP/CRM) |
-| 6 | Patrones de adaptación y capas de abstracción |
-| 7 | Mensajería asíncrona. Patrón Saga |
-| 8 | **Parcial 1** - Presentaciones técnicas |
-| 9 | Trazado de decisiones. Observabilidad |
-| 10 | Métricas y monitoreo de agentes |
-| 11 | Circuit breakers y kill-switches semánticos |
-| 12 | Alertas y procedimientos de respuesta |
-| 13 | Contenerización de agentes |
-| 14 | Orquestación y auto-escalado |
+| 1 | Percepción computacional. Introducción a visión por computadora |
+| 2 | Ciclo de vida de ML. Experiment tracking y versionado |
+| 3 | Monitoreo y detección de degradación en modelos |
+| 4 | Fundamentos de RAG. Arquitectura y componentes |
+| 5 | Fragmentación semántica y estrategias de chunking |
+| 6 | Bases de datos vectoriales. Búsqueda semántica |
+| 7 | Búsqueda híbrida. Estrategias de recuperación |
+| 8 | **Parcial 1** - Presentaciones grupales |
+| 9 | Modelado ontológico. OWL y RDF |
+| 10 | Bases de datos de grafos. Lenguajes de consulta |
+| 11 | GraphRAG. Integración de conocimiento estructurado |
+| 12 | Razonamiento de múltiples saltos en grafos |
+| 13 | Orquestación multi-agente. Protocolos y coordinación |
+| 14 | Seguridad en LLMs. Prevención de ataques y auditoría |
 | 15 | **Evaluación Final** - Proyecto integrador |
 | 16 | Cierre, tendencias y lecciones aprendidas |
 
@@ -116,13 +115,13 @@ Comisión Nacional de Carrera del Tecnólogo en Informática (UTU-UTEC-UDELAR)
 
 ### A3) MODALIDAD DEL CURSO Y PROCEDIMIENTO DE EVALUACIÓN
 
-**Aprobación del Curso:** Obtener un promedio ponderado mínimo de 60% en el total de las instancias de evaluación. La presentación técnica grupal es obligatoria para aprobar el curso.
+**Aprobación del Curso:** Obtener un promedio ponderado mínimo de 60% en el total de las instancias de evaluación. La presentación grupal es obligatoria para aprobar el curso.
 
 | Instancia | Descripción | Peso |
 |---|---|---|
-| Parcial 1 (Semana 8) | Presentación técnica grupal (25 min) de una arquitectura de orquestación de agentes persistentes | 40% |
-| Evaluación Final (Semana 15) | Defensa de una infraestructura "organización autónoma" desplegable y escalable | 40% |
-| Participación | Asistencia y entrega de trabajos prácticos de laboratorio | 20% |
+| Parcial 1 (Semana 8) | Presentación grupal (25 min) con demostración práctica de una arquitectura RAG o de grafos | 40% |
+| Evaluación Final (Semana 15) | Defensa de un "sistema cognitivo" que integre recuperación semántica, conocimiento ontológico y orquestación multi-agente | 40% |
+| Participación | Asistencia y entrega de ejercicios prácticos de laboratorio | 20% |
 
 ### A4) CALIDAD DE LIBRE
 
@@ -142,9 +141,9 @@ No tiene cupo
 
 ### B1) ÁREA DE FORMACIÓN
 
-Sistemas Inteligentes Avanzados
+Inteligencia Artificial y Aprendizaje Automático
 
 ### B2) UNIDADES CURRICULARES PREVIAS
 
-Introducción a la IA para Desarrolladores (Curso Aprobado).
-Sistemas Operativos (Curso Aprobado).
+Introducción a la Inteligencia Artificial (Curso Aprobado).
+Programación Avanzada (Curso Aprobado).
