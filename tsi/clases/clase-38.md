@@ -1,6 +1,6 @@
-# Clase 38: Taller Integrador - App Segura Parte 1
+# Clase 38: Secure Code Review - Taller Practico
 
-**Numero de clase:** 28  
+**Numero de clase:** 27  
 **Duracion:** 2 horas  
 **Curso:** Taller de Ciberseguridad Orientada al Desarrollo
 
@@ -8,735 +8,490 @@
 
 ## Objetivos de Aprendizaje
 
-- Desarrollar una API REST segura desde cero con FastAPI
-- Implementar autenticacion con JWT y refresh tokens
-- Almacenar contrasenas de forma segura con bcrypt
-- Aplicar input validation y parametrized queries
-- Estructurar un proyecto con separacion de responsabilidades
+- Comprender el proceso de secure code review y su importancia
+- Identificar patrones peligrosos en codigo fuente (Python, JavaScript, Java)
+- Aplicar la metodologia OWASP Code Review Guide
+- Distinguir entre vulnerabilidades automatizables y las que requieren revision manual
+- Corregir vulnerabilidades de seguridad en fragmentos de codigo reales
 
 ---
 
 ## Contenido Detallado
 
-### 1. Estructura del Proyecto (10 min)
+### 1. Que es un Secure Code Review? (15 min)
 
-Creamos la siguiente estructura de carpetas para la aplicacion segura:
+El **secure code review** es la revision sistematica del codigo fuente para identificar vulnerabilidades de seguridad antes de que el software llegue a produccion. No es lo mismo que un code review funcional: se enfoca exclusivamente en aspectos de seguridad.
+
+**Objetivos:**
+- Identificar vulnerabilidades antes del deploy
+- Educar al equipo de desarrollo
+- Establecer una linea base de seguridad
+- Reducir el costo de corregir errores (es mas barato corregir en desarrollo que en produccion)
+
+**Costo relativo de corregir vulnerabilidades:**
+- En desarrollo: 1x
+- En pruebas: 10x
+- En produccion: 100x
+- Despues de un incidente: 1000x
+
+### 2. Checklist de Revision - OWASP Code Review Guide (15 min)
+
+La metodologia OWASP se organiza en categorias:
+
+| Categoria | Que revisar |
+|-----------|-------------|
+| Validacion de entrada | SQL injection, XSS, command injection, path traversal |
+| Autenticacion | Contrasenas en texto plano, JWT debiles, session fixation |
+| Autorizacion | IDOR, privilege escalation, missing access controls |
+| Criptografia | Algoritmos debiles (MD5, SHA1), claves hardcodeadas, mal manejo de TLS |
+| Manejo de errores | Stack traces expuestos, informacion sensible en errores |
+| Logging | Informacion sensible en logs (PII, contrasenas) |
+| Configuracion | Secretos en codigo, CORS mal configurado, debug habilitado |
+| Dependencias | Librerias con vulnerabilidades conocidas |
+
+### 3. Automatizacion vs. Revision Manual (10 min)
+
+**Automatizable (herramientas SAST):**
+- SQL injection basico
+- XSS reflejado
+- Uso de funciones peligrosas (eval, exec)
+- Hardcoded secrets
+- Algoritmos criptograficos debiles
+
+**Requiere revision manual:**
+- Logica de negocio flaws (ej: un usuario puede editar recursos de otro)
+- IDOR (Insecure Direct Object References)
+- Problemas de autenticacion complejos
+- Race conditions
+- Vulnerabilidades en flujos de multiple paso
+
+### 4. Patrones Peligrosos a Buscar (10 min)
+
+| Patron | Lenguaje | Riesgo |
+|--------|----------|--------|
+| `eval()`, `exec()` | Python | Code injection |
+| `innerHTML`, `dangerouslySetInnerHTML` | JS/React | XSS |
+| `os.system()`, `subprocess.Popen(shell=True)` | Python | Command injection |
+| `pickle.loads()` | Python | Deserializacion insegura |
+| `JSON.parse()` sin validacion | JS | Prototype pollution |
+| `DES`, `MD5`, `SHA1` | Todos | Criptografia debil |
+| `"SELECT * FROM users WHERE id = " + id` | Todos | SQL injection |
+| `process.env.SECRET_KEY` expuesto | Node | Hardcoded secrets |
+
+### 5. Metodologia (10 min)
 
 ```
-secure-api/
-├── app/
-│   ├── __init__.py
-│   ├── main.py              # Punto de entrada de la aplicacion
-│   ├── config.py            # Configuracion (variables de entorno)
-│   ├── database.py          # Conexion a base de datos
-│   ├── models/
-│   │   ├── __init__.py
-│   │   └── user.py          # Modelo de usuario
-│   ├── schemas/
-│   │   ├── __init__.py
-│   │   └── user.py          # Pydantic schemas (validacion)
-│   ├── routers/
-│   │   ├── __init__.py
-│   │   └── auth.py          # Endpoints de autenticacion
-│   ├── services/
-│   │   ├── __init__.py
-│   │   └── auth_service.py  # Logica de autenticacion
-│   └── middleware/
-│       ├── __init__.py
-│       └── security.py      # Middleware de seguridad
-├── requirements.txt
-└── .env                     # Variables de entorno (nunca subir a git)
+Entrada -> Procesamiento -> Almacenamiento -> Salida
 ```
 
-### 2. Configuracion y Dependencias (10 min)
+Para cada fragmento de codigo, seguir:
+1. **Entrada:** De donde vienen los datos? (request, archivo, red)
+2. **Procesamiento:** Que se hace con los datos? (validacion, transformacion)
+3. **Almacenamiento:** Donde se guardan? (base de datos, archivos, cache)
+4. **Salida:** Como se devuelven? (HTML, JSON, XML, archivos)
 
-```txt
-# requirements.txt
-fastapi==0.109.0
-uvicorn[standard]==0.27.0
-sqlalchemy==2.0.25
-pydantic[email-validator]==2.5.3
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-python-multipart==0.0.6
-python-dotenv==1.0.0
-alembic==1.13.1
-```
+---
+
+## Ejercicio 1: Fragmento Python Flask - Login con Vulnerabilidades
+
+**Codigo vulnerable:**
 
 ```python
-# app/config.py
+from flask import Flask, request, render_template_string, session, redirect
+import sqlite3
+
+app = Flask(__name__)
+
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.form['username']
+    password = request.form['password']
+
+    # VULNERABILIDAD 1: SQL Injection
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
+    cursor.execute(query)
+    user = cursor.fetchone()
+    conn.close()
+
+    if user:
+        session['user'] = username
+        # VULNERABILIDAD 2: XSS (reflejado en template)
+        return render_template_string(f"<h1>Bienvenido {username}</h1>")
+    else:
+        return "Credenciales invalidas", 401
+
+if __name__ == '__main__':
+    app.run(debug=True)  # VULNERABILIDAD 3: Debug mode habilitado
+```
+
+**Vulnerabilidades identificadas:**
+
+1. **SQL Injection (Critico):** La concatenacion directa de `username` y `password` en la query SQL permite inyeccion. Un atacante puede enviar `' OR '1'='1` como username para eludir la autenticacion.
+
+2. **XSS Reflejado (Alto):** `render_template_string` con interpolacion directa de `username` permite ejecutar HTML/JavaScript arbitrario. Si un atacante envia `<script>alert('xss')</script>`, se ejecuta en el navegador.
+
+3. **Debug Mode en Produccion (Alto):** `app.run(debug=True)` expone el debugger de Werkzeug y permite ejecutar codigo Python arbitrario si se accede a `/console`.
+
+**Codigo corregido:**
+
+```python
+from flask import Flask, request, render_template, session, redirect, abort
+import sqlite3
+import bcrypt
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
-
-
-class Settings:
-    PROJECT_NAME: str = "Secure API"
-    VERSION: str = "1.0.0"
-
-    # Database
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL",
-        "sqlite:///./secure_api.db"
-    )
-
-    # JWT
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "")
-    ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
-
-    # Bcrypt
-    BCRYPT_ROUNDS: int = 12
-
-    # CORS
-    ALLOWED_ORIGINS: list = ["http://localhost:3000"]
-
-    def __init__(self):
-        if not self.SECRET_KEY:
-            raise ValueError(
-                "SECRET_KEY no configurada. "
-                "Establezca la variable de entorno SECRET_KEY."
-            )
-
-
-settings = Settings()
-```
-
-### 3. Base de Datos y Modelo de Usuario (15 min)
-
-```python
-# app/database.py
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
-
-from app.config import settings
-
-engine = create_engine(
-    settings.DATABASE_URL,
-    connect_args={"check_same_thread": False}  # Solo para SQLite
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-```
-
-```python
-# app/models/user.py
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
-from sqlalchemy.sql import func
-
-from app.database import Base
-
-
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(Integer, primary_key=True, index=True)
-    email = Column(String(255), unique=True, index=True, nullable=False)
-    username = Column(String(100), unique=True, index=True, nullable=False)
-    password_hash = Column(String(255), nullable=False)
-    role = Column(String(20), default="user")  # "user" o "admin"
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now()
-    )
-```
-
-### 4. Schemas de Validacion con Pydantic (10 min)
-
-```python
-# app/schemas/user.py
-from pydantic import BaseModel, EmailStr, Field, field_validator
-import re
-
-
-class UserRegister(BaseModel):
-    email: EmailStr
-    username: str = Field(..., min_length=3, max_length=50)
-    password: str = Field(..., min_length=8, max_length=128)
-
-    @field_validator("username")
-    @classmethod
-    def validate_username(cls, v):
-        if not re.match(r"^[a-zA-Z0-9_]+$", v):
-            raise ValueError(
-                "Username solo permite letras, numeros y guion bajo"
-            )
-        return v
-
-    @field_validator("password")
-    @classmethod
-    def validate_password(cls, v):
-        if not re.search(r"[A-Z]", v):
-            raise ValueError("La contrasena debe tener al menos una mayuscula")
-        if not re.search(r"[a-z]", v):
-            raise ValueError("La contrasena debe tener al menos una minuscula")
-        if not re.search(r"\d", v):
-            raise ValueError("La contrasena debe tener al menos un numero")
-        return v
-
-
-class UserLogin(BaseModel):
-    username: str
-    password: str
-
-
-class UserResponse(BaseModel):
-    id: int
-    email: str
-    username: str
-    role: str
-    is_active: bool
-
-    model_config = {"from_attributes": True}
-
-
-class TokenResponse(BaseModel):
-    access_token: str
-    refresh_token: str
-    token_type: str = "bearer"
-```
-
-### 5. Servicio de Autenticacion (15 min)
-
-```python
-# app/services/auth_service.py
-from datetime import datetime, timedelta, timezone
-from jose import jwt, JWTError
-from passlib.context import CryptContext
-from sqlalchemy.orm import Session
-
-from app.config import settings
-from app.models.user import User
-from app.schemas.user import UserRegister
-
-# Contexto de hashing con bcrypt
-pwd_context = CryptContext(
-    schemes=["bcrypt"],
-    deprecated="auto",
-    bcrypt__rounds=settings.BCRYPT_ROUNDS
-)
-
-
-def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
-
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-def create_access_token(data: dict) -> str:
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(
-        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-    )
-    to_encode.update({"exp": expire, "type": "access"})
-    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-
-
-def create_refresh_token(data: dict) -> str:
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(
-        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
-    )
-    to_encode.update({"exp": expire, "type": "refresh"})
-    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
-
-
-def decode_token(token: str) -> dict:
-    try:
-        payload = jwt.decode(
-            token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM]
-        )
-        return payload
-    except JWTError:
-        return None
-
-
-def register_user(db: Session, user_data: UserRegister) -> User:
-    # Verificar si el usuario o email ya existe
-    existing = db.query(User).filter(
-        (User.username == user_data.username) |
-        (User.email == user_data.email)
-    ).first()
-
-    if existing:
-        if existing.username == user_data.username:
-            raise ValueError("El nombre de usuario ya esta registrado")
-        raise ValueError("El email ya esta registrado")
-
-    # Crear nuevo usuario
-    user = User(
-        email=user_data.email,
-        username=user_data.username,
-        password_hash=hash_password(user_data.password),
-        role="user"
-    )
-
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    return user
-
-
-def authenticate_user(db: Session, username: str, password: str) -> User:
-    user = db.query(User).filter(User.username == username).first()
-    if not user:
-        return None
-    if not verify_password(password, user.password_hash):
-        return None
-    if not user.is_active:
-        return None
-    return user
-```
-
-### 6. Middleware de Seguridad (10 min)
-
-```python
-# app/middleware/security.py
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.orm import Session
-
-from app.database import get_db
-from app.models.user import User
-from app.services.auth_service import decode_token
-
-security_scheme = HTTPBearer()
-
-
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
-    db: Session = Depends(get_db)
-) -> User:
-    token = credentials.credentials
-    payload = decode_token(token)
-
-    if payload is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token invalido o expirado",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    if payload.get("type") != "access":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Tipo de token incorrecto",
-        )
-
-    user_id = payload.get("sub")
-    if user_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token invalido: sin identificador de usuario",
-        )
-
-    user = db.query(User).filter(User.id == int(user_id)).first()
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Usuario no encontrado",
-        )
-
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Usuario inactivo",
-        )
-
-    return user
-```
-
-### 7. Router de Autenticacion (15 min)
-
-```python
-# app/routers/auth.py
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-
-from app.database import get_db
-from app.schemas.user import (
-    UserRegister,
-    UserLogin,
-    UserResponse,
-    TokenResponse
-)
-from app.services.auth_service import (
-    register_user,
-    authenticate_user,
-    create_access_token,
-    create_refresh_token,
-    decode_token
-)
-from app.middleware.security import get_current_user
-from app.models.user import User
-
-router = APIRouter(prefix="/auth", tags=["auth"])
-
-
-@router.post("/register", response_model=UserResponse, status_code=201)
-def register(user_data: UserRegister, db: Session = Depends(get_db)):
-    try:
-        user = register_user(db, user_data)
-        return user
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(e)
-        )
-
-
-@router.post("/login", response_model=TokenResponse)
-def login(credentials: UserLogin, db: Session = Depends(get_db)):
-    user = authenticate_user(db, credentials.username, credentials.password)
-
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales invalidas",
-        )
-
-    access_token = create_access_token({"sub": str(user.id)})
-    refresh_token = create_refresh_token({"sub": str(user.id)})
-
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token
-    )
-
-
-@router.post("/refresh", response_model=TokenResponse)
-def refresh(refresh_token: str, db: Session = Depends(get_db)):
-    payload = decode_token(refresh_token)
-
-    if payload is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token invalido o expirado",
-        )
-
-    if payload.get("type") != "refresh":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Tipo de token incorrecto",
-        )
-
-    user_id = payload.get("sub")
-    user = db.query(User).filter(User.id == int(user_id)).first()
-
-    if user is None or not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Usuario no encontrado o inactivo",
-        )
-
-    new_access_token = create_access_token({"sub": str(user.id)})
-    new_refresh_token = create_refresh_token({"sub": str(user.id)})
-
-    return TokenResponse(
-        access_token=new_access_token,
-        refresh_token=new_refresh_token
-    )
-
-
-@router.get("/me", response_model=UserResponse)
-def get_me(current_user: User = Depends(get_current_user)):
-    return current_user
-```
-
-### 8. Punto de Entrada Principal (5 min)
-
-```python
-# app/main.py
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from app.config import settings
-from app.database import engine, Base
-from app.routers import auth
-
-# Crear tablas en la base de datos
-Base.metadata.create_all(bind=engine)
-
-app = FastAPI(
-    title=settings.PROJECT_NAME,
-    version=settings.VERSION
-)
-
-# CORS seguro
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["Authorization", "Content-Type"],
-)
-
-# Incluir routers
-app.include_router(auth.router)
-
-
-@app.get("/health")
-def health_check():
-    return {"status": "healthy"}
-
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=False)
-```
-
-### 9. Archivo .env (5 min)
-
-```env
-# .env - NUNCA subir al repositorio
-SECRET_KEY=generate-random-64-char-key-here-abcdef1234567890abcdef1234567890
-DATABASE_URL=sqlite:///./secure_api.db
-```
-
-Generar clave segura con Python:
-```python
-import secrets
-print(secrets.token_hex(32))
+app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', os.urandom(32))
+app.config['DEBUG'] = False  # Debug explcitamente deshabilitado
+
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.form.get('username', '').strip()
+    password = request.form.get('password', '')
+
+    if not username or not password:
+        abort(400, "Usuario y contrasena requeridos")
+
+    # CORRECCION 1: Consultas parametrizadas
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    query = "SELECT password_hash FROM users WHERE username = ?"
+    cursor.execute(query, (username,))
+    result = cursor.fetchone()
+    conn.close()
+
+    if result is None:
+        # Usuario no existe (no revelar si existe o no)
+        return "Credenciales invalidas", 401
+
+    password_hash = result[0]
+
+    # CORRECCION 2: Verificar contrasena con bcrypt
+    if not bcrypt.checkpw(password.encode('utf-8'), password_hash):
+        return "Credenciales invalidas", 401
+
+    session['user'] = username
+    # CORRECCION 3: Usar template separado (escapado automatico)
+    return render_template('dashboard.html', username=username)
+
+# CORRECCION 4: CSRF protection basica
+@app.before_request
+def csrf_check():
+    if request.method == 'POST':
+        token = request.form.get('csrf_token')
+        if not token or token != session.get('csrf_token'):
+            abort(400, "CSRF token invalido")
+
+if __name__ == '__main__':
+    app.run(debug=False)
 ```
 
 ---
 
-## Ejercicio 1: Crear Proyecto Flask/FastAPI con Estructura Segura
+## Ejercicio 2: Fragmento Node.js Express - IDOR, Deserializacion, Secretos
 
-**Enunciado:** Crear la estructura de carpetas completa del proyecto con FastAPI, incluyendo todos los archivos de inicializacion.
+**Codigo vulnerable:**
 
-**Solucion:**
+```javascript
+const express = require('express');
+const app = express();
 
-```
-secure-api/
-├── app/
-│   ├── __init__.py          # from app.main import app
-│   ├── main.py              # Punto de entrada
-│   ├── config.py            # Configuracion segura
-│   ├── database.py          # Conexion BD
-│   ├── models/
-│   │   ├── __init__.py      # from app.models.user import User
-│   │   └── user.py          # Modelo SQLAlchemy
-│   ├── schemas/
-│   │   ├── __init__.py
-│   │   └── user.py          # Pydantic validacion
-│   ├── routers/
-│   │   ├── __init__.py
-│   │   └── auth.py          # Endpoints auth
-│   ├── services/
-│   │   ├── __init__.py
-│   │   └── auth_service.py  # Logica de negocio
-│   └── middleware/
-│       ├── __init__.py
-│       └── security.py      # JWT validation
-├── requirements.txt
-├── .env.example             # Template sin valores reales
-└── .gitignore               # Incluir .env, *.db, __pycache__
-```
+// VULNERABILIDAD 1: Secretos hardcodeados
+const SECRET_KEY = 'my-super-secret-key-12345';
+const DB_PASSWORD = 'admin123';
 
-Recomendacion: Cada `__init__.py` debe exponer las clases/funciones principales:
+app.use(express.json());
 
-```python
-# app/__init__.py
-from app.main import app
+// VULNERABILIDAD 2: Deserializacion insegura
+app.post('/api/process', (req, res) => {
+  const data = req.body.data;
+  // Peligro: permite ejecucion de codigo arbitrario
+  const processed = eval('(' + data + ')');
+  res.json({ result: processed });
+});
 
-# app/models/__init__.py
-from app.models.user import User
+// VULNERABILIDAD 3: IDOR - Insecure Direct Object Reference
+app.get('/api/users/:id', (req, res) => {
+  const userId = req.params.id;
+  // No verifica que el usuario autenticado sea el propietario
+  const user = db.users.find(u => u.id === userId);
+  res.json(user);
+});
 
-# app/schemas/__init__.py
-from app.schemas.user import UserRegister, UserLogin, UserResponse, TokenResponse
-
-# app/routers/__init__.py
-from app.routers.auth import router as auth_router
-
-# app/services/__init__.py
-from app.services.auth_service import (
-    hash_password, verify_password,
-    create_access_token, create_refresh_token,
-    decode_token, register_user, authenticate_user
-)
-
-# app/middleware/__init__.py
-from app.middleware.security import get_current_user
+app.listen(3000);
 ```
 
----
+**Vulnerabilidades identificadas:**
 
-## Ejercicio 2: Implementar Modelo de Usuario con Contrasena Hasheada
+1. **Secretos hardcodeados (Critico):** La clave secreta y contrasena de BD estan en el codigo fuente. Cualquiera con acceso al repositorio las obtiene.
 
-**Enunciado:** Implementar el modelo de usuario SQLAlchemy y la funcion de hashing con bcrypt.
+2. **Deserializacion insegura con eval (Critico):** `eval()` ejecuta cualquier codigo JavaScript. Un atacante puede enviar `require('child_process').execSync('rm -rf /')` y ejecutar comandos en el servidor.
 
-**Solucion:** Ya incluida en las secciones 3 y 5 de la clase. Puntos clave:
+3. **IDOR (Alto):** El endpoint `/api/users/:id` permite acceder a la informacion de cualquier usuario sin verificar propiedad o permisos. Un atacante puede cambiar el `:id` para acceder a datos de otros usuarios.
 
-- La columna `password_hash` almacena el hash, nunca la contrasena en texto plano
-- Se usa `passlib` con `bcrypt` y `bcrypt__rounds=12` (12 rondas de salting)
-- La funcion `hash_password()` retorna el hash
-- `verify_password()` compara la contrasena ingresada contra el hash
-- El hash de bcrypt incluye el salt automaticamente (formato: `$2b$12$...`)
+**Codigo corregido:**
 
-Verificar que funciona:
+```javascript
+const express = require('express');
+const jwt = require('jsonwebtoken');
+const helmet = require('helmet');
 
-```python
-# test_hash.py
-from app.services.auth_service import hash_password, verify_password
+const app = express();
+app.use(helmet()); // Seguridad de headers
 
-password = "MiPassword123!"
-hashed = hash_password(password)
-print(f"Hash: {hashed}")
-# Output: $2b$12$abc123... (60 caracteres)
+// CORRECCION 1: Secretos desde variables de entorno
+const SECRET_KEY = process.env.JWT_SECRET;
+if (!SECRET_KEY) {
+  throw new Error('JWT_SECRET no configurado en variables de entorno');
+}
 
-assert verify_password(password, hashed) == True
-assert verify_password("WrongPassword", hashed) == False
-print("Hashing funciona correctamente")
-```
+app.use(express.json({ limit: '10kb' })); // Limite de tamano
 
----
+// CORRECCION 2: Validacion segura en vez de eval
+app.post('/api/process', (req, res) => {
+  const data = req.body.data;
 
-## Ejercicio 3: Implementar Endpoint POST /auth/register con Validacion
+  // Validar que sea un JSON valido
+  if (typeof data !== 'string') {
+    return res.status(400).json({ error: 'data debe ser un string JSON' });
+  }
 
-**Enunciado:** Implementar el endpoint de registro con validacion estricta de email, username y contrasena.
+  try {
+    // Usar JSON.parse en vez de eval (mucho mas seguro)
+    const parsed = JSON.parse(data);
 
-**Solucion:** Ya incluida en las secciones 4, 5 y 7. Resumen de validaciones:
+    // Validar estructura esperada
+    if (!parsed || typeof parsed !== 'object') {
+      return res.status(400).json({ error: 'Formato invalido' });
+    }
 
-1. **Email:** Validado con `EmailStr` de Pydantic (formato email valido)
-2. **Username:** Longitud 3-50 caracteres, solo alfanumerico + guion bajo, validado con regex
-3. **Password:** Longitud 8-128 caracteres, debe tener mayuscula, minuscula y numero
-4. **Duplicados:** Se verifica que username y email no existan en BD
-5. **Hash:** La contrasena se hashea con bcrypt antes de almacenar
-6. **Respuesta:** Nunca devuelve el hash en la respuesta (UserResponse no incluye password_hash)
+    // Procesar solo campos permitidos
+    const allowed = ['name', 'email', 'age'];
+    const processed = {};
+    for (const key of allowed) {
+      if (parsed[key] !== undefined) {
+        processed[key] = parsed[key];
+      }
+    }
 
-Ejemplo de request/response:
+    res.json({ result: processed });
+  } catch (e) {
+    res.status(400).json({ error: 'JSON invalido' });
+  }
+});
 
-```bash
-# Registro exitoso
-curl -X POST http://localhost:8000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "username": "usuario1",
-    "password": "MiPassword123"
-  }'
+// CORRECCION 3: Autenticacion y autorizacion con JWT
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
 
-# Respuesta:
-# {
-#   "id": 1,
-#   "email": "user@example.com",
-#   "username": "usuario1",
-#   "role": "user",
-#   "is_active": true
-# }
+  if (!token) {
+    return res.status(401).json({ error: 'Token requerido' });
+  }
 
-# Registro con error de validacion
-curl -X POST http://localhost:8000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "email-invalido",
-    "username": "us",
-    "password": "123"
-  }'
+  jwt.verify(token, SECRET_KEY, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: 'Token invalido' });
+    }
+    req.user = user;
+    next();
+  });
+}
 
-# Respuesta: 422 Unprocessable Entity con detalles de validacion
+// CORRECCION 4: IDOR - verificar que el usuario sea el propietario
+app.get('/api/users/:id', authenticateToken, (req, res) => {
+  const userId = parseInt(req.params.id, 10);
+
+  // Verificar que sea el mismo usuario o admin
+  if (req.user.id !== userId && req.user.role !== 'admin') {
+    return res.status(403).json({ error: 'No autorizado para ver este usuario' });
+  }
+
+  const user = db.users.find(u => u.id === userId);
+  if (!user) {
+    return res.status(404).json({ error: 'Usuario no encontrado' });
+  }
+
+  // No exponer campos sensibles
+  const { password_hash, ...safeUser } = user;
+  res.json(safeUser);
+});
+
+app.listen(3000);
 ```
 
 ---
 
-## Ejercicio 4: Implementar Endpoint POST /auth/login con JWT
+## Ejercicio 3: Fragmento Java Spring - XXE, Path Traversal, Falta de Autorizacion
 
-**Enunciado:** Implementar login que retorne access_token y refresh_token JWT.
+**Codigo vulnerable:**
 
-**Solucion:** Ya incluida en las secciones 5 y 7. Flujo completo:
+```java
+import org.springframework.web.bind.annotation.*;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 
-1. Recibe username y password
-2. Busca usuario en BD por username
-3. Verifica contrasena con bcrypt
-4. Verifica que el usuario este activo
-5. Genera access_token (30 min de validez) y refresh_token (7 dias)
-6. Retorna ambos tokens
+@RestController
+public class VulnerableController {
 
-Tokens JWT contienen:
-```json
-{
-  "sub": "1",        // ID del usuario
-  "exp": 1700000000, // Fecha de expiracion
-  "type": "access",  // o "refresh"
-  "iat": 1700000000  // Fecha de emision
+    // VULNERABILIDAD 1: XXE - XML External Entity
+    @PostMapping("/api/xml/parse")
+    public String parseXml(@RequestBody String xmlData) {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document doc = builder.parse(new InputSource(new StringReader(xmlData)));
+        // Procesa el XML permitiendo entidades externas
+        return doc.getDocumentElement().getTextContent();
+    }
+
+    // VULNERABILIDAD 2: Path Traversal
+    @GetMapping("/api/files/read")
+    public String readFile(@RequestParam String filename) {
+        // No valida ni sanitiza el nombre del archivo
+        Path filePath = Path.of("/app/data/" + filename);
+        return Files.readString(filePath);
+    }
+
+    // VULNERABILIDAD 3: Falta de autorizacion
+    @DeleteMapping("/api/admin/users/{userId}")
+    public String deleteUser(@PathVariable Long userId) {
+        // No verifica si el usuario autenticado es admin
+        userRepository.deleteById(userId);
+        return "Usuario eliminado";
+    }
 }
 ```
 
-Ejemplo de login:
+**Vulnerabilidades identificadas:**
 
-```bash
-curl -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "username": "usuario1",
-    "password": "MiPassword123"
-  }'
+1. **XXE (XML External Entity) - Critico:** El parser XML por defecto en Java procesa entidades externas. Un atacante puede enviar un XML que lea archivos del servidor o haga SSRF (Server-Side Request Forgery).
 
-# Respuesta:
-# {
-#   "access_token": "eyJhbGciOiJIUzI1NiIs...",
-#   "refresh_token": "eyJhbGciOiJIUzI1NiIs...",
-#   "token_type": "bearer"
-# }
+2. **Path Traversal - Alto:** El parametro `filename` se concatenan directamente a la ruta. Un atacante puede usar `../../etc/passwd` para leer archivos fuera del directorio permitido.
+
+3. **Falta de autorizacion - Critico:** El endpoint `DELETE /api/admin/users/{userId}` no verifica que el usuario que realiza la peticion tenga rol de administrador. Cualquier usuario autenticado (o no autenticado) puede eliminar usuarios.
+
+**Codigo corregido:**
+
+```java
+import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.XMLConstants;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+@RestController
+public class SecureController {
+
+    // CORRECCION 1: XXE deshabilitado
+    @PostMapping("/api/xml/parse")
+    public String parseXml(@RequestBody String xmlData) throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
+        // Deshabilitar DOCTYPE para prevenir XXE
+        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        // Deshabilitar entidades externas
+        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        // Deshabilitar DTDA (Document Type Definition)
+        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+        // Deshabilitar XInclude
+        factory.setXIncludeAware(false);
+        factory.setExpandEntityReferences(false);
+
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document doc = builder.parse(new InputSource(new StringReader(xmlData)));
+        return doc.getDocumentElement().getTextContent();
+    }
+
+    // CORRECCION 2: Path traversal prevenido
+    @GetMapping("/api/files/read")
+    public String readFile(@RequestParam String filename,
+                          Authentication auth) throws Exception {
+
+        // Obtener el usuario autenticado
+        String username = auth.getName();
+
+        // Sanitizar: permitir solo alfanumerico, punto y guion
+        if (!filename.matches("^[a-zA-Z0-9._-]+$")) {
+            throw new SecurityException("Nombre de archivo invalido");
+        }
+
+        // Resolver ruta canonica y verificar que este dentro del directorio base
+        Path baseDir = Paths.get("/app/data").toAbsolutePath().normalize();
+        Path filePath = baseDir.resolve(filename).normalize();
+
+        if (!filePath.startsWith(baseDir)) {
+            throw new SecurityException("Acceso denegado: fuera del directorio permitido");
+        }
+
+        if (!Files.exists(filePath) || Files.isDirectory(filePath)) {
+            throw new FileNotFoundException("Archivo no encontrado");
+        }
+
+        return Files.readString(filePath);
+    }
+
+    // CORRECCION 3: Autorizacion con Spring Security
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/api/admin/users/{userId}")
+    public String deleteUser(@PathVariable Long userId, Authentication auth) {
+        // Solo usuarios con rol ADMIN pueden acceder
+        // Spring Security verifica el rol antes de ejecutar el metodo
+
+        // Log de auditoria
+        log.info("Usuario {} elimino el usuario {}", auth.getName(), userId);
+        userRepository.deleteById(userId);
+        return "Usuario eliminado";
+    }
+}
 ```
 
 ---
 
 ## Preguntas y Respuestas
 
-**1. Por que se usa bcrypt en vez de SHA256 para almacenar contrasenas?**
+**1. Cual es la diferencia entre un code review funcional y un secure code review?**
 
-SHA256 es un hash rapido, disenado para verificacion de integridad. Un atacante puede calcular millones de SHA256 por segundo. Bcrypt es un hash lento por diseno (adaptive hash), incluye salt automatico y permite ajustar el factor de costo. Hace que ataques de fuerza bruta sean impracticables.
+El code review funcional verifica que el codigo cumpla con los requisitos de negocio, sea legible y siga las convenciones del equipo. El secure code review se enfoca exclusivamente en vulnerabilidades de seguridad: validacion de entrada, autenticacion, autorizacion, criptografia, manejo seguro de errores, etc.
 
-**2. Que informacion contiene un JWT y como se protege?**
+**2. Que es un IDOR y como se previene?**
 
-Un JWT contiene un header (algoritmo), payload (datos como sub, exp, type) y signature. El payload NO debe contener informacion sensible como contrasenas. La firma protege contra manipulacion: si alguien modifica el payload, la firma no valida.
+IDOR (Insecure Direct Object Reference) ocurre cuando un endpoint expone una referencia directa a un objeto interno (ID de base de datos, nombre de archivo) y no verifica que el usuario tenga permiso para acceder a ese objeto. Se previene con autorizacion: verificar que el usuario autenticado sea propietario o tenga rol adecuado.
 
-**3. Por que es importante validar los datos de entrada con Pydantic?**
+**3. Que es una vulnerabilidad XXE y cuando ocurre en Java?**
 
-Pydantic valida automaticamente tipos, formatos, longitudes y restricciones personalizadas. Previene que datos maliciosos o malformados lleguen a la base de datos. Reduce el riesgo de injection, buffer overflow y otros ataques basados en entrada no validada.
+XXE (XML External Entity) ocurre cuando un parser XML procesa entidades externas definidas en un DOCTYPE. En Java, el parser por defecto (`DocumentBuilderFactory.newInstance()`) tiene las entidades externas habilitadas. Un atacante puede leer archivos del servidor o hacer SSRF. Se previene deshabilitando DOCTYPE y entidades externas.
 
-**4. Que diferencia hay entre access_token y refresh_token?**
+**4. Por que es peligroso usar `eval()` en JavaScript o Node.js?**
 
-El access_token tiene corta duracion (minutos u horas) y se usa para autenticar requests. El refresh_token tiene larga duracion (dias) y solo se usa para obtener nuevos access_tokens sin pedir credenciales nuevamente. Esto limita el dano si un access_token es robado.
+`eval()` ejecuta cualquier string como codigo JavaScript. Esto permite inyeccion de codigo arbitrario. Si un atacante controla parte del string pasado a `eval()`, puede ejecutar comandos del sistema, leer archivos, robar datos, o tomar control del servidor.
 
-**5. Por que se configura CORS con origenes especificos?**
+**5. Que es path traversal y como se previene en Java?**
 
-CORS (Cross-Origin Resource Sharing) controla que origenes pueden acceder a la API. Si se configura como `*` (todos los origenes), cualquier sitio web malicioso puede hacer requests desde el navegador del usuario. Restringir a origenes conocidos previene ataques CSRF.
+Path traversal permite a un atacante leer archivos fuera del directorio permitido usando `../` en la ruta. Se previene: (1) sanitizando el input para eliminar `../`, (2) normalizando la ruta con `toRealPath()` o `normalize()`, (3) verificando que la ruta resultante comience con el directorio base permitido.
 
-**6. Que es el modelo `from_attributes = True` en Pydantic?**
+**6. Cuales son los 3 tipos de vulnerabilidades mas comunes en aplicaciones web segun OWASP Top 10?**
 
-Permite crear instancias del schema desde objetos SQLAlchemy (ORM). Sin esta configuracion, Pydantic solo acepta diccionarios. Con `from_attributes = True`, se puede pasar directamente un objeto `User` y Pydantic mapea los atributos del modelo a los campos del schema.
+Broken Access Control (fallas en control de acceso), Cryptographic Failures (fallas criptograficas), e Injection (inyeccion SQL, command, etc.). Estas tres cubren la mayoria de vulnerabilidades encontradas en aplicaciones web.
 
-**7. Como se genera una SECRET_KEY segura para JWT?**
+**7. Que herramientas SAST pueden automatizar parte del secure code review?**
 
-Usando `secrets.token_hex(32)` de Python que genera 64 caracteres hexadecimales criptograficamente aleatorios. No debe estar hardcodeada en el codigo fuente, sino en variables de entorno o un archivo .env excluido del repositorio.
+SonarQube, Semgrep, CodeQL (GitHub), Bandit (Python), ESLint con plugins de seguridad (JS/TS), FindSecBugs (Java), FlawFinder (C/C++), Brakeman (Ruby on Rails). Ninguna reemplaza la revision manual, pero automatizan la deteccion de patrones conocidos.
 
 ---
 
 ## Tarea / Lectura Recomendada
 
-- Completar la implementacion de la API hasta el login funcionando
-- Leer: FastAPI Security Documentation (https://fastapi.tiangolo.com/tutorial/security/)
-- Leer: JWT.io para entender la estructura de tokens (https://jwt.io/)
-- Investigar: OWASP ASVS (Application Security Verification Standard) nivel 1 y 2
-- Preparacion: Traer la API funcionando para la clase 29
+- Leer: OWASP Code Review Guide (https://owasp.org/www-project-code-review-guide/)
+- Leer: OWASP Top 10 - 2021 (https://owasp.org/www-project-top-ten/)
+- Practicar: Ejecutar Bandit y Semgrep sobre los fragmentos vulnerables de la clase
+- Instalar: Una herramienta SAST de tu eleccion y analizar un proyecto propio
+- Investigar: Que es un CVE y como se reporta
+
 
 

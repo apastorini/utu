@@ -1,0 +1,1640 @@
+---
+# ==============================================================================
+# Escenario 04 - Intrusion y Movimiento Lateral
+# Configuracion Base - Banco del Sol
+# ==============================================================================
+# Este playbook configura la infraestructura base del escenario de intrusion.
+# Establece los servidores, aplicaciones, bases de datos y servicios necesarios
+# para que el escenario de ataque funcione correctamente.
+#
+# NOTA: Este playbook se ejecuta DESPUES de clonar las VMs pero ANTES del
+# escenario de ataque (after_clone.yml).
+# ==============================================================================
+
+- name: Configuracion Base - Banco del Sol
+  hosts: all
+  become: yes
+  gather_facts: yes
+  vars:
+    banco_del_sol:
+      domain: "banco-dsol.local"
+      app_name: "Banco del Sol Online"
+      db_name: "banco_del_sol"
+      db_user: "bds_webapp"
+      db_password: "W3bApp_D3l_Sol_2024!"
+      db_root_password: "Tectonic_DB_2024!"
+      web_root: "/var/www/html/banco_del_sol"
+
+  tasks:
+    # ==========================================================================
+    # Configuracion General
+    # ==========================================================================
+    - name: Configurar hostname
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}.banco-dsol.local"
+
+    - name: Configurar /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: "{{ hostvars[item].ansible_default_ipv4.address }} {{ item }}.banco-dsol.local {{ item }}"
+        state: present
+        regexp: ".*{{ item }}.*"
+      loop: "{{ groups['all'] }}"
+
+    - name: Instalar paquetes base
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - python3
+          - python3-pip
+          - net-tools
+          - tcpdump
+          - htop
+          - iotop
+          - unzip
+          - vim
+          - git
+          - chrony
+          - rsyslog
+        state: present
+        update_cache: yes
+
+    - name: Configurar NTP (chrony)
+      ansible.builtin.lineinfile:
+        path: /etc/chrony/chrony.conf
+        line: "server 10.10.0.10 iburst"
+        state: present
+      notify: restart chrony
+
+    - name: Habilitar servicios de red
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        enabled: yes
+        state: started
+      loop:
+        - chrony
+        - rsyslog
+
+  handlers:
+    - name: restart chrony
+      ansible.builtin.systemd:
+        name: chrony
+        state: restarted
+
+# ==============================================================================
+# Configuracion del Webserver
+# ==============================================================================
+- name: Configurar Webserver - Banco del Sol
+  hosts: webserver
+  become: yes
+  gather_facts: yes
+  vars:
+    banco_del_sol:
+      db_name: "banco_del_sol"
+      db_user: "bds_webapp"
+      db_password: "W3bApp_D3l_Sol_2024!"
+      db_host: "10.10.2.30"
+      db_port: 3306
+      app_directory: "/var/www/html/banco_del_sol"
+      upload_directory: "/var/www/html/banco_del_sol/uploads"
+      log_directory: "/var/www/html/banco_del_sol/logs"
+
+  tasks:
+    - name: Instalar Apache y PHP
+      ansible.builtin.apt:
+        name:
+          - apache2
+          - php8.1
+          - php8.1-cli
+          - php8.1-mysql
+          - php8.1-json
+          - php8.1-curl
+          - php8.1-mbstring
+          - php8.1-xml
+          - php8.1-zip
+          - libapache2-mod-php8.1
+          - php8.1-gd
+          - php8.1-intl
+        state: present
+        update_cache: yes
+
+    - name: Instalar client MySQL
+      ansible.builtin.apt:
+        name:
+          - mysql-client-8.0
+        state: present
+
+    - name: Crear directorio de la aplicacion
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: "0755"
+      loop:
+        - "{{ banco_del_sol.app_directory }}"
+        - "{{ banco_del_sol.app_directory }}/public"
+        - "{{ banco_del_sol.app_directory }}/config"
+        - "{{ banco_del_sol.app_directory }}/src"
+        - "{{ banco_del_sol.app_directory }}/logs"
+        - "{{ banco_del_sol.upload_directory }}"
+        - "{{ banco_del_sol.app_directory }}/templates"
+
+    - name: Crear configuracion de base de datos (VULNERABLE - hardcodeada)
+      ansible.builtin.copy:
+        dest: "{{ banco_del_sol.app_directory }}/config/database.php"
+        owner: www-data
+        group: www-data
+        mode: "0644"
+        content: |
+          <?php
+          /**
+           * Configuracion de Base de Datos - Banco del Sol Online
+           * ================================================
+           * NOTA: En produccion, estas credenciales deben estar en variables
+           * de entorno o en un vault seguro. Esto es para testing.
+           */
+
+          class Database {
+              private $host = '{{ banco_del_sol.db_host }}';
+              private $port = {{ banco_del_sol.db_port }};
+              private $db_name = '{{ banco_del_sol.db_name }}';
+              private $username = '{{ banco_del_sol.db_user }}';
+              private $password = '{{ banco_del_sol.db_password }}';
+              private $conn;
+
+              public function getConnection() {
+                  $this->conn = null;
+                  try {
+                      $dsn = "mysql:host=" . $this->host . ";port=" . $this->port . ";dbname=" . $this->db_name;
+                      $this->conn = new PDO($dsn, $this->username, $this->password);
+                      $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                  } catch(PDOException $e) {
+                      // En produccion, no deberiamos mostrar el error completo
+                      error_log("Connection error: " . $e->getMessage());
+                      echo "Error de conexion: " . $e->getMessage();
+                  }
+                  return $this->conn;
+              }
+
+              public function query($sql) {
+                  $conn = $this->getConnection();
+                  $stmt = $conn->prepare($sql);
+                  $stmt->execute();
+                  return $stmt;
+              }
+
+              public function queryDirect($sql) {
+                  // METODO VULNERABLE - Ejecuta queries directamente sin sanitizar
+                  // ESTE METODO ES INTENCIONALMENTE VULNERABLE
+                  $conn = $this->getConnection();
+                  $result = $conn->query($sql);
+                  return $result;
+              }
+          }
+          ?>
+
+    - name: Crear archivo de conexion de base de datos
+      ansible.builtin.copy:
+        dest: "{{ banco_del_sol.app_directory }}/config/db_connect.php"
+        owner: www-data
+        group: www-data
+        mode: "0644"
+        content: |
+          <?php
+          // Conexion directa a la base de datos
+          // USADO POR LA APLICACION PRINCIPAL
+          $host = '{{ banco_del_sol.db_host }}';
+          $dbname = '{{ banco_del_sol.db_name }}';
+          $user = '{{ banco_del_sol.db_user }}';
+          $pass = '{{ banco_del_sol.db_password }}';
+
+          try {
+              $pdo = new PDO("mysql:host=$host;dbname=$dbname", $user, $pass);
+              $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+          } catch(PDOException $e) {
+              die("Error de conexion: " . $e->getMessage());
+          }
+          ?>
+
+    - name: Crear index principal (login vulnerable)
+      ansible.builtin.copy:
+        dest: "{{ banco_del_sol.app_directory }}/public/index.php"
+        owner: www-data
+        group: www-data
+        mode: "0644"
+        content: |
+          <!DOCTYPE html>
+          <html lang="es">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Banco del Sol - Acceso Online</title>
+              <style>
+                  body { font-family: Arial, sans-serif; background: #1a1a2e; color: #eee; margin: 0; padding: 0; }
+                  .container { max-width: 400px; margin: 100px auto; padding: 30px; background: #16213e; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.3); }
+                  h1 { color: #e94560; text-align: center; margin-bottom: 30px; }
+                  input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #0f3460; border-radius: 5px; background: #0f3460; color: #eee; font-size: 16px; box-sizing: border-box; }
+                  button { width: 100%; padding: 12px; background: #e94560; border: none; border-radius: 5px; color: white; font-size: 18px; cursor: pointer; margin-top: 10px; }
+                  button:hover { background: #c81d4e; }
+                  .error { color: #ff6b6b; text-align: center; margin-top: 10px; }
+                  .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>Banco del Sol Online</h1>
+                  <form method="POST" action="login.php">
+                      <input type="text" name="username" placeholder="Usuario o Documento" required>
+                      <input type="password" name="password" placeholder="Contrasena" required>
+                      <button type="submit">Ingresar</button>
+                  </form>
+                  <?php
+                  if (isset($_GET['error'])) {
+                      echo '<p class="error">Credenciales incorrectas. Intente nuevamente.</p>';
+                  }
+                  ?>
+                  <div class="footer">
+                      <p>Banco del Sol S.A. - Todos los derechos reservados</p>
+                      <p>Soporte: soporte@banco-dsol.local</p>
+                  </div>
+              </div>
+          </body>
+          </html>
+
+    - name: Crear script de login (VULNERABLE a SQLi)
+      ansible.builtin.copy:
+        dest: "{{ banco_del_sol.app_directory }}/public/login.php"
+        owner: www-data
+        group: www-data
+        mode: "0644"
+        content: |
+          <?php
+          /**
+           * Script de Login - Banco del Sol Online
+           * ======================================
+           * NOTA: Este script es INTENCIONALMENTE VULNERABLE a inyeccion SQL.
+           * NO USAR EN PRODUCCION.
+           */
+
+          if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+              header('Location: index.php');
+              exit();
+          }
+
+          $username = $_POST['username'];
+          $password = $_POST['password'];
+
+          // VULNERABILIDAD: La consulta SQL se construye directamente con las variables
+          // sin usar prepared statements. Esto permite inyeccion SQL.
+          $host = '10.10.2.30';
+          $dbname = 'banco_del_sol';
+          $user = 'bds_webapp';
+          $pass = 'W3bApp_D3l_Sol_2024!';
+
+          try {
+              $pdo = new PDO("mysql:host=$host;dbname=$dbname", $user, $pass);
+              $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+              // VULNERABLE: Query directa sin sanitizar
+              $sql = "SELECT * FROM customer_accounts WHERE username = '" . $username . "' AND password = '" . $password . "'";
+              $stmt = $pdo->query($sql);
+              $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+              // Log de intento de login
+              $log_entry = date('Y-m-d H:i:s') . " - Login attempt: user=" . $username . " from=" . $_SERVER['REMOTE_ADDR'] . " result=";
+              if ($result) {
+                  $log_entry .= "SUCCESS";
+                  error_log($log_entry, 3, "/var/www/html/banco_del_sol/logs/access.log");
+                  header('Location: dashboard.php?user=' . urlencode($username));
+                  exit();
+              } else {
+                  $log_entry .= "FAILED";
+                  error_log($log_entry, 3, "/var/www/html/banco_del_sol/logs/access.log");
+                  header('Location: index.php?error=1');
+                  exit();
+              }
+          } catch(PDOException $e) {
+              $error_log = date('Y-m-d H:i:s') . " - SQL Error: " . $e->getMessage() . " - Query: " . $sql;
+              error_log($error_log, 3, "/var/www/html/banco_del_sol/logs/sql_errors.log");
+              // VULNERABLE: Muestra el error al usuario (error-based SQLi)
+              echo "Error de base de datos: " . $e->getMessage();
+          }
+          ?>
+
+    - name: Crear script de busqueda (VULNERABLE a SQLi)
+      ansible.builtin.copy:
+        dest: "{{ banco_del_sol.app_directory }}/public/search.php"
+        owner: www-data
+        group: www-data
+        mode: "0644"
+        content: |
+          <?php
+          /**
+           * Script de Busqueda - Banco del Sol Online
+           * =========================================
+           * Busca cuentas de clientes por nombre o numero de cuenta.
+           * VULNERABLE a inyeccion SQL.
+           */
+
+          include_once '../config/db_connect.php';
+
+          $results = '';
+          $search_term = '';
+
+          if (isset($_GET['q'])) {
+              $search_term = $_GET['q'];
+
+              // VULNERABLE: Query directa sin sanitizar
+              $sql = "SELECT id, nombre, email, numero_cuenta, saldo
+                      FROM customer_accounts
+                      WHERE nombre LIKE '%" . $search_term . "%'
+                      OR numero_cuenta LIKE '%" . $search_term . "%'";
+
+              try {
+                  $stmt = $pdo->query($sql);
+                  $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                  if (count($rows) > 0) {
+                      $results = '<table border="1" cellpadding="10" cellspacing="0" style="border-collapse: collapse; width: 100%;">';
+                      $results .= '<tr style="background: #0f3460;"><th>ID</th><th>Nombre</th><th>Email</th><th>Numero Cuenta</th><th>Saldo</th></tr>';
+                      foreach ($rows as $row) {
+                          $results .= '<tr><td>' . htmlspecialchars($row['id']) . '</td>';
+                          $results .= '<td>' . htmlspecialchars($row['nombre']) . '</td>';
+                          $results .= '<td>' . htmlspecialchars($row['email']) . '</td>';
+                          $results .= '<td>' . htmlspecialchars($row['numero_cuenta']) . '</td>';
+                          $results .= '<td>$' . number_format($row['saldo'], 2) . '</td></tr>';
+                      }
+                      $results .= '</table>';
+                  } else {
+                      $results = '<p>No se encontraron resultados para: ' . htmlspecialchars($search_term) . '</p>';
+                  }
+              } catch(PDOException $e) {
+                  $error_log = date('Y-m-d H:i:s') . " - SQL Error in search: " . $e->getMessage() . " - Query: " . $sql;
+                  error_log($error_log, 3, "/var/www/html/banco_del_sol/logs/sql_errors.log");
+                  $results = '<p>Error en la busqueda. Por favor intente mas tarde.</p>';
+              }
+          }
+          ?>
+
+    - name: Crear dashboard basico
+      ansible.builtin.copy:
+        dest: "{{ banco_del_sol.app_directory }}/public/dashboard.php"
+        owner: www-data
+        group: www-data
+        mode: "0644"
+        content: |
+          <!DOCTYPE html>
+          <html lang="es">
+          <head>
+              <meta charset="UTF-8">
+              <title>Banco del Sol - Panel de Cliente</title>
+              <style>
+                  body { font-family: Arial, sans-serif; background: #1a1a2e; color: #eee; margin: 0; padding: 20px; }
+                  .header { background: #16213e; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+                  .content { max-width: 800px; margin: 0 auto; }
+                  h1 { color: #e94560; }
+                  .card { background: #0f3460; padding: 20px; border-radius: 8px; margin: 10px 0; }
+                  .nav { margin: 20px 0; }
+                  .nav a { color: #e94560; text-decoration: none; margin-right: 20px; padding: 10px 20px; background: #16213e; border-radius: 5px; }
+              </style>
+          </head>
+          <body>
+              <div class="content">
+                  <div class="header">
+                      <h1>Banco del Sol Online</h1>
+                      <p>Bienvenido, <?php echo htmlspecialchars($_GET['user'] ?? 'Cliente'); ?></p>
+                  </div>
+                  <div class="nav">
+                      <a href="search.php">Buscar Cuentas</a>
+                      <a href="transfer.php">Transferencias</a>
+                      <a href="profile.php">Mi Perfil</a>
+                  </div>
+                  <div class="card">
+                      <h2>Resumen de Cuentas</h2>
+                      <p>Saldo disponible: Consulte sus cuentas</p>
+                  </div>
+              </div>
+          </body>
+          </html>
+
+    - name: Crear pagina de busqueda HTML
+      ansible.builtin.copy:
+        dest: "{{ banco_del_sol.app_directory }}/public/search_form.html"
+        owner: www-data
+        group: www-data
+        mode: "0644"
+        content: |
+          <!DOCTYPE html>
+          <html lang="es">
+          <head>
+              <meta charset="UTF-8">
+              <title>Banco del Sol - Buscar Cuentas</title>
+              <style>
+                  body { font-family: Arial, sans-serif; background: #1a1a2e; color: #eee; margin: 0; padding: 20px; }
+                  .container { max-width: 600px; margin: 50px auto; }
+                  h1 { color: #e94560; text-align: center; }
+                  input[type="text"] { width: 70%; padding: 12px; border: 1px solid #0f3460; border-radius: 5px; background: #0f3460; color: #eee; font-size: 16px; }
+                  button { padding: 12px 30px; background: #e94560; border: none; border-radius: 5px; color: white; font-size: 16px; cursor: pointer; }
+                  .results { margin-top: 30px; }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <h1>Buscar Cuentas de Clientes</h1>
+                  <form method="GET" action="search.php" style="text-align: center;">
+                      <input type="text" name="q" placeholder="Nombre o Numero de Cuenta" required>
+                      <button type="submit">Buscar</button>
+                  </form>
+                  <div class="results">
+                      <?php include 'search.php'; ?>
+                  </div>
+              </div>
+          </body>
+          </html>
+
+    - name: Crear archivo .htaccess para logs
+      ansible.builtin.copy:
+        dest: "{{ banco_del_sol.app_directory }}/public/.htaccess"
+        owner: www-data
+        group: www-data
+        mode: "0644"
+        content: |
+          # Banco del Sol - Apache Configuration
+          RewriteEngine On
+
+          # Redirigir a HTTPS
+          RewriteCond %{HTTPS} off
+          RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+          # Bloquear acceso a directorio de configuracion
+          <Directory "{{ banco_del_sol.app_directory }}/config">
+              Require all denied
+          </Directory>
+
+          # Bloquear acceso a directorio de logs
+          <Directory "{{ banco_del_sol.app_directory }}/logs">
+              Require all denied
+          </Directory>
+
+    - name: Configurar Apache VirtualHost
+      ansible.builtin.copy:
+        dest: /etc/apache2/sites-available/banco_del_sol.conf
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          <VirtualHost *:80>
+              ServerName banco-dsol.local
+              ServerAlias www.banco-dsol.local webserver.banco-dsol.local
+              Redirect permanent / https://banco-dsol.local/
+          </VirtualHost>
+
+          <VirtualHost *:443>
+              ServerName banco-dsol.local
+              ServerAlias www.banco-dsol.local webserver.banco-dsol.local
+              DocumentRoot /var/www/html/banco_del_sol/public
+
+              SSLEngine on
+              SSLCertificateFile /etc/ssl/certs/banco_del_sol.crt
+              SSLCertificateKeyFile /etc/ssl/private/banco_del_sol.key
+
+              <Directory /var/www/html/banco_del_sol/public>
+                  Options -Indexes +FollowSymLinks
+                  AllowOverride All
+                  Require all granted
+              </Directory>
+
+              # Logging
+              ErrorLog ${APACHE_LOG_DIR}/banco_del_sol_error.log
+              CustomLog ${APACHE_LOG_DIR}/banco_del_sol_access.log combined
+
+              # LogLevel para capturar mas detalles
+              LogLevel info
+          </VirtualHost>
+
+    - name: Habilitar modulos de Apache
+      apache2.apache_module:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - rewrite
+        - ssl
+        - headers
+        - proxy
+
+    - name: Habilitar sitio
+      ansible.builtin.command: a2ensite banco_del_sol.conf
+      args:
+        creates: /etc/apache2/sites-enabled/banco_del_sol.conf
+
+    - name: Deshabilitar sitio default
+      ansible.builtin.command: a2dissite 000-default.conf
+      args:
+        removes: /etc/apache2/sites-enabled/000-default.conf
+      ignore_errors: yes
+
+    - name: Generar certificado SSL autofirmado
+      ansible.builtin.command: >
+        openssl req -x509 -nodes -days 365 -newkey rsa:2048
+        -keyout /etc/ssl/private/banco_del_sol.key
+        -out /etc/ssl/certs/banco_del_sol.crt
+        -subj "/C=UY/ST=Montevideo/L=Montevideo/O=Banco del Sol/OU=IT/CN=banco-dsol.local"
+      args:
+        creates: /etc/ssl/certs/banco_del_sol.crt
+
+    - name: Configurar permisos de directorios
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        owner: www-data
+        group: www-data
+        mode: "{{ item.mode }}"
+      loop:
+        - { path: "/var/www/html/banco_del_sol", mode: "0755" }
+        - { path: "/var/www/html/banco_del_sol/public", mode: "0755" }
+        - { path: "/var/www/html/banco_del_sol/uploads", mode: "0777" }
+        - { path: "/var/www/html/banco_del_sol/logs", mode: "0777" }
+        - { path: "/var/www/html/banco_del_sol/config", mode: "0750" }
+
+    - name: Configurar logrotate para logs de aplicacion
+      ansible.builtin.copy:
+        dest: /etc/logrotate.d/banco_del_sol
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          /var/www/html/banco_del_sol/logs/*.log {
+              daily
+              missingok
+              rotate 90
+              compress
+              delaycompress
+              notifempty
+              create 0644 www-data www-data
+              sharedscripts
+          }
+
+    - name: Iniciar Apache
+      ansible.builtin.systemd:
+        name: apache2
+        enabled: yes
+        state: started
+
+    - name: Configurar firewall webserver
+      community.general.ufw:
+        rule: "{{ item.rule }}"
+        port: "{{ item.port }}"
+        proto: "{{ item.proto }}"
+        from_ip: "{{ item.from_ip | default('any') }}"
+        direction: "{{ item.direction | default('in') }}"
+        state: enabled
+      loop:
+        - { rule: "allow", port: "80", proto: "tcp", from_ip: "any", direction: "in" }
+        - { rule: "allow", port: "443", proto: "tcp", from_ip: "any", direction: "in" }
+        - { rule: "allow", port: "22", proto: "tcp", from_ip: "10.10.0.0/24", direction: "in" }
+        - { rule: "allow", port: "3306", proto: "tcp", from_ip: "10.10.2.30", direction: "out" }
+
+# ==============================================================================
+# Configuracion del Servidor de Base de Datos
+# ==============================================================================
+- name: Configurar Database Server - Banco del Sol
+  hosts: database
+  become: yes
+  gather_facts: yes
+  vars:
+    banco_del_sol:
+      db_name: "banco_del_sol"
+      db_user: "bds_webapp"
+      db_password: "W3bApp_D3l_Sol_2024!"
+      db_root_password: "Tectonic_DB_2024!"
+      monitor_user: "bds_monitor"
+      monitor_password: "M0n1t0r_D3l_Sol_2024!"
+
+  tasks:
+    - name: Instalar MySQL Server
+      ansible.builtin.apt:
+        name:
+          - mysql-server-8.0
+          - mysql-client-8.0
+          - python3-pymysql
+        state: present
+        update_cache: yes
+
+    - name: Configurar MySQL - Bind Address
+      ansible.builtin.lineinfile:
+        path: /etc/mysql/mysql.conf.d/mysqld.cnf
+        line: "bind-address = 0.0.0.0"
+        state: present
+        regexp: "^bind-address"
+      notify: restart mysql
+
+    - name: Configurar MySQL - General Query Log
+      ansible.builtin.blockinfile:
+        path: /etc/mysql/mysql.conf.d/mysqld.cnf
+        marker: "# {mark} GENERAL LOG CONFIGURATION"
+        insertafter: "\\[mysqld\\]"
+        block: |
+          general_log = 1
+          general_log_file = /var/log/mysql/general.log
+      notify: restart mysql
+
+    - name: Configurar MySQL - Slow Query Log
+      ansible.builtin.blockinfile:
+        path: /etc/mysql/mysql.conf.d/mysqld.cnf
+        marker: "# {mark} SLOW QUERY LOG CONFIGURATION"
+        insertafter: "\\[mysqld\\]"
+        block: |
+          slow_query_log = 1
+          slow_query_log_file = /var/log/mysql/slow-query.log
+          long_query_time = 2
+          log_queries_not_using_indexes = 1
+      notify: restart mysql
+
+    - name: Configurar MySQL - Binlog
+      ansible.builtin.blockinfile:
+        path: /etc/mysql/mysql.conf.d/mysqld.cnf
+        marker: "# {mark} BINLOG CONFIGURATION"
+        insertafter: "\\[mysqld\\]"
+        block: |
+          log_bin = /var/log/mysql/mysql-bin.log
+          binlog_format = ROW
+          server_id = 1
+          expire_logs_days = 30
+      notify: restart mysql
+
+    - name: Configurar MySQL - Audit Log
+      ansible.builtin.blockinfile:
+        path: /etc/mysql/mysql.conf.d/mysqld.cnf
+        marker: "# {mark} AUDIT CONFIGURATION"
+        insertafter: "\\[mysqld\\]"
+        block: |
+          log_error_verbosity = 3
+      notify: restart mysql
+
+    - name: Iniciar MySQL
+      ansible.builtin.systemd:
+        name: mysql
+        enabled: yes
+        state: started
+
+    - name: Crear directorio de logs MySQL
+      ansible.builtin.file:
+        path: /var/log/mysql
+        state: directory
+        owner: mysql
+        group: mysql
+        mode: "0755"
+
+    - name: Crear base de datos banco_del_sol
+      community.mysql.mysql_db:
+        name: "{{ banco_del_sol.db_name }}"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+      become_user: root
+
+    - name: Crear usuario de aplicacion
+      community.mysql.mysql_user:
+        name: "{{ banco_del_sol.db_user }}"
+        password: "{{ banco_del_sol.db_password }}"
+        priv: "{{ banco_del_sol.db_name }}.*:ALL"
+        host: "10.10.1.10"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+      become_user: root
+
+    - name: Crear usuario de monitoreo
+      community.mysql.mysql_user:
+        name: "{{ banco_del_sol.monitor_user }}"
+        password: "{{ banco_del_sol.monitor_password }}"
+        priv: "*.*:PROCESS,REPLICATION CLIENT,SELECT"
+        host: "10.10.0.0/24"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+      become_user: root
+
+    - name: Crear tabla customer_accounts
+      community.mysql.mysql_query:
+        login_db: "{{ banco_del_sol.db_name }}"
+        login_user: root
+        login_password: "{{ banco_del_sol.db_root_password }}"
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        query: |
+          CREATE TABLE IF NOT EXISTS customer_accounts (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              username VARCHAR(50) NOT NULL,
+              nombre VARCHAR(100) NOT NULL,
+              email VARCHAR(100) NOT NULL,
+              numero_cuenta VARCHAR(20) NOT NULL UNIQUE,
+              saldo DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+              password VARCHAR(255) NOT NULL,
+              tipo_cuenta ENUM('ahorro', 'corriente', 'inversion') DEFAULT 'ahorro',
+              estado ENUM('activa', 'suspendida', 'cerrada') DEFAULT 'activa',
+              fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              INDEX idx_username (username),
+              INDEX idx_numero_cuenta (numero_cuenta),
+              INDEX idx_email (email)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    - name: Insertar datos dummy - Customer Accounts
+      community.mysql.mysql_query:
+        login_db: "{{ banco_del_sol.db_name }}"
+        login_user: root
+        login_password: "{{ banco_del_sol.db_root_password }}"
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        query: |
+          INSERT IGNORE INTO customer_accounts (username, nombre, email, numero_cuenta, saldo, password, tipo_cuenta) VALUES
+          ('juan.perez', 'Juan Carlos Perez', 'juan.perez@email.com', 'BS-001234', 15250.75, 'pass1234', 'ahorro'),
+          ('maria.fernandez', 'Maria Elena Fernandez', 'maria.f@email.com', 'BS-001235', 28930.50, 'maria2024', 'corriente'),
+          ('carlos.gomez', 'Carlos Alberto Gomez', 'carlos.g@email.com', 'BS-001236', 52100.00, 'cgomez24', 'inversion'),
+          ('laura.martinez', 'Laura Soledad Martinez', 'laura.m@email.com', 'BS-001237', 8750.25, 'lauraM!2024', 'ahorro'),
+          ('pedro.silva', 'Pedro Andres Silva', 'pedro.s@email.com', 'BS-001238', 41200.00, 'pedroS24', 'corriente'),
+          ('ana.rodriguez', 'Ana Gabriela Rodriguez', 'ana.r@email.com', 'BS-001239', 19875.50, 'AnaR_2024', 'ahorro'),
+          ('diego.morales', 'Diego Fernando Morales', 'diego.m@email.com', 'BS-001240', 33450.00, 'DMorales24', 'inversion'),
+          ('sofia.hernandez', 'Sofia Valentina Hernandez', 'sofia.h@email.com', 'BS-001241', 7620.25, 'SofiaH!24', 'ahorro'),
+          ('martin.diaz', 'Martin Jose Diaz', 'martin.d@email.com', 'BS-001242', 25800.00, 'MDiaz_2024', 'corriente'),
+          ('lucia.rios', 'Lucia Andrea Rios', 'lucia.r@email.com', 'BS-001243', 42150.75, 'LuciaR24', 'inversion'),
+          ('admin', 'Administrador Sistema', 'admin@banco-dsol.local', 'BS-000001', 999999.99, 'admin123', 'ahorro'),
+          ('test', 'Usuario de Prueba', 'test@banco-dsol.local', 'BS-000002', 1000.00, 'test1234', 'ahorro');
+
+    - name: Crear tabla de transacciones (vacia)
+      community.mysql.mysql_query:
+        login_db: "{{ banco_del_sol.db_name }}"
+        login_user: root
+        login_password: "{{ banco_del_sol.db_root_password }}"
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        query: |
+          CREATE TABLE IF NOT EXISTS transaction_log (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              cuenta_origen VARCHAR(20) NOT NULL,
+              cuenta_destino VARCHAR(20),
+              monto DECIMAL(15,2) NOT NULL,
+              tipo_operacion ENUM('transferencia', 'deposito', 'retiro', 'pago') NOT NULL,
+              descripcion TEXT,
+              fecha_operacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              INDEX idx_cuenta_origen (cuenta_origen),
+              INDEX idx_fecha (fecha_operacion)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    - name: Crear tabla de usuarios del sistema
+      community.mysql.mysql_query:
+        login_db: "{{ banco_del_sol.db_name }}"
+        login_user: root
+        login_password: "{{ banco_del_sol.db_root_password }}"
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        query: |
+          CREATE TABLE IF NOT EXISTS system_users (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              username VARCHAR(50) NOT NULL UNIQUE,
+              password VARCHAR(255) NOT NULL,
+              email VARCHAR(100),
+              rol ENUM('admin', 'operador', 'consulta') DEFAULT 'consulta',
+              ultimo_acceso TIMESTAMP NULL,
+              fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              activo BOOLEAN DEFAULT TRUE
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    - name: Insertar usuarios del sistema
+      community.mysql.mysql_query:
+        login_db: "{{ banco_del_sol.db_name }}"
+        login_user: root
+        login_password: "{{ banco_del_sol.db_root_password }}"
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        query: |
+          INSERT IGNORE INTO system_users (username, password, email, rol) VALUES
+          ('admin', 'Admin_BDS_2024!', 'admin@banco-dsol.local', 'admin'),
+          ('operador1', 'Oper_BDS_2024!', 'operador1@banco-dsol.local', 'operador'),
+          ('consulta', 'Cons_BDS_2024!', 'consulta@banco-dsol.local', 'consulta');
+
+    - name: Crear tabla de audit log
+      community.mysql.mysql_query:
+        login_db: "{{ banco_del_sol.db_name }}"
+        login_user: root
+        login_password: "{{ banco_del_sol.db_root_password }}"
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        query: |
+          CREATE TABLE IF NOT EXISTS audit_log (
+              id INT AUTO_INCREMENT PRIMARY KEY,
+              usuario VARCHAR(50),
+              accion VARCHAR(100) NOT NULL,
+              tabla_afectada VARCHAR(50),
+              detalle TEXT,
+              ip_origen VARCHAR(45),
+              fecha_accion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+    - name: Configurar logrotate para MySQL
+      ansible.builtin.copy:
+        dest: /etc/logrotate.d/mysql-server
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          /var/log/mysql/*.log {
+              daily
+              missingok
+              rotate 90
+              compress
+              delaycompress
+              notifempty
+              create 0640 mysql adm
+              sharedscripts
+              postrotate
+                  /usr/bin/mysqladmin -u root flush-logs 2>/dev/null || true
+              endscript
+          }
+
+    - name: Crear script de monitoreo de consultas sospechosas
+      ansible.builtin.copy:
+        dest: /usr/local/bin/check_suspicious_queries.sh
+        owner: root
+        group: root
+        mode: "0755"
+        content: |
+          #!/bin/bash
+          # Script de monitoreo para consultas sospechosas en MySQL
+          LOG_FILE="/var/log/mysql/general.log"
+          ALERT_FILE="/var/log/mysql/suspicious_queries.log"
+          PATTERNS="UNION.*SELECT|OR.*1.*=.*1|DROP.*TABLE|DELETE.*FROM.*WHERE.*1.*=.*1|INSERT.*INTO.*users|UPDATE.*users.*SET"
+
+          if [ -f "$LOG_FILE" ]; then
+              grep -iE "$PATTERNS" "$LOG_FILE" >> "$ALERT_FILE"
+              if [ $? -eq 0 ]; then
+                  logger -t mysql_monitor "WARNING: Suspicious queries detected in MySQL"
+              fi
+          fi
+
+    - name: Configurar cron de monitoreo MySQL
+      ansible.builtin.cron:
+        name: "Monitor consultas sospechosas MySQL"
+        minute: "*/5"
+        job: "/usr/local/bin/check_suspicious_queries.sh"
+        user: root
+
+    - name: Configurar firewall database
+      community.general.ufw:
+        rule: "{{ item.rule }}"
+        port: "{{ item.port }}"
+        proto: "{{ item.proto }}"
+        from_ip: "{{ item.from_ip | default('any') }}"
+        direction: "{{ item.direction | default('in') }}"
+        state: enabled
+      loop:
+        - { rule: "allow", port: "3306", proto: "tcp", from_ip: "10.10.1.10", direction: "in" }
+        - { rule: "allow", port: "3306", proto: "tcp", from_ip: "10.10.0.0/24", direction: "in" }
+        - { rule: "allow", port: "22", proto: "tcp", from_ip: "10.10.0.0/24", direction: "in" }
+        - { rule: "deny", port: "3306", proto: "tcp", from_ip: "any", direction: "in" }
+
+  handlers:
+    - name: restart mysql
+      ansible.builtin.systemd:
+        name: mysql
+        state: restarted
+
+# ==============================================================================
+# Configuracion del Servidor de Archivos
+# ==============================================================================
+- name: Configurar File Server - Banco del Sol
+  hosts: fileserver
+  become: yes
+  gather_facts: yes
+  vars:
+    banco_del_sol:
+      domain: "banco-dsol.local"
+      shares:
+        - name: "Documentos"
+          path: "C:\\Compartidos\\Documentos"
+          description: "Documentos corporativos - Banco del Sol"
+          users: "BancoSol\\Usuarios Banco del Sol"
+          permission: "Read"
+        - name: "Clientes"
+          path: "C:\\Compartidos\\Clientes"
+          description: "Archivos de clientes - Acceso restringido"
+          users: "BancoSol\\Gerentes"
+          permission: "FullControl"
+        - name: "IT"
+          path: "C:\\Compartidos\\IT"
+          description: "Documentacion tecnica - Equipo TI"
+          users: "BancoSol\\Equipo TI"
+          permission: "FullControl"
+
+  tasks:
+    - name: Crear directorios de comparticiones
+      ansible.windows.win_file:
+        path: "{{ item.path }}"
+        state: directory
+      loop: "{{ banco_del_sol.shares }}"
+
+    - name: Crear directorio de datos sensibles
+      ansible.windows.win_file:
+        path: "C:\\Compartidos\\IT\\config_servidores.txt"
+        state: touch
+
+    - name: Poblar archivo de configuracion (CREDENCIALES SENSIBLES)
+      ansible.windows.win_copy:
+        dest: "C:\\Compartidos\\IT\\config_servidores.txt"
+        content: |
+          # Configuracion de servidores - Acceso restringido Equipo TI
+          # ================================================
+          # Servidor Web
+          webserver_admin: admin
+          webserver_pass: Admin_Web_2024!
+
+          # Base de datos
+          db_root: root
+          db_root_pass: Tectonic_DB_2024!
+          db_app_user: bds_webapp
+          db_app_pass: W3bApp_D3l_Sol_2024!
+
+          # Domain Controller
+          dc_admin: administrator
+          dc_admin_pass: D0m41n_2024!
+
+          # Cuenta de servicio
+          svc_domain: svc_domainadmin
+          svc_domain_pass: Svc_D0m41n_2024!
+
+          # Ultima actualizacion: 2024-06-15
+          # Responsable: j.rodriguez
+
+    - name: Crear documentacion tecnica
+      ansible.windows.win_copy:
+        dest: "C:\\Compartidos\\IT\\documentacion_tecnica.txt"
+        content: |
+          Documentacion Tecnica - Banco del Sol
+          ======================================
+
+          Arquitectura de Red:
+          - DMZ: 10.10.1.0/24
+          - Internal: 10.10.2.0/24
+          - Management: 10.10.0.0/24
+
+          Servidores:
+          - webserver (10.10.1.10) - Apache/PHP
+          - database (10.10.2.30) - MySQL 8.0
+          - fileserver (10.10.2.20) - Windows Server 2019
+          - mailserver (10.10.2.10) - Postfix/Dovecot
+          - domaincontroller (10.10.0.10) - Active Directory
+
+          Politicas de backup:
+          - Diario: Base de datos, archivos criticos
+          - Semanal: Configuraciones de servidores
+          - Mensual: Full backup
+
+    - name: Crear script de auditoria SMB
+      ansible.windows.win_copy:
+        dest: "C:\\Compartidos\\IT\\auditoria_smb.ps1"
+        content: |
+          # Script de auditoria de conexiones SMB
+          # Ejecutar periodicamente para detectar accesos no autorizados
+
+          $logs = Get-WinEvent -LogName "Security" -FilterXPath "*[System[EventID=4624]]" -MaxEvents 100
+          $smbConnections = $logs | Where-Object {
+              $_.Properties[8].Value -eq 3 -and
+              $_.Properties[5].Value -eq "S-1-0-0"
+          }
+
+          $report = @{
+              Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+              TotalConnections = $smbConnections.Count
+              SuspiciousConnections = ($smbConnections | Where-Object {
+                  $_.Properties[18].Value -notmatch "^(10\.10\.2\.|10\.10\.0\.)"
+              }).Count
+          }
+
+          Write-Output "Reporte de Auditoria SMB:"
+          Write-Output "Total de conexiones: $($report.TotalConnections)"
+          Write-Output "Conexiones sospechosas: $($report.SuspiciousConnections)"
+
+    - name: Crear script de monitoreo de eventos de seguridad
+      ansible.windows.win_copy:
+        dest: "C:\\Scripts\\monitor_security_events.ps1"
+        content: |
+          # Script de monitoreo de eventos de seguridad
+          $eventLog = "Security"
+          $criticalEvents = @(4624, 4625, 4648, 4672, 4720, 4726, 4728, 4732)
+
+          while ($true) {
+              $events = Get-WinEvent -LogName $eventLog -FilterXPath "*[System[(" + ($criticalEvents | ForEach-Object { "EventID=$_" }) -join " or " + ")]]" -MaxEvents 50 -ErrorAction SilentlyContinue
+
+              foreach ($event in $events) {
+                  $logEntry = @{
+                      Timestamp = $event.TimeCreated
+                      EventID = $event.Id
+                      Message = $event.Message.Substring(0, [Math]::Min(200, $event.Message.Length))
+                      Source = $event.MachineName
+                  }
+
+                  # Enviar a SIEM via syslog
+                  $syslogMessage = "<14>1 $(Get-Date -Format 'yyyy-MM-ddTHH:mm:ss') fileserver security $($logEntry.EventID) - $($logEntry.Message)"
+                  try {
+                      $udpClient = New-Object System.Net.Sockets.UdpClient
+                      $udpClient.Connect("10.10.2.10", 514)
+                      $bytes = [System.Text.Encoding]::ASCII.GetBytes($syslogMessage)
+                      $udpClient.Send($bytes, $bytes.Length)
+                      $udpClient.Close()
+                  } catch {
+                      # Silently continue
+                  }
+              }
+
+              Start-Sleep -Seconds 30
+          }
+
+    - name: Crear directorio de scripts
+      ansible.windows.win_file:
+        path: "C:\\Scripts"
+        state: directory
+
+    - name: Copiar script de monitoreo
+      ansible.windows.win_copy:
+        dest: "C:\\Scripts\\start_monitoring.ps1"
+        content: |
+          # Iniciar monitoreo de seguridad
+          Start-Process powershell -ArgumentList "-File C:\Scripts\monitor_security_events.ps1" -WindowStyle Hidden
+
+    - name: Configurar tarea programada de auditoria
+      ansible.windows.win_scheduled_task:
+        name: "Auditoria Seguridad Banco del Sol"
+        state: present
+        actions:
+          - path: "powershell.exe"
+            arguments: "-File C:\\Scripts\\monitor_security_events.ps1"
+        triggers:
+          - boot:
+              enabled: true
+        settings:
+          enabled: true
+          execution_time_limit: "PT0S"
+
+    - name: Crear carpetas de usuario
+      ansible.windows.win_file:
+        path: "C:\\Users\\{{ item }}"
+        state: directory
+      loop:
+        - "j.rodriguez"
+        - "m.garcia"
+        - "c.lopez"
+        - "a.martinez"
+
+    - name: Crear archivos de ejemplo en Documentos
+      ansible.windows.win_copy:
+        dest: "C:\\Compartidos\\Documentos\\politica_seguridad.txt"
+        content: |
+          Politica de Seguridad - Banco del Sol
+          ======================================
+
+          1. Contrasenas
+          - Minimo 12 caracteres
+          - Debe incluir mayusculas, minusculas, numeros y simbolos
+          - Cambiar cada 90 dias
+          - No reutilizar las ultimas 5 contrasenas
+
+          2. Acceso a sistemas
+          - Usar unico usuario personal
+          - No compartir credenciales
+          - Bloquear sesiones al ausentarse
+          - Reportar accesos no autorizados
+
+          3. Red
+          - No conectar dispositivos personales
+          - Usar VPN para acceso remoto
+          - Reportar sitios web sospechosos
+
+          4. Datos
+          - Clasificar informacion segun sensibilidad
+          - No enviar datos sensibles por correo sin cifrar
+          - Usar cifrado para datos en reposo y transito
+
+    - name: Configurar permisos NTFS de comparticiones
+      ansible.windows.win_shell: |
+        $shares = @(
+          @{Name="Documentos"; Path="C:\Compartidos\Documentos"},
+          @{Name="Clientes"; Path="C:\Compartidos\Clientes"},
+          @{Name="IT"; Path="C:\Compartidos\IT"}
+        )
+
+        foreach ($share in $shares) {
+            $acl = Get-Acl -Path $share.Path
+            $acl.SetAccessRuleProtection($true, $false)
+
+            # Administrators - Full Control
+            $adminRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+                "BUILTIN\Administrators", "FullControl", "ContainerInherit,ObjectInherit", "None", "Allow"
+            )
+            $acl.AddAccessRule($adminRule)
+
+            Write-Output "Permisos configurados para $($share.Name)"
+        }
+      args:
+        executable: pwsh
+
+    - name: Habilitar comparticiones SMB
+      ansible.windows.win_feature:
+        name: FS-SMB
+        state: present
+
+    - name: Configurar regla de firewall para SMB
+      ansible.windows.win_firewall_rule:
+        name: "Allow SMB"
+        localport: 445
+        protocol: tcp
+        action: allow
+        state: present
+        enabled: yes
+        direction: in
+
+    - name: Configurar regla de firewall para RDP
+      ansible.windows.win_firewall_rule:
+        name: "Allow RDP"
+        localport: 3389
+        protocol: tcp
+        action: allow
+        state: present
+        enabled: yes
+        direction: in
+
+    - name: Instalar Sysmon
+      block:
+        - name: Descargar Sysmon
+          ansible.windows.win_get_url:
+            url: "https://download.sysinternals.com/files/Sysmon.zip"
+            dest: "C:\\Sysmon\\Sysmon.zip"
+
+        - name: Descomprimir Sysmon
+          ansible.windows.win_unzip:
+            src: "C:\\Sysmon\\Sysmon.zip"
+            dest: "C:\\Sysmon"
+
+        - name: Crear configuracion Sysmon
+          ansible.windows.win_copy:
+            dest: "C:\\Sysmon\\sysmonconfig.xml"
+            content: |
+              <Sysmon schemaversion="4.90">
+                <HashAlgorithms>md5,sha256</HashAlgorithms>
+                <CheckRevocation/>
+                <EventFiltering>
+                  <ProcessCreate onmatch="include">
+                    <Image condition="is">C:\Windows\System32\cmd.exe</Image>
+                    <Image condition="is">C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe</Image>
+                    <Image condition="contains">python</Image>
+                    <Image condition="contains">curl</Image>
+                  </ProcessCreate>
+                  <FileCreate onmatch="include">
+                    <TargetFilename condition="contains">.php</TargetFilename>
+                    <TargetFilename condition="contains">.aspx</TargetFilename>
+                    <TargetFilename condition="contains">.jsp</TargetFilename>
+                  </FileCreate>
+                  <NetworkConnect onmatch="include">
+                    <DestinationPort condition="is">445</DestinationPort>
+                    <DestinationPort condition="is">3389</DestinationPort>
+                    <DestinationPort condition="is">5985</DestinationPort>
+                  </NetworkConnect>
+                </EventFiltering>
+              </Sysmon>
+
+        - name: Instalar Sysmon
+          ansible.windows.win_command: "C:\\Sysmon\\Sysmon64.exe -i C:\\Sysmon\\sysmonconfig.xml"
+          register: sysmon_install
+          ignore_errors: yes
+
+  ignore_errors: yes
+
+# ==============================================================================
+# Configuracion del Domain Controller
+# ==============================================================================
+- name: Configurar Domain Controller - Banco del Sol
+  hosts: domaincontroller
+  become: yes
+  gather_facts: yes
+  vars:
+    banco_del_sol:
+      domain: "banco-dsol.local"
+      netbios_name: "BANCO-DSOL"
+      admin_password: "D0m41n_2024!"
+      users:
+        - username: "j.rodriguez"
+          password: "JR0d_2024!"
+          first_name: "Jorge"
+          last_name: "Rodriguez"
+          description: "Jefe de TI"
+          email: "j.rodriguez@banco-dsol.local"
+          groups: ["Domain Admins"]
+        - username: "m.garcia"
+          password: "MG4rc_2024!"
+          first_name: "Maria"
+          last_name: "Garcia"
+          description: "Administradora de sistemas"
+          email: "m.garcia@banco-dsol.local"
+          groups: ["Domain Admins"]
+        - username: "c.lopez"
+          password: "CL0p3z_2024!"
+          first_name: "Carlos"
+          last_name: "Lopez"
+          description: "Gerente de operaciones"
+          email: "c.lopez@banco-dsol.local"
+          groups: ["Domain Admins"]
+        - username: "a.martinez"
+          password: "4M4rt_2024!"
+          first_name: "Ana"
+          last_name: "Martinez"
+          description: "Analista de sistemas"
+          email: "a.martinez@banco-dsol.local"
+          groups: []
+        - username: "svc_webapp"
+          password: "SvcW3b_2024!"
+          first_name: "Service"
+          last_name: "WebApp"
+          description: "Cuenta de servicio aplicacion web"
+          email: "svc_webapp@banco-dsol.local"
+          groups: []
+          service_account: true
+        - username: "svc_fileserver"
+          password: "SvC_F1l3S3rv_2024!"
+          first_name: "Service"
+          last_name: "FileServer"
+          description: "Cuenta de servicio fileserver"
+          email: "svc_fileserver@banco-dsol.local"
+          groups: []
+          service_account: true
+
+  tasks:
+    - name: Verificar que es Domain Controller
+      ansible.windows.win_shell: |
+        (Get-WmiObject Win32_ComputerSystem).PartOfDomain
+      register: is_dc
+      ignore_errors: yes
+
+    - name: Configurar DNS forwarder
+      ansible.windows.win_shell: |
+        Set-DnsServerForwarder -IPAddress "8.8.8.8" -PassThru
+      ignore_errors: yes
+
+    - name: Crear Organizational Units
+      community.windows.win_domain_ou:
+        name: "{{ item.name }}"
+        description: "{{ item.description }}"
+        state: present
+        domain_username: "Administrator"
+        domain_password: "{{ admin_password }}"
+        domain_server: "localhost"
+      loop:
+        - { name: "Usuarios", description: "Usuarios del dominio" }
+        - { name: "Servidores", description: "Computadoras servidor" }
+        - { name: "Estaciones", description: "Estaciones de trabajo" }
+        - { name: "Grupos", description: "Grupos de seguridad" }
+      ignore_errors: yes
+
+    - name: Crear usuarios de dominio
+      community.windows.win_domain_user:
+        name: "{{ item.username }}"
+        password: "{{ item.password }}"
+        firstname: "{{ item.first_name }}"
+        lastname: "{{ item.last_name }}"
+        description: "{{ item.description }}"
+        email: "{{ item.email }}"
+        state: present
+        groups: "{{ item.groups | default([]) }}"
+        domain_username: "Administrator"
+        domain_password: "{{ admin_password }}"
+        domain_server: "localhost"
+      loop: "{{ banco_del_sol.users }}"
+      ignore_errors: yes
+
+    - name: Crear grupos de seguridad
+      community.windows.win_domain_group:
+        name: "{{ item.name }}"
+        description: "{{ item.description }}"
+        scope: "{{ item.scope | default('global') }}"
+        state: present
+        domain_username: "Administrator"
+        domain_password: "{{ admin_password }}"
+        domain_server: "localhost"
+      loop:
+        - { name: "Equipo TI", description: "Personal de Tecnologia de la Informacion", scope: "global" }
+        - { name: "Gerentes", description: "Gerentes de Banco del Sol", scope: "global" }
+        - { name: "Contabilidad", description: "Departamento de Contabilidad", scope: "global" }
+        - { name: "Auditoria", description: "Departamento de Auditoria Interna", scope: "domain" }
+      ignore_errors: yes
+
+    - name: Agregar usuarios a grupos
+      community.windows.win_domain_group_membership:
+        name: "{{ item.group }}"
+        members: "{{ item.members }}"
+        state: present
+        domain_username: "Administrator"
+        domain_password: "{{ admin_password }}"
+        domain_server: "localhost"
+      loop:
+        - { group: "Equipo TI", members: ["j.rodriguez", "m.garcia"] }
+        - { group: "Gerentes", members: ["c.lopez"] }
+        - { group: "Domain Admins", members: ["j.rodriguez", "m.garcia"] }
+      ignore_errors: yes
+
+    - name: Configurar auditoria de politicas de grupo
+      ansible.windows.win_shell: |
+        # Habilitar auditoria de logon
+        auditpol /set /subcategory:"Logon" /success:enable /failure:enable
+        auditpol /set /subcategory:"Logoff" /success:enable /failure:enable
+        auditpol /set /subcategory:"Special Logon" /success:enable /failure:enable
+        auditpol /set /subcategory:"Account Lockout" /success:enable /failure:enable
+        auditpol /set /subcategory:"Kerberos Service Ticket Operations" /success:enable /failure:enable
+        auditpol /set /subcategory:"Credential Validation" /success:enable /failure:enable
+        auditpol /set /subcategory:"Security Group Management" /success:enable /failure:enable
+        auditpol /set /subcategory:"User Account Management" /success:enable /failure:enable
+        auditpol /set /subcategory:"Directory Service Access" /success:enable /failure:enable
+        auditpol /set /subcategory:"Directory Service Changes" /success:enable /failure:enable
+      ignore_errors: yes
+
+    - name: Configurar auditoria de eventos de seguridad
+      ansible.windows.win_shell: |
+        # Aumentar tamano del log de seguridad
+        wevtutil sl Security /ms:1073741824
+        # Aumentar tamano del log de directorio de servicios
+        wevtutil sl "Directory Service" /ms:1073741824
+        # Configurar retencion de logs
+        wevtutil sl Security /rt:true /ab:true
+      ignore_errors: yes
+
+    - name: Crear tarea programada de auditoria
+      ansible.windows.win_scheduled_task:
+        name: "Auditoria Seguridad AD"
+        state: present
+        actions:
+          - path: "powershell.exe"
+            arguments: "-Command 'Get-WinEvent -LogName Security -MaxEvents 100 | Export-Csv C:\\Logs\\security_audit.csv'"
+        triggers:
+          - calendar:
+              enabled: true
+              schedule: daily
+              start_boundary: "2024-01-01T02:00:00"
+        settings:
+          enabled: true
+      ignore_errors: yes
+
+    - name: Crear directorio de logs
+      ansible.windows.win_file:
+        path: "C:\\Logs"
+        state: directory
+
+    - name: Configurar Sysmon en DC
+      ansible.windows.win_shell: |
+        if (Test-Path "C:\\Sysmon\\Sysmon64.exe") {
+            & "C:\\Sysmon\\Sysmon64.exe" -i C:\\Sysmon\\sysmonconfig.xml
+        }
+      ignore_errors: yes
+
+    - name: Configurar reglas de firewall
+      ansible.windows.win_firewall_rule:
+        name: "{{ item.name }}"
+        localport: "{{ item.port }}"
+        protocol: tcp
+        action: allow
+        state: present
+        enabled: yes
+        direction: in
+      loop:
+        - { name: "Allow LDAP", port: 389 }
+        - { name: "Allow LDAPS", port: 636 }
+        - { name: "Allow Kerberos", port: 88 }
+        - { name: "Allow DNS", port: 53 }
+        - { name: "Allow SMB", port: 445 }
+        - { name: "Allow WinRM", port: 5985 }
+        - { name: "Allow RDP", port: 3389 }
+
+    - name: Configurar GPO basica
+      ansible.windows.win_shell: |
+        # Crear GPO de auditoria
+        $gpoName = "Banco del Sol - Auditoria de Seguridad"
+        $gpo = New-GPO -Name $gpoName -Comment "Politica de auditoria para Banco del Sol"
+        New-GPLink -Guid $gpo.Id -Target "DC=banco-dsol,DC=local"
+
+        # Configurar politica de contrasenas
+        $gpoPassword = New-GPO -Name "Banco del Sol - Politica de Contrasenas" -Comment "Politica de contrasenas"
+        Set-GPRegistryValue -Name "Banco del Sol - Politica de Contrasenas" -Key "HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters" -ValueName "MinimumPasswordLength" -Value 12 -Type DWord
+        Set-GPRegistryValue -Name "Banco del Sol - Politica de Contrasenas" -Key "HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters" -ValueName "MaximumPasswordAge" -Value 90 -Type DWord
+        Set-GPRegistryValue -Name "Banco del Sol - Politica de Contrasenas" -Key "HKLM\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters" -ValueName "PasswordHistorySize" -Value 5 -Type DWord
+      ignore_errors: yes
+
+# ==============================================================================
+# Configuracion del Mail Server
+# ==============================================================================
+- name: Configurar Mail Server - Banco del Sol
+  hosts: mailserver
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Instalar Postfix y Dovecot
+      ansible.builtin.apt:
+        name:
+          - postfix
+          - dovecot-core
+          - dovecot-imapd
+          - dovecot-pop3d
+          - mailutils
+          - sasl2-bin
+        state: present
+        update_cache: yes
+
+    - name: Configurar Postfix
+      ansible.builtin.copy:
+        dest: /etc/postfix/main.cf
+        content: |
+          # Configuracion Postfix - Banco del Sol
+          smtpd_banner = $myhostname ESMTP
+          biff = no
+          append_dot_mydomain = no
+          readme_directory = no
+          compat_level = 2
+
+          # Network
+          inet_interfaces = all
+          inet_protocols = all
+
+          # Hostname
+          myhostname = mail.banco-dsol.local
+          mydomain = banco-dsol.local
+          myorigin = $mydomain
+          mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain
+          relay_domains =
+
+          # Mailbox
+          home_mailbox = Maildir/
+          mailbox_command =
+
+          # Restrictions
+          smtpd_recipient_restrictions =
+              permit_mynetworks,
+              reject_unauth_destination
+
+          mynetworks = 10.10.0.0/24, 127.0.0.0/8
+
+          # Logging
+          maillog_file = /var/log/mail.log
+      notify: restart postfix
+
+    - name: Configurar Dovecot
+      ansible.builtin.copy:
+        dest: /etc/dovecot/dovecot.conf
+        content: |
+          # Configuracion Dovecot - Banco del Sol
+          protocols = imap pop3
+          listen = *, ::
+
+          # SSL
+          ssl = required
+          ssl_cert = </etc/ssl/certs/ssl-cert-snakeoil.pem
+          ssl_key = </etc/ssl/private/ssl-cert-snakeoil.key
+
+          # Auth
+          auth_mechanisms = plain login
+          disable_plaintext_auth = yes
+
+          # Mailbox
+          mail_location = maildir:~/Maildir
+          mail_home_dir = /var/mail/%u
+
+          # Logging
+          log_path = /var/log/dovecot.log
+      notify: restart dovecot
+
+    - name: Habilitar servicios
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        enabled: yes
+        state: started
+      loop:
+        - postfix
+        - dovecot
+
+    - name: Configurar firewall mailserver
+      community.general.ufw:
+        rule: "{{ item.rule }}"
+        port: "{{ item.port }}"
+        proto: "{{ item.proto }}"
+        from_ip: "{{ item.from_ip | default('any') }}"
+        direction: "{{ item.direction | default('in') }}"
+        state: enabled
+      loop:
+        - { rule: "allow", port: "25", proto: "tcp", from_ip: "any", direction: "in" }
+        - { rule: "allow", port: "587", proto: "tcp", from_ip: "any", direction: "in" }
+        - { rule: "allow", port: "993", proto: "tcp", from_ip: "any", direction: "in" }
+        - { rule: "allow", port: "22", proto: "tcp", from_ip: "10.10.0.0/24", direction: "in" }
+
+  handlers:
+    - name: restart postfix
+      ansible.builtin.systemd:
+        name: postfix
+        state: restarted
+
+    - name: restart dovecot
+      ansible.builtin.systemd:
+        name: dovecot
+        state: restarted
+
+# ==============================================================================
+# Configuracion del Workstation
+# ==============================================================================
+- name: Configurar Workstation - Banco del Sol
+  hosts: workstation
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Crear directorio de usuario
+      ansible.windows.win_file:
+        path: "C:\\Users\\Public\\Documents"
+        state: directory
+
+    - name: Crear archivo de ejemplo
+      ansible.windows.win_copy:
+        dest: "C:\\Users\\Public\\Documents\\notas_contabilidad.txt"
+        content: |
+          Notas de Contabilidad - Banco del Sol
+          ====================================
+
+          Periodo: Junio 2024
+          Responsable: c.lopez
+
+          Tareas pendientes:
+          - Revisar estados contables Q2
+          - Preparar reporte para auditoria
+          - Actualizar plan de cuentas
+
+          Cuentas por cobrar: $45,230,000
+          Cuentas por pagar: $12,890,000
+          Capital social: $150,000,000
+
+    - name: Configurar firewall workstation
+      ansible.windows.win_firewall_rule:
+        name: "Allow SMB"
+        localport: 445
+        protocol: tcp
+        action: allow
+        state: present
+        enabled: yes
+        direction: in
+
+    - name: Instalar Sysmon en workstation
+      ansible.windows.win_shell: |
+        if (Test-Path "C:\\Sysmon\\Sysmon64.exe") {
+            & "C:\\Sysmon\\Sysmon64.exe" -i C:\\Sysmon\\sysmonconfig.xml
+        }
+      ignore_errors: yes
+
+    - name: Configurar tarea de auditoria
+      ansible.windows.win_scheduled_task:
+        name: "Monitor Eventos Seguridad"
+        state: present
+        actions:
+          - path: "powershell.exe"
+            arguments: "-File C:\\Scripts\\monitor_security_events.ps1"
+        triggers:
+          - boot:
+              enabled: true
+        settings:
+          enabled: true
+      ignore_errors: yes
+
+# ==============================================================================
+# Verificacion Final
+# ==============================================================================
+- name: Verificar configuracion base
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  tasks:
+    - name: Verificar servicios running
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: started
+      loop:
+        - apache2
+        - chrony
+        - rsyslog
+      when: ansible_os_family == "Debian"
+      ignore_errors: yes
+
+    - name: Verificar conectividad de red
+      ansible.builtin.ping:
+
+    - name: Verificar que los logs estan activos
+      ansible.builtin.command: ls -la /var/log/
+      register: log_check
+      changed_when: false
+
+    - name: Mostrar resumen de configuracion
+      ansible.builtin.debug:
+        msg: |
+          ============================================
+          Configuracion Base Completada
+          ============================================
+          Servidor: {{ inventory_hostname }}
+          IP: {{ ansible_default_ipv4.address }}
+          Red: {{ ansible_default_ipv4.network }}
+          ============================================

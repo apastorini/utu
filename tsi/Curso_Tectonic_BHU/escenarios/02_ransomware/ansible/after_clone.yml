@@ -1,0 +1,720 @@
+---
+# ============================================================
+# Escenario 02 - Ransomware
+# Simulacion del Ataque - Banco del Sol
+# ============================================================
+# Este playbook simula un ataque ransomware que cifra archivos
+# en el fileserver. El script NO cifra realmente los archivos,
+# solo simula la actividad para fines educativos.
+# ============================================================
+
+- name: Simulacion de ataque ransomware - Banco del Sol
+  hosts: all
+  become: true
+  vars:
+    attack_delay_seconds: 300  # 5 minutos despues del clone
+    ransom_note_content: |
+      ============================================================
+      BANCO DEL SOL - SISTEMA COMPROMETIDO
+      ============================================================
+
+      ATENCION: Todos los archivos en este servidor han sido cifrados
+      con algoritmo AES-256. No es posible acceder a los datos sin
+      la clave de descifrado.
+
+      ============================================================
+      INFORMACION DEL ATAQUE
+      ============================================================
+
+      Fecha: {{ ansible_date_time.date }}
+      Hora: {{ ansible_date_time.time }}
+      Servidor afectado: {{ inventory_hostname }}
+      Metodo de cifrado: AES-256-CBC
+      Clave de cifrado: Generada localmente (sin posibilidad de recuperacion externa)
+
+      ============================================================
+      ARCHIVOS AFECTADOS
+      ============================================================
+
+      Todos los archivos con las siguientes extensiones han sido cifrados:
+      - *.csv
+      - *.xlsx
+      - *.docx
+      - *.pdf
+      - *.json
+      - *.dat
+      - *.txt
+      - *.log
+
+      Los archivos cifrados tienen la extension ".encrypted"
+
+      ============================================================
+      INSTRUCCIONES DE RECUPERACION
+      ============================================================
+
+      1. NO apague el servidor
+      2. NO intente restaurar los archivos manualmente
+      3. Las copias de sombra del volumen han sido eliminadas
+      4. Contacte al equipo de seguridad para evaluar opciones
+
+      ============================================================
+      NOTA IMPORTANTE
+      ============================================================
+
+      Este es un escenario de simulacion para fines educativos.
+      Los archivos originales se encuentran respaldados en:
+      C:\Shares\.backup_hidden\
+
+      Para restaurar los archivos, consulte la guia de respuesta
+      del escenario o contacte al instructor.
+
+      ============================================================
+      BANCO DEL SOL - Departamento de Seguridad de la Informacion
+      ============================================================
+
+    log_file: "C:\\Shares\\.ransom_log.txt"
+
+  tasks:
+
+    # ============================================================
+    # FASE 1: Preparacion del ataque
+    # ============================================================
+
+    - name: FASE 1 - Preparacion del ataque
+      block:
+        - name: Registrar inicio del ataque
+          ansible.builtin.debug:
+            msg: |
+              ============================================
+              SIMULACION DE ATAQUE RANSOMWARE
+              Target: {{ inventory_hostname }}
+              Hora de inicio: {{ ansible_date_time.date }} {{ ansible_date_time.time }}
+              ============================================
+
+        - name: Crear log del ransomware
+          ansible.windows.win_copy:
+            content: |
+              [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] RANSOMWARE SIMULACION INICIADA
+              [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] Target: {{ inventory_hostname }}
+              [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] Metodologia: AES-256-CBC Encryption
+              [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] Fase: Preparacion
+              ============================================
+            dest: "{{ log_file }}"
+
+        - name: Crear directorio de copias ocultas
+          ansible.windows.win_file:
+            path: "C:\\Shares\\.backup_hidden"
+            state: directory
+
+      when: inventory_hostname == "fileserver"
+
+    # ============================================================
+    # FASE 2: Simulacion de eliminacion de VSS
+    # ============================================================
+
+    - name: FASE 2 - Eliminacion de copias de sombra (simulada)
+      block:
+        - name: Verificar copias de sombra antes de la eliminacion
+          ansible.windows.win_command: vssadmin list shadows
+          register: vss_before
+          changed_when: false
+
+        - name: Registrar copias de sombra existentes
+          ansible.windows.win_copy:
+            content: |
+              [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] Copias de sombra antes de la eliminacion:
+              {{ vss_before.stdout }}
+            dest: "C:\\Shares\\Logs\\vss_before_delete.log"
+
+        - name: Simular eliminacion de copias de sombra
+          ansible.windows.win_copy:
+            content: |
+              [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] Ejecutando: vssadmin delete shadows /all /quiet
+              [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] RESULTADO: Simulado - copias de sombra preservadas para laboratorio
+              [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] NOTA: En un ataque real, esto eliminaria todas las copias de sombra
+              [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] WARNING: Para verificar en un incidente real, ejecutar:
+              [{{ ansible_date_time.date }} {{ ansible_date_time.time }}]   vssadmin list shadows
+              [{{ ansible_date_time.date }} {{ ansible_date_time.time }}]   Si no hay copias, el atacante las elimino
+            dest: "C:\\Shares\\Logs\\vss_deletion_simulation.log"
+
+        - name: Crear registro de evento simulado (VSS eliminado)
+          ansible.windows.win_shell: |
+            # Simular entrada en log de eventos de Windows
+            $logEntry = @"
+            Log Name:      System
+            Source:        vssadmin
+            Event ID:      8222
+            Level:         Error
+            Description:   El servicio de instantaneas de volumen fue modificado.
+                          Se detecto eliminacion de instantaneas de volumen.
+                          Esto puede indicar actividad de ransomware.
+            "@
+            $logEntry | Out-File "C:\Shares\Logs\vss_event_simulation.log"
+            Write-Output "Registro de evento VSS creado"
+          args:
+            executable: powershell
+
+        - name: Actualizar log del ransomware
+          ansible.windows.win_lineinfile:
+            path: "{{ log_file }}"
+            line: "[{{ ansible_date_time.date }} {{ ansible_date_time.time }}] Fase: Eliminacion de copias de sombra completada"
+            create: yes
+
+      when: inventory_hostname == "fileserver"
+
+    # ============================================================
+    # FASE 3: Simulacion de cifrado de archivos
+    # ============================================================
+
+    - name: FASE 3 - Cifrado de archivos (simulado)
+      block:
+        - name: Crear script de simulacion de cifrado
+          ansible.windows.win_copy:
+            content: |
+              """
+              Simulador de Cifrado Ransomware - Banco del Sol
+              =================================================
+              Este script NO cifra archivos reales. Simula la actividad
+              de un ransomware para fines educativos.
+
+              Actividad simulada:
+              1. Crea copias de seguridad ocultas de los archivos originales
+              2. Renombra los archivos con extension .encrypted
+              3. Crea una nota de rescate en cada directorio
+              4. Registra toda la actividad en un log
+              """
+              import os
+              import shutil
+              import time
+              import json
+              from datetime import datetime
+
+              # Configuracion
+              SHARES_DIR = r"C:\Shares"
+              BACKUP_DIR = r"C:\Shares\.backup_hidden"
+              LOG_FILE = r"C:\Shares\.ransom_log.txt"
+              ENCRYPTED_EXTENSION = ".encrypted"
+
+              # Extensiones objetivo
+              TARGET_EXTENSIONS = [
+                  '.csv', '.xlsx', '.docx', '.pdf', '.json',
+                  '.dat', '.txt', '.log', '.xml', '.ini',
+                  '.cfg', '.conf', '.bak', '.sql'
+              ]
+
+              # Ransom note
+              RANSOM_NOTE = """
+              ============================================================
+              BANCO DEL SOL - SISTEMA COMPROMETIDO
+              ============================================================
+
+              ATENCION: Todos los archivos en este servidor han sido cifrados
+              con algoritmo AES-256. No es posible acceder a los datos sin
+              la clave de descifrado.
+
+              ============================================================
+              INFORMACION DEL ATAQUE
+              ============================================================
+
+              Fecha: {date}
+              Servidor: {hostname}
+              Metodo: AES-256-CBC
+              Clave: Generada localmente
+
+              ============================================================
+              ARCHIVOS AFECTADOS
+              ============================================================
+
+              Todos los archivos con extensiones .csv, .xlsx, .docx, .pdf,
+              .json, .dat, .txt, .log han sido cifrados.
+              Los archivos cifrados tienen la extension "{ext}"
+
+              ============================================================
+              NOTA IMPORTANTE
+              ============================================================
+
+              Este es un escenario de simulacion para fines educativos.
+              Los archivos originales se encuentran en:
+              C:\\Shares\\.backup_hidden\\
+
+              ============================================================
+              BANCO DEL SOL - Seguridad de la Informacion
+              ============================================================
+              """
+
+              def log_activity(message):
+                  """Registrar actividad en el log"""
+                  timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                  with open(LOG_FILE, 'a', encoding='utf-8') as f:
+                      f.write(f"[{timestamp}] {message}\n")
+                  print(f"[{timestamp}] {message}")
+
+              def create_backup(source_file, backup_dir):
+                  """Crear copia de seguridad oculta"""
+                  try:
+                      # Mantener la estructura de directorios
+                      rel_path = os.path.relpath(source_file, SHARES_DIR)
+                      backup_path = os.path.join(backup_dir, rel_path)
+                      backup_subdir = os.path.dirname(backup_path)
+
+                      if not os.path.exists(backup_subdir):
+                          os.makedirs(backup_subdir, exist_ok=True)
+
+                      shutil.copy2(source_file, backup_path)
+                      log_activity(f"BACKUP: {source_file} -> {backup_path}")
+                      return True
+                  except Exception as e:
+                      log_activity(f"ERROR BACKUP: {source_file} - {str(e)}")
+                      return False
+
+              def simulate_encryption(source_file):
+                  """Simular cifrado renombrando el archivo"""
+                  try:
+                      encrypted_file = source_file + ENCRYPTED_EXTENSION
+                      os.rename(source_file, encrypted_file)
+                      log_activity(f"ENCRYPT: {source_file} -> {encrypted_file}")
+                      return True
+                  except Exception as e:
+                      log_activity(f"ERROR ENCRYPT: {source_file} - {str(e)}")
+                      return False
+
+              def create_ransom_note(directory):
+                  """Crear nota de rescate en el directorio"""
+                  note_path = os.path.join(directory, "README_RANSOM.txt")
+                  try:
+                      with open(note_path, 'w', encoding='utf-8') as f:
+                          f.write(RANSOM_NOTE.format(
+                              date=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                              hostname=os.environ.get('COMPUTERNAME', 'UNKNOWN'),
+                              ext=ENCRYPTED_EXTENSION
+                          ))
+                      log_activity(f"NOTE: Ransom note created in {directory}")
+                      return True
+                  except Exception as e:
+                      log_activity(f"ERROR NOTE: {directory} - {str(e)}")
+                      return False
+
+              def scan_directory(directory):
+                  """Escanear directorio y cifrar archivos"""
+                  encrypted_count = 0
+                  backed_up_count = 0
+
+                  for root, dirs, files in os.walk(directory):
+                      # Saltar directorios ocultos y de logs
+                      if '.backup_hidden' in root or 'Logs' in root:
+                          continue
+
+                      for file in files:
+                          file_path = os.path.join(root, file)
+
+                          # Saltar la nota de ransom y el log
+                          if file in ['README_RANSOM.txt', '.ransom_log.txt']:
+                              continue
+
+                          # Verificar extension
+                          _, ext = os.path.splitext(file)
+                          if ext.lower() in TARGET_EXTENSIONS:
+                              log_activity(f"SCANNING: {file_path}")
+
+                              # Crear backup
+                              if create_backup(file_path, BACKUP_DIR):
+                                  backed_up_count += 1
+
+                              # Simular cifrado (renombrar)
+                              if simulate_encryption(file_path):
+                                  encrypted_count += 1
+
+                              # Pausa para simular proceso de cifrado
+                              time.sleep(0.1)
+
+                  return encrypted_count, backed_up_count
+
+              def main():
+                  log_activity("=" * 60)
+                  log_activity("RANSOMWARE SIMULACION - Banco del Sol")
+                  log_activity(f"Hora de inicio: {datetime.now()}")
+                  log_activity(f"Servidor: {os.environ.get('COMPUTERNAME', 'UNKNOWN')}")
+                  log_activity(f"Directorio objetivo: {SHARES_DIR}")
+                  log_activity("=" * 60)
+
+                  total_encrypted = 0
+                  total_backed_up = 0
+                  directories_with_notes = 0
+
+                  # Escanear cada share
+                  for share_name in ['Datos_Clientes', 'Reportes_Financieros', 'Recursos_Humanos']:
+                      share_path = os.path.join(SHARES_DIR, share_name)
+                      if os.path.exists(share_path):
+                          log_activity(f"\nProcesando share: {share_name}")
+                          encrypted, backed_up = scan_directory(share_path)
+                          total_encrypted += encrypted
+                          total_backed_up += backed_up
+
+                          # Crear nota de rescate
+                          create_ransom_note(share_path)
+                          directories_with_notes += 1
+
+                  log_activity("\n" + "=" * 60)
+                  log_activity("RESUMEN DE LA SIMULACION")
+                  log_activity(f"Archivos escaneados: {total_encrypted + total_backed_up}")
+                  log_activity(f"Archivos respaldados: {total_backed_up}")
+                  log_activity(f"Archivos renombrados: {total_encrypted}")
+                  log_activity(f"Notas de rescate creadas: {directories_with_notes}")
+                  log_activity(f"Hora de finalizacion: {datetime.now()}")
+                  log_activity("=" * 60)
+
+              if __name__ == "__main__":
+                  main()
+            dest: "C:\\Shares\\ransomware_simulator.py"
+
+        - name: Ejecutar simulador de ransomware
+          ansible.windows.win_command: python C:\Shares\ransomware_simulator.py
+          register: ransomware_result
+          args:
+            chdir: "C:\\Shares"
+
+        - name: Registrar resultado de la ejecucion
+          ansible.windows.win_copy:
+            content: |
+              [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] Simulador de ransomware ejecutado
+              [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] Salida del script:
+              {{ ransomware_result.stdout }}
+              [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] Codigo de retorno: {{ ransomware_result.rc }}
+            dest: "C:\\Shares\\Logs\\ransomware_execution.log"
+
+        - name: Verificar archivos cifrados
+          ansible.windows.win_shell: |
+            Get-ChildItem -Path "C:\Shares" -Recurse -Filter "*.encrypted" |
+                Select-Object FullName, Length, LastWriteTime |
+                Format-Table -AutoSize
+          args:
+            executable: powershell
+          register: encrypted_files
+
+        - name: Verificar notas de rescate
+          ansible.windows.win_shell: |
+            Get-ChildItem -Path "C:\Shares" -Recurse -Filter "README_RANSOM*" |
+                Select-Object FullName
+          args:
+            executable: powershell
+          register: ransom_notes
+
+        - name: Mostrar resumen
+          ansible.builtin.debug:
+            msg: |
+              ============================================
+              SIMULACION COMPLETADA
+              ============================================
+              Archivos cifrados: {{ encrypted_files.stdout_lines | length }}
+              Notas de rescate: {{ ransom_notes.stdout_lines | length }}
+              Log: C:\Shares\.ransom_log.txt
+              Backup oculto: C:\Shares\.backup_hidden\
+              ============================================
+
+      when: inventory_hostname == "fileserver"
+
+    # ============================================================
+    # FASE 4: Simulacion de persistencia
+    # ============================================================
+
+    - name: FASE 4 - Simulacion de persistencia
+      block:
+        - name: Simular entrada de registro de persistencia
+          ansible.windows.win_regedit:
+            path: HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+            name: "RansomService"
+            data: "python C:\\Shares\\ransomware_simulator.py --auto"
+            type: string
+
+        - name: Simular servicio malicioso
+          ansible.windows.win_shell: |
+            # Simular creacion de servicio (solo logging, no crear servicio real)
+            $serviceSimulation = @"
+            [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] SERVICIO SIMULADO:
+            Nombre: BancDelSolUpdate
+            Ruta: C:\Shares\ransomware_simulator.py
+            Tipo: Automatico
+            Estado: Simulado - no creado
+            "@
+            $serviceSimulation | Out-File "C:\Shares\Logs\service_simulation.log"
+            Write-Output "Simulacion de servicio completada"
+          args:
+            executable: powershell
+
+        - name: Crear log de persistencia
+          ansible.windows.win_copy:
+            content: |
+              [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] PERSISTENCIA: Entrada de registro creada
+              [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] PERSISTENCIA: HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
+              [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] PERSISTENCIA: RansomService -> python C:\Shares\ransomware_simulator.py --auto
+              [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] PERSISTENCIA: Servicio simulado BancDelSolUpdate
+            dest: "C:\\Shares\\Logs\\persistence.log"
+
+      when: inventory_hostname == "fileserver"
+
+    # ============================================================
+    # FASE 5: Dejar rastros en el atacante
+    # ============================================================
+
+    - name: FASE 5 - Rastros en el atacante
+      block:
+        - name: Crear script de ransomware en el atacante
+          copy:
+            content: |
+              #!/usr/bin/env python3
+              """
+              Ransomware Simulator - Banco del Sol
+              Este script fue utilizado para el ataque al fileserver.
+              Los archivos han sido cifrados con AES-256-CBC.
+              """
+              import os
+              import sys
+              import json
+              from datetime import datetime
+
+              TARGETS = [
+                  "\\\\fileserver\\Datos_Clientes",
+                  "\\\\fileserver\\Reportes_Financieros",
+                  "\\\\fileserver\\Recursos_Humanos"
+              ]
+
+              def encrypt_files(target):
+                  print(f"[*] Procesando objetivo: {target}")
+                  print(f"[*] Metodo: AES-256-CBC")
+                  print(f"[*] Generando clave de cifrado...")
+                  # Simulacion - no cifra realmente
+                  print(f"[+] Archivos cifrados en {target}")
+                  return True
+
+              def main():
+                  print("=" * 50)
+                  print("RANSOMWARE SIMULATOR - Banco del Sol")
+                  print(f"Fecha: {datetime.now()}")
+                  print("=" * 50)
+
+                  for target in TARGETS:
+                      encrypt_files(target)
+
+                  print("[*] Eliminando copias de sombra...")
+                  print("[*] vssadmin delete shadows /all /quiet")
+                  print("[+] Copias de sombra eliminadas")
+
+                  print("[*] Dejando nota de rescate...")
+                  print("[+] Ataque completado")
+
+              if __name__ == "__main__":
+                  main()
+            dest: "/opt/ransomware_simulator.py"
+            mode: '0755'
+
+        - name: Crear log de actividad del atacante
+          copy:
+            content: |
+              #!/bin/bash
+              # Log de actividad del atacante - Banco del Sol
+              echo "=========================================="
+              echo "ACTIVIDAD DEL ATACANTE - BANCO DEL SOL"
+              echo "=========================================="
+              echo "Fecha: $(date)"
+              echo "Objetivo: fileserver (10.10.2.30)"
+              echo "Metodo: AES-256-CBC Ransomware"
+              echo "=========================================="
+              echo ""
+              echo "Pasos ejecutados:"
+              echo "1. [OK] Acceso a shares SMB del fileserver"
+              echo "2. [OK] Eliminacion de copias de sombra (vssadmin)"
+              echo "3. [OK] Cifrado de archivos con AES-256-CBC"
+              echo "4. [OK] Dejada nota de rescate en cada directorio"
+              echo "5. [OK] Entradas de persistencia en registro"
+              echo ""
+              echo "Archivos cifrados:"
+              ls -la /tmp/encryption_log.txt 2>/dev/null || echo "Log no disponible"
+              echo ""
+              echo "=========================================="
+              echo "FIN DEL LOG"
+              echo "=========================================="
+            dest: "/opt/attack_log.sh"
+            mode: '0755'
+
+        - name: Ejecutar script del atacante (genera logs)
+          command: bash /opt/attack_log.sh
+          register: attack_log_result
+
+        - name: Crear evidencia de herramienta utilizada
+          copy:
+            content: |
+              {
+                  "tool": "AES-256-CBC Ransomware Simulator",
+                  "version": "1.0",
+                  "author": "Red Team Exercise",
+                  "targets": [
+                      "\\\\fileserver\\Datos_Clientes",
+                      "\\\\fileserver\\Reportes_Financieros",
+                      "\\\\fileserver\\Recursos_Humanos"
+                  ],
+                  "encryption_algorithm": "AES-256-CBC",
+                  "key_size": 256,
+                  "mode": "CBC",
+                  "notes": "Simulacion para laboratorio educativo"
+              }
+            dest: "/opt/tool_config.json"
+
+      when: inventory_hostname == "attacker"
+
+    # ============================================================
+    # FASE 6: Indicadores de red
+    # ============================================================
+
+    - name: FASE 6 - Indicadores de red
+      block:
+        - name: Crear indicadores de trafico malicioso
+          ansible.windows.win_shell: |
+            # Simular trafico de red malicioso (solo logs)
+            $indicators = @"
+            [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] INDICADORES DE RED:
+            [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] SMB Lateral Movement: 10.10.2.100 -> 10.10.2.30 (TCP 445)
+            [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] PowerShell Remoting: 10.10.2.100 -> 10.10.2.30 (TCP 5985)
+            [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] SMB Enumeration: 10.10.2.100 -> 10.10.2.30 (TCP 445)
+            [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] WinRM Session: 10.10.2.100 -> 10.10.2.30 (TCP 5985)
+            [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] RDP Connection: 10.10.2.100 -> 10.10.2.30 (TCP 3389)
+            "@
+            $indicators | Out-File "C:\Shares\Logs\network_indicators.log"
+            Write-Output "Indicadores de red creados"
+          args:
+            executable: powershell
+
+        - name: Simular eventos de seguridad en el fileserver
+          ansible.windows.win_shell: |
+            # Crear eventos de seguridad simulados
+            $events = @(
+                @{
+                    LogName = 'Security'
+                    EventID = 4624
+                    Message = 'Inicio de sesion exitoso. Cuenta: cmartinez. Origen: 10.10.2.100. Tipo: 10 (RemoteInteractive)'
+                },
+                @{
+                    LogName = 'Security'
+                    EventID = 4648
+                    Message = 'Inicio de sesion explicito con credenciales. Cuenta: cmartinez. Origen: WORKSTATION'
+                },
+                @{
+                    LogName = 'System'
+                    EventID = 8222
+                    Message = 'Servicio VSS modificado. Esto puede indicar actividad de ransomware.'
+                }
+            )
+
+            foreach ($event in $events) {
+                $logEntry = @"
+                [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] EVENTO: $($event.LogName) ID $($event.EventID)
+                [{{ ansible_date_time.date }} {{ ansible_date_time.time }}] $($event.Message)
+                "@
+                $logEntry | Out-File "C:\Shares\Logs\security_events_simulation.log" -Append
+            }
+
+            Write-Output "Eventos de seguridad simulados creados"
+          args:
+            executable: powershell
+
+      when: inventory_hostname == "fileserver"
+
+    # ============================================================
+    # FASE 7: Verificacion final
+    # ============================================================
+
+    - name: FASE 7 - Verificacion del escenario
+      block:
+        - name: Verificar archivos cifrados
+          ansible.windows.win_shell: |
+            $encrypted = Get-ChildItem -Path "C:\Shares" -Recurse -Filter "*.encrypted"
+            Write-Host "Archivos cifrados encontrados: $($encrypted.Count)" -ForegroundColor Red
+            $encrypted | ForEach-Object { Write-Host "  - $($_.FullName)" -ForegroundColor Yellow }
+          args:
+            executable: powershell
+          register: final_encrypted_check
+
+        - name: Verificar notas de rescate
+          ansible.windows.win_shell: |
+            $notes = Get-ChildItem -Path "C:\Shares" -Recurse -Filter "README_RANSOM*"
+            Write-Host "Notas de rescate encontradas: $($notes.Count)" -ForegroundColor Red
+            $notes | ForEach-Object { Write-Host "  - $($_.FullName)" -ForegroundColor Yellow }
+          args:
+            executable: powershell
+          register: final_notes_check
+
+        - name: Verificar backup oculto
+          ansible.windows.win_shell: |
+            $backup = Get-ChildItem -Path "C:\Shares\.backup_hidden" -Recurse -File
+            Write-Host "Archivos respaldados en backup oculto: $($backup.Count)" -ForegroundColor Green
+          args:
+            executable: powershell
+          register: final_backup_check
+
+        - name: Verificar log del ransomware
+          ansible.windows.win_shell: |
+            if (Test-Path "C:\Shares\.ransom_log.txt") {
+                $logContent = Get-Content "C:\Shares\.ransom_log.txt"
+                Write-Host "Log del ransomware encontrado. Lineas: $($logContent.Count)" -ForegroundColor Cyan
+                Write-Host "Primeras 10 lineas:" -ForegroundColor Cyan
+                $logContent | Select-Object -First 10 | ForEach-Object { Write-Host "  $_" }
+            } else {
+                Write-Host "Log del ransomware NO encontrado" -ForegroundColor Red
+            }
+          args:
+            executable: powershell
+          register: final_log_check
+
+        - name: Verificar registro malicioso
+          ansible.windows.win_shell: |
+            $regEntry = Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" -Name "RansomService" -ErrorAction SilentlyContinue
+            if ($regEntry) {
+                Write-Host "Entrada de registro maliciosa encontrada:" -ForegroundColor Red
+                Write-Host "  Nombre: RansomService" -ForegroundColor Yellow
+                Write-Host "  Valor: $($regEntry.RansomService)" -ForegroundColor Yellow
+            } else {
+                Write-Host "Entrada de registro maliciosa NO encontrada" -ForegroundColor Green
+            }
+          args:
+            executable: powershell
+          register: final_registry_check
+
+        - name: Resumen final del escenario
+          ansible.builtin.debug:
+            msg: |
+              ============================================================
+              ESCENARIO RANSOMWARE - BANCO DEL SOL
+              SIMULACION COMPLETADA EXITOSAMENTE
+              ============================================================
+
+              RESUMEN:
+              - Archivos cifrados (renombrados): Verificacion arriba
+              - Notas de rescate creadas: Verificacion arriba
+              - Backup oculto disponible: C:\Shares\.backup_hidden\
+              - Log del ransomware: C:\Shares\.ransom_log.txt
+              - Registro malicioso: HKLM\...\Run\RansomService
+              - Simulacion VSS: C:\Shares\Logs\vss_deletion_simulation.log
+              - Indicadores de red: C:\Shares\Logs\network_indicators.log
+
+              ESTUDIANTES DEBEN:
+              1. Detectar los archivos .encrypted y las notas de rescate
+              2. Analizar el log del ransomware
+              3. Verificar eliminacion de copias de sombra
+              4. Contener el fileserver
+              5. Restaurar archivos desde C:\Shares\.backup_hidden\
+              6. Documentar el incidente
+
+              GUIA DE RESPUESTA: GUIA_RESPUESTA.md
+              ============================================================
+
+      when: inventory_hostname == "fileserver"
+
+    # ============================================================
+    # Cleanup: No limpiar nada - los estudiantes deben encontrar
+    # ============================================================
+
+    - name: Escenario listo para los estudiantes
+      ansible.builtin.debug:
+        msg: |
+          El escenario ransomware esta activo.
+          Los estudiantes pueden comenzar a investigar el incidente.
+          Hora de activacion: {{ ansible_date_time.date }} {{ ansible_date_time.time }}

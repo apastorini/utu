@@ -1,0 +1,244 @@
+---
+# Banco del Sol - Escenario 05: Exfiltracion de Datos via DNS Tunneling
+# Edicion del laboratorio para Tectonic Cyber Range
+
+scenario:
+  name: dns_tunneling_exfiltracion
+  edition: "2025-BHU"
+  description: >
+    Escenario de exfiltracion de datos via DNS tunneling. Los estudiantes actuan
+    como equipo azul detectando y respondiendo a un incidente donde datos sensibles
+    de Banco del Sol estan siendo exfiltrados a traves de consultas DNS codificadas.
+
+  learning_environment: tectonic
+  difficulty: advanced
+  estimated_time: "2.5 hours"
+
+# Datos que seran "exfiltrados" en este escenario
+sensitive_data:
+  database_records:
+    - table: clientes
+      description: "Registros de clientes del banco"
+      records: 50
+      fields:
+        - dni
+        - nombre_completo
+        - numero_cuenta
+        - saldo
+        - direccion
+        - telefono
+        - email
+      sensitivity: high
+
+    - table: tarjetas_credito
+      description: "Datos de tarjetas de credito"
+      records: 50
+      fields:
+        - numero_tarjeta
+        - titular
+        - fecha_vencimiento
+        - cvv
+        - limite_credito
+      sensitivity: critical
+
+    - table: transacciones
+      description: "Historial de transacciones"
+      records: 100
+      fields:
+        - id_transaccion
+        - fecha
+        - monto
+        - tipo
+        - cuenta_origen
+        - cuenta_destino
+        - descripcion
+      sensitivity: high
+
+  fileserver_documents:
+    - path: "/Compartido/Directorio/"
+      description: "Directorio ejecutivo del banco"
+      files:
+        - name: "estrategia_2025_confidencial.pdf"
+          content: "Plan estrategico anual del banco"
+          size_kb: 245
+        - name: "fusion_bancaria_propuesta.docx"
+          content: "Propuesta de fusion con otro banco"
+          size_kb: 180
+        - name: "reestructuracion_personal.xlsx"
+          content: "Plan de reduccion de personal"
+          size_kb: 95
+
+    - path: "/Compartido/Legal/"
+      description: "Documentos legales"
+      files:
+        - name: "demanda_concursal.docx"
+          content: "Documentacion de demanda legal pendiente"
+          size_kb: 320
+        - name: "audit_financiera_q3.pdf"
+          content: "Auditoria financiera trimestral"
+          size_kb: 540
+
+    - path: "/Compartido/Tecnologia/"
+      description: "Documentos de tecnologia"
+      files:
+        - name: "arquitectura_red_interna.vsdx"
+          content: "Diagrama de arquitectura de red"
+          size_kb: 1200
+        - name: "credenciales_acceso_privilegiado.xlsx"
+          content: "Credenciales de acceso privilegiado"
+          size_kb: 45
+
+# Estado de la infraestructura antes del escenario
+infrastructure_state:
+  workstation:
+    compromised: true
+    compromise_method: "Credenciales comprometidas via phishing"
+    backdoor_type: "DNS tunneling client"
+    persistence: "Scheduled task ejecutando el script de exfiltracion cada 5 minutos"
+    status: "Exfiltracion activa - datos enviados en los ultimos 45 minutos"
+
+  dns_configuration:
+    internal_dns: "10.10.2.10 (domaincontroller)"
+    external_dns: "8.8.8.8, 8.8.4.4 (Google DNS - NO bloqueados)"
+    dns_logging: "Deshabilitado por defecto - los estudiantes deben habilitarlo"
+    query_length_limit: "No configurado"
+    allowed_external_domains: "Sin restricciones"
+
+  network_monitoring:
+    packet_capture: "No configurado"
+    dns_logs: "Deshabilitados"
+    netflow: "No configurado"
+    ids_ips: "Sin reglas especificas para DNS tunneling"
+
+# Simulacion del atacante
+attacker_setup:
+  attacker_machine: "attacker (Kali Linux - 10.10.0.10)"
+  dns_server: " servidor DNS del atacante configurado en attacker"
+  listening_domain: "exfil.attacker.com"
+  c2_channel: "DNS TXT records"
+  tool: "Script Python personalizado de DNS tunneling"
+  data_encoding: "base64url (sin padding)"
+  chunk_size: "60 bytes por consulta DNS"
+  query_interval: "1 consulta cada 2-5 segundos"
+  exfiltration_duration: "45 minutos antes de que los estudiantes inicien el escenario"
+
+  reception_logs:
+    location: "/root/exfil_logs/received_data.log"
+    format: "Timestamp | Source_IP | Encoded_Chunk | Decoded_Data"
+    total_chunks_received: 847
+    data_volume_exfiltrated: "~15 KB"
+
+# Pistas y evidencia para los estudiantes
+evidence_trails:
+  dns_logs:
+    - source: "workstation (10.10.2.100)"
+      pattern: "Consultas frequentes a exfil.attacker.com"
+      sample_queries:
+        - "aWRfY2xpZW50ZS0xMjM0NTY.exfil.attacker.com"
+        - "X25vbWJyZS1kZS1jdWVudGEtR2FyY2lh.exfil.attacker.com"
+        - "UzEyMzQ1Njc4OTAxMjM0NTY3ODk.exfil.attacker.com"
+      volume: "847 consultas en 45 minutos"
+      avg_query_length: "85 caracteres"
+      normal_dns_avg: "25 caracteres"
+
+  suspicious_patterns:
+    - "Consultas TXT representan 92% del trafico DNS del workstation"
+    - "Longitud promedio de subdominios: 85 caracteres (normal: 15-25)"
+    - "Frecuencia: 19 consultas por minuto (normal: 0.5 consultas/min)"
+    - "Todas las consultas apuntan al mismo dominio externo"
+    - "Patron temporal: consultas en bursts de 3-5 seguido de pausas de 10-15 seg"
+
+  workstation_artifacts:
+    - path: "C:\\Users\\Public\\dns_helper.py"
+      description: "Script Python de DNS tunneling"
+    - path: "C:\\Windows\\Tasks\\dns_monitor.job"
+      description: "Scheduled task que ejecuta el script periodicamente"
+    - path: "C:\\Users\\Public\\staged_data.txt"
+      description: "Archivo temporal con datos listos para exfiltrar"
+
+  network_captures:
+    description: "Capturas de trafico DNS disponibles para analisis"
+    files:
+      - name: "dns_traffic_normal.pcap"
+        description: "Trafico DNS normal previo al compromiso"
+      - name: "dns_traffic_suspicious.pcap"
+        description: "Trafico DNS con actividad de exfiltracion"
+      - name: "dns_traffic_c2.pcap"
+        description: "Trafico DNS con respuestas TXT del servidor C2"
+
+# Configuracion de red para el escenario
+network_topology:
+  dmz:
+    subnet: "10.10.1.0/24"
+    gateway: "10.10.1.1"
+    servers:
+      - hostname: webserver
+        ip: "10.10.1.10"
+        services: ["HTTP/HTTPS", "SSH"]
+      - hostname: mailserver
+        ip: "10.10.1.20"
+        services: ["SMTP", "IMAP", "HTTPS"]
+
+  internal:
+    subnet: "10.10.2.0/24"
+    gateway: "10.10.2.1"
+    servers:
+      - hostname: domaincontroller
+        ip: "10.10.2.10"
+        services: ["DNS", "AD", "LDAP", "Kerberos"]
+      - hostname: fileserver
+        ip: "10.10.2.30"
+        services: ["SMB", "NFS"]
+      - hostname: database
+        ip: "10.10.2.40"
+        services: ["MySQL", "SSH"]
+      - hostname: workstation
+        ip: "10.10.2.100"
+        services: ["SSH", "RDP"]
+        notes: "COMPROMETIDA - backdoor activa"
+
+  management:
+    subnet: "10.10.0.0/24"
+    gateway: "10.10.0.1"
+    servers:
+      - hostname: attacker
+        ip: "10.10.0.10"
+        services: ["SSH", "DNS server (malicious)"]
+
+  internet:
+    subnet: "172.16.0.0/24"
+    gateway: "172.16.0.1"
+    simulated: true
+
+# Instrucciones de setup para el instructor
+instructor_notes:
+  setup_order:
+    - step: 1
+      action: "Provisionar todas las VMs usando la imagen base"
+    - step: 2
+      action: "Ejecutar ansible/base_config.yml para configuracion base"
+    - step: 3
+      action: "Ejecutar ansible/after_clone.yml para simular el ataque"
+    - step: 4
+      action: "Verificar que los logs de exfiltracion esten generandose"
+    - step: 5
+      action: "Iniciar capturas de trafico en puntos de monitoreo"
+    - step: 6
+      action: "Iniciar el escenario y dar acceso a los estudiantes"
+
+  verification_checklist:
+    - "Workstation tiene el script de DNS tunneling ejecutandose"
+    - "Consultas DNS anomalias se estan generando"
+    - "Base de datos tiene datos de prueba cargados"
+    - "Servidor de archivos tiene documentos de prueba"
+    - "DNS logging esta habilitado en domaincontroller"
+    - "Capturas de trafico estan activas"
+    - "Attacker esta recibiendo y registrando datos exfiltrados"
+
+  cleanup:
+    - "Eliminar scheduled task en workstation"
+    - "Eliminar script de exfiltracion"
+    - "Restaurar configuracion DNS original"
+    - "Eliminar archivos de datos de prueba"
+    - "Eliminar capturas de trafico"
+    - "Restaurar snapshots de todas las VMs"

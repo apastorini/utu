@@ -1,0 +1,477 @@
+lab_edition:
+  name: "Banco del Sol - DDoS SYN Flood Lab"
+  edition: "BHU Cyber Range - Edicion Academica"
+  version: "1.0.0"
+  maintainer: "BHU Uruguay - Departamento de Ciberseguridad"
+  created_date: "2026-07-13"
+  last_updated: "2026-07-13"
+
+metadata:
+  scenario_id: "DDOS-003"
+  difficulty: intermediate
+  estimated_duration: "2 horas"
+  max_students: 12
+  instructor_notes: >
+    Este escenario simula un ataque DDoS SYN Flood contra la infraestructura web
+    del Banco del Sol. Los estudiantes actuan como equipo de respuesta a incidentes.
+    Se recomienda guiar la fase de deteccion antes de revelar el ataque.
+    El ataque comienza 10 minutos despues de la clonacion de las maquinas.
+
+organization:
+  name: "Banco del Sol"
+  type: simulated-bank
+  industry: financial-services
+  employees: 500
+  locations:
+    - name: "Sede Principal"
+      city: "Montevideo"
+      country: "Uruguay"
+  digital_assets:
+    - name: "Portal Web Bancario"
+      url: "https://www.bancodelsol.example.com.uy"
+      technology: "Apache/2.4 + PHP 8.1 + MySQL 8.0"
+      criticality: high
+    - name: "Portal de Banca Online"
+      url: "https://online.bancodelsol.example.com.uy"
+      technology: "Nginx + Node.js + PostgreSQL"
+      criticality: critical
+    - name: "Servicio de Email Corporativo"
+      technology: "Postfix + Dovecot"
+      criticality: medium
+    - name: "Servidor de Archivos"
+      technology: "Samba + NFS"
+      criticality: medium
+
+infrastructure_spec:
+  hypervisor: virtualbox
+  network_mode: bridged
+  snapshots_enabled: true
+  clone_method: linked-clone
+  
+  resource_allocation:
+    attacker:
+      cpu: 2
+      ram: "2GB"
+      disk: "40GB"
+      network_adapters: 2
+      notes: "Kali Linux con herramientas de ataque pre-instaladas"
+      
+    webserver:
+      cpu: 2
+      ram: "4GB"
+      disk: "40GB"
+      network_adapters: 2
+      notes: "Ubuntu 22.04 con Apache, fail2ban, monitoreo basico"
+      
+    mailserver:
+      cpu: 1
+      ram: "2GB"
+      disk: "30GB"
+      network_adapters: 2
+      notes: "Ubuntu 22.04 con Postfix/Dovecot configurado"
+      
+    fileserver:
+      cpu: 1
+      ram: "2GB"
+      disk: "50GB"
+      network_adapters: 2
+      notes: "Ubuntu 22.04 con Samba/NFS"
+      
+    database:
+      cpu: 2
+      ram: "4GB"
+      disk: "40GB"
+      network_adapters: 2
+      notes: "Ubuntu 22.04 con MySQL 8.0"
+      
+    domaincontroller:
+      cpu: 2
+      ram: "4GB"
+      disk: "40GB"
+      network_adapters: 2
+      notes: "Windows Server 2022 con AD DS"
+      
+    workstation:
+      cpu: 2
+      ram: "4GB"
+      disk: "40GB"
+      network_adapters: 2
+      notes: "Windows 11 con herramientas de analisis"
+
+network_topology:
+  segments:
+    dmz:
+      name: "Zona Desmilitarizada"
+      cidr: "10.10.1.0/24"
+      gateway: "10.10.1.1"
+      vlan_id: 100
+      description: "Servidores expuestos a Internet"
+      hosts:
+        - hostname: "webserver"
+          ip: "10.10.1.10"
+          mac: "08:00:27:a1:b2:c3"
+        - hostname: "mailserver"
+          ip: "10.10.1.20"
+          mac: "08:00:27:d4:e5:f6"
+      firewall_rules:
+        - "ALLOW TCP 80,443 FROM internet TO webserver"
+        - "ALLOW TCP 25,587,993 FROM internet TO mailserver"
+        - "ALLOW TCP 22 FROM management TO dmz"
+        - "DENY ALL OTHER"
+        
+    internal:
+      name: "Red Interna"
+      cidr: "10.10.2.0/24"
+      gateway: "10.10.2.1"
+      vlan_id: 200
+      description: "Servicios internos y estaciones de trabajo"
+      hosts:
+        - hostname: "domaincontroller"
+          ip: "10.10.2.10"
+          mac: "08:00:27:11:22:33"
+        - hostname: "fileserver"
+          ip: "10.10.2.20"
+          mac: "08:00:27:44:55:66"
+        - hostname: "database"
+          ip: "10.10.2.30"
+          mac: "08:00:27:77:88:99"
+        - hostname: "workstation"
+          ip: "10.10.2.100"
+          mac: "08:00:27:aa:bb:cc"
+      firewall_rules:
+        - "ALLOW TCP 3306 FROM dmz TO database"
+        - "ALLOW TCP 445,139 FROM internal TO fileserver"
+        - "ALLOW TCP 53,88,389,636 FROM internal TO domaincontroller"
+        - "DENY ALL FROM dmz TO internal (except db)"
+        
+    management:
+      name: "Red de Gestion"
+      cidr: "10.10.0.0/24"
+      gateway: "10.10.0.1"
+      vlan_id: 500
+      description: "Administracion y monitoreo"
+      hosts:
+        - hostname: "ansible-controller"
+          ip: "10.10.0.5"
+          notes: "Controlador Ansible para configuracion"
+      firewall_rules:
+        - "ALLOW TCP 22,443,8080 FROM management TO all"
+        - "ALLOW ICMP FROM management TO all"
+        - "DENY ALL FROM internal TO management"
+        
+    internet:
+      name: "Simulacion Internet"
+      cidr: "172.16.0.0/24"
+      gateway: "172.16.0.1"
+      vlan_id: 999
+      description: "Simulacion de Internet - origenes de ataque"
+      hosts:
+        - hostname: "attacker"
+          ip: "172.16.0.10"
+          mac: "08:00:27:dd:ee:ff"
+          notes: "Maquina atacante Kali Linux"
+        - hostname: "internet-sim-1"
+          ip: "172.16.0.20"
+          notes: "Simula host en Internet para reflexion DNS"
+        - hostname: "internet-sim-2"
+          ip: "172.16.0.30"
+          notes: "Simula host en Internet para amplificacion"
+
+attack_simulation:
+  type: "SYN Flood DDoS"
+  protocol: "TCP SYN"
+  target: "webserver (10.10.1.10)"
+  target_ports: [80, 443]
+  
+  phases:
+    - id: 1
+      name: "Reconocimiento"
+      start_time: "T+0:00"
+      duration: "5 minutos"
+      description: "Escaneo de puertos y fingerprinting del objetivo"
+      tools: ["nmap -sS -sV -O 10.10.1.10"]
+      expected_output: "Puertos 80,443 abiertos, Apache 2.4 detectado"
+      
+    - id: 2
+      name: "Ataque Inicial"
+      start_time: "T+5:00"
+      duration: "10 minutos"
+      description: "SYN flood basico contra puerto 80"
+      command: "hping3 -S -p 80 --flood --rand-source 10.10.1.10"
+      parameters:
+        spoofed_sources: "172.16.0.0/24 random"
+        packet_rate: "1000 pps"
+        payload_size: "0 bytes (SYN only)"
+      expected_impact:
+        - "Incremento de CPU a 60-80%"
+        - "Conexiones SYN_RECV en aumento"
+        - "Latencia HTTP incrementada"
+        
+    - id: 3
+      name: "Escalada"
+      start_time: "T+15:00"
+      duration: "10 minutos"
+      description: "Aumento de intensidad y puertos atacados"
+      commands:
+        - "hping3 -S -p 80 --flood --rand-source 10.10.1.10 &"
+        - "hping3 -S -p 443 --flood --rand-source 10.10.1.10 &"
+      parameters:
+        spoofed_sources: "172.16.0.0/24 random + fabricated"
+        packet_rate: "5000+ pps combined"
+        target_ports: [80, 443]
+      expected_impact:
+        - "CPU al 100%"
+        - "Tabla de conexiones llena"
+        - "Servicio web degradado significativamente"
+        - "Posible caida del servicio"
+        
+    - id: 4
+      name: "Amplificacion DNS"
+      start_time: "T+25:00"
+      duration: "5 minutos"
+      description: "Reflexion DNS para amplificar trafico"
+      tool: "scapy custom script"
+      technique: "DNS request con IP origen = target IP"
+      amplification_factor: "5-10x"
+      expected_impact:
+        - "Trafico UDP masivo hacia webserver"
+        - "Agotamiento de ancho de banda"
+        
+    - id: 5
+      name: "Persistencia"
+      start_time: "T+30:00"
+      duration: "20 minutos"
+      description: "Mantencion del ataque con variaciones"
+      variations:
+        - "Ciclado de puertos origen"
+        - "Variacion de tamanos de paquete"
+        - "Pausas cortas para evadir deteccion"
+      goal: "Mantener degradacion del servicio"
+
+student_tasks:
+  phase_1_detection:
+    - id: "T1.1"
+      task: "Identificar la degradacion del servicio web"
+      hints:
+        - "Verificar tiempos de respuesta con curl"
+        - "Revisar metricas de Apache/Nginx"
+        - "Usar top/htop para ver uso de CPU"
+      success_indicator: "Al menos 3 indicadores de ataque identificados"
+      
+    - id: "T1.2"
+      task: "Analizar el trafico de red en busca de anomalias"
+      hints:
+        - "Usar tcpdump para capturar trafico"
+        - "Contar paquetes SYN vs ACK"
+        - "Identificar IPs origen repetitivas"
+      success_indicator: "Patron SYN flood identificado"
+      
+    - id: "T1.3"
+      task: "Revisar estados de conexion TCP"
+      hints:
+        - "Usar ss -s para estadisticas"
+        - "Contar conexiones en SYN_RECV"
+        - "Verificar tablas de conntrack"
+      success_indicator: "Exceso de conexiones SYN_RECV documentado"
+      
+  phase_2_analysis:
+    - id: "T2.1"
+      task: "Capturar y analizar paquetes de ataque"
+      hints:
+        - "Usar tcpdump con filtros BPF"
+        - "Analizar con Wireshark o tshark"
+        - "Identificar patrones en headers TCP"
+      success_indicator: "Captura de al menos 1000 paquetes SYN"
+      
+    - id: "T2.2"
+      task: "Determinar el rango de IPs atacantes"
+      hints:
+        - "Usar awk/sort/uniq para analizar IPs"
+        - "Crear histograma de origenes"
+        - "Identificar IPs spoofed vs reales"
+      success_indicator: "Rango de IPs documentado"
+      
+    - id: "T2.3"
+      task: "Medir el impacto en el servicio"
+      hints:
+        - "Comparar tiempos de respuesta antes/durante"
+        - "Verificar caida de requests por segundo"
+        - "Documentar errores en logs"
+      success_indicator: "Metricas de impacto documentadas"
+      
+  phase_3_containment:
+    - id: "T3.1"
+      task: "Implementar reglas de rate limiting"
+      hints:
+        - "Usar iptables con -m limit"
+        - "Configurar SYN limit por IP"
+        - "Implementar connlimit"
+      success_indicator: "Reglas activas y funcionando"
+      
+    - id: "T3.2"
+      task: "Configurar SYN cookies"
+      hints:
+        - "sysctl net.ipv4.tcp_syncookies=1"
+        - "Ajustar tcp_max_syn_backlog"
+        - "Verificar efectividad"
+      success_indicator: "SYN cookies habilitados"
+      
+    - id: "T3.3"
+      task: "Configurar fail2ban para SYN flood"
+      hints:
+        - "Crear jail personalizada"
+        - "Configurar filtro para SYNRecv"
+        - "Ajustar bantime e findtime"
+      success_indicator: "fail2ban bloqueando atacantes"
+      
+    - id: "T3.4"
+      task: "Bloquear IPs/rangos atacantes"
+      hints:
+        - "Usar ipset para rangos grandes"
+        - "Configurar bloqueo temporal"
+        - "Documentar IPs bloqueadas"
+      success_indicator: "Al menos 80% de trafico de ataque bloqueado"
+      
+  phase_4_eradication:
+    - id: "T4.1"
+      task: "Detener el trafico de ataque"
+      hints:
+        - "Verificar que las reglas aplican"
+        - "Monitorear reduccion de trafico"
+        - "Ajustar reglas si es necesario"
+      success_indicator: "Trafico de ataque reducido en 90%+"
+      
+    - id: "T4.2"
+      task: "Verificar mitigacion efectiva"
+      hints:
+        - "Probar acceso al servicio web"
+        - "Verificar tiempos de respuesta"
+        - "Confirmar que no hay bypass"
+      success_indicator: "Servicio accesible y estable"
+      
+  phase_5_recovery:
+    - id: "T5.1"
+      task: "Restaurar servicio web a normalidad"
+      hints:
+        - "Reiniciar servicios si es necesario"
+        - "Limpiar tablas de conexion"
+        - "Restablecer timeouts TCP"
+      success_indicator: "Servicio operando con metricas normales"
+      
+    - id: "T5.2"
+      task: "Verificar integridad del sistema"
+      hints:
+        - "Revisar logs por actividad sospechosa"
+        - "Verificar archivos del sistema"
+        - "Confirmar que no hay compromiso"
+      success_indicator: "Sistema verificado limpio"
+      
+    - id: "T5.3"
+      task: "Documentar el incidente"
+      hints:
+        - "Crear reporte con timeline"
+        - "Incluir IOCs identificados"
+        - "Documentar accion tomadas"
+      success_indicator: "Reporte completo del incidente"
+      
+  phase_6_lessons:
+    - id: "T6.1"
+      task: "Analizar lecciones aprendidas"
+      hints:
+        - "Que funciono bien?"
+        - "Que se pudo mejorar?"
+        - "Que faltaba en la infraestructura?"
+      success_indicator: "Lista de mejoras identificadas"
+      
+    - id: "T6.2"
+      task: "Proponer mejoras de capacidad"
+      hints:
+        - "Dimensionar para picos de trafico"
+        - "Evaluar soluciones CDN"
+        - "Planificar escalabilidad"
+      success_indicator: "Propuesta de mejoras documentada"
+
+scoring:
+  maximum_points: 100
+  breakdown:
+    detection:
+      points: 20
+      criteria:
+        - "Identificar ataque (5 pts)"
+        - "Detectar IOCs (5 pts)"
+        - "Documentar indicadores (5 pts)"
+        - "Tiempo de deteccion < 5 min (5 pts)"
+        
+    analysis:
+      points: 20
+      criteria:
+        - "Capturar paquetes (5 pts)"
+        - "Identificar patron de ataque (5 pts)"
+        - "Determinar IPs atacantes (5 pts)"
+        - "Medir impacto (5 pts)"
+        
+    containment:
+      points: 30
+      criteria:
+        - "Rate limiting (5 pts)"
+        - "SYN cookies (5 pts)"
+        - "fail2ban (5 pts)"
+        - "IP blocking (5 pts)"
+        - "Efectividad >= 80% (10 pts)"
+        
+    eradication:
+      points: 15
+      criteria:
+        - "Detener trafico de ataque (10 pts)"
+        - "Verificar mitigacion (5 pts)"
+        
+    recovery:
+      points: 10
+      criteria:
+        - "Restaurar servicio (5 pts)"
+        - "Verificar integridad (5 pts)"
+        
+    documentation:
+      points: 5
+      criteria:
+        - "Reporte completo (3 pts)"
+        - "Lecciones aprendidas (2 pts)"
+
+validation_checks:
+  - id: "VC1"
+    description: "Servicio web accesible durante y despues del ataque"
+    method: "curl -I http://10.10.1.10"
+    expected: "HTTP/1.1 200 OK"
+    
+  - id: "VC2"
+    description: "Reglas de firewall activas"
+    method: "iptables -L -n | grep SYN"
+    expected: "Al menos 2 reglas SYN-related"
+    
+  - id: "VC3"
+    description: "SYN cookies habilitados"
+    method: "sysctl net.ipv4.tcp_syncookies"
+    expected: "net.ipv4.tcp_syncookies = 1"
+    
+  - id: "VC4"
+    description: "fail2ban operativo"
+    method: "fail2ban-client status"
+    expected: "Jail activa con bans"
+    
+  - id: "VC5"
+    description: "Trafico de ataque reducido"
+    method: "tcpdump -c 100 -i eth0 'tcp[tcpflags] & tcp-syn != 0' | wc -l"
+    expected: "Conteo reducido significativamente"
+
+cleanup:
+  post_lab:
+    - "Restaurar snapshots de todas las maquinas"
+    - "Verificar configuracion de red original"
+    - "Limpiar reglas de firewall agregadas"
+    - "Eliminar archivos de captura generados"
+    
+  pre_lab:
+    - "Verificar que todas las maquinas arrancan correctamente"
+    - "Confirmar conectividad entre segmentos"
+    - "Probar acceso a servicios web"
+    - "Verificar herramientas de ataque en Kali"

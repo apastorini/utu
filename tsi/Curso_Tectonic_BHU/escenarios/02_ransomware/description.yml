@@ -1,0 +1,124 @@
+---
+name: ransomware
+description: |
+  Escenario de ataque ransomware contra la infraestructura de Banco del Sol.
+  Un actor malicioso ha logrado infiltrarse en la red corporativa y ejecutar
+  un script de cifrado AES que afecta los archivos almacenados en el servidor
+  de archivos (fileserver). Los estudiantes actúan como equipo azul (defensores)
+  y deben detectar, contener, erradicar y recuperarse del ataque.
+
+  El ransomware simula cifrar archivos compartidos en SMB mediante AES-256,
+  eliminando copias de sombra del volumen y dejando una nota de rescate.
+  Los equipos deben analizar el incidente, preservar evidencia y restaurar
+  los datos desde copias de seguridad.
+
+  Escenarios incluidos:
+  - Detección del ransomware mediante análisis de archivos modificados
+  - Análisis de la nota de rescate y el método de cifrado
+  - Recuperación de copias de sombra del volumen (vssadmin)
+  - Restauración de archivos desde backups
+  - Containment del sistema afectado
+  - Análisis forense de artefactos dejados por el atacante
+
+tags:
+  - ransomware
+  - encryption
+  - malware
+  - incident-response
+  - aes
+  - vssadmin
+  - smb
+  - forensics
+
+difficulty: intermediate
+estimated_time: "2.5 hours"
+
+learning_objectives:
+  - Identificar indicadores de compromiso (IoC) de un ataque ransomware
+  - Analizar notas de rescate y determinar variante del ransomware
+  - Verificar eliminación de copias de sombra del volumen (vssadmin)
+  - Contener un sistema afectado sin perder evidencia forense
+  - Restaurar archivos desde copias de seguridad y copias de sombra
+  - Realizar análisis forense básico de artefactos de malware
+  - Documentar correctamente un incidente de seguridad
+  - Implementar medidas de mitigación post-incidente
+
+infrastructure:
+  networks:
+    - name: DMZ
+      cidr: 10.10.1.0/24
+      description: Zona desmilitarada con servidores expuestos
+    - name: Internal
+      cidr: 10.10.2.0/24
+      description: Red interna con servidores de dominio y estaciones de trabajo
+    - name: Management
+      cidr: 10.10.0.0/24
+      description: Red de gestión y administración
+    - name: Internet
+      cidr: 172.16.0.0/24
+      description: Simulación de red externa e Internet
+
+  vms:
+    - name: attacker
+      role: Atacante
+      network: Management
+      ip: 10.10.0.10
+      description: Estación Kali Linux del atacante
+    - name: webserver
+      role: Servidor Web
+      network: DMZ
+      ip: 10.10.1.10
+      description: Servidor web de la banca en línea
+    - name: mailserver
+      role: Servidor de Correo
+      network: DMZ
+      ip: 10.10.1.20
+      description: Servidor de correo corporativo
+    - name: fileserver
+      role: Servidor de Archivos
+      network: Internal
+      ip: 10.10.2.30
+      description: Servidor de archivos compartidos (objetivo principal)
+    - name: database
+      role: Servidor de Base de Datos
+      network: Internal
+      ip: 10.10.2.40
+      description: Servidor de base de datos bancaria
+    - name: domaincontroller
+      role: Controlador de Dominio
+      network: Internal
+      ip: 10.10.2.10
+      description: Controlador de dominio Active Directory
+    - name: workstation
+      role: Estación de Trabajo
+      network: Internal
+      ip: 10.10.2.100
+      description: Estación de trabajo del usuario afectado
+
+attack_narrative: |
+  El atacante obtuvo acceso inicial mediante credenciales comprometidas extraídas
+  de un phishing anterior. Desde la estación de trabajo, el atacante escaló
+  privilegios y obtuvo acceso al fileserver mediante SMB. Se ejecutó un script
+  de Python que simula cifrado AES-256 de archivos en las carpetas compartidas,
+  se eliminaron copias de sombra del volumen y se dejó una nota de rescate.
+  Los usuarios reportan que no pueden acceder a los archivos compartidos.
+
+blue_team_objectives: |
+  Como equipo azul, su misión es:
+  1. Detectar el incidente mediante alertas y reportes de usuarios
+  2. Analizar el alcance del daño en el fileserver
+  3. Identificar el tipo de ransomware y su método de propagación
+  4. Contener el incidente aislando el sistema afectado
+  5. Intentar recuperar archivos desde copias de sombra
+  6. Restaurar datos desde backups verificados
+  7. Erradicar el malware y cerrar vectores de ataque
+  8. Documentar el incidente completo para el reporte final
+
+evaluation_criteria:
+  - Detección temprana del ransomware (tiempo de respuesta)
+  - Análisis correcto de los indicadores de compromiso
+  - Preservación adecuada de evidencia forense
+  - Containment efectivo sin pérdida de datos adicionales
+  - Recuperación exitosa de archivos desde copias de sombra o backups
+  - Documentación completa del incidente
+  - Implementación de controles preventivos post-incidente

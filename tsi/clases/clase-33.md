@@ -1,878 +1,717 @@
-# Clase 33: SAST - Static Application Security Testing
+# Clase 33: Introduccion a DevSecOps y Shift-Left
 
-**Numero de clase:** 23
+**Numero de clase:** 22
 **Duracion:** 2 horas
 
 ## Objetivos de Aprendizaje
 
-- Comprender que es SAST y como funciona (analisis de codigo sin ejecucion)
-- Usar herramientas SAST: Bandit, Semgrep, SonarQube
-- Diferenciar falsos positivos de verdaderos positivos
-- Integrar SAST en IDE y CI/CD
-- Crear reglas personalizadas de Semgrep para detectar vulnerabilidades
+- Comprender la evolucion de DevOps hacia DevSecOps
+- Entender el movimiento Shift-Left y sus beneficios
+- Identificar las etapas de un pipeline CI/CD donde insertar controles de seguridad
+- Disenar un pipeline DevSecOps completo con SAST, DAST, SCA, secret scanning y linting
+- Evaluar el modelo de madurez DevSecOps
 
 ## Contenido Detallado
 
-### 1. Que es SAST?
+### 1. Que es DevOps?
 
-SAST (Static Application Security Testing) analiza el codigo fuente, bytecode o binarios de una aplicacion SIN ejecutarlos, buscando patrones que indican vulnerabilidades de seguridad.
+DevOps es la combinacion de desarrollo (Dev) y operaciones (Ops) que busca:
+- Acelerar la entrega de software
+- Automatizar procesos de build, test y deploy
+- Fomentar colaboracion entre equipos
+- Implementar integracion continua (CI) y despliegue continuo (CD)
 
-**Caracteristicas:**
-- White-box testing: tiene acceso completo al codigo fuente
-- Se ejecuta temprano en el ciclo de desarrollo (Shift-Left)
-- Detecta vulnerabilidades en tiempo de escritura de codigo
-- Escalable a proyectos grandes
+**Ciclo DevOps:** Plan -> Code -> Build -> Test -> Release -> Deploy -> Operate -> Monitor
 
-**Lo que detecta:**
-- Inyecciones (SQL, Command, LDAP, XML)
-- Cross-Site Scripting (XSS)
-- Buffer overflows
-- Hardcoded secrets
-- Uso de funciones peligrosas
-- Configuracion insegura
-- Validacion incorrecta de entradas
+### 2. DevSecOps: Agregar Seguridad a DevOps
 
-### 2. Herramientas SAST Populares
+DevSecOps integra la seguridad en cada fase del ciclo DevOps, no como una etapa final separada.
 
-| Herramienta | Lenguaje | Tipo | Caracteristicas |
-|------------|----------|------|-----------------|
-| SonarQube | Multi-lenguaje | Comercial/Community | Analisis continuo, deuda tecnica, quality gates |
-| Semgrep | Multi-lenguaje | Open Source | Reglas custom, patrones, integracion CI/CD |
-| Bandit | Python | Open Source | Disenado para Python, OWASP Top 10 |
-| FindSecBugs | Java (FindBugs plugin) | Open Source | Seguridad para Java/Kotlin |
-| Brakeman | Ruby on Rails | Open Source | Especializado en Rails |
-| Checkmarx | Multi-lenguaje | Comercial | Cobertura amplia, correlacion de flujos |
-| Fortify | Multi-lenguaje | Comercial | Analisis profundo, cumplimiento normativo |
+**Principios fundamentales:**
+- "You build it, you run it, you secure it"
+- Seguridad como responsabilidad compartida, no solo del equipo de seguridad
+- Automatizacion de controles de seguridad
+- Visibilidad y transparencia
 
-### 3. Falsos Positivos vs. Verdaderos Positivos
+### 3. El Movimiento Shift-Left
 
-| Tipo | Descripcion | Que hacer |
-|------|-------------|-----------|
-| Verdadero Positivo (TP) | Vulnerabilidad real | Corregir inmediatamente |
-| Falso Positivo (FP) | No es vulnerabilidad, el analisis se equivoco | Marcar como falso positivo |
-| Verdadero Negativo (TN) | No hay vulnerabilidad y el analisis no reporto | Correcto, sin accion |
-| Falso Negativo (FN) | Hay vulnerabilidad pero el analisis no la detecto | El peor caso, mejorar reglas |
+Shift-Left significa mover las actividades de seguridad hacia la izquierda del timeline del proyecto (mas temprano en el ciclo de desarrollo).
 
-**Como reducir falsos positivos:**
-- Ajustar niveles de confianza (confidence level)
-- Usar reglas especificas del proyecto
-- Combinar con revision manual
-- Mantener una base de conocimiento de FP conocidos
+**Beneficios:**
+- **Costo menor:** Corregir una vulnerabilidad en produccion cuesta 30x mas que corregirla en desarrollo
+- **Parches mas rapidos:** Las vulnerabilidades se detectan antes de llegar a produccion
+- **Cultura de seguridad:** Todo el equipo es responsable de la seguridad
+- **Menos deuda tecnica de seguridad:** No se acumulan vulnerabilidades sin corregir
 
-### 4. SAST vs SCA vs DAST
+**Niveles de Shift-Left:**
+1. **Nivel 1 (Requerimientos):** Modelado de amenazas, security stories en backlog
+2. **Nivel 2 (Diseno):** Security review de arquitectura, threat modeling
+3. **Nivel 3 (Desarrollo):** IDE plugins con linting de seguridad, pre-commit hooks
+4. **Nivel 4 (Build):** SAST, SCA, secret scanning automatizados
+5. **Nivel 5 (Test):** DAST, penetration testing, fuzzing
+6. **Nivel 6 (Staging):** Config hardening, compliance scanning
 
-| Aspecto | SAST | SCA | DAST |
-|---------|------|-----|------|
-| Que analiza | Codigo fuente | Dependencias | App en ejecucion |
-| Cuando | Build/Commit | Build | Testing/Staging |
-| Perspectiva | White-box | Componentes | Black-box |
-| Detecta | Vulnerabilidades en codigo propio | CVEs en librerias de terceros | Vulnerabilidades en entorno y config |
-| Falsos positivos | Altos | Bajos | Medios |
+### 4. Pipeline CI/CD con Seguridad
 
-### 5. Integracion en IDE y CI/CD
+**Etapas de un pipeline DevSecOps:**
 
-**IDE:**
-- SonarLint (VSCode, IntelliJ, Eclipse)
-- Semgrep VSCode Extension
-- Bandit como plugin en linter (flake8-bandit)
-
-**CI/CD:**
-- GitHub Actions: `semgrep-action`, `bandit-action`
-- GitLab CI/CD: `semgrep.gitlab-ci.yml`
-- Jenkins: Plugins de SonarQube, Semgrep
-
-## Ejercicio 1: Proyecto Python Vulnerable + Ejecutar Bandit
-
-```python
-# proyecto_vulnerable.py - Proyecto con vulnerabilidades para analisis SAST
-import hashlib
-import os
-import subprocess
-import sqlite3
-import pickle
-import yaml
-import requests
-
-# ============================================================
-# VULNERABILIDAD 1: Hash inseguro (MD5)
-# ============================================================
-
-def hash_contrasena_md5(contrasena):
-    """Vulnerabilidad: MD5 es debil para contrasenas."""
-    return hashlib.md5(contrasena.encode()).hexdigest()
-
-
-# ============================================================
-# VULNERABILIDAD 2: Inyeccion SQL
-# ============================================================
-
-def buscar_usuario(nombre):
-    """Vulnerabilidad: concatenacion directa en consulta SQL."""
-    conn = sqlite3.connect('usuarios.db')
-    cursor = conn.cursor()
-
-    query = f"SELECT * FROM usuarios WHERE nombre = '{nombre}'"
-    cursor.execute(query)  # Inyeccion SQL
-
-    return cursor.fetchall()
-
-
-# ============================================================
-# VULNERABILIDAD 3: Command Injection
-# ============================================================
-
-def ejecutar_comando(comando):
-    """Vulnerabilidad: ejecuta comandos sin validar."""
-    resultado = subprocess.check_output(comando, shell=True)
-    return resultado.decode()
-
-
-# ============================================================
-# VULNERABILIDAD 4: Hardcoded password
-# ============================================================
-
-DB_PASSWORD = "admin123"  # Contrasena hardcodeada
-
-def conectar_bd():
-    """Usa contrasena hardcodeada."""
-    conn = sqlite3.connect(f'db://admin:{DB_PASSWORD}@localhost:5432/prod')
-    return conn
-
-
-# ============================================================
-# VULNERABILIDAD 5: Pickle inseguro
-# ============================================================
-
-def cargar_datos(archivo):
-    """Pickle puede ejecutar codigo arbitrario al deserializar."""
-    with open(archivo, 'rb') as f:
-        return pickle.load(f)  # Inseguro
-
-
-# ============================================================
-# VULNERABILIDAD 6: Uso de eval
-# ============================================================
-
-def evaluar_expresion(expresion):
-    """eval() ejecuta codigo Python arbitrario."""
-    return eval(expresion)
-
-
-# ============================================================
-# VULNERABILIDAD 7: YAML unsafe load
-# ============================================================
-
-def cargar_config_yaml(archivo):
-    """yaml.load() sin Loader seguro puede ejecutar codigo."""
-    with open(archivo, 'r') as f:
-        return yaml.load(f)  # yaml.safe_load() es seguro
-
-
-# ============================================================
-# VULNERABILIDAD 8: HTTP en lugar de HTTPS
-# ============================================================
-
-def obtener_datos():
-    """HTTP sin TLS expone datos en transito."""
-    response = requests.get('http://api-insegura.com/data')  # HTTP no HTTPS
-    return response.json()
-
-
-# ============================================================
-# VULNERABILIDAD 9: Path Traversal
-# ============================================================
-
-def leer_archivo(nombre):
-    """Path traversal: no valida que el archivo este en el directorio permitido."""
-    with open(nombre, 'r') as f:
-        return f.read()
-
-
-# ============================================================
-# VULNERABILIDAD 10: Assert usado como validacion
-# ============================================================
-
-def validar_usuario(usuario):
-    """assert se desactiva con -O, no es seguro para validacion."""
-    assert usuario.rol == 'admin', "No autorizado"  # No usar assert para seguridad
-    return True
-
-
-if __name__ == '__main__':
-    print("Proyecto vulnerable para analisis SAST con Bandit")
-
-    # Pruebas (no ejecutar en produccion)
-    print(hash_contrasena_md5("test"))
-    print(ejecutar_comando("echo test"))
-    print(evaluar_expresion("1+1"))
+```
+Commit --> Lint --> Build --> SAST --> SCA --> Test --> DAST --> Deploy --> Monitor
+                (seg)    (seg)    (seg)    (seg)    (seg)
 ```
 
-**Comandos para analizar con Bandit:**
-```bash
-# Instalar Bandit
-pip install bandit
+**Controles de seguridad por etapa:**
 
-# 1. Escaneo basico
-bandit -r .
+| Etapa | Herramienta | Que detecta |
+|-------|-------------|-------------|
+| Pre-commit | git-secrets, truffleHog | Secretos en codigo |
+| Lint | ESLint + eslint-plugin-security | Codigo inseguro |
+| Build | Docker Scout, Trivy | Vulnerabilidades en imagenes |
+| SAST | SonarQube, Semgrep, Bandit | Vulnerabilidades en codigo fuente |
+| SCA | OWASP Dependency-Check, Snyk | Vulnerabilidades en dependencias |
+| DAST | OWASP ZAP, Burp Suite | Vulnerabilidades en app en ejecucion |
+| Deploy | Checkov, tfsec | Infraestructura insegura |
+| Monitor | SIEM, WAF, Runtime Security | Ataques en produccion |
 
-# 2. Escaneo con nivel de confianza especifico
-bandit -r . --confidence-level high --severity-level high
+### 5. Modelo de Madurez DevSecOps
 
-# 3. Escaneo con formato JSON (para procesamiento)
-bandit -r . -f json -o bandit-report.json
+| Nivel | Caracteristicas |
+|-------|-----------------|
+| 1 - Inicial | Sin seguridad en CI/CD. Seguridad solo en auditorias anuales |
+| 2 - Repetible | Seguridad basica: SAST manual, revisores de seguridad asignados |
+| 3 - Definido | Automatizacion parcial: SAST y SCA en CI/CD, gate de seguridad basico |
+| 4 - Gestionado | Pipeline automatizado completo: SAST, DAST, SCA, secret scanning. Gates en cada etapa |
+| 5 - Optimizado | Seguridad continua: monitoreo runtime, feedback loop automatico, threat modeling integrado |
 
-# 4. Escaneo excluyendo ciertos tests
-bandit -r . --skip B101,B105,B108
-
-# 5. Escaneo con contexto y linea de codigo
-bandit -r . -ll -ii -n 5
-
-# 6. Reporte HTML
-bandit -r . -f html -o bandit-report.html
-```
-
-**Interpretacion del reporte de Bandit:**
-```
->> Issue: [B303:blacklist] Use of insecure MD4, MD5, or SHA1 hash function.
-   Severity: Medium   Confidence: High
-   Location: proyecto_vulnerable.py:13
-   12  def hash_contrasena_md5(contrasena):
-   13      return hashlib.md5(contrasena.encode()).hexdigest()
-
->> Issue: [B611:sql_injection] Possible SQL injection vector through string-based query construction.
-   Severity: Medium   Confidence: High
-   Location: proyecto_vulnerable.py:24
-   23      query = f"SELECT * FROM usuarios WHERE nombre = '{nombre}'"
-   24      cursor.execute(query)
-
->> Issue: [B602:subprocess_popen_with_shell_equals_true] subprocess call with shell=True seems safe...
-   Severity: High   Confidence: High
-   Location: proyecto_vulnerable.py:33
-   32  def ejecutar_comando(comando):
-   33      resultado = subprocess.check_output(comando, shell=True)
-
->> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'admin123'
-   Severity: Medium   Confidence: Medium
-   Location: proyecto_vulnerable.py:41
-   41  DB_PASSWORD = "admin123"
-
->> Issue: [B301:pickle] Pickle and modules that wrap it can be unsafe...
-   Severity: Medium   Confidence: High
-   Location: proyecto_vulnerable.py:51
-   51      return pickle.load(f)
-
->> Issue: [B307:eval] Use of possibly insecure function - consider using safer ast.literal_eval.
-   Severity: Medium   Confidence: High
-   Location: proyecto_vulnerable.py:60
-   60      return eval(expresion)
-
->> Issue: [B506:yaml_load] Use of yaml.load() without a Loader parameter...
-   Severity: Medium   Confidence: High
-   Location: proyecto_vulnerable.py:69
-   69      return yaml.load(f)
-```
-
-```python
-# proyecto_corregido.py - Version corregida del codigo vulnerable
-import hashlib
-import os
-import subprocess
-import sqlite3
-import json
-import yaml
-import requests
-from ast import literal_eval
-
-# ============================================================
-# CORRECCION 1: Hash seguro con bcrypt/argon2
-# ============================================================
-
-import bcrypt
-
-def hash_contrasena(contrasena):
-    """OK: Usa bcrypt con salt y factor de costo."""
-    return bcrypt.hashpw(
-        contrasena.encode(),
-        bcrypt.gensalt(rounds=12)
-    ).decode()
-
-
-# ============================================================
-# CORRECCION 2: SQL parametrizado
-# ============================================================
-
-def buscar_usuario_seguro(nombre):
-    """OK: Usa parametros en lugar de concatenacion."""
-    conn = sqlite3.connect('usuarios.db')
-    cursor = conn.cursor()
-
-    cursor.execute(
-        "SELECT * FROM usuarios WHERE nombre = ?",
-        (nombre,)
-    )
-    return cursor.fetchall()
-
-
-# ============================================================
-# CORRECCION 3: Sin shell=True
-# ============================================================
-
-def ejecutar_comando_seguro(lista_comandos):
-    """OK: Usa lista en lugar de string y shell=False."""
-    resultado = subprocess.check_output(lista_comandos, shell=False)
-    return resultado.decode()
-
-
-# ============================================================
-# CORRECCION 4: Secretos desde entorno
-# ============================================================
-
-def conectar_bd_segura():
-    """OK: Lee credenciales de variables de entorno."""
-    db_host = os.environ.get('DB_HOST', 'localhost')
-    db_user = os.environ.get('DB_USER', 'app')
-    db_pass = os.environ.get('DB_PASSWORD', '')
-
-    if not db_pass:
-        raise ValueError("DB_PASSWORD no configurada en variables de entorno")
-
-    conn = sqlite3.connect(f'db://{db_user}:****@{db_host}:5432/prod')
-    return conn
-
-
-# ============================================================
-# CORRECCION 5: JSON en lugar de Pickle
-# ============================================================
-
-def cargar_datos_seguro(archivo):
-    """OK: JSON no ejecuta codigo arbitrario."""
-    with open(archivo, 'r') as f:
-        return json.load(f)
-
-
-# ============================================================
-# CORRECCION 6: literal_eval en lugar de eval
-# ============================================================
-
-def evaluar_expresion_segura(expresion):
-    """OK: literal_eval solo evalua literales, no ejecuta codigo."""
-    try:
-        return literal_eval(expresion)
-    except (ValueError, SyntaxError):
-        return None
-
-
-# ============================================================
-# CORRECCION 7: yaml.safe_load
-# ============================================================
-
-def cargar_config_yaml_seguro(archivo):
-    """OK: safe_load no permite ejecucion de codigo."""
-    with open(archivo, 'r') as f:
-        return yaml.safe_load(f)
-
-
-# ============================================================
-# CORRECCION 8: HTTPS
-# ============================================================
-
-def obtener_datos_seguro():
-    """OK: Usa HTTPS para cifrar la comunicacion."""
-    response = requests.get('https://api-segura.com/data')
-    return response.json()
-
-
-# ============================================================
-# CORRECCION 9: Path traversal prevenido
-# ============================================================
-
-DIRECTORIO_BASE = os.path.abspath('data')
-
-def leer_archivo_seguro(nombre):
-    """OK: Valida que el archivo este dentro del directorio permitido."""
-    # Sanitizar path
-    ruta = os.path.normpath(os.path.join(DIRECTORIO_BASE, nombre))
-
-    # Verificar que este dentro del directorio base
-    if not ruta.startswith(DIRECTORIO_BASE):
-        raise PermissionError("Acceso denegado: fuera del directorio permitido")
-
-    if not os.path.exists(ruta):
-        raise FileNotFoundError("Archivo no encontrado")
-
-    with open(ruta, 'r') as f:
-        return f.read()
-
-
-# ============================================================
-# CORRECCION 10: Validacion explicita
-# ============================================================
-
-def validar_usuario_seguro(usuario):
-    """OK: Validacion explicita, no depende de assert."""
-    if not hasattr(usuario, 'rol'):
-        return False
-    if usuario.rol != 'admin':
-        return False
-    return True
-```
-
-## Ejercicio 2: Reglas Personalizadas de Semgrep para Detectar Hardcoded Passwords
+## Ejercicio 1: Pipeline CI/CD con 5 Controles de Seguridad (GitHub Actions)
 
 ```yaml
-# semgrep-rules/hardcoded-passwords.yaml
-# Reglas Semgrep personalizadas para detectar secretos hardcodeados
+# .github/workflows/devsecops-pipeline.yml
+# Pipeline CI/CD DevSecOps completo con 5 controles de seguridad
 
-rules:
-  # =============================================
-  # Regla 1: Contrasenas en variables
-  # =============================================
-  - id: hardcoded-password-variable
-    pattern-either:
-      - pattern: |
-          $VAR = "..."
-      - pattern: |
-          $VAR = '...'
-    patterns:
-      - metavariable-regex:
-          metavariable: $VAR
-          regex: (?i).*(password|passwd|pwd|secret|api_key|apikey).*
-      - metavariable-regex:
-          metavariable: $VAL
-          regex: (?i).*(password|passwd|pwd|secret|api_key|apikey).*
-    message: >
-      Posible secreto hardcodeado encontrado en la variable $VAR.
-      Los secretos deben leerse de variables de entorno o
-      un gestor de secretos (Vault, Azure Key Vault).
-    severity: ERROR
-    languages:
-      - python
-      - javascript
-      - typescript
-      - java
-      - go
-      - ruby
-    metadata:
-      category: security
-      cwe: "CWE-798: Use of Hard-coded Credentials"
-      owasp: "A2:2021 - Cryptographic Failures"
+name: DevSecOps Pipeline
 
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 6 * * 1'  # Escaneo completo semanal (lunes 6AM)
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
   # =============================================
-  # Regla 2: Contrasenas en diccionarios de configuracion
+  # CONTROL 1: LINTING DE SEGURIDAD
   # =============================================
-  - id: hardcoded-password-dict
-    pattern-either:
-      - pattern: |
-          {
-            ...,
-            "$KEY": "...",
-            ...
-          }
-      - pattern: |
-          {
-            ...,
-            '$KEY': '...',
-            ...
-          }
-    patterns:
-      - metavariable-regex:
-          metavariable: $KEY
-          regex: (?i).*(password|passwd|secret|api_key|apikey|token|secret_key).*
-      - metavariable-regex:
-          metavariable: $VAL
-          regex: (?i).*(password|passwd|secret|api_key|apikey|token|secret_key).*
-    message: >
-      Secreto hardcodeado encontrado en diccionario de configuracion.
-      Usa variables de entorno o un gestor de secretos.
-    severity: ERROR
-    languages:
-      - python
-      - javascript
-      - typescript
-      - java
-      - ruby
+  security-lint:
+    name: 'Control 1 - Linting de Seguridad'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Instalar dependencias
+        run: |
+          pip install flake8 flake8-bandit flake8-bugbear
+
+      - name: Ejecutar flake8 con plugins de seguridad
+        run: |
+          flake8 . --count --statistics \
+            --select=B,C,E,F,W,T4,B9 \
+            --max-complexity=10 \
+            --exclude=venv,.git,__pycache__
 
   # =============================================
-  # Regla 3: Conexion a BD con contrasena en texto plano
+  # CONTROL 2: SAST (Static Application Security Testing)
   # =============================================
-  - id: hardcoded-db-connection-string
-    patterns:
-      - pattern-either:
-          - pattern: |
-              $FUNC("$URL", ...)
-          - pattern: |
-              $FUNC('$URL', ...)
-      - metavariable-regex:
-          metavariable: $URL
-          regex: (?i).*(postgres|mysql|mongodb|sqlite|oracle)://.*:.*@.*
-    message: >
-      Conexion a base de datos con credenciales en texto plano
-      en la URL de conexion. Las credenciales deben pasarse
-      por parametros separados desde variables de entorno.
-    severity: WARNING
-    languages:
-      - python
-      - javascript
-      - typescript
-      - java
-      - go
+  sast:
+    name: 'Control 2 - SAST con Bandit y Semgrep'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Instalar herramientas SAST
+        run: |
+          pip install bandit semgrep
+
+      - name: SAST con Bandit
+        run: |
+          bandit -r . -f json -o bandit-report.json \
+            --confidence-level medium \
+            --severity-level medium \
+            --skip B101,B105
+
+      - name: SAST con Semgrep
+        run: |
+          semgrep --config=p/owasp-top-ten \
+            --config=p/python \
+            --error --strict \
+            --output=semgrep-report.json \
+            --json .
+
+      - name: Subir reportes SAST
+        uses: actions/upload-artifact@v4
+        with:
+          name: sast-reports
+          path: |
+            bandit-report.json
+            semgrep-report.json
+
+      - name: Fallar si hay vulnerabilidades criticas
+        run: |
+          python -c "
+          import json
+          with open('bandit-report.json') as f:
+              report = json.load(f)
+          high_issues = [i for i in report.get('results', [])
+                        if i.get('issue_severity') == 'HIGH']
+          if high_issues:
+              print(f'ERROR: {len(high_issues)} vulnerabilidades HIGH encontradas')
+              for issue in high_issues:
+                  print(f'  - {issue[\"filename\"]}:{issue[\"line_number\"]} - {issue[\"issue_text\"]}')
+              exit(1)
+          "
 
   # =============================================
-  # Regla 4: Funciones criptograficas debiles
+  # CONTROL 3: SCA (Software Composition Analysis)
   # =============================================
-  - id: weak-crypto-md5-sha1
-    pattern-either:
-      - pattern: hashlib.md5(...)
-      - pattern: hashlib.sha1(...)
-      - pattern: Crypto.Cipher.DES(...)
-      - pattern: Crypto.Cipher.ARC4(...)
-    message: >
-      Uso de algoritmo criptografico debil. MD5 y SHA-1 tienen
-      colisiones demostradas. DES y RC4 son vulnerables.
-      Usa SHA-256/3 para hash, AES-GCM para cifrado.
-    severity: ERROR
-    languages:
-      - python
-    metadata:
-      cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+  sca:
+    name: 'Control 3 - SCA con pip-audit'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Instalar pip-audit
+        run: pip install pip-audit
+
+      - name: Escanear dependencias
+        run: |
+          pip-audit --requirement requirements.txt \
+            --strict \
+            --desc on \
+            --format markdown \
+            --output pip-audit-report.md
+
+      - name: Publicar reporte
+        uses: actions/upload-artifact@v4
+        with:
+          name: sca-report
+          path: pip-audit-report.md
+
+      - name: Verificar bloqueos
+        run: |
+          if [ -f pip-audit-report.md ]; then
+            if grep -q "CRITICAL\|HIGH" pip-audit-report.md; then
+              echo "Vulnerabilidades criticas o altas en dependencias."
+              exit 1
+            fi
+          fi
 
   # =============================================
-  # Regla 5: SQL Injection detectado
+  # CONTROL 4: SECRET SCANNING
   # =============================================
-  - id: sql-injection-concatenation
-    pattern-either:
-      - pattern: |
-          $DB.execute("..." + $VAR + "...")
-      - pattern: |
-          $DB.execute(f"...{$VAR}...")
-      - pattern: |
-          $DB.execute('...' + $VAR + '...')
-    message: >
-      Posible inyeccion SQL detectada. No concatenes variables
-      en queries SQL. Usa consultas parametrizadas (? o %s).
-    severity: ERROR
-    languages:
-      - python
-    metadata:
-      cwe: "CWE-89: SQL Injection"
-      owasp: "A3:2021 - Injection"
+  secret-scanning:
+    name: 'Control 4 - Secret Scanning'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Historial completo para truffleHog
+
+      - name: Instalar truffleHog
+        run: pip install trufflehog
+
+      - name: Escanear con truffleHog
+        run: |
+          trufflehog git file://. --only-verified \
+            --fail \
+            --json > trufflehog-report.json || true
+
+      - name: Publicar reporte
+        uses: actions/upload-artifact@v4
+        with:
+          name: secret-scan-report
+          path: trufflehog-report.json
+
+      - name: Verificar resultados
+        run: |
+          if [ -f trufflehog-report.json ]; then
+            if [ "$(cat trufflehog-report.json | wc -l)" -gt 0 ]; then
+              echo "Secretos encontrados en el repositorio!"
+              cat trufflehog-report.json
+              exit 1
+            fi
+          fi
 
   # =============================================
-  # Regla 6: Debug/INFO en produccion
+  # CONTROL 5: DAST (Dynamic Application Security Testing)
   # =============================================
-  - id: debug-enabled-production
-    patterns:
-      - pattern: |
-          app.run(debug=True, ...)
-    message: >
-      Modo DEBUG activado. No usar debug=True en produccion.
-      Expone stack traces al usuario y permite ejecucion
-      remota de codigo.
-    severity: ERROR
-    languages:
-      - python
+  dast:
+    name: 'Control 5 - DAST con OWASP ZAP'
+    runs-on: ubuntu-latest
+    needs: [build-and-test]
+    if: github.event_name == 'schedule' || github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Iniciar aplicacion de prueba
+        run: |
+          # En un pipeline real, aqui se deploya la app en un entorno de staging
+          docker build -t miapp:test .
+          docker run -d -p 5000:5000 --name miapp-test miapp:test
+
+      - name: Ejecutar OWASP ZAP Scan
+        uses: zaproxy/action-full-scan@v0.10.0
+        with:
+          target: 'http://localhost:5000'
+          cmd_options: '-a -j -T 5'
+
+      - name: Subir reporte ZAP
+        uses: actions/upload-artifact@v4
+        with:
+          name: dast-report
+          path: zap-report.html
 
   # =============================================
-  # Regla 7: eval() detectado
+  # BUILD, TEST Y DEPLOY
   # =============================================
-  - id: dangerous-eval
-    pattern: eval(...)
-    message: >
-      Uso de eval() detectado. eval() ejecuta codigo Python
-      arbitrario. Usa ast.literal_eval() si necesitas evaluar
-      literales, o parseadores especificos.
-    severity: ERROR
-    languages:
-      - python
-    metadata:
-      cwe: "CWE-95: Eval Injection"
+  build-and-test:
+    name: 'Build y Test'
+    runs-on: ubuntu-latest
+    needs: [security-lint, sast, sca, secret-scanning]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Ejecutar tests
+        run: |
+          python -m pytest tests/ \
+            --junitxml=test-report.xml \
+            --cov=app \
+            --cov-report=xml
+
+      - name: Construir paquete
+        run: python -m build
+
+      - name: Subir artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-package
+          path: dist/
+
+  deploy:
+    name: 'Deploy Seguro'
+    runs-on: ubuntu-latest
+    needs: [build-and-test, dast]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy a produccion
+        run: |
+          # En produccion, usar credenciales de GitHub Secrets
+          # No hardcodear nunca
+          echo "Desplegando version segura..."
+          # ./deploy.sh
+
+      - name: Verificar deploy
+        run: |
+          curl -f http://produccion.example.com/health || exit 1
 ```
 
-**Como ejecutar las reglas personalizadas:**
-```bash
-# Ejecutar Semgrep con reglas personalizadas
-semgrep --config=semgrep-rules/hardcoded-passwords.yaml --error --strict .
+## Ejercicio 2: Diagrama ASCII de Pipeline DevSecOps
 
-# Ejecutar con output JSON
-semgrep --config=semgrep-rules/hardcoded-passwords.yaml --json -o semgrep-hallazgos.json .
-
-# Ejecutar combinando reglas personalizadas y publicas
-semgrep --config=semgrep-rules/ --config=p/owasp-top-ten --config=p/python .
-
-# Ejecutar en modo CI (solo mostrar hallazgos)
-semgrep --config=semgrep-rules/hardcoded-passwords.yaml --ci .
+```
++-------------------------------------------------------------------+
+|                    PIPELINE DEVSECOPS COMPLETO                     |
++-------------------------------------------------------------------+
+|                                                                     |
+|  [DESARROLLADOR]                                                    |
+|       |                                                             |
+|       | git commit + git push                                       |
+|       v                                                             |
+|  +----------+     +------------+     +------------+                 |
+|  | PRE-     |     | LINT DE    |     | BUILD      |                 |
+|  | COMMIT   | --> | SEGURIDAD  | --> | DEL        |                 |
+|  | HOOKS    |     | (flake8 +  |     | PROYECTO   |                 |
+|  | (git-    |     | bandit)    |     |            |                 |
+|  | secrets) |     +------------+     +------------+                 |
+|  +----------+            |                  |                       |
+|                          |                  |                       |
+|                          v                  v                       |
+|                    +------------+     +------------+                 |
+|                    | CONTROL 1  |     | CONTROL 2  |                 |
+|                    | SAST       |     | SCA        |                 |
+|                    | (Semgrep,  |     | (pip-audit,|                 |
+|                    | Bandit)    |     | Snyk)      |                 |
+|                    +------------+     +------------+                 |
+|                          |                  |                       |
+|                          +--------+---------+                       |
+|                                   |                                 |
+|                                   v                                 |
+|                            +------------+                           |
+|                            | CONTROL 3  |                           |
+|                            | SECRET     |                           |
+|                            | SCANNING   |                           |
+|                            | (truffle-  |                           |
+|                            | Hog)       |                           |
+|                            +------------+                           |
+|                                   |                                 |
+|                                   v                                 |
+|                            +------------+                           |
+|                            | BUILD DE   |                           |
+|                            | IMAGEN     |                           |
+|                            | DOCKER     |                           |
+|                            | (Docker    |                           |
+|                            | Scout)     |                           |
+|                            +------------+                           |
+|                                   |                                 |
+|                                   v                                 |
+|                            +------------+                           |
+|                            | CONTROL 4  |                           |
+|                            | DAST       |                           |
+|                            | (OWASP ZAP,|                           |
+|                            | Nikto)     |                           |
+|                            +------------+                           |
+|                                   |                                 |
+|                                   v                                 |
+|                            +------------+                           |
+|                            | DEPLOY A   |                           |
+|                            | STAGING    |                           |
+|                            +------------+                           |
+|                                   |                                 |
+|                                   v                                 |
+|                            +------------+                           |
+|                            | CONTROL 5  |                           |
+|                            | INFRA      |                           |
+|                            | SCANNING   |                           |
+|                            | (Checkov,  |                           |
+|                            | tfsec)     |                           |
+|                            +------------+                           |
+|                                   |                                 |
+|                                   v                                 |
+|                            +------------+                           |
+|                            | DEPLOY A   |                           |
+|                            | PRODUCCION |                           |
+|                            +------------+                           |
+|                                   |                                 |
+|                                   v                                 |
+|                            +------------+                           |
+|                            | MONITOR    |                           |
+|                            | CONTINUO   |                           |
+|                            | (SIEM,     |                           |
+|                            | WAF,       |                           |
+|                            | Runtime    |                           |
+|                            | Security)  |                           |
+|                            +------------+                           |
+|                                                                     |
++-------------------------------------------------------------------+
+|                                                                     |
+|  GATES DE SEGURIDAD (Quality Gates):                               |
+|  - Si SAST encuentra vulnerabilidades CRITICAS -> FALLA pipeline    |
+|  - Si SCA encuentra CVE conocidas -> FALLA pipeline                |
+|  - Si secret scanning encuentra secretos -> FALLA pipeline         |
+|  - Si DAST encuentra vulnerabilidades HIGH -> REQUIERE aprobacion  |
+|  - Si linting de seguridad falla -> FALLA pipeline                 |
+|                                                                     |
++-------------------------------------------------------------------+
 ```
 
-## Ejercicio 3: Analisis y Correccion de Reporte SonarQube
+## Ejercicio 3: Script de Automatizacion de Seguridad Local
 
 ```python
-# sonarqube_analysis.py - Script para procesar reporte de SonarQube
+# devsecops_local.py - Automatizacion de seguridad local (pre-commit)
+import os
+import sys
 import json
+import subprocess
 import logging
+from pathlib import Path
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(message)s')
 logger = logging.getLogger(__name__)
 
 
-class AnalizadorSonarQube:
+class DevSecOpsLocal:
     """
-    Procesa un reporte de SonarQube en formato JSON y prioriza
-    las vulnerabilidades para correccion.
+    Ejecuta controles de seguridad localmente antes del commit.
+    Simula lo que hara el pipeline CI/CD, pero en el entorno del
+    desarrollador para feedback inmediato (Shift-Left).
     """
 
-    def __init__(self, reporte_json: str):
-        with open(reporte_json, 'r') as f:
-            self.reporte = json.load(f)
+    def __init__(self, repo_path: str = '.'):
+        self.repo_path = Path(repo_path)
+        self.python_files = list(self.repo_path.rglob('*.py'))
+        self.requirements = self.repo_path / 'requirements.txt'
+        self.errores = []
 
-    def priorizar_vulnerabilidades(self) -> list:
-        """
-        Prioriza vulnerabilidades por severidad y tipo.
-        Retorna lista ordenada por criticidad.
-        """
-        issues = self.reporte.get('issues', [])
+    def ejecutar_todo(self) -> bool:
+        """Ejecuta todos los controles de seguridad."""
+        logger.info("=" * 60)
+        logger.info("DEVSECOPS LOCAL - Controles de Seguridad Pre-Commit")
+        logger.info("=" * 60)
 
-        prioridad = {
-            'BLOCKER': 0,
-            'CRITICAL': 1,
-            'MAJOR': 2,
-            'MINOR': 3,
-            'INFO': 4
-        }
+        controles = [
+            ('1. Lint Seguridad (flake8 + bandit)', self._lint_seguridad),
+            ('2. SAST (Bandit)', self._sast_bandit),
+            ('3. SAST (Semgrep)', self._sast_semgrep),
+            ('4. SCA (pip-audit)', self._sca_pip_audit),
+            ('5. Secret Scanning', self._secret_scanning),
+        ]
 
-        vulnerabilidades = []
-        for issue in issues:
-            if issue.get('type') == 'VULNERABILITY':
-                vulnerabilidades.append({
-                    'severidad': issue.get('severity', 'INFO'),
-                    'mensaje': issue.get('message', ''),
-                    'archivo': issue.get('component', ''),
-                    'linea': issue.get('line', 0),
-                    'regla': issue.get('rule', ''),
-                    'prioridad': prioridad.get(
-                        issue.get('severity', 'INFO'), 99
-                    ),
-                    'esfuerzo': issue.get('effort', '0min')
-                })
+        for nombre, control in controles:
+            logger.info(f"\n--- {nombre} ---")
+            try:
+                if control():
+                    logger.info(f"  OK: {nombre} pasado")
+                else:
+                    logger.error(f"  FALLO: {nombre}")
+            except Exception as e:
+                logger.error(f"  ERROR: {nombre} - {str(e)}")
+                self.errores.append(nombre)
 
-        vulnerabilidades.sort(key=lambda x: x['prioridad'])
-        return vulnerabilidades
+        if self.errores:
+            logger.info("\n" + "=" * 60)
+            logger.error("CONTROLES FALLIDOS:")
+            for e in self.errores:
+                logger.error(f"  - {e}")
+            logger.info("\nCorrige los errores antes de hacer commit.")
+            logger.info("Usa 'git commit --no-verify' para saltar (NO RECOMENDADO).")
+            return False
+        else:
+            logger.info("\n" + "=" * 60)
+            logger.info("TODOS LOS CONTROLES DE SEGURIDAD PASARON")
+            logger.info("=" * 60)
+            return True
 
-    def resumen_ejecutivo(self) -> dict:
-        """Genera resumen del reporte."""
-        issues = self.reporte.get('issues', [])
+    def _lint_seguridad(self) -> bool:
+        """Ejecuta flake8 con plugins de seguridad."""
+        if not self.python_files:
+            return True
+        result = subprocess.run(
+            ['flake8', '--select=B,C,E,F,W,T4,B9', '--statistics', '--count', '.'],
+            capture_output=True, text=True, cwd=self.repo_path
+        )
+        if result.returncode != 0:
+            logger.info(result.stdout[:2000])
+            return False
+        logger.info("  Sin errores de linting de seguridad")
+        return True
 
-        resumen = {
-            'total_issues': len(issues),
-            'total_vulnerabilidades': 0,
-            'total_bugs': 0,
-            'total_code_smells': 0,
-            'por_severidad': {'BLOCKER': 0, 'CRITICAL': 0,
-                             'MAJOR': 0, 'MINOR': 0, 'INFO': 0},
-            'por_tipo': {}
-        }
+    def _sast_bandit(self) -> bool:
+        """Ejecuta Bandit SAST."""
+        if not self.python_files:
+            return True
+        result = subprocess.run(
+            ['bandit', '-r', '.', '-f', 'json', '--confidence-level', 'medium',
+             '--severity-level', 'medium'],
+            capture_output=True, text=True, cwd=self.repo_path
+        )
+        try:
+            report = json.loads(result.stdout)
+            issues = report.get('results', [])
+            high = [i for i in issues if i.get('issue_severity') == 'HIGH']
+            medium = [i for i in issues if i.get('issue_severity') == 'MEDIUM']
 
-        for issue in issues:
-            tipo = issue.get('type', 'UNKNOWN')
-            severidad = issue.get('severity', 'INFO')
+            if high:
+                logger.error(f"  {len(high)} vulnerabilidades HIGH encontradas:")
+                for issue in high:
+                    logger.error(f"    {issue['filename']}:{issue['line_number']} - "
+                                f"{issue['issue_text']}")
+            if medium:
+                logger.info(f"  {len(medium)} vulnerabilidades MEDIUM encontradas")
 
-            resumen['por_severidad'][severidad] = \
-                resumen['por_severidad'].get(severidad, 0) + 1
+            logger.info(f"  Total: {len(issues)} issues")
+            return len(high) == 0
 
-            if tipo == 'VULNERABILITY':
-                resumen['total_vulnerabilidades'] += 1
-            elif tipo == 'BUG':
-                resumen['total_bugs'] += 1
-            elif tipo == 'CODE_SMELL':
-                resumen['total_code_smells'] += 1
+        except json.JSONDecodeError:
+            logger.warning("  Bandit no produjo JSON valido")
+            return True
 
-            resumen['por_tipo'][tipo] = \
-                resumen['por_tipo'].get(tipo, 0) + 1
+    def _sast_semgrep(self) -> bool:
+        """Ejecuta Semgrep con reglas OWASP Top 10 y Python."""
+        result = subprocess.run(
+            ['semgrep', '--config=p/owasp-top-ten', '--config=p/python',
+             '--json', '--error', '--strict', '.'],
+            capture_output=True, text=True, cwd=self.repo_path
+        )
+        if result.returncode != 0 and result.stderr:
+            try:
+                report = json.loads(result.stdout)
+                errors_count = len(report.get('errors', []))
+                results_count = len(report.get('results', []))
+                if results_count > 0:
+                    logger.info(f"  {results_count} hallazgos de Semgrep")
+                    for r in report['results'][:5]:
+                        logger.info(f"    {r['path']}:{r['start']['line']} - "
+                                   f"{r['extra']['message'][:80]}")
+                return results_count == 0
+            except (json.JSONDecodeError, KeyError):
+                return False
+        return True
 
-        return resumen
+    def _sca_pip_audit(self) -> bool:
+        """Ejecuta pip-audit para SCA."""
+        if not self.requirements.exists():
+            logger.info("  No hay requirements.txt, saltando SCA")
+            return True
+
+        result = subprocess.run(
+            ['pip-audit', '--requirement', 'requirements.txt', '--strict', '--desc'],
+            capture_output=True, text=True, cwd=self.repo_path
+        )
+        if result.returncode != 0:
+            logger.info(result.stdout[:1000])
+            return False
+        logger.info("  Sin vulnerabilidades conocidas en dependencias")
+        return True
+
+    def _secret_scanning(self) -> bool:
+        """Ejecuta busqueda de secretos con regex."""
+        secret_patterns = [
+            (r'-----BEGIN (RSA|EC|OPENSSH|PGP) PRIVATE KEY-----',
+             'Clave privada'),
+            (r'AKIA[0-9A-Z]{16}', 'AWS Access Key ID'),
+            (r'sk_live_[0-9a-zA-Z]+', 'Stripe Live Key'),
+            (r'ghp_[0-9a-zA-Z]{36}', 'GitHub Token'),
+            (r'(password|passwd|pwd)\s*[=:]\s*["\'].+["\']',
+             'Contrasena hardcodeada'),
+            (r'api[_-]?key\s*[=:]\s*["\'].+["\']',
+             'API Key hardcodeada'),
+            (r'secret[_-]?key\s*[=:]\s*["\'].+["\']',
+             'Secret Key hardcodeada'),
+            (r'token\s*[=:]\s*["\'].+["\']',
+             'Token hardcodeado'),
+        ]
+
+        found = False
+        for pattern, description in secret_patterns:
+            result = subprocess.run(
+                ['rg', '-n', pattern, '--glob', '!.git', '--glob', '!venv', '.'],
+                capture_output=True, text=True, cwd=self.repo_path
+            )
+            if result.stdout.strip():
+                logger.warning(f"  POSIBLE SECRETO: {description}")
+                for line in result.stdout.strip().split('\n')[:3]:
+                    logger.warning(f"    {line}")
+                found = True
+
+        if not found:
+            logger.info("  Sin secretos detectados")
+            return True
+        return False
 
 
 # ============================================================
-# EJEMPLO DE REPORTE SIMULADO DE SONARQUBE
+# PRE-COMMIT HOOK (instalar en .git/hooks/pre-commit)
 # ============================================================
 
-reporte_ejemplo = {
-    "issues": [
-        {
-            "type": "VULNERABILITY",
-            "severity": "BLOCKER",
-            "message": "Use of hardcoded password in database connection",
-            "component": "src/database.py",
-            "line": 42,
-            "rule": "python:S1313",
-            "effort": "5min"
-        },
-        {
-            "type": "VULNERABILITY",
-            "severity": "CRITICAL",
-            "message": "Make sure using the literal expression is safe here",
-            "component": "src/utils.py",
-            "line": 15,
-            "rule": "python:S1523",
-            "effort": "2min"
-        },
-        {
-            "type": "VULNERABILITY",
-            "severity": "MAJOR",
-            "message": "Use of MD5 hash function is not recommended",
-            "component": "src/auth.py",
-            "line": 23,
-            "rule": "python:S2070",
-            "effort": "10min"
-        },
-        {
-            "type": "BUG",
-            "severity": "MAJOR",
-            "message": "This function does not return a value in all paths",
-            "component": "src/process.py",
-            "line": 87,
-            "rule": "python:S935",
-            "effort": "5min"
-        },
-        {
-            "type": "VULNERABILITY",
-            "severity": "MINOR",
-            "message": "Use of assert without error message",
-            "component": "src/validators.py",
-            "line": 34,
-            "rule": "python:S1871",
-            "effort": "1min"
-        },
-        {
-            "type": "VULNERABILITY",
-            "severity": "CRITICAL",
-            "message": "This code uses SQL concatenation instead of prepared statements",
-            "component": "src/queries.py",
-            "line": 55,
-            "rule": "python:S2077",
-            "effort": "15min"
-        },
-        {
-            "type": "CODE_SMELL",
-            "severity": "MAJOR",
-            "message": "Function has too many parameters (8 > 5)",
-            "component": "src/handlers.py",
-            "line": 120,
-            "rule": "python:S107",
-            "effort": "20min"
-        }
-    ]
-}
+PRE_COMMIT_HOOK = """#!/bin/bash
+# Hook pre-commit que ejecuta DevSecOps local
+echo "Ejecutando controles de seguridad pre-commit..."
+python devsecops_local.py
+if [ $? -ne 0 ]; then
+    echo "ERROR: Los controles de seguridad fallaron."
+    echo "Corrige los errores o usa 'git commit --no-verify' para saltar."
+    exit 1
+fi
+"""
 
 
-def corregir_vulnerabilidades_prioritarias():
-    """
-    Demostracion de correccion de las 5 vulnerabilidades
-    mas criticas del reporte.
-    """
-    analizador = AnalizadorSonarQube(reporte_ejemplo)
-    resumen = analizador.resumen_ejecutivo()
-
-    logger.info("RESUMEN DEL REPORTE SONARQUBE:")
-    logger.info(f"  Total issues: {resumen['total_issues']}")
-    logger.info(f"  Vulnerabilidades: {resumen['total_vulnerabilidades']}")
-    logger.info(f"  Bugs: {resumen['total_bugs']}")
-    logger.info(f"  Code Smells: {resumen['total_code_smells']}")
-    logger.info(f"  Por severidad: {resumen['por_severidad']}")
-
-    priorizadas = analizador.priorizar_vulnerabilidades()
-
-    logger.info("\nTOP 5 VULNERABILIDADES A CORREGIR:")
-    for i, vuln in enumerate(priorizadas[:5], 1):
-        logger.info(f"\n  {i}. [{vuln['severidad']}] {vuln['mensaje']}")
-        logger.info(f"     Archivo: {vuln['archivo']}:{vuln['linea']}")
-        logger.info(f"     Esfuerzo estimado: {vuln['esfuerzo']}")
-        logger.info(f"     Regla: {vuln['regla']}")
-
-    # Plan de accion
-    logger.info("\n--- PLAN DE ACCION ---")
-    logger.info("""
-    1. BLOCKER - Contrasena hardcodeada (database.py:42)
-       ACCION: Mover a variable de entorno/Vault.
-       CODIGO:
-         # Antes: DB_PASSWORD = "admin123"
-         # Despues: DB_PASSWORD = os.environ['DB_PASSWORD']
-
-    2. CRITICAL - eval() en utils.py:15
-       ACCION: Reemplazar con ast.literal_eval().
-       CODIGO:
-         # Antes: resultado = eval(expresion)
-         # Despues: resultado = ast.literal_eval(expresion)
-
-    3. CRITICAL - SQL concatenation (queries.py:55)
-       ACCION: Usar consultas parametrizadas.
-       CODIGO:
-         # Antes: cursor.execute(f"SELECT * FROM users WHERE id = {user_id}")
-         # Despues: cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
-
-    4. MAJOR - MD5 hash (auth.py:23)
-       ACCION: Reemplazar con bcrypt o Argon2.
-       CODIGO:
-         # Antes: hashlib.md5(password.encode()).hexdigest()
-         # Despues: bcrypt.hashpw(password.encode(), bcrypt.gensalt())
-
-    5. MINOR - assert sin mensaje (validators.py:34)
-       ACCION: Reemplazar con validacion explicita.
-       CODIGO:
-         # Antes: assert user.is_admin
-         # Despues: if not user.is_admin: raise PermissionError("No autorizado")
-    """)
+def instalar_precommit_hook():
+    """Instala el hook pre-commit."""
+    hook_path = Path('.git/hooks/pre-commit')
+    hook_path.write_text(PRE_COMMIT_HOOK)
+    hook_path.chmod(0o755)
+    logger.info("Hook pre-commit instalado en .git/hooks/pre-commit")
 
 
 if __name__ == '__main__':
-    # Simular el reporte de SonarQube
-    with open('sonarqube-report.json', 'w') as f:
-        json.dump(reporte_ejemplo, f, indent=2)
+    import argparse
+    parser = argparse.ArgumentParser(description='DevSecOps Local')
+    parser.add_argument('--install-hook', action='store_true',
+                       help='Instalar hook pre-commit')
+    args = parser.parse_args()
 
-    corregir_vulnerabilidades_prioritarias()
+    if args.install_hook:
+        instalar_precommit_hook()
+    else:
+        devsecops = DevSecOpsLocal()
+        exito = devsecops.ejecutar_todo()
+        sys.exit(0 if exito else 1)
 ```
 
 ## Preguntas y Respuestas
 
-**P1: Que es SAST y en que se diferencia de DAST?**
-R: SAST (Static Application Security Testing) analiza el codigo fuente sin ejecutarlo, detectando vulnerabilidades en el codigo mismo. DAST (Dynamic Application Security Testing) analiza la aplicacion en ejecucion desde afuera. SAST es white-box (ve el codigo completo) y funciona temprano en el ciclo; DAST es black-box (solo ve respuestas HTTP) y requiere la app desplegada.
+**P1: Que es DevSecOps y como se diferencia de DevOps?**
+R: DevOps se enfoca en acelerar la entrega de software integrando desarrollo y operaciones. DevSecOps agrega seguridad como parte integral del proceso, no como una etapa final. En DevSecOps, la seguridad es responsabilidad de todos (no solo del equipo de seguridad) y se automatiza en cada etapa del pipeline.
 
-**P2: Que es un falso positivo en SAST y como se maneja?**
-R: Un falso positivo es un resultado que SAST marca como vulnerabilidad pero que en realidad no lo es en el contexto del proyecto. Se maneja: (1) verificando manualmente el resultado, (2) marcandolo como falso positivo en la herramienta, (3) ajustando las reglas para reducir ruido, (4) manteniendo un registro de FP conocidos.
+**P2: Que significa Shift-Left y cuales son sus beneficios?**
+R: Shift-Left significa mover las actividades de seguridad a etapas tempranas del ciclo de desarrollo (requisitos, diseno, codificacion) en lugar de dejarlas para el final. Beneficios: costo de correccion 30x menor, vulnerabilidades detectadas antes de produccion, cultura de seguridad compartida, menos deuda tecnica de seguridad.
 
-**P3: Cual es la diferencia entre SAST y SCA?**
-R: SAST analiza el codigo fuente propio de la aplicacion en busca de vulnerabilidades de diseno e implementacion. SCA (Software Composition Analysis) analiza las dependencias y librerias de terceros en busca de vulnerabilidades conocidas (CVE). SAST usa analisis de patrones y flujo de datos; SCA compara versiones de paquetes contra bases de datos de vulnerabilidades.
+**P3: Que 5 controles de seguridad se deben insertar en un pipeline CI/CD?**
+R: (1) SAST (Static Analysis) - analisis de codigo fuente en build. (2) SCA (Software Composition Analysis) - analisis de dependencias. (3) Secret Scanning - deteccion de secretos en el repositorio. (4) DAST (Dynamic Analysis) - prueba de seguridad en app en ejecucion. (5) Linting de seguridad - reglas de codigo seguro en el IDE/pre-commit.
 
-**P4: Que es Bandit y que tipo de vulnerabilidades detecta?**
-R: Bandit es una herramienta SAST disenada especificamente para Python. Detecta: uso de funciones peligrosas (eval, exec, pickle), hashes inseguros (MD5, SHA-1), inyecciones SQL, hardcoded passwords, command injection, uso de assert para seguridad, configuraciones inseguras (debug=True), y otras vulnerabilidades del OWASP Top 10.
+**P4: Cual es la diferencia entre SAST y DAST?**
+R: SAST (Static Application Security Testing) analiza el codigo fuente sin ejecutarlo, detectando vulnerabilidades en el codigo mismo (inyecciones, XSS, etc.). DAST (Dynamic Application Security Testing) analiza la aplicacion en ejecucion desde afuera, detectando vulnerabilidades en la configuracion y el comportamiento en tiempo real. SAST es "white-box" (ve el codigo), DAST es "black-box" (no ve el codigo).
 
-**P5: Como se crea una regla personalizada en Semgrep?**
-R: Una regla Semgrep es un archivo YAML que define: (1) id unico de la regla, (2) pattern o patterns que describen el codigo a buscar (usando metavariables como $VAR, $EXPR), (3) message que se mostrara al encontrar el patron, (4) severity (ERROR, WARNING, INFO), (5) languages a los que aplica, (6) metadata opcional (CWE, OWASP).
+**P5: Que es un "quality gate" en un pipeline DevSecOps?**
+R: Un quality gate es un punto de control en el pipeline donde se evaluan metricas de seguridad y calidad. Si no se cumplen los criterios (ej: vulnerabilidades criticas, cobertura de tests insuficiente, secretos detectados), el pipeline se detiene y el cambio no avanza a la siguiente etapa. Ejemplos: "no permitir vulnerabilidades HIGH en SAST", "no permitir CVEs conocidos en dependencias".
 
-**P6: Por que es importante integrar SAST en el IDE y no solo en CI/CD?**
-R: Integrar SAST en el IDE permite que el desarrollador reciba feedback inmediato mientras escribe codigo, en lugar de esperar al pipeline CI/CD. Esto sigue el principio Shift-Left: corregir la vulnerabilidad cuando el contexto del codigo esta fresco, reduciendo el tiempo y costo de correccion.
+**P6: Por que es importante que la seguridad sea responsabilidad compartida en DevSecOps?**
+R: En modelos tradicionales, la seguridad es responsabilidad exclusiva del equipo de seguridad, que revisa al final del ciclo. Esto crea cuellos de botella y conflictos. En DevSecOps, desarrolladores, operaciones y seguridad colaboran desde el inicio, con herramientas automatizadas que permiten a los desarrolladores detectar y corregir vulnerabilidades sin depender del equipo de seguridad.
 
-**P7: Que es SonarQube y que son los "Quality Gates"?**
-R: SonarQube es una plataforma de analisis continuo de calidad y seguridad de codigo. Los Quality Gates son conjuntos de criterios (ej: "0 vulnerabilidades BLOCKER", "cobertura de tests > 80%") que determinan si el codigo es aceptable. Si no se cumple el quality gate, el pipeline CI/CD se detiene y el cambio no se despliega.
+**P7: Que es el modelo de madurez DevSecOps y cuales son sus niveles?**
+R: Es un marco para evaluar que tan integrada esta la seguridad en el ciclo DevOps. Niveles: (1) Inicial - sin seguridad en CI/CD. (2) Repetible - SAST manual basico. (3) Definido - automatizacion parcial con SAST y SCA. (4) Gestionado - pipeline completo con gates en cada etapa. (5) Optimizado - seguridad continua con monitoreo runtime y feedback loop automatico.
 
 ## Tarea / Lectura Recomendada
 
-1. **Bandit Documentation:**
-   https://bandit.readthedocs.io/en/latest/
+1. **OWASP DevSecOps Guideline:**
+   https://owasp.org/www-project-devsecops-guideline/
 
-2. **Semgrep Registry (Reglas publicas):**
-   https://semgrep.dev/explore
+2. **OWASP Software Assurance Maturity Model (SAMM):**
+   https://owaspsamm.org/
 
-3. **Semgrep Writing Rules:**
-   https://semgrep.dev/docs/writing-rules/overview/
+3. **DevSecOps en GitHub Actions:**
+   https://docs.github.com/en/actions/security-guides
 
-4. **SonarQube Security Rules:**
-   https://rules.sonarsource.com/
+4. **Docker Security Scanning:**
+   https://docs.docker.com/scout/
 
-5. **OWASP Source Code Analysis Tools:**
-   https://owasp.org/www-community/Source_Code_Analysis_Tools
+5. **Tarea practica:** Crear un pipeline DevSecOps para una app Node.js con ESLint + SonarCloud + Snyk + ZAP.
 
-6. **Tarea practica:** Crear 3 reglas Semgrep adicionales para detectar: (a) uso de `requests` sin timeout, (b) archivos temporales en directorios inseguros, (c) comparacion de contrasenas sin timing-safe comparison.
+6. **Tarea practica:** Evaluar la madurez DevSecOps de un proyecto real usando el modelo de 5 niveles y proponer mejoras especificas.
 
-7. **Tarea practica:** Configurar SonarQube en Docker y ejecutar analisis sobre el proyecto vulnerable de la clase, corrigiendo las 10 vulnerabilidades.
 
 

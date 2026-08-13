@@ -1,6 +1,6 @@
-# Clase 40: Pruebas de Seguridad y Hacking Etico
+# Clase 40: Taller Integrador - App Segura Parte 2
 
-**Numero de clase:** 30  
+**Numero de clase:** 29  
 **Duracion:** 2 horas  
 **Curso:** Taller de Ciberseguridad Orientada al Desarrollo
 
@@ -8,431 +8,893 @@
 
 ## Objetivos de Aprendizaje
 
-- Distinguir entre pruebas de penetracion y pruebas automatizadas
-- Aplicar metodologia de pentesting: reconocimiento, escaneo, explotacion
-- Usar herramientas como nmap, curl, OWASP ZAP, Burp Suite
-- Probar ataques comunes contra la app segura
-- Demostrar que las defensas implementadas bloquean los ataques
+- Implementar endpoints protegidos con JWT
+- Implementar RBAC (Role-Based Access Control)
+- Agregar logging seguro sin exponer informacion sensible
+- Implementar rate limiting
+- Agregar security headers con Helmet
+- Escribir pruebas unitarias de seguridad
 
 ---
 
 ## Contenido Detallado
 
-### 1. Pentesting vs. Pruebas Automatizadas (15 min)
+### 1. Endpoints Protegidos con JWT (15 min)
 
-| Aspecto | Pentesting Manual | Pruebas Automatizadas |
-|---------|------------------|----------------------|
-| Alcance | Profundo, especifico | Amplio, general |
-| Velocidad | Lenta | Rapida |
-| Creatividad | Alta (encadenamiento de vulnerabilidades) | Baja (patrones conocidos) |
-| Falsos positivos | Bajos | Pueden ser altos |
-| Costo | Alto | Bajo |
-| Cobertura | Logica de negocio, bypass creativo | Vulnerabilidades tecnicas comunes |
+Agregamos el router de items con proteccion JWT.
 
-**Cuando usar cada una:**
-- Automatizadas: En CI/CD (SAST, DAST, SCA), escaneos regulares
-- Manual: Antes de releases criticos, aplicaciones con logica de negocio compleja, aplicaciones que manejan datos sensibles
-
-### 2. Metodologia de Pentesting (10 min)
-
-```
-1. Reconocimiento (Information Gathering)
-   -> nmap, whois, dnsrecon, sublist3r
-
-2. Escaneo (Scanning)
-   -> nmap -sV, gobuster, nikto, OWASP ZAP
-
-3. Explotacion (Exploitation)
-   -> SQLMap, Metasploit, Burp Suite Repeater
-
-4. Post-Explotacion
-   -> Escalada de privilegios, persistencia, exfiltracion de datos
-
-5. Reporte
-   -> Documentar hallazgos, evidencias, recomendaciones
-```
-
-### 3. Herramientas (15 min)
-
-**nmap - Escaneo de puertos y servicios:**
-```bash
-# Escaneo basico de puertos
-nmap -sS -p- localhost
-
-# Escaneo de servicios y versiones
-nmap -sV -p 8000 localhost
-
-# Escaneo con scripts de seguridad
-nmap -sV --script=http-enum,http-headers -p 8000 localhost
-```
-
-**gobuster - Fuzzing de directorios:**
-```bash
-gobuster dir -u http://localhost:8000 -w /usr/share/wordlists/dirb/common.txt
-```
-
-**curl - Pruebas manuales:**
-```bash
-# GET basico
-curl -v http://localhost:8000/health
-
-# POST con datos
-curl -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"test","password":"test"}'
-
-# Con token
-curl -H "Authorization: Bearer TOKEN" http://localhost:8000/api/items/
-```
-
-**SQLMap - Deteccion de SQL Injection:**
-```bash
-sqlmap -u "http://localhost:8000/api/items/1" \
-  --cookie="access_token=TOKEN" \
-  --batch --level=2
-```
-
-**OWASP ZAP - DAST automatizado:**
-```bash
-# Escaneo basico
-zap-baseline.py -t http://localhost:8000 -r report.html
-
-# Escaneo completo
-zap-full-scan.py -t http://localhost:8000 -r report.html
-```
-
-### 4. La App Segura como Objetivo (5 min)
-
-La aplicacion creada en las clases 28-29 tiene las siguientes defensas:
-
-- Autenticacion JWT con refresh tokens
-- Hashing de contrasenas con bcrypt
-- Validacion de entrada con Pydantic
-- Consultas parametrizadas (SQLAlchemy ORM)
-- Autorizacion con RBAC (roles user/admin)
-- Proteccion IDOR (verificacion de ownership)
-- Rate limiting en login
-- Security headers
-- Logging seguro
-- CORS restrictivo
-
----
-
-## Ejercicio 1: Escanear la App con nmap y OWASP ZAP
-
-**Enunciado:** Ejecutar nmap y OWASP ZAP contra la aplicacion segura, analizar los resultados.
-
-**Solucion paso a paso:**
-
-**Paso 1: Iniciar la aplicacion**
-```bash
-cd secure-api
-uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
-
-**Paso 2: Escaneo con nmap**
-```bash
-nmap -sV -p 8000 --script=http-enum,http-headers localhost
-```
-
-**Analisis de resultados esperados:**
-```
-PORT     STATE SERVICE VERSION
-8000/tcp open  http    uvicorn 0.27.0
-| http-headers:
-|   content-type: application/json
-|   x-content-type-options: nosniff
-|   x-frame-options: DENY
-|   x-xss-protection: 1; mode=block
-|   strict-transport-security: max-age=31536000; includeSubDomains
-|   content-security-policy: default-src 'self'
-|   referrer-policy: strict-origin-when-cross-origin
-|_  date: ...
-```
-
-**Interpretacion:**
-- Solo un puerto abierto (8000) = superficie de ataque minima
-- Security headers presentes = proteccion contra clickjacking, XSS, MIME sniffing
-- Version de uvicorn expuesta = informacion para el atacante (podria ocultarse)
-- Sin directorios sensibles detectados
-
-**Paso 3: Escaneo con OWASP ZAP**
-```bash
-docker run --rm -v $(pwd):/zap/wrk ghcr.io/zaproxy/zaproxy:stable \
-  zap-baseline.py -t http://host.docker.internal:8000 -r zap-report.html
-```
-
-**Analisis de resultados esperados:**
-```
-PASS: Anti-CSRF tokens scanner
-PASS: Path Traversal scanner
-PASS: SQL Injection scanner
-PASS: XSS scanner
-WARN: Content Security Policy (CSP) could be strengthened
-INFO: Server leaks version via Server header
-```
-
-**Interpretacion:**
-- PASS en las pruebas de inyeccion = las defensas funcionan
-- La advertencia de CSP es configuracion mejorable, no vulnerabilidad
-- La fuga de version del servidor es informativa, baja prioridad
-
----
-
-## Ejercicio 2: Probar Ataques Comunes Contra la App Segura
-
-**Enunciado:** Ejecutar ataques de SQL injection, path traversal y XSS, demostrando que la app segura los bloquea.
-
-**Solucion paso a paso:**
-
-**Ataque 1: SQL Injection en login**
-```bash
-# Intento de SQL injection en username
-curl -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"admin' OR '1'='1", "password":"cualquiera"}'
-```
-
-**Resultado esperado:**
-```json
-{"detail":"Credenciales invalidas"}
-```
-
-**Por que falla el ataque:** La app NO concatena el string en la query SQL. Usa SQLAlchemy ORM con consultas parametrizadas:
 ```python
-user = db.query(User).filter(User.username == username).first()
+# app/schemas/item.py
+from pydantic import BaseModel, Field
+from typing import Optional
+from datetime import datetime
+
+
+class ItemCreate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=1000)
+
+
+class ItemUpdate(BaseModel):
+    title: Optional[str] = Field(None, min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=1000)
+
+
+class ItemResponse(BaseModel):
+    id: int
+    title: str
+    description: Optional[str]
+    owner_id: int
+    created_at: datetime
+    updated_at: Optional[datetime]
+
+    model_config = {"from_attributes": True}
 ```
-Esto escapa automaticamente los caracteres especiales. La inyeccion se convierte en una busqueda literal del username `"admin' OR '1'='1"`.
 
-**Ataque 2: Path traversal en endpoint de archivos**
-```bash
-# Asumiendo que intentamos leer /etc/passwd (si existiera un endpoint de archivos)
-curl -X GET "http://localhost:8000/api/files/read?filename=../../../etc/passwd" \
-  -H "Authorization: Bearer TOKEN"
+```python
+# app/models/item.py
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+from sqlalchemy.sql import func
+from app.database import Base
+
+
+class Item(Base):
+    __tablename__ = "items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now()
+    )
 ```
 
-**Resultado esperado:** 404 Not Found (el endpoint no existe) o 422 Validation Error.
+```python
+# app/routers/items.py
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy.orm import Session
+from typing import List
 
-**Por que falla el ataque:** La app segura no expone endpoints que lean archivos del sistema. Si los tuviera, se implementaria sanitizacion con normalizacion de rutas y verificacion de directorio base.
+from app.database import get_db
+from app.models.user import User
+from app.models.item import Item
+from app.schemas.item import ItemCreate, ItemUpdate, ItemResponse
+from app.middleware.security import get_current_user
 
-**Ataque 3: XSS en campos de texto**
+router = APIRouter(prefix="/api/items", tags=["items"])
+
+
+@router.get("/", response_model=List[ItemResponse])
+def list_items(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    items = (
+        db.query(Item)
+        .filter(Item.owner_id == current_user.id)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    return items
+
+
+@router.get("/{item_id}", response_model=ItemResponse)
+def get_item(
+    item_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    item = db.query(Item).filter(Item.id == item_id).first()
+    if item is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Item no encontrado"
+        )
+    # Verificar ownership (IDOR protection)
+    if item.owner_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No autorizado para ver este item"
+        )
+    return item
+
+
+@router.post("/", response_model=ItemResponse, status_code=201)
+def create_item(
+    item_data: ItemCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    item = Item(
+        title=item_data.title,
+        description=item_data.description,
+        owner_id=current_user.id
+    )
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@router.put("/{item_id}", response_model=ItemResponse)
+def update_item(
+    item_id: int,
+    item_data: ItemUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    item = db.query(Item).filter(Item.id == item_id).first()
+    if item is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Item no encontrado"
+        )
+    if item.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No autorizado para modificar este item"
+        )
+    if item_data.title is not None:
+        item.title = item_data.title
+    if item_data.description is not None:
+        item.description = item_data.description
+    db.commit()
+    db.refresh(item)
+    return item
+
+
+@router.delete("/{item_id}", status_code=204)
+def delete_item(
+    item_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    item = db.query(Item).filter(Item.id == item_id).first()
+    if item is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Item no encontrado"
+        )
+    if item.owner_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No autorizado para eliminar este item"
+        )
+    db.delete(item)
+    db.commit()
+    return None
+```
+
+### 2. Middleware de Autorizacion por Roles (15 min)
+
+```python
+# app/middleware/rbac.py
+from functools import wraps
+from fastapi import Depends, HTTPException, status
+
+from app.models.user import User
+from app.middleware.security import get_current_user
+
+
+def require_role(required_role: str):
+    """
+    Decorator para verificar que el usuario tenga un rol especifico.
+
+    Uso:
+        @router.get("/admin/users")
+        @require_role("admin")
+        def admin_endpoint(current_user: User = Depends(get_current_user)):
+            ...
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            # Extraer current_user de kwargs (inyectado por FastAPI)
+            current_user = kwargs.get("current_user")
+            if current_user is None:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Autenticacion requerida"
+                )
+            if current_user.role != required_role:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"Se requiere rol '{required_role}'"
+                )
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
+```
+
+Alternativa usando dependencia directa (mas "FastAPI way"):
+
+```python
+# app/middleware/rbac.py - Version alternativa
+from fastapi import Depends, HTTPException, status
+from app.models.user import User
+from app.middleware.security import get_current_user
+
+
+class RoleChecker:
+    def __init__(self, allowed_roles: list):
+        self.allowed_roles = allowed_roles
+
+    def __call__(self, current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in self.allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Acceso denegado. Roles permitidos: {self.allowed_roles}"
+            )
+        return current_user
+
+
+# Instancias reutilizables
+admin_only = RoleChecker(["admin"])
+user_or_admin = RoleChecker(["user", "admin"])
+```
+
+Uso con clase:
+
+```python
+from app.middleware.rbac import admin_only, user_or_admin
+
+@router.get("/admin/users")
+def list_all_users(
+    current_user: User = Depends(admin_only),
+    db: Session = Depends(get_db)
+):
+    users = db.query(User).all()
+    return users
+```
+
+### 3. Logging Seguro (10 min)
+
+El logging seguro nunca debe incluir informacion sensible como contrasenas, tokens, datos personales.
+
+```python
+# app/services/logger.py
+import logging
+import json
+import re
+from datetime import datetime, timezone
+
+
+class SecureLogger:
+    """
+    Logger que filtra informacion sensible antes de escribir.
+    """
+
+    # Patrones de campos sensibles
+    SENSITIVE_FIELDS = [
+        "password", "secret", "token", "authorization",
+        "credit_card", "ssn", "phone", "email"
+    ]
+
+    def __init__(self, name: str):
+        self.logger = logging.getLogger(name)
+        self.logger.setLevel(logging.INFO)
+
+        # Handler para archivo
+        handler = logging.FileHandler("app.log")
+        handler.setFormatter(logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        ))
+        self.logger.addHandler(handler)
+
+    def _sanitize(self, data: dict) -> dict:
+        """Elimina o enmascara campos sensibles."""
+        sanitized = {}
+        for key, value in data.items():
+            key_lower = key.lower()
+            if any(field in key_lower for field in self.SENSITIVE_FIELDS):
+                sanitized[key] = "***REDACTED***"
+            elif isinstance(value, dict):
+                sanitized[key] = self._sanitize(value)
+            else:
+                sanitized[key] = value
+        return sanitized
+
+    def log_event(self, level: str, event: str, user_id: int = None,
+                  details: dict = None, ip_address: str = None):
+        """Registra un evento de seguridad."""
+        log_entry = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "event": event,
+            "user_id": user_id,
+            "ip_address": ip_address,
+            "details": self._sanitize(details or {})
+        }
+
+        message = json.dumps(log_entry)
+
+        if level.upper() == "INFO":
+            self.logger.info(message)
+        elif level.upper() == "WARNING":
+            self.logger.warning(message)
+        elif level.upper() == "ERROR":
+            self.logger.error(message)
+        elif level.upper() == "CRITICAL":
+            self.logger.critical(message)
+
+
+# Instancia global
+secure_logger = SecureLogger("secure_api")
+```
+
+Uso en endpoints:
+
+```python
+from app.services.logger import secure_logger
+
+@router.post("/login", response_model=TokenResponse)
+def login(credentials: UserLogin, request: Request, db: Session = Depends(get_db)):
+    user = authenticate_user(db, credentials.username, credentials.password)
+
+    if user is None:
+        secure_logger.log_event(
+            level="WARNING",
+            event="LOGIN_FAILED",
+            details={"username": credentials.username},
+            ip_address=request.client.host
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciales invalidas"
+        )
+
+    access_token = create_access_token({"sub": str(user.id)})
+    refresh_token = create_refresh_token({"sub": str(user.id)})
+
+    secure_logger.log_event(
+        level="INFO",
+        event="LOGIN_SUCCESS",
+        user_id=user.id,
+        ip_address=request.client.host
+    )
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token
+    )
+```
+
+### 4. Rate Limiting (15 min)
+
+```python
+# app/middleware/ratelimit.py
+import time
+from collections import defaultdict
+from fastapi import HTTPException, Request, status
+
+
+class RateLimiter:
+    """
+    Rate limiter simple en memoria (para produccion usar Redis).
+    """
+
+    def __init__(self):
+        # {key: [(timestamp, count), ...]}
+        self.requests = defaultdict(list)
+
+    def _get_key(self, request: Request) -> str:
+        """Identificador unico basado en IP o usuario autenticado."""
+        client_ip = request.client.host if request.client else "unknown"
+
+        # Si hay usuario autenticado, usar su ID
+        if hasattr(request.state, "user"):
+            return f"user:{request.state.user.id}"
+
+        return f"ip:{client_ip}"
+
+    def check(self, request: Request, max_requests: int = 10,
+              window_seconds: int = 60) -> None:
+        """
+        Verifica si el request excede el limite.
+
+        Args:
+            request: Request de FastAPI
+            max_requests: Maximo de requests permitidos en la ventana
+            window_seconds: Tamano de la ventana en segundos
+        """
+        key = self._get_key(request)
+        now = time.time()
+
+        # Limpiar entradas viejas
+        self.requests[key] = [
+            req_time for req_time in self.requests[key]
+            if now - req_time < window_seconds
+        ]
+
+        # Verificar limite
+        if len(self.requests[key]) >= max_requests:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Limite de requests excedido. "
+                       f"Maximo: {max_requests} por {window_seconds}s",
+                headers={"Retry-After": str(window_seconds)}
+            )
+
+        # Registrar request
+        self.requests[key].append(now)
+
+
+# Instancia global
+rate_limiter = RateLimiter()
+```
+
+Integracion como middleware FastAPI:
+
+```python
+# app/middleware/ratelimit_middleware.py
+from fastapi import Request, HTTPException, status
+from starlette.middleware.base import BaseHTTPMiddleware
+
+from app.middleware.ratelimit import rate_limiter
+
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        # Aplicar rate limiting a rutas de autenticacion
+        if request.url.path.startswith("/auth"):
+            rate_limiter.check(
+                request,
+                max_requests=5,       # 5 intentos
+                window_seconds=60     # por minuto
+            )
+
+        response = await call_next(request)
+        return response
+```
+
+Registrar en `main.py`:
+
+```python
+from app.middleware.ratelimit_middleware import RateLimitMiddleware
+
+app.add_middleware(RateLimitMiddleware)
+```
+
+### 5. Security Headers (10 min)
+
+```python
+# app/middleware/headers.py
+from fastapi import Request
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response: Response = await call_next(request)
+
+        # Prevenir que el navegador haga MIME-type sniffing
+        response.headers["X-Content-Type-Options"] = "nosniff"
+
+        # Prevenir clickjacking
+        response.headers["X-Frame-Options"] = "DENY"
+
+        # Habilitar XSS filter en navegadores antiguos
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+
+        # HSTS (HTTP Strict Transport Security)
+        response.headers["Strict-Transport-Security"] = \
+            "max-age=31536000; includeSubDomains"
+
+        # Content Security Policy
+        response.headers["Content-Security-Policy"] = \
+            "default-src 'self'; script-src 'self'; style-src 'self'"
+
+        # Referrer Policy
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+        # Cache-Control para respuestas sensibles
+        if request.url.path.startswith("/auth"):
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+
+        # Remove Server header
+        if "server" in response.headers:
+            del response.headers["server"]
+
+        return response
+```
+
+Registrar en `main.py`:
+
+```python
+from app.middleware.headers import SecurityHeadersMiddleware
+
+app.add_middleware(SecurityHeadersMiddleware)
+```
+
+### 6. Tests de Seguridad (15 min)
+
+```python
+# tests/test_security.py
+import pytest
+from httpx import AsyncClient, ASGITransport
+from app.main import app
+from app.database import Base, engine, SessionLocal
+from app.models.user import User
+from app.services.auth_service import hash_password
+
+
+@pytest.fixture(autouse=True)
+def setup_db():
+    """Crear tablas limpias para cada test."""
+    Base.metadata.create_all(bind=engine)
+    yield
+    # Limpiar despues de cada test
+    Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture
+def db_session():
+    session = SessionLocal()
+    yield session
+    session.close()
+
+
+@pytest.fixture
+def test_user(db_session):
+    user = User(
+        email="test@example.com",
+        username="testuser",
+        password_hash=hash_password("TestPass123"),
+        role="user"
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.fixture
+def admin_user(db_session):
+    user = User(
+        email="admin@example.com",
+        username="adminuser",
+        password_hash=hash_password("AdminPass123"),
+        role="admin"
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+    return user
+
+
+@pytest.mark.asyncio
+async def test_register_with_weak_password():
+    """Test: registro con contrasena debil debe fallar."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post("/auth/register", json={
+            "email": "weak@example.com",
+            "username": "weakuser",
+            "password": "123"  # Demasiado corta, sin mayusculas
+        })
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_login_invalid_credentials():
+    """Test: login con credenciales invalidas debe fallar."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.post("/auth/login", json={
+            "username": "nonexistent",
+            "password": "WrongPass123"
+        })
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_access_without_token():
+    """Test: endpoint protegido sin token debe retornar 401."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/api/items/")
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_access_with_expired_token():
+    """Test: token expirado debe dar 401."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get(
+            "/api/items/",
+            headers={"Authorization": "Bearer expired.token.here"}
+        )
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_idor_access_other_user_item(test_user):
+    """Test: usuario no puede acceder a items de otro usuario."""
+    # Crear un segundo usuario con un item
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        # Login como test_user
+        login_resp = await client.post("/auth/login", json={
+            "username": "testuser",
+            "password": "TestPass123"
+        })
+        token = login_resp.json()["access_token"]
+
+        # Crear item
+        create_resp = await client.post(
+            "/api/items/",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"title": "Mi item", "description": "desc"}
+        )
+        item_id = create_resp.json()["id"]
+
+        # Intentar acceder como otro usuario (simulado con usuario2)
+        # En este test, simplemente verificamos que el item creado
+        # pertenece al usuario correcto
+        assert create_resp.status_code == 201
+        assert create_resp.json()["owner_id"] == test_user.id
+
+
+@pytest.mark.asyncio
+async def test_security_headers():
+    """Test: verificar que los security headers estan presentes."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/health")
+    assert response.headers.get("x-content-type-options") == "nosniff"
+    assert response.headers.get("x-frame-options") == "DENY"
+    assert response.headers.get("strict-transport-security") is not None
+```
+
+### 7. Actualizar main.py (5 min)
+
+```python
+# app/main.py - Version final
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.config import settings
+from app.database import engine, Base
+from app.routers import auth, items
+from app.middleware.ratelimit_middleware import RateLimitMiddleware
+from app.middleware.headers import SecurityHeadersMiddleware
+
+# Crear tablas
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version=settings.VERSION
+)
+
+# Middleware (orden importante: se ejecutan en orden inverso)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
+)
+app.add_middleware(RateLimitMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Routers
+app.include_router(auth.router)
+app.include_router(items.router)
+
+
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=False)
+```
+
+---
+
+## Ejercicio 1: Implementar GET /api/items Protegido
+
+**Enunciado:** Implementar el endpoint GET /api/items que solo devuelva items del usuario autenticado.
+
+**Solucion:** Ya incluida en la seccion 1. El endpoint:
+
+- Requiere autenticacion via `Depends(get_current_user)`
+- Filtra items por `owner_id == current_user.id`
+- Soporta paginacion via `skip` y `limit`
+- Valida que `skip >= 0` y `limit` entre 1 y 100
+
+Prueba:
 ```bash
-# Registrar un item con codigo JS
+# Login
 TOKEN=$(curl -s -X POST http://localhost:8000/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"testuser","password":"TestPass123"}' | \
   python -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 
-curl -X POST http://localhost:8000/api/items/ \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"title":"<script>alert(1)</script>","description":"<img src=x onerror=alert(2)>"}'
-```
+# Listar items
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8000/api/items/
 
-**Resultado esperado:** El item se crea correctamente, pero el contenido se devuelve escapado:
-```json
-{
-  "title": "<script>alert(1)</script>",
-  "description": "<img src=x onerror=alert(2)>"
-}
-```
-
-**Por que falla el ataque:** FastAPI con Pydantic escapa automaticamente los caracteres HTML en las respuestas JSON. El script se almacena como texto inofensivo. Si hubiera un frontend que renderice sin escapar, ahi estaria el riesgo, pero en la API solo se devuelve JSON.
-
-**Ataque 4: Fuerza bruta en login**
-```bash
-# Script simple de fuerza bruta (debe fallar por rate limiting)
-for i in $(seq 1 10); do
-  curl -s -X POST http://localhost:8000/auth/login \
-    -H "Content-Type: application/json" \
-    -d '{"username":"admin","password":"pass'$i'"}' &
-done
-```
-
-**Resultado esperado:** Despues de 5 intentos, retorna 429 Too Many Requests:
-```json
-{"detail":"Limite de requests excedido. Maximo: 5 por 60s"}
-```
-
-**Por que falla el ataque:** El rate limiter cuenta los intentos por IP y bloquea despues de 5 requests en 60 segundos.
-
----
-
-## Ejercicio 3: Usar Burp Suite Proxy para Interceptar y Modificar Requests
-
-**Enunciado:** Configurar Burp Suite como proxy, interceptar un request de login y modificar parametros.
-
-**Solucion paso a paso:**
-
-**Paso 1: Configurar Burp Suite**
-1. Abrir Burp Suite (Community Edition es suficiente)
-2. Ir a la pestana Proxy > Options
-3. Por defecto escucha en 127.0.0.1:8080
-4. Ir a Proxy > Intercept y hacer clic en "Intercept is on"
-
-**Paso 2: Configurar el cliente para usar el proxy**
-```bash
-# Con curl usando proxy
-curl -x http://127.0.0.1:8080 \
-  -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"TestPass123"}'
-```
-
-En Burp Suite, interceptar el request y modificarlo:
-- Cambiar el body a `{"username":"admin","password":"WrongPass"}`
-- Hacer clic en "Forward" para enviar el request modificado
-
-**Analisis:**
-- El request modificado debe ser rechazado con 401 si las credenciales son invalidas
-- La app no tiene vulnerabilidas de logica en la autenticacion
-- Burp permite ver los headers de seguridad en la respuesta
-
-**Paso 3: Probar manipulacion de JWT**
-1. Interceptar un request autenticado
-2. Modificar el token JWT (cambiar el payload en base64)
-3. Observar que la firma no valida y retorna 401
-
-```bash
-# Obtener token
-TOKEN=$(curl -s -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"TestPass123"}' | \
-  python -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
-
-# Decodificar payload (JWT es base64url)
-PAYLOAD=$(echo $TOKEN | cut -d. -f2 | base64 -d 2>/dev/null || \
-  echo $TOKEN | cut -d. -f2 | python -c "import sys,base64; print(base64.urlsafe_b64decode(sys.stdin.read() + '=='))")
-echo $PAYLOAD
-# {"sub":"1","exp":...,"type":"access","iat":...}
-
-# Modificar sub y re-encodear (la firma no va a validar)
-# El servidor detectara la manipulacion y retornara 401
-```
-
----
-
-## Ejercicio 4: Demostrar que la App NO es Vulnerable
-
-**Enunciado:** Recorrer cada defensa implementada y demostrar que bloquea un ataque especifico.
-
-**Solucion:**
-
-| Defensa | Ataque que bloquea | Evidencia |
-|---------|-------------------|-----------|
-| Validacion Pydantic | Inyeccion de tipos, buffer overflow | Request con tipos invalidos retorna 422 |
-| SQLAlchemy ORM | SQL injection | Username `' OR '1'='1` no altera la query |
-| Password hashing (bcrypt) | Exposicion de contrasenas | BD almacena hash, no texto plano |
-| JWT con firma HMAC | Manipulacion de token | Token modificado retorna 401 |
-| Verificacion de ownership (IDOR) | Acceso a recursos ajenos | Cambiar item_id de otro usuario retorna 403 |
-| Role checker (RBAC) | Escalada de privilegios | Usuario user no puede acceder a rutas admin |
-| Rate limiting | Fuerza bruta | 5+ intentos por minuto retorna 429 |
-| Security headers | Clickjacking, XSS reflectivo | Headers presentes en cada respuesta |
-| CORS restrictivo | CSRF desde origenes no autorizados | Request desde otro origen es bloqueado por navegador |
-| Logging seguro | Exposicion de datos sensibles en logs | Contrasenas y tokens son redactados |
-
-**Demostracion en vivo del flujo completo:**
-
-```bash
-# 1. Escaneo inicial - SOLO un puerto abierto
-nmap -p- localhost
-
-# 2. Intento de SQL injection
-curl -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"'\'' OR 1=1 --","password":"x"}'
-# Respuesta: 401 Credenciales invalidas
-
-# 3. Registro con contrasena debil
-curl -X POST http://localhost:8000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"test@test.com","username":"test","password":"123"}'
-# Respuesta: 422 Validation Error
-
-# 4. Acceso sin token
+# Sin token (debe fallar)
 curl http://localhost:8000/api/items/
 # Respuesta: 401 Unauthorized
-
-# 5. Acceso con token manipulado
-curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIn0.firma" \
-  http://localhost:8000/api/items/
-# Respuesta: 401 Unauthorized
-
-# 6. Fuerza bruta
-for i in $(seq 1 6); do
-  curl -s -o /dev/null -w "%{http_code}\n" \
-    -X POST http://localhost:8000/auth/login \
-    -H "Content-Type: application/json" \
-    -d "{\"username\":\"admin\",\"password\":\"pass$i\"}"
-done
-# Output: 401, 401, 401, 401, 401, 429
-
-# 7. IDOR
-TOKEN=$(curl -s -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"TestPass123"}' | \
-  python -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
-
-curl -H "Authorization: Bearer $TOKEN" \
-  http://localhost:8000/api/items/9999
-# Respuesta: 404 Not Found (item no existe)
-
-# 8. Security headers
-curl -s -D - http://localhost:8000/health | head -n 20
-# Output incluye: x-content-type-options, x-frame-options, etc.
 ```
 
+---
+
+## Ejercicio 2: Implementar Middleware de Autorizacion por Roles
+
+**Enunciado:** Crear un middleware/dependencia que restrinja endpoints segun el rol del usuario.
+
+**Solucion:** Ya incluida en la seccion 2 (clase `RoleChecker`). Ejemplo de uso:
+
+```python
+from app.middleware.rbac import RoleChecker
+from app.models.user import User
+
+# Crear instancias
+admin_only = RoleChecker(["admin"])
+user_or_admin = RoleChecker(["user", "admin"])
+
+# Endpoint solo para admin
+@router.get("/admin/users")
+def list_users(
+    current_user: User = Depends(admin_only),
+    db: Session = Depends(get_db)
+):
+    """Solo administradores pueden listar todos los usuarios."""
+    users = db.query(User).all()
+    return users
+
+# Endpoint accesible por user y admin
+@router.get("/api/items/stats")
+def get_stats(
+    current_user: User = Depends(user_or_admin),
+    db: Session = Depends(get_db)
+):
+    items_count = db.query(Item).filter(
+        Item.owner_id == current_user.id
+    ).count()
+    return {"total_items": items_count}
+```
+
+---
+
+## Ejercicio 3: Agregar Rate Limiting con Flask-Limiter (version FastAPI)
+
+**Enunciado:** Agregar rate limiting de 5 intentos por minuto en login.
+
+**Solucion:** Ya incluida en la seccion 4. Para una solucion mas robusta:
+
 ```bash
-# 9. Escaneo completo con OWASP ZAP (simulado)
-echo "Resumen del reporte ZAP:"
-echo "  SQL Injection: PASS (0 alertas)"
-echo "  XSS: PASS (0 alertas)"
-echo "  Path Traversal: PASS (0 alertas)"
-echo "  CSRF: PASS (0 alertas)"
-echo "  Security Headers: PASS (todos presentes)"
-echo "  Resultado: No se encontraron vulnerabilidades criticas"
+pip install slowapi
+```
+
+```python
+# app/middleware/slowapi_setup.py
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+limiter = Limiter(key_func=get_remote_address)
+```
+
+En `main.py`:
+```python
+from app.middleware.slowapi_setup import limiter, _rate_limit_exceeded_handler
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+```
+
+En `routers/auth.py`:
+```python
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+limiter = Limiter(key_func=get_remote_address)
+
+@router.post("/login")
+@limiter.limit("5/minute")
+def login(credentials: UserLogin, request: Request, db: Session = Depends(get_db)):
+    # ... resto del codigo
+```
+
+---
+
+## Ejercicio 4: Escribir Tests Unitarios de Seguridad
+
+**Enunciado:** Escribir 3 tests de seguridad: registro con contrasena debil, acceso sin token, y verificacion de security headers.
+
+**Solucion:** Tests ya incluidos en la seccion 6. Resumen de lo que cada test verifica:
+
+1. `test_register_with_weak_password`: Verifica que contrasenas debiles son rechazadas (422)
+2. `test_access_without_token`: Verifica que endpoints protegidos requieren autenticacion (401)
+3. `test_security_headers`: Verifica que headers como X-Content-Type-Options y X-Frame-Options estan presentes
+
+Para ejecutar los tests:
+```bash
+pip install pytest httpx pytest-asyncio
+cd secure-api
+pytest tests/ -v
 ```
 
 ---
 
 ## Preguntas y Respuestas
 
-**1. Cual es la diferencia entre pentesting manual y automatizado?**
+**1. Que es RBAC y como se implemento en la aplicacion?**
 
-El pentesting manual es realizado por un humano que puede encadenar vulnerabilidades, entender logica de negocio y encontrar fallos creativos. El automatizado usa herramientas que buscan patrones conocidos y es mas rapido pero menos profundo. Ambos se complementan.
+RBAC (Role-Based Access Control) asigna permisos basados en roles. En nuestra app, los roles son "user" y "admin". Se implemento con una dependencia `RoleChecker` que verifica `current_user.role` contra los roles permitidos en cada endpoint.
 
-**2. Que informacion proporciona nmap sobre la app y por que es util para un atacante?**
+**2. Por que es importante rate limiting en endpoints de autenticacion?**
 
-nmap revela: puertos abiertos, servicios y versiones, sistema operativo, scripts HTTP habilitados. Para un atacante, esto permite identificar posibles vectores de ataque (ej: version desactualizada de uvicorn, directorios expuestos).
+Rate limiting previene ataques de fuerza bruta y diccionario. Sin el, un atacante puede probar miles de contrasenas por minuto. Con 5 intentos por minuto, un ataque de 10,000 contrasenas tomaria mas de 33 horas.
 
-**3. Por que SQLAlchemy ORM previene SQL injection?**
+**3. Que security headers se agregaron y que protege cada uno?**
 
-SQLAlchemy ORM usa consultas parametrizadas (prepared statements). Los valores de los parametros se envian por separado de la estructura SQL. El motor de BD trata los parametros como datos, no como codigo SQL ejecutable, haciendo imposible la inyeccion.
+- X-Content-Type-Options: previene MIME sniffing
+- X-Frame-Options: previene clickjacking
+- X-XSS-Protection: habilita filtro XSS en navegadores antiguos
+- Strict-Transport-Security: fuerza HTTPS
+- Content-Security-Policy: controla recursos que puede cargar la pagina
 
-**4. Que es Burp Suite y como se usa en pentesting?**
+**4. Que informacion no debe aparecer en los logs de seguridad?**
 
-Burp Suite es un proxy de interceptacion que se coloca entre el navegador y el servidor. Permite interceptar, inspeccionar y modificar requests HTTP/S. Incluye herramientas como Repeater (repetir requests), Intruder (ataques de fuerza bruta), Scanner (vulnerabilidades), Decoder.
+Nunca registrar: contrasenas (ni hasheadas), tokens JWT, secret keys, datos de tarjetas de credito, numeros de seguro social, emails completos (parcialmente enmascarados puede ser aceptable), informacion biomedica.
 
-**5. Que demostro el rate limiting en el ejercicio de fuerza bruta?**
+**5. Como se protege contra IDOR en los endpoints del CRUD?**
 
-Demostro que despues de 5 intentos de login en 60 segundos, el servidor retorna 429 Too Many Requests. Esto hace que los ataques de fuerza bruta sean impracticables: probar 10,000 contrasenas tomarias 33 horas minimo.
+En cada endpoint que accede a un recurso por ID, se verifica que `item.owner_id == current_user.id`. Si el usuario no es el propietario y no es admin, se retorna 403 Forbidden. Esto evita que un usuario malicioso cambie el ID en la URL para acceder a recursos de otros.
 
-**6. Por que el JWT no puede ser manipulado aunque el payload sea visible?**
+**6. Que hace `from_attributes = True` en los schemas de respuesta?**
 
-El JWT tiene tres partes: header, payload y signature. El payload esta solo codificado en base64 (no cifrado), cualquiera puede leerlo. Pero la firma se genera con una clave secreta que solo el servidor conoce. Si se modifica el payload, la firma no coincide y el servidor rechaza el token.
+Configura Pydantic para crear instancias del schema directamente desde objetos SQLAlchemy (ORM). Sin esta opcion, habria que convertir manualmente el objeto a diccionario. Con `from_attributes = True`, se pasa el objeto directamente y Pydantic mapea los atributos.
 
-**7. Que es OWASP ZAP y que tipo de pruebas realiza?**
+**7. Cual es la diferencia entre `Depends(get_current_user)` y `Depends(admin_only)`?**
 
-OWASP ZAP (Zed Attack Proxy) es una herramienta DAST (Dynamic Application Security Testing) de codigo abierto. Realiza pruebas de SQL injection, XSS, path traversal, CSRF, configuracion insegura, y mas. Puede ejecutarse en modo automatico (zap-baseline, zap-full-scan) o manual.
+`get_current_user` solo verifica que el token JWT sea valido y retorna el usuario. `admin_only` (que internamente usa `get_current_user`) ademas verifica que el usuario tenga el rol requerido. Se pueden componer: primero se autentica, luego se autoriza.
 
 ---
 
 ## Tarea / Lectura Recomendada
 
-- Ejecutar OWASP ZAP contra la app segura y analizar el reporte generado
-- Leer: OWASP Testing Guide (https://owasp.org/www-project-web-security-testing-guide/)
-- Leer: Metodologia de pentesting de PTES (http://www.pentest-standard.org/)
-- Practicar: Usar Burp Suite Repeater para modificar requests JWT
-- Preparacion: Tener listos los proyectos para la clase 31
+- Completar todos los endpoints del CRUD con proteccion IDOR
+- Agregar rate limiting funcional y probarlo con un script de fuerza bruta
+- Escribir al menos 3 tests de seguridad adicionales
+- Leer: OWASP REST Security Cheat Sheet (https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html)
+- Preparacion: Tener la app funcionando para las pruebas de la clase 30
+
 
 

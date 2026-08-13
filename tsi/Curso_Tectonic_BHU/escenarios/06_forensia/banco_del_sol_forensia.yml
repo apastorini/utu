@@ -1,0 +1,370 @@
+edition: "2024.1"
+scenario: forensic_analysis
+display_name: "Escenario 06 - Analisis Forense Digital - Banco del Sol"
+description: >
+  Edicion del rango de ciberseguridad Tectonic para el curso de BHU Uruguay.
+  Analisis forense digital de un sistema comprometido en la red corporativa
+  de Banco del Sol. Los alumnos actuan como analistas forenses del CERT
+  interno investigando una intrusion detectada.
+
+environment:
+  provider: virtualbox
+  hypervisor: virtualbox-7.x
+  base_image: ubuntu-server-22.04-lts
+  total_machines: 8
+  total_networks: 4
+
+  resource_allocation:
+    workstation:
+      cpus: 2
+      ram_mb: 4096
+      disk_gb: 80
+      extra_disks:
+        - name: "forensic_evidence"
+          size_gb: 50
+          format: vmdk
+          controller: sata
+          description: "Almacenamiento de evidencia forense"
+
+    attacker:
+      cpus: 2
+      ram_mb: 4096
+      disk_gb: 40
+
+    webserver:
+      cpus: 1
+      ram_mb: 2048
+      disk_gb: 30
+
+    mailserver:
+      cpus: 1
+      ram_mb: 2048
+      disk_gb: 40
+
+    fileserver:
+      cpus: 1
+      ram_mb: 2048
+      disk_gb: 60
+
+    database:
+      cpus: 2
+      ram_mb: 4096
+      disk_gb: 50
+
+    domaincontroller:
+      cpus: 2
+      ram_mb: 4096
+      disk_gb: 50
+
+    instructor:
+      cpus: 2
+      ram_mb: 4096
+      disk_gb: 100
+      extra_disks:
+        - name: "evidence_vault"
+          size_gb: 200
+          format: vmdk
+          controller: sata
+          mount_point: /evidence
+          description: "Almacenamiento seguro de evidencia forense"
+
+networks:
+  - name: dmz
+    cidr: "10.10.1.0/24"
+    gateway: "10.10.1.1"
+    description: "Zona desmilitarizada"
+    hosts:
+      - name: webserver
+        ip: "10.10.1.10"
+        mac: "08:00:27:AA:01:01"
+      - name: mailserver
+        ip: "10.10.1.20"
+        mac: "08:00:27:AA:01:02"
+
+  - name: internal
+    cidr: "10.10.2.0/24"
+    gateway: "10.10.2.1"
+    description: "Red interna corporativa"
+    hosts:
+      - name: workstation
+        ip: "10.10.2.50"
+        mac: "08:00:27:BB:02:01"
+      - name: fileserver
+        ip: "10.10.2.10"
+        mac: "08:00:27:BB:02:02"
+      - name: database
+        ip: "10.10.2.20"
+        mac: "08:00:27:BB:02:03"
+      - name: domaincontroller
+        ip: "10.10.2.5"
+        mac: "08:00:27:BB:02:04"
+
+  - name: management
+    cidr: "10.10.0.0/24"
+    gateway: "10.10.0.1"
+    description: "Red de gestion"
+    hosts:
+      - name: instructor
+        ip: "10.10.0.10"
+        mac: "08:00:27:CC:00:01"
+
+  - name: internet
+    cidr: "172.16.0.0/24"
+    gateway: "172.16.0.1"
+    description: "Simulacion de Internet"
+    hosts:
+      - name: attacker
+        ip: "172.16.0.100"
+        mac: "08:00:27:DD:00:01"
+
+vulnerabilities:
+  - id: vuln-01
+    name: "SQL Injection en Login"
+    machine: webserver
+    type: web
+    cwe: "CWE-89"
+    description: "El formulario de login del portal bancario es vulnerable a inyeccion SQL"
+    used_by_attacker: true
+    stage: initial_access
+
+  - id: vuln-02
+    name: "Webshell Upload"
+    machine: webserver
+    type: web
+    cwe: "CWE-434"
+    description: "Permite subir archivos PHP sin validacion via el modulo de soporte"
+    used_by_attacker: true
+    stage: persistence
+
+  - id: vuln-03
+    name: "Weak SSH Credentials"
+    machine: workstation
+    type: credentials
+    cwe: "CWE-521"
+    description: "Credenciales SSH debiles en la estacion de trabajo (admin:admin123)"
+    used_by_attacker: true
+    stage: lateral_movement
+
+  - id: vuln-04
+    name: "Outdated Apache Version"
+    machine: webserver
+    type: configuration
+    cwe: "CWE-1104"
+    description: "Apache 2.4.49 con vulnerabilidad de path traversal (CVE-2021-41773)"
+    used_by_attacker: true
+    stage: initial_access
+
+attack_narrative:
+  description: >
+    Narrativa del ataque que el equipo debe reconstruir mediante el analisis forense.
+    El atacante ejecuto las siguientes fases:
+  phases:
+    - phase: 1
+      name: "Reconocimiento"
+      description: "El atacante realizo escaneo de puertos y fingerprinting del servidor web"
+      artifacts:
+        - "Logs de Apache con multiples peticiones de escaneo"
+        - "User-Agent strings de herramientas de reconocimiento"
+        - "Escaneo de directorios con herramienta dirb/gobuster"
+
+    - phase: 2
+      name: "Explotacion Inicial"
+      description: "Explotacion de SQL injection en el formulario de login del portal bancario"
+      artifacts:
+        - "Peticiones HTTP con payload de SQL injection en access.log"
+        - "Respuestas de error de base de datos en los logs"
+        - "Archivo .php subido via formulario de soporte"
+
+    - phase: 3
+      name: "Instalacion de Webshell"
+      description: "Subida de webshell PHP para mantener acceso al servidor web"
+      artifacts:
+        - "Archivo cmd.php en /var/www/html/uploads/"
+        - "Accesos al webshell desde IP del atacante"
+        - "Comandos ejecutados via webshell en access.log"
+
+    - phase: 4
+      name: "Movimiento Lateral"
+      description: "Uso de credenciales comprometidas para SSH a la estacion de trabajo"
+      artifacts:
+        - "Logs de auth.log con login SSH desde 10.10.1.10"
+        - "Nuevo usuario creado en /etc/passwd"
+        - "Archivo .bashrc modificado con alias sospechosos"
+
+    - phase: 5
+      name: "Escalada de Privilegios"
+      description: "Explotacion de configuracion SUID para obtener root"
+      artifacts:
+        - "Archivo SUID modificado en /usr/bin/"
+        - "Historial de comandos con sudo"
+        - "Archivo /etc/cron.d/backdoor con tarea persistente"
+
+    - phase: 6
+      name: "Exfiltracion de Datos"
+      description: "Acceso a archivos sensibles y exfiltracion via DNS tunneling"
+      artifacts:
+        - "Accesos a directorios del departamento de operaciones"
+        - "Queries DNS sospechosas en /var/log/syslog"
+        - "Archivos comprimidos en /tmp/"
+        - "Transferencias de datos inusuales"
+
+    - phase: 7
+      name: "Borrado de Huellas"
+      description: "Intento de limpiar logs y modificar timestamps"
+      artifacts:
+        - "Logs truncados o faltantes"
+        - "Timestamps modificados en archivos (timestomp)"
+        - "Historial de bash parcialmente borrado"
+        - "Logs de auth.log incompletos"
+
+forensic_images:
+  - id: img-01
+    name: "workstation_disk_image.dd"
+    source_machine: workstation
+    format: raw (dd)
+    algorithm: SHA256
+    expected_hash: "auto-generado en provisioning"
+    description: >
+      Imagen bit a bit del disco de la estacion de trabajo comprometida.
+      Contiene el sistema de archivos completo con evidencia del ataque.
+    creation_date: "auto-generado"
+    size_approx: "80GB comprimido a ~15GB"
+
+  - id: img-02
+    name: "workstation_memory.dump"
+    source_machine: workstation
+    format: LiME
+    algorithm: SHA256
+    expected_hash: "auto-generado en provisioning"
+    description: >
+      Volcado de memoria RAM de la estacion de trabajo al momento de
+      la deteccion. Contiene procesos activos, conexiones de red y
+      datos en cache.
+    creation_date: "auto-generado"
+    size_approx: "4GB"
+
+  - id: img-03
+    name: "webserver_log_archive.tar.gz"
+    source_machine: webserver
+    format: tar.gz
+    algorithm: SHA256
+    expected_hash: "auto-generado en provisioning"
+    description: >
+      Archivo comprimido con los logs del servidor web incluyendo
+      access.log, error.log y configuracion de Apache.
+    creation_date: "auto-generado"
+    size_approx: "500MB"
+
+analysis_environment:
+  workstation:
+    hostname: "analista-forense"
+    ip: "10.10.0.20"
+    network: management
+    pre_installed_tools:
+      - autopsy (3.x)
+      - sleuthkit (4.x)
+      - volatility (2.x / 3.x)
+      - binwalk
+      - foremost
+      - photorec / testdisk
+      - strings
+      - hexdump
+      - tcpdump
+      - wireshark (CLI: tshark)
+      - bulk_extractor
+      - dc3dd
+      - mactime (Sleuth Kit)
+      - sqlite3
+      - jq
+
+    mount_points:
+      - device: "/dev/sdb1"
+        mount: "/evidence/disk_image"
+        options: "ro,loop,noexec,nosuid"
+        description: "Imagen de disco montada en modo solo lectura"
+
+      - device: "none"
+        mount: "/case/working"
+        options: ""
+        description: "Directorio de trabajo para el caso"
+
+instructor_vm:
+  hostname: "instructor-control"
+  ip: "10.10.0.10"
+  services:
+    - name: "evidence_vault"
+      description: "Almacenamiento seguro de evidencia"
+      path: "/evidence"
+      permissions: "0750"
+      owner: "instructor"
+
+    - name: "progress_monitor"
+      description: "Monitoreo del progreso de alumnos"
+      port: 8080
+      protocol: HTTP
+
+    - name: "scenario_controller"
+      description: "Control de estados del escenario"
+      port: 9090
+      protocol: HTTP
+
+scoring_checkpoints:
+  - id: cp-01
+    name: "Evidencia adquirida"
+    points: 10
+    verification: "Verificar hash de imagen de disco y cadena de custodia"
+
+  - id: cp-02
+    name: "Disco analizado"
+    points: 15
+    verification: "Verificar que identifico archivos sospechosos y artefactos"
+
+  - id: cp-03
+    name: "Memoria analizada"
+    points: 15
+    verification: "Verificar extraccion de procesos y conexiones de red"
+
+  - id: cp-04
+    name: "Logs examinados"
+    points: 10
+    verification: "Verificar identificacion de patron de ataque en logs"
+
+  - id: cp-05
+    name: "Linea de tiempo construida"
+    points: 10
+    verification: "Verificar cronologia correcta de eventos del ataque"
+
+  - id: cp-06
+    name: "Informe presentado"
+    points: 10
+    verification: "Verificar estructura y completitud del informe forense"
+
+time_constraints:
+  max_duration_minutes: 180
+  warning_at_minutes: 150
+  auto_submit_at_minutes: 180
+
+network_rules:
+  - rule: "Alumno solo puede acceder a red de gestion (10.10.0.0/24)"
+    interface: management
+    allowed:
+      - "10.10.0.0/24"
+    denied:
+      - "10.10.1.0/24"
+      - "10.10.2.0/24"
+      - "172.16.0.0/24"
+
+  - rule: "Workstation de analisis puede montar imagenes desde instructor"
+    source: "10.10.0.20"
+    destination: "10.10.0.10"
+    protocol: NFS/SCP
+    port: 2049/22
+
+cleanup:
+  automated: true
+  script: "cleanup.sh"
+  actions:
+    - "Destruir todas las imagenes forense generadas"
+    - "Eliminar archivos de evidencia de alumno"
+    - "Restaurar snapshots de maquinas virtuales"
+    - "Limpiar archivos temporales de redes compartidas"

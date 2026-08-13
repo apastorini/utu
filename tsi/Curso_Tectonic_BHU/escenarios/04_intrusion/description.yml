@@ -1,0 +1,306 @@
+---
+name: intrusion_lateral_movement
+display_name: "Escenario 04 - Intrusion y Movimiento Lateral"
+description: |
+  Simulacion de un ataque completo contra la infraestructura de Banco del Sol.
+  El escenario comienza con la explotacion de una vulnerabilidad de inyeccion SQL
+  en la aplicacion web bancaria, avanzando hasta la obtencion de credenciales
+  de base de datos, movimiento lateral hacia servidores internos y escalamiento
+  de privilegios hasta obtener control del dominio.
+
+  Los estudiantes actuan como equipo de respuesta azul (blue team) y deben
+  detectar, analizar, contener y erradicar la intrusion utilizando las
+  herramientas de monitoreo y logging disponibles en la infraestructura.
+
+  Este escenario evalua la capacidad del estudiante para correlacionar eventos
+ 分散 across multiple systems, trace an attack chain through network logs, and
+  implement effective containment measures without disrupting business operations.
+
+tags:
+  - web-attack
+  - sql-injection
+  - lateral-movement
+  - privilege-escalation
+  - incident-response
+  - blue-team
+  - banco-del-sol
+
+difficulty: advanced
+estimated_time: 180
+time_unit: minutes
+
+max_score: 100
+scoring:
+  - category: "Deteccion de la intrusion"
+    points: 25
+    criteria: |
+      Identificar las primeras senales de compromise en el webserver.
+      Correlacionar los logs de acceso web con patrones de inyeccion SQL.
+      Detectar la creacion del webshell y las conexiones sospechosas.
+  - category: "Analisis del ataque"
+    points: 25
+    criteria: |
+      Reconstruir la cadena de ataque completa desde el punto de entrada.
+      Identificar todas las credenciales comprometidas.
+      Mapear el movimiento lateral entre sistemas.
+  - category: "Contencion"
+    points: 25
+    criteria: |
+      Aislar los sistemas comprometidos sin causar impacto innecesario.
+      Revocar credenciales comprometidas de forma ordenada.
+      Bloquear direcciones IP del atacante en los puntos de control.
+  - category: "Erradicacion y recuperacion"
+    points: 25
+    criteria: |
+      Eliminar el webshell y cualquier artefacto del atacante.
+      Parchear la vulnerabilidad de inyeccion SQL.
+      Restablecer todas las credenciales y verificar integridad de sistemas.
+
+prerequisites:
+  - Conocimientos basicos de SQL
+  - Comprension de protocolos HTTP/HTTPS
+  - Familiaridad con logs de servidores web (Apache/Nginx)
+  - Conceptos基本icos de movimiento lateral en entornos Windows/Linux
+  - Herramientas de analisis: Wireshark, grep, SIEM basico
+
+learning_objectives:
+  - Identificar y explotar vulnerabilidades de inyeccion SQL en aplicaciones web
+  - Comprender tecnicas de post-explotacion y obtencion de credenciales
+  - Analizar movimento lateral en entornos de red mixtos (Linux/Windows)
+  - Detectar活动idad maliciosa mediante analisis de logs y correlacion de eventos
+  - Implementar procedures de respuesta a incidentes siguiendo el marco NIST
+  - Evaluar la efectividad de la segmentacion de red y el principle of least privilege
+
+network_topology:
+  dmz:
+    cidr: "10.10.1.0/24"
+    description: "Red de demilitarizada con servidores expuestos"
+    hosts:
+      - name: webserver
+        ip: "10.10.1.10"
+        role: "Servidor web con aplicacion bancaria vulnerable"
+        os: "Ubuntu 22.04 LTS"
+      - name: attacker
+        ip: "10.10.1.100"
+        role: "Estacion de ataque (Kali Linux)"
+        os: "Kali 2024.1"
+
+  internal:
+    cidr: "10.10.2.0/24"
+    description: "Red interna corporativa"
+    hosts:
+      - name: mailserver
+        ip: "10.10.2.10"
+        role: "Servidor de correo electronico"
+        os: "Ubuntu 22.04 LTS"
+      - name: fileserver
+        ip: "10.10.2.20"
+        role: "Servidor de archivos con comparticiones SMB"
+        os: "Windows Server 2019"
+      - name: database
+        ip: "10.10.2.30"
+        role: "Servidor de base de datos MySQL"
+        os: "Ubuntu 22.04 LTS"
+      - name: workstation
+        ip: "10.10.2.50"
+        role: "Estacion de trabajo de empleado"
+        os: "Windows 10 Pro"
+
+  management:
+    cidr: "10.10.0.0/24"
+    description: "Red de gestion y administracion"
+    hosts:
+      - name: domaincontroller
+        ip: "10.10.0.10"
+        role: "Controlador de dominio Active Directory"
+        os: "Windows Server 2019"
+
+  internet:
+    cidr: "172.16.0.0/24"
+    description: "Simulacion de Internet"
+
+attack_chain:
+  phase_1:
+    name: "Explotacion Web - Inyeccion SQL"
+    source: "attacker"
+    target: "webserver"
+    technique: "T1190 - Exploit Public-Facing Application"
+    description: |
+      El atacante identifica una vulnerabilidad de inyeccion SQL en el formulario
+      de login de la aplicacion bancaria "Banco del Sol Online". Mediante UNION-based
+      SQL injection, extrae credenciales de la cuenta de servicio de base de datos
+      y datos de clientes de la tabla customer_accounts.
+    indicators:
+      - Patrones de UNION SELECT en logs de acceso web
+      - Errores de SQL en respuestas HTTP (error-based SQLi)
+      - Requests con caracteres especiales: ' OR, UNION, SELECT, FROM
+      - Incremento anormal en tiempo de respuesta del servidor
+
+  phase_2:
+    name: "Punto de Apoyo Inicial - Webshell"
+    source: "attacker"
+    target: "webserver"
+    technique: "T1505.003 - Server Software Component: Web Shell"
+    description: |
+      Utilizando las credenciales de base de datos extraidas, el atacante accede
+      al servidor web y coloca un webshell (archivo PHP disfrazado) en el directorio
+      web. El webshell permite ejecutar comandos remotos y establish una reverse shell
+      hacia la estacion de ataque.
+    indicators:
+      - Archivo PHP nuevo en directorio web (/var/www/html/uploads/)
+      - Proceso PHP conectandose a IP externa
+      - Conexiones salientes desde webserver hacia attacker
+      - Archivos temporalmente modificados en /tmp
+
+  phase_3:
+    name: "Movimiento Lateral"
+    source: "webserver"
+    target: "database, fileserver"
+    technique: "T1021 - Remote Services"
+    description: |
+      Desde el webserver comprometido, el atacante utiliza las credenciales extraidas
+      para acceder al servidor de base de datos. Posteriormente, roba credenciales
+      del fileserver y establish conexiones SMB para enumerar y acceder a archivos
+      sensibles.
+    indicators:
+      - Autenticaciones SSH exitosas desde webserver hacia database
+      - Conexiones SMB desde webserver hacia fileserver
+      - Eventos de logon 4624 en fileserver desde origen inesperado
+      - Consultas inusuales en el servidor de base de datos
+
+  phase_4:
+    name: "Escalamiento de Privilegios"
+    source: "fileserver"
+    target: "domaincontroller"
+    technique: "T1078 - Valid Accounts"
+    description: |
+      En el fileserver, el atacante encuentra credenciales de administrador en un
+      archivo de configuracion. Utiliza estas credenciales para acceder al dominio
+      Active Directory, creando una cuenta de backdoor o modificando privilegios
+      de una cuenta existente.
+    indicators:
+      - Evento de logon 4624 tipo 3 desde fileserver hacia domaincontroller
+      - Creacion o modificacion de cuentas de usuario en Active Directory
+      - Acceso a SYSVOL o NETLOGON compartido
+      - Eventos de privilegio elevado (4672) en domaincontroller
+
+log_sources:
+  - webserver:
+      - /var/log/apache2/access.log
+      - /var/log/apache2/error.log
+      - /var/log/auth.log
+      - /var/log/syslog
+      - /var/www/html/app/logs/app.log
+
+  - database:
+      - /var/log/mysql/general.log
+      - /var/log/mysql/error.log
+      - /var/log/auth.log
+      - /var/log/syslog
+
+  - fileserver:
+      - Security event log (Windows Event ID 4624, 4625, 4672, 4720, 4726)
+      - SMB access logs
+      - System event log
+
+  - domaincontroller:
+      - Security event log (Active Directory audit events)
+      - Directory Service event log
+      - SYSVOL access logs
+
+  - mailserver:
+      - /var/log/mail.log
+      - /var/log/auth.log
+
+scoring_checks:
+  - id: "SC-01"
+    description: "Identificar patrones de SQLi en logs de acceso web"
+    points: 5
+    check_type: "manual"
+    expected_evidence: "Logs con patrones UNION SELECT o error-based SQLi"
+
+  - id: "SC-02"
+    description: "Detectar webshell en webserver"
+    points: 5
+    check_type: "file_exists"
+    target: "webserver"
+    path: "/var/www/html/uploads/shell.php"
+
+  - id: "SC-03"
+    description: "Identificar movimiento lateral SSH webserver -> database"
+    points: 5
+    check_type: "log_analysis"
+    target: "database"
+    pattern: "Accepted password.*10.10.1.10"
+
+  - id: "SC-04"
+    description: "Detectar conexiones SMB sospechosas al fileserver"
+    points: 5
+    check_type: "event_log"
+    target: "fileserver"
+    event_id: 4624
+    logon_type: 3
+    source_ip: "10.10.1.10"
+
+  - id: "SC-05"
+    description: "Identificar escalamiento hacia domaincontroller"
+    points: 5
+    check_type: "event_log"
+    target: "domaincontroller"
+    event_id: 4624
+    description: "Logon desde fileserver"
+
+  - id: "SC-06"
+    description: "Documentar cadena de ataque completa"
+    points: 10
+    check_type: "report"
+    criteria: "Reporte con las 4 fases del ataque documentadas"
+
+  - id: "SC-07"
+    description: "Aislar webserver correctamente"
+    points: 5
+    check_type: "network"
+    target: "webserver"
+    criteria: "Regla de firewall activa bloqueando trafico saliente"
+
+  - id: "SC-08"
+    description: "Revocar credenciales comprometidas"
+    points: 5
+    check_type: "manual"
+    criteria: "Credenciales de servicio y usuario restablecidas"
+
+  - id: "SC-09"
+    description: "Eliminar webshell"
+    points: 5
+    check_type: "file_not_exists"
+    target: "webserver"
+    path: "/var/www/html/uploads/shell.php"
+
+  - id: "SC-10"
+    description: "Parchear vulnerabilidad SQLi"
+    points: 5
+    check_type: "manual"
+    criteria: "Queries parametrizadas implementadas en la aplicacion"
+
+time_limit_exceeded:
+  penalty: 0
+  message: "Tiempo maximo alcanzado. La puntuacion se basa en las evidencias recolectadas."
+
+hints:
+  - cost: 5
+    text: "Revisa los logs de Apache en el webserver, busca patrones inusuales en las queries HTTP"
+  - cost: 5
+    text: "El atacante dejo un archivo sospechoso en el directorio de uploads del webserver"
+  - cost: 10
+    text: "Las credenciales de la base de datos estan hardcoded en la configuracion de la aplicacion PHP"
+  - cost: 10
+    text: "En el fileserver hay un archivo de configuracion con credenciales de administrador"
+
+metadata:
+  author: "BHURU - Equipo de Ciberseguridad"
+  version: "1.0.0"
+  created_date: "2026-07-13"
+  last_modified: "2026-07-13"
+  target_audience: "Estudiantes avanzados del Curso de Tectonic BHU Uruguay"
+  environment: "Tectonic Cyber Range"
+  lab_id: "BHU-TEC-004"

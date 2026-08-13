@@ -1,6 +1,6 @@
-# Clase 39: Taller Integrador - App Segura Parte 2
+# Clase 39: Taller Integrador - App Segura Parte 1
 
-**Numero de clase:** 29  
+**Numero de clase:** 28  
 **Duracion:** 2 horas  
 **Curso:** Taller de Ciberseguridad Orientada al Desarrollo
 
@@ -8,63 +8,144 @@
 
 ## Objetivos de Aprendizaje
 
-- Implementar endpoints protegidos con JWT
-- Implementar RBAC (Role-Based Access Control)
-- Agregar logging seguro sin exponer informacion sensible
-- Implementar rate limiting
-- Agregar security headers con Helmet
-- Escribir pruebas unitarias de seguridad
+- Desarrollar una API REST segura desde cero con FastAPI
+- Implementar autenticacion con JWT y refresh tokens
+- Almacenar contrasenas de forma segura con bcrypt
+- Aplicar input validation y parametrized queries
+- Estructurar un proyecto con separacion de responsabilidades
 
 ---
 
 ## Contenido Detallado
 
-### 1. Endpoints Protegidos con JWT (15 min)
+### 1. Estructura del Proyecto (10 min)
 
-Agregamos el router de items con proteccion JWT.
+Creamos la siguiente estructura de carpetas para la aplicacion segura:
 
-```python
-# app/schemas/item.py
-from pydantic import BaseModel, Field
-from typing import Optional
-from datetime import datetime
+```
+secure-api/
+├── app/
+│   ├── __init__.py
+│   ├── main.py              # Punto de entrada de la aplicacion
+│   ├── config.py            # Configuracion (variables de entorno)
+│   ├── database.py          # Conexion a base de datos
+│   ├── models/
+│   │   ├── __init__.py
+│   │   └── user.py          # Modelo de usuario
+│   ├── schemas/
+│   │   ├── __init__.py
+│   │   └── user.py          # Pydantic schemas (validacion)
+│   ├── routers/
+│   │   ├── __init__.py
+│   │   └── auth.py          # Endpoints de autenticacion
+│   ├── services/
+│   │   ├── __init__.py
+│   │   └── auth_service.py  # Logica de autenticacion
+│   └── middleware/
+│       ├── __init__.py
+│       └── security.py      # Middleware de seguridad
+├── requirements.txt
+└── .env                     # Variables de entorno (nunca subir a git)
+```
 
+### 2. Configuracion y Dependencias (10 min)
 
-class ItemCreate(BaseModel):
-    title: str = Field(..., min_length=1, max_length=200)
-    description: Optional[str] = Field(None, max_length=1000)
-
-
-class ItemUpdate(BaseModel):
-    title: Optional[str] = Field(None, min_length=1, max_length=200)
-    description: Optional[str] = Field(None, max_length=1000)
-
-
-class ItemResponse(BaseModel):
-    id: int
-    title: str
-    description: Optional[str]
-    owner_id: int
-    created_at: datetime
-    updated_at: Optional[datetime]
-
-    model_config = {"from_attributes": True}
+```txt
+# requirements.txt
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+sqlalchemy==2.0.25
+pydantic[email-validator]==2.5.3
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+python-dotenv==1.0.0
+alembic==1.13.1
 ```
 
 ```python
-# app/models/item.py
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
+# app/config.py
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+class Settings:
+    PROJECT_NAME: str = "Secure API"
+    VERSION: str = "1.0.0"
+
+    # Database
+    DATABASE_URL: str = os.getenv(
+        "DATABASE_URL",
+        "sqlite:///./secure_api.db"
+    )
+
+    # JWT
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "")
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # Bcrypt
+    BCRYPT_ROUNDS: int = 12
+
+    # CORS
+    ALLOWED_ORIGINS: list = ["http://localhost:3000"]
+
+    def __init__(self):
+        if not self.SECRET_KEY:
+            raise ValueError(
+                "SECRET_KEY no configurada. "
+                "Establezca la variable de entorno SECRET_KEY."
+            )
+
+
+settings = Settings()
+```
+
+### 3. Base de Datos y Modelo de Usuario (15 min)
+
+```python
+# app/database.py
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
+
+from app.config import settings
+
+engine = create_engine(
+    settings.DATABASE_URL,
+    connect_args={"check_same_thread": False}  # Solo para SQLite
+)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+```
+
+```python
+# app/models/user.py
+from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy.sql import func
+
 from app.database import Base
 
 
-class Item(Base):
-    __tablename__ = "items"
+class User(Base):
+    __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(200), nullable=False)
-    description = Column(Text, nullable=True)
-    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    email = Column(String(255), unique=True, index=True, nullable=False)
+    username = Column(String(100), unique=True, index=True, nullable=False)
+    password_hash = Column(String(255), nullable=False)
+    role = Column(String(20), default="user")  # "user" o "admin"
+    is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True),
@@ -73,621 +154,323 @@ class Item(Base):
     )
 ```
 
+### 4. Schemas de Validacion con Pydantic (10 min)
+
 ```python
-# app/routers/items.py
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+# app/schemas/user.py
+from pydantic import BaseModel, EmailStr, Field, field_validator
+import re
+
+
+class UserRegister(BaseModel):
+    email: EmailStr
+    username: str = Field(..., min_length=3, max_length=50)
+    password: str = Field(..., min_length=8, max_length=128)
+
+    @field_validator("username")
+    @classmethod
+    def validate_username(cls, v):
+        if not re.match(r"^[a-zA-Z0-9_]+$", v):
+            raise ValueError(
+                "Username solo permite letras, numeros y guion bajo"
+            )
+        return v
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v):
+        if not re.search(r"[A-Z]", v):
+            raise ValueError("La contrasena debe tener al menos una mayuscula")
+        if not re.search(r"[a-z]", v):
+            raise ValueError("La contrasena debe tener al menos una minuscula")
+        if not re.search(r"\d", v):
+            raise ValueError("La contrasena debe tener al menos un numero")
+        return v
+
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+
+
+class UserResponse(BaseModel):
+    id: int
+    email: str
+    username: str
+    role: str
+    is_active: bool
+
+    model_config = {"from_attributes": True}
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+```
+
+### 5. Servicio de Autenticacion (15 min)
+
+```python
+# app/services/auth_service.py
+from datetime import datetime, timedelta, timezone
+from jose import jwt, JWTError
+from passlib.context import CryptContext
 from sqlalchemy.orm import Session
-from typing import List
+
+from app.config import settings
+from app.models.user import User
+from app.schemas.user import UserRegister
+
+# Contexto de hashing con bcrypt
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__rounds=settings.BCRYPT_ROUNDS
+)
+
+
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+def create_access_token(data: dict) -> str:
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(
+        minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+    )
+    to_encode.update({"exp": expire, "type": "access"})
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def create_refresh_token(data: dict) -> str:
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(
+        days=settings.REFRESH_TOKEN_EXPIRE_DAYS
+    )
+    to_encode.update({"exp": expire, "type": "refresh"})
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+
+
+def decode_token(token: str) -> dict:
+    try:
+        payload = jwt.decode(
+            token,
+            settings.SECRET_KEY,
+            algorithms=[settings.ALGORITHM]
+        )
+        return payload
+    except JWTError:
+        return None
+
+
+def register_user(db: Session, user_data: UserRegister) -> User:
+    # Verificar si el usuario o email ya existe
+    existing = db.query(User).filter(
+        (User.username == user_data.username) |
+        (User.email == user_data.email)
+    ).first()
+
+    if existing:
+        if existing.username == user_data.username:
+            raise ValueError("El nombre de usuario ya esta registrado")
+        raise ValueError("El email ya esta registrado")
+
+    # Crear nuevo usuario
+    user = User(
+        email=user_data.email,
+        username=user_data.username,
+        password_hash=hash_password(user_data.password),
+        role="user"
+    )
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def authenticate_user(db: Session, username: str, password: str) -> User:
+    user = db.query(User).filter(User.username == username).first()
+    if not user:
+        return None
+    if not verify_password(password, user.password_hash):
+        return None
+    if not user.is_active:
+        return None
+    return user
+```
+
+### 6. Middleware de Seguridad (10 min)
+
+```python
+# app/middleware/security.py
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.user import User
-from app.models.item import Item
-from app.schemas.item import ItemCreate, ItemUpdate, ItemResponse
-from app.middleware.security import get_current_user
+from app.services.auth_service import decode_token
 
-router = APIRouter(prefix="/api/items", tags=["items"])
+security_scheme = HTTPBearer()
 
 
-@router.get("/", response_model=List[ItemResponse])
-def list_items(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=100),
-    current_user: User = Depends(get_current_user),
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security_scheme),
     db: Session = Depends(get_db)
-):
-    items = (
-        db.query(Item)
-        .filter(Item.owner_id == current_user.id)
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
-    return items
+) -> User:
+    token = credentials.credentials
+    payload = decode_token(token)
 
-
-@router.get("/{item_id}", response_model=ItemResponse)
-def get_item(
-    item_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    item = db.query(Item).filter(Item.id == item_id).first()
-    if item is None:
+    if payload is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Item no encontrado"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token invalido o expirado",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-    # Verificar ownership (IDOR protection)
-    if item.owner_id != current_user.id and current_user.role != "admin":
+
+    if payload.get("type") != "access":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Tipo de token incorrecto",
+        )
+
+    user_id = payload.get("sub")
+    if user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token invalido: sin identificador de usuario",
+        )
+
+    user = db.query(User).filter(User.id == int(user_id)).first()
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuario no encontrado",
+        )
+
+    if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="No autorizado para ver este item"
+            detail="Usuario inactivo",
         )
-    return item
 
-
-@router.post("/", response_model=ItemResponse, status_code=201)
-def create_item(
-    item_data: ItemCreate,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    item = Item(
-        title=item_data.title,
-        description=item_data.description,
-        owner_id=current_user.id
-    )
-    db.add(item)
-    db.commit()
-    db.refresh(item)
-    return item
-
-
-@router.put("/{item_id}", response_model=ItemResponse)
-def update_item(
-    item_id: int,
-    item_data: ItemUpdate,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    item = db.query(Item).filter(Item.id == item_id).first()
-    if item is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Item no encontrado"
-        )
-    if item.owner_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No autorizado para modificar este item"
-        )
-    if item_data.title is not None:
-        item.title = item_data.title
-    if item_data.description is not None:
-        item.description = item_data.description
-    db.commit()
-    db.refresh(item)
-    return item
-
-
-@router.delete("/{item_id}", status_code=204)
-def delete_item(
-    item_id: int,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    item = db.query(Item).filter(Item.id == item_id).first()
-    if item is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Item no encontrado"
-        )
-    if item.owner_id != current_user.id and current_user.role != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No autorizado para eliminar este item"
-        )
-    db.delete(item)
-    db.commit()
-    return None
+    return user
 ```
 
-### 2. Middleware de Autorizacion por Roles (15 min)
+### 7. Router de Autenticacion (15 min)
 
 ```python
-# app/middleware/rbac.py
-from functools import wraps
-from fastapi import Depends, HTTPException, status
+# app/routers/auth.py
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
 
+from app.database import get_db
+from app.schemas.user import (
+    UserRegister,
+    UserLogin,
+    UserResponse,
+    TokenResponse
+)
+from app.services.auth_service import (
+    register_user,
+    authenticate_user,
+    create_access_token,
+    create_refresh_token,
+    decode_token
+)
+from app.middleware.security import get_current_user
 from app.models.user import User
-from app.middleware.security import get_current_user
+
+router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-def require_role(required_role: str):
-    """
-    Decorator para verificar que el usuario tenga un rol especifico.
+@router.post("/register", response_model=UserResponse, status_code=201)
+def register(user_data: UserRegister, db: Session = Depends(get_db)):
+    try:
+        user = register_user(db, user_data)
+        return user
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e)
+        )
 
-    Uso:
-        @router.get("/admin/users")
-        @require_role("admin")
-        def admin_endpoint(current_user: User = Depends(get_current_user)):
-            ...
-    """
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            # Extraer current_user de kwargs (inyectado por FastAPI)
-            current_user = kwargs.get("current_user")
-            if current_user is None:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Autenticacion requerida"
-                )
-            if current_user.role != required_role:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Se requiere rol '{required_role}'"
-                )
-            return func(*args, **kwargs)
-        return wrapper
-    return decorator
-```
-
-Alternativa usando dependencia directa (mas "FastAPI way"):
-
-```python
-# app/middleware/rbac.py - Version alternativa
-from fastapi import Depends, HTTPException, status
-from app.models.user import User
-from app.middleware.security import get_current_user
-
-
-class RoleChecker:
-    def __init__(self, allowed_roles: list):
-        self.allowed_roles = allowed_roles
-
-    def __call__(self, current_user: User = Depends(get_current_user)) -> User:
-        if current_user.role not in self.allowed_roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Acceso denegado. Roles permitidos: {self.allowed_roles}"
-            )
-        return current_user
-
-
-# Instancias reutilizables
-admin_only = RoleChecker(["admin"])
-user_or_admin = RoleChecker(["user", "admin"])
-```
-
-Uso con clase:
-
-```python
-from app.middleware.rbac import admin_only, user_or_admin
-
-@router.get("/admin/users")
-def list_all_users(
-    current_user: User = Depends(admin_only),
-    db: Session = Depends(get_db)
-):
-    users = db.query(User).all()
-    return users
-```
-
-### 3. Logging Seguro (10 min)
-
-El logging seguro nunca debe incluir informacion sensible como contrasenas, tokens, datos personales.
-
-```python
-# app/services/logger.py
-import logging
-import json
-import re
-from datetime import datetime, timezone
-
-
-class SecureLogger:
-    """
-    Logger que filtra informacion sensible antes de escribir.
-    """
-
-    # Patrones de campos sensibles
-    SENSITIVE_FIELDS = [
-        "password", "secret", "token", "authorization",
-        "credit_card", "ssn", "phone", "email"
-    ]
-
-    def __init__(self, name: str):
-        self.logger = logging.getLogger(name)
-        self.logger.setLevel(logging.INFO)
-
-        # Handler para archivo
-        handler = logging.FileHandler("app.log")
-        handler.setFormatter(logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        ))
-        self.logger.addHandler(handler)
-
-    def _sanitize(self, data: dict) -> dict:
-        """Elimina o enmascara campos sensibles."""
-        sanitized = {}
-        for key, value in data.items():
-            key_lower = key.lower()
-            if any(field in key_lower for field in self.SENSITIVE_FIELDS):
-                sanitized[key] = "***REDACTED***"
-            elif isinstance(value, dict):
-                sanitized[key] = self._sanitize(value)
-            else:
-                sanitized[key] = value
-        return sanitized
-
-    def log_event(self, level: str, event: str, user_id: int = None,
-                  details: dict = None, ip_address: str = None):
-        """Registra un evento de seguridad."""
-        log_entry = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "event": event,
-            "user_id": user_id,
-            "ip_address": ip_address,
-            "details": self._sanitize(details or {})
-        }
-
-        message = json.dumps(log_entry)
-
-        if level.upper() == "INFO":
-            self.logger.info(message)
-        elif level.upper() == "WARNING":
-            self.logger.warning(message)
-        elif level.upper() == "ERROR":
-            self.logger.error(message)
-        elif level.upper() == "CRITICAL":
-            self.logger.critical(message)
-
-
-# Instancia global
-secure_logger = SecureLogger("secure_api")
-```
-
-Uso en endpoints:
-
-```python
-from app.services.logger import secure_logger
 
 @router.post("/login", response_model=TokenResponse)
-def login(credentials: UserLogin, request: Request, db: Session = Depends(get_db)):
+def login(credentials: UserLogin, db: Session = Depends(get_db)):
     user = authenticate_user(db, credentials.username, credentials.password)
 
     if user is None:
-        secure_logger.log_event(
-            level="WARNING",
-            event="LOGIN_FAILED",
-            details={"username": credentials.username},
-            ip_address=request.client.host
-        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales invalidas"
+            detail="Credenciales invalidas",
         )
 
     access_token = create_access_token({"sub": str(user.id)})
     refresh_token = create_refresh_token({"sub": str(user.id)})
 
-    secure_logger.log_event(
-        level="INFO",
-        event="LOGIN_SUCCESS",
-        user_id=user.id,
-        ip_address=request.client.host
-    )
-
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token
     )
-```
-
-### 4. Rate Limiting (15 min)
-
-```python
-# app/middleware/ratelimit.py
-import time
-from collections import defaultdict
-from fastapi import HTTPException, Request, status
 
 
-class RateLimiter:
-    """
-    Rate limiter simple en memoria (para produccion usar Redis).
-    """
+@router.post("/refresh", response_model=TokenResponse)
+def refresh(refresh_token: str, db: Session = Depends(get_db)):
+    payload = decode_token(refresh_token)
 
-    def __init__(self):
-        # {key: [(timestamp, count), ...]}
-        self.requests = defaultdict(list)
-
-    def _get_key(self, request: Request) -> str:
-        """Identificador unico basado en IP o usuario autenticado."""
-        client_ip = request.client.host if request.client else "unknown"
-
-        # Si hay usuario autenticado, usar su ID
-        if hasattr(request.state, "user"):
-            return f"user:{request.state.user.id}"
-
-        return f"ip:{client_ip}"
-
-    def check(self, request: Request, max_requests: int = 10,
-              window_seconds: int = 60) -> None:
-        """
-        Verifica si el request excede el limite.
-
-        Args:
-            request: Request de FastAPI
-            max_requests: Maximo de requests permitidos en la ventana
-            window_seconds: Tamano de la ventana en segundos
-        """
-        key = self._get_key(request)
-        now = time.time()
-
-        # Limpiar entradas viejas
-        self.requests[key] = [
-            req_time for req_time in self.requests[key]
-            if now - req_time < window_seconds
-        ]
-
-        # Verificar limite
-        if len(self.requests[key]) >= max_requests:
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=f"Limite de requests excedido. "
-                       f"Maximo: {max_requests} por {window_seconds}s",
-                headers={"Retry-After": str(window_seconds)}
-            )
-
-        # Registrar request
-        self.requests[key].append(now)
-
-
-# Instancia global
-rate_limiter = RateLimiter()
-```
-
-Integracion como middleware FastAPI:
-
-```python
-# app/middleware/ratelimit_middleware.py
-from fastapi import Request, HTTPException, status
-from starlette.middleware.base import BaseHTTPMiddleware
-
-from app.middleware.ratelimit import rate_limiter
-
-
-class RateLimitMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        # Aplicar rate limiting a rutas de autenticacion
-        if request.url.path.startswith("/auth"):
-            rate_limiter.check(
-                request,
-                max_requests=5,       # 5 intentos
-                window_seconds=60     # por minuto
-            )
-
-        response = await call_next(request)
-        return response
-```
-
-Registrar en `main.py`:
-
-```python
-from app.middleware.ratelimit_middleware import RateLimitMiddleware
-
-app.add_middleware(RateLimitMiddleware)
-```
-
-### 5. Security Headers (10 min)
-
-```python
-# app/middleware/headers.py
-from fastapi import Request
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
-
-
-class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        response: Response = await call_next(request)
-
-        # Prevenir que el navegador haga MIME-type sniffing
-        response.headers["X-Content-Type-Options"] = "nosniff"
-
-        # Prevenir clickjacking
-        response.headers["X-Frame-Options"] = "DENY"
-
-        # Habilitar XSS filter en navegadores antiguos
-        response.headers["X-XSS-Protection"] = "1; mode=block"
-
-        # HSTS (HTTP Strict Transport Security)
-        response.headers["Strict-Transport-Security"] = \
-            "max-age=31536000; includeSubDomains"
-
-        # Content Security Policy
-        response.headers["Content-Security-Policy"] = \
-            "default-src 'self'; script-src 'self'; style-src 'self'"
-
-        # Referrer Policy
-        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-
-        # Cache-Control para respuestas sensibles
-        if request.url.path.startswith("/auth"):
-            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
-
-        # Remove Server header
-        if "server" in response.headers:
-            del response.headers["server"]
-
-        return response
-```
-
-Registrar en `main.py`:
-
-```python
-from app.middleware.headers import SecurityHeadersMiddleware
-
-app.add_middleware(SecurityHeadersMiddleware)
-```
-
-### 6. Tests de Seguridad (15 min)
-
-```python
-# tests/test_security.py
-import pytest
-from httpx import AsyncClient, ASGITransport
-from app.main import app
-from app.database import Base, engine, SessionLocal
-from app.models.user import User
-from app.services.auth_service import hash_password
-
-
-@pytest.fixture(autouse=True)
-def setup_db():
-    """Crear tablas limpias para cada test."""
-    Base.metadata.create_all(bind=engine)
-    yield
-    # Limpiar despues de cada test
-    Base.metadata.drop_all(bind=engine)
-
-
-@pytest.fixture
-def db_session():
-    session = SessionLocal()
-    yield session
-    session.close()
-
-
-@pytest.fixture
-def test_user(db_session):
-    user = User(
-        email="test@example.com",
-        username="testuser",
-        password_hash=hash_password("TestPass123"),
-        role="user"
-    )
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
-    return user
-
-
-@pytest.fixture
-def admin_user(db_session):
-    user = User(
-        email="admin@example.com",
-        username="adminuser",
-        password_hash=hash_password("AdminPass123"),
-        role="admin"
-    )
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
-    return user
-
-
-@pytest.mark.asyncio
-async def test_register_with_weak_password():
-    """Test: registro con contrasena debil debe fallar."""
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.post("/auth/register", json={
-            "email": "weak@example.com",
-            "username": "weakuser",
-            "password": "123"  # Demasiado corta, sin mayusculas
-        })
-    assert response.status_code == 422
-
-
-@pytest.mark.asyncio
-async def test_login_invalid_credentials():
-    """Test: login con credenciales invalidas debe fallar."""
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.post("/auth/login", json={
-            "username": "nonexistent",
-            "password": "WrongPass123"
-        })
-    assert response.status_code == 401
-
-
-@pytest.mark.asyncio
-async def test_access_without_token():
-    """Test: endpoint protegido sin token debe retornar 401."""
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.get("/api/items/")
-    assert response.status_code == 401
-
-
-@pytest.mark.asyncio
-async def test_access_with_expired_token():
-    """Test: token expirado debe dar 401."""
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.get(
-            "/api/items/",
-            headers={"Authorization": "Bearer expired.token.here"}
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Refresh token invalido o expirado",
         )
-    assert response.status_code == 401
 
-
-@pytest.mark.asyncio
-async def test_idor_access_other_user_item(test_user):
-    """Test: usuario no puede acceder a items de otro usuario."""
-    # Crear un segundo usuario con un item
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        # Login como test_user
-        login_resp = await client.post("/auth/login", json={
-            "username": "testuser",
-            "password": "TestPass123"
-        })
-        token = login_resp.json()["access_token"]
-
-        # Crear item
-        create_resp = await client.post(
-            "/api/items/",
-            headers={"Authorization": f"Bearer {token}"},
-            json={"title": "Mi item", "description": "desc"}
+    if payload.get("type") != "refresh":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Tipo de token incorrecto",
         )
-        item_id = create_resp.json()["id"]
 
-        # Intentar acceder como otro usuario (simulado con usuario2)
-        # En este test, simplemente verificamos que el item creado
-        # pertenece al usuario correcto
-        assert create_resp.status_code == 201
-        assert create_resp.json()["owner_id"] == test_user.id
+    user_id = payload.get("sub")
+    user = db.query(User).filter(User.id == int(user_id)).first()
+
+    if user is None or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Usuario no encontrado o inactivo",
+        )
+
+    new_access_token = create_access_token({"sub": str(user.id)})
+    new_refresh_token = create_refresh_token({"sub": str(user.id)})
+
+    return TokenResponse(
+        access_token=new_access_token,
+        refresh_token=new_refresh_token
+    )
 
 
-@pytest.mark.asyncio
-async def test_security_headers():
-    """Test: verificar que los security headers estan presentes."""
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.get("/health")
-    assert response.headers.get("x-content-type-options") == "nosniff"
-    assert response.headers.get("x-frame-options") == "DENY"
-    assert response.headers.get("strict-transport-security") is not None
+@router.get("/me", response_model=UserResponse)
+def get_me(current_user: User = Depends(get_current_user)):
+    return current_user
 ```
 
-### 7. Actualizar main.py (5 min)
+### 8. Punto de Entrada Principal (5 min)
 
 ```python
-# app/main.py - Version final
+# app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from app.config import settings
 from app.database import engine, Base
-from app.routers import auth, items
-from app.middleware.ratelimit_middleware import RateLimitMiddleware
-from app.middleware.headers import SecurityHeadersMiddleware
+from app.routers import auth
 
-# Crear tablas
+# Crear tablas en la base de datos
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
@@ -695,7 +478,7 @@ app = FastAPI(
     version=settings.VERSION
 )
 
-# Middleware (orden importante: se ejecutan en orden inverso)
+# CORS seguro
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
@@ -703,12 +486,9 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Authorization", "Content-Type"],
 )
-app.add_middleware(RateLimitMiddleware)
-app.add_middleware(SecurityHeadersMiddleware)
 
-# Routers
+# Incluir routers
 app.include_router(auth.router)
-app.include_router(items.router)
 
 
 @app.get("/health")
@@ -721,179 +501,243 @@ if __name__ == "__main__":
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=False)
 ```
 
----
+### 9. Archivo .env (5 min)
 
-## Ejercicio 1: Implementar GET /api/items Protegido
+```env
+# .env - NUNCA subir al repositorio
+SECRET_KEY=generate-random-64-char-key-here-abcdef1234567890abcdef1234567890
+DATABASE_URL=sqlite:///./secure_api.db
+```
 
-**Enunciado:** Implementar el endpoint GET /api/items que solo devuelva items del usuario autenticado.
-
-**Solucion:** Ya incluida en la seccion 1. El endpoint:
-
-- Requiere autenticacion via `Depends(get_current_user)`
-- Filtra items por `owner_id == current_user.id`
-- Soporta paginacion via `skip` y `limit`
-- Valida que `skip >= 0` y `limit` entre 1 y 100
-
-Prueba:
-```bash
-# Login
-TOKEN=$(curl -s -X POST http://localhost:8000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"username":"testuser","password":"TestPass123"}' | \
-  python -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
-
-# Listar items
-curl -H "Authorization: Bearer $TOKEN" \
-  http://localhost:8000/api/items/
-
-# Sin token (debe fallar)
-curl http://localhost:8000/api/items/
-# Respuesta: 401 Unauthorized
+Generar clave segura con Python:
+```python
+import secrets
+print(secrets.token_hex(32))
 ```
 
 ---
 
-## Ejercicio 2: Implementar Middleware de Autorizacion por Roles
+## Ejercicio 1: Crear Proyecto Flask/FastAPI con Estructura Segura
 
-**Enunciado:** Crear un middleware/dependencia que restrinja endpoints segun el rol del usuario.
+**Enunciado:** Crear la estructura de carpetas completa del proyecto con FastAPI, incluyendo todos los archivos de inicializacion.
 
-**Solucion:** Ya incluida en la seccion 2 (clase `RoleChecker`). Ejemplo de uso:
+**Solucion:**
+
+```
+secure-api/
+├── app/
+│   ├── __init__.py          # from app.main import app
+│   ├── main.py              # Punto de entrada
+│   ├── config.py            # Configuracion segura
+│   ├── database.py          # Conexion BD
+│   ├── models/
+│   │   ├── __init__.py      # from app.models.user import User
+│   │   └── user.py          # Modelo SQLAlchemy
+│   ├── schemas/
+│   │   ├── __init__.py
+│   │   └── user.py          # Pydantic validacion
+│   ├── routers/
+│   │   ├── __init__.py
+│   │   └── auth.py          # Endpoints auth
+│   ├── services/
+│   │   ├── __init__.py
+│   │   └── auth_service.py  # Logica de negocio
+│   └── middleware/
+│       ├── __init__.py
+│       └── security.py      # JWT validation
+├── requirements.txt
+├── .env.example             # Template sin valores reales
+└── .gitignore               # Incluir .env, *.db, __pycache__
+```
+
+Recomendacion: Cada `__init__.py` debe exponer las clases/funciones principales:
 
 ```python
-from app.middleware.rbac import RoleChecker
+# app/__init__.py
+from app.main import app
+
+# app/models/__init__.py
 from app.models.user import User
 
-# Crear instancias
-admin_only = RoleChecker(["admin"])
-user_or_admin = RoleChecker(["user", "admin"])
+# app/schemas/__init__.py
+from app.schemas.user import UserRegister, UserLogin, UserResponse, TokenResponse
 
-# Endpoint solo para admin
-@router.get("/admin/users")
-def list_users(
-    current_user: User = Depends(admin_only),
-    db: Session = Depends(get_db)
-):
-    """Solo administradores pueden listar todos los usuarios."""
-    users = db.query(User).all()
-    return users
+# app/routers/__init__.py
+from app.routers.auth import router as auth_router
 
-# Endpoint accesible por user y admin
-@router.get("/api/items/stats")
-def get_stats(
-    current_user: User = Depends(user_or_admin),
-    db: Session = Depends(get_db)
-):
-    items_count = db.query(Item).filter(
-        Item.owner_id == current_user.id
-    ).count()
-    return {"total_items": items_count}
+# app/services/__init__.py
+from app.services.auth_service import (
+    hash_password, verify_password,
+    create_access_token, create_refresh_token,
+    decode_token, register_user, authenticate_user
+)
+
+# app/middleware/__init__.py
+from app.middleware.security import get_current_user
 ```
 
 ---
 
-## Ejercicio 3: Agregar Rate Limiting con Flask-Limiter (version FastAPI)
+## Ejercicio 2: Implementar Modelo de Usuario con Contrasena Hasheada
 
-**Enunciado:** Agregar rate limiting de 5 intentos por minuto en login.
+**Enunciado:** Implementar el modelo de usuario SQLAlchemy y la funcion de hashing con bcrypt.
 
-**Solucion:** Ya incluida en la seccion 4. Para una solucion mas robusta:
+**Solucion:** Ya incluida en las secciones 3 y 5 de la clase. Puntos clave:
 
-```bash
-pip install slowapi
-```
+- La columna `password_hash` almacena el hash, nunca la contrasena en texto plano
+- Se usa `passlib` con `bcrypt` y `bcrypt__rounds=12` (12 rondas de salting)
+- La funcion `hash_password()` retorna el hash
+- `verify_password()` compara la contrasena ingresada contra el hash
+- El hash de bcrypt incluye el salt automaticamente (formato: `$2b$12$...`)
+
+Verificar que funciona:
 
 ```python
-# app/middleware/slowapi_setup.py
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
+# test_hash.py
+from app.services.auth_service import hash_password, verify_password
 
-limiter = Limiter(key_func=get_remote_address)
-```
+password = "MiPassword123!"
+hashed = hash_password(password)
+print(f"Hash: {hashed}")
+# Output: $2b$12$abc123... (60 caracteres)
 
-En `main.py`:
-```python
-from app.middleware.slowapi_setup import limiter, _rate_limit_exceeded_handler
-
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-```
-
-En `routers/auth.py`:
-```python
-from slowapi import Limiter
-from slowapi.util import get_remote_address
-
-limiter = Limiter(key_func=get_remote_address)
-
-@router.post("/login")
-@limiter.limit("5/minute")
-def login(credentials: UserLogin, request: Request, db: Session = Depends(get_db)):
-    # ... resto del codigo
+assert verify_password(password, hashed) == True
+assert verify_password("WrongPassword", hashed) == False
+print("Hashing funciona correctamente")
 ```
 
 ---
 
-## Ejercicio 4: Escribir Tests Unitarios de Seguridad
+## Ejercicio 3: Implementar Endpoint POST /auth/register con Validacion
 
-**Enunciado:** Escribir 3 tests de seguridad: registro con contrasena debil, acceso sin token, y verificacion de security headers.
+**Enunciado:** Implementar el endpoint de registro con validacion estricta de email, username y contrasena.
 
-**Solucion:** Tests ya incluidos en la seccion 6. Resumen de lo que cada test verifica:
+**Solucion:** Ya incluida en las secciones 4, 5 y 7. Resumen de validaciones:
 
-1. `test_register_with_weak_password`: Verifica que contrasenas debiles son rechazadas (422)
-2. `test_access_without_token`: Verifica que endpoints protegidos requieren autenticacion (401)
-3. `test_security_headers`: Verifica que headers como X-Content-Type-Options y X-Frame-Options estan presentes
+1. **Email:** Validado con `EmailStr` de Pydantic (formato email valido)
+2. **Username:** Longitud 3-50 caracteres, solo alfanumerico + guion bajo, validado con regex
+3. **Password:** Longitud 8-128 caracteres, debe tener mayuscula, minuscula y numero
+4. **Duplicados:** Se verifica que username y email no existan en BD
+5. **Hash:** La contrasena se hashea con bcrypt antes de almacenar
+6. **Respuesta:** Nunca devuelve el hash en la respuesta (UserResponse no incluye password_hash)
 
-Para ejecutar los tests:
+Ejemplo de request/response:
+
 ```bash
-pip install pytest httpx pytest-asyncio
-cd secure-api
-pytest tests/ -v
+# Registro exitoso
+curl -X POST http://localhost:8000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "username": "usuario1",
+    "password": "MiPassword123"
+  }'
+
+# Respuesta:
+# {
+#   "id": 1,
+#   "email": "user@example.com",
+#   "username": "usuario1",
+#   "role": "user",
+#   "is_active": true
+# }
+
+# Registro con error de validacion
+curl -X POST http://localhost:8000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "email-invalido",
+    "username": "us",
+    "password": "123"
+  }'
+
+# Respuesta: 422 Unprocessable Entity con detalles de validacion
+```
+
+---
+
+## Ejercicio 4: Implementar Endpoint POST /auth/login con JWT
+
+**Enunciado:** Implementar login que retorne access_token y refresh_token JWT.
+
+**Solucion:** Ya incluida en las secciones 5 y 7. Flujo completo:
+
+1. Recibe username y password
+2. Busca usuario en BD por username
+3. Verifica contrasena con bcrypt
+4. Verifica que el usuario este activo
+5. Genera access_token (30 min de validez) y refresh_token (7 dias)
+6. Retorna ambos tokens
+
+Tokens JWT contienen:
+```json
+{
+  "sub": "1",        // ID del usuario
+  "exp": 1700000000, // Fecha de expiracion
+  "type": "access",  // o "refresh"
+  "iat": 1700000000  // Fecha de emision
+}
+```
+
+Ejemplo de login:
+
+```bash
+curl -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "usuario1",
+    "password": "MiPassword123"
+  }'
+
+# Respuesta:
+# {
+#   "access_token": "eyJhbGciOiJIUzI1NiIs...",
+#   "refresh_token": "eyJhbGciOiJIUzI1NiIs...",
+#   "token_type": "bearer"
+# }
 ```
 
 ---
 
 ## Preguntas y Respuestas
 
-**1. Que es RBAC y como se implemento en la aplicacion?**
+**1. Por que se usa bcrypt en vez de SHA256 para almacenar contrasenas?**
 
-RBAC (Role-Based Access Control) asigna permisos basados en roles. En nuestra app, los roles son "user" y "admin". Se implemento con una dependencia `RoleChecker` que verifica `current_user.role` contra los roles permitidos en cada endpoint.
+SHA256 es un hash rapido, disenado para verificacion de integridad. Un atacante puede calcular millones de SHA256 por segundo. Bcrypt es un hash lento por diseno (adaptive hash), incluye salt automatico y permite ajustar el factor de costo. Hace que ataques de fuerza bruta sean impracticables.
 
-**2. Por que es importante rate limiting en endpoints de autenticacion?**
+**2. Que informacion contiene un JWT y como se protege?**
 
-Rate limiting previene ataques de fuerza bruta y diccionario. Sin el, un atacante puede probar miles de contrasenas por minuto. Con 5 intentos por minuto, un ataque de 10,000 contrasenas tomaria mas de 33 horas.
+Un JWT contiene un header (algoritmo), payload (datos como sub, exp, type) y signature. El payload NO debe contener informacion sensible como contrasenas. La firma protege contra manipulacion: si alguien modifica el payload, la firma no valida.
 
-**3. Que security headers se agregaron y que protege cada uno?**
+**3. Por que es importante validar los datos de entrada con Pydantic?**
 
-- X-Content-Type-Options: previene MIME sniffing
-- X-Frame-Options: previene clickjacking
-- X-XSS-Protection: habilita filtro XSS en navegadores antiguos
-- Strict-Transport-Security: fuerza HTTPS
-- Content-Security-Policy: controla recursos que puede cargar la pagina
+Pydantic valida automaticamente tipos, formatos, longitudes y restricciones personalizadas. Previene que datos maliciosos o malformados lleguen a la base de datos. Reduce el riesgo de injection, buffer overflow y otros ataques basados en entrada no validada.
 
-**4. Que informacion no debe aparecer en los logs de seguridad?**
+**4. Que diferencia hay entre access_token y refresh_token?**
 
-Nunca registrar: contrasenas (ni hasheadas), tokens JWT, secret keys, datos de tarjetas de credito, numeros de seguro social, emails completos (parcialmente enmascarados puede ser aceptable), informacion biomedica.
+El access_token tiene corta duracion (minutos u horas) y se usa para autenticar requests. El refresh_token tiene larga duracion (dias) y solo se usa para obtener nuevos access_tokens sin pedir credenciales nuevamente. Esto limita el dano si un access_token es robado.
 
-**5. Como se protege contra IDOR en los endpoints del CRUD?**
+**5. Por que se configura CORS con origenes especificos?**
 
-En cada endpoint que accede a un recurso por ID, se verifica que `item.owner_id == current_user.id`. Si el usuario no es el propietario y no es admin, se retorna 403 Forbidden. Esto evita que un usuario malicioso cambie el ID en la URL para acceder a recursos de otros.
+CORS (Cross-Origin Resource Sharing) controla que origenes pueden acceder a la API. Si se configura como `*` (todos los origenes), cualquier sitio web malicioso puede hacer requests desde el navegador del usuario. Restringir a origenes conocidos previene ataques CSRF.
 
-**6. Que hace `from_attributes = True` en los schemas de respuesta?**
+**6. Que es el modelo `from_attributes = True` en Pydantic?**
 
-Configura Pydantic para crear instancias del schema directamente desde objetos SQLAlchemy (ORM). Sin esta opcion, habria que convertir manualmente el objeto a diccionario. Con `from_attributes = True`, se pasa el objeto directamente y Pydantic mapea los atributos.
+Permite crear instancias del schema desde objetos SQLAlchemy (ORM). Sin esta configuracion, Pydantic solo acepta diccionarios. Con `from_attributes = True`, se puede pasar directamente un objeto `User` y Pydantic mapea los atributos del modelo a los campos del schema.
 
-**7. Cual es la diferencia entre `Depends(get_current_user)` y `Depends(admin_only)`?**
+**7. Como se genera una SECRET_KEY segura para JWT?**
 
-`get_current_user` solo verifica que el token JWT sea valido y retorna el usuario. `admin_only` (que internamente usa `get_current_user`) ademas verifica que el usuario tenga el rol requerido. Se pueden componer: primero se autentica, luego se autoriza.
+Usando `secrets.token_hex(32)` de Python que genera 64 caracteres hexadecimales criptograficamente aleatorios. No debe estar hardcodeada en el codigo fuente, sino en variables de entorno o un archivo .env excluido del repositorio.
 
 ---
 
 ## Tarea / Lectura Recomendada
 
-- Completar todos los endpoints del CRUD con proteccion IDOR
-- Agregar rate limiting funcional y probarlo con un script de fuerza bruta
-- Escribir al menos 3 tests de seguridad adicionales
-- Leer: OWASP REST Security Cheat Sheet (https://cheatsheetseries.owasp.org/cheatsheets/REST_Security_Cheat_Sheet.html)
-- Preparacion: Tener la app funcionando para las pruebas de la clase 30
+- Completar la implementacion de la API hasta el login funcionando
+- Leer: FastAPI Security Documentation (https://fastapi.tiangolo.com/tutorial/security/)
+- Leer: JWT.io para entender la estructura de tokens (https://jwt.io/)
+- Investigar: OWASP ASVS (Application Security Verification Standard) nivel 1 y 2
+- Preparacion: Traer la API funcionando para la clase 29
+
 
 

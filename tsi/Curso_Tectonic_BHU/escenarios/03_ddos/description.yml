@@ -1,0 +1,240 @@
+name: ddos_syn_flood
+display_name: "DDoS SYN Flood - Banco del Sol"
+version: "1.0.0"
+author: "BHU Uruguay - Equipo de Ciberseguridad"
+
+tags:
+  - ddos
+  - syn-flood
+  - availability
+  - network-attack
+  - blue-team
+  - incident-response
+
+difficulty: intermediate
+estimated_time: 2 hours
+category: network-security
+subcategory: denial-of-service
+
+scenario:
+  type: defensive
+  role: blue-team
+  target: webserver
+  attacker_vm: kali
+  
+description: >
+  Simulacion de un ataque DDoS SYN Flood contra la infraestructura web del
+  Banco del Sol. Los estudiantes actuan como equipo de respuesta a incidentes
+  y deben detectar, analizar, contener y mitigar un ataque de denegacion de
+  servicio basado en la explotacion del protocolo TCP. El escenario simula
+  multiples origenes de ataque y requiere conocimientos de redes, sistemas
+  operativos y herramientas de monitoreo.
+
+learning_objectives:
+  - Comprender el mecanismo SYN flood y la explotacion del handshake TCP
+  - Identificar indicadores de compromiso (IOCs) de ataques DDoS
+  - Aplicar tecnicas de deteccion usando herramientas de monitoreo de red
+  - Implementar reglas de mitigacion con iptables/nftables
+  - Configurar SYN cookies y rate limiting en servidores web
+  - Analizar capturas de paquetes para identificar patrones de ataque
+  - Desarrollar un plan de respuesta a incidentes para ataques DDoS
+  - Evaluar la efectividad de las contramedidas implementadas
+
+prerequisites:
+  - Conocimientos basicos de TCP/IP y el handshake de tres vías
+  - Familiaridad con Linux y herramientas de linea de comandos
+  - Comprension basica de iptables y firewall management
+  - Experiencia con herramientas como tcpdump, netstat, ss
+
+infrastructure:
+  networks:
+    dmz:
+      cidr: "10.10.1.0/24"
+      description: "Zona desmilitarizada - servidores expuestos"
+    internal:
+      cidr: "10.10.2.0/24"
+      description: "Red interna - estaciones de trabajo y servicios internos"
+    management:
+      cidr: "10.10.0.0/24"
+      description: "Red de gestion - administracion de infraestructura"
+    internet:
+      cidr: "172.16.0.0/24"
+      description: "Simulacion de Internet - origenes de ataque"
+
+  machines:
+    attacker:
+      role: attacker
+      os: kali-linux
+      network: internet
+      ip: "172.16.0.10"
+      description: "Maquina atacante - ejecuta el SYN flood"
+      tools:
+        - hping3
+        - nmap
+        - tcpdump
+        - metasploit (opcional)
+      
+    webserver:
+      role: webserver
+      os: ubuntu-22.04
+      network: dmz
+      ip: "10.10.1.10"
+      description: "Servidor web principal - objetivo del ataque"
+      services:
+        - apache2/nginx
+        - fail2ban
+        - iptables
+      ports:
+        - "80/tcp"
+        - "443/tcp"
+        - "22/tcp (management)"
+      
+    mailserver:
+      role: mailserver
+      os: ubuntu-22.04
+      network: dmz
+      ip: "10.10.1.20"
+      description: "Servidor de correo - puede ser afectado colateralmente"
+      services:
+        - postfix
+        - dovecot
+        
+    fileserver:
+      role: fileserver
+      os: ubuntu-22.04
+      network: internal
+      ip: "10.10.2.20"
+      description: "Servidor de archivos - servicios internos"
+      services:
+        - samba
+        - nfs
+        
+    database:
+      role: database
+      os: ubuntu-22.04
+      network: internal
+      ip: "10.10.2.30"
+      description: "Servidor de base de datos - datos criticos del banco"
+      services:
+        - mysql
+        - redis
+        
+    domaincontroller:
+      role: domain-controller
+      os: windows-server-2022
+      network: internal
+      ip: "10.10.2.10"
+      description: "Controlador de dominio - autenticacion corporativa"
+      services:
+        - active-directory
+        - dns
+        - dhcp
+        
+    workstation:
+      role: workstation
+      os: windows-11
+      network: internal
+      ip: "10.10.2.100"
+      description: "Estacion de trabajo del analista - herramientas de monitoreo"
+
+attack_phases:
+  - phase: reconnaissance
+    description: "El atacante identifica el objetivo y analiza la infraestructura"
+    tools: ["nmap", "whois", "dig"]
+    duration: "5-10 minutos"
+    
+  - phase: initial_attack
+    description: "SYN flood inicial contra puerto 80 del webserver"
+    tools: ["hping3"]
+    parameters:
+      protocol: TCP SYN
+      target_port: 80
+      source_ips: "spoofed (172.16.0.0/24)"
+      packet_rate: "1000 packets/second"
+      
+  - phase: escalation
+    description: "Escala del ataque con multiples origenes y puertos"
+    tools: ["hping3", "scapy"]
+    parameters:
+      target_ports: [80, 443]
+      source_ips: "multiple spoofed"
+      packet_rate: "5000+ packets/second"
+      techniques: ["SYN flood", "ACK flood", "RST flood"]
+      
+  - phase: amplification
+    description: "Reflexion DNS para amplificar el trafico de ataque"
+    tools: ["scapy"]
+    parameters:
+      protocol: UDP
+      amplification_factor: "5-10x"
+      
+  - phase: persistence
+    description: "Mantencion del ataque para degradar servicios"
+    duration: "20-30 minutos"
+    goal: "Agotar recursos del servidor y tablas de conexion"
+
+detection_indicators:
+  network:
+    - "Incremento anomalo de trafico SYN entrante"
+    - "Multiples conexiones en estado SYN_RECV"
+    - "Consumo de ancho de banda inusual"
+    - "Paquetes con IPs origen falsificadas"
+    
+  host:
+    - "Alto uso de CPU y memoria en webserver"
+    - "Tabla de conexiones TCP llena"
+    - "Servicios web respondiendo con latencia alta"
+    - "Errores de connection timeout en logs"
+    - "Puertos efimeros agotados"
+    
+  logs:
+    - "Apache/Nginx: incremento de requests por segundo"
+    - "Syslog: mensajes de connection tracking overflow"
+    - "Kernel: tcp_abort_on_overflow activado"
+    - "fail2ban: banning automatico de IPs"
+
+mitigation_strategies:
+  immediate:
+    - "Activar SYN cookies en el kernel"
+    - "Configurar rate limiting con iptables"
+    - "Bloquear rangos de IPs atacantes"
+    - "Habilitar tcp_syncookies=1"
+    
+  short_term:
+    - "Configurar fail2ban con reglas agresivas"
+    - "Ajustar timeouts TCP en el servidor"
+    - "Implementar connection rate limiting"
+    - "Configurar proxy inverso con buffering"
+    
+  long_term:
+    - "Implementar solucion CDN/anti-DDoS"
+    - "Configurar BGP Flowspec o RTBH"
+    - "Dimensionar infraestructura para picos"
+    - "Desarrollar plan de respuesta a incidentes"
+
+success_criteria:
+  detection:
+    - "Identificar el tipo de ataque (SYN flood) en los primeros 5 minutos"
+    - "Detectar al menos 3 indicadores de compromiso"
+    - "Determinar el rango de IPs atacantes"
+    
+  containment:
+    - "Reducir el trafico de ataque en un 80% dentro de 15 minutos"
+    - "Mantener el servicio web operativo durante el ataque"
+    - "Implementar al menos 2 tecnicas de mitigacion"
+    
+  recovery:
+    - "Restaurar tiempos de respuesta normales"
+    - "Verificar integridad del servicio web"
+    - "Documentar lecciones aprendidas"
+
+files_created:
+  - description.yml
+  - banco_del_sol_ddos.yml
+  - ansible/base_config.yml
+  - ansible/after_clone.yml
+  - GUIA_RESPUESTA.md
+
+estimated_lab_size: "4GB RAM minimum per VM"
+total_infrastructure_size: "28GB RAM recommended"
+network_topology: "multi-segment with DMZ, internal, and internet simulation"

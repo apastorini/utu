@@ -1,0 +1,263 @@
+name: forensic_analysis
+display_name: "Escenario 06 - Analisis Forense Digital"
+slug: escenario-06-forensia
+description: >
+  Analisis forense digital de un sistema comprometido en la red corporativa
+  de Banco del Sol. Los alumnos actuan como analistas forenses del equipo
+  CERT interno, encargados de investigar una posible intrusion detectada
+  en una estacion de trabajo del departamento de operaciones. El escenario
+  comprende adquisicion de evidencia, analisis de disco, analisis de memoria,
+  reconstruccion de lineas de tiempo y elaboracion de informe forense.
+tags:
+  - forensics
+  - disk-forensics
+  - memory-forensics
+  - evidence
+  - chain-of-custody
+  - log-analysis
+  - timeline-reconstruction
+  - blue-team
+difficulty: advanced
+estimated_time: 3_hours
+category: blue-team
+scenario_number: 6
+
+objectives:
+  - id: obj-01
+    title: "Adquisicion de evidencia digital"
+    description: >
+      Realizar la adquisicion forense de una imagen de disco bit a bit
+      de la estacion de trabajo comprometida, garantizando la integridad
+      de la evidencia mediante hashes criptograficos y documentando la
+      cadena de custodia.
+    points: 15
+
+  - id: obj-02
+    title: "Analisis de imagen de disco"
+    description: >
+      Montar y analizar la imagen de disco forense utilizando herramientas
+      del conjunto The Sleuth Kit y Autopsy. Identificar archivos
+      sospechosos, artefactos del sistema, archivos eliminados y evidencia
+      de actividad maliciosa.
+    points: 20
+
+  - id: obj-03
+    title: "Analisis de volcado de memoria"
+    description: >
+      Analizar el volcado de memoria RAM del sistema comprometido usando
+      Volatility Framework. Extraer procesos en ejecucion, conexiones de
+      red activas, archivos cargados en memoria, artefactos de credenciales
+      y codigo inyectado.
+    points: 20
+
+  - id: obj-04
+    title: "Analisis de logs y registros del sistema"
+    description: >
+      Examinar los registros del sistema (auth.log, syslog, apache logs,
+      logs de Windows si aplica) para identificar intentos de acceso no
+      autorizado, inyeccion SQL, webshells, comunicaciones C2 y otras
+      actividades sospechosas.
+    points: 15
+
+  - id: obj-05
+    title: "Reconstruccion de la linea de tiempo"
+    description: >
+      Construir una linea de tiempo unificada que correlacione eventos
+      de disco, memoria y logs para reconstruir la secuencia completa
+      del ataque, desde el vector de entrada inicial hasta la
+      exfiltracion de datos.
+    points: 15
+
+  - id: obj-06
+    title: "Manejo de evidencia y cadena de custodia"
+    description: >
+      Documentar correctamente la cadena de custodia de toda la evidencia
+      recolectada, incluyendo sellos de hash, registros de acceso,
+      almacenamiento seguro y consideraciones legales bajo la legislacion
+      uruguaya vigente.
+    points: 10
+
+  - id: obj-07
+    title: "Elaboracion de informe forense"
+    description: >
+      Redactar un informe forense completo que incluya resumen ejecutivo,
+      metodologia utilizada, hallazgos tecnicos, catalogo de evidencia,
+      conclusiones y recomendaciones de remediacion.
+    points: 5
+
+infrastructure:
+  networks:
+    dmz:
+      cidr: "10.10.1.0/24"
+      description: "Zona desmilitarizada - servidores publicos"
+    internal:
+      cidr: "10.10.2.0/24"
+      description: "Red interna - estaciones de trabajo y servidores internos"
+    management:
+      cidr: "10.10.0.0/24"
+      description: "Red de gestion - administracion y monitoreo"
+    internet:
+      cidr: "172.16.0.0/24"
+      description: "Simulacion de Internet"
+
+  machines:
+    - name: workstation
+      role: "Estacion de trabajo comprometida"
+      network: internal
+      ip: "10.10.2.50"
+      os: "Windows 10 Pro / Ubuntu 22.04 LTS"
+      description: >
+        Equipo del departamento de operaciones donde se detecto
+        actividad sospechosa. Contiene la imagen forense a analizar.
+      compromised: true
+
+    - name: attacker
+      role: "Equipo del atacante (Kali Linux)"
+      network: internet
+      ip: "172.16.0.100"
+      os: "Kali Linux 2024"
+      description: >
+        Maquina del atacante con herramientas de penetracion y
+        registros de la intrusión. Tiene trazas del ataque.
+
+    - name: webserver
+      role: "Servidor web"
+      network: dmz
+      ip: "10.10.1.10"
+      os: "Ubuntu 22.04 LTS"
+      description: >
+        Servidor Apache/nginx expuesto publicamente. Punto de entrada
+        inicial del atacante via vulnerabilidad web.
+
+    - name: mailserver
+      role: "Servidor de correo"
+      network: dmz
+      ip: "10.10.1.20"
+      os: "Ubuntu 22.04 LTS"
+      description: >
+        Servidor de correo electronico corporativo. Contiene emails
+        de phishing utilizados en la fase de reconocimiento.
+
+    - name: fileserver
+      role: "Servidor de archivos"
+      network: internal
+      ip: "10.10.2.10"
+      os: "Ubuntu 22.04 LTS"
+      description: >
+        Servidor de archivos compartidos. Contiene documentos
+        sensibles del banco que fueron accedidos por el atacante.
+
+    - name: database
+      role: "Servidor de base de datos"
+      network: internal
+      ip: "10.10.2.20"
+      os: "Ubuntu 22.04 LTS"
+      description: >
+        Servidor PostgreSQL/MySQL con datos de clientes.
+        Sufrio intentos de exfiltracion de datos.
+
+    - name: domaincontroller
+      role: "Controlador de dominio"
+      network: internal
+      ip: "10.10.2.5"
+      os: "Windows Server 2022"
+      description: >
+        Controlador de dominio Active Directory. Contiene logs
+        de autenticacion y eventos de seguridad.
+
+    - name: instructor
+      role: "Maquina del instructor"
+      network: management
+      ip: "10.10.0.10"
+      os: "Ubuntu 22.04 LTS"
+      description: >
+        Maquina de control del escenario con almacenamiento
+        de evidencia y monitoreo del progreso de alumnos.
+
+scoring:
+  type: manual_assessment
+  total_points: 100
+  passing_score: 70
+  rubric:
+    - category: "Evidencia y cadena de custodia"
+      points: 25
+      criteria:
+        - "Imagen forense bit a bit obtenida correctamente"
+        - "Hashes MD5 y SHA256 calculados y verificados"
+        - "Cadena de custodia documentada completamente"
+        - "Evidencia almacenada de forma segura"
+        - "Consideraciones legales mencionadas"
+
+    - category: "Analisis de disco"
+      points: 25
+      criteria:
+        - "Imagen montada en modo solo lectura"
+        - "Archivos sospechosos identificados"
+        - "Archivos eliminados recuperados"
+        - "Artefactos de navegador analizados"
+        - "Archivos de email examinados"
+
+    - category: "Analisis de memoria"
+      points: 25
+      criteria:
+        - "Volatility ejecutado correctamente"
+        - "Procesos sospechosos identificados"
+        - "Conexiones de red extraidas"
+        - "Codigo inyectado detectado"
+        - "Credenciales comprometidas identificadas"
+
+    - category: "Reporte y documentacion"
+      points: 25
+      criteria:
+        - "Informe forense estructurado"
+        - "Linea de tiempo clara"
+        - "Hallazgos bien documentados"
+        - "Recomendaciones especificas"
+        - "Catalogo de evidencia completo"
+
+hints:
+  - id: hint-01
+    cost: 0
+    text: "Comienza siempre por documentar la escena antes de tocar cualquier evidencia digital."
+
+  - id: hint-02
+    cost: 0
+    text: "El hash criptografico es tu garantia de integridad. Calculalo antes y despues de cada operacion."
+
+  - id: hint-03
+    cost: 5
+    text: "Revisa los archivos ocultos en /tmp y los archivos con permisos SUID en la imagen de disco."
+
+  - id: hint-04
+    cost: 5
+    text: "En Volatility, usa 'linux_pslist' y 'linux_netscan' como primeros pasos para identificar procesos y conexiones."
+
+  - id: hint-05
+    cost: 10
+    text: "El atacante modifico /etc/passwd para crear un usuario backdoor. Busca diferencias con el archivo original."
+
+  - id: hint-06
+    cost: 10
+    text: "Los logs de Apache muestran patron de inyeccion SQL seguido de acceso a un webshell. Correlaciona las IPs."
+
+  - id: hint-07
+    cost: 15
+    text: "El cron job del atacante ejecuta un script que establece una conexion reverse shell cada 5 minutos al puerto 4444."
+
+tags_metadata:
+  forensics:
+    description: "Disciplina de analisis forense digital"
+  disk-forensics:
+    description: "Analisis forense de imagenes de disco"
+  memory-forensics:
+    description: "Analisis forense de volcados de memoria RAM"
+  evidence:
+    description: "Recoleccion y preservacion de evidencia digital"
+  chain-of-custody:
+    description: "Documentacion de la cadena de custodia"
+  log-analysis:
+    description: "Analisis de registros y logs del sistema"
+  timeline-reconstruction:
+    description: "Reconstruccion de lineas de tiempo de ataque"
+  blue-team:
+    description: "Equipo defensivo - respuesta a incidentes"

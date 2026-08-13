@@ -1,0 +1,895 @@
+---
+lab:
+  id: "BHU-TEC-004"
+  name: "Banco del Sol - Intrusion y Movimiento Lateral"
+  description: |
+    Edicion de laboratorio para el escenario de intrusion y movimiento lateral
+    contra la infraestructura de Banco del Sol. Este laboratorio simula un
+    ataque completo desde la explotacion de una vulnerabilidad web hasta el
+    escalamiento de privilegios en el dominio Active Directory.
+
+  edition: "intrusion"
+  scenario: "04_intrusion"
+  difficulty: "advanced"
+  estimated_duration: 180
+
+infrastructure:
+  provider: "vmware"
+  base_image: "tectonic-base-2024"
+  snapshot_before_lab: true
+  revert_on_completion: true
+
+  global_settings:
+    ntp_server: "10.10.0.10"
+    dns_primary: "10.10.0.10"
+    dns_secondary: "8.8.8.8"
+    syslog_server: "10.10.2.10"
+    time_zone: "America/Montevideo"
+
+virtual_machines:
+  - name: attacker
+    hostname: "attacker.banco-dsol.local"
+    description: "Estacion de ataque Kali Linux para simular el adversario"
+    os:
+      type: "linux"
+      distribution: "kali"
+      version: "2024.1"
+    role: "attacker"
+    network_interfaces:
+      - name: "eth0"
+        network: "dmz"
+        ip_address: "10.10.1.100"
+        netmask: "255.255.255.0"
+        gateway: "10.10.1.1"
+        static: true
+    resources:
+      cpu: 2
+      memory_mb: 2048
+      disk_gb: 40
+    software:
+      - nmap
+      - sqlmap
+      - metasploit-framework
+      - burpsuite
+      - curl
+      - python3
+      - impacket-scripts
+    configuration:
+      desktop_environment: "xfce"
+      auto_login: true
+      root_password: "tectonic2024"
+      ssh_enabled: true
+
+  - name: webserver
+    hostname: "webserver.banco-dsol.local"
+    description: |
+      Servidor web Ubuntu con aplicacion PHP vulnerable a inyeccion SQL.
+      Expone la aplicacion bancaria "Banco del Sol Online" en puerto 443 (HTTPS)
+      y 80 (HTTP con redireccion). Es el punto de entrada del ataque.
+    os:
+      type: "linux"
+      distribution: "ubuntu"
+      version: "22.04 LTS"
+    role: "webserver"
+    network_interfaces:
+      - name: "eth0"
+        network: "dmz"
+        ip_address: "10.10.1.10"
+        netmask: "255.255.255.0"
+        gateway: "10.10.1.1"
+        static: true
+      - name: "eth1"
+        network: "internal"
+        ip_address: "10.10.2.11"
+        netmask: "255.255.255.0"
+        gateway: "10.10.2.1"
+        static: true
+    resources:
+      cpu: 2
+      memory_mb: 4096
+      disk_gb: 60
+    software:
+      - apache2
+      - php8.1
+      - php8.1-mysql
+      - libapache2-mod-php
+      - python3
+      - python3-pip
+      - mysql-client
+      - fail2ban
+      - ufw
+      - logrotate
+    ports:
+      - port: 80
+        protocol: "tcp"
+        state: "open"
+        description: "HTTP - Redireccion a HTTPS"
+      - port: 443
+        protocol: "tcp"
+        state: "open"
+        description: "HTTPS - Aplicacion bancaria"
+      - port: 22
+        protocol: "tcp"
+        state: "open"
+        description: "SSH - Administracion"
+    configuration:
+      web_root: "/var/www/html"
+      app_directory: "/var/www/html/banco_del_sol"
+      log_directory: "/var/log/apache2"
+      ssl_certificate: "/etc/ssl/certs/banco_del_sol.crt"
+      ssl_key: "/etc/ssl/private/banco_del_sol.key"
+      apache_config: "/etc/apache2/sites-available/banco_del_sol.conf"
+      php_version: "8.1"
+      document_root: "/var/www/html/banco_del_sol/public"
+      upload_directory: "/var/www/html/banco_del_sol/uploads"
+      database_host: "10.10.2.30"
+      database_port: 3306
+      database_name: "banco_del_sol"
+      database_user: "bds_webapp"
+      database_password: "W3bApp_D3l_Sol_2024!"
+      admin_email: "admin@banco-dsol.local"
+      ssh_enabled: true
+      root_password: "Tectonic_W3b_2024"
+
+  - name: database
+    hostname: "database.banco-dsol.local"
+    description: |
+      Servidor de base de datos MySQL 8.0 conteniendo la base de datos
+      "banco_del_sol" con tablas de clientes, cuentas y transacciones.
+      Solo accesible desde la red interna.
+    os:
+      type: "linux"
+      distribution: "ubuntu"
+      version: "22.04 LTS"
+    role: "database"
+    network_interfaces:
+      - name: "eth0"
+        network: "internal"
+        ip_address: "10.10.2.30"
+        netmask: "255.255.255.0"
+        gateway: "10.10.2.1"
+        static: true
+    resources:
+      cpu: 4
+      memory_mb: 8192
+      disk_gb: 200
+    software:
+      - mysql-server-8.0
+      - mysql-client-8.0
+      - python3
+      - python3-pymysql
+      - logrotate
+    ports:
+      - port: 3306
+        protocol: "tcp"
+        state: "open"
+        description: "MySQL - Base de datos"
+        allowed_sources:
+          - "10.10.2.11"
+          - "10.10.2.1"
+      - port: 22
+        protocol: "tcp"
+        state: "open"
+        description: "SSH - Administracion"
+    configuration:
+      mysql_config: "/etc/mysql/mysql.conf.d/mysqld.cnf"
+      general_log: true
+      general_log_file: "/var/log/mysql/general.log"
+      slow_query_log: true
+      slow_query_log_file: "/var/log/mysql/slow-query.log"
+      log_queries_not_using_indexes: true
+      binlog_enabled: true
+      server_id: 1
+      root_password: "Tectonic_DB_2024!"
+      app_user: "bds_webapp"
+      app_password: "W3bApp_D3l_Sol_2024!"
+      app_database: "banco_del_sol"
+      monitoring_user: "bds_monitor"
+      monitoring_password: "M0n1t0r_D3l_Sol_2024!"
+      ssh_enabled: true
+
+  - name: fileserver
+    hostname: "fileserver.banco-dsol.local"
+    description: |
+      Servidor de archivos Windows Server 2019 con comparticiones SMB
+      para documentos corporativos. Contiene archivos sensibles de clientes
+      y configuraciones internas. Miembro del dominio banco-dsol.local.
+    os:
+      type: "windows"
+      distribution: "windows_server"
+      version: "2019"
+    role: "fileserver"
+    network_interfaces:
+      - name: "eth0"
+        network: "internal"
+        ip_address: "10.10.2.20"
+        netmask: "255.255.255.0"
+        gateway: "10.10.2.1"
+        static: true
+    resources:
+      cpu: 2
+      memory_mb: 4096
+      disk_gb: 500
+    software:
+      - "File and Storage Services"
+      - "DFS Namespaces"
+      - "SMB Direct"
+      - "PowerShell 5.1"
+      - "Sysmon"
+      - "Windows Event Forwarding"
+    ports:
+      - port: 445
+        protocol: "tcp"
+        state: "open"
+        description: "SMB - Comparticiones de archivos"
+      - port: 139
+        protocol: "tcp"
+        state: "open"
+        description: "NetBIOS Session"
+      - port: 3389
+        protocol: "tcp"
+        state: "open"
+        description: "RDP - Administracion remota"
+      - port: 5985
+        protocol: "tcp"
+        state: "open"
+        description: "WinRM HTTP"
+    configuration:
+      domain: "banco-dsol.local"
+      shares:
+        - name: "Documentos"
+          path: "C:\Compartidos\Documentos"
+          description: "Documentos corporativos"
+          access_group: "Usuarios Banco del Sol"
+          permissions: "Read"
+        - name: "Clientes"
+          path: "C:\Compartidos\Clientes"
+          description: "Archivos de clientes"
+          access_group: "Gerentes"
+          permissions: "FullControl"
+        - name: "IT"
+          path: "C:\Compartidos\IT"
+          description: "Documentacion tecnica"
+          access_group: "Equipo TI"
+          permissions: "Read"
+        - name: "ADMIN$"
+          path: "C:\Windows"
+          description: "Comparticion de administracion"
+          access_group: "Administrators"
+          permissions: "FullControl"
+      local_admin_user: "fsadmin"
+      local_admin_password: "F1l3Adm1n_2024!"
+      service_account: "svc_fileserver"
+      service_account_password: "SvC_F1l3S3rv_2024!"
+      event_forwarding_enabled: true
+      sysmon_installed: true
+      audit_policy: "advanced"
+      log_retention_days: 90
+      suspicious_file: "C:\Compartidos\IT\config_servidores.txt"
+      suspicious_file_content: |
+        # Configuracion de servidores - Acceso restringido Equipo TI
+        # ================================================
+        # Servidor Web
+        webserver_admin: admin
+        webserver_pass: Admin_Web_2024!
+
+        # Base de datos
+        db_root: root
+        db_root_pass: Tectonic_DB_2024!
+        db_app_user: bds_webapp
+        db_app_pass: W3bApp_D3l_Sol_2024!
+
+        # Domain Controller
+        dc_admin: administrator
+        dc_admin_pass: D0m41n_2024!
+
+        # Cuenta de servicio
+        svc_domain: svc_domainadmin
+        svc_domain_pass: Svc_D0m41n_2024!
+
+  - name: mailserver
+    hostname: "mailserver.banco-dsol.local"
+    description: |
+      Servidor de correo electronico Ubuntu con Postfix y Dovecot.
+      Maneja el correo interno de Banco del Sol.
+    os:
+      type: "linux"
+      distribution: "ubuntu"
+      version: "22.04 LTS"
+    role: "mailserver"
+    network_interfaces:
+      - name: "eth0"
+        network: "internal"
+        ip_address: "10.10.2.10"
+        netmask: "255.255.255.0"
+        gateway: "10.10.2.1"
+        static: true
+    resources:
+      cpu: 2
+      memory_mb: 4096
+      disk_gb: 100
+    software:
+      - postfix
+      - dovecot
+      - roundcube
+      - python3
+      - logrotate
+    ports:
+      - port: 25
+        protocol: "tcp"
+        state: "open"
+        description: "SMTP"
+      - port: 587
+        protocol: "tcp"
+        state: "open"
+        description: "SMTP Submission"
+      - port: 993
+        protocol: "tcp"
+        state: "open"
+        description: "IMAPS"
+      - port: 22
+        protocol: "tcp"
+        state: "open"
+        description: "SSH - Administracion"
+    configuration:
+      domain: "banco-dsol.local"
+      smtp_hostname: "mail.banco-dsol.local"
+      imap_hostname: "mail.banco-dsol.local"
+      mail_directory: "/var/mail"
+      log_file: "/var/log/mail.log"
+      ssh_enabled: true
+      root_password: "Tectonic_Mail_2024"
+
+  - name: domaincontroller
+    hostname: "DC01.banco-dsol.local"
+    description: |
+      Controlador de dominio Windows Server 2019 para el dominio
+      banco-dsol.local. Contiene las cuentas de usuario, politicas de
+      grupo y servicios de Active Directory. Es el objetivo final del
+      escalamiento de privilegios.
+    os:
+      type: "windows"
+      distribution: "windows_server"
+      version: "2019"
+    role: "domaincontroller"
+    network_interfaces:
+      - name: "eth0"
+        network: "management"
+        ip_address: "10.10.0.10"
+        netmask: "255.255.255.0"
+        gateway: "10.10.0.1"
+        static: true
+    resources:
+      cpu: 4
+      memory_mb: 8192
+      disk_gb: 100
+    software:
+      - "Active Directory Domain Services"
+      - "DNS Server"
+      - "Group Policy Management"
+      - "PowerShell 5.1"
+      - "Sysmon"
+      - "Windows Event Forwarding"
+      - "AD Audit"
+    ports:
+      - port: 389
+        protocol: "tcp"
+        state: "open"
+        description: "LDAP"
+      - port: 636
+        protocol: "tcp"
+        state: "open"
+        description: "LDAPS"
+      - port: 88
+        protocol: "tcp"
+        state: "open"
+        description: "Kerberos"
+      - port: 445
+        protocol: "tcp"
+        state: "open"
+        description: "SMB (SYSVOL/NETLOGON)"
+      - port: 53
+        protocol: "tcp"
+        state: "open"
+        description: "DNS"
+      - port: 5985
+        protocol: "tcp"
+        state: "open"
+        description: "WinRM HTTP"
+    configuration:
+      domain_name: "banco-dsol.local"
+      netbios_name: "BANCO-DSOL"
+      forest_level: 7
+      domain_level: 7
+      admin_password: "D0m41n_2024!"
+      safe_mode_admin_password: "Saf3M0d3_2024!"
+      dns_forwarder: "8.8.8.8"
+      default_domain_policy:
+        password_complexity: true
+        min_password_length: 8
+        lockout_threshold: 5
+        lockout_duration: 30
+      organizational_units:
+        - name: "Usuarios"
+          description: "Usuarios del dominio"
+        - name: "Servidores"
+          description: "Computadoras servidor"
+        - name: "Estaciones"
+          description: "Estaciones de trabajo"
+        - name: "Grupos"
+          description: "Grupos de seguridad"
+      user_accounts:
+        - username: "Administrator"
+          password: "D0m41n_2024!"
+          description: "Administrador del dominio"
+          enabled: true
+          groups:
+            - "Domain Admins"
+            - "Enterprise Admins"
+        - username: "j.rodriguez"
+          password: "JR0d_2024!"
+          description: "Jefe de TI"
+          enabled: true
+          groups:
+            - "Domain Admins"
+            - "Equipo TI"
+          first_name: "Jorge"
+          last_name: "Rodriguez"
+          email: "j.rodriguez@banco-dsol.local"
+        - username: "m.garcia"
+          password: "MG4rc_2024!"
+          description: "Administrador de sistemas"
+          enabled: true
+          groups:
+            - "Equipo TI"
+          first_name: "Maria"
+          last_name: "Garcia"
+          email: "m.garcia@banco-dsol.local"
+        - username: "c.lopez"
+          password: "CL0p3z_2024!"
+          description: "Gerente de operaciones"
+          enabled: true
+          groups:
+            - "Gerentes"
+          first_name: "Carlos"
+          last_name: "Lopez"
+          email: "c.lopez@banco-dsol.local"
+        - username: "a.martinez"
+          password: "4M4rt_2024!"
+          description: "Analista de sistemas"
+          enabled: true
+          groups:
+            - "Usuarios"
+          first_name: "Ana"
+          last_name: "Martinez"
+          email: "a.martinez@banco-dsol.local"
+        - username: "svc_webapp"
+          password: "SvcW3b_2024!"
+          description: "Cuenta de servicio para aplicacion web"
+          enabled: true
+          groups: []
+          service_account: true
+        - username: "svc_fileserver"
+          password: "SvC_F1l3S3rv_2024!"
+          description: "Cuenta de servicio para fileserver"
+          enabled: true
+          groups: []
+          service_account: true
+      service_accounts:
+        - name: "svc_webapp"
+          password: "SvcW3b_2024!"
+          description: "Servicio de aplicacion web"
+        - name: "svc_fileserver"
+          password: "SvC_F1l3S3rv_2024!"
+          description: "Servicio de fileserver"
+      event_forwarding_enabled: true
+      audit_policy: "advanced"
+      log_retention_days: 90
+      sysmon_installed: true
+
+  - name: workstation
+    hostname: "WS-CONTABILIDAD01.banco-dsol.local"
+    description: |
+      Estacion de trabajo Windows 10 Pro utilizada por el departamento
+      de contabilidad. Miembro del dominio banco-dsol.local.
+    os:
+      type: "windows"
+      distribution: "windows"
+      version: "10"
+    role: "workstation"
+    network_interfaces:
+      - name: "eth0"
+        network: "internal"
+        ip_address: "10.10.2.50"
+        netmask: "255.255.255.0"
+        gateway: "10.10.2.1"
+        static: true
+    resources:
+      cpu: 2
+      memory_mb: 4096
+      disk_gb: 100
+    software:
+      - "Microsoft Office 2019"
+      - "PowerShell 5.1"
+      - "Sysmon"
+      - "Windows Event Forwarding"
+    ports:
+      - port: 3389
+        protocol: "tcp"
+        state: "open"
+        description: "RDP"
+      - port: 445
+        protocol: "tcp"
+        state: "open"
+        description: "SMB"
+    configuration:
+      domain: "banco-dsol.local"
+      local_admin: "wsadmin"
+      local_admin_password: "Ws_4dm1n_2024!"
+      logged_in_user: "c.lopez"
+      user_password: "CL0p3z_2024!"
+      event_forwarding_enabled: true
+      sysmon_installed: true
+
+networks:
+  - name: "dmz"
+    description: "Red de Demilitarizada - Servidores expuestos"
+    cidr: "10.10.1.0/24"
+    subnet_mask: "255.255.255.0"
+    gateway: "10.10.1.1"
+    vlan_id: 100
+    dhcp: false
+    dns_server: "10.10.0.10"
+    internet_access: true
+    firewall_rules:
+      - description: "Permitir HTTP/HTTPS desde Internet"
+        direction: "inbound"
+        source: "any"
+        destination: "10.10.1.10"
+        ports: "80,443"
+        action: "allow"
+      - description: "Permitir SSH desde Management"
+        direction: "inbound"
+        source: "10.10.0.0/24"
+        destination: "any"
+        ports: "22"
+        action: "allow"
+      - description: "Permitir trafico interno DMZ"
+        direction: "intra-zone"
+        source: "10.10.1.0/24"
+        destination: "10.10.1.0/24"
+        action: "allow"
+      - description: "Bloquear acceso directo DMZ -> Internal"
+        direction: "outbound"
+        source: "10.10.1.0/24"
+        destination: "10.10.2.0/24"
+        action: "deny"
+      - description: "Permitir webserver a database (MySQL)"
+        direction: "outbound"
+        source: "10.10.1.10"
+        destination: "10.10.2.30"
+        ports: "3306"
+        action: "allow"
+      - description: "Permitir DNS"
+        direction: "outbound"
+        source: "10.10.1.0/24"
+        destination: "10.10.0.10"
+        ports: "53"
+        action: "allow"
+
+  - name: "internal"
+    description: "Red Interna Corporativa - Servidores internos"
+    cidr: "10.10.2.0/24"
+    subnet_mask: "255.255.255.0"
+    gateway: "10.10.2.1"
+    vlan_id: 200
+    dhcp: false
+    dns_server: "10.10.0.10"
+    internet_access: true
+    firewall_rules:
+      - description: "Permitir trafico interno"
+        direction: "intra-zone"
+        source: "10.10.2.0/24"
+        destination: "10.10.2.0/24"
+        action: "allow"
+      - description: "Permitir SMB desde internal"
+        direction: "inbound"
+        source: "10.10.2.0/24"
+        destination: "10.10.2.20"
+        ports: "445,139"
+        action: "allow"
+      - description: "Permitir MySQL desde webserver"
+        direction: "inbound"
+        source: "10.10.1.10"
+        destination: "10.10.2.30"
+        ports: "3306"
+        action: "allow"
+      - description: "Permitir RDP desde Management"
+        direction: "inbound"
+        source: "10.10.0.0/24"
+        destination: "10.10.2.0/24"
+        ports: "3389"
+        action: "allow"
+      - description: "Permitir acceso a Management"
+        direction: "outbound"
+        source: "10.10.2.0/24"
+        destination: "10.10.0.0/24"
+        action: "allow"
+      - description: "Bloquear acceso directo Internal -> DMZ"
+        direction: "outbound"
+        source: "10.10.2.0/24"
+        destination: "10.10.1.0/24"
+        action: "deny"
+
+  - name: "management"
+    description: "Red de Gestion - Administracion de dominio"
+    cidr: "10.10.0.0/24"
+    subnet_mask: "255.255.255.0"
+    gateway: "10.10.0.1"
+    vlan_id: 50
+    dhcp: false
+    dns_server: "10.10.0.10"
+    internet_access: true
+    firewall_rules:
+      - description: "Permitir acceso a DC desde todas las redes"
+        direction: "inbound"
+        source: "any"
+        destination: "10.10.0.10"
+        ports: "53,88,135,389,445,636,3268,3269"
+        action: "allow"
+      - description: "Permitir RDP desde Management"
+        direction: "inbound"
+        source: "10.10.0.0/24"
+        destination: "10.10.0.0/24"
+        ports: "3389"
+        action: "allow"
+      - description: "Permitir WinRM desde Management"
+        direction: "inbound"
+        source: "10.10.0.0/24"
+        destination: "10.10.0.0/24"
+        ports: "5985,5986"
+        action: "allow"
+      - description: "Permitir acceso completo Management"
+        direction: "intra-zone"
+        source: "10.10.0.0/24"
+        destination: "10.10.0.0/24"
+        action: "allow"
+
+  - name: "internet"
+    description: "Simulacion de Internet"
+    cidr: "172.16.0.0/24"
+    subnet_mask: "255.255.255.0"
+    gateway: "172.16.0.1"
+    description: "Simulacion de red externa"
+
+monitoring:
+  siem:
+    enabled: true
+    server: "10.10.2.10"
+    port: 514
+    protocol: "syslog"
+    log_sources:
+      - "webserver"
+      - "database"
+      - "fileserver"
+      - "domaincontroller"
+      - "mailserver"
+      - "workstation"
+
+  snmp:
+    enabled: true
+    community: "tectonic_2024"
+    version: "2c"
+
+  netflow:
+    enabled: true
+    collector: "10.10.2.10"
+    port: 9995
+    interface: "eth0"
+
+  ntp:
+    server: "10.10.0.10"
+    stratum: 2
+
+scoring:
+  method: "checks"
+  total_points: 100
+  passing_score: 70
+  checks_interval_seconds: 30
+  evaluation_delay_seconds: 60
+  auto_evaluate: true
+  manual_review_required:
+    - "SC-06"
+    - "SC-08"
+    - "SC-10"
+
+  automated_checks:
+    - id: "SC-01"
+      type: "log_pattern"
+      target: "webserver"
+      file: "/var/log/apache2/access.log"
+      patterns:
+        - "(?i)union.*select"
+        - "(?i)or.*1.*=.*1"
+        - "(?i)comment.*--"
+        - "(?i)select.*from"
+      expected_count: 5
+      points: 5
+
+    - id: "SC-02"
+      type: "file_check"
+      target: "webserver"
+      path: "/var/www/html/uploads/shell.php"
+      exists: false
+      points: 5
+
+    - id: "SC-03"
+      type: "log_pattern"
+      target: "database"
+      file: "/var/log/mysql/general.log"
+      patterns:
+        - "10.10.1.10"
+        - "bds_webapp"
+      expected_count: 3
+      points: 5
+
+    - id: "SC-04"
+      type: "event_check"
+      target: "fileserver"
+      event_log: "Security"
+      event_id: 4624
+      filters:
+        source_ip: "10.10.1.10"
+        logon_type: 3
+      points: 5
+
+    - id: "SC-05"
+      type: "event_check"
+      target: "domaincontroller"
+      event_log: "Security"
+      event_id: 4624
+      filters:
+        source_ip: "10.10.2.20"
+      points: 5
+
+    - id: "SC-09"
+      type: "file_check"
+      target: "webserver"
+      path: "/var/www/html/uploads/shell.php"
+      exists: false
+      points: 5
+
+  manual_checks:
+    - id: "SC-06"
+      type: "report_review"
+      description: "Documentacion de la cadena de ataque"
+      points: 10
+
+    - id: "SC-07"
+      type: "network_check"
+      target: "webserver"
+      description: "Aislamiento del webserver"
+      points: 5
+
+    - id: "SC-08"
+      type: "credential_check"
+      description: "Rotacion de credenciales comprometidas"
+      points: 5
+
+    - id: "SC-10"
+      type: "vulnerability_check"
+      description: "Correccion de la vulnerabilidad SQLi"
+      points: 5
+
+hints:
+  - id: "H01"
+    cost: 5
+    category: "Detection"
+    text: |
+      Revisa los logs de Apache en el webserver (/var/log/apache2/access.log).
+      Busca patrones inusuales como UNION SELECT, comillas simples repetidas,
+      o strings como ' OR '1'='1 en las URI de las peticiones HTTP.
+    target_audience: "Fase 1 - Deteccion"
+
+  - id: "H02"
+    cost: 5
+    category: "Detection"
+    text: |
+      El webshell se encuentra en el directorio de uploads de la aplicacion.
+      Verifica archivos PHP en /var/www/html/uploads/ que no deberian estar ahi.
+      Compara con la lista de archivos legítimos.
+    target_audience: "Fase 2 - Analisis"
+
+  - id: "H03"
+    cost: 10
+    category: "Analysis"
+    text: |
+      Las credenciales de la base de datos estan configuradas en el archivo
+      de conexion PHP de la aplicacion. Busca en /var/www/html/banco_del_sol/config/
+      el archivo de configuracion de base de datos.
+    target_audience: "Fase 2 - Analisis"
+
+  - id: "H04"
+    cost: 10
+    category: "Analysis"
+    text: |
+      En el fileserver existe un archivo de configuracion que contiene
+      credenciales de administrador: C:\Compartidos\IT\config_servidores.txt
+      Revisa el contenido de los compartidos SMB.
+    target_audience: "Fase 3 - Movimiento Lateral"
+
+time_management:
+  phase_1_detection:
+    recommended_minutes: 30
+    critical_findings:
+      - "Patron SQLi en webserver"
+      - "Errores de base de datos"
+      - "Webshell detectado"
+
+  phase_2_analysis:
+    recommended_minutes: 45
+    critical_findings:
+      - "Cadena de ataque documentada"
+      - "Credenciales comprometidas identificadas"
+      - "Sistemas afectados mapeados"
+
+  phase_3_containment:
+    recommended_minutes: 30
+    critical_actions:
+      - "Aislamiento de webserver"
+      - "Bloqueo de IP atacante"
+      - "Revocacion de credenciales"
+
+  phase_4_eradication_recovery:
+    recommended_minutes: 45
+    critical_actions:
+      - "Eliminacion de webshell"
+      - "Parcheo de vulnerabilidad"
+      - "Restablecimiento de credenciales"
+
+  phase_5_documentation:
+    recommended_minutes: 30
+    deliverables:
+      - "Reporte de incidente"
+      - "Timeline del ataque"
+      - "Recomendaciones de mejora"
+
+rescue_commands:
+  - name: "Verificar estado del webserver"
+    target: "webserver"
+    command: "systemctl status apache2"
+    description: "Comprueba que el servicio web esta funcionando"
+
+  - name: "Reiniciar servicios de red"
+    target: "webserver"
+    command: "systemctl restart networking"
+    description: "Reinicia la configuracion de red"
+
+  - name: "Verificar conectividad"
+    target: "webserver"
+    command: "ping -c 3 10.10.2.30"
+    description: "Prueba conectividad hacia base de datos"
+
+  - name: "Verificar estado de MySQL"
+    target: "database"
+    command: "systemctl status mysql"
+    description: "Comprueba que MySQL esta funcionando"
+
+  - name: "Verificar comparticiones SMB"
+    target: "fileserver"
+    command: "Get-SmbShare"
+    description: "Lista las comparticiones SMB activas"
+
+  - name: "Verificar servicios de AD"
+    target: "domaincontroller"
+    command: "Get-Service ADWS,KDC,Netlogon,DNS"
+    description: "Comprueba servicios criticos de Active Directory"
+
+support_information:
+  course: "Curso de Tectonic BHU Uruguay"
+  institution: "BHU Uruguay"
+  lab_environment: "Tectonic Cyber Range"
+  support_contact: "soporte-tectonic@bhu.edu.uy"
+  documentation_url: "https://docs.tectonic-bhu.edu.uy/escenarios/04_intrusion"
+  version: "1.0.0"
+  last_updated: "2026-07-13"

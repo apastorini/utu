@@ -1,0 +1,835 @@
+# banco_del_sol_phishing.yml
+# Edicion del laboratorio: Phishing y Reverse Shell
+# Curso: Ciberseguridad BHU - Tectonic Cyber Range
+# Escenario: 01_phishing
+
+lab:
+  name: "Banco del Sol - Phishing"
+  description: "Laboratorio de simulacion de ataque de phishing con reverse shell contra la entidad virtual Banco del Sol"
+  version: "1.0.0"
+  edition: "banco_del_sol_phishing"
+  author: "BHU UdelaR"
+  difficulty: "beginner-intermediate"
+  estimated_duration: "2 horas"
+  base_edition: "banco_del_sol_base"
+
+# =============================================================================
+# DEFINICION DE REDES
+# =============================================================================
+networks:
+
+  - name: "mgmt_net"
+    description: "Red de gestion - Acceso del instructor"
+    type: "managed"
+    subnet: "10.10.0.0/24"
+    gateway: "10.10.0.1"
+    dhcp_range: "10.10.0.100-10.10.0.200"
+    bridge: "br-mgmt"
+    vlan_id: 100
+
+  - name: "dmz_net"
+    description: "Zona DMZ - Servidores expuestos (webserver, mailserver)"
+    type: "managed"
+    subnet: "10.10.1.0/24"
+    gateway: "10.10.1.1"
+    dhcp_range: "10.10.1.100-10.10.1.200"
+    bridge: "br-dmz"
+    vlan_id: 200
+
+  - name: "internal_net"
+    description: "Red interna - Servidores criticos y estaciones de trabajo"
+    type: "managed"
+    subnet: "10.10.2.0/24"
+    gateway: "10.10.2.1"
+    dhcp_range: "10.10.2.100-10.10.2.200"
+    bridge: "br-internal"
+    vlan_id: 300
+
+  - name: "internet_net"
+    description: "Zona Internet simulado - Red externa no confiable"
+    type: "managed"
+    subnet: "172.16.0.0/24"
+    gateway: "172.16.0.1"
+    dhcp_range: "172.16.0.100-172.16.0.200"
+    bridge: "br-internet"
+    vlan_id: 400
+
+# =============================================================================
+# DEFINICION DE MAQUINAS VIRTUALES
+# =============================================================================
+vms:
+
+  # ---------------------------------------------------------------------------
+  # VM: instructor
+  # Zona: Management (10.10.0.0/24)
+  # ---------------------------------------------------------------------------
+  - name: "instructor"
+    description: "Maquina del instructor - Administracion y monitoreo del laboratorio"
+    image: "ubuntu-server-22.04"
+    os: "linux"
+    arch: "amd64"
+    resources:
+      cpu: 2
+      ram: 4096
+      disk: 40
+    interfaces:
+      - network: "mgmt_net"
+        ip: "10.10.0.10"
+        netmask: "255.255.255.0"
+        gateway: "10.10.0.1"
+    ssh:
+      enabled: true
+      port: 22
+      user: "instructor"
+      auth_method: "key"
+      key_path: "keys/instructor_key"
+    packages:
+      - "nmap"
+      - "ansible"
+      - "python3"
+      - "python3-pip"
+      - "curl"
+      - "git"
+      - "tcpdump"
+      - "swaks"
+    startup_services:
+      - "ssh"
+    provision:
+      - type: "shell"
+        script: "scripts/instructor_setup.sh"
+      - type: "ansible"
+        playbook: "ansible/base_config.yml"
+        extra_vars:
+          target_host: "all"
+
+  # ---------------------------------------------------------------------------
+  # VM: attacker
+  # Zona: Internet simulado (172.16.0.0/24)
+  # ---------------------------------------------------------------------------
+  - name: "attacker"
+    description: "Maquina atacante - Kali Linux con herramientas ofensivas para phishing"
+    image: "kali-linux-2024.1"
+    os: "linux"
+    arch: "amd64"
+    resources:
+      cpu: 2
+      ram: 4096
+      disk: 40
+    interfaces:
+      - network: "internet_net"
+        ip: "172.16.0.10"
+        netmask: "255.255.255.0"
+        gateway: "172.16.0.1"
+    ssh:
+      enabled: true
+      port: 22
+      user: "kali"
+      auth_method: "password"
+      password: "kali"
+    packages:
+      - "netcat-traditional"
+      - "python3"
+      - "python3-pip"
+      - "swaks"
+      - "nmap"
+      - "curl"
+    startup_services:
+      - "ssh"
+    provision:
+      - type: "shell"
+        script: "scripts/attacker_setup.sh"
+
+  # ---------------------------------------------------------------------------
+  # VM: webserver
+  # Zona: DMZ (10.10.1.0/24)
+  # ---------------------------------------------------------------------------
+  - name: "webserver"
+    description: "Servidor web del Banco del Sol - Apache HTTP"
+    image: "ubuntu-server-22.04"
+    os: "linux"
+    arch: "amd64"
+    resources:
+      cpu: 2
+      ram: 4096
+      disk: 40
+    interfaces:
+      - network: "dmz_net"
+        ip: "10.10.1.10"
+        netmask: "255.255.255.0"
+        gateway: "10.10.1.1"
+    ssh:
+      enabled: true
+      port: 22
+      user: "webadmin"
+      auth_method: "key"
+      key_path: "keys/webserver_key"
+    packages:
+      - "apache2"
+      - "php8.1"
+      - "libapache2-mod-php8.1"
+      - "rsyslog"
+      - "ufw"
+      - "fail2ban"
+    startup_services:
+      - "apache2"
+      - "ssh"
+      - "rsyslog"
+    provision:
+      - type: "shell"
+        script: "scripts/webserver_setup.sh"
+      - type: "ansible"
+        playbook: "ansible/base_config.yml"
+        tags: "webserver"
+
+  # ---------------------------------------------------------------------------
+  # VM: mailserver
+  # Zona: DMZ (10.10.1.0/24)
+  # ---------------------------------------------------------------------------
+  - name: "mailserver"
+    description: "Servidor de correo del Banco del Sol - Postfix + Dovecot"
+    image: "ubuntu-server-22.04"
+    os: "linux"
+    arch: "amd64"
+    resources:
+      cpu: 2
+      ram: 4096
+      disk: 40
+    interfaces:
+      - network: "dmz_net"
+        ip: "10.10.1.20"
+        netmask: "255.255.255.0"
+        gateway: "10.10.1.1"
+    ssh:
+      enabled: true
+      port: 22
+      user: "mailadmin"
+      auth_method: "key"
+      key_path: "keys/mailserver_key"
+    packages:
+      - "postfix"
+      - "dovecot-core"
+      - "dovecot-imapd"
+      - "dovecot-pop3d"
+      - "rsyslog"
+      - "ufw"
+      - "fail2ban"
+    startup_services:
+      - "postfix"
+      - "dovecot"
+      - "ssh"
+      - "rsyslog"
+    provision:
+      - type: "shell"
+        script: "scripts/mailserver_setup.sh"
+      - type: "ansible"
+        playbook: "ansible/base_config.yml"
+        tags: "mailserver"
+
+  # ---------------------------------------------------------------------------
+  # VM: workstation
+  # Zona: Interna (10.10.2.0/24)
+  # Victima principal del ataque de phishing
+  # ---------------------------------------------------------------------------
+  - name: "workstation"
+    description: "Estacion de trabajo del empleado - Victima del phishing"
+    image: "ubuntu-server-22.04"
+    os: "linux"
+    arch: "amd64"
+    resources:
+      cpu: 2
+      ram: 4096
+      disk: 40
+    interfaces:
+      - network: "internal_net"
+        ip: "10.10.2.100"
+        netmask: "255.255.255.0"
+        gateway: "10.10.2.1"
+    ssh:
+      enabled: true
+      port: 22
+      user: "empleado"
+      auth_method: "password"
+      password: "empleado123"
+    packages:
+      - "curl"
+      - "wget"
+      - "python3"
+      - "netcat-traditional"
+      - "rsyslog"
+      - "ufw"
+    startup_services:
+      - "ssh"
+      - "rsyslog"
+    provision:
+      - type: "shell"
+        script: "scripts/workstation_setup.sh"
+      - type: "ansible"
+        playbook: "ansible/base_config.yml"
+        tags: "workstation"
+
+  # ---------------------------------------------------------------------------
+  # VM: fileserver
+  # Zona: Interna (10.10.2.0/24)
+  # Servicio minimo para completar la topologia
+  # ---------------------------------------------------------------------------
+  - name: "fileserver"
+    description: "Servidor de archivos - Samba SMB (servicio minimo)"
+    image: "ubuntu-server-22.04"
+    os: "linux"
+    arch: "amd64"
+    resources:
+      cpu: 1
+      ram: 2048
+      disk: 20
+    interfaces:
+      - network: "internal_net"
+        ip: "10.10.2.10"
+        netmask: "255.255.255.0"
+        gateway: "10.10.2.1"
+    ssh:
+      enabled: true
+      port: 22
+      user: "fileadmin"
+      auth_method: "key"
+      key_path: "keys/fileserver_key"
+    packages:
+      - "samba"
+      - "rsyslog"
+    startup_services:
+      - "smbd"
+      - "ssh"
+      - "rsyslog"
+    provision:
+      - type: "shell"
+        script: "scripts/fileserver_setup.sh"
+
+  # ---------------------------------------------------------------------------
+  # VM: database
+  # Zona: Interna (10.10.2.0/24)
+  # Servicio minimo para completar la topologia
+  # ---------------------------------------------------------------------------
+  - name: "database"
+    description: "Servidor de bases de datos - MySQL (servicio minimo)"
+    image: "ubuntu-server-22.04"
+    os: "linux"
+    arch: "amd64"
+    resources:
+      cpu: 2
+      ram: 4096
+      disk: 40
+    interfaces:
+      - network: "internal_net"
+        ip: "10.10.2.20"
+        netmask: "255.255.255.0"
+        gateway: "10.10.2.1"
+    ssh:
+      enabled: true
+      port: 22
+      user: "dbadmin"
+      auth_method: "key"
+      key_path: "keys/database_key"
+    packages:
+      - "mysql-server"
+      - "rsyslog"
+    startup_services:
+      - "mysql"
+      - "ssh"
+      - "rsyslog"
+    provision:
+      - type: "shell"
+        script: "scripts/database_setup.sh"
+
+  # ---------------------------------------------------------------------------
+  # VM: domaincontroller
+  # Zona: Interna (10.10.2.0/24)
+  # DNS y autenticacion centralizada
+  # ---------------------------------------------------------------------------
+  - name: "domaincontroller"
+    description: "Controlador de dominio - Samba AD DC, DNS"
+    image: "ubuntu-server-22.04"
+    os: "linux"
+    arch: "amd64"
+    resources:
+      cpu: 2
+      ram: 4096
+      disk: 40
+    interfaces:
+      - network: "internal_net"
+        ip: "10.10.2.5"
+        netmask: "255.255.255.0"
+        gateway: "10.10.2.1"
+    ssh:
+      enabled: true
+      port: 22
+      user: "dcadmin"
+      auth_method: "key"
+      key_path: "keys/domaincontroller_key"
+    packages:
+      - "samba"
+      - "bind9"
+      - "rsyslog"
+    startup_services:
+      - "samba"
+      - "named"
+      - "ssh"
+      - "rsyslog"
+    provision:
+      - type: "shell"
+        script: "scripts/domaincontroller_setup.sh"
+
+# =============================================================================
+# REGLAS DE ENRUTAMIENTO
+# =============================================================================
+routing:
+
+  - name: "mgmt_full_access"
+    description: "La zona de gestion tiene acceso completo a todas las zonas"
+    source_zone: "mgmt_net"
+    destination_zones:
+      - "dmz_net"
+      - "internal_net"
+      - "internet_net"
+    action: "allow"
+    priority: 100
+
+  - name: "dmz_to_internal_services"
+    description: "DMZ accede a servicios internos limitados"
+    source_zone: "dmz_net"
+    destination_zones:
+      - "internal_net"
+    services:
+      - name: "mysql"
+        protocol: "tcp"
+        port: 3306
+      - name: "smb"
+        protocol: "tcp"
+        port: 445
+    action: "allow"
+    priority: 200
+
+  - name: "internet_to_dmz_web_smtp"
+    description: "Internet accede a web y correo en DMZ (necesario para el phishing)"
+    source_zone: "internet_net"
+    destination_zones:
+      - "dmz_net"
+    services:
+      - name: "http"
+        protocol: "tcp"
+        port: 80
+      - name: "smtp"
+        protocol: "tcp"
+        port: 25
+      - name: "submission"
+        protocol: "tcp"
+        port: 587
+    action: "allow"
+    priority: 300
+
+  - name: "internet_to_internal_deny"
+    description: "Internet NO accede directamente a zona interna"
+    source_zone: "internet_net"
+    destination_zones:
+      - "internal_net"
+    action: "deny"
+    priority: 400
+
+  - name: "internal_to_internet_limited"
+    description: "Zona interna accede a Internet simulado (HTTP/HTTPS)"
+    source_zone: "internal_net"
+    destination_zones:
+      - "internet_net"
+    services:
+      - name: "https"
+        protocol: "tcp"
+        port: 443
+      - name: "http"
+        protocol: "tcp"
+        port: 80
+    action: "allow"
+    priority: 500
+
+  - name: "internal_to_dmz_smtp"
+    description: "Zona interna accede al servidor de correo"
+    source_zone: "internal_net"
+    destination_zones:
+      - "dmz_net"
+    services:
+      - name: "smtp"
+        protocol: "tcp"
+        port: 25
+      - name: "submission"
+        protocol: "tcp"
+        port: 587
+      - name: "imap"
+        protocol: "tcp"
+        port: 143
+      - name: "imaps"
+        protocol: "tcp"
+        port: 993
+    action: "allow"
+    priority: 510
+
+  - name: "dmz_to_internet"
+    description: "DMZ accede a Internet para actualizaciones"
+    source_zone: "dmz_net"
+    destination_zones:
+      - "internet_net"
+    services:
+      - name: "https"
+        protocol: "tcp"
+        port: 443
+      - name: "http"
+        protocol: "tcp"
+        port: 80
+    action: "allow"
+    priority: 600
+
+  - name: "default_deny"
+    description: "Politica por defecto - Denegar todo no explicitamente permitido"
+    source_zone: "any"
+    destination_zones:
+      - "any"
+    action: "deny"
+    priority: 9999
+
+# =============================================================================
+# REGLAS DE ACCESO SSH
+# =============================================================================
+access_rules:
+  ssh_access:
+
+    - name: "instructor_ssh_all"
+      description: "El instructor tiene acceso SSH a todas las VMs"
+      source: "instructor"
+      destination:
+        - "webserver"
+        - "mailserver"
+        - "fileserver"
+        - "database"
+        - "domaincontroller"
+        - "attacker"
+        - "workstation"
+      port: 22
+      auth_method: "key"
+      action: "allow"
+      priority: 100
+
+    - name: "attacker_ssh_webserver"
+      description: "Atacante puede SSH a webserver (simula acceso comprometido)"
+      source: "attacker"
+      destination:
+        - "webserver"
+      port: 22
+      auth_method: "password"
+      credentials:
+        webserver: "webadmin:webadmin123"
+      action: "allow"
+      priority: 200
+
+    - name: "attacker_internal_deny"
+      description: "Atacante NO tiene acceso SSH directo a zona interna"
+      source: "attacker"
+      destination:
+        - "workstation"
+        - "fileserver"
+        - "database"
+        - "domaincontroller"
+      port: 22
+      action: "deny"
+      priority: 300
+
+# =============================================================================
+# REGLAS DE FIREWALL POR VM
+# =============================================================================
+firewall_rules:
+
+  webserver:
+    - name: "allow_http"
+      port: 80
+      protocol: "tcp"
+      action: "allow"
+      direction: "in"
+    - name: "allow_https"
+      port: 443
+      protocol: "tcp"
+      action: "allow"
+      direction: "in"
+    - name: "allow_ssh_mgmt"
+      port: 22
+      protocol: "tcp"
+      source: "10.10.0.0/24"
+      action: "allow"
+      direction: "in"
+    - name: "allow_ssh_dmz"
+      port: 22
+      protocol: "tcp"
+      source: "10.10.1.0/24"
+      action: "allow"
+      direction: "in"
+    - name: "allow_ssh_internet"
+      port: 22
+      protocol: "tcp"
+      source: "172.16.0.0/24"
+      action: "allow"
+      direction: "in"
+    - name: "deny_all_inbound"
+      action: "deny"
+      direction: "in"
+
+  mailserver:
+    - name: "allow_smtp"
+      port: 25
+      protocol: "tcp"
+      action: "allow"
+      direction: "in"
+    - name: "allow_submission"
+      port: 587
+      protocol: "tcp"
+      action: "allow"
+      direction: "in"
+    - name: "allow_imaps"
+      port: 993
+      protocol: "tcp"
+      action: "allow"
+      direction: "in"
+    - name: "allow_imap"
+      port: 143
+      protocol: "tcp"
+      action: "allow"
+      direction: "in"
+    - name: "allow_pop3"
+      port: 110
+      protocol: "tcp"
+      action: "allow"
+      direction: "in"
+    - name: "allow_ssh_mgmt"
+      port: 22
+      protocol: "tcp"
+      source: "10.10.0.0/24"
+      action: "allow"
+      direction: "in"
+    - name: "deny_all_inbound"
+      action: "deny"
+      direction: "in"
+
+  workstation:
+    - name: "allow_ssh"
+      port: 22
+      protocol: "tcp"
+      source: "10.10.2.0/24"
+      action: "allow"
+      direction: "in"
+    - name: "allow_ssh_mgmt"
+      port: 22
+      protocol: "tcp"
+      source: "10.10.0.0/24"
+      action: "allow"
+      direction: "in"
+    - name: "deny_all_inbound"
+      action: "deny"
+      direction: "in"
+
+  fileserver:
+    - name: "allow_smb"
+      port: 445
+      protocol: "tcp"
+      source: "10.10.2.0/24"
+      action: "allow"
+      direction: "in"
+    - name: "allow_ssh_mgmt"
+      port: 22
+      protocol: "tcp"
+      source: "10.10.0.0/24"
+      action: "allow"
+      direction: "in"
+    - name: "deny_all_inbound"
+      action: "deny"
+      direction: "in"
+
+  database:
+    - name: "allow_mysql"
+      port: 3306
+      protocol: "tcp"
+      source: "10.10.1.0/24"
+      action: "allow"
+      direction: "in"
+    - name: "allow_ssh_mgmt"
+      port: 22
+      protocol: "tcp"
+      source: "10.10.0.0/24"
+      action: "allow"
+      direction: "in"
+    - name: "deny_all_inbound"
+      action: "deny"
+      direction: "in"
+
+  domaincontroller:
+    - name: "allow_dns"
+      port: 53
+      protocol: "tcp"
+      source: "10.10.2.0/24"
+      action: "allow"
+      direction: "in"
+    - name: "allow_dns_udp"
+      port: 53
+      protocol: "udp"
+      source: "10.10.2.0/24"
+      action: "allow"
+      direction: "in"
+    - name: "allow_smb"
+      port: 445
+      protocol: "tcp"
+      source: "10.10.2.0/24"
+      action: "allow"
+      direction: "in"
+    - name: "allow_ssh_mgmt"
+      port: 22
+      protocol: "tcp"
+      source: "10.10.0.0/24"
+      action: "allow"
+      direction: "in"
+    - name: "deny_all_inbound"
+      action: "deny"
+      direction: "in"
+
+  instructor:
+    - name: "allow_ssh_in"
+      port: 22
+      protocol: "tcp"
+      action: "allow"
+      direction: "in"
+    - name: "allow_all_out"
+      action: "allow"
+      direction: "out"
+
+  attacker:
+    - name: "allow_ssh_in"
+      port: 22
+      protocol: "tcp"
+      source: "10.10.0.0/24"
+      action: "allow"
+      direction: "in"
+    - name: "allow_all_out"
+      action: "allow"
+      direction: "out"
+
+# =============================================================================
+# USUARIOS Y CREDENCIALES
+# =============================================================================
+users:
+
+  local_users:
+    webserver:
+      - username: "webadmin"
+        password: "webadmin123"
+        groups:
+          - "sudo"
+
+    mailserver:
+      - username: "mailadmin"
+        password: "mailadmin123"
+        groups:
+          - "sudo"
+
+    workstation:
+      - username: "empleado"
+        password: "empleado123"
+      - username: "soporte"
+        password: "soporte123"
+
+    fileserver:
+      - username: "fileadmin"
+        password: "fileadmin123"
+        groups:
+          - "sudo"
+
+    database:
+      - username: "dbadmin"
+        password: "dbadmin123"
+        groups:
+          - "sudo"
+
+    domaincontroller:
+      - username: "dcadmin"
+        password: "dcadmin123"
+        groups:
+          - "sudo"
+
+  mail_users:
+    - username: "juan.perez"
+      password: "Mail2024!"
+      full_name: "Juan Perez"
+      mailbox: "juan.perez@bancodelsol.local"
+      role: "Victima principal del phishing"
+
+    - username: "maria.garcia"
+      password: "Mail2024!"
+      full_name: "Maria Garcia"
+      mailbox: "maria.garcia@bancodelsol.local"
+
+    - username: "pedro.lopez"
+      password: "Mail2024!"
+      full_name: "Pedro Lopez"
+      mailbox: "pedro.lopez@bancodelsol.local"
+
+# =============================================================================
+# PROVISION POST-CLONACION
+# =============================================================================
+post_clone_provision:
+  - type: "ansible"
+    playbook: "ansible/after_clone.yml"
+    description: "Simula el ataque de phishing despues de clonar las VMs"
+    target_vms:
+      - "attacker"
+      - "mailserver"
+      - "webserver"
+      - "workstation"
+
+# =============================================================================
+# SERVICIOS Y CONFIGURACION
+# =============================================================================
+services:
+
+  dns:
+    primary: "10.10.2.5"
+    secondary: "8.8.8.8"
+    zones:
+      - name: "bancodelsol.local"
+        type: "forward"
+        server: "10.10.2.5"
+
+  ntp:
+    server: "10.10.2.5"
+
+# =============================================================================
+# VARIABLES DE ENTORNO
+# =============================================================================
+variables:
+  domain_name: "bancodelsol.local"
+  timezone: "America/Montevideo"
+  bank_name: "Banco del Sol S.A."
+  phishing_email_sender: "soporte@bancodel-sol.com.uy"
+  phishing_email_recipient: "juan.perez@bancodelsol.local"
+  phishing_subject: "Actualizacion de seguridad - Verifique su cuenta"
+  attacker_listener_port: 4444
+  malicious_payload_path: "/descargar.php"
+  webserver_ip: "10.10.1.10"
+  mailserver_ip: "10.10.1.20"
+  workstation_ip: "10.10.2.100"
+  attacker_ip: "172.16.0.10"
+
+# =============================================================================
+# METADATOS
+# =============================================================================
+metadata:
+  course: "Ciberseguridad - Tectonic Cyber Range"
+  institution: "BHU - Universidad de la Republica"
+  country: "Uruguay"
+  language: "es"
+  tags:
+    - "phishing"
+    - "social-engineering"
+    - "reverse-shell"
+    - "email-security"
+    - "incident-response"
+    - "blue-team"

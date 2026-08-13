@@ -1,6 +1,6 @@
-# Clase 42: Presentacion de Proyectos - Red Team + Cierre
+# Clase 42: Presentacion de Proyectos - Parte 1
 
-**Numero de clase:** 32  
+**Numero de clase:** 31  
 **Duracion:** 2 horas  
 **Curso:** Taller de Ciberseguridad Orientada al Desarrollo
 
@@ -8,415 +8,240 @@
 
 ## Objetivos de Aprendizaje
 
-- Presentar ataques Red Team sobre las aplicaciones desarrolladas
-- Demostrar ataques y defensas en escenarios reales
-- Reflexionar sobre las lecciones aprendidas durante el curso
-- Identificar recursos para continuar la formacion en seguridad
-- Recibir certificados simbolicos y cerrar el curso
+- Presentar y defender proyectos de seguridad ante la clase
+- Evaluar proyectos utilizando una rubrica formal
+- Proporcionar y recibir feedback constructivo
+- Demostrar comprension de conceptos de DevSecOps
 
 ---
 
 ## Contenido Detallado
 
-### 1. Estructura de la Sesion (10 min)
+### 1. Estructura de la Sesion (15 min)
 
 **Organizacion del tiempo (2 horas):**
+- 10 min: Introduccion y recordatorio de criterios
+- 5 min por presentacion (x 10 grupos = 50 min)
+- 3 min de preguntas por presentacion (x 10 = 30 min)
+- 15 min: Feedback general y cierre
 
-| Actividad | Duracion |
-|-----------|----------|
-| Introduccion y recordatorio | 10 min |
-| Presentaciones Red Team (5 grupos x 8 min) | 40 min |
-| Preguntas por presentacion | 15 min |
-| Lecciones aprendidas y discusion final | 20 min |
-| Recursos para seguir aprendiendo | 15 min |
-| Entrega de certificados y feedback | 20 min |
+**Material necesario:**
+- Proyector o pantalla compartida
+- Rubrica de evaluacion impresa o digital para cada estudiante
+- Cronometro visible para todos
+- Acceso al repositorio de cada grupo
 
-### 2. Criterios de Evaluacion - Ataque Red Team (10 min)
+### 2. Criterios de Evaluacion - Proyecto Shift Left (5 min)
 
 | Criterio | Peso | Excelente (4) | Bueno (3) | Suficiente (2) | Insuficiente (1) |
 |----------|------|---------------|-----------|----------------|-------------------|
-| Identificacion de vulnerabilidades | 25% | 3+ vulnerabilidades reales encontradas | 2 vulnerabilidades | 1 vulnerabilidad | Ninguna |
-| Tecnica de ataque | 25% | Ataque ejecutado con exito, con herramientas reales | Ataque parcialmente exitoso | Solo teorico | Sin ataque |
-| Defensa propuesta | 25% | Defensa completa con codigo correctivo | Defensa teorica correcta | Defensa incompleta | Sin defensa |
-| Presentacion | 25% | Clara, demostracion en vivo, responde preguntas | Buena exposicion | Presentacion basica | Sin preparacion |
+| Codigo seguro | 25% | Sin vulnerabilidades, mejores practicas | Vulnerabilidades menores | Vulnerabilidades moderadas | Vulnerabilidades criticas |
+| Pipeline CI/CD | 25% | Pipeline completo con SAST, SCA, gates | Pipeline con SAST o SCA | Pipeline basico sin seguridad | Sin pipeline |
+| Documentacion | 15% | Completa, clara, con instrucciones | Adecuada | Incompleta | Ausente |
+| Defensas implementadas | 20% | Validacion, JWT, RBAC, rate limiting | 3 de 4 defensas | 2 de 4 defensas | 1 o menos defensas |
+| Presentacion | 15% | Clara, demostracion en vivo, responde preguntas | Buena exposicion | Presentacion basica | Sin preparacion |
 
-### 3. Guia para la Presentacion Red Team (5 min)
+### 3. Rubrica de Evaluacion Detallada (10 min)
 
-**Estructura recomendada (8 min):**
+**Rubrica para evaluacion por pares:**
 
-1. **Introduccion (1 min):** Que aplicacion atacaron, objetivo del ataque
-2. **Reconocimiento (1 min):** Que informacion recolectaron (puertos, tecnologias)
-3. **Vulnerabilidad encontrada (2 min):** Cual es, como se explota, impacto
-4. **Demostracion del ataque (2 min):** Ejecutar el ataque en vivo o grabado
-5. **Defensa implementada (1.5 min):** Codigo correctivo, que cambio, por que funciona
-6. **Conclusion (30 seg):** Leccion aprendida, recomendacion
+```
+RUBRICA DE EVALUACION - PROYECTO SHIFT LEFT
+============================================
 
-**Ejemplos de ataques para presentar:**
-- Fuerza bruta a login (y como rate limiting lo bloquea)
-- Manipulacion de JWT (y como la firma HMAC lo detecta)
-- IDOR en endpoints (y como la verificacion de ownership lo previene)
-- SQL injection (y como SQLAlchemy ORM lo evita)
-- XSS en campos de texto (y como el escaping lo neutraliza)
-- Path traversal (y como la normalizacion de rutas lo bloquea)
+Grupo evaluado: _______________
+Evaluador: ____________________
+
+1. CODIGO SEGURO (25 puntos)
+   - Uso de consultas parametrizadas (0-5): ___
+   - Validacion de entrada (0-5): ___
+   - Manejo seguro de contrasenas (0-5): ___
+   - Control de acceso/autorizacion (0-5): ___
+   - Logging seguro (0-5): ___
+   Total: ___/25
+
+2. PIPELINE CI/CD (25 puntos)
+   - Pipeline implementado y funcional (0-7): ___
+   - SAST integrado (Bandit, Semgrep, etc.) (0-6): ___
+   - SCA integrado (pip-audit, npm audit, etc.) (0-6): ___
+   - Quality gates con fail criteria (0-6): ___
+   Total: ___/25
+
+3. DOCUMENTACION (15 puntos)
+   - README con instrucciones claras (0-5): ___
+   - Archivo .env.example y configuracion (0-5): ___
+   - Explicacion de decisiones de seguridad (0-5): ___
+   Total: ___/15
+
+4. DEFENSAS IMPLEMENTADAS (20 puntos)
+   - Autenticacion JWT (0-5): ___
+   - Hashing de contrasenas (0-5): ___
+   - Rate limiting (0-5): ___
+   - Security headers (0-5): ___
+   Total: ___/20
+
+5. PRESENTACION (15 puntos)
+   - Claridad y organizacion (0-5): ___
+   - Demostracion en vivo (0-5): ___
+   - Respuesta a preguntas (0-5): ___
+   Total: ___/15
+
+PUNTAJE TOTAL: ___/100
+
+COMENTARIOS:
+_________________________________________
+_________________________________________
+```
+
+### 4. Guia para la Presentacion (10 min)
+
+**Estructura recomendada (5 min):**
+
+1. **Introduccion (30 seg):** Nombre del proyecto, integrantes, tecnologias utilizadas
+2. **Demo de la app (1 min):** Mostrar que la aplicacion funciona
+3. **Defensas de seguridad (1.5 min):** Mostrar implementacion de JWT, validacion, RBAC
+4. **Pipeline CI/CD (1 min):** Mostrar el workflow de GitHub Actions funcionando
+5. **Lecciones aprendidas (30 seg):** Que aprendieron, que harian diferente
+6. **Preguntas (restante):** Responder preguntas del profesor y companeros
+
+**Consejos para la presentacion:**
+- Tener la demo preparada y funcionando localmente
+- Tener el pipeline ya ejecutado (o ejecutar un commit en vivo)
+- Mostrar tanto los casos de exito como los fallos del pipeline
+- Si algo falla en vivo, explicar que esperaban y por que fallo
+- Responder honestamente si no saben algo
+
+### 5. Preguntas Tecnicas para la Ronda (10 min)
+
+Banco de preguntas que el profesor puede hacer:
+
+1. "Por que eligieron esa herramienta SAST y no otra?"
+2. "Como manejarian un falso positivo de Bandit en el pipeline?"
+3. "Que pasaria si un atacante obtiene el JWT de un usuario?"
+4. "Como escalarian esta solucion a microservicios?"
+5. "Que mejoras de seguridad agregarian si tuvieran mas tiempo?"
+6. "Como protegen las claves de API en el pipeline de CI/CD?"
+7. "Que pasaria si la base de datos se compromete? Las contrasenas estan seguras?"
+8. "Como implementarian logging sin exponer datos personales?"
+9. "Que ocurre si el rate limiter falla? Como se recupera?"
+10. "Como verificarian que el contenedor desplegado es el mismo que se construyo?"
+
+### 6. Feedback Constructivo (10 min)
+
+**Metodo de feedback: "2 estrellas y 1 deseo"**
+- 2 aspectos positivos (estrellas)
+- 1 area de mejora con sugerencia concreta (deseo)
+
+**Ejemplos de feedback constructivo:**
+
+Positivo:
+- "Me gusto que implementaron rate limiting con Redis en vez de memoria"
+- "La documentacion del pipeline es clara y facil de seguir"
+- "Buena decision usar multi-stage build para reducir tamano de imagen"
+
+Constructivo:
+- "Podrian mejorar la validacion de entrada agregando expresiones regulares mas estrictas"
+- "Sugiero agregar un healthcheck al contenedor de la BD"
+- "El .env no deberia estar en el repositorio aunque sea de ejemplo sin valores reales"
 
 ---
 
-## Ejercicio: Escribir "Lessons Learned" de 3 Vulnerabilidades
+## Ejercicio: Evaluar usando la Rubrica
 
-**Enunciado:** Cada estudiante o grupo debe escribir un documento de "lessons learned" que describa 3 vulnerabilidades encontradas durante el ataque Red Team, incluyendo: descripcion, impacto, ataque, defensa implementada y reflexion personal.
+**Enunciado:** Los grupos que no estan presentando deben evaluar a sus companeros usando la rubrica proporcionada. Cada estudiante evalua al menos 2 presentaciones y entrega las rubricas completadas al final de la clase.
 
-**Solucion - Documento de ejemplo completo:**
-
-```
-LESSONS LEARNED - TALLER DE CIBERSECURIDAD
-===========================================
-
-Estudiante: [Nombre]
-Fecha: [Fecha]
-
-Introduccion:
-Durante el ataque Red Team a la aplicacion segura desarrollada
-en las clases 28-29, se identificaron y analizaron 3 vectores
-de ataque. A continuacion se documentan los hallazgos, ataques
-ejecutados y defensas implementadas.
-
---- VULNERABILIDAD 1: FUERZA BRUTA EN LOGIN ---
-
-Descripcion:
-El endpoint POST /auth/login permite multiples intentos de
-autenticacion sin restriccion de velocidad inicial (antes de
-agregar rate limiting).
-
-Impacto:
-Un atacante puede probar miles de combinaciones de usuario/
-contrasena en minutos, comprometiendo cuentas con contrasenas
-debilmente protegidas.
-
-Ataque ejecutado:
-Se utilizo un script bash con curl en un bucle for:
-
-    for password in $(cat passwords.txt); do
-      curl -s -X POST http://localhost:8000/auth/login \
-        -H "Content-Type: application/json" \
-        -d "{\"username\":\"admin\",\"password\":\"$password\"}" \
-        | grep -q "access_token" && echo "FOUND: $password"
-    done
-
-Resultado: Se lograron probar 1000 contrasenas en 3 minutos.
-
-Defensa implementada:
-Se agrego rate limiting con SlowAPI:
-
-    from slowapi import Limiter
-    from slowapi.util import get_remote_address
-
-    limiter = Limiter(key_func=get_remote_address)
-
-    @router.post("/login")
-    @limiter.limit("5/minute")
-    def login(credentials: UserLogin, request: Request, ...):
-        ...
-
-Codigo adicional: Se agrego bloqueo temporal de IP despues de
-10 intentos fallidos en 15 minutos.
-
-Reflexion:
-El rate limiting es una defensa simple pero extremadamente
-efectiva contra fuerza bruta. Combinado con bloqueo temporal
-de IP, hace que atacar un solo usuario sea impracticable.
-La leccion principal es que la autenticacion siempre debe
-tener proteccion anti-fuerza bruta desde el primer dia.
-
-
---- VULNERABILIDAD 2: IDOR EN ENDPOINT DE ITEMS ---
-
-Descripcion:
-El endpoint GET /api/items/{item_id} inicialmente no verificaba
-que el item perteneciera al usuario autenticado.
-
-Impacto:
-Un usuario malicioso podia cambiar el item_id en la URL para
-acceder, modificar o eliminar items de otros usuarios.
-
-Ataque ejecutado:
-1. Login como usuario1, obtener token1
-2. Crear item, obtener item_id=1
-3. Login como usuario2, obtener token2
-4. GET /api/items/1 con token2 (deberia estar prohibido)
-
-    curl -H "Authorization: Bearer $TOKEN2" \
-      http://localhost:8000/api/items/1
-
-Resultado: Sin proteccion, usuario2 accedia al item de usuario1.
-Con proteccion, retorna 403 Forbidden.
-
-Defensa implementada:
-Se agrego verificacion de ownership en cada endpoint:
-
-    @router.get("/{item_id}")
-    def get_item(item_id: int, current_user=Depends(get_current_user), ...):
-        item = db.query(Item).filter(Item.id == item_id).first()
-        if item is None:
-            raise HTTPException(status_code=404)
-        if item.owner_id != current_user.id and current_user.role != "admin":
-            raise HTTPException(status_code=403, detail="No autorizado")
-        return item
-
-Reflexion:
-Nunca confiar en que el usuario enviara solo IDs que le
-pertenecen. Siempre verificar propiedad o permisos en el
-servidor. Esta vulnerabilidad es muy comun en APIs REST
-y una de las mas explotadas en la actualidad (OWASP Top 10:
-Broken Access Control #1).
-
-
---- VULNERABILIDAD 3: EXPOSICION DE INFORMACION EN LOGS ---
-
-Descripcion:
-El logging inicial registraba los cuerpos completos de los
-requests, incluyendo contrasenas y tokens.
-
-Impacto:
-Un atacante con acceso a los archivos de log podia obtener
-credenciales de usuarios y tokens JWT validos. Ademas,
-viola regulaciones como GDPR al almacenar datos personales
-sin proteccion.
-
-Ataque ejecutado:
-Se accedio (simulado) al archivo app.log:
-
-    cat app.log | grep "password"
-    # Output: {"password": "MiPassword123", "username": "admin"}
-
-Resultado: Contrasenas en texto plano en los logs.
-
-Defensa implementada:
-Se implemento un SecureLogger que redacta campos sensibles:
-
-    class SecureLogger:
-        SENSITIVE_FIELDS = ["password", "secret", "token",
-                          "authorization", "credit_card"]
-
-        def _sanitize(self, data):
-            sanitized = {}
-            for key, value in data.items():
-                key_lower = key.lower()
-                if any(f in key_lower for f in self.SENSITIVE_FIELDS):
-                    sanitized[key] = "***REDACTED***"
-                elif isinstance(value, dict):
-                    sanitized[key] = self._sanitize(value)
-                else:
-                    sanitized[key] = value
-            return sanitized
-
-Reflexion:
-El logging es una herramienta de debugging y auditoria, pero
-puede convertirse en un riesgo de seguridad si no se filtra
-la informacion sensible. La leccion: todo lo que se registra
-debe considerarse publico. Si no quieres que alguien lo vea,
-no lo registres.
-
-
---- CONCLUSION FINAL ---
-
-Este ejercicio demostro que las vulnerabilidades mas comunes
-(OWASP Top 10) siguen siendo las mas efectivas. Sin embargo,
-defensas simples y bien implementadas (parametrized queries,
-rate limiting, verificacion de ownership, logging seguro)
-pueden detener la mayoria de los ataques.
-
-La seguridad no es un producto, es un proceso continuo que
-debe integrarse en cada etapa del desarrollo.
-
-Recursos para seguir aprendiendo:
-- OWASP Top 10: https://owasp.org/www-project-top-ten/
-- OWASP ASVS: https://owasp.org/www-project-application-security-verification-standard/
-- PortSwigger Web Security Academy: https://portswigger.net/web-security
-```
-
----
-
-## Recursos para Seguir Aprendiendo (15 min)
-
-### OWASP (Open Web Application Security Project)
-- **OWASP Top 10:** Las 10 vulnerabilidades mas criticas en aplicaciones web
-- **OWASP ASVS (Application Security Verification Standard):** Framework de verificacion con 3 niveles de seguridad
-- **OWASP Cheat Sheets:** Guias rapidas por tema (autenticacion, autorizacion, cifrado)
-- **OWASP Juice Shop:** Aplicacion vulnerable para practicar hacking etico
-- **Web:** https://owasp.org/
-
-### SANS Institute
-- **SANS Cyber Aces Online:** Cursos gratuitos de introduccion
-- **SANS Holiday Hack Challenge:** Evento anual gratuito de hacking
-- **Web:** https://www.sans.org/
-
-### Certificaciones
-- **CSSLP (Certified Secure Software Lifecycle Professional):** Certificacion de (ISC)2 enfocada en desarrollo seguro
-- **CEH (Certified Ethical Hacker):** Certificacion de hacking etico de EC-Council
-- **OSCP (Offensive Security Certified Professional):** Certificacion practica de pentesting de Offensive Security
-- **CompTIA Security+:** Certificacion de entrada en seguridad
-- **AWS Security Specialty:** Especialidad en seguridad en la nube AWS
-
-### Plataformas de practica
-- **HackTheBox:** Maquinas vulnerables para practicar pentesting
-- **TryHackMe:** Plataforma educativa con salas guiadas
-- **PortSwigger Web Security Academy:** Labs gratuitos de seguridad web
-- **PentesterLab:** Ejercicios progresivos de seguridad
-
-### Herramientas recomendadas (post-curso)
-- **Burp Suite Professional:** Proxy de interceptacion (version commercial)
-- **Metasploit Framework:** Framework de explotacion
-- **BloodHound:** Analisis de relaciones en Active Directory
-- **Wireshark:** Analisis de trafico de red
-- **Ghidra:** Reverse engineering de codigo
-
-### Libros recomendados
-- "The Web Application Hacker's Handbook" - Stuttard & Pinto
-- "OWASP Testing Guide" - OWASP Foundation
-- "Hacking: The Art of Exploitation" - Jon Erickson
-- "Security Engineering" - Ross Anderson
-- "The Tangled Web" - Michal Zalewski
-
----
-
-## Entrega de Certificados Simbolicos (10 min)
-
-**Modelo de certificado:**
+**Solucion - Rubrica de ejemplo completada:**
 
 ```
-=============================================
-           TALLER DE CIBERSEGURIDAD
-          ORIENTADA AL DESARROLLO
-=============================================
+RUBRICA DE EVALUACION - EJEMPLO COMPLETADO
+============================================
 
-       Certificado de Participacion
+Grupo evaluado: Los DevSecOps
+Evaluador: Estudiante X
 
-  Por medio del presente, se certifica que:
+1. CODIGO SEGURO (25 puntos)
+   - Uso de consultas parametrizadas (0-5): 5
+   - Validacion de entrada (0-5): 5
+   - Manejo seguro de contrasenas (0-5): 4
+   - Control de acceso/autorizacion (0-5): 4
+   - Logging seguro (0-5): 3
+   Total: 21/25
 
-              [NOMBRE DEL ESTUDIANTE]
+2. PIPELINE CI/CD (25 puntos)
+   - Pipeline implementado y funcional (0-7): 7
+   - SAST integrado (0-6): 6
+   - SCA integrado (0-6): 6
+   - Quality gates con fail criteria (0-6): 5
+   Total: 24/25
 
-  Ha completado satisfactoriamente el taller
-  "Ciberseguridad Orientada al Desarrollo"
-  con una duracion de 32 horas (8 semanas).
+3. DOCUMENTACION (15 puntos)
+   - README con instrucciones claras (0-5): 5
+   - Archivo .env.example y configuracion (0-5): 4
+   - Explicacion de decisiones de seguridad (0-5): 4
+   Total: 13/15
 
-  Temas cubiertos:
-  - Fundamentos de seguridad en desarrollo
-  - SAST, SCA, DAST en pipelines CI/CD
-  - Seguridad en contenedores e IaC
-  - Secure Code Review
-  - Desarrollo de API REST segura
-  - Pruebas de penetracion y hacking etico
+4. DEFENSAS IMPLEMENTADAS (20 puntos)
+   - Autenticacion JWT (0-5): 5
+   - Hashing de contrasenas (0-5): 5
+   - Rate limiting (0-5): 4
+   - Security headers (0-5): 4
+   Total: 18/20
 
-  Fecha: [Fecha de finalizacion]
+5. PRESENTACION (15 puntos)
+   - Claridad y organizacion (0-5): 4
+   - Demostracion en vivo (0-5): 5
+   - Respuesta a preguntas (0-5): 4
+   Total: 13/15
 
-  _________________________________
-  Profesor del Taller
+PUNTAJE TOTAL: 89/100
 
-=============================================
+COMENTARIOS:
+Excelente trabajo en el pipeline CI/CD con Bandit y pip-audit. La
+demostracion en vivo fue clara y mostraron tanto exito como fallo.
+Sugerencia: agregar logging seguro usando la libreria 'structlog'
+para evitar exponer datos sensibles en los logs.
 ```
-
----
-
-## Encuesta de Feedback del Curso (10 min)
-
-**Modelo de encuesta:**
-
-```
-ENCUESTA DE FEEDBACK - TALLER DE CIBERSEGURIDAD
-================================================
-
-1. CONTENIDO DEL CURSO (1-5, donde 5 es excelente)
-   - Relevancia del contenido: ___
-   - Nivel de profundidad adecuado: ___
-   - Calidad de los ejercicios practicos: ___
-   - Utilidad de los ejemplos de codigo: ___
-
-2. METODOLOGIA
-   - Claridad de las explicaciones: ___
-   - Ritmo de las clases (1=lento, 5=rapido): ___
-   - Balance teoria/practica: ___
-   - Calidad del material (archivos markdown): ___
-
-3. TEMAS ESPECIFICOS
-   - Clases 1-4 (Fundamentos): ___
-   - Clases 5-8 (OWASP Top 10): ___
-   - Clases 9-12 (Criptografia): ___
-   - Clases 13-16 (Autenticacion): ___
-   - Clases 17-20 (SAST/SCA): ___
-   - Clases 21-24 (DAST/Contenedores): ___
-   - Clases 25-28 (CI/CD + App segura): ___
-   - Clases 29-32 (App segura + Proyectos): ___
-
-4. PREGUNTAS ABIERTAS
-   - Que fue lo que mas te gusto del curso?
-     _________________________________
-   - Que mejorarias?
-     _________________________________
-   - Que tema te gustaria profundizar?
-     _________________________________
-   - Recomendarias este curso a un colega? (SI/NO)
-   - Comentarios adicionales:
-     _________________________________
-```
-
----
-
-## Discusion Final: El Futuro de la Seguridad en Desarrollo (10 min)
-
-**Temas de discusion:**
-
-1. **Shift Left:** La seguridad se mueve cada vez mas a etapas tempranas del desarrollo
-2. **AI/ML en seguridad:** Herramientas como CodeQL, Semgrep y GitHub Copilot (con cuidado)
-3. **Supply Chain Security:** La importancia de firmar artefactos (SLSA, Sigstore)
-4. **Zero Trust:** "Never trust, always verify" aplicado a APIs y microservicios
-5. **DevSecOps cultura:** La seguridad no es solo del equipo de security, es de todos
-6. **IA generativa:** Nuevos riesgos (prompt injection, modelos adversarios) y oportunidades
-
-**Mensaje final para los estudiantes:**
-
-"La seguridad no es un destino, es un viaje. Cada dia aparecen nuevas vulnerabilidades, nuevos vectores de ataque, nuevas defensas. Lo que aprendieron en este curso es la base: los principios fundamentales no cambian. Validar entrada, controlar acceso, cifrar datos, auditar acciones. Apliquen estos principios siempre, en cada linea de codigo que escriban. Y nunca dejen de aprender."
 
 ---
 
 ## Preguntas y Respuestas
 
-**1. Que certificaciones de seguridad recomiendan para empezar?**
+**1. Que peso tiene cada criterio en la evaluacion del proyecto?**
 
-CompTIA Security+ para fundamentos, luego CSSLP si te enfocas en desarrollo seguro, o CEH/OSCP si te interesa el hacking etico. Para cloud, AWS Security Specialty o Azure Security Engineer.
+Codigo seguro (25%), Pipeline CI/CD (25%), Defensas implementadas (20%), Documentacion (15%), Presentacion (15%).
 
-**2. Donde puedo practicar hacking etico legalmente?**
+**2. Que debe incluir la documentacion del proyecto?**
 
-Plataformas como HackTheBox, TryHackMe, PortSwigger Web Security Academy, OWASP Juice Shop. Todas son legales y tienen entornos controlados. Nunca practiques en sistemas sin autorizacion explicita.
+README con instrucciones de instalacion y ejecucion, archivo .env.example, explicacion de las decisiones de seguridad tomadas, y ejemplo de uso de los endpoints.
 
-**3. Que es OWASP y por que es importante?**
+**3. Como se evalua el pipeline CI/CD?**
 
-OWASP (Open Web Application Security Project) es una comunidad sin fines de lucro dedicada a mejorar la seguridad del software. Publican el OWASP Top 10 (vulnerabilidades mas comunes), ASVS (estandar de verificacion), Cheat Sheets, y herramientas como ZAP. Es la referencia principal en seguridad web.
+Se evalua que este implementado y funcional (7 pts), que incluya SAST (6 pts), SCA (6 pts), y quality gates con criterios de fallo (6 pts).
 
-**4. Como mantenerse actualizado en ciberseguridad?**
+**4. Que tipo de preguntas tecnicas se esperan en la ronda?**
 
-Seguir blogs como Krebs on Security, PortSwigger Research, SANS Internet Storm Center. Leer los boletines de CVE. Participar en comunidades como OWASP local chapters. Asistir a conferencias como BlackHat, DEF CON, OWASP Global AppSec.
+Preguntas sobre justificacion de herramientas, manejo de falsos positivos, escalabilidad, proteccion de secretos, logging seguro, y recuperacion ante fallos.
 
-**5. Que es Shift Left y por que es importante?**
+**5. Cual es el formato de feedback recomendado?**
 
-Shift Left es mover las pruebas de seguridad a etapas tempranas del desarrollo (izquierda en el timeline). En lugar de probar seguridad al final (cuando es caro corregir), se integra desde el diseno y codificacion. Reduce costos, acelera entregas y mejora la calidad.
+"2 estrellas y 1 deseo": dos aspectos positivos y un area de mejora con sugerencia concreta. Esto asegura feedback balanceado y constructivo.
 
-**6. Que es SLSA y por que es relevante?**
+**6. Que ocurre si un grupo no tiene el pipeline funcionando en la presentacion?**
 
-SLSA (Supply-chain Levels for Software Artifacts) es un framework para asegurar la cadena de suministro de software. Define niveles de confianza desde build documentado hasta integridad total. Relevante despues de ataques como SolarWinds.
+Se evalua sobre lo que se presenta. Si el pipeline no funciona, la puntuacion en ese criterio sera baja o cero. Se recomienda tener una grabacion o capturas de pantalla como respaldo.
 
-**7. Como seguir aprendiendo seguridad en desarrollo despues del curso?**
+**7. Como se maneja el tiempo de presentacion?**
 
-Leer OWASP Testing Guide, practicar en labs (PortSwigger, HackTheBox), contribuir a proyectos open source de seguridad, obtener certificaciones (CSSLP), y sobre todo: aplicar lo aprendido en proyectos reales.
+Cada grupo tiene exactamente 5 minutos mas 3 de preguntas. Se usa un cronometro visible. A los 4 minutos se avisa. A los 5 minutos se corta y se pasa a preguntas.
 
 ---
 
-## Tarea / Lectura Recomendada (Post-Curso)
+## Tarea / Lectura Recomendada
 
-- Leer: OWASP Application Security Verification Standard (ASVS) nivel 2 completo
-- Practicar: Resolver los 30 labs de PortSwigger Web Security Academy
-- Leer: "The Web Application Hacker's Handbook" - Stuttard & Pinto
-- Implementar: Un proyecto personal aplicando DevSecOps desde el inicio
-- Unirse: Al capitulo local de OWASP o comunidad de seguridad de tu ciudad
-- Mantenerse al dia: Suscribirse a CVE alerts y OWASP newsletter
+- Completar las rubricas de evaluacion de los grupos que presentaron
+- Preparar la presentacion del ataque Red Team para la clase 32 (grupos que presentan en la segunda sesion)
+- Leer: Recursos de OWASP para seguir aprendiendo despues del curso
+- Reflexionar: Que aprendiste en el curso? Que aplicaras en tu trabajo diario?
+
 
 

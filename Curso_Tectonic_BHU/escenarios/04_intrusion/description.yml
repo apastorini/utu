@@ -1,0 +1,150 @@
+---
+# ==============================================================================
+# Escenario 04: Intrusion y Movimiento Lateral - Banco del Sol
+# ==============================================================================
+# Simulacion de intrusion web y movimiento lateral en la red del banco.
+# attack-ws explota una vulnerabilidad SQL Injection en una aplicacion web
+# Flask en web-srv, extrae credenciales de la base de datos, accede via SSH
+# a db-srv y finalmente planta una bandera en core-bank.
+# El equipo azul debe detectar, contener y erradicar la intrusion.
+#
+# Objetivos de aprendizaje:
+#   1. Deteccion de SQL Injection en logs web
+#   2. Analisis de movimiento lateral
+#   3. Contencion de hosts comprometidos
+#   4. Revocacion de credenciales
+#   5. Correccion de vulnerabilidades web
+# ==============================================================================
+
+institution: bhu
+lab_name: intrusion
+default_os: ubuntu22
+description: |
+  Escenario de Intrusion y Movimiento Lateral contra Banco del Sol.
+
+  Un atacante utiliza attack-ws para explotar una vulnerabilidad SQL Injection
+  en una aplicacion Flask vulnerable en web-srv. Mediante la explotacion,
+  extrae credenciales de la base de datos PostgreSQL que almacena clientes,
+  utiliza esas credenciales para acceder via SSH a db-srv, y finalmente
+  planta una bandera en core-bank demostrando el movimiento lateral completo.
+
+  El equipo de defensa (blue-team-ws) debe:
+  - Detectar el patron SQL Injection en los logs de acceso web
+  - Identificar las credenciales comprometidas
+  - Bloquear la IP del atacante
+  - Revocar todas las credenciales de base de datos
+  - Rastrear el camino completo del ataque
+  - Corregir la vulnerabilidad SQL Injection
+
+  Herramientas del atacante: sqlmap, nmap, sshpass
+  Servicios objetivo: Flask (web-srv), PostgreSQL (db-srv), SSH (todos)
+
+# Maquinas del escenario
+guest_settings:
+  attack-ws:
+    hostname: attack-ws
+    entry_point: yes
+    memory: 2048
+    vcpu: 2
+    disk: 20
+    base_os: kali
+    internet_access: no
+    copies: 1
+    monitor: no
+    red_team_agent: no
+    blue_team_agent: no
+
+  blue-team-ws:
+    hostname: blue-team-ws
+    entry_point: yes
+    memory: 4096
+    vcpu: 4
+    disk: 30
+    base_os: ubuntu22
+    internet_access: no
+    copies: 1
+    monitor: no
+    red_team_agent: no
+    blue_team_agent: no
+
+  web-srv:
+    hostname: web-srv
+    entry_point: no
+    memory: 2048
+    vcpu: 2
+    disk: 20
+    base_os: ubuntu22
+    internet_access: no
+    copies: 1
+    monitor: no
+    red_team_agent: no
+    blue_team_agent: no
+
+  db-srv:
+    hostname: db-srv
+    entry_point: no
+    memory: 2048
+    vcpu: 2
+    disk: 20
+    base_os: ubuntu22
+    internet_access: no
+    copies: 1
+    monitor: no
+    red_team_agent: no
+    blue_team_agent: no
+
+  core-bank:
+    hostname: core-bank
+    entry_point: no
+    memory: 2048
+    vcpu: 2
+    disk: 20
+    base_os: ubuntu22
+    internet_access: no
+    copies: 1
+    monitor: no
+    red_team_agent: no
+    blue_team_agent: no
+
+# Topologia de red
+topology:
+  - name: lab
+    members:
+      - attack-ws
+      - blue-team-ws
+      - web-srv
+      - db-srv
+      - core-bank
+
+# Reglas de trafico
+traffic_rules:
+  - description: Permitir que attack-ws acceda a web-srv (HTTP)
+    source: attack-ws.lab
+    destination: web-srv.lab
+    port_range: 5000
+    protocol: tcp
+  - description: Permitir que attack-ws acceda a web-srv (SSH)
+    source: attack-ws.lab
+    destination: web-srv.lab
+    port_range: 22
+    protocol: tcp
+  - description: Permitir que attack-ws acceda a db-srv (SSH - movimiento lateral)
+    source: attack-ws.lab
+    destination: db-srv.lab
+    port_range: 22
+    protocol: tcp
+  - description: Permitir que attack-ws acceda a core-bank (SSH - movimiento lateral)
+    source: attack-ws.lab
+    destination: core-bank.lab
+    port_range: 22
+    protocol: tcp
+  - description: Permitir que web-srv acceda a db-srv (PostgreSQL)
+    source: web-srv.lab
+    destination: db-srv.lab
+    port_range: 5432
+    protocol: tcp
+  - description: Permitir que blue-team-ws acceda a todos los servidores para monitoreo
+    source: blue-team-ws.lab
+    destination: lab
+    port_range: 1-65535
+    protocol: all

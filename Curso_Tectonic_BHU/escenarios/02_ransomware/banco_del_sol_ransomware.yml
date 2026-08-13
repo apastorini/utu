@@ -1,0 +1,16 @@
+---
+# ==============================================================================
+# Edicion del Laboratorio: Ransomware - Banco del Sol
+# ==============================================================================
+# Archivo de edicion para desplegar el escenario de ransomware.
+# ==============================================================================
+
+base_lab: ransomware
+institution: bhu
+lab_edition_name: banco_del_sol_ransomware
+instance_number: 1
+teacher_pubkey_dir: ./teacher_pubkeys
+student_prefix: trainee
+student_pubkey_dir: ./student_pubkeys
+create_students_passwords: true
+random_seed: bhu_ransomware_2026_banco_del_sol

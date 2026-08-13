@@ -14,8 +14,8 @@
 | **Grupo atacante** | [Completar: Grupo X] |
 | **Grupo objetivo** | [Completar: Grupo Y] |
 | **Aplicacion analizada** | [Completar: Nombre/URL de la aplicacion] |
-| **Fecha de inicio** | [Completar: Clase 38 - Fecha] |
-| **Fecha de entrega** | [Completar: Clase 41 - Fecha] |
+| **Fecha de inicio** | [Completar: Clase 39 - Fecha] |
+| **Fecha de entrega** | [Completar: Clase 42 - Fecha] |
 | **Integrantes** | [Nombre 1], [Nombre 2], [Nombre 3], [Nombre 4] |
 | **Profesor** | [Completar nombre] |
 | **Version del informe** | 1.0 |

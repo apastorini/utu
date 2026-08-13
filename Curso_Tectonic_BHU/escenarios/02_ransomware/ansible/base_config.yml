@@ -1,0 +1,122 @@
+---
+# ==============================================================================
+# Escenario Ransomware - Configuracion Base de Imagenes
+# ==============================================================================
+# Este playbook se ejecuta DURANTE la creacion de imagenes base (fase Packer).
+# Instala todas las dependencias que requieren conexion a internet.
+#
+# COMPONENTES INSTALADOS:
+#   1. attack-ws: python3, python3-pip, libreria cryptography, sshpass
+#   2. core-bank: python3-pip, libreria cryptography, openssh-server
+#   3. blue-team-ws: python3, tcpdump, net-tools
+# ==============================================================================
+
+- name: "Configurar attack-ws para ransomware"
+  hosts: attack-ws
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: "Actualizar repositorios"
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: "Instalar herramientas de ataque"
+      ansible.builtin.package:
+        state: present
+        name:
+          - python3
+          - python3-pip
+          - python3-venv
+          - sshpass
+          - openssh-client
+          - net-tools
+          - nmap
+
+    - name: "Instalar libreria cryptography de Python"
+      ansible.builtin.pip:
+        name: cryptography
+        executable: pip3
+
+    - name: "Instalar libreria faker de Python"
+      ansible.builtin.pip:
+        name: faker
+        executable: pip3
+
+- name: "Configurar core-bank"
+  hosts: core-bank
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: "Actualizar repositorios"
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: "Instalar servidor SSH y herramientas"
+      ansible.builtin.package:
+        state: present
+        name:
+          - openssh-server
+          - python3
+          - python3-pip
+          - python3-venv
+          - net-tools
+          - rsync
+
+    - name: "Instalar libreria cryptography de Python"
+      ansible.builtin.pip:
+        name: cryptography
+        executable: pip3
+
+    - name: "Instalar libreria faker de Python"
+      ansible.builtin.pip:
+        name: faker
+        executable: pip3
+
+    - name: "Habilitar login SSH con password"
+      block:
+        - name: "Buscar archivos de configuracion SSH"
+          ansible.builtin.find:
+            paths: /etc/ssh/sshd_config.d
+            file_type: file
+          register: ssh_config
+
+        - name: "Ajustar configuracion SSH para permitir login con password"
+          ansible.builtin.lineinfile:
+            path: "{{ item.path }}"
+            regex: "^\\s*PasswordAuthentication"
+            line: "PasswordAuthentication yes"
+          with_items:
+            - "{{ ssh_config['files'] }}"
+            - { path: '/etc/ssh/sshd_config' }
+
+    - name: "Habilitar y iniciar servicio SSH"
+      ansible.builtin.service:
+        name: ssh
+        state: started
+        enabled: yes
+
+- name: "Configurar blue-team-ws"
+  hosts: blue-team-ws
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: "Actualizar repositorios"
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: "Instalar herramientas de monitoreo"
+      ansible.builtin.package:
+        state: present
+        name:
+          - python3
+          - python3-pip
+          - tcpdump
+          - net-tools
+          - nmap
+          - inotify-tools

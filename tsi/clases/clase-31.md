@@ -1,984 +1,787 @@
-# Clase 31: Manejo de Secretos
+# Clase 31: Autenticacion y Autorizacion Avanzada + OAuth2 / OpenID Connect
 
-**Numero de clase:** 21
+**Numero de clase:** 20
 **Duracion:** 2 horas
 
 ## Objetivos de Aprendizaje
 
-- Identificar que constituye un secreto y por que debe protegerse
-- Reconocer practicas inseguras de manejo de secretos
-- Usar herramientas como HashiCorp Vault, Azure Key Vault y AWS Secrets Manager
-- Implementar deteccion de secretos expuestos con truffleHog y git-secrets
-- Disenar rotacion automatica de secretos en aplicaciones
+- Comprender los roles y flujos de OAuth2
+- Diferenciar entre access token, refresh token e ID token
+- Implementar OAuth2 con GitHub como provider en Flask
+- Crear middleware de autorizacion con validacion de JWT y roles
+- Identificar vulnerabilidades en flujos OAuth2 (PKCE, implicit flow)
 
 ## Contenido Detallado
 
-### 1. Que son Secretos?
+### 1. OAuth2: Roles Fundamentales
 
-Un secreto es cualquier informacion que permite el acceso a un sistema o dato protegido.
+OAuth2 define cuatro roles:
 
-**Tipos de secretos:**
-- API keys (claves de servicios externos)
-- Contrasenas de bases de datos y servicios
-- Tokens de autenticacion (JWT, OAuth)
-- Certificados TLS/SSL y claves privadas
-- Claves SSH
-- Claves de cifrado
-- Tokens de bots y servicios
-- Credenciales de nube (AWS keys, Azure client secrets)
-- Connection strings de bases de datos
-- Secret keys de aplicaciones (Django SECRET_KEY, Flask SECRET_KEY)
+- **Resource Owner:** El usuario que posee los recursos (sus datos)
+- **Client:** La aplicacion que solicita acceso a los recursos
+- **Authorization Server:** El servidor que autentica al usuario y emite tokens
+- **Resource Server:** El servidor que aloja los recursos protegidos
 
-### 2. Practicas Inseguras (y Por que evitarlas)
+### 2. Flujos (Grant Types) de OAuth2
 
-| Practica Insegura | Riesgo |
-|-------------------|--------|
-| Hardcodear en codigo fuente | Cualquiera con acceso al repo ve las credenciales |
-| .env en repositorio | Se suben accidentalmente a GitHub |
-| Compartir por Slack/email | Quedan en logs y cache de mensajeria |
-| Misma clave en todos los entornos | Si se compromete un entorno, todos los demas tambien |
-| Sin rotacion de secretos | Un secreto comprometido sirve indefinidamente |
-| Secretos en logs | Quedan registrados en sistemas de monitoreo |
+| Flujo | Uso | Seguridad |
+|-------|-----|-----------|
+| Authorization Code | Apps web con backend | Alto (con PKCE) |
+| Implicit | SPAs (deprecado) | Bajo (token en URL) |
+| Client Credentials | Comunicacion servidor-servidor | Medio |
+| Resource Owner Password | Apps propias (legacy) | Bajo (expone credenciales) |
+| Authorization Code + PKCE | Apps moviles y SPAs | Alto |
 
-### 3. Herramientas de Gestion de Secretos
+### 3. OpenID Connect (OIDC)
 
-**HashiCorp Vault:**
-- Almacenamiento cifrado de secretos
-- Rotacion automatica de contraseas
-- Dynamic secrets (generados bajo demanda)
-- Auditing de acceso a secretos
-- Multi-platform (CLI, API, UI)
+Capa de identidad sobre OAuth2 que agrega:
+- **ID Token:** JWT que contiene informacion del usuario autenticado (claims)
+- **UserInfo Endpoint:** API para obtener informacion adicional del usuario
+- **Discovery:** Documento JSON con configuracion del proveedor
 
-**Azure Key Vault:**
-- Gestion de claves de cifrado, certificados y secretos
-- Integracion nativa con servicios Azure
-- HSM (Hardware Security Module) opcional
-- Rotacion automatica de certificados
+**Tokens en OIDC:**
+- **Access Token:** Para acceder a recursos protegidos
+- **Refresh Token:** Para obtener nuevos access tokens sin re-autenticar
+- **ID Token:** JWT con informacion de identidad del usuario (solo OIDC)
 
-**AWS Secrets Manager:**
-- Rotacion automatica de credenciales RDS
-- Cifrado con AWS KMS
-- Integracion con Lambda y otros servicios AWS
-- Replicacion multi-region
+### 4. JWT (JSON Web Tokens)
 
-### 4. Deteccion de Secretos en Repositorios
+Estructura: `header.payload.signature`
 
-**git-secrets:** Escanea commits, archivos y mensajes de commit contra patrones de secretos.
+```json
+// Header
+{"alg": "RS256", "typ": "JWT", "kid": "key-id-123"}
 
-**truffleHog:** Escanea todo el historial de Git en busqueda de secretos usando entropy analysis.
-
-**.gitignore para secretos:**
-```
-# Archivos que NUNCA deben subirse
-.env
-*.key
-*.pem
-config/secrets.yml
-*.secret
-credentials.json
-service-account.json
+// Payload (claims)
+{
+  "sub": "1234567890",
+  "name": "Juan Perez",
+  "iat": 1516239022,
+  "exp": 1516242622,
+  "roles": ["admin", "usuario"],
+  "iss": "https://auth.example.com"
+}
 ```
 
-### 5. Rotacion de Secretos
+### 5. PKCE (Proof Key for Code Exchange)
 
-Principios:
-- Rotar periodicamente (cada 30-90 dias)
-- Rotar inmediatamente si hay sospecha de compromiso
-- Usar versionamiento de secretos (mantener versiones anteriores por ventana de transicion)
-- Automatizar el proceso (no rotar manualmente)
+Protege el flujo Authorization Code contra ataques de interceptacion:
 
-## Ejercicio 1: Script que Lee Secretos desde Entorno + Vault
+1. El cliente genera un `code_verifier` aleatorio (43-128 chars)
+2. Calcula `code_challenge = SHA256(code_verifier)` (o plain)
+3. Envia `code_challenge` en la solicitud de autorizacion
+4. Al canjear el codigo, envia el `code_verifier`
+5. El servidor verifica que coincidan
+
+## Ejercicio 1: OAuth2 con GitHub como Provider en Flask
 
 ```python
-# gestor_secretos.py - Lectura de secretos desde entorno y Vault
+# oauth_github.py - Autenticacion OAuth2 con GitHub en Flask
 import os
 import json
-import base64
-import logging
-from typing import Optional, Dict, Any
+import requests
+import secrets
+from urllib.parse import urlencode
+
+from flask import (
+    Flask, request, redirect, url_for,
+    session, jsonify, render_template_string
+)
 
 # ============================================================
-# CONFIGURACION DE LOGGING (sin exponer secretos)
+# CONFIGURACION
 # ============================================================
+# Registrar una app en: https://github.com/settings/developers
+# OAuth App -> New OAuth App
+# Homepage URL: http://localhost:5000
+# Authorization callback URL: http://localhost:5000/callback
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+CLIENT_ID = os.environ.get('GITHUB_CLIENT_ID', '')
+CLIENT_SECRET = os.environ.get('GITHUB_CLIENT_SECRET', '')
+REDIRECT_URI = 'http://localhost:5000/callback'
 
-
-class GestorSecretosEntorno:
-    """
-    Lee secretos desde variables de entorno.
-    Estrategia: las variables de entorno se inyectan en el
-    contenedor/servidor y nunca se almacenan en el codigo.
-    """
-
-    @staticmethod
-    def obtener( nombre: str, required: bool = True, default: str = None) -> Optional[str]:
-        """
-        Obtiene un secreto de variable de entorno.
-
-        Args:
-            nombre: Nombre de la variable de entorno
-            required: Si True, lanza error si no existe
-            default: Valor por defecto si no es required
-
-        Returns:
-            Valor del secreto o default
-        """
-        valor = os.environ.get(nombre)
-        if valor is None:
-            if required:
-                raise ValueError(
-                    f"Secreto '{nombre}' no encontrado en variables de entorno"
-                )
-            return default
-        return valor
-
-    @staticmethod
-    def obtener_int(nombre: str, required: bool = True, default: int = None) -> Optional[int]:
-        valor = GestorSecretosEntorno.obtener(nombre, required, default)
-        if valor is not None:
-            return int(valor)
-        return None
-
-    @staticmethod
-    def obtener_bool(nombre: str, default: bool = False) -> bool:
-        valor = GestorSecretosEntorno.obtener(nombre, required=False, default=None)
-        if valor is None:
-            return default
-        return valor.lower() in ('true', '1', 'yes', 'si')
-
-
-class GestorSecretosVault:
-    """
-    Lee secretos desde HashiCorp Vault usando su API REST.
-
-    Requiere configurar:
-    - VAULT_ADDR: URL del servidor Vault
-    - VAULT_TOKEN: Token de autenticacion
-    """
-
-    def __init__(self, vault_addr: str = None, vault_token: str = None):
-        self.vault_addr = vault_addr or os.environ.get('VAULT_ADDR', 'http://localhost:8200')
-        self.vault_token = vault_token or os.environ.get('VAULT_TOKEN', '')
-
-        if not self.vault_token:
-            logger.warning("VAULT_TOKEN no configurado. Intentando auth por token file...")
-            self._autenticar_por_archivo()
-
-        self._cliente = None
-        self._conectado = False
-
-    def _autenticar_por_archivo(self):
-        """Intenta leer token desde archivo (~/.vault-token)."""
-        token_file = os.path.expanduser('~/.vault-token')
-        if os.path.exists(token_file):
-            with open(token_file, 'r') as f:
-                self.vault_token = f.read().strip()
-
-    def _get_headers(self) -> Dict[str, str]:
-        return {
-            'X-Vault-Token': self.vault_token,
-            'Content-Type': 'application/json'
-        }
-
-    def leer_secreto(self, ruta: str, clave: str = None, version: int = None) -> Any:
-        """
-        Lee un secreto desde Vault en la ruta especificada.
-
-        Args:
-            ruta: Path del secreto en Vault (ej: secret/data/api)
-            clave: Clave especifica dentro del secreto (opcional)
-            version: Version del secreto (opcional)
-
-        Returns:
-            Valor del secreto (dict completo o valor de clave especifica)
-        """
-        import requests
-
-        # Construir URL
-        url = f"{self.vault_addr}/v1/{ruta}"
-        params = {}
-        if version:
-            params['version'] = version
-
-        logger.info("Leyendo secreto desde Vault: %s", ruta)
-
-        try:
-            response = requests.get(
-                url,
-                headers=self._get_headers(),
-                params=params,
-                timeout=10
-            )
-
-            if response.status_code == 404:
-                raise ValueError(f"Secreto no encontrado en ruta: {ruta}")
-            elif response.status_code == 403:
-                raise PermissionError("Token Vault no autorizado para leer este secreto")
-            elif response.status_code != 200:
-                raise RuntimeError(
-                    f"Error Vault ({response.status_code}): {response.text}"
-                )
-
-            data = response.json()
-
-            # Vault KV v2: data.data.<claves>
-            # Vault KV v1: data.<claves>
-            if 'data' in data:
-                if 'data' in data['data']:
-                    secret_data = data['data']['data']
-                else:
-                    secret_data = data['data']
-            else:
-                secret_data = data
-
-            if clave:
-                if clave not in secret_data:
-                    raise KeyError(
-                        f"Clave '{clave}' no encontrada en secreto '{ruta}'"
-                    )
-                return secret_data[clave]
-
-            return secret_data
-
-        except requests.exceptions.ConnectionError:
-            raise ConnectionError(
-                f"No se pudo conectar a Vault en {self.vault_addr}. "
-                "Verifica que Vault este corriendo."
-            )
-
-    def listar_caminos(self, ruta: str) -> list:
-        """Lista los caminos disponibles bajo una ruta en Vault."""
-        import requests
-        url = f"{self.vault_addr}/v1/{ruta}"
-        response = requests.request(
-            'LIST', url,
-            headers=self._get_headers(),
-            timeout=10
-        )
-        if response.status_code == 200:
-            return response.json().get('data', {}).get('keys', [])
-        return []
-
-
-class GestorSecretosAzureKV:
-    """Lee secretos desde Azure Key Vault."""
-
-    def __init__(self, key_vault_url: str = None):
-        self.key_vault_url = (
-            key_vault_url
-            or os.environ.get('AZURE_KEY_VAULT_URL', '')
-        )
-
-    def leer_secreto(self, nombre: str) -> str:
-        """Lee un secreto de Azure Key Vault."""
-        try:
-            from azure.identity import DefaultAzureCredential
-            from azure.keyvault.secrets import SecretClient
-
-            credential = DefaultAzureCredential()
-            client = SecretClient(
-                vault_url=self.key_vault_url,
-                credential=credential
-            )
-            secret = client.get_secret(nombre)
-            return secret.value
-        except ImportError:
-            raise ImportError(
-                "Instala azure-identity y azure-keyvault-secrets: "
-                "pip install azure-identity azure-keyvault-secrets"
-            )
-
-
-class GestorSecretosAWS:
-    """Lee secretos desde AWS Secrets Manager."""
-
-    def __init__(self, region: str = None):
-        self.region = region or os.environ.get('AWS_REGION', 'us-east-1')
-
-    def leer_secreto(self, nombre_secreto: str) -> str:
-        """Lee un secreto de AWS Secrets Manager."""
-        try:
-            import boto3
-            from botocore.exceptions import ClientError
-
-            session = boto3.session.Session()
-            client = session.client(
-                service_name='secretsmanager',
-                region_name=self.region
-            )
-
-            response = client.get_secret_value(SecretId=nombre_secreto)
-            if 'SecretString' in response:
-                return response['SecretString']
-            else:
-                return base64.b64decode(response['SecretBinary']).decode('utf-8')
-
-        except ImportError:
-            raise ImportError(
-                "Instala boto3: pip install boto3"
-            )
-        except ClientError as e:
-            raise RuntimeError(f"Error al leer secreto de AWS: {str(e)}")
-
+# URL de GitHub
+GITHUB_AUTH_URL = 'https://github.com/login/oauth/authorize'
+GITHUB_TOKEN_URL = 'https://github.com/login/oauth/access_token'
+GITHUB_USER_URL = 'https://api.github.com/user'
+GITHUB_EMAIL_URL = 'https://api.github.com/user/emails'
 
 # ============================================================
-# CONFIGURACION CENTRALIZADA
+# APP FLASK
 # ============================================================
 
-class ConfiguracionSegura:
-    """
-    Gestiona configuracion de la aplicacion leyendo secretos
-    de la fuente apropiada (entorno, Vault, Azure, AWS).
-    """
-
-    def __init__(self):
-        self._gestores = {
-            'entorno': GestorSecretosEntorno(),
-        }
-
-        # Intentar conectar Vault si esta configurado
-        if os.environ.get('VAULT_ADDR'):
-            try:
-                self._gestores['vault'] = GestorSecretosVault()
-                logger.info("Vault configurado en %s", os.environ['VAULT_ADDR'])
-            except Exception as e:
-                logger.warning("No se pudo conectar a Vault: %s", str(e))
-
-    def obtener(self, nombre: str, required: bool = True) -> str:
-        """
-        Obtiene un valor de configuracion.
-
-        Orden de busqueda:
-        1. Variable de entorno
-        2. Vault (si esta configurado)
-        3. Error si required=True
-        """
-        # 1. Buscar en entorno
-        valor = self._gestores['entorno'].obtener(nombre, required=False)
-        if valor is not None:
-            logger.debug("Config %s obtenida de variable de entorno", nombre)
-            return valor
-
-        # 2. Buscar en Vault
-        if 'vault' in self._gestores:
-            try:
-                return self._gestores['vault'].leer_secreto(
-                    f"secret/data/{nombre.lower()}"
-                )
-            except Exception as e:
-                logger.debug("Config %s no encontrada en Vault: %s", nombre, str(e))
-
-        if required:
-            raise ValueError(
-                f"Secreto '{nombre}' no encontrado en ninguna fuente"
-            )
-        return None
+app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', secrets.token_hex(32))
 
 
-# ============================================================
-# EJEMPLO DE USO
-# ============================================================
-if __name__ == '__main__':
-    print("=" * 60)
-    print("Gestor de Secretos - Demostracion")
-    print("=" * 60)
+@app.route('/')
+def home():
+    """Pagina principal."""
+    usuario = session.get('usuario')
+    if usuario:
+        return f'''
+        <h1>Bienvenido, {usuario['login']}!</h1>
+        <img src="{usuario['avatar_url']}" width="100">
+        <p>Nombre: {usuario.get('name', 'No disponible')}</p>
+        <p>Email: {usuario.get('email', 'No disponible')}</p>
+        <p>Bio: {usuario.get('bio', 'No disponible')}</p>
+        <a href="/logout">Cerrar sesion</a>
+        '''
+    return '''
+    <h1>Autenticacion con GitHub</h1>
+    <p>Haz clic para iniciar sesion con GitHub:</p>
+    <a href="/login/github">
+        <button>Iniciar sesion con GitHub</button>
+    </a>
+    '''
 
-    # Configurar variables de entorno simuladas
-    os.environ['DB_HOST'] = 'localhost'
-    os.environ['DB_PORT'] = '5432'
-    os.environ['APP_DEBUG'] = 'false'
 
-    config = ConfiguracionSegura()
+@app.route('/login/github')
+def login_github():
+    """Inicia el flujo OAuth2 redirigiendo a GitHub."""
 
-    print("\n--- Leyendo desde variables de entorno ---")
-    db_host = config.obtener('DB_HOST')
-    db_port = config.obtener('DB_PORT')
-    print(f"DB_HOST: {db_host}")
-    print(f"DB_PORT: {db_port}")
+    # Generar y almacenar state para proteger contra CSRF
+    state = secrets.token_urlsafe(16)
+    session['oauth_state'] = state
 
-    print("\n--- Configuracion de BD segura ---")
-    db_config = {
-        'host': os.environ.get('DB_HOST', 'localhost'),
-        'port': int(os.environ.get('DB_PORT', 5432)),
-        'database': os.environ.get('DB_NAME', 'miapp'),
-        'username': os.environ.get('DB_USER', 'app_user'),
-        'password': os.environ.get('DB_PASSWORD', ''),
-        'ssl': True,
-        'pool_size': 10,
+    # Generar PKCE code_verifier y code_challenge
+    code_verifier = secrets.token_urlsafe(64)
+    session['code_verifier'] = code_verifier
+
+    import hashlib
+    import base64
+    code_challenge = base64.urlsafe_b64encode(
+        hashlib.sha256(code_verifier.encode()).digest()
+    ).rstrip('=').decode()
+
+    params = {
+        'client_id': CLIENT_ID,
+        'redirect_uri': REDIRECT_URI,
+        'scope': 'read:user user:email',
+        'state': state,
+        'code_challenge': code_challenge,
+        'code_challenge_method': 'S256'
     }
 
-    if not db_config['password']:
-        # Intentar leer de Vault
-        if 'vault' in config._gestores:
-            try:
-                db_config['password'] = config._gestores['vault'].leer_secreto(
-                    'secret/data/database',
-                    'password'
-                )
-            except Exception:
-                raise ValueError(
-                    "DB_PASSWORD no configurada ni en entorno ni en Vault"
-                )
+    auth_url = f'{GITHUB_AUTH_URL}?{urlencode(params)}'
+    return redirect(auth_url)
 
-    # No mostrar la contrasena en logs
-    logger.info("Configuracion de BD cargada (contrasena oculta)")
-    safe_config = {**db_config, 'password': '***'}
-    print(f"Config: {json.dumps(safe_config, indent=2)}")
+
+@app.route('/callback')
+def callback():
+    """Callback que GitHub llama despues de la autenticacion."""
+
+    # Verificar state contra CSRF
+    error = request.args.get('error')
+    if error:
+        return f'Error de autenticacion: {error}', 400
+
+    state_recibido = request.args.get('state')
+    state_esperado = session.pop('oauth_state', None)
+
+    if not state_recibido or state_recibido != state_esperado:
+        return 'Error: State invalido (posible ataque CSRF)', 400
+
+    # Obtener el codigo de autorizacion
+    code = request.args.get('code')
+    if not code:
+        return 'Error: No se recibio el codigo de autorizacion', 400
+
+    # Intercambiar el codigo por un access token
+    code_verifier = session.pop('code_verifier', None)
+    token_data = {
+        'client_id': CLIENT_ID,
+        'client_secret': CLIENT_SECRET,
+        'code': code,
+        'redirect_uri': REDIRECT_URI,
+    }
+
+    # Si teniamos PKCE, enviar el code_verifier
+    if code_verifier:
+        token_data['code_verifier'] = code_verifier
+
+    headers = {'Accept': 'application/json'}
+    response = requests.post(
+        GITHUB_TOKEN_URL,
+        data=token_data,
+        headers=headers
+    )
+
+    if response.status_code != 200:
+        return f'Error al obtener token: {response.text}', 400
+
+    token_json = response.json()
+    access_token = token_json.get('access_token')
+    token_type = token_json.get('token_type', 'bearer')
+
+    if not access_token:
+        return f'Error: No se recibio access token: {token_json}', 400
+
+    # Obtener informacion del usuario
+    user_headers = {
+        'Authorization': f'{token_type} {access_token}',
+        'Accept': 'application/json'
+    }
+
+    user_response = requests.get(GITHUB_USER_URL, headers=user_headers)
+    if user_response.status_code != 200:
+        return f'Error al obtener usuario: {user_response.text}', 400
+
+    usuario = user_response.json()
+
+    # Obtener emails (el email principal puede estar en privado)
+    email_response = requests.get(GITHUB_EMAIL_URL, headers=user_headers)
+    if email_response.status_code == 200:
+        emails = email_response.json()
+        email_principal = next(
+            (e['email'] for e in emails if e['primary']),
+            usuario.get('email')
+        )
+        usuario['email'] = email_principal
+
+    # Guardar usuario en sesion
+    session['usuario'] = usuario
+    session['access_token'] = access_token
+
+    return redirect(url_for('home'))
+
+
+@app.route('/logout')
+def logout():
+    """Cierra sesion."""
+    session.clear()
+    return redirect(url_for('home'))
+
+
+@app.route('/api/me')
+def api_me():
+    """API protegida que requiere autenticacion."""
+    usuario = session.get('usuario')
+    if not usuario:
+        return jsonify({'error': 'No autenticado'}), 401
+
+    return jsonify({
+        'login': usuario['login'],
+        'name': usuario.get('name'),
+        'email': usuario.get('email'),
+        'avatar': usuario.get('avatar_url')
+    })
+
+
+if __name__ == '__main__':
+    if not CLIENT_ID or not CLIENT_SECRET:
+        print("=" * 60)
+        print("ERROR: Configura las variables de entorno:")
+        print("  set GITHUB_CLIENT_ID=tu_client_id")
+        print("  set GITHUB_CLIENT_SECRET=tu_client_secret")
+        print("=" * 60)
+        print("\nRegistra tu app en: https://github.com/settings/developers")
+    else:
+        print("Iniciando servidor OAuth2 en http://localhost:5000")
+        app.run(debug=True, port=5000)
 ```
 
-## Ejercicio 2: Escanear Repositorio con truffleHog/git-secrets
-
+**Configuracion en GitHub:**
+1. Ir a https://github.com/settings/developers -> OAuth Apps -> New OAuth App
+2. Homepage URL: `http://localhost:5000`
+3. Authorization callback URL: `http://localhost:5000/callback`
+4. Copiar Client ID y Client Secret
+5. Ejecutar:
 ```bash
-#!/bin/bash
-# scan_secretos.sh - Escaneo de secretos en repositorio
-
-echo "========================================"
-echo "ESCANEO DE SECRETOS EN REPOSITORIO"
-echo "========================================"
-
-# =============================================
-# METODO 1: git-secrets
-# =============================================
-echo ""
-echo "[1] Instalando git-secrets..."
-
-# En Windows (PowerShell):
-# git clone https://github.com/awslabs/git-secrets.git
-# cd git-secrets
-# make install
-
-echo ""
-echo "[2] Configurando patrones de git-secrets..."
-# Patrones comunes de secretos
-git secrets --add 'password\s*=\s*.+'
-git secrets --add 'api[_-]?key\s*=\s*.+'
-git secrets --add 'secret\s*=\s*.+'
-git secrets --add 'token\s*=\s*.+'
-git secrets --add '-----BEGIN (RSA|EC|OPENSSH|PGP) PRIVATE KEY-----'
-
-# Patrones de AWS
-git secrets --add --provider aws
-
-# Patrones personalizados
-git secrets --add 'AKIA[0-9A-Z]{16}'  # AWS Access Key ID
-git secrets --add 'sk-[a-zA-Z0-9]{20,}'  # OpenAI API Key
-git secrets --add 'ghp_[a-zA-Z0-9]{36}'  # GitHub Personal Access Token
-
-echo ""
-echo "[3] Escaneando commits historicos..."
-git secrets --scan-history
-
-echo ""
-echo "[4] Escaneando archivos actuales..."
-git secrets --scan
-
-# =============================================
-# METODO 2: truffleHog
-# =============================================
-echo ""
-echo "========================================"
-echo "TRUFFLEHOG"
-echo "========================================"
-echo ""
-echo "Instalacion: pip install trufflehog"
-
-echo ""
-echo "Escaneo de repositorio completo (incluyendo historial):"
-echo "  trufflehog git file:///ruta/del/repo --only-verified"
-echo ""
-echo "Escaneo de un branch especifico:"
-echo "  trufflehog git file:///ruta/del/repo --branch main"
-echo ""
-echo "Escaneo en busqueda de alta entropia:"
-echo "  trufflehog filesystem /ruta/del/repo"
-
-# =============================================
-# EJEMPLO DE ARCHIVO CON SECRETOS (DETECTAR)
-# =============================================
-echo ""
-echo "========================================"
-echo "EJEMPLO: ARCHIVO CON SECRETOS EXPUESTOS"
-echo "========================================"
-echo ""
-echo "Crea un archivo test_secrets.py y ejecuta el escaneo:"
-echo ""
+set GITHUB_CLIENT_ID=tu_client_id
+set GITHUB_CLIENT_SECRET=tu_client_secret
+python oauth_github.py
 ```
+
+## Ejercicio 2: Middleware de Autorizacion con JWT y Roles
 
 ```python
-# test_secrets.py - NO SUBIR A GIT (contiene secretos exposivos)
-# Este archivo contiene secretos intencionalmente para demostrar deteccion
-
-# ============================================================
-# SECRETOS EXPUESTOS - SOLO PARA DEMOSTRACION
-# ============================================================
-
-# MAL: API Key hardcodeada
-STRIPE_API_KEY = "sk_live_4eC39HqLyjWDarjtT1zdp7dc"  # noqa
-
-# MAL: Contrasena de BD hardcodeada
-DB_PASSWORD = "SuperSecret2024!db_admin"
-
-# MAL: Token de AWS hardcodeado
-AWS_ACCESS_KEY = "AKIAIOSFODNN7EXAMPLE"
-AWS_SECRET_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
-
-# MAL: Clave secreta de aplicacion
-SECRET_KEY = "mi-clave-super-secreta-que-nadie-debe-saber"
-
-# MAL: Token de GitHub
-GITHUB_TOKEN = "ghp_1234567890abcdefghijklmnopqrstuvwxyzABCD"
-
-# MAL: Connection string con credenciales
-DATABASE_URL = "postgresql://admin:password123@prod-db.example.com:5432/miapp_prod"
-
-# MAL: Certificado privado (simulado)
-PRIVATE_KEY = """
------BEGIN RSA PRIVATE KEY-----
-MIIEpAIBAAKCAQEA0gD2t1g0nVZnJcC6QXBjRmPKBQMzFh0UMlI+p/jQpR+n
-... (contenido del certificado)
------END RSA PRIVATE KEY-----
-"""
-```
-
-**Comandos de escaneo:**
-```bash
-# Escanear con git-secrets
-git secrets --scan
-
-# Escanear con truffleHog
-trufflehog filesystem ./
-trufflehog git file://. --only-verified
-
-# Verificar .gitignore
-cat .gitignore
-# Debe incluir:
-# *.key
-# *.pem
-# .env
-# credentials.json
-# service-account.json
-# secrets*
-```
-
-**Salida esperada de truffleHog:**
-```
-Found verified result 🐷🔑
-Branch: main
-Commit: a1b2c3d4e5f6...
-File: test_secrets.py
-Line: 8
-Secret: sk_live_4eC39HqLyjWDarjtT1zdp7dc
-Detector: Stripe
-
-Found unverified result
-File: test_secrets.py
-Line: 11
-Reason: High entropy string 'SuperSecret2024!db_admin'
-```
-
-## Ejercicio 3: Rotacion Automatica de API Keys en Flask
-
-```python
-# rotacion_api_keys.py - Rotacion automatica de API keys en Flask
+# jwt_middleware.py - Middleware de autorizacion JWT con roles
 import os
 import json
 import time
-import hashlib
-import secrets
-import logging
-from datetime import datetime, timedelta
-from typing import Optional, Dict, List
+import jwt
+from functools import wraps
 from flask import Flask, request, jsonify, g
 
 # ============================================================
 # CONFIGURACION
 # ============================================================
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s | %(levelname)s | %(message)s'
-)
-logger = logging.getLogger(__name__)
+# En produccion, usar una clave asimetrica (RS256) o HMAC secreta
+JWT_SECRET = os.environ.get('JWT_SECRET', 'mi-clave-secreta-cambiame-en-produccion')
+JWT_ALGORITHM = 'HS256'
+JWT_EXPIRATION_HOURS = 24
 
 # ============================================================
-# GESTOR DE API KEYS CON ROTACION AUTOMATICA
+# UTILIDADES JWT
 # ============================================================
 
-class GestorAPIKeys:
-    """
-    Gestiona API keys con:
-    - Rotacion automatica cada N dias
-    - Versionamiento de keys (v1, v2, v3...)
-    - Periodo de gracia donde keys viejas siguen siendo validas
-    - Revocacion inmediata de keys comprometidas
-    """
-
-    def __init__(self, rotacion_dias: int = 90, periodo_gracia_horas: int = 48):
-        """
-        Args:
-            rotacion_dias: Cada cuantos dias se rotan las keys
-            periodo_gracia_horas: Horas que una key vieja sigue siendo valida
-        """
-        self.rotacion_dias = rotacion_dias
-        self.periodo_gracia = timedelta(hours=periodo_gracia_horas)
-
-        # Estructura: {client_id: {key_id: {key_hash, created_at, expires_at, active}}}
-        self._keys: Dict[str, Dict] = {}
-        self._key_index: Dict[str, str] = {}  # key_hash -> client_id
-
-    def generar_key(self, client_id: str) -> dict:
-        """
-        Genera una nueva API key para un cliente.
-        La key se devuelve UNA SOLA VEZ (no se almacena en texto plano).
-        """
-        # Generar key segura
-        key_raw = f"sk_{secrets.token_urlsafe(48)}"
-        key_id = f"key_{secrets.token_hex(8)}"
-
-        # Hash de la key (nunca almacenar en texto plano)
-        key_hash = self._hash_key(key_raw)
-
-        now = datetime.now()
-
-        if client_id not in self._keys:
-            self._keys[client_id] = {}
-
-        self._keys[client_id][key_id] = {
-            'key_hash': key_hash,
-            'created_at': now,
-            'expires_at': now + timedelta(days=self.rotacion_dias),
-            'active': True,
-            'version': len(self._keys[client_id]) + 1
-        }
-
-        self._key_index[key_hash] = client_id
-
-        logger.info(
-            "API key generada para %s (key_id: %s, expira: %s)",
-            client_id, key_id,
-            self._keys[client_id][key_id]['expires_at'].isoformat()
-        )
-
-        return {
-            'key_id': key_id,
-            'api_key': key_raw,  # SOLO se muestra al crearla
-            'expires_at': self._keys[client_id][key_id]['expires_at'].isoformat(),
-            'warning': 'Guarda esta key ahora. No se mostrara nuevamente.'
-        }
-
-    def validar_key(self, api_key: str) -> Optional[dict]:
-        """
-        Valida una API key. Retorna info del cliente si es valida.
-        Considera periodo de gracia para keys recien rotadas.
-        """
-        key_hash = self._hash_key(api_key)
-        client_id = self._key_index.get(key_hash)
-
-        if not client_id:
-            logger.warning("API key invalida: hash no encontrado")
-            return None
-
-        # Buscar en todas las keys del cliente
-        for key_id, key_data in self._keys[client_id].items():
-            if key_data['key_hash'] == key_hash:
-                if not key_data['active']:
-                    logger.warning("API key revocada: %s", key_id)
-                    return None
-
-                now = datetime.now()
-
-                # Verificar expiracion + periodo de gracia
-                if now > key_data['expires_at']:
-                    # Verificar si esta en periodo de gracia
-                    fin_gracia = key_data['expires_at'] + self.periodo_gracia
-                    if now > fin_gracia:
-                        logger.warning("API key expirada: %s", key_id)
-                        return None
-                    logger.info("API key en periodo de gracia: %s", key_id)
-
-                return {
-                    'client_id': client_id,
-                    'key_id': key_id,
-                    'version': key_data['version'],
-                    'expires_at': key_data['expires_at'].isoformat()
-                }
-
-        return None
-
-    def revocar_key(self, client_id: str, key_id: str) -> bool:
-        """Revoca una API key inmediatamente."""
-        if client_id in self._keys and key_id in self._keys[client_id]:
-            self._keys[client_id][key_id]['active'] = False
-            logger.warning(
-                "API key revocada: client=%s, key_id=%s",
-                client_id, key_id
-            )
-            return True
-        return False
-
-    def rotar_keys(self, client_id: str) -> dict:
-        """
-        Rota las keys de un cliente:
-        1. Las keys actuales entran en periodo de gracia
-        2. Se genera una nueva key
-        """
-        logger.info("Rotando keys para cliente: %s", client_id)
-
-        # Las keys viejas ya expiraran naturalmente o entraran en gracia
-        nueva_key = self.generar_key(client_id)
-        return nueva_key
-
-    def rotacion_masiva(self) -> list:
-        """
-        Ejecuta rotacion programada para todos los clientes
-        cuyas keys esten por expirar.
-        """
-        rotados = []
-        now = datetime.now()
-
-        for client_id in self._keys:
-            for key_id, key_data in self._keys[client_id].items():
-                if key_data['active']:
-                    tiempo_restante = key_data['expires_at'] - now
-                    dias_restantes = tiempo_restante.days
-
-                    if dias_restantes <= 7:  # Rotar si expira en 7 dias o menos
-                        logger.info(
-                            "Rotacion automatica: %s key %s expira en %d dias",
-                            client_id, key_id, dias_restantes
-                        )
-                        nueva = self.rotar_keys(client_id)
-                        rotados.append({
-                            'client_id': client_id,
-                            'old_key_id': key_id,
-                            'nueva_key': nueva
-                        })
-
-        return rotados
-
-    def limpiar_expiradas(self) -> int:
-        """Elimina keys expiradas que ya superaron el periodo de gracia."""
-        now = datetime.now()
-        eliminadas = 0
-
-        for client_id in list(self._keys.keys()):
-            for key_id in list(self._keys[client_id].keys()):
-                key_data = self._keys[client_id][key_id]
-                fin_gracia = key_data['expires_at'] + self.periodo_gracia
-                if now > fin_gracia and not key_data['active']:
-                    # Eliminar del indice
-                    self._key_index.pop(key_data['key_hash'], None)
-                    del self._keys[client_id][key_id]
-                    eliminadas += 1
-
-        return eliminadas
+class JWTManager:
+    """Maneja creacion y validacion de tokens JWT."""
 
     @staticmethod
-    def _hash_key(key: str) -> str:
-        """Hash de la API key usando SHA-256 con salt."""
-        return hashlib.sha256(key.encode()).hexdigest()
+    def crear_token(user_id: str, username: str, roles: list) -> str:
+        """
+        Crea un JWT con informacion del usuario y roles.
+
+        Payload:
+            - sub: subject (user_id)
+            - username: nombre de usuario
+            - roles: lista de roles asignados
+            - iat: issued at
+            - exp: expiration
+            - jti: JWT ID (unico)
+        """
+        payload = {
+            'sub': user_id,
+            'username': username,
+            'roles': roles,
+            'iat': int(time.time()),
+            'exp': int(time.time()) + JWT_EXPIRATION_HOURS * 3600,
+            'jti': os.urandom(8).hex()
+        }
+        return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+    @staticmethod
+    def verificar_token(token: str) -> dict:
+        """
+        Verifica y decodifica un JWT.
+
+        Returns:
+            dict con payload del token
+
+        Raises:
+            jwt.ExpiredSignatureError: Token expirado
+            jwt.InvalidTokenError: Token invalido
+        """
+        try:
+            payload = jwt.decode(
+                token,
+                JWT_SECRET,
+                algorithms=[JWT_ALGORITHM],
+                options={
+                    'verify_exp': True,
+                    'verify_iat': True,
+                    'require': ['sub', 'exp', 'iat', 'roles']
+                }
+            )
+            return payload
+        except jwt.ExpiredSignatureError:
+            raise PermissionError("Token expirado")
+        except jwt.InvalidTokenError as e:
+            raise PermissionError(f"Token invalido: {str(e)}")
 
 
 # ============================================================
-# APP FLASK CON API KEY AUTH
+# MIDDLEWARE DE AUTORIZACION
+# ============================================================
+
+def requerir_autenticacion(f):
+    """
+    Decorador que requiere autenticacion JWT.
+    Extrae el token del header Authorization: Bearer <token>
+    """
+    @wraps(f)
+    def decorada(*args, **kwargs):
+        auth_header = request.headers.get('Authorization', '')
+
+        if not auth_header.startswith('Bearer '):
+            return jsonify({
+                'error': 'Token de autenticacion requerido',
+                'codigo': 'AUTH_REQUIRED'
+            }), 401
+
+        token = auth_header.split(' ', 1)[1]
+
+        try:
+            payload = JWTManager.verificar_token(token)
+            # Almacenar datos del usuario en el contexto de la request
+            g.usuario = payload
+            g.user_id = payload['sub']
+            g.user_roles = payload['roles']
+        except PermissionError as e:
+            return jsonify({
+                'error': str(e),
+                'codigo': 'TOKEN_INVALIDO'
+            }), 401
+
+        return f(*args, **kwargs)
+    return decorada
+
+
+def requerir_roles(roles_permitidos: list):
+    """
+    Decorador que verifica que el usuario tenga al menos uno de los roles.
+    Debe usarse junto con @requerir_autenticacion.
+
+    Uso:
+        @app.route('/admin')
+        @requerir_autenticacion
+        @requerir_roles(['admin'])
+        def admin_only():
+            ...
+    """
+    def decorador(f):
+        @wraps(f)
+        def decorada(*args, **kwargs):
+            roles_usuario = g.get('user_roles', [])
+
+            if not any(rol in roles_usuario for rol in roles_permitidos):
+                return jsonify({
+                    'error': 'No tienes permisos para acceder a este recurso',
+                    'codigo': 'FORBIDDEN',
+                    'roles_requeridos': roles_permitidos,
+                    'roles_usuario': roles_usuario
+                }), 403
+
+            return f(*args, **kwargs)
+        return decorada
+    return decorador
+
+
+def requerir_permiso(permiso: str):
+    """
+    Decorador granular que verifica permisos especificos.
+    Los permisos se definen como "recurso:accion" (ej: "usuarios:eliminar").
+    """
+    def decorador(f):
+        @wraps(f)
+        def decorada(*args, **kwargs):
+            permisos_usuario = g.get('permisos', [])
+
+            if permiso not in permisos_usuario:
+                return jsonify({
+                    'error': f'Permiso "{permiso}" requerido',
+                    'codigo': 'PERMISO_DENEGADO'
+                }), 403
+
+            return f(*args, **kwargs)
+        return decorada
+    return decorador
+
+
+# ============================================================
+# APP FLASK DE EJEMPLO
 # ============================================================
 
 app = Flask(__name__)
-gestor_keys = GestorAPIKeys(rotacion_dias=90, periodo_gracia_horas=48)
 
 
-# Middleware de autenticacion por API Key
-@app.before_request
-def autenticar_api_key():
-    """Verifica API Key en cada request (excepto endpoints publicos)."""
-    if request.path.startswith('/publico'):
-        return None
+@app.route('/login', methods=['POST'])
+def login():
+    """Endpoint de autenticacion que devuelve un JWT."""
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'JSON requerido'}), 400
 
-    api_key = request.headers.get('X-API-Key')
-    if not api_key:
-        return jsonify({'error': 'API Key requerida (header X-API-Key)'}), 401
+    username = data.get('username', '')
+    password = data.get('password', '')
 
-    info = gestor_keys.validar_key(api_key)
-    if not info:
-        return jsonify({'error': 'API Key invalida o expirada'}), 401
-
-    g.client_id = info['client_id']
-    g.key_info = info
-
-    # Warning si la key esta proxima a expirar
-    if info.get('expires_at'):
-        exp = datetime.fromisoformat(info['expires_at'])
-        dias_restantes = (exp - datetime.now()).days
-        if dias_restantes <= 7:
-            g.warning_key_expiration = dias_restantes
-
-    return None
-
-
-@app.route('/publico')
-def publico():
-    """Endpoint publico, no requiere API key."""
-    return jsonify({'mensaje': 'Endpoint publico'})
-
-
-@app.route('/api/datos')
-def obtener_datos():
-    """Endpoint protegido por API key."""
-    response = {
-        'mensaje': 'Datos protegidos',
-        'client_id': g.client_id,
-        'key_id': g.key_info['key_id']
+    # Simular verificacion de credenciales
+    usuarios = {
+        'admin': {'password': 'admin123', 'roles': ['admin', 'usuario'], 'nombre': 'Admin'},
+        'user1': {'password': 'user123', 'roles': ['usuario'], 'nombre': 'Usuario 1'},
     }
 
-    if hasattr(g, 'warning_key_expiration'):
-        response['warning'] = (
-            f"Tu API key expira en {g.warning_key_expiration} dias. "
-            "Por favor, renuevala."
-        )
+    usuario = usuarios.get(username)
+    if not usuario or usuario['password'] != password:
+        return jsonify({'error': 'Credenciales invalidas'}), 401
 
-    return jsonify(response)
+    token = JWTManager.crear_token(
+        user_id=username,
+        username=usuario['nombre'],
+        roles=usuario['roles']
+    )
 
-
-@app.route('/api/key/generar', methods=['POST'])
-def generar_nueva_key():
-    """Genera una nueva API key para un cliente."""
-    data = request.get_json()
-    client_id = data.get('client_id') if data else None
-
-    if not client_id:
-        return jsonify({'error': 'client_id requerido'}), 400
-
-    key_info = gestor_keys.generar_key(client_id)
-    return jsonify(key_info), 201
-
-
-@app.route('/api/key/rotar', methods=['POST'])
-def rotar_key():
-    """Rota la API key del cliente actual."""
-    if not hasattr(g, 'client_id'):
-        return jsonify({'error': 'Autenticacion requerida'}), 401
-
-    nueva_key = gestor_keys.rotar_keys(g.client_id)
-    return jsonify(nueva_key)
-
-
-@app.route('/api/key/revocar', methods=['POST'])
-def revocar_key():
-    """Revoca una API key."""
-    if not hasattr(g, 'client_id'):
-        return jsonify({'error': 'Autenticacion requerida'}), 401
-
-    data = request.get_json()
-    key_id = data.get('key_id') if data else None
-
-    if not key_id:
-        return jsonify({'error': 'key_id requerido'}), 400
-
-    if gestor_keys.revocar_key(g.client_id, key_id):
-        return jsonify({'mensaje': f'Key {key_id} revocada'})
-    else:
-        return jsonify({'error': 'Key no encontrada'}), 404
-
-
-@app.route('/admin/rotacion-masiva', methods=['POST'])
-def rotacion_masiva():
-    """Ejecuta rotacion programada (tarea administrativa)."""
-    rotados = gestor_keys.rotacion_masiva()
-    limpiados = gestor_keys.limpiar_expiradas()
     return jsonify({
-        'rotados': len(rotados),
-        'limpiados': limpiados,
-        'detalle': rotados
+        'token': token,
+        'token_type': 'Bearer',
+        'expires_in': JWT_EXPIRATION_HOURS * 3600,
+        'usuario': {
+            'username': username,
+            'nombre': usuario['nombre'],
+            'roles': usuario['roles']
+        }
     })
 
 
-@app.after_request
-def add_security_headers(response):
-    """Agrega headers de seguridad."""
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'DENY'
-    return response
+@app.route('/api/public')
+def publico():
+    """Endpoint publico, no requiere autenticacion."""
+    return jsonify({'mensaje': 'Este es un endpoint publico'})
+
+
+@app.route('/api/perfil')
+@requerir_autenticacion
+def perfil():
+    """Endpoint que requiere autenticacion (cualquier usuario)."""
+    return jsonify({
+        'user_id': g.user_id,
+        'roles': g.user_roles,
+        'mensaje': 'Perfil de usuario'
+    })
+
+
+@app.route('/api/admin')
+@requerir_autenticacion
+@requerir_roles(['admin'])
+def admin_panel():
+    """Endpoint solo para administradores."""
+    return jsonify({
+        'mensaje': 'Panel de administracion',
+        'usuario': g.usuario
+    })
+
+
+@app.route('/api/usuarios', methods=['GET'])
+@requerir_autenticacion
+@requerir_roles(['admin', 'usuario'])
+def listar_usuarios():
+    """Usuarios autenticados pueden ver la lista."""
+    return jsonify({
+        'usuarios': [
+            {'id': 1, 'nombre': 'Juan'},
+            {'id': 2, 'nombre': 'Maria'}
+        ]
+    })
+
+
+@app.route('/api/usuarios/<int:user_id>', methods=['DELETE'])
+@requerir_autenticacion
+@requerir_roles(['admin'])
+def eliminar_usuario(user_id):
+    """Solo admin puede eliminar usuarios."""
+    return jsonify({
+        'mensaje': f'Usuario {user_id} eliminado'
+    })
 
 
 # ============================================================
-# USO Y PRUEBAS
+# DEMOSTRACION
 # ============================================================
 if __name__ == '__main__':
     print("=" * 60)
-    print("API con Rotacion Automatica de API Keys")
+    print("API con Autenticacion JWT y Roles")
+    print("=" * 60)
+    print("\nEndpoints:")
+    print("  POST /login          - Autenticarse")
+    print("  GET /api/public      - Publico")
+    print("  GET /api/perfil      - Requiere auth")
+    print("  GET /api/admin       - Solo admin")
+    print("  GET /api/usuarios    - Auth + rol usuario/admin")
+    print("  DELETE /api/usuarios/:id - Solo admin")
+    print("\nPruebas con curl:")
+    print('  # Login como admin:')
+    print('  curl -X POST http://localhost:5000/login \\')
+    print('    -H "Content-Type: application/json" \\')
+    print('    -d "{\\"username\\":\\"admin\\",\\"password\\":\\"admin123\\"}"')
+    print('\n  # Usar token:')
+    print('  curl http://localhost:5000/api/admin \\')
+    print('    -H "Authorization: Bearer <TOKEN>"')
+    app.run(debug=True, port=5000)
+```
+
+## Ejercicio 3: Identificar Vulnerabilidades en Flujo OAuth2 Inseguro
+
+```python
+# oauth_inseguro.py - Flujo OAuth2 con vulnerabilidades (IDENTIFICARLAS)
+
+# ============================================================
+# VERSION INSEGURA - IDENTIFICAR LAS VULNERABILIDADES
+# ============================================================
+
+"""
+VULNERABILIDADES EN EL FLUJO ABAJO DOCUMENTADO:
+
+1. IMPLICIT FLOW: El access token se devuelve en el fragmento de la URL.
+   Cualquier script en la pagina (incluso de terceros) puede leerlo.
+   Solucion: Usar Authorization Code + PKCE.
+
+2. SIN PKCE: No se genera code_verifier/code_challenge, permitiendo
+   un ataque de interceptacion si alguien obtiene el codigo de autorizacion.
+
+3. SIN STATE: No se valida el parametro state, permitiendo ataques CSRF
+   donde un atacante inicia el flujo y el usuario completa la autenticacion
+   sin saberlo.
+
+4. REDIRECT URI SIN VALIDACION: No se valida que la redirect_uri coincida
+   con la registrada, permitiendo open redirect attacks.
+
+5. TOKEN EN FRAGMENTO DE URL: El token queda en el historial del navegador
+   y puede ser expuesto en el Referer header.
+
+6. SIN EXPIRACION DE TOKEN: El access token no tiene expiracion (sin 'exp').
+
+7. SCOPE EXCESIVO: Se solicitan mas permisos de los necesarios.
+"""
+
+# Ejemplo de flujo implicito inseguro:
+FLUJO_IMPLICITO_INSEGURO = """
+1. El usuario hace clic en "Login con Proveedor"
+2. Se redirige a:
+   https://proveedor.com/auth?response_type=token
+   &client_id=app123
+   &redirect_uri=http://cliente.com/callback
+   &scope=read+write+delete+admin
+   (SIN state, SIN PKCE, scope excesivo)
+3. El usuario se autentica en el proveedor
+4. El proveedor redirige a:
+   http://cliente.com/callback#access_token=eyJhbGci...
+   &token_type=Bearer
+   &expires_in=3600
+   (TOKEN EN FRAGMENTO - cualquier script JS lo lee)
+5. JavaScript del cliente lee el token del fragmento
+6. CUALQUIER extension del navegador o script malicioso
+   en la pagina puede leer tambien el token
+"""
+
+
+# ============================================================
+# VERSION CORREGIDA - FLUJO AUTHORIZATION CODE + PKCE + STATE
+# ============================================================
+
+FLUJO_SEGURO = """
+1. El usuario hace clic en "Login con Proveedor"
+2. El cliente genera:
+   - state (token aleatorio contra CSRF)
+   - code_verifier (secreto, 43-128 chars)
+   - code_challenge = SHA256(code_verifier) en base64url
+3. Se redirige a:
+   https://proveedor.com/auth?response_type=code
+   &client_id=app123
+   &redirect_uri=https://cliente.com/callback
+   &scope=read
+   &state=abc123def456
+   &code_challenge=E9Melhoa2OhCJdB6PpA8B...
+   &code_challenge_method=S256
+4. El usuario se autentica en el proveedor
+5. El proveedor redirige a:
+   https://cliente.com/callback?code=eyJhbGciOiJSUzI1NiI...
+   &state=abc123def456
+6. El servidor valida que state coincida con el almacenado
+7. El servidor intercambia code + code_verifier por tokens:
+   POST https://proveedor.com/token
+   grant_type=authorization_code
+   &code=eyJhbGciOiJSUzI1...
+   &code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r...
+   &client_id=app123
+   &client_secret=********
+   &redirect_uri=https://cliente.com/callback
+8. El proveedor verifica:
+   - El code_verifier coincide con code_challenge original
+   - El client_id y client_secret son validos
+   - La redirect_uri coincide con la registrada
+9. Se devuelve access_token + refresh_token (opcional)
+10. El servidor (no el navegador) almacena el token
+"""
+
+
+# ============================================================
+# CHECKLIST DE SEGURIDAD PARA OAUTH2/OIDC
+# ============================================================
+
+def checklist_seguridad_oauth():
+    """Lista de verificacion para implementar OAuth2/OIDC segura."""
+    return """
+CHECKLIST DE SEGURIDAD OAUTH2:
+
+[ ] 1. Usar Authorization Code Flow + PKCE (NUNCA Implicit Flow)
+[ ] 2. Generar y validar 'state' contra CSRF
+[ ] 3. Generar code_verifier aleatorio y code_challenge=S256
+[ ] 4. Validar que redirect_uri coincida exactamente con la registrada
+[ ] 5. Solicitar solo los scopes minimos necesarios (principio de minimo privilegio)
+[ ] 6. Validar 'aud' (audience) en el token JWT
+[ ] 7. Validar 'iss' (issuer) en el token JWT
+[ ] 8. Verificar firma del ID Token (JWT)
+[ ] 9. Verificar expiracion del token
+[ ] 10. Almacenar tokens en httpOnly cookies, no en localStorage
+[ ] 11. Rotar refresh tokens en cada uso
+[ ] 12. Usar HTTPS exclusivamente (nunca HTTP para tokens)
+[ ] 13. No exponer client_secret en frontend
+[ ] 14. Implementar rate limiting en endpoints de token
+[ ] 15. Revocar tokens cuando el usuario cierra sesion
+
+VULNERABILIDADES COMUNES:
+- Token en URL (implicit flow)
+- Sin validacion de state (CSRF)
+- Sin PKCE (interceptacion de codigo)
+- Sin validacion de redirect_uri (open redirect)
+- Scopes excesivos (privilegio elevado)
+- Token sin expiracion (token permanente)
+- Almacenar token en localStorage (XSS -> token robado)
+- No validar firma JWT (token falsificado)
+- No validar audience (token reutilizado en otro servicio)
+"""
+
+
+def main():
+    print("=" * 60)
+    print("Analisis de Seguridad OAuth2")
     print("=" * 60)
 
-    print("""
-Pruebas:
-  # 1. Generar una API key
-  curl -X POST http://localhost:5000/api/key/generar \\
-    -H "Content-Type: application/json" \\
-    -d '{"client_id": "cliente-ejemplo"}'
+    reporte = checklist_seguridad_oauth()
+    print(reporte)
 
-  # 2. Usar la API key
-  curl http://localhost:5000/api/datos \\
-    -H "X-API-Key: sk_<key_generada>"
+    print("\n--- EJERCICIO PRACTICO ---")
+    print("Corrige el siguiente flujo inseguro:")
+    print(FLUJO_IMPLICITO_INSEGURO)
 
-  # 3. Rotar la key
-  curl -X POST http://localhost:5000/api/key/rotar \\
-    -H "X-API-Key: sk_<key_actual>"
+    print("\nTu solucion debe implementar:")
+    print("1. Authorization Code + PKCE")
+    print("2. State parameter anti-CSRF")
+    print("3. Validacion de redirect_uri")
+    print("4. Scope minimo necesario")
+    print("5. Token en backend (httpOnly cookie)")
 
-  # 4. Revocar una key
-  curl -X POST http://localhost:5000/api/key/revocar \\
-    -H "X-API-Key: sk_<key_actual>" \\
-    -H "Content-Type: application/json" \\
-    -d '{"key_id": "key_<id_a_revocar>"}'
-""")
-    app.run(debug=True, port=5000)
+
+if __name__ == '__main__':
+    main()
 ```
 
 ## Preguntas y Respuestas
 
-**P1: Que es un secreto en el contexto de desarrollo de software?**
-R: Un secreto es cualquier informacion que permite acceso a sistemas o datos protegidos: API keys, contrasenas, tokens de autenticacion, claves SSH, certificados TLS, claves de cifrado, connection strings. Si se expone, un atacante puede acceder a los sistemas sin autenticacion.
+**P1: Cual es la diferencia entre OAuth2 y OpenID Connect?**
+R: OAuth2 es un protocolo de autorizacion que permite a una aplicacion acceder a recursos en nombre de un usuario sin compartir credenciales. OpenID Connect es una capa de identidad sobre OAuth2 que agrega el ID Token (un JWT con informacion del usuario autenticado). OAuth2 da acceso (scopes), OIDC da identidad (claims como nombre, email).
 
-**P2: Cuales son las 5 practicas inseguras mas comunes en manejo de secretos?**
-R: (1) Hardcodear secretos en el codigo fuente. (2) Incluir archivos .env en repositorios Git. (3) Compartir secretos por Slack, email o mensajeria. (4) Usar la misma clave en todos los entornos (dev, staging, prod). (5) No rotar secretos periodicamente o despues de un incidente.
+**P2: Por que el Implicit Flow esta deprecado y que lo reemplaza?**
+R: El Implicit Flow devuelve el access token en el fragmento de la URL (#access_token=...), lo que expone el token al historial del navegador, extensiones, y cualquier script en la pagina. Fue reemplazado por Authorization Code + PKCE, que intercambia un codigo temporal por tokens mediante una llamada backend-backend, manteniendo los tokens fuera del navegador.
 
-**P3: Como funciona git-secrets y que detecta?**
-R: git-secrets es una herramienta de AWS que escanea commits, archivos y mensajes de commit en busca de patrones de secretos. Puede detectar patrones predefinidos (AWS Access Keys) y patrones personalizados configurados por el usuario. Tambien puede configurarse como pre-commit hook para evitar que secretos lleguen al repositorio.
+**P3: Que es PKCE y contra que ataque protege?**
+R: PKCE (Proof Key for Code Exchange) es un mecanismo donde el cliente genera un `code_verifier` secreto, envía un `code_challenge` (hash del verifier) al iniciar el flujo, y luego presenta el `code_verifier` al canjear el codigo. Protege contra ataques de interceptacion donde un atacante obtiene el codigo de autorizacion pero no puede canjearlo sin el verifier.
 
-**P4: Que diferencia hay entre truffleHog y git-secrets?**
-R: git-secrets usa patrones regex para detectar secretos conocidos (ej: AKIA... para AWS keys). truffleHog ademas analiza entropia (Shannon entropy) para detectar strings de alta entropia que parecen secretos aunque no coincidan con patrones conocidos. truffleHog tambien escanea todo el historial de Git, no solo el codigo actual.
+**P4: Que informacion contiene un JWT y como se valida su autenticidad?**
+R: Un JWT contiene tres partes codificadas en base64url separadas por puntos: Header (algoritmo y tipo), Payload (claims como sub, exp, roles, issuer), y Signature (firma). La autenticidad se valida verificando la firma con la clave publica (RS256) o secreta (HS256) del emisor, y verificando que exp (expiration), nbf (not before), iss (issuer) y aud (audience) sean correctos.
 
-**P5: Que es rotacion de secretos y por que es importante?**
-R: Rotacion de secretos es el proceso de reemplazar un secreto por uno nuevo periodicamente o despues de un incidente de seguridad. Es importante porque: (a) limita la ventana de exposicion si un secreto es comprometido, (b) cumple con regulaciones (PCI-DSS, SOC2), (c) reduce el impacto de filtraciones de datos.
+**P5: Que son access token, refresh token e ID token y cual es la diferencia?**
+R: Access token: credencial que permite acceder a recursos protegidos (vida corta, minutos/horas). Refresh token: credencial para obtener nuevos access tokens sin re-autenticar al usuario (vida larga, dias/meses). ID token: JWT que contiene informacion de identidad del usuario (solo en OIDC), no se usa para acceder a recursos.
 
-**P6: Como se debe almacenar una API key en una base de datos?**
-R: Nunca en texto plano. Se debe almacenar el hash de la API key usando SHA-256 o similar. La key raw se muestra al usuario UNA SOLA VEZ cuando la genera. Para validacion, se hashea la key recibida y se compara con los hashes almacenados.
+**P6: Como funciona el parametro 'state' en OAuth2 y contra que protege?**
+R: El parametro 'state' es un valor aleatorio unico generado por el cliente antes de redirigir al usuario al proveedor OAuth. Cuando el proveedor redirige de vuelta, incluye el mismo 'state'. El cliente verifica que coincida con el que genero. Esto protege contra CSRF (Cross-Site Request Forgery), evitando que un atacante fuerce a un usuario a completar un flujo OAuth2 sin su consentimiento.
 
-**P7: Que es el principio de "periodo de gracia" en rotacion de secretos y por que es util?**
-R: El periodo de gracia es el tiempo durante el cual las keys viejas siguen siendo validas despues de una rotacion. Permite que los clientes actualicen sus keys sin perder acceso inmediato. Durante este periodo, tanto la key nueva como la vieja son aceptadas. Una vez que termina el periodo, la key vieja deja de funcionar.
+**P7: Que es un ataque de "open redirect" en OAuth2 y como se previene?**
+R: Ocurre cuando el servidor OAuth no valida estrictamente la `redirect_uri` y permite redirigir a URLs arbitrarias. Un atacante puede modificar la redirect_uri para que apunte a su servidor malicioso, capturando el codigo de autorizacion. Se previene validando que la redirect_uri coincida exactamente (caracter por caracter) con la URI registrada para ese client_id.
 
 ## Tarea / Lectura Recomendada
 
-1. **HashiCorp Vault Documentation:**
-   https://developer.hashicorp.com/vault/docs
+1. **RFC 6749 - The OAuth 2.0 Authorization Framework:**
+   https://datatracker.ietf.org/doc/html/rfc6749
 
-2. **Azure Key Vault Developer Guide:**
-   https://learn.microsoft.com/en-us/azure/key-vault/
+2. **RFC 7636 - Proof Key for Code Exchange (PKCE):**
+   https://datatracker.ietf.org/doc/html/rfc7636
 
-3. **AWS Secrets Manager Documentation:**
-   https://docs.aws.amazon.com/secretsmanager/
+3. **OpenID Connect Specification:**
+   https://openid.net/specs/openid-connect-core-1_0.html
 
-4. **truffleHog GitHub:**
-   https://github.com/trufflesecurity/trufflehog
+4. **JWT.io - Debugger y documentacion:**
+   https://jwt.io/
 
-5. **git-secrets (AWS Labs):**
-   https://github.com/awslabs/git-secrets
+5. **Auth0 Learning Resources:**
+   https://auth0.com/learn
 
-6. **OWASP Secrets Management Cheat Sheet:**
-   https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html
+6. **Tarea practica:** Implementar login con Google OAuth2 en Flask usando `google-auth` y validacion de ID Token JWT.
 
-7. **Tarea practica:** Configurar Vault en Docker local y conectar la app Flask para leer secretos.
+7. **Tarea practica:** Configurar Keycloak localmente y conectar una app Flask usando `python-keycloak`.
 
-8. **Tarea practica:** Implementar un pre-commit hook de Git que ejecute git-secrets y truffleHog antes de cada commit.
 
 

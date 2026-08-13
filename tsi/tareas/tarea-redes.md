@@ -1,7 +1,7 @@
 # Tarea Grupal: Diseno, Simulacion y Auditoria de Red Corporativa
 
 **Curso:** Taller de Ciberseguridad Orientada al Desarrollo  
-**Modulo:** Seguridad en Redes (Clase 10)  
+**Modulo:** Seguridad en Redes (Clase 10)
 **Tipo:** Trabajo grupal (2 personas)  
 **Puntaje total:** 100 puntos  
 
@@ -275,10 +275,10 @@ Elaborar un plan de hardening que incluya:
 | Evento | Fecha |
 |--------|-------|
 | Asignacion de escenarios | Clase 10 |
-| Entrega parte 1 (diseno) | Clase 16 |
-| Entrega parte 2 (simulacion) | Clase 18 |
-| Entrega parte 3 (auditoria) + final | Clase 21 |
-| Presentacion en clase | Clase 22 |
+| Entrega parte 1 (diseno) | Clase 17 |
+| Entrega parte 2 (simulacion) | Clase 19 |
+| Entrega parte 3 (auditoria) + final | Clase 22 |
+| Presentacion en clase | Clase 23 |
 
 ---
 

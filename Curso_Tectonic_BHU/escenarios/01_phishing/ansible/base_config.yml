@@ -1,0 +1,109 @@
+---
+# ==============================================================================
+# Escenario Phishing - Configuracion Base de Imagenes
+# ==============================================================================
+# Este playbook se ejecuta DURANTE la creacion de imagenes base (fase Packer).
+# Instala todas las dependencias que requieren conexion a internet.
+#
+# CONTEXTO DE EJECUCUCION:
+#   - Se ejecuta en la imagen base antes del clonado
+#   - Conexion a internet DISPONIBLE
+#
+# COMPONENTES INSTALADOS:
+#   1. attack-ws: swaks, netcat, python3, curl
+#   2. mail-srv: postfix, dovecot, netcat, python3
+#   3. blue-team-ws: python3, net-tools, tcpdump, mailutils
+# ==============================================================================
+
+- name: "Configurar attack-ws para phishing"
+  hosts: attack-ws
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: "Actualizar repositorios"
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: "Instalar herramientas de ataque"
+      ansible.builtin.package:
+        state: present
+        name:
+          - swaks
+          - netcat-traditional
+          - net-tools
+          - python3
+          - python3-pip
+          - curl
+          - nmap
+
+- name: "Configurar mail-srv"
+  hosts: mail-srv
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: "Actualizar repositorios"
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: "Preconfigurar postfix para evitar interaccion"
+      ansible.builtin debconf:
+        name: postfix
+        question: "postfix/mailname"
+        value: "mail-srv.lab"
+        vtype: "string"
+      ignore_errors: yes
+
+    - name: "Preconfigurar tipo de postfix"
+      ansible.builtin.debconf:
+        name: postfix
+        question: "postfix/main_mailer_type"
+        value: "Internet Site"
+        vtype: "select"
+      ignore_errors: yes
+
+    - name: "Instalar servidor de correo y herramientas"
+      ansible.builtin.package:
+        state: present
+        name:
+          - postfix
+          - dovecot-imap
+          - dovecot-pop3d
+          - netcat-traditional
+          - net-tools
+          - python3
+          - mailutils
+          - libsasl2-modules
+
+    - name: "Instalar netcat-sbin en caso de no estar disponible"
+      ansible.builtin.package:
+        state: present
+        name:
+          - netcat-openbsd
+      ignore_errors: yes
+
+- name: "Configurar blue-team-ws"
+  hosts: blue-team-ws
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: "Actualizar repositorios"
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: "Instalar herramientas de monitoreo"
+      ansible.builtin.package:
+        state: present
+        name:
+          - python3
+          - python3-pip
+          - net-tools
+          - tcpdump
+          - mailutils
+          - curl
+          - nmap

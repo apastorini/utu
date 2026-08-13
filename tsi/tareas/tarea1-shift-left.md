@@ -2,7 +2,7 @@
 
 **Curso:** Taller de Ciberseguridad Orientada al Desarrollo  
 **Tipo:** Trabajo grupal (2 personas)  
-**Entrega:** Clase 36 | **Presentacion:** Clases 41-42
+**Entrega:** Clase 37 | **Presentacion:** Clases 42-43
 
 ---
 
@@ -327,7 +327,7 @@ En el README o en una seccion del informe, documentar:
 
 ## 10. Fechas importantes
 
-- **Clase 36**: Entrega del repositorio (push a GitHub/GitLab, tag o commit final).
+- **Clase 37**: Entrega del repositorio (push a GitHub/GitLab, tag o commit final).
 - **Clases 41-42**: Presentacion en clase (10-15 min por grupo, incluyendo demo del pipeline, despliegue y discusion de seguridad).
 
 ---
@@ -441,3 +441,4 @@ El informe debe entregarse en formato PDF o MD completando el siguiente template
 ## 8. LECCIONES APRENDIDAS
 [3-5 lecciones]
 ```
+

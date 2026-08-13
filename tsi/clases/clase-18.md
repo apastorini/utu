@@ -1,4 +1,4 @@
-# Clase 18: Exposicion de Datos Sensibles
+# Clase 18: Autenticacion y Gestion de Sesiones
 
 **Duracion:** 2 horas
 
@@ -6,776 +6,542 @@
 
 ## Objetivos de Aprendizaje
 
-1. Identificar que constituyen datos sensibles en diferentes contextos
-2. Comprender y aplicar cifrado en transito (TLS/SSL) y en reposo (AES, RSA)
-3. Reconocer practicas inseguras de manejo de datos sensibles
-4. Conocer los principios basicos de normativas: PCI DSS, GDPR, HIPAA
+1. Identificar problemas comunes de autenticacion en aplicaciones web
+2. Implementar almacenamiento seguro de contrasenas con algoritmos modernos
+3. Comprender y gestionar sesiones de usuario con JWT y cookies seguras
+4. Conocer los principios de MFA y las mejores practicas de OWASP
 
 ---
 
 ## Contenido Detallado
 
-### 1. Que son Datos Sensibles?
+### 1. Problemas Comunes de Autenticacion
 
-Datos sensibles son cualquier informacion que, si se expone, puede causar dano a individuos, organizaciones o sistemas.
+#### Credenciales Debiles
+- Contrasenas cortas o sin complejidad
+- Contrasenas por defecto (admin/admin, root/toor)
+- Reutilizacion de contrasenas entre servicios
 
-#### Categorias de Datos Sensibles
-
-| Categoria | Ejemplos | Regulacion |
-|-----------|----------|------------|
-| **PII (Personally Identifiable Information)** | Nombre, DNI, email, direccion, telefono, IP | GDPR, CCPA, LGPD |
-| **Datos Financieros** | Numero de tarjeta, CVV, cuenta bancaria, saldos | PCI DSS |
-| **Datos de Salud** | Historial medico, diagnostico, recetas, seguro medico | HIPAA |
-| **Credenciales** | Contrasenas, tokens, claves API, certificados | - |
-| **Propiedad Intelectual** | Codigo fuente, secretos comerciales, patentes | - |
-| **Datos Biométricos** | Huellas dactilares, reconocimiento facial, ADN | GDPR (categoria especial) |
+#### Fuerza Bruta (Brute Force)
+Ataque sistematico probando multiples combinaciones de usuario/contrasena.
 
 ```
-Clasificacion de Datos por Sensibilidad
-+--------------------------------------------------+
-| ALTA                                               |
-| - Credenciales de acceso                          |
-| - Datos de pago (NUM, CVV)                        |
-| - Datos de salud                                  |
-| - Secretos comerciales                            |
-+--------------------------------------------------+
-| MEDIA                                              |
-| - PII (nombre, email, direccion)                  |
-| - Historial de transacciones                      |
-| - Datos de uso del sistema                        |
-+--------------------------------------------------+
-| BAJA                                               |
-| - Datos publicos                                  |
-| - Contenido de sitios web publicos                |
-| - Informacion agregada y anonimizada              |
-+--------------------------------------------------+
+Tasas de Ataque de Fuerza Bruta
++------------------+------------------------+
+| Tipo             | Intentos por segundo   |
++------------------+------------------------+
+| Manual           | 1-5                    |
+| Script basico    | 100-500                |
+| Botnet           | 10,000+                |
+| GPGPU (local)    | 1,000,000,000+ (hash) |
++------------------+------------------------+
 ```
 
-### 2. Cifrado en Transito: TLS/SSL
+#### Credenciales por Defecto
+Dispositivos y software que mantienen credenciales de fabrica sin cambios.
 
-El cifrado en transito protege los datos mientras viajan entre el cliente y el servidor (o entre servidores).
+| Dispositivo  | Usuario  | Contrasena |
+|-------------|----------|------------|
+| Router TP-Link | admin | admin |
+| Camara IP Hikvision | admin | 12345 |
+| MySQL | root | (vacia) |
+| Tomcat | admin | admin |
 
-#### Como funciona TLS 1.3
+#### Session Hijacking
+Robo del identificador de sesion de un usuario para suplantarlo.
 
 ```
-CLIENTE                              SERVIDOR
-   |                                     |
-   |---- ClientHello                  -->|
-   |                                     |
-   |<--- ServerHello + Certificado    ---|
-   |                                     |
-   |<--- ServerKeyExchange             --|
-   |                                     |
-   |---- ClientKeyExchange            -->|
-   |  (cifra clave pre-master con       |
-   |   clave publica del servidor)      |
-   |                                     |
-   |---- ChangeCipherSpec             -->|
-   |<--- ChangeCipherSpec              --|
-   |                                     |
-   |===== CANAL CIFRADO ================|
-   |<--- Datos protegidos (AES-GCM)   -->
+Metodos comunes de session hijacking:
+1. Sniffing de trafico no cifrado
+2. XSS para robar cookies
+3. Prediccion de ID de sesion
+4. Session fixation
+5. Ataque a la red local (ARP spoofing)
 ```
 
-#### Conceptos Clave de TLS
+### 2. Almacenamiento Seguro de Contrasenas
 
-| Concepto | Explicacion |
-|----------|------------|
-| **Certificado digital** | Documento electronico que vincula una identidad (dominio) con una clave publica, firmado por una CA |
-| **CA (Certificate Authority)** | Entidad confiable que emite certificados (Let's Encrypt, DigiCert, GlobalSign) |
-| **Handshake TLS** | Proceso inicial donde cliente y servidor acuerdan algoritmos y establecen claves compartidas |
-| **Cipher suite** | Conjunto de algoritmos (ej: TLS_AES_256_GCM_SHA384) |
-| **Perfect Forward Secrecy (PFS)** | Propiedad donde comprometer la clave privada a largo plazo no permite descifrar sesiones pasadas |
+#### Hashing vs. Encriptacion
 
-#### Implementacion de HTTPS en Flask
+```
+HASHING (unidireccional):
+password + salt --> hash_function --> hash_value
+Hash -> password: IMPOSIBLE (funcion de un solo sentido)
+
+ENCRIPTACION (bidireccional):
+password + clave --> encrypt_function --> ciphertext
+ciphertext + clave --> decrypt_function --> password
+```
+
+| Caracteristica | Hashing | Encriptacion |
+|---------------|---------|-------------|
+| Direccion | Un solo sentido | Reversible |
+| Uso en passwords | SI (almacenar verificacion) | NO (necesita clave secreta) |
+| Clave necesaria? | No (usa salt) | Si (clave de cifrado) |
+| Seguridad para passwords | Alta (si el algoritmo es bueno) | Baja (si roban clave, ven todos) |
+
+#### Algoritmos Recomendados
+
+| Algoritmo | Tipo | Iteraciones | Recomendado? |
+|-----------|------|-------------|-------------|
+| MD5 | Hash | 1 | NO (colisiones conocidas, 2^0.5s) |
+| SHA-1 | Hash | 1 | NO (colisiones demostradas 2017) |
+| SHA-256/512 | Hash | 1 | NO para passwords (muy rapido para GPU) |
+| **bcrypt** | Slow hash | 10-14 | **SI** (diseno especifico para passwords) |
+| **PBKDF2** | Slow hash | 310,000+ | **SI** (recomendado por NIST) |
+| **Argon2** | Slow hash | variable | **SI** (ganador PHC 2015, el mas moderno) |
+
+#### bcrypt en detalle
+
+bcrypt incluye automaticamente el salt en el output, no necesita almacenamiento separado.
 
 ```python
-from flask import Flask
-import ssl
+import bcrypt
 
-app = Flask(__name__)
+# Hash de contrasena
+password = b"MiPasswordSegura123"
+salt = bcrypt.gensalt(rounds=12)  # rounds=12 es un buen balance
+hashed = bcrypt.hashpw(password, salt)
 
-@app.route('/')
-def index():
-    return "Conexion segura!"
+print(f"Hash: {hashed}")
+# Output: b'$2b$12$Qx4u7Y9yR3zS2wV5kL8j6O5m2n3p4q5r6s7t8u9v0w1x2y3z4A5B6C'
 
-if __name__ == '__main__':
-    # Configurar SSL con certificado autofirmado
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    context.load_cert_chain('cert.pem', 'key.pem')
-    app.run(ssl_context=context, host='0.0.0.0', port=443)
+# Verificacion
+if bcrypt.checkpw(password, hashed):
+    print("Contrasena correcta!")
 ```
 
-#### Forzar HTTPS en Flask
+#### Almacenamiento Seguro
+```
+NUNCA almacenar:
+- Contrasenas en texto plano
+- Contrasenas en logs
+- Contrasenas en archivos de configuracion
+- Contrasenas cifradas (en vez de hasheadas)
 
-```python
-from flask import Flask, redirect, request
-
-app = Flask(__name__)
-
-@app.before_request
-def force_https():
-    if not request.is_secure:
-        url = request.url.replace('http://', 'https://', 1)
-        return redirect(url, code=301)
+SIEMPRE almacenar:
+- Hash de la contrasena + salt (bcrypt/Argon2)
+- En columna separada de la base de datos
+- Con los menores privilegios de acceso posibles
 ```
 
-#### Headers de Seguridad para HTTPS
+### 3. Gestion de Sesiones
 
-```python
-@app.after_request
-def add_security_headers(response):
-    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['X-Frame-Options'] = 'DENY'
-    return response
-```
+#### Tokens JWT (JSON Web Tokens)
 
-### 3. Cifrado en Reposo
+JWT es un estandar abierto (RFC 7519) para transmitir informacion entre partes como un objeto JSON compacto y autónomo.
 
-El cifrado en reposo protege los datos cuando estan almacenados (disco, BD, backups).
-
-#### Cifrado de Base de Datos
+**Estructura de un JWT:**
 
 ```
-NIVELES DE CIFRADO EN BD
-+-------------------------------------------------------+
-| Aplicacion (application-level encryption)              |
-| - Datos cifrados antes de enviar a BD                 |
-| - Ventaja: la BD nunca ve datos en texto plano         |
-| - Desventaja: no se pueden hacer busquedas en esos     |
-|   campos sin descifrar                                 |
-+-------------------------------------------------------+
-| Base de Datos (TDE - Transparent Data Encryption)     |
-| - Cifrado a nivel de pagina/archivo de BD             |
-| - Transparente para la aplicacion                     |
-| - Protege archivos de BD robados                      |
-+-------------------------------------------------------+
-| Disco/Archivos (FDE - Full Disk Encryption)            |
-| - BitLocker, LUKS, FileVault                          |
-| - Protege si roban el disco fisico                    |
-| - No protege contra acceso via SO (si la BD esta      |
-|   montada)                                             |
-+-------------------------------------------------------+
+Header.Payload.Signature
 ```
 
-#### Cifrado de Archivos
-
-```python
-# Cifrado de archivo completo con clave derivada de contrasena
-from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.primitives import hashes
-import base64
-import os
-
-def encrypt_file(password, input_file, output_file):
-    # Derivar clave de la contrasena
-    salt = os.urandom(16)
-    kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(),
-        length=32,
-        salt=salt,
-        iterations=480000,
-    )
-    key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
-    f = Fernet(key)
-
-    # Cifrar archivo
-    with open(input_file, 'rb') as f_in:
-        data = f_in.read()
-    encrypted = f.encrypt(data)
-
-    with open(output_file, 'wb') as f_out:
-        f_out.write(salt + encrypted)  # Guardar salt + datos cifrados
-
-def decrypt_file(password, input_file, output_file):
-    with open(input_file, 'rb') as f_in:
-        salt = f_in.read(16)
-        encrypted = f_in.read()
-
-    kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(),
-        length=32,
-        salt=salt,
-        iterations=480000,
-    )
-    key = base64.urlsafe_b64encode(kdf.derive(password.encode()))
-    f = Fernet(key)
-
-    decrypted = f.decrypt(encrypted)
-    with open(output_file, 'wb') as f_out:
-        f_out.write(decrypted)
 ```
+HEADER:
+{
+  "alg": "HS256",
+  "typ": "JWT"
+}
 
-### 4. AES vs. RSA: Cuando Usar Cada Uno
+PAYLOAD:
+{
+  "sub": "1234567890",
+  "name": "Juan Perez",
+  "iat": 1516239022,
+  "exp": 1516242622,
+  "role": "admin"
+}
 
-| Caracteristica | AES (Simetrico) | RSA (Asimetrico) |
-|---------------|----------------|-----------------|
-| Claves | Unica clave compartida | Par: publica + privada |
-| Velocidad | Muy rapido | Lento (100-1000x mas lento) |
-| Tamano de clave | 128, 192, 256 bits | 2048, 4096 bits |
-| Uso tipico | Cifrar datos grandes | Intercambiar claves, firmas |
-| Cifrado por bloques | 128 bits | Variable (con padding) |
-
-**Regla practica:** Usar RSA para intercambiar claves AES, y AES para cifrar datos.
-
-```
-Proceso tipico (hybrid encryption):
-1. Generar clave AES aleatoria (256 bits)
-2. Cifrar datos con AES-GCM (rapido, datos grandes)
-3. Cifrar clave AES con RSA publica del destinatario (solo clave)
-4. Enviar: datos_cifrados + clave_aes_cifrada_con_rsa
-
-El destinatario:
-1. Descifrar clave AES con su RSA privada
-2. Descifrar datos con AES
-```
-
-#### AES-256 en Python
-
-```python
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-import os
-import base64
-
-def aes_encrypt(key_hex: str, plaintext: str) -> dict:
-    """Cifrar texto con AES-256-GCM"""
-    key = bytes.fromhex(key_hex)
-    aesgcm = AESGCM(key)
-    nonce = os.urandom(12)  # 96 bits recomendado para GCM
-    ciphertext = aesgcm.encrypt(nonce, plaintext.encode('utf-8'), None)
-    return {
-        'nonce': base64.b64encode(nonce).decode('utf-8'),
-        'ciphertext': base64.b64encode(ciphertext).decode('utf-8')
-    }
-
-def aes_decrypt(key_hex: str, nonce_b64: str, ciphertext_b64: str) -> str:
-    """Descifrar texto con AES-256-GCM"""
-    key = bytes.fromhex(key_hex)
-    nonce = base64.b64decode(nonce_b64)
-    ciphertext = base64.b64decode(ciphertext_b64)
-    aesgcm = AESGCM(key)
-    plaintext = aesgcm.decrypt(nonce, ciphertext, None)
-    return plaintext.decode('utf-8')
-
-# Ejemplo de uso
-key = os.urandom(32).hex()  # 32 bytes = 256 bits
-print(f"Clave AES: {key}")
-
-# Cifrar
-result = aes_encrypt(key, "Datos sensibles: Tarjeta 4532-1234-5678-9012")
-print(f"Nonce: {result['nonce']}")
-print(f"Cifrado: {result['ciphertext']}")
-
-# Descifrar
-decrypted = aes_decrypt(key, result['nonce'], result['ciphertext'])
-print(f"Descifrado: {decrypted}")
-```
-
-#### RSA en Python
-
-```python
-from cryptography.hazmat.primitives.asymmetric import rsa, padding
-from cryptography.hazmat.primitives import serialization, hashes
-import base64
-
-# Generar par de claves RSA
-private_key = rsa.generate_private_key(
-    public_exponent=65537,
-    key_size=2048,
+SIGNATURE:
+HMACSHA256(
+  base64UrlEncode(header) + "." +
+  base64UrlEncode(payload),
+  secret_key
 )
-
-public_key = private_key.public_key()
-
-# Cifrar con clave publica
-def rsa_encrypt(public_key_pem: bytes, plaintext: str) -> str:
-    public_key = serialization.load_pem_public_key(public_key_pem)
-    ciphertext = public_key.encrypt(
-        plaintext.encode('utf-8'),
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-    return base64.b64encode(ciphertext).decode('utf-8')
-
-# Descifrar con clave privada
-def rsa_decrypt(private_key_pem: bytes, ciphertext_b64: str) -> str:
-    private_key = serialization.load_pem_private_key(
-        private_key_pem,
-        password=None,
-    )
-    ciphertext = base64.b64decode(ciphertext_b64)
-    plaintext = private_key.decrypt(
-        ciphertext,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
-    return plaintext.decode('utf-8')
-
-# Uso
-pub_pem = public_key.public_bytes(
-    encoding=serialization.Encoding.PEM,
-    format=serialization.PublicFormat.SubjectPublicKeyInfo
-)
-priv_pem = private_key.private_bytes(
-    encoding=serialization.Encoding.PEM,
-    format=serialization.PrivateFormat.PKCS8,
-    encryption_algorithm=serialization.NoEncryption()
-)
-
-cifrado = rsa_encrypt(pub_pem, "Mensaje secreto con RSA")
-print(f"Cifrado: {cifrado}")
-descifrado = rsa_decrypt(priv_pem, cifrado)
-print(f"Descifrado: {descifrado}")
 ```
 
-### 5. Practicas Inseguras
+**JWT en formato string:**
+```
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
+eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6Ikp1YW4gUGVyZXoiLCJpYXQiOjE1MTYyMzkwMjIsImV4cCI6MTUxNjI0MjYyMn0.
+SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+```
 
-| Practica Insegura | Ejemplo | Consecuencia | Solucion |
-|-------------------|---------|-------------|----------|
-| Texto plano en BD | `INSERT INTO usuarios VALUES ('admin', 'password123')` | Cualquier leak expone datos | Hashing + cifrado |
-| Contrasenas en codigo | `DB_PASSWORD = "admin123"` | Acceso via repositorio | Variables de entorno / Vault |
-| Logs expuestos | `logger.info(f"Login: {username}:{password}")` | Datos en logs accesibles | Nunca loguear datos sensibles |
-| Datos en URLs | `/api/usuario?token=abc123&role=admin` | Cache, referer, logs | Usar headers Authorization |
-| Backups sin cifrar | Backup de BD en S3 sin encriptar | Robo de backup = robo de datos | Cifrar backups |
-| Headers inseguros | Sin HSTS, CORS mal configurado | Interceptacion, acceso cross-origin | Configurar headers de seguridad |
+#### Cookies Seguras
 
-### 6. Regulaciones (Mencion)
+| Atributo | Significado | Recomendacion |
+|----------|------------|--------------|
+| **HttpOnly** | No accesible desde JavaScript | SIEMPRE (previene XSS robo de cookies) |
+| **Secure** | Solo se envia por HTTPS | SIEMPRE |
+| **SameSite** | Controla envio cross-site | `Strict` o `Lax` (previene CSRF) |
+| **Path** | Limita ruta de envio | Especifico (/api) |
+| **Domain** | Limita dominio | Sin comodin si es posible |
+| **Max-Age/Expires** | Tiempo de vida | 15-60 min para sesion, mas para recuerdame |
 
-| Regulacion | Ambito | Sancion Maxima | Requisito Clave |
-|------------|--------|---------------|-----------------|
-| **PCI DSS** | Datos de tarjetas de pago | $500,000/mes + perdida de licencia | Cifrar datos de tarjeta almacenados |
-| **GDPR** | Datos personales de ciudadanos UE | 20M EUR o 4% factura global | Consentimiento, notificacion de brechas |
-| **HIPAA** | Datos de salud en EE.UU. | $1.5M/anual | Cifrado, control de acceso, auditoria |
+#### OWASP Session Management Cheat Sheet
+
+Recomendaciones clave:
+
+1. **Generar IDs de sesion con fuentes seguras:** `crypto.randomBytes()` en Node, `secrets.token_hex()` en Python
+2. **Longitud minima de 128 bits** para el identificador
+3. **Expiracion de sesion:** Inactividad (15-30 min), absoluta (8-24 horas)
+4. **Regenerar ID de sesion** despues del login exitoso (previene session fixation)
+5. **Invalidar sesion** al logout (servidor y cliente)
+6. **No exponer ID en URLs** (usar cookies HttpOnly)
+7. **Almacen del lado seguro** (no confiar en datos del cliente sin verificar)
+
+### 4. MFA (Multi-Factor Authentication)
+
+Factores de autenticacion:
+
+| Factor | Ejemplo | Descripcion |
+|--------|---------|-------------|
+| Algo que sabes | Contrasena, PIN | Conocimiento |
+| Algo que tienes | Telefono, token fisico, tarjeta | Posesion |
+| Algo que eres | Huella dactilar, reconocimiento facial | Herencia |
+
+**TOTP (Time-based One-Time Password):**
+```python
+import pyotp
+import qrcode
+
+# Generar secreto
+secret = pyotp.random_base32()
+print(f"Secreto: {secret}")
+# 'JBSWY3DPEHPK3PXP'
+
+# Generar codigo TOTP (valido 30 segundos)
+totp = pyotp.TOTP(secret)
+codigo = totp.now()
+print(f"Codigo actual: {codigo}")
+
+# Verificar
+print(totp.verify(codigo))        # True
+print(totp.verify("000000"))      # False
+```
 
 ---
 
-## Ejercicio 1: Implementar Cifrado AES-256 en Python para Datos Sensibles
-
-Desarrollar un modulo completo para cifrar datos sensibles antes de almacenarlos.
+## Ejercicio 1: Registro y Login con Flask + bcrypt
 
 ```python
-"""
-secure_storage.py - Modulo de cifrado para datos sensibles
-Uso: cifrar datos de tarjeta de credito antes de almacenar en BD
-"""
-import os
-import base64
-import json
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from cryptography.hazmat.primitives import hashes
-
-class SecureStorage:
-    """Clase para manejar cifrado de datos sensibles"""
-
-    def __init__(self, master_key_hex=None):
-        """Inicializar con clave maestra. Si no se provee, generar una nueva."""
-        if master_key_hex:
-            self.master_key = bytes.fromhex(master_key_hex)
-            if len(self.master_key) != 32:
-                raise ValueError("La clave maestra debe ser 32 bytes (256 bits)")
-        else:
-            self.master_key = os.urandom(32)
-
-    def get_master_key_hex(self):
-        """Obtener clave maestra en hex para almacenar seguramente"""
-        return self.master_key.hex()
-
-    def encrypt_data(self, plaintext: str) -> str:
-        """
-        Cifrar un string de datos sensibles.
-        Retorna string JSON con: nonce (b64) + ciphertext (b64)
-        """
-        aesgcm = AESGCM(self.master_key)
-        nonce = os.urandom(12)
-        ciphertext = aesgcm.encrypt(nonce, plaintext.encode('utf-8'), None)
-
-        result = {
-            'nonce': base64.b64encode(nonce).decode('utf-8'),
-            'ct': base64.b64encode(ciphertext).decode('utf-8'),
-        }
-        return json.dumps(result)
-
-    def decrypt_data(self, encrypted_json: str) -> str:
-        """
-        Descifrar datos previamente cifrados.
-        Recibe el string JSON generado por encrypt_data.
-        """
-        data = json.loads(encrypted_json)
-        nonce = base64.b64decode(data['nonce'])
-        ciphertext = base64.b64decode(data['ct'])
-
-        aesgcm = AESGCM(self.master_key)
-        plaintext = aesgcm.decrypt(nonce, ciphertext, None)
-        return plaintext.decode('utf-8')
-
-class CreditCardProcessor:
-    """Procesador de tarjetas que cifra datos antes de almacenar"""
-
-    def __init__(self):
-        self.storage = SecureStorage()
-        self.cards_db = {}  # Simula BD
-
-    def add_card(self, user_id: str, card_number: str, cvv: str, expiry: str):
-        """Almacenar tarjeta cifrada"""
-        # NUNCA almacenar CVV completo en BD real (PCI DSS prohibe)
-        # Aqui solo como demostracion educativa
-        card_data = json.dumps({
-            'number': card_number[-4:].zfill(16),  # Solo ultimos 4 digitos
-            'cvv_hash': hashlib.sha256(cvv.encode()).hexdigest()[:8],  # Hash del CVV
-            'expiry': expiry,
-            'issuer': self._detect_issuer(card_number)
-        })
-        encrypted = self.storage.encrypt_data(card_data)
-        self.cards_db[user_id] = encrypted
-        return "Tarjeta almacenada de forma segura"
-
-    def get_card_preview(self, user_id: str) -> dict:
-        """Obtener datos no sensibles de la tarjeta"""
-        if user_id not in self.cards_db:
-            return None
-        decrypted = self.storage.decrypt_data(self.cards_db[user_id])
-        return json.loads(decrypted)
-
-    def _detect_issuer(self, card_number: str) -> str:
-        if card_number.startswith('4'):
-            return 'Visa'
-        elif card_number.startswith(('51', '52', '53', '54', '55')):
-            return 'Mastercard'
-        elif card_number.startswith('34') or card_number.startswith('37'):
-            return 'Amex'
-        return 'Unknown'
-
-# --- Demostracion ---
-if __name__ == "__main__":
-    import hashlib
-
-    processor = CreditCardProcessor()
-
-    # Almacenar tarjeta (simulado)
-    result = processor.add_card(
-        'user_001',
-        '4532123456789012',
-        '123',
-        '12/28'
-    )
-    print(result)
-
-    # Recuperar datos (solo ultimos 4 digitos)
-    preview = processor.get_card_preview('user_001')
-    print(f"Datos recuperados: {json.dumps(preview, indent=2)}")
-    # {
-    #   "number": "0000000000009012",
-    #   "cvv_hash": "a1b2c3d4",
-    #   "expiry": "12/28",
-    #   "issuer": "Visa"
-    # }
-
-    # Verificar que el cifrado es diferente cada vez (nonce aleatorio)
-    card_data = '{"number": "0000000000009012", "expiry": "12/28"}'
-    enc1 = processor.storage.encrypt_data(card_data)
-    enc2 = processor.storage.encrypt_data(card_data)
-    print(f"Mismo texto, cifrado 1: {enc1[:50]}...")
-    print(f"Mismo texto, cifrado 2: {enc2[:50]}...")
-    print(f"Son diferentes: {enc1 != enc2}")  # True por nonce aleatorio
-
-    print("Clave maestra (guardar seguramente):", processor.storage.get_master_key_hex())
-```
-
-### Principios aplicados:
-1. **AES-256-GCM:** Cifrado autenticado (protege confidencialidad e integridad)
-2. **Nonce aleatorio:** Mismo texto plano produce diferente cifrado cada vez
-3. **Minimizacion de datos:** Solo almacenar ultimos 4 digitos de tarjeta
-4. **Hash de CVV:** No almacenar CVV, solo hash para verificacion
-5. **JSON estructurado:** Formato claro para datos cifrados
-
----
-
-## Ejercicio 2: Auditoria de una App - Identificar Exposicion de Datos Sensibles
-
-**Escenario:** Revisar el siguiente codigo de una aplicacion web y encontrar 5 lugares donde se exponen datos sensibles.
-
-```python
-from flask import Flask, request, jsonify, send_file
+# app.py - Aplicacion Flask con autenticacion segura
 import sqlite3
-import logging
-
-app = Flask(__name__)
-
-# Configurar logging
-logging.basicConfig(filename='app.log', level=logging.DEBUG)
-
-@app.route('/api/login')
-def login():
-    user = request.args.get('user')
-    passwd = request.args.get('pass')
-    app.logger.debug(f"Login attempt: {user}:{passwd}")  # PROBLEMA 1
-
-    conn = sqlite3.connect('users.db')
-    cursor = conn.cursor()
-    query = f"SELECT * FROM users WHERE username='{user}' AND password='{passwd}'"
-    cursor.execute(query)
-    user_data = cursor.fetchone()
-
-    if user_data:
-        # Devolver datos del usuario incluyendo password hash
-        return jsonify({
-            'id': user_data[0],
-            'username': user_data[1],
-            'password_hash': user_data[2],  # PROBLEMA 2
-            'email': user_data[3],
-            'credit_card': user_data[4]      # PROBLEMA 3
-        })
-    return jsonify({'error': 'Login failed'}), 401
-
-@app.route('/api/user/profile')
-def profile():
-    user_id = request.args.get('id')
-    # Sin autenticacion ni autorizacion  # PROBLEMA 4
-    conn = sqlite3.connect('users.db')
-    cursor = conn.cursor()
-    cursor.execute(f"SELECT * FROM users WHERE id={user_id}")
-    data = cursor.fetchone()
-
-    # Servir foto de perfil
-    return send_file(f'/var/app/photos/{user_id}.jpg')  # PROBLEMA 5
-```
-
-### Solucion: Identificacion y Correccion
-
-| # | Problema | Tipo | Correccion |
-|---|----------|------|------------|
-| 1 | **Log de credenciales** | Exposicion en logs | No loguear contrasenas jamas |
-| 2 | **Password hash en respuesta** | Exposicion de hash | No devolver hash de password en APIs |
-| 3 | **Tarjeta de credito en respuesta** | Exposicion de datos financieros | Nunca devolver datos de tarjeta completos |
-| 4 | **Sin autenticacion/autorizacion** | IDOR / Broken Access Control | Validar token de sesion y propiedad del recurso |
-| 5 | **Path traversal en foto** | Exposicion de archivos arbitrarios | Validar path, sanitizar user_id |
-
-### Codigo Corregido
-
-```python
-from flask import Flask, request, jsonify, send_file, session
-import sqlite3
-import logging
+from flask import Flask, request, jsonify, session, make_response
+import bcrypt
+import secrets
+from datetime import datetime, timedelta
 import re
-import os
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'change-me-in-production')
+# Usar una clave secreta segura, no hardcodeada en produccion
+app.config['SECRET_KEY'] = secrets.token_hex(32)
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SECURE'] = True     # Solo HTTPS
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 
-# Logging sin datos sensibles
-logging.basicConfig(filename='app.log', level=logging.INFO)
+DB_PATH = 'users.db'
 
-@app.before_request
-def check_authentication():
-    # Rutas publicas no requieren auth
-    if request.path.startswith('/api/public'):
-        return
-    if 'user_id' not in session:
-        return jsonify({'error': 'No autenticado'}), 401
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS usuarios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT UNIQUE NOT NULL,
+            username TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            mfa_secret TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+def get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def validate_email(email):
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
+def validate_password(password):
+    """Validar: min 8 chars, 1 mayuscula, 1 minuscula, 1 numero"""
+    if len(password) < 8:
+        return False
+    if not re.search(r'[A-Z]', password):
+        return False
+    if not re.search(r'[a-z]', password):
+        return False
+    if not re.search(r'[0-9]', password):
+        return False
+    return True
+
+# --- Endpoints ---
+
+@app.route('/api/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Datos requeridos'}), 400
+
+    username = data.get('username', '').strip()
+    email = data.get('email', '').strip()
+    password = data.get('password', '')
+
+    # Validaciones
+    if not username or len(username) < 3:
+        return jsonify({'error': 'Username debe tener al menos 3 caracteres'}), 400
+    if not validate_email(email):
+        return jsonify({'error': 'Email invalido'}), 400
+    if not validate_password(password):
+        return jsonify({'error': 'Password debe tener 8+ caracteres, mayuscula, minuscula y numero'}), 400
+
+    # Hash de contrasena con bcrypt
+    password_hash = bcrypt.hashpw(
+        password.encode('utf-8'),
+        bcrypt.gensalt(rounds=12)
+    ).decode('utf-8')
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO usuarios (email, username, password_hash) VALUES (?, ?, ?)",
+            (email, username, password_hash)
+        )
+        conn.commit()
+        return jsonify({'message': 'Usuario registrado exitosamente'}), 201
+    except sqlite3.IntegrityError as e:
+        return jsonify({'error': 'El usuario o email ya existe'}), 409
+    finally:
+        conn.close()
 
 @app.route('/api/login', methods=['POST'])
 def login():
     data = request.get_json()
-    username = data.get('username', '')
+    if not data:
+        return jsonify({'error': 'Datos requeridos'}), 400
+
+    username = data.get('username', '').strip()
     password = data.get('password', '')
 
-    # NO loguear contrasenas
-    app.logger.info(f"Login attempt for user: {username}")
-
-    conn = sqlite3.connect('users.db')
+    conn = get_db()
     cursor = conn.cursor()
-    # Consulta parametrizada
+
+    # Consulta parametrizada (segura contra inyeccion SQL)
     cursor.execute(
-        "SELECT id, username, email FROM users WHERE username = ? AND password_hash = ?",
-        (username, hash_password(password))  # hash antes de comparar
+        "SELECT id, username, password_hash FROM usuarios WHERE username = ?",
+        (username,)
     )
     user = cursor.fetchone()
     conn.close()
 
-    if user:
-        session['user_id'] = user[0]
-        session['username'] = user[1]
-        return jsonify({
-            'id': user[0],
-            'username': user[1],
-            'email': user[2]
-            # NO incluir password_hash ni credit_card
-        })
-    return jsonify({'error': 'Credenciales invalidas'}), 401
+    if not user:
+        return jsonify({'error': 'Credenciales invalidas'}), 401
 
-@app.route('/api/user/profile')
-def profile():
-    # Solo puede ver su propio perfil
-    user_id = session.get('user_id')
-    if not user_id:
+    # Verificar contrasena con bcrypt
+    stored_hash = user['password_hash'].encode('utf-8')
+    if bcrypt.checkpw(password.encode('utf-8'), stored_hash):
+        # Regenerar sesion (previene session fixation)
+        session.clear()
+        session.permanent = True
+        session['user_id'] = user['id']
+        session['username'] = user['username']
+
+        return jsonify({
+            'message': 'Login exitoso',
+            'user': {'id': user['id'], 'username': user['username']}
+        }), 200
+    else:
+        return jsonify({'error': 'Credenciales invalidas'}), 401
+
+@app.route('/api/logout', methods=['POST'])
+def logout():
+    # Invalidar sesion
+    session.clear()
+    response = jsonify({'message': 'Sesion cerrada'})
+    # Eliminar cookie de sesion del cliente
+    response.set_cookie('session', '', expires=0)
+    return response, 200
+
+@app.route('/api/perfil', methods=['GET'])
+def perfil():
+    # Verificar autenticacion
+    if 'user_id' not in session:
         return jsonify({'error': 'No autenticado'}), 401
 
-    conn = sqlite3.connect('users.db')
+    conn = get_db()
     cursor = conn.cursor()
-    # El usuario solo ve sus propios datos
     cursor.execute(
-        "SELECT id, username, email FROM users WHERE id = ?",
-        (user_id,)
+        "SELECT id, username, email, created_at FROM usuarios WHERE id = ?",
+        (session['user_id'],)
     )
-    data = cursor.fetchone()
+    user = cursor.fetchone()
     conn.close()
 
-    if not data:
+    if not user:
+        session.clear()
         return jsonify({'error': 'Usuario no encontrado'}), 404
 
     return jsonify({
-        'id': data[0],
-        'username': data[1],
-        'email': data[2]
-    })
+        'id': user['id'],
+        'username': user['username'],
+        'email': user['email'],
+        'created_at': user['created_at']
+    }), 200
 
-@app.route('/api/user/photo')
-def user_photo():
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({'error': 'No autenticado'}), 401
-
-    # Validar que user_id es un numero (previene path traversal)
-    if not isinstance(user_id, int) or user_id <= 0:
-        return jsonify({'error': 'ID invalido'}), 400
-
-    # Construir path seguro
-    photo_path = f'/var/app/photos/{user_id}.jpg'
-
-    # Verificar que el archivo existe y esta dentro del directorio permitido
-    allowed_dir = os.path.abspath('/var/app/photos')
-    abs_path = os.path.abspath(photo_path)
-
-    if not abs_path.startswith(allowed_dir):
-        return jsonify({'error': 'Acceso denegado'}), 403
-
-    if not os.path.exists(abs_path):
-        return jsonify({'error': 'Foto no encontrada'}), 404
-
-    return send_file(abs_path)
-
-def hash_password(password):
-    """Placeholder - usar bcrypt/Argon2 en produccion"""
-    import hashlib
-    return hashlib.sha256(password.encode()).hexdigest()
+if __name__ == '__main__':
+    init_db()
+    # En produccion: usar HTTPS, debug=False
+    app.run(debug=False, host='0.0.0.0', port=5000)
 ```
+
+### Explicacion del codigo:
+
+1. **bcrypt:** Se usa `gensalt(rounds=12)` - 2^12 = 4096 iteraciones, balance seguridad/rendimiento
+2. **Sesiones seguras:** Cookies con HttpOnly, Secure, SameSite=Lax
+3. **Regeneracion de sesion:** Se llama a `session.clear()` antes de establecer datos de sesion en login
+4. **Politica de contrasenas:** 8+ caracteres, mayuscula, minuscula, numero
+5. **Consultas parametrizadas:** Todas las operaciones SQL usan `?` placeholders
+6. **Mensajes genericos:** No revelar si el usuario existe ("Credenciales invalidas")
+7. **Validacion de email:** Expresion regular para formato basico
 
 ---
 
-## Ejercicio 3: Configurar HTTPS en Flask con Certificado Autofirmado
+## Ejercicio 2: Analisis de Token JWT
 
-**Paso 1: Generar certificado autofirmado con OpenSSL**
-```bash
-# Generar clave privada y certificado en un solo comando
-openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=localhost"
+**Token dado:**
+```
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.
+eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6Ikp1YW4gUGVyZXoiLCJyb2xlIjoidXNlciIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoxNzAwMDAzNjAwfQ.
+kQk7X5mN2z8L6y2sY5w9K4p3n2m1b6c5d4e3f2g1h0i9j8k7l6m5n4o3p2
 ```
 
-**Paso 2: Aplicacion Flask con HTTPS**
+### Analisis paso a paso:
+
+**Paso 1: Decodificar Header**
 ```python
-from flask import Flask, jsonify
-import ssl
+import base64
+import json
 
-app = Flask(__name__)
+def decode_base64url(s):
+    padding = 4 - len(s) % 4
+    if padding != 4:
+        s += '=' * padding
+    return base64.urlsafe_b64decode(s)
 
-@app.route('/')
-def index():
-    return jsonify({
-        'message': 'Conexion HTTPS establecida',
-        'secure': True
-    })
-
-if __name__ == '__main__':
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    context.load_cert_chain('cert.pem', 'key.pem')
-
-    # Forzar TLS 1.2+ solamente
-    context.minimum_version = ssl.TLSVersion.TLSv1_2
-    context.maximum_version = ssl.TLSVersion.TLSv1_3
-
-    # Cipher suites seguras
-    context.set_ciphers('ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM')
-    context.options |= ssl.OP_NO_TLSv1
-    context.options |= ssl.OP_NO_TLSv1_1
-
-    print("Servidor HTTPS en https://localhost:443")
-    app.run(
-        ssl_context=context,
-        host='0.0.0.0',
-        port=443,
-        debug=False
-    )
+header_b64 = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+header = json.loads(decode_base64url(header_b64))
+print(json.dumps(header, indent=2))
+# {
+#   "alg": "HS256",      # HMAC con SHA-256
+#   "typ": "JWT"         # Tipo: JWT
+# }
 ```
 
-**Paso 3: Verificar la configuracion**
-```bash
-# Verificar certificado
-openssl x509 -in cert.pem -text -noout
-
-# Probar conexion con curl
-curl -k https://localhost:443/
-# -k: ignorar verificacion de certificado autofirmado
-
-# Verificar cifrados soportados
-nmap --script ssl-enum-ciphers -p 443 localhost
+**Paso 2: Decodificar Payload**
+```python
+payload_b64 = "eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6Ikp1YW4gUGVyZXoiLCJyb2xlIjoidXNlciIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjoxNzAwMDAzNjAwfQ"
+payload = json.loads(decode_base64url(payload_b64))
+print(json.dumps(payload, indent=2))
+# {
+#   "sub": "1234567890",    # Subject (ID del usuario)
+#   "name": "Juan Perez",   # Nombre
+#   "role": "user",         # Rol (user/admin)
+#   "iat": 1700000000,      # Issued At (fecha emision)
+#   "exp": 1700003600       # Expiration (fecha expiracion, 1 hora despues)
+# }
 ```
 
-**Paso 4: Para produccion, usar Let's Encrypt (certificados gratuitos y confiables)**
-```bash
-# Instalar certbot
-# Ejecutar para obtener certificado valido
-certbot certonly --standalone -d tudominio.com
+**Paso 3: Verificar Firma**
+```python
+import hmac
+import hashlib
 
-# Los certificados quedan en:
-# /etc/letsencrypt/live/tudominio.com/fullchain.pem
-# /etc/letsencrypt/live/tudominio.com/privkey.pem
+signature_b64 = "kQk7X5mN2z8L6y2sY5w9K4p3n2m1b6c5d4e3f2g1h0i9j8k7l6m5n4o3p2"
+
+# Calcular firma esperada (necesitamos la clave secreta)
+secret_key = "mi_clave_secreta_super_segura"
+message = f"{header_b64}.{payload_b64}"
+expected_signature = hmac.new(
+    secret_key.encode('utf-8'),
+    message.encode('utf-8'),
+    hashlib.sha256
+).digest()
+
+expected_b64 = base64.urlsafe_b64encode(expected_signature).rstrip('=').decode('utf-8')
+
+print(f"Firma dada:      {signature_b64}")
+print(f"Firma esperada:  {expected_b64}")
+print(f"Firma valida:    {signature_b64 == expected_b64}")
 ```
+
+**Paso 4: Verificar Claims de Seguridad**
+- **iat:** 1700000000 -> Fecha emision: 2023-11-14 (fecha pasada)
+- **exp:** 1700003600 -> Fecha expiracion: 2023-11-14 + 1h
+- La expiracion debe verificarse: si `time.time() > exp`, rechazar token
+- El **rol es "user"**, pero deberia validarse contra la BD
+- El token NO tiene `nbf` (Not Before) ni `jti` (JWT ID)
+
+**Paso 5: Ataque potencial - None Algorithm**
+Si el servidor acepta `"alg": "none"`, el atacante puede modificar el header:
+```json
+// Header modificado
+{ "alg": "none", "typ": "JWT" }
+
+// Cualquier payload con role: admin
+{ "sub": "123", "name": "Juan Perez", "role": "admin", "iat": 1700000000, "exp": 9999999999 }
+
+// Firma: "" (vacia)
+// Token resultante: eyJhbGciOiAibm9uZSIsICJ0eXAiOiAiSldUIn0.eyJzdWIiOiIxMjMiLCJuYW1lIjoiSnVhbiBQZXJleiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTcwMDAwMDAwMCwiZXhwIjo5OTk5OTk5OTk5fQ.
+```
+
+Conclusión: el token usa HS256 (simetrico), el payload contiene rol "user", expira en 1 hora. Las vulnerabilidades potenciales incluyen: clave secreta debil (ataque de diccionario), algoritmo none, rol definido en el token (podria modificarse).
 
 ---
 
 ## Preguntas y Respuestas
 
 ### Pregunta 1
-**Cual es la diferencia entre cifrado en transito y cifrado en reposo? De ejemplos de cada uno.**
+**Cual es la diferencia fundamental entre hashing y encriptacion en el contexto de contrasenas?**
 
-**Respuesta:** El cifrado en transito protege los datos mientras se mueven entre sistemas (cliente-servidor, servidor-servidor). Ejemplos: HTTPS/TLS, SSH, VPN, WPA3. El cifrado en reposo protege los datos almacenados en disco, BD, backups, archivos. Ejemplos: AES-256 para archivos, BitLocker (disco completo), cifrado de columnas en BD, S3 server-side encryption. Ambos son necesarios para una proteccion completa de datos sensibles.
+**Respuesta:** El hashing es unidireccional: una vez que se genera el hash, no se puede revertir para obtener la contrasena original. La encriptacion es bidireccional: los datos cifrados pueden descifrarse con la clave correcta. Para contrasenas, SIEMPRE debe usarse hashing (con salt y algoritmo lento como bcrypt/Argon2), NUNCA encriptacion. Si alguien roba la clave de encriptacion, puede descifrar todas las contrasenas. Con hashing, incluso si roban la BD, las contrasenas no pueden recuperarse (solo mediante fuerza bruta del hash individual).
 
 ### Pregunta 2
-**Por que AES es preferible sobre RSA para cifrar grandes volumenes de datos?**
+**Que es CSRF y como se previene con cookies seguras?**
 
-**Respuesta:** AES es un cifrado simetrico que opera a nivel de hardware en muchos procesadores (instrucciones AES-NI), haciendolo extremadamente rapido (varios GB/s). RSA es asimetrico y requiere operaciones matematicas complejas (exponenciacion modular con numeros grandes de 2048+ bits), siendo 100-1000 veces mas lento. RSA solo puede cifrar bloques de hasta el tamano de clave menos overhead (245 bytes para RSA 2048), mientras que AES cifra cualquier tamano. La practica estandar: usar RSA para intercambiar una clave AES, y luego AES para cifrar los datos.
+**Respuesta:** CSRF (Cross-Site Request Forgery) es un ataque donde el atacante enga~na al navegador de la victima para que envie una peticion no deseada a un sitio donde la victima esta autenticada. Ejemplo: si estas logueado en tu banco y visitas un sitio malicioso, ese sitio puede enviar un POST para transferir dinero usando tu sesion activa. La defensa principal es el atributo `SameSite` en cookies: `SameSite=Strict` evita que la cookie se envie en peticiones de otros orígenes. Tambien se usan tokens CSRF (generados por servidor, validados en cada formulario/API).
 
 ### Pregunta 3
-**Que es un nonce y por que es importante en AES-GCM?**
+**Que es session fixation y como se previene?**
 
-**Respuesta:** Un nonce (number used once) es un valor unico que se usa una sola vez con una clave determinada. En AES-GCM, el nonce de 12 bytes se combina con la clave para generar un keystream unico. Es importante porque: (1) si se reutiliza el mismo nonce con la misma clave, un atacante puede recuperar la clave y descifrar todos los mensajes; (2) el nonce debe ser aleatorio o un contador que nunca se repite; (3) en AES-GCM, si nonce se reutiliza, la autenticacion tambien se rompe. Por eso el codigo genera `os.urandom(12)` cada vez que cifra.
+**Respuesta:** Session fixation es un ataque donde el atacante establece (fija) el ID de sesion de la victima antes de que esta se autentique. Si la aplicacion no regenera el ID despues del login, el atacante conoce el ID de sesion valido y puede suplantar a la victima. Prevencion: despues de un login exitoso, la aplicacion debe regenerar/emitir un nuevo ID de sesion. En Flask: `session.clear()` seguido de establecer los datos. En general: `session_regenerate_id()`.
 
 ### Pregunta 4
-**Que datos de tarjeta de credito NO deben almacenarse segun PCI DSS?**
+**JWT es inherentemente seguro? Que practicas debe seguirse para usarlo correctamente?**
 
-**Respuesta:** Segun PCI DSS, NUNCA deben almacenarse despues de la autorizacion: (1) el codigo de verificacion de la tarjeta (CVV/CVC/CID) - ni siquiera cifrado; (2) los datos de la banda magnetica o chip (track data); (3) el PIN. Si se almacenan numero de tarjeta (PAN), deben estar cifrados con AES, truncados o tokenizados, y solo mostrar los ultimos 4 digitos. El cumplimiento PCI DSS ademas requiere: no almacenar datos de tarjeta innecesarios, mantener inventario de donde se almacenan, y documentar la necesidad de negocio para cada campo.
+**Respuesta:** JWT no es inherentemente seguro; la seguridad depende de como se implementa. Practicas necesarias: (1) usar algoritmos asimetricos (RS256/ES256) en vez de simetricos (HS256) cuando multiples servicios verifican el token; (2) verificar siempre la firma (nunca aceptar "alg: none"); (3) validar exp, nbf, iat; (4) incluir jti (JWT ID) unico para prevenir replay; (5) usar HTTPS para evitar interceptacion; (6) almacenar JWT en HttpOnly cookie, no en localStorage (vulnerable a XSS); (7) rotar claves periodicamente; (8) no incluir datos sensibles en el payload (solo se codifica en base64, no se cifra).
 
 ### Pregunta 5
-**Que diferencia hay entre PII y datos personales bajo GDPR?**
+**Cuando usar bcrypt vs Argon2? Cual es la recomendacion actual?**
 
-**Respuesta:** PII (Personally Identifiable Information) es un termino mas antiguo de EE.UU. que se refiere a informacion que puede identificar directamente a una persona (nombre, SSN, DNI). GDPR usa el termino "datos personales" que es mas amplio: incluye PII mas cualquier informacion relacionada a una persona identificada o identificable, incluyendo datos indirectos como direccion IP, cookies, identificadores de dispositivo, datos de localizacion, preferencias politicas, sindicales, geneticos, biometricos. GDPR ademas categoriza "categorias especiales" (datos sensibles) con proteccion adicional: origen racial, opinion politica, religion, salud, vida sexual, datos geneticos y biometricos.
+**Respuesta:** Argon2 es el algoritmo mas moderno (ganador del Password Hashing Competition 2015) y recomendado por OWASP como primera opcion. Sin embargo, bcrypt sigue siendo ampliamente usado y es seguro si se configura con rounds >= 10. Argon2 tiene tres variantes: Argon2d (resistente a GPU), Argon2i (resistente a side-channel), Argon2id (híbrido, recomendado). La recomendacion actual: usar Argon2id si la libreria esta disponible (ej: `argon2-cffi` en Python). Si no, bcrypt con rounds 12 es perfectamente aceptable. Lo importante es no usar algoritmos rapidos (MD5, SHA-256 directo, SHA-512 directo) para contrasenas.
 
 ---
 
 ## Tarea / Lectura Recomendada
 
-1. **Leer:** OWASP Cryptographic Storage Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html
-2. **Leer:** OWASP Transport Layer Protection Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html
-3. **Practicar:** Implementar un modulo de cifrado para una app Flask que proteja datos de usuarios usando AES-256-GCM
-4. **Profundizar:** Leer sobre PCI DSS v4.0 - https://www.pcisecuritystandards.org/
-5. **Experimentar:** Escanear la configuracion TLS de un sitio con SSL Labs (ssllabs.com/ssltest/)
-6. **Leer:** Guia de GDPR para desarrolladores de la CNIL - https://www.cnil.fr/en/home
+1. **Leer:** OWASP Authentication Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html
+2. **Leer:** OWASP Session Management Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+3. **Leer:** JWT.io - Debugger y documentacion - https://jwt.io/
+4. **Practicar:** Implementar login con MFA (TOTP) en Flask usando la libreria `pyotp`
+5. **Profundizar:** Leer "Introduction to JWT" de Auth0 - https://auth0.com/learn/json-web-tokens
+6. **Experimentar:** Usar Burp Suite para interceptar y analizar tokens JWT en una app de prueba
+
 
 

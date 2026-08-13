@@ -1,6 +1,6 @@
-# Clase 37: Secure Code Review - Taller Practico
+# Clase 37: Seguridad en Contenedores e Infraestructura como Codigo
 
-**Numero de clase:** 27  
+**Numero de clase:** 26  
 **Duracion:** 2 horas  
 **Curso:** Taller de Ciberseguridad Orientada al Desarrollo
 
@@ -8,489 +8,582 @@
 
 ## Objetivos de Aprendizaje
 
-- Comprender el proceso de secure code review y su importancia
-- Identificar patrones peligrosos en codigo fuente (Python, JavaScript, Java)
-- Aplicar la metodologia OWASP Code Review Guide
-- Distinguir entre vulnerabilidades automatizables y las que requieren revision manual
-- Corregir vulnerabilidades de seguridad en fragmentos de codigo reales
+- Aplicar buenas practicas de seguridad en Dockerfiles
+- Escanear imagenes de contenedores en busca de vulnerabilidades
+- Escribir configuraciones seguras de infraestructura como codigo (IaC)
+- Implementar seguridad en Kubernetes: Pod Security Standards, RBAC, Network Policies
+- Usar Checkov para escaneo automatizado de IaC
 
 ---
 
 ## Contenido Detallado
 
-### 1. Que es un Secure Code Review? (15 min)
+### 1. Seguridad en Docker (20 min)
 
-El **secure code review** es la revision sistematica del codigo fuente para identificar vulnerabilidades de seguridad antes de que el software llegue a produccion. No es lo mismo que un code review funcional: se enfoca exclusivamente en aspectos de seguridad.
+**Imagenes base minimas:**
+- Usar imagenes oficiales y ligeras como `python:3.11-slim`, `alpine`, `distroless`
+- Evitar imagenes como `ubuntu:latest` o `node:latest` que incluyen paquetes innecesarios
+- Preferir imagenes con soporte LTS y parches de seguridad
 
-**Objetivos:**
-- Identificar vulnerabilidades antes del deploy
-- Educar al equipo de desarrollo
-- Establecer una linea base de seguridad
-- Reducir el costo de corregir errores (es mas barato corregir en desarrollo que en produccion)
+**Principio de no-root:**
+- Nunca ejecutar procesos como root dentro del contenedor
+- Crear un usuario dedicado con `USER` en el Dockerfile
+- Asignar solo los permisos minimos necesarios
 
-**Costo relativo de corregir vulnerabilidades:**
-- En desarrollo: 1x
-- En pruebas: 10x
-- En produccion: 100x
-- Despues de un incidente: 1000x
+**Multi-stage builds:**
+- Separar la etapa de compilacion de la etapa de produccion
+- Solo copiar artefactos necesarios a la imagen final
+- Reducir drasticamente el tamano y superficie de ataque
 
-### 2. Checklist de Revision - OWASP Code Review Guide (15 min)
+**Buenas practicas adicionales:**
+- Usar `COPY` en vez de `ADD` (ADD descarga URLs y extrae archivos automaticamente)
+- Implementar `HEALTHCHECK` para monitorizar el estado del contenedor
+- No exponer puertos innecesarios
+- Usar `.dockerignore` para excluir archivos sensibles
+- Fijar versiones especificas de paquetes
 
-La metodologia OWASP se organiza en categorias:
+### 2. Dockerfile Seguro - Ejemplo Completo
 
-| Categoria | Que revisar |
-|-----------|-------------|
-| Validacion de entrada | SQL injection, XSS, command injection, path traversal |
-| Autenticacion | Contrasenas en texto plano, JWT debiles, session fixation |
-| Autorizacion | IDOR, privilege escalation, missing access controls |
-| Criptografia | Algoritmos debiles (MD5, SHA1), claves hardcodeadas, mal manejo de TLS |
-| Manejo de errores | Stack traces expuestos, informacion sensible en errores |
-| Logging | Informacion sensible en logs (PII, contrasenas) |
-| Configuracion | Secretos en codigo, CORS mal configurado, debug habilitado |
-| Dependencias | Librerias con vulnerabilidades conocidas |
+```dockerfile
+# Etapa de construccion (multi-stage)
+FROM python:3.11-slim AS builder
 
-### 3. Automatizacion vs. Revision Manual (10 min)
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --user --no-cache-dir -r requirements.txt
 
-**Automatizable (herramientas SAST):**
-- SQL injection basico
-- XSS reflejado
-- Uso de funciones peligrosas (eval, exec)
-- Hardcoded secrets
-- Algoritmos criptograficos debiles
+# Etapa de produccion
+FROM python:3.11-slim AS production
 
-**Requiere revision manual:**
-- Logica de negocio flaws (ej: un usuario puede editar recursos de otro)
-- IDOR (Insecure Direct Object References)
-- Problemas de autenticacion complejos
-- Race conditions
-- Vulnerabilidades en flujos de multiple paso
+# Crear usuario no-root
+RUN addgroup --system --gid 1001 appgroup && \
+    adduser --system --uid 1001 --gid 1001 appuser
 
-### 4. Patrones Peligrosos a Buscar (10 min)
+# Instalar solo lo necesario para produccion
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl ca-certificates && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-| Patron | Lenguaje | Riesgo |
-|--------|----------|--------|
-| `eval()`, `exec()` | Python | Code injection |
-| `innerHTML`, `dangerouslySetInnerHTML` | JS/React | XSS |
-| `os.system()`, `subprocess.Popen(shell=True)` | Python | Command injection |
-| `pickle.loads()` | Python | Deserializacion insegura |
-| `JSON.parse()` sin validacion | JS | Prototype pollution |
-| `DES`, `MD5`, `SHA1` | Todos | Criptografia debil |
-| `"SELECT * FROM users WHERE id = " + id` | Todos | SQL injection |
-| `process.env.SECRET_KEY` expuesto | Node | Hardcoded secrets |
+WORKDIR /app
 
-### 5. Metodologia (10 min)
+# Copiar solo artefactos necesarios desde builder
+COPY --from=builder /root/.local /home/appuser/.local
+COPY app.py .
+COPY templates/ ./templates/
 
-```
-Entrada -> Procesamiento -> Almacenamiento -> Salida
-```
+# Configurar PATH
+ENV PATH=/home/appuser/.local/bin:$PATH
 
-Para cada fragmento de codigo, seguir:
-1. **Entrada:** De donde vienen los datos? (request, archivo, red)
-2. **Procesamiento:** Que se hace con los datos? (validacion, transformacion)
-3. **Almacenamiento:** Donde se guardan? (base de datos, archivos, cache)
-4. **Salida:** Como se devuelven? (HTML, JSON, XML, archivos)
+# Usar usuario no-root
+USER appuser
 
----
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:5000/health || exit 1
 
-## Ejercicio 1: Fragmento Python Flask - Login con Vulnerabilidades
+# Exponer solo puerto necesario
+EXPOSE 5000
 
-**Codigo vulnerable:**
-
-```python
-from flask import Flask, request, render_template_string, session, redirect
-import sqlite3
-
-app = Flask(__name__)
-
-@app.route('/login', methods=['POST'])
-def login():
-    username = request.form['username']
-    password = request.form['password']
-
-    # VULNERABILIDAD 1: SQL Injection
-    conn = sqlite3.connect('users.db')
-    cursor = conn.cursor()
-    query = f"SELECT * FROM users WHERE username = '{username}' AND password = '{password}'"
-    cursor.execute(query)
-    user = cursor.fetchone()
-    conn.close()
-
-    if user:
-        session['user'] = username
-        # VULNERABILIDAD 2: XSS (reflejado en template)
-        return render_template_string(f"<h1>Bienvenido {username}</h1>")
-    else:
-        return "Credenciales invalidas", 401
-
-if __name__ == '__main__':
-    app.run(debug=True)  # VULNERABILIDAD 3: Debug mode habilitado
+CMD ["python", "app.py"]
 ```
 
-**Vulnerabilidades identificadas:**
+### 3. Escaneo de Imagenes (15 min)
 
-1. **SQL Injection (Critico):** La concatenacion directa de `username` y `password` en la query SQL permite inyeccion. Un atacante puede enviar `' OR '1'='1` como username para eludir la autenticacion.
+**Trivy (Aqua Security):**
+```bash
+# Escaneo basico
+trivy image python:3.11-slim
 
-2. **XSS Reflejado (Alto):** `render_template_string` con interpolacion directa de `username` permite ejecutar HTML/JavaScript arbitrario. Si un atacante envia `<script>alert('xss')</script>`, se ejecuta en el navegador.
+# Escaneo con severidad especifica
+trivy image --severity CRITICAL,HIGH mi-app:latest
 
-3. **Debug Mode en Produccion (Alto):** `app.run(debug=True)` expone el debugger de Werkzeug y permite ejecutar codigo Python arbitrario si se accede a `/console`.
-
-**Codigo corregido:**
-
-```python
-from flask import Flask, request, render_template, session, redirect, abort
-import sqlite3
-import bcrypt
-import os
-
-app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', os.urandom(32))
-app.config['DEBUG'] = False  # Debug explcitamente deshabilitado
-
-@app.route('/login', methods=['POST'])
-def login():
-    username = request.form.get('username', '').strip()
-    password = request.form.get('password', '')
-
-    if not username or not password:
-        abort(400, "Usuario y contrasena requeridos")
-
-    # CORRECCION 1: Consultas parametrizadas
-    conn = sqlite3.connect('users.db')
-    cursor = conn.cursor()
-    query = "SELECT password_hash FROM users WHERE username = ?"
-    cursor.execute(query, (username,))
-    result = cursor.fetchone()
-    conn.close()
-
-    if result is None:
-        # Usuario no existe (no revelar si existe o no)
-        return "Credenciales invalidas", 401
-
-    password_hash = result[0]
-
-    # CORRECCION 2: Verificar contrasena con bcrypt
-    if not bcrypt.checkpw(password.encode('utf-8'), password_hash):
-        return "Credenciales invalidas", 401
-
-    session['user'] = username
-    # CORRECCION 3: Usar template separado (escapado automatico)
-    return render_template('dashboard.html', username=username)
-
-# CORRECCION 4: CSRF protection basica
-@app.before_request
-def csrf_check():
-    if request.method == 'POST':
-        token = request.form.get('csrf_token')
-        if not token or token != session.get('csrf_token'):
-            abort(400, "CSRF token invalido")
-
-if __name__ == '__main__':
-    app.run(debug=False)
+# Escaneo con salida JSON
+trivy image --format json --output trivy-report.json mi-app:latest
 ```
 
----
-
-## Ejercicio 2: Fragmento Node.js Express - IDOR, Deserializacion, Secretos
-
-**Codigo vulnerable:**
-
-```javascript
-const express = require('express');
-const app = express();
-
-// VULNERABILIDAD 1: Secretos hardcodeados
-const SECRET_KEY = 'my-super-secret-key-12345';
-const DB_PASSWORD = 'admin123';
-
-app.use(express.json());
-
-// VULNERABILIDAD 2: Deserializacion insegura
-app.post('/api/process', (req, res) => {
-  const data = req.body.data;
-  // Peligro: permite ejecucion de codigo arbitrario
-  const processed = eval('(' + data + ')');
-  res.json({ result: processed });
-});
-
-// VULNERABILIDAD 3: IDOR - Insecure Direct Object Reference
-app.get('/api/users/:id', (req, res) => {
-  const userId = req.params.id;
-  // No verifica que el usuario autenticado sea el propietario
-  const user = db.users.find(u => u.id === userId);
-  res.json(user);
-});
-
-app.listen(3000);
+**Docker Scout:**
+```bash
+docker scout quickview mi-app:latest
+docker scout cves mi-app:latest
+docker scout recommendations mi-app:latest
 ```
 
-**Vulnerabilidades identificadas:**
+**Clair:**
+```bash
+clairctl analyze --docker mi-app:latest
+```
 
-1. **Secretos hardcodeados (Critico):** La clave secreta y contrasena de BD estan en el codigo fuente. Cualquiera con acceso al repositorio las obtiene.
+### 4. Infraestructura como Codigo (IaC) Segura (15 min)
 
-2. **Deserializacion insegura con eval (Critico):** `eval()` ejecuta cualquier codigo JavaScript. Un atacante puede enviar `require('child_process').execSync('rm -rf /')` y ejecutar comandos en el servidor.
+**Terraform - Buenas practicas:**
 
-3. **IDOR (Alto):** El endpoint `/api/users/:id` permite acceder a la informacion de cualquier usuario sin verificar propiedad o permisos. Un atacante puede cambiar el `:id` para acceder a datos de otros usuarios.
+```hcl
+# Ejemplo seguro: S3 bucket con cifrado y bloqueo de acceso publico
+resource "aws_s3_bucket" "secure_bucket" {
+  bucket = "mi-bucket-seguro-${var.environment}"
+  acl    = "private"
 
-**Codigo corregido:**
-
-```javascript
-const express = require('express');
-const jwt = require('jsonwebtoken');
-const helmet = require('helmet');
-
-const app = express();
-app.use(helmet()); // Seguridad de headers
-
-// CORRECCION 1: Secretos desde variables de entorno
-const SECRET_KEY = process.env.JWT_SECRET;
-if (!SECRET_KEY) {
-  throw new Error('JWT_SECRET no configurado en variables de entorno');
-}
-
-app.use(express.json({ limit: '10kb' })); // Limite de tamano
-
-// CORRECCION 2: Validacion segura en vez de eval
-app.post('/api/process', (req, res) => {
-  const data = req.body.data;
-
-  // Validar que sea un JSON valido
-  if (typeof data !== 'string') {
-    return res.status(400).json({ error: 'data debe ser un string JSON' });
+  versioning {
+    enabled = true
   }
 
-  try {
-    // Usar JSON.parse en vez de eval (mucho mas seguro)
-    const parsed = JSON.parse(data);
-
-    // Validar estructura esperada
-    if (!parsed || typeof parsed !== 'object') {
-      return res.status(400).json({ error: 'Formato invalido' });
-    }
-
-    // Procesar solo campos permitidos
-    const allowed = ['name', 'email', 'age'];
-    const processed = {};
-    for (const key of allowed) {
-      if (parsed[key] !== undefined) {
-        processed[key] = parsed[key];
+  server_side_encryption_configuration {
+    rule {
+      apply_server_side_encryption_by_default {
+        sse_algorithm = "AES256"
       }
     }
-
-    res.json({ result: processed });
-  } catch (e) {
-    res.status(400).json({ error: 'JSON invalido' });
   }
-});
-
-// CORRECCION 3: Autenticacion y autorizacion con JWT
-function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ error: 'Token requerido' });
-  }
-
-  jwt.verify(token, SECRET_KEY, (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: 'Token invalido' });
-    }
-    req.user = user;
-    next();
-  });
 }
 
-// CORRECCION 4: IDOR - verificar que el usuario sea el propietario
-app.get('/api/users/:id', authenticateToken, (req, res) => {
-  const userId = parseInt(req.params.id, 10);
+resource "aws_s3_bucket_public_access_block" "block_public" {
+  bucket = aws_s3_bucket.secure_bucket.id
 
-  // Verificar que sea el mismo usuario o admin
-  if (req.user.id !== userId && req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'No autorizado para ver este usuario' });
-  }
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+```
 
-  const user = db.users.find(u => u.id === userId);
-  if (!user) {
-    return res.status(404).json({ error: 'Usuario no encontrado' });
-  }
+**CloudFormation - Buenas practicas:**
 
-  // No exponer campos sensibles
-  const { password_hash, ...safeUser } = user;
-  res.json(safeUser);
-});
+```yaml
+Resources:
+  SecureInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-0abcdef1234567890
+      InstanceType: t3.micro
+      SecurityGroupIds:
+        - !Ref SecureSecurityGroup
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            Encrypted: true
+            VolumeSize: 20
+```
 
-app.listen(3000);
+### 5. Kubernetes Security (20 min)
+
+**Pod Security Standards (PSS):**
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: secure-ns
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+```
+
+Niveles:
+- **privileged:** Sin restricciones
+- **baseline:** Minimamente restrictivo
+- **restricted:** Maxima seguridad
+
+**Network Policies:**
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-all
+  namespace: secure-ns
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress
+```
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api-only
+  namespace: secure-ns
+spec:
+  podSelector:
+    matchLabels:
+      app: api
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    ports:
+    - protocol: TCP
+      port: 8080
+```
+
+**RBAC (Role-Based Access Control):**
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: secure-ns
+  name: pod-reader
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "watch", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: read-pods
+  namespace: secure-ns
+subjects:
+- kind: User
+  name: developer
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: pod-reader
+  apiGroup: rbac.authorization.k8s.io
+```
+
+### 6. Checkov para Escaneo de IaC (15 min)
+
+Checkov analiza Terraform, CloudFormation, Kubernetes, Dockerfile y otros formatos. Usa politicas predefinidas (CKV_*) y personalizadas.
+
+```bash
+# Escaneo basico
+checkov -d .
+
+# Escaneo con directorio especifico
+checkov -d terraform/
+
+# Escaneo de Kubernetes
+checkov -f deployment.yaml --framework kubernetes
+
+# Escaneo con salida JSON
+checkov -d . --output json -o report.json
+
+# Escaneo con skip de politicas
+checkov -d . --skip-check CKV_AWS_52
+```
+
+Ejemplo de resultado:
+```
+Check: CKV_DOCKER_2: "Ensure that HEALTHCHECK is set for container"
+        FAILED for resource: Dockerfile
+        File: /Dockerfile
+        Guide: https://docs.bridgecrew.io/docs/
 ```
 
 ---
 
-## Ejercicio 3: Fragmento Java Spring - XXE, Path Traversal, Falta de Autorizacion
+## Ejercicio 1: Reescribir un Dockerfile Inseguro
 
-**Codigo vulnerable:**
+**Enunciado:** Dado el siguiente Dockerfile inseguro, reescribelo siguiendo mejores practicas.
 
-```java
-import org.springframework.web.bind.annotation.*;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-
-@RestController
-public class VulnerableController {
-
-    // VULNERABILIDAD 1: XXE - XML External Entity
-    @PostMapping("/api/xml/parse")
-    public String parseXml(@RequestBody String xmlData) {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.parse(new InputSource(new StringReader(xmlData)));
-        // Procesa el XML permitiendo entidades externas
-        return doc.getDocumentElement().getTextContent();
-    }
-
-    // VULNERABILIDAD 2: Path Traversal
-    @GetMapping("/api/files/read")
-    public String readFile(@RequestParam String filename) {
-        // No valida ni sanitiza el nombre del archivo
-        Path filePath = Path.of("/app/data/" + filename);
-        return Files.readString(filePath);
-    }
-
-    // VULNERABILIDAD 3: Falta de autorizacion
-    @DeleteMapping("/api/admin/users/{userId}")
-    public String deleteUser(@PathVariable Long userId) {
-        // No verifica si el usuario autenticado es admin
-        userRepository.deleteById(userId);
-        return "Usuario eliminado";
-    }
-}
+Dockerfile inseguro original:
+```dockerfile
+FROM ubuntu:latest
+RUN apt-get update
+RUN apt-get install -y python3 python3-pip curl vim netcat git
+COPY . /app
+WORKDIR /app
+RUN pip install -r requirements.txt
+EXPOSE 8000 3000 22
+CMD ["python3", "app.py"]
 ```
 
-**Vulnerabilidades identificadas:**
+**Solucion:**
 
-1. **XXE (XML External Entity) - Critico:** El parser XML por defecto en Java procesa entidades externas. Un atacante puede enviar un XML que lea archivos del servidor o haga SSRF (Server-Side Request Forgery).
+```dockerfile
+# Etapa de construccion
+FROM python:3.11-slim AS builder
 
-2. **Path Traversal - Alto:** El parametro `filename` se concatenan directamente a la ruta. Un atacante puede usar `../../etc/passwd` para leer archivos fuera del directorio permitido.
+WORKDIR /build
+COPY requirements.txt .
+RUN pip install --user --no-cache-dir -r requirements.txt
 
-3. **Falta de autorizacion - Critico:** El endpoint `DELETE /api/admin/users/{userId}` no verifica que el usuario que realiza la peticion tenga rol de administrador. Cualquier usuario autenticado (o no autenticado) puede eliminar usuarios.
+# Etapa de produccion
+FROM python:3.11-slim AS production
 
-**Codigo corregido:**
+# Crear usuario no-root
+RUN addgroup --system --gid 1001 appgroup && \
+    adduser --system --uid 1001 --gid 1001 appuser
 
-```java
-import org.springframework.web.bind.annotation.*;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.XMLConstants;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+# Instalar solo curl para healthcheck (nada de vim, netcat, git)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-@RestController
-public class SecureController {
+WORKDIR /app
 
-    // CORRECCION 1: XXE deshabilitado
-    @PostMapping("/api/xml/parse")
-    public String parseXml(@RequestBody String xmlData) throws Exception {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+# Copiar solo lo necesario desde builder
+COPY --from=builder /root/.local /home/appuser/.local
+COPY app.py .
+COPY templates/ ./templates/
 
-        // Deshabilitar DOCTYPE para prevenir XXE
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        // Deshabilitar entidades externas
-        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
-        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-        // Deshabilitar DTDA (Document Type Definition)
-        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
-        // Deshabilitar XInclude
-        factory.setXIncludeAware(false);
-        factory.setExpandEntityReferences(false);
+ENV PATH=/home/appuser/.local/bin:$PATH
 
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document doc = builder.parse(new InputSource(new StringReader(xmlData)));
-        return doc.getDocumentElement().getTextContent();
-    }
+USER appuser
 
-    // CORRECCION 2: Path traversal prevenido
-    @GetMapping("/api/files/read")
-    public String readFile(@RequestParam String filename,
-                          Authentication auth) throws Exception {
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
 
-        // Obtener el usuario autenticado
-        String username = auth.getName();
+EXPOSE 8000
 
-        // Sanitizar: permitir solo alfanumerico, punto y guion
-        if (!filename.matches("^[a-zA-Z0-9._-]+$")) {
-            throw new SecurityException("Nombre de archivo invalido");
-        }
+CMD ["python3", "app.py"]
+```
 
-        // Resolver ruta canonica y verificar que este dentro del directorio base
-        Path baseDir = Paths.get("/app/data").toAbsolutePath().normalize();
-        Path filePath = baseDir.resolve(filename).normalize();
+**Cambios realizados y justificacion:**
+1. **Imagen base:** Cambie `ubuntu:latest` por `python:3.11-slim` -> imagen oficial, mas pequena y con Python incluido
+2. **Multi-stage:** Agregue etapa builder para instalar dependencias por separado
+3. **No-root:** Se crea usuario `appuser` y se usa `USER appuser`
+4. **Paquetes minimos:** Elimine vim, netcat, git, y herramientas innecesarias
+5. **ADD eliminado:** Se usa COPY en vez de ADD
+6. **COPY especifico:** Se copia solo lo necesario (no todo el directorio)
+7. **Puertos minimos:** Se expone solo el puerto 8000 (elimine 3000 y 22)
+8. **HEALTHCHECK:** Agregado para monitorizacion
+9. **Apt-get con --no-install-recommends:** Reduce paquetes instalados
+10. **Limpieza de cache:** `rm -rf /var/lib/apt/lists/*`
 
-        if (!filePath.startsWith(baseDir)) {
-            throw new SecurityException("Acceso denegado: fuera del directorio permitido");
-        }
+---
 
-        if (!Files.exists(filePath) || Files.isDirectory(filePath)) {
-            throw new FileNotFoundException("Archivo no encontrado");
-        }
+## Ejercicio 2: Escribir un docker-compose.yml Seguro
 
-        return Files.readString(filePath);
-    }
+**Enunciado:** Escribe un docker-compose.yml seguro con secrets management y healthchecks para una aplicacion web con base de datos PostgreSQL.
 
-    // CORRECCION 3: Autorizacion con Spring Security
-    @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/api/admin/users/{userId}")
-    public String deleteUser(@PathVariable Long userId, Authentication auth) {
-        // Solo usuarios con rol ADMIN pueden acceder
-        // Spring Security verifica el rol antes de ejecutar el metodo
+**Solucion:**
 
-        // Log de auditoria
-        log.info("Usuario {} elimino el usuario {}", auth.getName(), userId);
-        userRepository.deleteById(userId);
-        return "Usuario eliminado";
-    }
-}
+```yaml
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=production
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME:-appdb}
+    env_file:
+      - .env
+    secrets:
+      - db_password
+      - jwt_secret
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - internal
+      - monitoring
+    restart: unless-stopped
+    # No ejecutar como root
+    user: "1001:1001"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${DB_NAME:-appdb}
+    env_file:
+      - .env.db
+    secrets:
+      - db_password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U appuser -d appdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - internal
+    restart: unless-stopped
+    # PostgreSQL corre como usuario no-root por defecto en alpine
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+
+  # Proxy reverso con Traefik (opcional)
+  reverse-proxy:
+    image: traefik:v2.10
+    ports:
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+  jwt_secret:
+    file: ./secrets/jwt_secret.txt
+
+volumes:
+  pgdata:
+
+networks:
+  internal:
+    driver: bridge
+    internal: true  # Sin acceso externo
+  monitoring:
+    driver: bridge
+```
+
+**Nota:** Archivos de secretos en `./secrets/` deben crearse con permisos 600:
+```bash
+echo "mi-contrasena-segura" > ./secrets/db_password.txt
+chmod 600 ./secrets/db_password.txt
+```
+
+---
+
+## Ejercicio 3: Escanear un Dockerfile con Trivy y Corregir Vulnerabilidades
+
+**Enunciado:** Dado el siguiente Dockerfile, ejecuta Trivy (simulado) para identificar vulnerabilidades y propone correcciones.
+
+Dockerfile con vulnerabilidades:
+```dockerfile
+FROM node:14
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE 3000
+USER root
+CMD ["node", "app.js"]
+```
+
+**Solucion - Analisis y correcciones:**
+
+**Paso 1: Resultado del escaneo con Trivy**
+
+Trivy detectaria:
+- Node 14 contiene CVE conocidas (fecha de soporte finalizada)
+- `npm install` no usa `--only=production`, incluye devDependencies
+- `USER root` ejecuta el contenedor con privilegios maximos
+- No hay HEALTHCHECK
+- No se usan multi-stage builds
+- npm audit no se ejecuto antes del build
+
+**Paso 2: Dockerfile corregido**
+
+```dockerfile
+# Etapa de construccion
+FROM node:20-alpine AS builder
+
+WORKDIR /build
+COPY package*.json ./
+RUN npm ci --only=production
+
+# Etapa de produccion
+FROM node:20-alpine AS production
+
+# Crear usuario no-root
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+WORKDIR /app
+
+# Copiar solo node_modules de produccion
+COPY --from=builder /build/node_modules ./node_modules
+COPY app.js .
+COPY public/ ./public/
+
+USER appuser
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+
+EXPOSE 3000
+
+CMD ["node", "app.js"]
+```
+
+**Cambios:**
+1. Node 14 -> Node 20-alpine (imagen mantenida, mas pequena)
+2. Multi-stage build (separar dependencias)
+3. `npm ci --only=production` (instalacion reproducible, solo produccion)
+4. Usuario no-root (appuser)
+5. HEALTHCHECK agregado
+6. COPY especificos en vez de COPY . .
+7. `.dockerignore` recomendado:
+
+```
+node_modules
+npm-debug.log
+.git
+.gitignore
+.env
+*.md
+tests/
 ```
 
 ---
 
 ## Preguntas y Respuestas
 
-**1. Cual es la diferencia entre un code review funcional y un secure code review?**
+**1. Por que es mejor usar imagenes slim o alpine en vez de full?**
 
-El code review funcional verifica que el codigo cumpla con los requisitos de negocio, sea legible y siga las convenciones del equipo. El secure code review se enfoca exclusivamente en vulnerabilidades de seguridad: validacion de entrada, autenticacion, autorizacion, criptografia, manejo seguro de errores, etc.
+Las imagenes slim/alpine tienen menor superficie de ataque porque incluyen menos paquetes y herramientas. Menos paquetes significa menos vulnerabilidades potenciales. Ademas, son mas rapidas de descargar y ocupan menos espacio en disco.
 
-**2. Que es un IDOR y como se previene?**
+**2. Que problema de seguridad tiene usar `USER root` en un contenedor?**
 
-IDOR (Insecure Direct Object Reference) ocurre cuando un endpoint expone una referencia directa a un objeto interno (ID de base de datos, nombre de archivo) y no verifica que el usuario tenga permiso para acceder a ese objeto. Se previene con autorizacion: verificar que el usuario autenticado sea propietario o tenga rol adecuado.
+Ejecutar como root dentro del contenedor significa que si un atacante compromete la aplicacion, obtiene control total del contenedor. Ademas, si hay un escape de contenedor, el atacante podria obtener privilegios de root en el host. Siempre se debe usar un usuario no-root con `USER`.
 
-**3. Que es una vulnerabilidad XXE y cuando ocurre en Java?**
+**3. Que es Checkov y que tipo de recursos analiza?**
 
-XXE (XML External Entity) ocurre cuando un parser XML procesa entidades externas definidas en un DOCTYPE. En Java, el parser por defecto (`DocumentBuilderFactory.newInstance()`) tiene las entidades externas habilitadas. Un atacante puede leer archivos del servidor o hacer SSRF. Se previene deshabilitando DOCTYPE y entidades externas.
+Checkov es una herramienta de analisis estatico para IaC (Infrastructure as Code). Analiza Terraform, CloudFormation, Kubernetes, Dockerfile, ARM, Bicep, Serverless, entre otros. Aplica politicas predefinidas de seguridad y compliance (CIS, GDPR, PCI-DSS).
 
-**4. Por que es peligroso usar `eval()` en JavaScript o Node.js?**
+**4. Cual es la diferencia entre Pod Security Standards (PSS) y Pod Security Policies (PSP)?**
 
-`eval()` ejecuta cualquier string como codigo JavaScript. Esto permite inyeccion de codigo arbitrario. Si un atacante controla parte del string pasado a `eval()`, puede ejecutar comandos del sistema, leer archivos, robar datos, o tomar control del servidor.
+PSP fue deprecated en Kubernetes 1.21 y eliminado en 1.25. PSS es el reemplazo oficial. PSS define tres niveles (privileged, baseline, restricted) que se aplican mediante Admission Controllers nativos o herramientas como Kyverno o OPA Gatekeeper.
 
-**5. Que es path traversal y como se previene en Java?**
+**5. Que son las Network Policies en Kubernetes y para que sirven?**
 
-Path traversal permite a un atacante leer archivos fuera del directorio permitido usando `../` en la ruta. Se previene: (1) sanitizando el input para eliminar `../`, (2) normalizando la ruta con `toRealPath()` o `normalize()`, (3) verificando que la ruta resultante comience con el directorio base permitido.
+Network Policies son reglas que controlan el trafico de red entre pods. Por defecto, todos los pods pueden comunicarse entre si. Las Network Policies permiten implementar el principio de minimo privilegio: solo permitir trafico explicito y denegar todo lo demas.
 
-**6. Cuales son los 3 tipos de vulnerabilidades mas comunes en aplicaciones web segun OWASP Top 10?**
+**6. Que practica insegura representa usar `ADD` en vez de `COPY` en un Dockerfile?**
 
-Broken Access Control (fallas en control de acceso), Cryptographic Failures (fallas criptograficas), e Injection (inyeccion SQL, command, etc.). Estas tres cubren la mayoria de vulnerabilidades encontradas en aplicaciones web.
+`ADD` tiene comportamientos adicionales como descargar URLs y extraer archivos comprimidos automaticamente. Si se usa `ADD` con una URL, el contenedor podria descargar codigo malicioso sin verificacion. `COPY` solo copia archivos locales y es mas predecible y seguro.
 
-**7. Que herramientas SAST pueden automatizar parte del secure code review?**
+**7. Como se manejan secretos en docker-compose de forma segura?**
 
-SonarQube, Semgrep, CodeQL (GitHub), Bandit (Python), ESLint con plugins de seguridad (JS/TS), FindSecBugs (Java), FlawFinder (C/C++), Brakeman (Ruby on Rails). Ninguna reemplaza la revision manual, pero automatizan la deteccion de patrones conocidos.
+Usando el bloque `secrets:` en docker-compose que monta archivos en `/run/secrets/`. Los secretos se definen con `file: ./secrets/mi_secreto.txt` y se referencian en servicios con `secrets: [mi_secreto]`. Esto evita poner contraseñas en variables de entorno del archivo compose.
 
 ---
 
 ## Tarea / Lectura Recomendada
 
-- Leer: OWASP Code Review Guide (https://owasp.org/www-project-code-review-guide/)
-- Leer: OWASP Top 10 - 2021 (https://owasp.org/www-project-top-ten/)
-- Practicar: Ejecutar Bandit y Semgrep sobre los fragmentos vulnerables de la clase
-- Instalar: Una herramienta SAST de tu eleccion y analizar un proyecto propio
-- Investigar: Que es un CVE y como se reporta
+- Leer: Docker security best practices (https://docs.docker.com/develop/security-best-practices/)
+- Leer: CIS Benchmark for Docker (https://www.cisecurity.org/benchmark/docker)
+- Practicar: Escanear tu propia imagen de Docker con Trivy y corregir vulnerabilidades
+- Leer: Kubernetes Pod Security Standards (https://kubernetes.io/docs/concepts/security/pod-security-standards/)
+- Practicar: Ejecutar Checkov en una configuracion de Terraform propia
+
 
 

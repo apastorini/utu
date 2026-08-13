@@ -1,0 +1,631 @@
+---
+# ============================================================
+# Escenario 02 - Ransomware
+# Banco del Sol - Simulación de Ataque Ransomware
+# Lab Edition - Tectonic Cyber Range
+# ============================================================
+
+lab:
+  name: "Banco del Sol - Ransomware Attack"
+  description: |
+    Escenario de ataque ransomware contra la infraestructura de Banco del Sol.
+    El equipo debe detectar, contener y recuperarse de un ataque de cifrado
+    AES que afecta los archivos compartidos en el servidor de archivos.
+
+  edition: "lab"
+  version: "1.0"
+  difficulty: "intermediate"
+  estimated_duration: "150"  # minutos
+  category: "incident-response"
+
+# ============================================================
+# Redes del laboratorio
+# ============================================================
+
+networks:
+  - name: "DMZ"
+    cidr: "10.10.1.0/24"
+    gateway: "10.10.1.1"
+    vlan_id: 100
+    description: "Zona desmilitarada"
+
+  - name: "Internal"
+    cidr: "10.10.2.0/24"
+    gateway: "10.10.2.1"
+    vlan_id: 200
+    description: "Red interna corporativa"
+
+  - name: "Management"
+    cidr: "10.10.0.0/24"
+    gateway: "10.10.0.1"
+    vlan_id: 50
+    description: "Red de gestión"
+
+  - name: "Internet"
+    cidr: "172.16.0.0/24"
+    gateway: "172.16.0.1"
+    vlan_id: 999
+    description: "Simulación de Internet"
+
+# ============================================================
+# Máquinas virtuales
+# ============================================================
+
+vms:
+
+  # --- Atacante ---
+  - name: "attacker"
+    hostname: "attacker"
+    role: "attacker"
+    network: "Management"
+    ip_address: "10.10.0.10"
+    subnet_mask: "255.255.255.0"
+    gateway: "10.10.0.1"
+    dns: ["10.10.2.10"]
+    os:
+      type: "linux"
+      distribution: "kali"
+      version: "2024.1"
+    specs:
+      cpu: 2
+      ram_mb: 4096
+      disk_gb: 60
+    services:
+      - name: "ssh"
+        port: 22
+      - name: "metasploit"
+        port: 4444
+    scripts:
+      after_clone:
+        - "ansible/after_clone.yml"
+    notes: |
+      Estación de ataque Kali Linux. Contiene herramientas de penetración
+      y el script de ransomware simulado. Los estudiantes no tienen acceso
+      directo a esta máquina, pero pueden encontrar rastros de su actividad.
+
+  # --- Servidor Web ---
+  - name: "webserver"
+    hostname: "webserver"
+    role: "webserver"
+    network: "DMZ"
+    ip_address: "10.10.1.10"
+    subnet_mask: "255.255.255.0"
+    gateway: "10.10.1.1"
+    dns: ["10.10.2.10"]
+    os:
+      type: "linux"
+      distribution: "ubuntu"
+      version: "22.04"
+    specs:
+      cpu: 2
+      ram_mb: 4096
+      disk_gb: 40
+    services:
+      - name: "nginx"
+        port: 80
+      - name: "nginx-ssl"
+        port: 443
+      - name: "ssh"
+        port: 22
+    base_config:
+      - "ansible/base_config.yml"
+    notes: |
+      Servidor web de la banca en línea de Banco del Sol. Expuesto a la
+      red DMZ. No es el objetivo principal del ransomware, pero puede
+      contener indicadores de compromiso secundarios.
+
+  # --- Servidor de Correo ---
+  - name: "mailserver"
+    hostname: "mailserver"
+    role: "mailserver"
+    network: "DMZ"
+    ip_address: "10.10.1.20"
+    subnet_mask: "255.255.255.0"
+    gateway: "10.10.1.1"
+    dns: ["10.10.2.10"]
+    os:
+      type: "linux"
+      distribution: "ubuntu"
+      version: "22.04"
+    specs:
+      cpu: 2
+      ram_mb: 4096
+      disk_gb: 40
+    services:
+      - name: "postfix"
+        port: 25
+      - name: "dovecot"
+        port: 143
+      - name: "dovecot-imaps"
+        port: 993
+      - name: "ssh"
+        port: 22
+    base_config:
+      - "ansible/base_config.yml"
+    notes: |
+      Servidor de correo corporativo. Contiene emails que podrían incluir
+      el correo de phishing utilizado para el acceso inicial. Los estudiantes
+      pueden revisar el buzón del usuario comprometido.
+
+  # --- Servidor de Archivos (OBJETIVO PRINCIPAL) ---
+  - name: "fileserver"
+    hostname: "fileserver"
+    role: "fileserver"
+    network: "Internal"
+    ip_address: "10.10.2.30"
+    subnet_mask: "255.255.255.0"
+    gateway: "10.10.2.1"
+    dns: ["10.10.2.10"]
+    os:
+      type: "windows"
+      edition: "server"
+      version: "2019"
+    specs:
+      cpu: 4
+      ram_mb: 8192
+      disk_gb: 200
+    services:
+      - name: "smb"
+        port: 445
+      - name: "smb-mgmt"
+        port: 139
+      - name: "rdp"
+        port: 3389
+      - name: "vss"
+        port: null
+      - name: "winrm"
+        port: 5985
+    shared_folders:
+      - name: "Datos_Clientes"
+        path: "C:\\Shares\\Datos_Clientes"
+        share_name: "Datos_Clientes"
+        description: "Información de clientes del banco"
+        permissions:
+          - group: "BancoDelSol\\Empleados"
+            access: "read"
+          - group: "BancoDelSol\\Finanzas"
+            access: "full"
+        dummy_files:
+          - name: "clientes_activos_2025_Q4.csv"
+            content: |
+              numero_cliente,nombre,apellido,documento,tipo_cuenta,saldo,fecha_apertura
+              1001,Carlos,Martinez,12345678,Cuenta Corriente,45230.50,2019-03-15
+              1002,Laura,Gonzalez,23456789,Caja de Ahorro,125800.00,2018-07-22
+              1003,Miguel,Rodriguez,34567890,Cuenta Corriente,8920.75,2020-11-03
+              1004,Ana,Lopez,45678901,Plazo Fijo,250000.00,2021-01-18
+              1005,Pedro,Fernandez,56789012,Caja de Ahorro,67430.25,2017-05-30
+              1006,Maria,Garcia,67890123,Cuenta Corriente,15620.80,2022-08-14
+              1007,Juan,Sanchez,78901234,Plazo Fijo,500000.00,2020-12-01
+              1008,Carmen,Diaz,89012345,Caja de Ahorro,23450.60,2019-06-25
+              1009,Roberto,Morales,90123456,Cuenta Corriente,7890.40,2023-02-10
+              1010,Lucia,Herrera,01234567,Plazo Fijo,180000.00,2021-09-05
+            size_kb: 2
+          - name: "transacciones_noviembre_2025.csv"
+            content: |
+              id_transaccion,fecha,hora,cliente_origen,cliente_destino,monto,tipo,estado
+              TX001,2025-11-01,09:15:32,1001,1003,5000.00,transferencia,completada
+              TX002,2025-11-01,10:22:45,1002,,1500.00,deposito,completada
+              TX003,2025-11-01,14:08:17,,1005,800.00,retiro,completada
+              TX004,2025-11-02,08:45:03,1004,1001,12000.00,transferencia,completada
+              TX005,2025-11-02,11:30:22,1006,,3500.00,deposito,completada
+              TX006,2025-11-03,09:05:44,1003,1007,2000.00,transferencia,pendiente
+              TX007,2025-11-03,16:22:11,,1009,450.00,retiro,completada
+              TX008,2025-11-04,10:15:33,1008,1002,7500.00,transferencia,completada
+              TX009,2025-11-04,13:40:55,1001,,10000.00,deposito,completada
+              TX010,2025-11-05,09:58:12,1010,1006,3200.00,transferencia,completada
+            size_kb: 1
+          - name: "kyc_documentos_pendientes.json"
+            content: |
+              {
+                "empresa": "Banco del Sol",
+                "departamento": "Cumplimiento",
+                "documentos_pendientes": [
+                  {
+                    "cliente_id": 1003,
+                    "nombre": "Miguel Rodriguez",
+                    "documento": "34567890",
+                    "tipo_verificacion": "Actualización de domicilio",
+                    "fecha_limite": "2025-12-15",
+                    "estado": "pendiente"
+                  },
+                  {
+                    "cliente_id": 1006,
+                    "nombre": "Maria Garcia",
+                    "documento": "67890123",
+                    "tipo_verificacion": "Renovación de cédula",
+                    "fecha_limite": "2025-12-20",
+                    "estado": "en_proceso"
+                  },
+                  {
+                    "cliente_id": 1009,
+                    "nombre": "Roberto Morales",
+                    "documento": "90123456",
+                    "tipo_verificacion": "Declaración de origen de fondos",
+                    "fecha_limite": "2025-12-31",
+                    "estado": "pendiente"
+                  }
+                ],
+                "total_pendientes": 3
+              }
+            size_kb: 1
+          - name: "informe_auditoria_interna_Q3.docx"
+            content: "[ARCHIVO SIMULADO] Informe de auditoria interna Q3 2025 - Banco del Sol. Contenido clasificado."
+            size_kb: 15
+          - name: "backup_config_server.dat"
+            content: "[ARCHIVO SIMULADO] Configuracion de backup del servidor - No editar manualmente."
+            size_kb: 4
+
+      - name: "Reportes_Financieros"
+        path: "C:\\Shares\\Reportes_Financieros"
+        share_name: "Reportes_Financieros"
+        description: "Reportes financieros del banco"
+        permissions:
+          - group: "BancoDelSol\\Finanzas"
+            access: "full"
+          - group: "BancoDelSol\\Direccion"
+            access: "read"
+        dummy_files:
+          - name: "balance_general_octubre_2025.xlsx"
+            content: "[ARCHIVO SIMULADO] Balance General Banco del Sol - Octubre 2025. Activos: $45.230.000.000 | Pasivos: $38.910.000.000 | Patrimonio: $6.320.000.000"
+            size_kb: 25
+          - name: "estado_resultados_Q3_2025.xlsx"
+            content: "[ARCHIVO SIMULADO] Estado de Resultados Q3 2025 - Banco del Sol. Ingresos por intereses: $2.150.000.000 | Gastos operativos: $890.000.000 | Utilidad neta: $945.000.000"
+            size_kb: 18
+          - name: "proyecciones_2026_preliminar.pdf"
+            content: "[ARCHIVO SIMULADO] Proyecciones Financieras 2026 - Documento preliminar confidencial. Crecimiento estimado: 8.5% | ROI proyectado: 14.2%"
+            size_kb: 42
+          - name: "concentracion_cartera_noviembre.csv"
+            content: |
+              tipo_producto,cantidad_clientes,monto_total,porcentaje_cartera
+              Cuentas Corrientes,45230,1809200000.00,40.0
+              Cajas de Ahorro,38900,1945000000.00,43.0
+              Plazos Fijos,12450,622500000.00,13.8
+              Creditos Hipotecarios,3200,96000000.00,2.1
+              Creditos Personales,8900,89000000.00,2.0
+              Tarjetas de Credito,21000,52500000.00,1.2
+            size_kb: 1
+          - name: "inventario_activos_TIC.xlsx"
+            content: "[ARCHIVO SIMULADO] Inventario de Activos TIC - Banco del Sol. Total servidores: 47 | Total estaciones: 312 | Total switches: 28"
+            size_kb: 35
+
+      - name: "Recursos_Humanos"
+        path: "C:\\Shares\\Recursos_Humanos"
+        share_name: "Recursos_Humanos"
+        description: "Documentación de recursos humanos"
+        permissions:
+          - group: "BancoDelSol\\RRHH"
+            access: "full"
+          - group: "BancoDelSol\\Direccion"
+            access: "read"
+        dummy_files:
+          - name: "nomina_empleados_noviembre_2025.csv"
+            content: |
+              legajo,nombre,apellido,departamento,cargo,salario_bruto,bonificacion
+              EMP001,Carlos,Martinez,IT,Analista Senior,95000,12000
+              EMP002,Laura,Gonzalez,Finanzas,Contadora,105000,15000
+              EMP003,Miguel,Rodriguez,Ventas,Ejecutivo,78000,8000
+              EMP004,Ana,Lopez,RRHH,Coordinadora,88000,10000
+              EMP005,Pedro,Fernandez,IT,SysAdmin,110000,18000
+              EMP006,Maria,Garcia,Legal,Abogada,120000,20000
+              EMP007,Juan,Sanchez,Operaciones,Supervisor,72000,7000
+              EMP008,Carmen,Diaz,Marketing,Gerente,135000,25000
+              EMP009,Roberto,Morales,IT,Director TI,180000,35000
+              EMP010,Lucia,Herrera,Finanzas,CFO,220000,50000
+            size_kb: 1
+          - name: "registros_asistencia_octubre.csv"
+            content: |
+              legajo,fecha,entrada,salida,horas_extra,observaciones
+              EMP001,2025-10-01,08:55,17:05,0.5,
+              EMP002,2025-10-01,09:00,17:30,1.0,
+              EMP005,2025-10-01,08:30,22:15,3.75,incidente servidor
+              EMP009,2025-10-01,08:00,19:00,2.0,auditoria
+            size_kb: 1
+          - name: "politicas_seguridad_info_2025.pdf"
+            content: "[ARCHIVO SIMULADO] Politicas de Seguridad de la Informacion Banco del Sol 2025. Documento confidencial."
+            size_kb: 85
+
+    base_config:
+      - "ansible/base_config.yml"
+    after_clone:
+      - "ansible/after_clone.yml"
+    notes: |
+      Servidor de archivos principal de Banco del Sol. Contiene datos
+      sensibles de clientes, reportes financieros y documentación de RRHH.
+      Es el objetivo principal del ataque ransomware. Los archivos en
+      las carpetas compartidas serán cifrados por el script de ransomware.
+
+  # --- Servidor de Base de Datos ---
+  - name: "database"
+    hostname: "database"
+    role: "database"
+    network: "Internal"
+    ip_address: "10.10.2.40"
+    subnet_mask: "255.255.255.0"
+    gateway: "10.10.2.1"
+    dns: ["10.10.2.10"]
+    os:
+      type: "windows"
+      edition: "server"
+      version: "2019"
+    specs:
+      cpu: 4
+      ram_mb: 8192
+      disk_gb: 150
+    services:
+      - name: "mssql"
+        port: 1433
+      - name: "rdp"
+        port: 3389
+      - name: "winrm"
+        port: 5985
+    base_config:
+      - "ansible/base_config.yml"
+    notes: |
+      Servidor de base de datos SQL Server. Contiene la base de datos
+      transaccional del banco. No es afectado directamente por el
+      ransomware, pero se recomienda verificar su integridad.
+
+  # --- Controlador de Dominio ---
+  - name: "domaincontroller"
+    hostname: "domaincontroller"
+    role: "domaincontroller"
+    network: "Internal"
+    ip_address: "10.10.2.10"
+    subnet_mask: "255.255.255.0"
+    gateway: "10.10.2.1"
+    dns: ["127.0.0.1"]
+    os:
+      type: "windows"
+      edition: "server"
+      version: "2019"
+    specs:
+      cpu: 4
+      ram_mb: 8192
+      disk_gb: 80
+    services:
+      - name: "ad-ds"
+        port: 389
+      - name: "ad-ds-ssl"
+        port: 636
+      - name: "dns"
+        port: 53
+      - name: "rdp"
+        port: 3389
+      - name: "winrm"
+        port: 5985
+    active_directory:
+      domain: "BancoDelSol.local"
+      base_dn: "DC=BancoDelSol,DC=local"
+      users:
+        - name: "Administrador"
+          username: "administrador"
+          password: "B@ncoDelSol2025!"
+          groups: ["Domain Admins"]
+        - name: "svc_backup"
+          username: "svc_backup"
+          password: "B@ckup2025!"
+          groups: ["Backup Operators"]
+        - name: "Carlos Martinez"
+          username: "cmartinez"
+          password: "C@rlos2025!"
+          groups: ["Domain Users", "IT"]
+        - name: "Laura Gonzalez"
+          username: "lgonzalez"
+          password: "L@ura2025!"
+          groups: ["Domain Users", "Finanzas"]
+        - name: "Pedro Fernandez"
+          username: "pfernandez"
+          password: "P@dro2025!"
+          groups: ["Domain Users", "IT", "Domain Admins"]
+      groups:
+        - name: "IT"
+          description: "Personal de Tecnologia de la Informacion"
+        - name: "Finanzas"
+          description: "Departamento de Finanzas"
+        - name: "RRHH"
+          description: "Departamento de Recursos Humanos"
+        - name: "Ventas"
+          description: "Departamento de Ventas"
+        - name: "Legal"
+          description: "Departamento Legal"
+        - name: "Direccion"
+          description: "Direccion General"
+        - name: "Operaciones"
+          description: "Departamento de Operaciones"
+        - name: "Marketing"
+          description: "Departamento de Marketing"
+    base_config:
+      - "ansible/base_config.yml"
+    notes: |
+      Controlador de dominio Active Directory para BancoDelSol.local.
+      Contiene todas las cuentas de usuario y grupos del dominio.
+      Los estudiantes pueden revisar logs de autenticación y buscar
+      cuentas comprometidas.
+
+  # --- Estación de Trabajo ---
+  - name: "workstation"
+    hostname: "workstation"
+    role: "workstation"
+    network: "Internal"
+    ip_address: "10.10.2.100"
+    subnet_mask: "255.255.255.0"
+    gateway: "10.10.2.1"
+    dns: ["10.10.2.10"]
+    os:
+      type: "windows"
+      edition: "professional"
+      version: "10"
+    specs:
+      cpu: 2
+      ram_mb: 4096
+      disk_gb: 80
+    services:
+      - name: "rdp"
+        port: 3389
+      - name: "winrm"
+        port: 5985
+    logged_in_user: "cmartinez"
+    shared_folders_mapped:
+      - drive_letter: "S:"
+        path: "\\\\fileserver\\Datos_Clientes"
+      - drive_letter: "R:"
+        path: "\\\\fileserver\\Reportes_Financieros"
+    dummy_files:
+      - name: "C:\\Users\\cmartinez\\Desktop\\acceso_rapido.txt"
+        content: |
+          Acceso rapido a recursos - Banco del Sol
+          =========================================
+          Servidor de archivos: \\fileserver\Datos_Clientes
+          Reportes financieros: \\fileserver\Reportes_Financieros
+          Recursos humanos: \\fileserver\Recursos_Humanos
+          Correo: https://mail.bancodelsol.local
+          Intranet: https://intranet.bancodelsol.local
+        size_kb: 1
+      - name: "C:\\Users\\cmartinez\\Desktop\\记事本.txt"
+        content: "Acceso rápido a datos del banco. Contactar a IT si hay problemas."
+        size_kb: 1
+    base_config:
+      - "ansible/base_config.yml"
+    notes: |
+      Estación de trabajo de Carlos Martinez (IT). Es la máquina desde
+      la cual se origina el acceso al fileserver. Contiene mapeos de
+      unidades de red y accesos directos a los recursos compartidos.
+      Los estudiantes pueden revisar historial de navegación, archivos
+      temporales y logs del sistema.
+
+# ============================================================
+# Configuración del escenario
+# ============================================================
+
+scenario:
+  # Tiempo antes de que se active el ataque (en minutos despues del clone)
+  activation_delay: 5
+
+  # Indicadores que se crean durante el ataque
+  indicators:
+    file_indicators:
+      - path: "C:\\Shares\\Datos_Clientes\\README_RANSOM.txt"
+        description: "Nota de rescate del ransomware"
+      - path: "C:\\Shares\\Reportes_Financieros\\README_RANSOM.txt"
+        description: "Nota de rescate en carpeta de reportes"
+      - path: "C:\\Shares\\Recursos_Humanos\\README_RANSOM.txt"
+        description: "Nota de rescate en carpeta de RRHH"
+      - path: "C:\\Shares\\Datos_Clientes\\.backup_hidden"
+        description: "Directorio oculto con copias originales"
+      - path: "C:\\Shares\\.ransom_log.txt"
+        description: "Log de actividad del ransomware"
+
+    log_indicators:
+      - source: "Security"
+        event_id: 4624
+        description: "Inicio de sesion exitoso con cuenta de servicio"
+      - source: "Security"
+        event_id: 4648
+        description: "Inicio de sesion explicito con credenciales"
+      - source: "System"
+        event_id: 8222
+        description: "Servicio VSS modificado o eliminado"
+      - source: "PowerShell"
+        event_id: 4104
+        description: "Bloque de script de PowerShell ejecutado"
+
+    network_indicators:
+      - type: "smb_lateral_movement"
+        source: "10.10.2.100"
+        destination: "10.10.2.30"
+        description: "Movimiento lateral via SMB al fileserver"
+      - type: "powershell_remoting"
+        source: "10.10.2.100"
+        destination: "10.10.2.30"
+        description: "Ejecucion remota de comandos PowerShell"
+
+    registry_indicators:
+      - path: "HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"
+        value: "RansomService"
+        description: "Entrada de persistencia del ransomware"
+
+  # Credenciales para los estudiantes (acceso limitado)
+  student_access:
+    workstation:
+      username: "cmartinez"
+      password: "C@rlos2025!"
+      notes: "Acceso RDP a la estacion de trabajo"
+    fileserver:
+      username: "cmartinez"
+      password: "C@rlos2025!"
+      notes: "Acceso via SMB con credenciales mapeadas"
+
+  # Hints disponibles (se activan por tiempo o manualmente)
+  hints:
+    - time_minutes: 30
+      text: "Revise los archivos en las carpetas compartidas del fileserver. Busque archivos con extension .encrypted"
+    - time_minutes: 60
+      text: "El fileserver tiene un log en C:\\Shares\\.ransom_log.txt que registra la actividad del ransomware"
+    - time_minutes: 90
+      text: "Verifique si las copias de sombra del volumen estan disponibles con vssadmin list shadows"
+    - time_minutes: 120
+      text: "Revise el registro de eventos de Seguridad en el fileserver. Busque eventos 4624 y 4648"
+
+  # Evaluacion
+  evaluation:
+    max_score: 100
+    criteria:
+      - id: "detect_01"
+        description: "Detectar la existencia de archivos .encrypted"
+        points: 15
+      - id: "detect_02"
+        description: "Encontrar y analizar la nota de rescate"
+        points: 10
+      - id: "analyze_01"
+        description: "Identificar el metodo de cifrado (AES)"
+        points: 10
+      - id: "analyze_02"
+        description: "Verificar eliminacion de copias de sombra"
+        points: 10
+      - id: "analyze_03"
+        description: "Identificar el vector de entrada"
+        points: 10
+      - id: "contain_01"
+        description: "Aislar el fileserver de la red"
+        points: 10
+      - id: "contain_02"
+        description: "Preservar evidencia forense"
+        points: 10
+      - id: "recover_01"
+        description: "Intentar recuperacion desde copias de sombra"
+        points: 10
+      - id: "recover_02"
+        description: "Restaurar archivos desde backup"
+        points: 10
+      - id: "document_01"
+        description: "Documentar el incidente completamente"
+        points: 5
+
+# ============================================================
+# Configuracion de red
+# ============================================================
+
+routing:
+  - from: "DMZ"
+    to: "Internal"
+    allow: true
+    ports: [445, 1433, 3389, 5985]
+    description: "DMZ a Internal - Servicios necesarios"
+  - from: "Internal"
+    to: "DMZ"
+    allow: true
+    ports: [80, 443, 25, 143, 993, 22]
+    description: "Internal a DMZ - Servicios de usuario"
+  - from: "Management"
+    to: "Internal"
+    allow: true
+    ports: [22, 445, 3389, 5985, 4444]
+    description: "Management a Internal - Administracion"
+  - from: "Internal"
+    to: "Management"
+    allow: false
+    description: "Internal a Management - Bloqueado"
+  - from: "DMZ"
+    to: "Management"
+    allow: false
+    description: "DMZ a Management - Bloqueado"

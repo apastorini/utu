@@ -1,0 +1,16 @@
+---
+# ==============================================================================
+# Edicion del Laboratorio: Exfiltracion - Banco del Sol
+# ==============================================================================
+# Archivo de edicion para desplegar el escenario de exfiltracion.
+# ==============================================================================
+
+base_lab: exfiltracion
+institution: bhu
+lab_edition_name: banco_del_sol_exfiltracion
+instance_number: 1
+teacher_pubkey_dir: ./teacher_pubkeys
+student_prefix: trainee
+student_pubkey_dir: ./student_pubkeys
+create_students_passwords: true
+random_seed: bhu_exfiltracion_2026_banco_del_sol

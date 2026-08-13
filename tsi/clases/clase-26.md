@@ -1,4 +1,4 @@
-# Clase 26: Principios de Desarrollo Seguro - Security by Design
+# Clase 26: Componentes con Vulnerabilidades Conocidas + Logging/Monitoreo
 
 **Duracion:** 2 horas
 
@@ -6,862 +6,955 @@
 
 ## Objetivos de Aprendizaje
 
-1. Comprender la diferencia entre Security by Design y Security by Obscurity
-2. Aplicar los principios fundamentales de seguridad en el diseno de software
-3. Conocer los OWASP Proactive Controls (C1-C10)
-4. Evaluar disenos de arquitectura identificando violaciones a principios de seguridad
-5. Implementar patrones de diseno seguro como fail secure, defensa en profundidad
+1. Comprender la importancia de gestionar dependencias y componentes
+2. Usar herramientas SCA (Snyk, Dependabot, OWASP Dependency-Check)
+3. Conocer SBOM (Software Bill of Materials) y su utilidad
+4. Implementar logging seguro sin exponer datos sensibles
+5. Disenar un sistema de monitoreo y deteccion basico
 
 ---
 
 ## Contenido Detallado
 
-### 1. Security by Design vs. Security by Obscurity
+### 1. Componentes con Vulnerabilidades Conocidas
 
-**Security by Design:** La seguridad se incorpora desde las primeras etapas del diseno del software, no como una capa final. Es un enfoque proactivo donde cada decision de diseno considera las implicaciones de seguridad.
+OWASP Top 10 categoria #6: usar componentes con vulnerabilidades conocidas.
 
-**Security by Obscurity:** Confiar en que el sistema es seguro porque sus detalles internos estan ocultos. Ejemplos clasicos: codigo fuente secreto, algoritmos propietarios no publicados, rutas ocultas.
+**Estadisticas:**
+- 90%+ de las aplicaciones usan componentes open source
+- En promedio, un proyecto tiene 50+ dependencias directas y 200+ transitivas
+- Cada dependencia transitiva es un vector de ataque potencial
 
-| Aspecto | Security by Design | Security by Obscurity |
-|---------|-------------------|----------------------|
-| Enfoque | Proactivo (diseno) | Reactivo (ocultamiento) |
-| Mecanismo | Controles de seguridad robustos | Dependencia del secreto |
-| Si se revela el secreto | El sistema sigue siendo seguro | El sistema se compromete |
-| Ejemplo | Cifrado AES con clave secreta | Algoritmo de cifrado secreto |
-| Evaluacion | Puede ser auditado publicamente | No puede ser verificado |
-| Resultado | Seguridad a largo plazo | Falsa sensacion de seguridad |
+**Ejemplos de vulnerabilidades famosas:**
 
-**Ley de Shannon (Kerckhoffs):** Un sistema debe ser seguro incluso si todo lo relacionado con el sistema, excepto la clave, es de conocimiento publico.
+| Vulnerabilidad | Componente | Impacto | Year |
+|---------------|-----------|---------|------|
+| Log4Shell (CVE-2021-44228) | Log4j 2.x | RCE remoto sin autenticacion | 2021 |
+| Struts2 S2-045 | Apache Struts 2 | RCE via Content-Type | 2017 |
+| Heartbleed (CVE-2014-0160) | OpenSSL 1.0.1 | Filtracion de memoria | 2014 |
+| Spring4Shell (CVE-2022-22965) | Spring Framework | RCE via data binding | 2022 |
+| ImageTragick (CVE-2016-3714) | ImageMagick | RCE via imagenes maliciosas | 2016 |
 
-### 2. Principios Fundamentales de Seguridad
+### 2. Software Composition Analysis (SCA)
 
-#### Minimo Privilegio (Principle of Least Privilege)
+El SCA es el proceso de identificar y gestionar riesgos en componentes de software de terceros.
 
-Cada usuario, proceso o sistema debe tener exactamente los permisos necesarios para realizar su funcion, ni mas ni menos.
+**Herramientas SCA:**
 
-**Aplicacion:**
-- Usuarios solo tienen permisos para sus recursos
-- Procesos corren con la minima cuenta necesaria (no root)
-- Contenedores sin privilegios (no --privileged)
-- APIs exponen solo los endpoints necesarios
+| Herramienta | Tipo | Caracteristicas |
+|-------------|------|-----------------|
+| **Snyk** | SaaS + CLI | Base de datos mas completa, integracion CI/CD, correcciones automaticas |
+| **Dependabot** | GitHub integrado | PRs automaticos para actualizar dependencias |
+| **OWASP Dependency-Check** | Open source | Analisis local, base de datos NVD, plugins Maven/Gradle |
+| **GitHub Dependabot Alerts** | GitHub | Alertas automaticas de vulnerabilidades en dependencias |
+| **WhiteSource (Mend)** | SaaS | Gestion completa de licencias y vulnerabilidades |
+| **Sonatype Nexus Lifecycle** | SaaS + On-prem | Politicas de seguridad automatizadas |
 
-#### Defensa en Profundidad (Defense in Depth)
+### 3. SBOM (Software Bill of Materials)
 
-Multiples capas de seguridad. Si una capa falla, la siguiente detiene el ataque.
+SBOM es un inventario formal y estructurado de todos los componentes que conforman un software.
 
-```
-CAPAS DE DEFENSA:
-+--------------------------------------------------+
-| 1. Firewall perimetral                            |
-| 2. WAF (Web Application Firewall)                 |
-| 3. Autenticacion + Autorizacion                   |
-| 4. Validacion de input + Sanitizacion              |
-| 5. Cifrado en transito y reposo                   |
-| 6. Logging y monitoreo                            |
-| 7. Principio de minimo privilegio                 |
-+--------------------------------------------------+
-```
+**Formato SPDX (ISO/IEC 5962):**
 
-#### Superficie de Ataque Minima
-
-Reducir al minimo los puntos de entrada que un atacante puede explotar.
-
-**Como reducir la superficie de ataque:**
-- Deshabilitar servicios y puertos no utilizados
-- Cerrar endpoints de API no utilizados
-- Desactivar funcionalidades innecesarias
-- NO exponer informacion interna (versiones, stack traces)
-- Usar interfaces minimalistas
-
-#### Fallo Seguro (Fail Secure / Fail Safe)
-
-Cuando un sistema falla, debe hacerlo en un estado seguro (denegar acceso por defecto).
-
-```python
-# MAL: Fail open - si falla la verificacion, permite acceso
-def check_permission(user, resource):
-    try:
-        return verify_permission(user, resource)
-    except Exception:
-        return True  # PELIGROSO: falla a "permitido"
-
-# BIEN: Fail secure - si falla, deniega acceso
-def check_permission(user, resource):
-    try:
-        return verify_permission(user, resource)
-    except Exception:
-        return False  # SEGURO: falla a "denegado"
+```json
+{
+  "spdxVersion": "SPDX-2.3",
+  "dataLicense": "CC0-1.0",
+  "name": "MiApp-SBOM",
+  "creationInfo": {
+    "created": "2024-06-25T10:00:00Z",
+    "creators": ["Tool: MiApp-SBOM-Generator"]
+  },
+  "packages": [
+    {
+      "name": "Flask",
+      "versionInfo": "2.3.0",
+      "supplier": "Organization: Pallets Project",
+      "downloadLocation": "https://pypi.org/project/Flask/2.3.0/",
+      "licenseDeclared": "BSD-3-Clause",
+      "copyrightText": "Copyright 2010 Pallets"
+    },
+    {
+      "name": "requests",
+      "versionInfo": "2.31.0",
+      "supplier": "Organization: Python Software Foundation",
+      "licenseDeclared": "Apache-2.0"
+    }
+  ]
+}
 ```
 
-#### Separacion de Responsabilidades (Separation of Duties)
+### 4. Logging Seguro
 
-Ninguna persona o sistema debe tener el control completo de una operacion critica.
+#### Que NO debe loguearse
+
+- Contrasenas (nunca, jamas)
+- Tokens de autenticacion (JWT, API keys, session tokens)
+- Datos de tarjetas de credito (PAN, CVV)
+- Datos biometricos
+- Informacion medica (a menos que sea estrictamente necesario y cifrado)
+- Secretos de infraestructura (claves SSH, certificados privados)
+- Datos personales no necesarios (GDPR)
+
+#### Que SI debe loguearse
+
+- Intentos de autenticacion (exitosos y fallidos) - sin contrasenas
+- Cambios de permisos/roles
+- Accesos denegados (403, 401)
+- Errores del servidor con detalles tecnicos (sin datos sensibles)
+- Operaciones de administrador
+- Creacion/eliminacion de recursos
+- Cambios en configuracion de seguridad
+- Tiempos de respuesta anormales (posible ataque)
+
+#### Logs Estructurados
+
+```json
+{
+  "timestamp": "2024-06-25T10:30:00.123Z",
+  "level": "WARN",
+  "logger": "app.api.auth",
+  "message": "Intento de login fallido",
+  "context": {
+    "user_id": "user_123",
+    "ip": "192.168.1.100",
+    "user_agent": "Mozilla/5.0...",
+    "reason": "contrasena_incorrecta"
+  },
+  "request_id": "req_abc123",
+  "session_id": "sess_xyz789"
+}
+```
+
+### 5. SIEM y Deteccion de Intrusos
+
+| Sistema | Descripcion |
+|---------|-------------|
+| **SIEM** (Security Information and Event Management) | Centraliza y correlaciona logs de multiples fuentes para detectar patrones de ataque |
+| **IDS** (Intrusion Detection System) | Detecta actividad sospechosa en la red o sistema |
+| **IPS** (Intrusion Prevention System) | Detecta y BLOQUEA actividad sospechosa en tiempo real |
+| **WAF** (Web Application Firewall) | Protege aplicaciones web de ataques como SQLi, XSS |
 
 **Ejemplos:**
-- Quien aprueba un pago no puede ejecutarlo
-- Quien despliega codigo no puede aprobar el deploy
-- Admin de BD no es el mismo que admin de sistema
-- Dos personas necesarias para acceder a una boveda
-
-#### Economia de Mecanismo (Economy of Mechanism)
-
-Los mecanismos de seguridad deben ser simples y pequenos. La complejidad introduce errores.
-
-**Principio:** Un diseno simple es mas facil de auditar, mantener y verificar que uno complejo.
-
-#### Mediacion Completa (Complete Mediation)
-
-Cada acceso a cada recurso debe ser verificado contra una politica de autorizacion. No confiar en resultados de verificaciones anteriores.
-
-```python
-# MAL: Verificar solo al inicio de la sesion
-@app.route('/api/admin/delete')
-def admin_delete():
-    # Verificacion solo al login - asume que el usuario sigue siendo admin
-    pass
-
-# BIEN: Verificar en CADA operacion
-@app.route('/api/admin/delete', methods=['POST'])
-@requires_role('admin')  # Se verifica en CADA request
-def admin_delete():
-    pass
-```
-
-### 3. OWASP Proactive Controls (C1-C10)
-
-| Control | Descripcion |
-|---------|-------------|
-| **C1** | Definir requisitos de seguridad |
-| **C2** | Aprovechar frameworks de seguridad existentes |
-| **C3** | Proteger datos en transito (TLS 1.2+) y en reposo (cifrado) |
-| **C4** | Validar todo input (whitelist, parametrizacion) |
-| **C5** | Implementar autenticacion e identidad robusta |
-| **C6** | Implementar autorizacion (RBAC, ABAC) en cada endpoint |
-| **C7** | Configurar correctamente la seguridad (headers, CORS, CSP) |
-| **C8** | Manejar sesiones de forma segura (HttpOnly, Secure, SameSite) |
-| **C9** | Proteger contra XSS (escape, CSP, sanitizacion) |
-| **C10** | Manejar errores y logging de forma segura |
+- SIEM: Splunk, ELK Stack (Elasticsearch, Logstash, Kibana), Wazuh
+- IDS/IPS: Snort, Suricata
+- WAF: ModSecurity, Cloudflare WAF, AWS WAF
 
 ---
 
-## Ejercicio 1: Redisenar un Sistema de Archivos Compartidos con Security by Design
+## Ejercicio 1: Analizar Dependencias con Snyk
 
 ### Escenario
 
-Un sistema actual de archivos compartidos tiene multiples problemas de seguridad. Redisenarlo aplicando Security by Design.
+Analizar un archivo `requirements.txt` con Snyk CLI para identificar vulnerabilidades y proponer correcciones.
 
-**Sistema actual (inseguro):**
+**Paso 1: Crear requirements.txt vulnerable**
 
-```python
-"""
-sistema_archivos_inseguro.py - Sistema con multiples violaciones de seguridad
-"""
-import os
-import shutil
-from flask import Flask, request, jsonify, send_file
-
-app = Flask(__name__)
-
-BASE_DIR = '/shared/files'
-
-# Sin autenticacion - cualquiera puede acceder
-# Sin autorizacion - cualquiera puede leer/escribir cualquier archivo
-# Sin cifrado - archivos en texto plano
-# Sin logging - no hay registro de accesos
-
-@app.route('/files/<path:filename>')
-def get_file(filename):
-    # Puede leer cualquier archivo del sistema
-    filepath = os.path.join(BASE_DIR, filename)
-    return send_file(filepath)
-
-@app.route('/files/upload', methods=['POST'])
-def upload_file():
-    # Cualquiera puede subir archivos sin restriccion
-    file = request.files['file']
-    filepath = os.path.join(BASE_DIR, file.filename)
-    file.save(filepath)
-    return jsonify({'mensaje': 'Archivo subido'})
-
-@app.route('/files/delete/<path:filename>', methods=['DELETE'])
-def delete_file(filename):
-    # Cualquiera puede eliminar cualquier archivo
-    filepath = os.path.join(BASE_DIR, filename)
-    os.remove(filepath)
-    return jsonify({'mensaje': 'Archivo eliminado'})
+```txt
+# requirements.txt - Proyecto con dependencias vulnerables
+flask==1.0           # Version vulnerable: < 2.3.2
+requests==2.20.0     # Version vulnerable: < 2.31.0
+django==2.2          # Version vulnerable: < 3.2.23
+urllib3==1.24.1      # Version vulnerable: < 1.26.18
+pyyaml==5.1          # Version vulnerable: < 6.0
+log4j==2.14.0        # Version vulnerable: < 2.17.0 (simulado)
 ```
 
-**Rediseno aplicando Security by Design:**
+**Paso 2: Analizar con Snyk**
+
+```bash
+# Instalar Snyk CLI
+npm install -g snyk
+
+# Autenticar (requiere cuenta gratuita en snyk.io)
+snyk auth
+
+# Probar Snyk (sin conexion)
+snyk test --file=requirements.txt --package-manager=pip
+
+# Generar reporte JSON
+snyk test --json > snyk-report.json
+```
+
+**Paso 3: Script Python para analisis offline (simulado)**
 
 ```python
 """
-sistema_archivos_seguro.py - Rediseno con Security by Design
+sca_analyzer.py - Simulacion de analisis SCA
 """
-import os
-import uuid
-import hashlib
-import hmac
-import logging
-from datetime import datetime, timezone
-from functools import wraps
-from typing import Set, Optional
+import json
+import re
+from packaging.version import Version, InvalidVersion
+from typing import Dict, List, Tuple
 
-from flask import Flask, request, jsonify, send_file, session, abort, g
-
-app = Flask(__name__)
-app.secret_key = os.urandom(32).hex()
-
-# ============================================================
-# CONFIGURACION
-# ============================================================
-
-STORAGE_DIR = os.path.abspath(os.environ.get('STORAGE_DIR', '/shared/secure_files'))
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
-ALLOWED_EXTENSIONS: Set[str] = {'.txt', '.pdf', '.jpg', '.png', '.docx', '.xlsx', '.zip'}
-ALLOWED_MIME_TYPES: Set[str] = {
-    'text/plain', 'application/pdf', 'image/jpeg', 'image/png',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'application/zip',
+# Base de datos de vulnerabilidades simulada
+VULNERABILITY_DB = {
+    'flask': {
+        'min_fixed': '2.3.2',
+        'vulnerabilities': [
+            {'id': 'CVE-2023-30861', 'severity': 'HIGH',
+             'description': 'Possible XSS vulnerability in Flask',
+             'affected': '<2.3.2'},
+        ]
+    },
+    'requests': {
+        'min_fixed': '2.31.0',
+        'vulnerabilities': [
+            {'id': 'CVE-2023-32681', 'severity': 'MEDIUM',
+             'description': 'Potential bypass of SSL verification',
+             'affected': '<2.31.0'},
+        ]
+    },
+    'django': {
+        'min_fixed': '3.2.23',
+        'vulnerabilities': [
+            {'id': 'CVE-2024-27351', 'severity': 'HIGH',
+             'description': 'Potential denial-of-service via regex',
+             'affected': '<3.2.23'},
+        ]
+    },
+    'urllib3': {
+        'min_fixed': '1.26.18',
+        'vulnerabilities': [
+            {'id': 'CVE-2023-45803', 'severity': 'MEDIUM',
+             'description': 'Request body not always validated',
+             'affected': '<1.26.18'},
+        ]
+    },
+    'pyyaml': {
+        'min_fixed': '6.0',
+        'vulnerabilities': [
+            {'id': 'CVE-2020-14343', 'severity': 'CRITICAL',
+             'description': 'Arbitrary code execution via yaml.load()',
+             'affected': '<6.0'},
+        ]
+    },
 }
 
-# ============================================================
-# PRINCIPIO 1: MINIMO PRIVILEGIO
-# ============================================================
 
-class RBAC:
-    """Control de acceso basado en roles con minimo privilegio"""
+def parse_requirements(filepath: str) -> List[Dict]:
+    """Parse a requirements.txt file"""
+    dependencies = []
+    with open(filepath, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#') and not line.startswith('-'):
+                # Parsear: flask==1.0
+                match = re.match(r'([a-zA-Z0-9_-]+)\s*==\s*([\d.]+)', line)
+                if match:
+                    dependencies.append({
+                        'name': match.group(1),
+                        'version': match.group(2),
+                    })
+    return dependencies
 
-    ROLES = {
-        'admin': {'read', 'write', 'delete', 'manage_users', 'audit'},
-        'editor': {'read', 'write'},
-        'viewer': {'read'},
+
+def analyze_dependencies(dependencies: List[Dict]) -> List[Dict]:
+    """Analyze dependencies for known vulnerabilities"""
+    results = []
+    for dep in dependencies:
+        name = dep['name']
+        version = dep['version']
+        vuln_info = VULNERABILITY_DB.get(name)
+
+        if not vuln_info:
+            results.append({
+                'name': name,
+                'version': version,
+                'status': 'NO_KNOWN_VULNERABILITIES',
+                'vulnerabilities': [],
+                'fixed_version': None,
+            })
+            continue
+
+        try:
+            current = Version(version)
+            fixed = Version(vuln_info['min_fixed'])
+
+            if current < fixed:
+                results.append({
+                    'name': name,
+                    'version': version,
+                    'status': 'VULNERABLE',
+                    'vulnerabilities': vuln_info['vulnerabilities'],
+                    'fixed_version': vuln_info['min_fixed'],
+                    'recommendation': f"Actualizar {name} de {version} a {vuln_info['min_fixed']}",
+                })
+            else:
+                results.append({
+                    'name': name,
+                    'version': version,
+                    'status': 'OK',
+                    'vulnerabilities': [],
+                    'fixed_version': None,
+                })
+
+        except InvalidVersion:
+            results.append({
+                'name': name,
+                'version': version,
+                'status': 'INVALID_VERSION',
+                'vulnerabilities': [],
+                'fixed_version': None,
+            })
+
+    return results
+
+
+def generate_report(results: List[Dict]):
+    """Generate a security report"""
+    total = len(results)
+    vulnerable = [r for r in results if r['status'] == 'VULNERABLE']
+    ok = [r for r in results if r['status'] in ('OK', 'NO_KNOWN_VULNERABILITIES')]
+
+    print("=" * 70)
+    print("REPORTE DE ANALISIS SCA")
+    print("=" * 70)
+    print(f"\nTotal dependencias analizadas: {total}")
+    print(f"Dependencias seguras: {len(ok)}")
+    print(f"Dependencias VULNERABLES: {len(vulnerable)}")
+    print()
+
+    if vulnerable:
+        print("VULNERABILIDADES ENCONTRADAS:")
+        print("-" * 70)
+        for v in vulnerable:
+            print(f"\n[!] {v['name']} {v['version']} (arreglado en: {v['fixed_version']})")
+            for vuln in v['vulnerabilities']:
+                print(f"    CVE: {vuln['id']}")
+                print(f"    Severidad: {vuln['severity']}")
+                print(f"    Descripcion: {vuln['description']}")
+            print(f"    Recomendacion: {v['recommendation']}")
+
+    print("\n" + "=" * 70)
+    print("DEPENDENCIAS SEGURAS:")
+    print("-" * 70)
+    for o in ok:
+        print(f"  [+] {o['name']} {o['version']}")
+
+    # Generar JSON
+    report = {
+        'summary': {
+            'total': total,
+            'vulnerable': len(vulnerable),
+            'safe': len(ok),
+        },
+        'vulnerabilities': vulnerable,
     }
+    print(f"\nReporte JSON generado: snyk_simulated_report.json")
+    with open('snyk_simulated_report.json', 'w') as f:
+        json.dump(report, f, indent=2)
 
-    @staticmethod
-    def has_permission(user_role: str, permission: str) -> bool:
-        return permission in RBAC.ROLES.get(user_role, set())
 
+def generate_fixed_requirements(results: List[Dict], original_file: str, output_file: str):
+    """Generate a fixed requirements.txt"""
+    fixes = {r['name']: r['fixed_version'] for r in results if r['fixed_version']}
 
-# ============================================================
-# PRINCIPIO 2: DEFENSA EN PROFUNDIDAD
-# ============================================================
-
-# CAPA 1: Autenticacion
-def require_auth(f):
-    @wraps(f)
-    def wrapper(*args, **kwargs):
-        if 'user_id' not in session:
-            return jsonify({'error': 'Autenticacion requerida'}), 401
-        g.user_id = session['user_id']
-        g.username = session.get('username', '')
-        g.user_role = session.get('role', 'viewer')
-        return f(*args, **kwargs)
-    return wrapper
-
-# CAPA 2: Autorizacion
-def require_permission(permission: str):
-    def decorator(f):
-        @wraps(f)
-        def wrapper(*args, **kwargs):
-            if not RBAC.has_permission(g.user_role, permission):
-                app.logger.warning(
-                    f"Acceso denegado: user={g.username} role={g.user_role} "
-                    f"required={permission} resource={request.path}"
+    with open(original_file, 'r') as f_in, open(output_file, 'w') as f_out:
+        for line in f_in:
+            stripped = line.strip()
+            match = re.match(r'([a-zA-Z0-9_-]+)\s*==\s*([\d.]+)', stripped)
+            if match and match.group(1) in fixes:
+                fixed_line = line.replace(
+                    f"=={match.group(2)}",
+                    f">={fixes[match.group(1)]}"
                 )
-                return jsonify({'error': 'Permiso denegado'}), 403
-            return f(*args, **kwargs)
-        return wrapper
-    return decorator
+                f_out.write(fixed_line)
+            else:
+                f_out.write(line)
 
-# CAPA 3: Path traversal prevention
-def sanitize_filename(filename: str) -> Optional[str]:
-    """Previene path traversal - solo permite el nombre base"""
-    clean = os.path.basename(filename)
-    if not clean or clean.startswith('.'):
-        return None
-    return clean
-
-# CAPA 4: Validacion de archivos
-def validate_file(filename: str, file_size: int) -> bool:
-    if file_size > MAX_FILE_SIZE:
-        return False
-    ext = os.path.splitext(filename)[1].lower()
-    if ext not in ALLOWED_EXTENSIONS:
-        return False
-    return True
-
-
-# ============================================================
-# PRINCIPIO 3: FALLO SEGURO
-# ============================================================
-
-def safe_get_file(filepath: str) -> Optional[str]:
-    """
-    PRINCIPIO: Fail secure
-    Si algo falla (path invalido, archivo no existe, error de permisos),
-    retorna None en lugar de lanzar excepcion que podria revelar informacion.
-    """
-    try:
-        abs_path = os.path.abspath(filepath)
-
-        # Verificar que el path resuelto esta dentro del directorio permitido
-        if not abs_path.startswith(os.path.abspath(STORAGE_DIR) + os.sep):
-            return None
-
-        if not os.path.isfile(abs_path):
-            return None
-
-        # No seguir enlaces simbolicos
-        if os.path.islink(abs_path):
-            return None
-
-        return abs_path
-    except Exception:
-        # Fail secure: en caso de error, denegar acceso
-        return None
-
-
-# ============================================================
-# PRINCIPIO 4: SEPARACION DE RESPONSABILIDADES
-# ============================================================
-
-# Los roles estan claramente separados:
-# - viewer: solo lectura
-# - editor: lectura y escritura (no puede eliminar)
-
-# ============================================================
-# PRINCIPIO 5: MEDIACION COMPLETA
-# ============================================================
-
-# Cada endpoint verifica permisos independientemente
-# No se asume que porque el usuario esta autenticado tiene permiso
-
-
-# ============================================================
-# PRINCIPIO 6: ECONOMIA DE MECANISMO
-# ============================================================
-
-# La logica de autorizacion es simple y directa:
-# 1. Verificar autenticacion (who are you?)
-# 2. Verificar permiso (what can you do?)
-# 3. Ejecutar accion
-
-
-# ============================================================
-# PRINCIPIO 7: SUPERFICIE DE ATAQUE MINIMA
-# ============================================================
-
-# Solo los endpoints necesarios estan expuestos
-# Sin debug endpoints en produccion
-# Sin informacion de version en respuestas
-
-
-# ============================================================
-# LOGGING (OWASP C10)
-# ============================================================
-
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s',
-    handlers=[
-        logging.FileHandler('audit.log'),
-        logging.StreamHandler(),
-    ]
-)
-
-def log_action(action: str, resource: str, success: bool, detail: str = ''):
-    app.logger.info(
-        f"ACTION={action} USER={g.get('username', 'anon')} "
-        f"ROLE={g.get('user_role', 'anon')} "
-        f"RESOURCE={resource} SUCCESS={success} "
-        f"IP={request.remote_addr} DETAIL={detail}"
-    )
-
-
-# ============================================================
-# RUTAS SEGURAS
-# ============================================================
-
-@app.route('/login', methods=['POST'])
-def login():
-    """Autenticacion con credenciales verificadas"""
-    data = request.get_json()
-    # En produccion, verificar contra BD con bcrypt
-    username = data.get('username', '')
-    password = data.get('password', '')
-
-    # Simulacion de verificacion
-    users = {
-        'admin': {'password': 'admin123', 'role': 'admin', 'id': 1},
-        'editor1': {'password': 'editor123', 'role': 'editor', 'id': 2},
-        'viewer1': {'password': 'viewer123', 'role': 'viewer', 'id': 3},
-    }
-
-    if username in users and users[username]['password'] == password:
-        session['user_id'] = users[username]['id']
-        session['username'] = username
-        session['role'] = users[username]['role']
-        app.logger.info(f"Login exitoso: {username} ({users[username]['role']})")
-        return jsonify({
-            'mensaje': 'Login exitoso',
-            'usuario': username,
-            'rol': users[username]['role'],
-        })
-
-    app.logger.warning(f"Login fallido: {username}")
-    return jsonify({'error': 'Credenciales invalidas'}), 401
-
-
-@app.route('/logout', methods=['POST'])
-def logout():
-    session.clear()
-    return jsonify({'mensaje': 'Sesion cerrada'})
-
-
-@app.route('/api/files', methods=['GET'])
-@require_auth
-@require_permission('read')
-def list_files():
-    """
-    PRINCIPIO: Minimo privilegio
-    - viewer: solo ve sus archivos
-    - editor: solo ve sus archivos (o los que creo)
-    - admin: puede ver todos
-    """
-    user_id = g.user_id
-    user_role = g.user_role
-
-    files = []
-    try:
-        for fname in os.listdir(STORAGE_DIR):
-            filepath = safe_get_file(os.path.join(STORAGE_DIR, fname))
-            if filepath is None:
-                continue
-
-            stat = os.stat(filepath)
-
-            # Minimo privilegio: segun rol, ver diferentes archivos
-            if user_role == 'admin':
-                files.append({
-                    'nombre': fname,
-                    'tamano': stat.st_size,
-                    'creado': datetime.fromtimestamp(stat.st_ctime, tz=timezone.utc).isoformat(),
-                    'modificado': datetime.fromtimestamp(stat.st_mtime, tz=timezone.utc).isoformat(),
-                })
-            elif user_role in ('editor', 'viewer'):
-                # En un sistema real, filtrar por ownership
-                files.append({
-                    'nombre': fname,
-                    'tamano': stat.st_size,
-                    # No incluir metadata sensible para viewers
-                })
-    except FileNotFoundError:
-        os.makedirs(STORAGE_DIR, exist_ok=True)
-
-    log_action('LIST_FILES', '/api/files', True, f'found={len(files)}')
-    return jsonify({'archivos': files})
-
-
-@app.route('/api/files/<path:filename>', methods=['GET'])
-@require_auth
-@require_permission('read')
-def get_file(filename):
-    """
-    PRINCIPIO: Defensa en profundidad
-    CAPA 1: Autenticacion (require_auth)
-    CAPA 2: Autorizacion (require_permission)
-    CAPA 3: Sanitizacion de nombre
-    CAPA 4: Path traversal prevention
-    """
-    # CAPA 3: Sanitizacion
-    safe_name = sanitize_filename(filename)
-    if safe_name is None:
-        log_action('GET_FILE', filename, False, 'invalid_filename')
-        return jsonify({'error': 'Nombre de archivo invalido'}), 400
-
-    # CAPA 4: Path traversal y validacion
-    filepath = safe_get_file(os.path.join(STORAGE_DIR, safe_name))
-    if filepath is None:
-        log_action('GET_FILE', filename, False, 'file_not_found_or_blocked')
-        return jsonify({'error': 'Archivo no encontrado'}), 404
-
-    log_action('GET_FILE', safe_name, True)
-    try:
-        return send_file(filepath)
-    except Exception:
-        log_action('GET_FILE', safe_name, False, 'send_error')
-        return jsonify({'error': 'Error al leer archivo'}), 500
-
-
-@app.route('/api/files/upload', methods=['POST'])
-@require_auth
-@require_permission('write')
-def upload_file():
-    """
-    PRINCIPIO: Fallo seguro
-    Si la validacion falla, NO se guarda el archivo.
-    """
-    if 'file' not in request.files:
-        return jsonify({'error': 'No se envio archivo'}), 400
-
-    file = request.files['file']
-
-    # Validar tamano
-    file.seek(0, os.SEEK_END)
-    size = file.tell()
-    file.seek(0)
-
-    if size > MAX_FILE_SIZE:
-        log_action('UPLOAD', file.filename, False, 'file_too_large')
-        return jsonify({'error': f'Archivo demasiado grande (max {MAX_FILE_SIZE//1024//1024}MB)'}), 400
-
-    # Validar extension
-    if not validate_file(file.filename, size):
-        log_action('UPLOAD', file.filename, False, 'invalid_extension')
-        return jsonify({'error': 'Tipo de archivo no permitido'}), 400
-
-    # Generar nombre seguro y unico (previene colisiones y path traversal)
-    ext = os.path.splitext(file.filename)[1].lower()
-    unique_name = f"{uuid.uuid4().hex}{ext}"
-
-    filepath = os.path.join(STORAGE_DIR, unique_name)
-
-    # Fail secure: validar que el path es seguro
-    safe_path = safe_get_file(filepath)
-    if safe_path is None:
-        log_action('UPLOAD', file.filename, False, 'path_validation_failed')
-        return jsonify({'error': 'Error de seguridad al guardar'}), 500
-
-    try:
-        file.save(safe_path)
-
-        # Registrar metadata
-        log_action('UPLOAD', f"{unique_name} (original: {file.filename})", True)
-
-        return jsonify({
-            'mensaje': 'Archivo subido exitosamente',
-            'filename': unique_name,
-            'original_name': file.filename,
-            'size': size,
-        }), 201
-
-    except Exception as e:
-        log_action('UPLOAD', file.filename, False, f'save_error: {str(e)}')
-        return jsonify({'error': 'Error al guardar archivo'}), 500
-
-
-@app.route('/api/files/<path:filename>', methods=['DELETE'])
-@require_auth
-@require_permission('delete')
-def delete_file(filename):
-    """Solo admin puede eliminar (minimo privilegio)"""
-    safe_name = sanitize_filename(filename)
-    if safe_name is None:
-        return jsonify({'error': 'Nombre de archivo invalido'}), 400
-
-    filepath = safe_get_file(os.path.join(STORAGE_DIR, safe_name))
-    if filepath is None:
-        return jsonify({'error': 'Archivo no encontrado'}), 404
-
-    try:
-        os.remove(filepath)
-        log_action('DELETE', safe_name, True)
-        return jsonify({'mensaje': 'Archivo eliminado'})
-    except Exception as e:
-        log_action('DELETE', safe_name, False, str(e))
-        return jsonify({'error': 'Error al eliminar archivo'}), 500
-
-
-@app.route('/api/audit/logs', methods=['GET'])
-@require_auth
-@require_permission('audit')
-def get_audit_logs():
-    """Solo admin con permiso audit puede ver logs"""
-    try:
-        with open('audit.log', 'r') as f:
-            lines = f.readlines()[-100:]  # Ultimas 100 lineas
-        return jsonify({'logs': lines})
-    except FileNotFoundError:
-        return jsonify({'logs': []})
+    print(f"\nArchivo corregido generado: {output_file}")
 
 
 if __name__ == '__main__':
-    os.makedirs(STORAGE_DIR, exist_ok=True)
-    print(f"Sistema de archivos seguro iniciado")
-    print(f"Directorio de almacenamiento: {STORAGE_DIR}")
-    print("Principios aplicados: Minimo privilegio, Defensa en profundidad,")
-    print("  Fallo seguro, Separacion de responsabilidades,")
-    print("  Mediacion completa, Economia de mecanismo,")
-    print("  Superficie de ataque minima")
+    import sys
+
+    req_file = sys.argv[1] if len(sys.argv) > 1 else 'requirements.txt'
+
+    print(f"Analizando: {req_file}\n")
+
+    dependencies = parse_requirements(req_file)
+    results = analyze_dependencies(dependencies)
+    generate_report(results)
+
+    # Generar version corregida
+    generate_fixed_requirements(results, req_file, 'requirements_fixed.txt')
+```
+
+**Ejecutar el analisis:**
+
+```bash
+# Crear requirements.txt
+# Guardar el contenido vulnerable en requirements.txt
+
+# Ejecutar el analizador
+python sca_analyzer.py requirements.txt
+
+# Ver el reporte generado
+type snyk_simulated_report.json
+
+# Ver el archivo con dependencias corregidas
+type requirements_fixed.txt
+```
+
+---
+
+## Ejercicio 2: Logger Seguro en Python
+
+### Escenario
+
+Escribir un sistema de logging que registre eventos de seguridad sin exponer datos sensibles.
+
+```python
+"""
+secure_logger.py - Sistema de logging seguro
+"""
+import logging
+import json
+import re
+import hashlib
+from datetime import datetime, timezone
+from typing import Dict, Optional, Any
+from flask import Flask, request, g
+import uuid
+
+app = Flask(__name__)
+
+# ============================================================
+# CONFIGURACION DE LOGGING SEGURO
+# ============================================================
+
+class SensitiveDataFilter(logging.Filter):
+    """
+    Filtro que remueve datos sensibles de los mensajes de log.
+    Patrones de datos sensibles que deben ser redactados.
+    """
+
+    SENSITIVE_PATTERNS = {
+        'password': r'(?i)(password|passwd|pwd|secret|token|api_key|apikey|authorization)\s*[:=]\s*["\']?([^"\'\s&,]+)',
+        'credit_card': r'\b(?:\d[ -]*?){13,16}\b',
+        'email': r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',
+        'ssn': r'\b\d{3}-\d{2}-\d{4}\b',
+        'ip_private': r'\b(10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})\b',
+    }
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Filtra el mensaje y redacta datos sensibles"""
+        if hasattr(record, 'msg') and isinstance(record.msg, str):
+            original = record.msg
+            for data_type, pattern in self.SENSITIVE_PATTERNS.items():
+                record.msg = re.sub(pattern, f'[REDACTED_{data_type}]', record.msg)
+            if original != record.msg:
+                record.msg += ' [SENSITIVE_DATA_REDACTED]'
+        return True
+
+
+class JSONFormatter(logging.Formatter):
+    """Formato JSON estructurado para logs"""
+
+    def format(self, record: logging.LogRecord) -> str:
+        log_entry = {
+            'timestamp': datetime.now(timezone.utc).isoformat(),
+            'level': record.levelname,
+            'logger': record.name,
+            'module': record.module,
+            'function': record.funcName,
+            'line': record.lineno,
+            'message': record.getMessage(),
+        }
+
+        # Agregar excepcion si existe
+        if record.exc_info and record.exc_info[0]:
+            log_entry['exception'] = {
+                'type': record.exc_info[0].__name__,
+                'message': str(record.exc_info[1]),
+                # NO incluir traceback completo en produccion (puede tener datos sensibles)
+                'traceback': self.formatException(record.exc_info) if record.levelno <= logging.DEBUG else None,
+            }
+
+        # Agregar atributos extra (contexto)
+        if hasattr(record, 'extra_data'):
+            log_entry['extra'] = record.extra_data
+
+        return json.dumps(log_entry, default=str, ensure_ascii=False)
+
+
+class SecureLogger:
+    """
+    Logger seguro que registra eventos sin exponer datos sensibles.
+    Proporciona metodos especificos para eventos de seguridad.
+    """
+
+    def __init__(self, name: str = 'secure_logger'):
+        self.logger = logging.getLogger(name)
+        self.logger.setLevel(logging.INFO)
+
+        # Evitar duplicacion de handlers
+        if not self.logger.handlers:
+            handler = logging.StreamHandler()
+            handler.setFormatter(JSONFormatter())
+            handler.addFilter(SensitiveDataFilter())
+            self.logger.addHandler(handler)
+
+    def _sanitize_context(self, context: Dict[str, Any]) -> Dict[str, Any]:
+        """Sanitiza el contexto eliminando/reemplazando datos sensibles"""
+        if not context:
+            return {}
+
+        SENSITIVE_KEYS = {'password', 'pass', 'pwd', 'token', 'secret',
+                          'api_key', 'api_secret', 'auth', 'authorization',
+                          'credit_card', 'card_number', 'cvv', 'ssn', 'pin'}
+
+        sanitized = {}
+        for key, value in context.items():
+            key_lower = key.lower()
+            if any(sk in key_lower for sk in SENSITIVE_KEYS):
+                sanitized[key] = '[REDACTED]'
+            elif isinstance(value, str) and len(value) > 200:
+                sanitized[key] = value[:200] + '... [TRUNCATED]'
+            else:
+                sanitized[key] = value
+
+        return sanitized
+
+    def auth_event(self, event_type: str, user_id: str, success: bool,
+                   ip: str = '', context: Optional[Dict] = None):
+        """Registra eventos de autenticacion"""
+        extra = {
+            'event_type': 'auth',
+            'auth_event': event_type,
+            'user_id': user_id,
+            'success': success,
+            'ip': ip,
+            'user_agent': context.get('user_agent', '') if context else '',
+        }
+        # NO registrar contrasenas ni tokens
+        if context:
+            extra['context'] = self._sanitize_context(context)
+
+        level = logging.INFO if success else logging.WARNING
+        self.logger.log(level, f"Auth event: {event_type} - user={user_id} success={success}", extra={'extra_data': extra})
+
+    def access_denied(self, user_id: str, resource: str, action: str,
+                      ip: str = '', reason: str = ''):
+        """Registra accesos denegados"""
+        extra = {
+            'event_type': 'access_control',
+            'user_id': user_id,
+            'resource': resource,
+            'action': action,
+            'ip': ip,
+            'reason': reason,
+            'status': 'denied',
+        }
+        self.logger.warning(f"Access denied: user={user_id} resource={resource} action={action}",
+                           extra={'extra_data': extra})
+
+    def data_change(self, user_id: str, resource_type: str, resource_id: str,
+                    action: str, changes: Dict[str, Any]):
+        """Registra cambios en datos"""
+        # NO registrar los valores nuevos de datos sensibles
+        safe_changes = self._sanitize_context(changes)
+
+        extra = {
+            'event_type': 'data_change',
+            'user_id': user_id,
+            'resource_type': resource_type,
+            'resource_id': resource_id,
+            'action': action,
+            'changes': safe_changes,
+        }
+        self.logger.info(f"Data change: {action} on {resource_type}:{resource_id} by {user_id}",
+                        extra={'extra_data': extra})
+
+    def security_alert(self, alert_type: str, severity: str, message: str,
+                       context: Optional[Dict] = None):
+        """Registra alertas de seguridad"""
+        extra = {
+            'event_type': 'security_alert',
+            'alert_type': alert_type,
+            'severity': severity,
+            'context': self._sanitize_context(context) if context else {},
+        }
+        level = getattr(logging, severity.upper(), logging.WARNING)
+        self.logger.log(level, f"Security alert [{alert_type}]: {message}",
+                        extra={'extra_data': extra})
+
+    def error_event(self, error_type: str, message: str, user_id: str = '',
+                    exception: Optional[Exception] = None):
+        """Registra errores sin exponer datos sensibles"""
+        extra = {
+            'event_type': 'error',
+            'error_type': error_type,
+            'user_id': user_id,
+        }
+        self.logger.error(f"Error: {error_type} - {message}",
+                         exc_info=exception,
+                         extra={'extra_data': extra})
+
+
+# ============================================================
+# INSTANCIA GLOBAL
+# ============================================================
+
+secure_logger = SecureLogger()
+
+
+# ============================================================
+# EJEMPLO DE USO EN FLASK
+# ============================================================
+
+@app.before_request
+def before_request():
+    """Genera un request_id unico para tracking"""
+    g.request_id = uuid.uuid4().hex[:16]
+    g.start_time = datetime.now()
+
+
+@app.after_request
+def after_request(response):
+    """Log de todas las requests (sin datos sensibles)"""
+    if hasattr(g, 'start_time'):
+        elapsed = (datetime.now() - g.start_time).total_seconds()
+
+        # Solo loggear informacion basica, NO el body completo
+        secure_logger.logger.info(
+            f"Request: {request.method} {request.path} -> {response.status_code} ({elapsed:.3f}s)",
+            extra={'extra_data': {
+                'request_id': getattr(g, 'request_id', ''),
+                'method': request.method,
+                'path': request.path,
+                'status': response.status_code,
+                'elapsed': f"{elapsed:.3f}s",
+                'ip': request.remote_addr,
+                # NO incluir: request.data, request.args, request.form (pueden tener datos sensibles)
+            }}
+        )
+    return response
+
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+
+    # NUNCA loguear la contrasena
+    secure_logger.auth_event(
+        event_type='login',
+        user_id=data.get('username', 'unknown'),
+        success=True,  # Simplificado para el ejemplo
+        ip=request.remote_addr,
+        context={
+            'username': data.get('username', ''),
+            'user_agent': request.headers.get('User-Agent', ''),
+            # password NO se incluye
+        }
+    )
+    return {'mensaje': 'Login exitoso'}
+
+
+@app.route('/api/datos-sensibles')
+def datos_sensibles():
+    # Probar que el filtro funciona
+    password = "admin123"
+    token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0"
+    credit_card = "4532-1234-5678-9012"
+
+    logger.warning(f"Debug: password={password}, token={token}, card={credit_card}")
+    # En logs: password=[REDACTED_password], token=[REDACTED_password], card=[REDACTED_credit_card]
+
+    return {'mensaje': 'Revisar logs - datos sensibles deben estar redactados'}
+
+
+if __name__ == '__main__':
+    print("=== DEMOSTRACION DE LOGGER SEGURO ===\n")
+
+    # Demostracion de eventos
+    secure_logger.auth_event('login', 'user123', True, '192.168.1.1')
+    secure_logger.auth_event('login', 'user456', False, '10.0.0.1',
+                            {'reason': 'contrasena_incorrecta'})
+    secure_logger.access_denied('user789', '/api/admin/users', 'delete',
+                                '192.168.1.100', 'rol_insuficiente')
+    secure_logger.data_change('admin', 'user', '123', 'update_role',
+                              {'new_role': 'admin', 'old_role': 'user'})
+    secure_logger.security_alert('brute_force', 'HIGH',
+                                 'Multiple login failures detected',
+                                 {'attempts': 50, 'ip': '10.0.0.50', 'timeframe': '5min'})
+
+    # Demostrar redaccion de datos sensibles
+    print("\n=== Prueba de redaccion de datos sensibles ===")
+    secure_logger.logger.warning("Contrasena incorrecta: password='miPass123' para usuario admin",
+                                extra={'extra_data': {}})
+
+    # Iniciar servidor Flask
+    print("\n=== Iniciando servidor Flask ===")
     app.run(host='127.0.0.1', port=5000)
 ```
 
 ---
 
-## Ejercicio 2: Evaluar un Diseno de Arquitectura
+## Ejercicio 3: Crear un SBOM Simple para un Proyecto
 
 ### Escenario
 
-Evaluar la siguiente descripcion de arquitectura de un sistema de e-commerce y encontrar 5 violaciones a principios de seguridad, proponiendo correcciones.
-
-**Descripcion del sistema:**
-
-```
-Sistema de e-commerce "CompraFacil"
-
-1. Los usuarios se autentican con usuario y contrasena (sin 2FA).
-2. La sesion se mantiene con cookies sin HttpOnly ni Secure.
-3. El API REST expone endpoints como:
-   - GET /api/productos (publico)
-   - GET /api/pedidos/{id} (autenticado, devuelve datos del pedido)
-   - POST /api/pedidos/{id}/cancelar (autenticado)
-   - GET /api/admin/usuarios (autenticado, devuelve todos los usuarios)
-4. La base de datos almacena contrasenas en MD5 sin salt.
-5. Los logs registran todas las requests incluyendo body completo.
-6. El servidor usa HTTP (no HTTPS) en entorno de staging.
-7. Los archivos de configuracion con claves de API estan en el repositorio Git.
-8. El sistema usa una libreria de procesamiento de imagenes con vulnerabilidades conocidas (CVE-2023-XXXX).
-9. No hay rate limiting en el endpoint de login.
-10. Cuando ocurre un error, se devuelve el stack trace completo.
-```
-
-**Solucion: Violaciones y Correcciones**
-
-| # | Violacion | Principio violado | Correccion |
-|---|-----------|-------------------|------------|
-| 1 | **Contrasenas en MD5 sin salt** | Security by Design (cifrado debil) | Usar bcrypt (cost=12), Argon2id, o PBKDF2 con salt. MD5 puede romperse en segundos con tablas rainbow o GPUs. |
-| 2 | **Cookies sin HttpOnly ni Secure** | Defensa en profundidad | Configurar `HttpOnly=True, Secure=True, SameSite=Lax`. Esto protege contra robo de cookies via XSS y asegura que solo se envien por HTTPS. |
-| 3 | **GET /api/pedidos/{id} sin verificacion de pertenencia** | Minimo privilegio / IDOR | Verificar que el pedido pertenece al usuario autenticado. Solo admin deberia poder ver pedidos de otros usuarios. Implementar `@require_ownership` decorator. |
-| 4 | **GET /api/admin/usuarios accesible sin rol admin** | Minimo privilegio / Mediacion completa | Requerir explícitamente rol admin con un decorador `@require_role('admin')`. No asumir que un endpoint con "admin" en la URL es seguro. |
-| 5 | **Logs con body completo de requests** | Minimo privilegio (datos) | Filtrar datos sensibles (contrasenas, tokens, tarjetas) de los logs. Usar logging estructurado con campos especificos, no el body completo. |
-| 6 | **HTTP sin HTTPS en staging** | Defensa en profundidad | Forzar HTTPS en TODOS los entornos. Usar certificados de Let's Encrypt incluso en staging. Configurar HSTS. |
-| 7 | **Claves de API en repositorio Git** | Security by Design (secretos) | Usar variables de entorno o un vault de secretos (HashiCorp Vault, AWS Secrets Manager). Agregar patrones al .gitignore. Rotar claves comprometidas. |
-| 8 | **Libreria vulnerable sin actualizar** | Defensa en profundidad | Implementar SCA (Snyk, Dependabot). Actualizar la libreria a la version parcheada. Si no hay parche, buscar alternativa. |
-| 9 | **Sin rate limiting en login** | Defensa en profundidad | Implementar rate limiting (5 intentos/minuto por IP, 10 intentos/hora por usuario). Usar Flask-Limiter o equivalente. Bloquear IP despues de N intentos fallidos. |
-| 10 | **Stack traces en respuestas de error** | Superficie de ataque minima | Devolver mensajes genericos ("Error interno del servidor"). Loggear el stack trace completo en el servidor para debugging. |
-
----
-
-## Ejercicio 3: Reescribir una Funcion Fail Secure
-
-### Escenario
-
-Reescribir la siguiente funcion que maneja archivos para que sea "fail secure" (cuando falla, deniega acceso en lugar de permitirlo).
-
-**Funcion original (fail open - insegura):**
+Crear un generador de SBOM que analice dependencias de un proyecto Python y genere el inventario en formato SPDX.
 
 ```python
 """
-Funcion original con fail open.
-Si ocurre cualquier error, permite el acceso por defecto.
+sbom_generator.py - Generador simple de SBOM
 """
+import json
+import hashlib
 import os
+from datetime import datetime, timezone
+from typing import Dict, List
+import pkg_resources
+import re
 
-def read_user_file(user_id, filename):
+
+class SBOMGenerator:
     """
-    Lee un archivo de usuario.
-    VULNERABILIDAD: Si algo falla, retorna el contenido del archivo.
+    Genera un Software Bill of Materials (SBOM) en formato SPDX
+    para un proyecto Python.
     """
-    base_path = f"/var/app/users/{user_id}/files"
 
-    try:
-        filepath = os.path.join(base_path, filename)
+    def __init__(self, project_name: str, project_version: str = "1.0.0"):
+        self.project_name = project_name
+        self.project_version = project_version
+        self.packages = {}
 
-        # Verificar que el archivo existe
-        if os.path.exists(filepath):
-            with open(filepath, 'r') as f:
-                content = f.read()
-                return content
+    def scan_installed_packages(self):
+        """
+        Escanea los paquetes instalados en el entorno actual.
+        En produccion, leer requirements.txt o poetry.lock en su lugar.
+        """
+        for dist in pkg_resources.working_set:
+            self.packages[dist.key] = {
+                'name': dist.key,
+                'version': dist.version,
+                'summary': getattr(dist, 'summary', ''),
+                'home_page': getattr(dist, 'home_page', ''),
+                'license': getattr(dist, 'license', ''),
+            }
 
-        # Intenta con mayusculas si no existe
-        alt_filename = filename.upper()
-        alt_filepath = os.path.join(base_path, alt_filename)
-        if os.path.exists(alt_filepath):
-            with open(alt_filepath, 'r') as f:
-                content = f.read()
-                return content
+    def scan_requirements_file(self, filepath: str):
+        """Escanea dependencias desde requirements.txt"""
+        if not os.path.exists(filepath):
+            print(f"Archivo no encontrado: {filepath}")
+            return
 
-        return "Archivo no encontrado"
+        with open(filepath, 'r') as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and not line.startswith('-'):
+                    match = re.match(r'([a-zA-Z0-9_.-]+)\s*([><=!]+)\s*([\d.*]+)', line)
+                    if match:
+                        name = match.group(1).lower()
+                        version = match.group(3)
+                        if name not in self.packages:
+                            self.packages[name] = {
+                                'name': name,
+                                'version': version,
+                                'summary': '',
+                                'home_page': '',
+                                'license': 'NOASSERTION',
+                            }
 
-    except Exception as e:
-        # FAIL OPEN: Si ocurre un error (ej: path traversal bloqueado),
-        # devuelve el archivo de todas formas
-        print(f"Error: {e}")
-        try:
-            with open(filepath, 'r') as f:
-                return f.read()
-        except:
-            return f"Error al leer archivo: {e}"
-```
+    def generate_spdx(self) -> Dict:
+        """Genera el SBOM en formato SPDX 2.3"""
+        now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 
-**Funcion corregida (fail secure):**
+        spdx = {
+            'spdxVersion': 'SPDX-2.3',
+            'dataLicense': 'CC0-1.0',
+            'SPDXID': 'SPDXRef-DOCUMENT',
+            'name': f'{self.project_name}-{self.project_version}',
+            'creationInfo': {
+                'created': now,
+                'creators': [
+                    f'Tool: SBOMGenerator-1.0',
+                    f'Organization: MiOrganizacion',
+                ],
+            },
+            'documentNamespace': f'https://spdx.org/spdxdocs/{self.project_name}-{self.project_version}-{hashlib.md5(now.encode()).hexdigest()}',
+            'packages': [],
+            'relationships': [],
+        }
 
-```python
-"""
-Funcion corregida con fail secure.
-Si ocurre cualquier error, deniega el acceso.
-"""
-import os
-import logging
+        for pkg_name, pkg_info in self.packages.items():
+            pkg_spdxid = f'SPDXRef-Package-{pkg_name}'
 
-logger = logging.getLogger(__name__)
+            pkg_entry = {
+                'name': pkg_name,
+                'SPDXID': pkg_spdxid,
+                'versionInfo': pkg_info['version'],
+                'supplier': 'NOASSERTION',
+                'downloadLocation': pkg_info.get('home_page', 'NOASSERTION'),
+                'licenseDeclared': self._normalize_license(pkg_info.get('license', 'NOASSERTION')),
+                'copyrightText': 'NOASSERTION',
+                'summary': pkg_info.get('summary', '')[:200] if pkg_info.get('summary') else 'NOASSERTION',
+                'externalRefs': [
+                    {
+                        'referenceCategory': 'PACKAGE-MANAGER',
+                        'referenceType': 'purl',
+                        'referenceLocator': f'pkg:pypi/{pkg_name}@{pkg_info["version"]}'
+                    }
+                ],
+            }
 
+            # Si tiene checksum (archivo)
+            spdx['packages'].append(pkg_entry)
 
-def read_user_file_safe(user_id: int, filename: str) -> str:
-    """
-    Lee un archivo de usuario de forma segura.
-    PRINCIPIO: Fail secure - si algo falla, deniega acceso.
+            # Relacion: proyecto depende del paquete
+            spdx['relationships'].append({
+                'spdxElementId': 'SPDXRef-DOCUMENT',
+                'relationshipType': 'DESCRIBES',
+                'relatedSpdxElement': pkg_spdxid,
+            })
 
-    Args:
-        user_id: ID del usuario (debe ser positivo)
-        filename: Nombre del archivo (solo nombre base)
+        return spdx
 
-    Returns:
-        Contenido del archivo o mensaje de error.
+    def _normalize_license(self, license_str: str) -> str:
+        """Normaliza nombres de licencias a formato SPDX"""
+        if not license_str or license_str == 'UNKNOWN':
+            return 'NOASSERTION'
 
-    Raises:
-        No lanza excepciones al llamador; siempre retorna un string.
-    """
-    # 1. Validar parametros de entrada
-    if not isinstance(user_id, int) or user_id <= 0:
-        logger.warning(f"user_id invalido: {user_id}")
-        return "Error: Acceso denegado"
+        license_map = {
+            'MIT License': 'MIT',
+            'Apache Software License': 'Apache-2.0',
+            'BSD License': 'BSD-3-Clause',
+            'GNU General Public License v2 or later (GPLv2+)': 'GPL-2.0-or-later',
+            'GNU General Public License v3 or later (GPLv3+)': 'GPL-3.0-or-later',
+            'Python Software Foundation License': 'PSF-2.0',
+            'Mozilla Public License 2.0 (MPL 2.0)': 'MPL-2.0',
+        }
 
-    if not filename or not isinstance(filename, str):
-        logger.warning(f"filename invalido: {filename}")
-        return "Error: Acceso denegado"
+        return license_map.get(license_str, license_str)
 
-    # 2. Sanitizar nombre de archivo (prevenir path traversal)
-    safe_filename = os.path.basename(filename)
-    if not safe_filename:
-        logger.warning(f"filename vacio despues de sanitizar: {filename}")
-        return "Error: Acceso denegado"
+    def save_spdx(self, filepath: str = 'sbom.json'):
+        """Guarda el SBOM en un archivo JSON"""
+        spdx = self.generate_spdx()
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(spdx, f, indent=2, ensure_ascii=False)
+        print(f"SBOM generado: {filepath}")
 
-    # 3. Construir path base seguro
-    base_path = os.path.abspath(f"/var/app/users/{user_id}/files")
-    filepath = os.path.abspath(os.path.join(base_path, safe_filename))
+    def save_cyclonedx(self, filepath: str = 'sbom.cyclonedx.json'):
+        """Genera SBOM en formato CycloneDX (simplificado)"""
+        now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
 
-    # 4. Verificar que el path resuelto esta dentro del directorio permitido
-    #    (prevenir path traversal con ../)
-    if not filepath.startswith(base_path + os.sep):
-        logger.warning(f"Path traversal detectado: user={user_id} path={filepath}")
-        return "Error: Acceso denegado"
+        cyclonedx = {
+            '$schema': 'http://cyclonedx.org/schema/bom-1.5.schema.json',
+            'bomFormat': 'CycloneDX',
+            'specVersion': '1.5',
+            'serialNumber': f'urn:uuid:{hashlib.md5(now.encode()).hexdigest()}',
+            'version': 1,
+            'metadata': {
+                'timestamp': now,
+                'tools': [{
+                    'vendor': 'MiOrganizacion',
+                    'name': 'SBOMGenerator',
+                    'version': '1.0',
+                }],
+                'component': {
+                    'type': 'application',
+                    'name': self.project_name,
+                    'version': self.project_version,
+                    'bom-ref': self.project_name,
+                }
+            },
+            'components': [],
+        }
 
-    # 5. Intentar leer el archivo con fail secure
-    try:
-        if not os.path.isfile(filepath):
-            logger.info(f"Archivo no encontrado: user={user_id} file={safe_filename}")
-            return "Error: Archivo no encontrado"
+        for pkg_name, pkg_info in self.packages.items():
+            cyclonedx['components'].append({
+                'type': 'library',
+                'name': pkg_name,
+                'version': pkg_info['version'],
+                'purl': f'pkg:pypi/{pkg_name}@{pkg_info["version"]}',
+                'bom-ref': f'pkg:{pkg_name}@{pkg_info["version"]}',
+                'licenses': [{
+                    'license': {
+                        'name': self._normalize_license(pkg_info.get('license', 'NOASSERTION'))
+                    }
+                }] if pkg_info.get('license') else [],
+            })
 
-        with open(filepath, 'r', encoding='utf-8') as f:
-            content = f.read()
-
-        logger.info(f"Archivo leido exitosamente: user={user_id} file={safe_filename} size={len(content)}")
-        return content
-
-    except PermissionError:
-        logger.error(f"Permiso denegado al leer archivo: user={user_id} file={safe_filename}")
-        return "Error: Acceso denegado"
-
-    except FileNotFoundError:
-        logger.info(f"Archivo no encontrado (race condition): user={user_id} file={safe_filename}")
-        return "Error: Archivo no encontrado"
-
-    except UnicodeDecodeError:
-        logger.warning(f"Archivo binario no soportado: user={user_id} file={safe_filename}")
-        return "Error: Formato de archivo no soportado"
-
-    except OSError as e:
-        # Fail secure: cualquier error de E/S deniega acceso
-        logger.error(f"Error de E/S al leer archivo: user={user_id} file={safe_filename} error={e}")
-        return "Error: Acceso denegado"
-
-    except Exception as e:
-        # Fail secure: cualquier error desconocido deniega acceso
-        logger.error(f"Error desconocido al leer archivo: user={user_id} file={safe_filename} error={e}")
-        return "Error: Acceso denegado"
-
-
-def read_user_file_readable(user_id: int, filename: str) -> tuple:
-    """
-    Version alternativa que retorna (contenido, error) en lugar de strings.
-    Mas facil de integrar en APIs REST.
-    """
-    result = read_user_file_safe(user_id, filename)
-
-    if result.startswith("Error:"):
-        return None, result
-    return result, None
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(cyclonedx, f, indent=2, ensure_ascii=False)
+        print(f"SBOM (CycloneDX) generado: {filepath}")
 
 
 # ============================================================
-# PRUEBAS
+# USO
 # ============================================================
 
-def test_fail_secure():
-    """Pruebas de la funcion fail secure"""
+def generate_sbom_for_project():
+    """Genera SBOM para el proyecto actual"""
+    generator = SBOMGenerator(
+        project_name="MiApp",
+        project_version="2.1.0"
+    )
 
-    tests = [
-        # (user_id, filename, expected_prefix)
-        (0, "test.txt", "Error:"),        # user_id invalido
-        (-1, "test.txt", "Error:"),       # user_id negativo
-        (1, "", "Error:"),                # filename vacio
-        (1, None, "Error:"),              # filename None
-        (1, "../../etc/passwd", "Error:"), # path traversal
-        (1, ".../.../.../etc/passwd", "Error:"), # path traversal alternativo
-        (1, "archivo_inexistente.txt", "Error:"), # archivo no existe
-    ]
+    # Escanear paquetes instalados
+    print("Escaneando paquetes instalados...")
+    generator.scan_installed_packages()
 
-    print("=" * 60)
-    print("PRUEBAS: Fail Secure")
-    print("=" * 60)
+    # Si hay requirements.txt, escanearlo tambien
+    req_file = 'requirements.txt'
+    if os.path.exists(req_file):
+        print(f"Escaneando dependencias desde {req_file}...")
+        generator.scan_requirements_file(req_file)
 
-    all_passed = True
-    for user_id, filename, expected in tests:
-        result = read_user_file_safe(user_id, filename)
-        passed = result.startswith(expected)
-        status = "PASS" if passed else "FAIL"
-        if not passed:
-            all_passed = False
-        print(f"[{status}] user_id={user_id}, filename={filename!r}")
-        print(f"       Esperado: {expected}")
-        print(f"       Obtenido: {result[:80]}...")
-        print()
+    # Generar SBOM en formato SPDX
+    print("\nGenerando SBOM...")
+    generator.save_spdx('sbom_spdx.json')
 
-    if all_passed:
-        print("Todas las pruebas pasaron.")
-    else:
-        print("Algunas pruebas fallaron.")
+    # Generar SBOM en formato CycloneDX
+    generator.save_cyclonedx('sbom_cyclonedx.json')
+
+    # Mostrar resumen
+    print(f"\nResumen:")
+    print(f"  Total paquetes: {len(generator.packages)}")
+    print(f"  Licencias unicas: {len(set(p.get('license', 'UNKNOWN') for p in generator.packages.values()))}")
+
+    # Verificar vulnerabilidades conocidas en los paquetes
+    total_vulns = check_vulnerabilities(generator.packages)
+    print(f"  Posibles vulnerabilidades: {total_vulns}")
+
+    return generator.packages
 
 
-def compare_fail_open_vs_fail_secure():
-    """Comparacion directa de comportamientos"""
+def check_vulnerabilities(packages: Dict) -> int:
+    """Verifica vulnerabilidades conocidas (simplificado)"""
+    # En produccion, esto consultaria la API de Snyk o la base de datos NVD
+    known_vulnerable = {
+        'flask': ['1.0', '1.0.1', '1.0.2', '2.0', '2.1'],
+        'requests': ['2.20.0', '2.21.0', '2.22.0'],
+        'django': ['2.2', '2.2.1', '3.0', '3.1'],
+        'urllib3': ['1.24.1', '1.25', '1.26.0'],
+        'pyyaml': ['5.1', '5.2', '5.3'],
+    }
 
-    print("=" * 60)
-    print("COMPARACION: Fail Open vs Fail Secure")
-    print("=" * 60)
+    vuln_count = 0
+    for pkg_name, pkg_info in packages.items():
+        if pkg_name in known_vulnerable:
+            if pkg_info['version'] in known_vulnerable[pkg_name]:
+                print(f"  [!] {pkg_name} {pkg_info['version']} - POSIBLE VULNERABLE")
+                vuln_count += 1
 
-    scenarios = [
-        ("Path traversal: ../../../etc/passwd", 1, "../../../etc/passwd"),
-        ("Usuario invalido: user_id=-1", -1, "test.txt"),
-        ("Archivo inexistente", 1, "no_existe.txt"),
-        ("Nombre vacio", 1, ""),
-        ("Caracteres especiales", 1, "..\\..\\..\\windows\\win.ini"),
-    ]
-
-    for scenario, user_id, filename in scenarios:
-        print(f"\nEscenario: {scenario}")
-        print(f"  Fail Open (original):   Permitiria acceso (inseguro)")
-        print(f"  Fail Secure (corregido): {read_user_file_safe(user_id, filename)}")
+    return vuln_count
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
+    print("=" * 60)
+    print("GENERADOR DE SBOM")
+    print("=" * 60)
 
-    test_fail_secure()
-    print()
-    compare_fail_open_vs_fail_secure()
+    packages = generate_sbom_for_project()
+
+    # Mostrar primeros paquetes
+    print(f"\nPrimeros 10 paquetes:")
+    for i, (name, info) in enumerate(sorted(packages.items())[:10]):
+        print(f"  {i+1}. {name} == {info['version']} ({info.get('license', 'N/A')})")
 ```
 
 ---
@@ -869,46 +962,47 @@ if __name__ == '__main__':
 ## Preguntas y Respuestas
 
 ### Pregunta 1
-**Cual es la diferencia fundamental entre Security by Design y Security by Obscurity? De un ejemplo de cada uno.**
+**Que es SCA y por que es importante en el desarrollo de software?**
 
-**Respuesta:** Security by Design incorpora la seguridad en la arquitectura del sistema desde el principio, usando mecanismos robustos y verificables. Ejemplo: usar AES-256 con clave gestionada por un HSM (Hardware Security Module). Security by Obscurity confia en mantener secretos los detalles internos del sistema. Ejemplo: ocultar la ruta de administracion en `/secretadmin123/` en lugar de implementar autenticacion y autorizacion. La diferencia crucial: si el atacante descubre el "secreto" en Security by Obscurity, el sistema queda completamente comprometido; en Security by Design, el sistema sigue siendo seguro porque los controles de seguridad son intrinsecos, no dependen del ocultamiento.
+**Respuesta:** SCA (Software Composition Analysis) es el proceso de identificar y gestionar riesgos en componentes de terceros (open source, librerias comerciales). Es importante porque las aplicaciones modernas usan 50-200+ dependencias, cada una con su propio conjunto de vulnerabilidades. Sin SCA, el equipo de desarrollo no tiene visibilidad de que componentes estan usando, que vulnerabilidades tienen, ni cuando deben actualizarlos. SCA automatiza la deteccion de componentes vulnerables, licencias conflictivas, y genera alertas cuando se descubren nuevas vulnerabilidades en dependencias existentes.
 
 ### Pregunta 2
-**Explica el principio de defensa en profundidad con un ejemplo practico en una aplicacion web.**
+**Que datos NUNCA deben registrarse en logs y por que?**
 
-**Respuesta:** Defensa en profundidad significa tener multiples capas de seguridad independientes, de modo que si una capa falla, la siguiente detiene el ataque. Ejemplo para una aplicacion web: CAPA 1 - Firewall de red que solo permite puertos 80/443. CAPA 2 - WAF (Web Application Firewall) que bloquea SQLi y XSS. CAPA 3 - Autenticacion con 2FA. CAPA 4 - Autorizacion RBAC en cada endpoint. CAPA 5 - Validacion de input en el servidor (parametrizacion, sanitizacion). CAPA 6 - CSP headers que limitan ejecucion de scripts. CAPA 7 - Logging y monitoreo que detectan patrones anomalos. CAPA 8 - Cifrado en reposo de datos sensibles. Si un atacante evade el WAF, la autenticacion lo detiene. Si evade la autenticacion, la autorizacion limita que puede hacer.
+**Respuesta:** Jamas deben registrarse: (1) contrasenas en texto plano (riesgo de compromiso de cuentas), (2) tokens de autenticacion y API keys (permite acceso no autorizado), (3) datos de tarjetas de credito (viola PCI DSS), (4) datos biometricos y de salud (viola HIPAA, GDPR), (5) secretos de infraestructura (claves SSH, certificados privados), (6) PII innecesaria (direcciones, DNI completos). Incluso en logs internos, si un atacante accede a los logs, obtiene estos datos. La regla es: si no es estrictamente necesario para debugging, no lo loguees. Si es necesario, ofuscalo o tokenizalo.
 
 ### Pregunta 3
-**Que es el principio de "fallo seguro" y por que es importante? Da un ejemplo de codigo.**
+**Que es un SBOM y para que sirve en seguridad?**
 
-**Respuesta:** El principio de fallo seguro (fail secure) establece que cuando un sistema falla, debe hacerlo en un estado seguro, tipicamente denegando el acceso en lugar de permitiendolo. Es importante porque los errores son inevitables, y un sistema que "falla abierto" (fail open) puede permitir accesos no autorizados cuando ocurre una excepcion. Ejemplo: en lugar de `try: verificar() except: return True` (fail open - permite acceso si falla la verificacion), se debe usar `try: verificar() except: return False` (fail secure - deniega acceso si falla la verificacion). Similarmente, al leer archivos, si ocurre un error de path traversal o permisos, se debe denegar el acceso en lugar de intentar leer el archivo de todas formas.
+**Respuesta:** Un SBOM (Software Bill of Materials) es un inventario formal y estructurado de todos los componentes que conforman un software, incluyendo nombres, versiones, licencias, y relaciones de dependencia. Sirve para: (1) identificar rapidamente si una vulnerabilidad recien descubierta afecta al software, (2) gestionar licencias y cumplimiento legal, (3) facilitar auditorias de seguridad, (4) cumplir con requisitos regulatorios (EE.UU. orden ejecutiva 14028 requiere SBOM para software gubernamental), (5) mantener un inventario preciso de la superficie de ataque del software.
 
 ### Pregunta 4
-**Cuales son los OWASP Proactive Controls mas importantes para un desarrollador backend?**
+**Cual es la diferencia entre dependencias directas y transitivas? Por que son importantes ambas?**
 
-**Respuesta:** Los 5 mas importantes para backend: (1) **C4 - Validar todo input**: nunca confiar en datos del cliente, usar whitelist de caracteres permitidos, parametrizar consultas SQL, validar tipos y rangos. (2) **C6 - Implementar autorizacion**: verificar permisos en CADA endpoint (no solo al login), implementar RBAC/ABAC, nunca confiar en roles enviados por el cliente. (3) **C7 - Configurar seguridad**: security headers (HSTS, CSP, X-Frame-Options), CORS con whitelist, TLS 1.2+, eliminar configuraciones por defecto. (4) **C9 - Proteger contra XSS**: escapar output segun contexto (HTML, atributo, JS, URL, CSS), usar plantillas con autoescape, implementar CSP. (5) **C10 - Manejo de errores y logging seguro**: nunca devolver stack traces al cliente, loggear eventos de seguridad sin datos sensibles, implementar auditoria.
+**Respuesta:** Dependencias directas son las que el proyecto incluye explicitamente (ej: `pip install requests`). Dependencias transitivas son las que las dependencias directas requieren a su vez (requests depende de urllib3, que depende de...). Ambas son importantes porque: una vulnerabilidad en una dependencia transitiva (como la de Log4j en aplicaciones Java que usaban ElasticSearch o Kafka) puede comprometer toda la aplicacion. El equipo de desarrollo muchas veces no sabe que dependencias transitivas tiene. Herramientas SCA como Snyk o Dependabot analizan el arbol completo de dependencias, no solo las directas.
 
 ### Pregunta 5
-**Como se aplica el principio de minimo privilegio en una API REST?**
+**Como se implementa un logging seguro en una aplicacion Flask?**
 
-**Respuesta:** En una API REST, el minimo privilegio se aplica en multiples niveles: (1) **Por endpoint**: cada endpoint requiere un permiso especifico (ej: `documentos:eliminar`), no solo un rol. (2) **Por recurso**: los usuarios solo acceden a sus propios recursos a menos que tengan permiso global (admin). (3) **Por metodo**: GET solo lectura, POST creacion, PUT actualizacion, DELETE eliminacion. Un viewer solo tiene GET, un editor GET+POST+PUT, admin todos. (4) **Por campo**: algunos campos solo son visibles para ciertos roles (ej: admin ve email completo, viewer solo email parcial). (5) **Por accion**: operaciones masivas (exportar todos los usuarios, eliminar en lote) requieren permisos adicionales. La implementacion tipica usa decoradores como `@require_permission('documentos:leer')` y verificacion de pertenencia.
+**Respuesta:** Para logging seguro en Flask: (1) implementar un filtro de logging que detecte y redacte patrones de datos sensibles (contrasenas, tokens, tarjetas de credito), (2) usar formato JSON estructurado para facilitar el analisis posterior, (3) nunca loguear el body completo de las requests (puede contener datos sensibles), (4) usar metodos especificos para eventos de seguridad (login, access denied, cambios de rol) que automaticamente excluyan campos sensibles, (5) configurar niveles de log apropiados (INFO para eventos normales, WARNING para sospechas, ERROR para fallos), (6) incluir un request_id unico en cada log para correlacionar eventos de una misma sesion.
 
 ### Pregunta 6
-**Cual es la relacion entre la superficie de ataque y la seguridad de una aplicacion?**
+**Que es Log4Shell y como se relaciona con la gestion de componentes?**
 
-**Respuesta:** La superficie de ataque es el conjunto de todos los puntos por los que un atacante puede interactuar con el sistema. A mayor superficie de ataque, mayor probabilidad de encontrar una vulnerabilidad explotable. La relacion es directamente proporcional: mas endpoints, mas puertos, mas funcionalidades, mas librerias, mas configuraciones = mas oportunidades para el atacante. Para reducir la superficie de ataque: (1) deshabilitar servicios no utilizados, (2) cerrar endpoints de API que no se usan, (3) minimizar las librerias y dependencias, (4) no exponer informacion interna (versiones, stack traces), (5) usar autenticacion y autorizacion para reducir la superficie accesible a usuarios no autenticados, (6) implementar principios de "secure by default" donde las funcionalidades peligrosas esten deshabilitadas hasta que se configuren explicitamente.
+**Respuesta:** Log4Shell (CVE-2021-44228) es una vulnerabilidad critica en Log4j 2.x que permite ejecucion remota de codigo sin autenticacion. La vulnerabilidad existia desde 2013 pero fue descubierta en diciembre 2021. Se relaciona con la gestion de componentes porque: (1) Log4j estaba presente en miles de aplicaciones como dependencia directa o transitiva, (2) muchas organizaciones no tenian un inventario (SBOM) de donde se usaba Log4j, (3) la correccion requirio actualizar a Log4j 2.17.0+, pero muchas aplicaciones no podian actualizar porque usaban versiones embedidas o dependencias transitivas que no se actualizaban, (4) demostro la importancia del SCA: si las organizaciones hubieran tenido visibilidad completa de sus dependencias, habrian podido responder mas rapido.
 
 ---
 
 ## Tarea / Lectura Recomendada
 
-1. **Leer:** OWASP Proactive Controls - https://owasp.org/www-project-proactive-controls/
-2. **Leer:** OWASP Cheat Sheet Series - https://cheatsheetseries.owasp.org/
-3. **Leer:** "Security by Design Principles" (Microsoft) - https://learn.microsoft.com/en-us/azure/well-architected/security/security-principles
-4. **Practicar:** Realizar un threat modeling de una aplicacion simple usando STRIDE
-5. **Leer:** OWASP ASVS - Application Security Verification Standard - https://owasp.org/www-project-application-security-verification-standard/
-6. **Profundizar:** Investigar el modelo STRIDE (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege)
-7. **Evaluar:** Elegir un proyecto personal o laboral y evaluar cuantos principios de seguridad cumple
-8. **Leer:** "The Security Development Lifecycle" de Microsoft (SDL)
+1. **Leer:** OWASP Dependency Check - https://owasp.org/www-project-dependency-check/
+2. **Practicar:** Crear cuenta en Snyk (snyk.io) y analizar un proyecto real
+3. **Leer:** OWASP Logging Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html
+4. **Practicar:** Configurar Dependabot en un repositorio GitHub
+5. **Leer:** SBOM Guide - CISA: https://www.cisa.gov/sbom
+6. **Experimentar:** Generar SBOM para el proyecto actual usando el codigo del ejercicio 3
+7. **Profundizar:** Investigar el formato CycloneDX vs SPDX para SBOM
+8. **Leer:** OWASP Top 10:2021 - A06:2021 Vulnerable and Outdated Components
+
 
 

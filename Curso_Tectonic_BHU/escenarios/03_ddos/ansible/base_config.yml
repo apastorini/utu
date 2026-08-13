@@ -1,0 +1,98 @@
+---
+# ==============================================================================
+# Escenario DDoS - Configuracion Base de Imagenes
+# ==============================================================================
+# Este playbook se ejecuta DURANTE la creacion de imagenes base (fase Packer).
+# Instala todas las dependencias que requieren conexion a internet.
+#
+# COMPONENTES INSTALADOS:
+#   1. attack-ws: hping3, slowloris (python), python3
+#   2. web-srv: nginx, iptables, fail2ban, python3
+#   3. blue-team-ws: python3, tcpdump, net-tools, curl
+# ==============================================================================
+
+- name: "Configurar attack-ws para DDoS"
+  hosts: attack-ws
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: "Actualizar repositorios"
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: "Instalar herramientas de ataque"
+      ansible.builtin.package:
+        state: present
+        name:
+          - hping3
+          - python3
+          - python3-pip
+          - net-tools
+          - nmap
+          - curl
+
+    - name: "Instalar slowloris via pip"
+      ansible.builtin.pip:
+        name: slowloris
+        executable: pip3
+
+    - name: "Compilar hping3 desde fuente si no esta disponible"
+      ansible.builtin.shell: |
+        which hping3 || apt-get install -y hping3
+      ignore_errors: yes
+
+- name: "Configurar web-srv"
+  hosts: web-srv
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: "Actualizar repositorios"
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: "Instalar servidor web y herramientas de seguridad"
+      ansible.builtin.package:
+        state: present
+        name:
+          - nginx
+          - iptables
+          - iptables-persistent
+          - fail2ban
+          - python3
+          - net-tools
+          - tcpdump
+          - curl
+          - netcat-traditional
+
+    - name: "Instalar librerias de Python para monitoreo"
+      ansible.builtin.pip:
+        name:
+          - psutil
+        executable: pip3
+
+- name: "Configurar blue-team-ws"
+  hosts: blue-team-ws
+  gather_facts: yes
+  become: yes
+  tasks:
+    - name: "Actualizar repositorios"
+      ansible.builtin.apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: "Instalar herramientas de monitoreo"
+      ansible.builtin.package:
+        state: present
+        name:
+          - python3
+          - python3-pip
+          - tcpdump
+          - net-tools
+          - curl
+          - nmap
+          - hping3

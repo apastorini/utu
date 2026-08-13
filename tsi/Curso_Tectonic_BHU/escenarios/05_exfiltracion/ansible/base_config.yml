@@ -1,0 +1,597 @@
+---
+# Banco del Sol - Escenario 05: Exfiltracion via DNS Tunneling
+# Configuracion base del laboratorio
+# Ejecutar despues de clonar las VMs
+
+- name: Configuracion base del escenario de exfiltracion
+  hosts: all
+  become: true
+  vars:
+    banco_del_sol:
+      nombre: "Banco del Sol"
+      dominio: "bancodelsol.local"
+      dns_domain: "bancodelsol.local"
+
+  tasks:
+    # =========================================================
+    # CONFIGURACION GENERAL DE RED
+    # =========================================================
+    - name: Configurar hostname en todas las VMs
+      hostname:
+        name: "{{ inventory_hostname }}"
+
+    - name: Configurar /etc/hosts con todos los servidores
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ item.ip }} {{ item.hostname }}.{{ banco_del_sol.dns_domain }} {{ item.hostname }}"
+        state: present
+      loop:
+        - { ip: "10.10.0.10", hostname: "attacker" }
+        - { ip: "10.10.1.10", hostname: "webserver" }
+        - { ip: "10.10.1.20", hostname: "mailserver" }
+        - { ip: "10.10.2.10", hostname: "domaincontroller" }
+        - { ip: "10.10.2.30", hostname: "fileserver" }
+        - { ip: "10.10.2.40", hostname: "database" }
+        - { ip: "10.10.2.100", hostname: "workstation" }
+
+    # =========================================================
+    # INSTALACION DE HERRAMIENTAS BASE
+    # =========================================================
+    - name: Instalar paquetes base en todas las VMs
+      apt:
+        name:
+          - tcpdump
+          - dnsutils
+          - bind9
+          - bind9utils
+          - wireshark-common
+          - tshark
+          - nmap
+          - curl
+          - wget
+          - python3
+          - python3-pip
+          - sysstat
+          - net-tools
+          - iputils-ping
+        state: present
+        update_cache: yes
+      when: ansible_os_family == "Debian"
+
+    - name: Instalar paquetes base en VMs RedHat
+      yum:
+        name:
+          - tcpdump
+          - bind-utils
+          - bind
+          - wireshark-cli
+          - nmap
+          - curl
+          - wget
+          - python3
+          - python3-pip
+          - sysstat
+          - net-tools
+        state: present
+      when: ansible_os_family == "RedHat"
+
+    # =========================================================
+    # CONFIGURACION DE DNS LOGGING
+    # =========================================================
+    - name: Configurar DNS logging en domaincontroller
+      blockinfile:
+        path: /etc/bind/named.conf.local
+        marker: "# {mark} BANCO DEL SOL DNS LOGGING"
+        insertafter: EOF
+        block: |
+          logging {
+              channel query_log {
+                  file "/var/log/bind/query.log" versions 3 size 50m;
+                  severity info;
+                  print-time yes;
+                  print-severity yes;
+                  print-category yes;
+              };
+              channel security_log {
+                  file "/var/log/bind/security.log" versions 3 size 20m;
+                  severity dynamic;
+                  print-time yes;
+                  print-severity yes;
+                  print-category yes;
+              };
+              category queries { query_log; };
+              category security { security_log; };
+              category rate-limit { query_log; };
+          };
+      when: inventory_hostname == "domaincontroller"
+
+    - name: Crear directorio para logs DNS
+      file:
+        path: /var/log/bind
+        state: directory
+        owner: bind
+        group: bind
+        mode: '0755'
+      when: inventory_hostname == "domaincontroller"
+
+    - name: Habilitar y reiniciar servicio DNS
+      systemd:
+        name: bind9
+        state: restarted
+        enabled: yes
+      when: inventory_hostname == "domaincontroller"
+
+    # =========================================================
+    # CONFIGURACION DEL SERVIDOR DE BASE DE DATOS
+    # =========================================================
+    - name: Instalar MySQL server
+      apt:
+        name:
+          - mysql-server
+          - python3-mysqldb
+        state: present
+      when: inventory_hostname == "database"
+
+    - name: Iniciar servicio MySQL
+      systemd:
+        name: mysql
+        state: started
+        enabled: yes
+      when: inventory_hostname == "database"
+
+    - name: Crear base de datos de prueba
+      mysql_db:
+        name: banco_del_sol
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+      when: inventory_hostname == "database"
+
+    - name: Crear usuario de base de datos
+      mysql_user:
+        name: admin_banco
+        password: "B@nco$2025!Secure"
+        priv: "banco_del_sol.*:ALL"
+        state: present
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+      when: inventory_hostname == "database"
+
+    - name: Crear tablas de datos de prueba
+      mysql_query:
+        login_db: banco_del_sol
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        login_user: admin_banco
+        login_password: "B@nco$2025!Secure"
+        query: "{{ item }}"
+      loop:
+        - |
+          CREATE TABLE IF NOT EXISTS clientes (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            dni VARCHAR(12) NOT NULL,
+            nombre_completo VARCHAR(100) NOT NULL,
+            numero_cuenta VARCHAR(20) NOT NULL,
+            saldo DECIMAL(15,2) NOT NULL,
+            direccion VARCHAR(200),
+            telefono VARCHAR(20),
+            email VARCHAR(100),
+            fecha_registro DATE,
+            nivel_cuenta ENUM('basico', 'preferencial', 'vip', 'premium'),
+            INDEX idx_dni (dni),
+            INDEX idx_cuenta (numero_cuenta)
+          ) ENGINE=InnoDB;
+        - |
+          CREATE TABLE IF NOT EXISTS tarjetas_credito (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            numero_tarjeta VARCHAR(19) NOT NULL,
+            titular VARCHAR(100) NOT NULL,
+            fecha_vencimiento DATE NOT NULL,
+            cvv VARCHAR(4) NOT NULL,
+            limite_credito DECIMAL(12,2) NOT NULL,
+            saldo_actual DECIMAL(12,2) NOT NULL,
+            cliente_id INT,
+            FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+            INDEX idx_tarjeta (numero_tarjeta)
+          ) ENGINE=InnoDB;
+        - |
+          CREATE TABLE IF NOT EXISTS transacciones (
+            id_transaccion INT AUTO_INCREMENT PRIMARY KEY,
+            fecha DATETIME NOT NULL,
+            monto DECIMAL(12,2) NOT NULL,
+            tipo ENUM('deposito', 'retiro', 'transferencia', 'pago') NOT NULL,
+            cuenta_origen VARCHAR(20) NOT NULL,
+            cuenta_destino VARCHAR(20),
+            descripcion VARCHAR(200),
+            INDEX idx_fecha (fecha),
+            INDEX idx_cuenta_origen (cuenta_origen)
+          ) ENGINE=InnoDB;
+      when: inventory_hostname == "database"
+
+    - name: Poblar tabla clientes con datos de prueba
+      mysql_query:
+        login_db: banco_del_sol
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        login_user: admin_banco
+        login_password: "B@nco$2025!Secure"
+        query: >
+          INSERT IGNORE INTO clientes (dni, nombre_completo, numero_cuenta, saldo, direccion, telefono, email, fecha_registro, nivel_cuenta)
+          VALUES
+          ('4.123.456-7', 'Garcia Rodriguez, Maria Elena', '0011-2233-4455', 125000.50, 'Av. 18 de Julio 1234, Montevideo', '2123-4567', 'mgarcia@email.com', '2019-03-15', 'premium'),
+          ('3.987.654-3', 'Fernandez Lopez, Carlos Alberto', '0011-2233-4456', 89750.25, 'Rambla Sur 567, Montevideo', '2123-8901', 'cfernandez@email.com', '2020-06-22', 'preferencial'),
+          ('2.456.789-0', 'Martinez Silva, Ana Victoria', '0011-2233-4457', 342100.00, 'Bulevar Artigas 890, Montevideo', '2123-2345', 'amartinez@email.com', '2018-01-10', 'vip'),
+          ('5.678.901-2', 'Rodriguez Perez, Juan Martin', '0011-2233-4458', 15680.75, 'Calle Colonia 1456, Montevideo', '2123-6789', 'jrodriguez@email.com', '2021-09-05', 'basico'),
+          ('1.234.567-8', 'Lopez Gutierrez, Laura Sofia', '0011-2233-4459', 275430.90, 'Av. Italia 2345, Montevideo', '2123-0123', 'llopez@email.com', '2017-11-28', 'premium'),
+          ('4.567.890-1', 'Hernandez Castro, Roberto Carlos', '0011-2233-4460', 67890.30, 'Pocitos, Rambla Mahatma Gandhi 3456', '2123-4567', 'rhernandez@email.com', '2020-02-14', 'preferencial'),
+          ('3.210.987-6', 'Torres Ramirez, Patricia Elena', '0011-2233-4461', 198540.60, 'Cordón, Ciudad Vieja 789', '2123-8901', 'ptorres@email.com', '2019-07-30', 'vip'),
+          ('2.876.543-2', 'Diaz Morales, Fernando Andres', '0011-2233-4462', 43210.45, 'Buceo, Av. Del Libertador 1234', '2123-2345', 'fdiaz@email.com', '2021-04-18', 'basico'),
+          ('5.432.109-8', 'Sanchez Vargas, Claudia Andrea', '0011-2233-4463', 156780.20, 'Parque Rodó, Av. Constituyente 567', '2123-6789', 'csanchez@email.com', '2018-08-12', 'preferencial'),
+          ('1.098.765-4', 'Ramirez Otero, Diego Martin', '0011-2233-4464', 89320.15, 'Punta Carretas, Rambla 890', '2123-0123', 'dramirez@email.com', '2020-12-01', 'vip')
+      when: inventory_hostname == "database"
+
+    - name: Poblar tabla tarjetas de credito
+      mysql_query:
+        login_db: banco_del_sol
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        login_user: admin_banco
+        login_password: "B@nco$2025!Secure"
+        query: >
+          INSERT IGNORE INTO tarjetas_credito (numero_tarjeta, titular, fecha_vencimiento, cvv, limite_credito, saldo_actual, cliente_id)
+          VALUES
+          ('4532-1234-5678-9012', 'Garcia Rodriguez, Maria Elena', '2027-03-31', '847', 500000.00, 125000.00, 1),
+          ('4532-2345-6789-0123', 'Fernandez Lopez, Carlos Alberto', '2026-11-30', '392', 300000.00, 87500.00, 2),
+          ('4532-3456-7890-1234', 'Martinez Silva, Ana Victoria', '2028-06-30', '156', 750000.00, 45000.00, 3),
+          ('4532-4567-8901-2345', 'Rodriguez Perez, Juan Martin', '2027-09-30', '728', 150000.00, 23400.00, 4),
+          ('4532-5678-9012-3456', 'Lopez Gutierrez, Laura Sofia', '2026-08-31', '614', 800000.00, 210000.00, 5)
+      when: inventory_hostname == "database"
+
+    - name: Poblar tabla transacciones
+      mysql_query:
+        login_db: banco_del_sol
+        login_unix_socket: /var/run/mysqld/mysqld.sock
+        login_user: admin_banco
+        login_password: "B@nco$2025!Secure"
+        query: >
+          INSERT IGNORE INTO transacciones (fecha, monto, tipo, cuenta_origen, cuenta_destino, descripcion)
+          VALUES
+          ('2025-01-15 09:30:00', 15000.00, 'transferencia', '0011-2233-4455', '0011-2233-4456', 'Transferencia entre cuentas propias'),
+          ('2025-01-15 14:45:00', 2500.00, 'retiro', '0011-2233-4457', NULL, 'Retiro cajero automatico'),
+          ('2025-01-16 10:00:00', 50000.00, 'deposito', '0011-2233-4458', NULL, 'Deposito en efectivo'),
+          ('2025-01-16 16:20:00', 8900.50, 'pago', '0011-2233-4459', '0011-2233-4460', 'Pago de servicios'),
+          ('2025-01-17 08:15:00', 125000.00, 'transferencia', '0011-2233-4461', '0011-2233-4462', 'Transferencia internacional'),
+          ('2025-01-17 11:30:00', 3400.00, 'retiro', '0011-2233-4463', NULL, 'Retiro cajero automatico'),
+          ('2025-01-17 15:45:00', 7850.25, 'pago', '0011-2233-4464', NULL, 'Pago tarjeta de credito'),
+          ('2025-01-18 09:00:00', 25000.00, 'deposito', '0011-2233-4455', NULL, 'Deposito cheque'),
+          ('2025-01-18 13:30:00', 4200.00, 'transferencia', '0011-2233-4456', '0011-2233-4457', 'Pago a tercero'),
+          ('2025-01-18 17:00:00', 18900.75, 'retiro', '0011-2233-4458', NULL, 'Retiro en sucursal')
+      when: inventory_hostname == "database"
+
+    - name: Habilitar logging de consultas en MySQL
+      lineinfile:
+        path: /etc/mysql/mysql.conf.d/mysqld.cnf
+        line: "{{ item }}"
+        state: present
+      loop:
+        - "general_log = 1"
+        - "general_log_file = /var/log/mysql/query.log"
+        - "log_error = /var/log/mysql/error.log"
+      when: inventory_hostname == "database"
+
+    - name: Reiniciar MySQL
+      systemd:
+        name: mysql
+        state: restarted
+      when: inventory_hostname == "database"
+
+    # =========================================================
+    # CONFIGURACION DEL SERVIDOR DE ARCHIVOS (SMB)
+    # =========================================================
+    - name: Instalar Samba
+      apt:
+        name:
+          - samba
+          - samba-common-bin
+        state: present
+      when: inventory_hostname == "fileserver"
+
+    - name: Crear directorios compartidos
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: nobody
+        group: nogroup
+        mode: '0777'
+      loop:
+        - /srv/samba/Directorio
+        - /srv/samba/Legal
+        - /srv/samba/Tecnologia
+        - /srv/samba/Compartido
+      when: inventory_hostname == "fileserver"
+
+    - name: Crear documentos confidenciales de prueba
+      copy:
+        content: "{{ item.content }}"
+        dest: "{{ item.path }}"
+        owner: nobody
+        group: nogroup
+        mode: '0644'
+      loop:
+        - path: /srv/samba/Directorio/estrategia_2025_confidencial.pdf
+          content: |
+            [CONTENIDO SIMULADO - Documento PDF]
+            Banco del Sol - Estrategia 2025 Confidencial
+            ============================================
+            Departamento: Directorio Ejecutivo
+            Clasificacion: CONFIDENCIAL
+            
+            Resumen Ejecutivo del Plan Estrategico 2025:
+            - Expansion regional: apertura de 3 sucursales en interior
+            - Fusion bancaria en negociaciones avanzadas con Banco Regional del Sur
+            - Reduccion de personal estimada: 15% en areas administrativas
+            - Inversion en transformacion digital: USD 5.2 millones
+            - Nuevo producto: banca de inversiones para clientes premium
+            
+            Proyecciones financieras:
+            - Crecimiento de cartera de credito: 12%
+            - Reduccion de costos operativos: 8%
+            - ROI proyectado: 18.5%
+            - Meta de captacion: USD 450 millones
+            
+            NOTA: Este documento contiene informacion estrictamente confidencial.
+            Su distribucion no autorizada esta sujeta a sanciones legales.
+
+        - path: /srv/samba/Directorio/fusion_bancaria_propuesta.docx
+          content: |
+            [CONTENIDO SIMULADO - Documento Word]
+            Propuesta de Fusion - Banco del Sol & Banco Regional del Sur
+            ============================================================
+            Fecha: 15 de enero de 2025
+            Clasificacion: CONFIDENCIAL - SOLO DIRECTORIO
+            
+            I. Resumen de la Operacion
+            Fusion entre Banco del Sol S.A. y Banco Regional del Sur S.A.
+            creando la tercera entidad bancaria mas grande del pais.
+            
+            II. Valor de la Operacion
+            - Valor estimado: USD 280 millones
+            - Ratio de intercambio: 1.35 acciones de BRS por 1 accion de BDS
+            - Prima ofrecida: 22% sobre valor de mercado
+            
+            III. Sindicacion Financiera
+            - Banco Mandatario: Itau Corpbanca
+            - Asesor Legal: Estudio Garcia & Asociados
+            - Due Diligence: Ernst & Young
+            
+            IV. Cronograma
+            - Fase 1: Aprobacion regulatoria (Q1 2025)
+            - Fase 2: Votacion de accionistas (Q2 2025)
+            - Fase 3: Fusion operativa (Q3 2025)
+
+        - path: /srv/samba/Directorio/reestructuracion_personal.xlsx
+          content: |
+            [CONTENIDO SIMULADO - Hoja de calculo]
+            Plan de Reduccion de Personal - 2025
+            =====================================
+            Departamento | Actual | Propuesto | Reduccion | %
+            Administracion | 45 | 28 | 17 | 37.8%
+            Operaciones | 120 | 105 | 15 | 12.5%
+            Tecnologia | 35 | 30 | 5 | 14.3%
+            Marketing | 20 | 15 | 5 | 25.0%
+            Recursos Humanos | 15 | 10 | 5 | 33.3%
+            Total | 235 | 188 | 47 | 20.0%
+            
+            Indemnizaciones estimadas: USD 1.8 millones
+            Fecha efectiva: 1 de julio de 2025
+            Paquete de retiro voluntario disponible hasta 30 de junio
+
+        - path: /srv/samba/Legal/demanda_concursal.docx
+          content: |
+            [CONTENIDO SIMULADO - Documento Legal]
+            Expediente Nro. 2024-0892
+            Juzgado Letrado de Primera Instancia en lo Civil de 3er Turno
+            
+            DEMANDA DE ACCION ORDINARIA
+            
+            Banco del Sol S.A. contra Inversiones del Sur S.R.L.
+            
+            MOTIVO: Incumplimiento contractual - Prestamo comercial
+            
+            Monto reclamado: USD 2.340.000
+            Fecha de vencimiento: 15 de octubre de 2024
+            Garantia: Hipoteca sobre inmueble comercial
+            
+            Se reclama el pago total del capital adeudado mas intereses
+            y costas del juicio.
+
+        - path: /srv/samba/Legal/audit_financiera_q3.pdf
+          content: |
+            [CONTENIDO SIMULADO - Reporte de Auditoria]
+            Auditoria Financiera Q3 2025 - Banco del Sol S.A.
+            ===================================================
+            Auditor: Ernst & Young Uruguay S.R.L.
+            Periodo: Julio - Septiembre 2025
+            
+            HALLAZGOS PRINCIPALES:
+            1. Estado de resultados: Conforme a normas internacionales
+            2. Balance general: Observaciones menores en clasificacion de activos
+            3. Capital adecuado: Nivel de solvencia 14.2% (minimo regulatorio: 10%)
+            4. Cartera de credito: 3.2% en mora (promedio industria: 4.1%)
+            5. Liquidez: Ratio de cobertura 135% (minimo: 100%)
+            
+            OPINION: Calificada sin salvedades
+            Riesgo identificado: Concentracion de cartera en sector inmobiliario
+
+        - path: /srv/samba/Tecnologia/arquitectura_red_interna.vsdx
+          content: |
+            [CONTENIDO SIMULADO - Diagrama de Red]
+            Arquitectura de Red Interna - Banco del Sol
+            =============================================
+            RED DMZ (10.10.1.0/24):
+            - Webserver (10.10.1.10): Apache, PHP, SSL
+            - Mailserver (10.10.1.20): Postfix, Dovecot
+            
+            RED INTERNA (10.10.2.0/24):
+            - DomainController (10.10.2.10): Windows Server 2019, AD, DNS
+            - Fileserver (10.10.2.30): Ubuntu 22.04, Samba
+            - Database (10.10.2.40): Ubuntu 22.04, MySQL 8.0
+            
+            RED GESTION (10.10.0.0/24):
+            - Monitoring (10.10.0.5): Zabbix, Grafana
+            - JumpServer (10.10.0.20): SSH Bastion
+            
+            FIREWALL:
+            - Palo Alto PA-220 (10.10.1.1 / 10.10.2.1 / 10.10.0.1)
+            - Reglas: DMZ a Internet permitido, Interna a DMZ restringido
+            
+            VPN:
+            - Site-to-Site con sucursales
+            - Client VPN para teletrabajo
+            
+            [Este diagrama contiene informacion de infraestructura clasificada]
+
+        - path: /srv/samba/Tecnologia/credenciales_acceso_privilegiado.xlsx
+          content: |
+            [CONTENIDO SIMULADO - Credenciales]
+            WARNING: Este archivo contiene credenciales de acceso privilegiado
+            Solo para uso del equipo de tecnologia autorizado
+            
+            Servicio | Usuario | Contrasena | Servidor | Nota
+            MySQL | admin_banco | B@nco$2025!Secure | database | Produccion
+            Samba | admin_banco | SMB2025!Admin | fileserver | Administrador
+            SSH | root | R00t$erver2025! | database | Acceso root
+            SSH | admin | Adm1n$sh2025! | fileserver | Administrador
+            AD | administrator | ADmin2025!Pass | domaincontroller | Domain Admin
+            WebPanel | admin | W3bP@nel2025! | webserver | cPanel
+      when: inventory_hostname == "fileserver"
+
+    - name: Configurar Samba - Directorio Ejecutivo
+      blockinfile:
+        path: /etc/samba/smb.conf
+        marker: "# {mark} BANCO DEL SOL - DIRECTORIO"
+        insertbefore: "^\[global\]"
+        block: |
+          [Compartido]
+            path = /srv/samba/Compartido
+            browseable = yes
+            read only = no
+            guest ok = yes
+            create mask = 0664
+            directory mask = 0775
+            force user = nobody
+      when: inventory_hostname == "fileserver"
+
+    - name: Reiniciar Samba
+      systemd:
+        name: smbd
+        state: restarted
+        enabled: yes
+      when: inventory_hostname == "fileserver"
+
+    # =========================================================
+    # CONFIGURACION DEL WORKSTATION
+    # =========================================================
+    - name: Crear directorio de trabajo en workstation
+      file:
+        path: /home/student
+        state: directory
+        owner: student
+        group: student
+        mode: '0755'
+      when: inventory_hostname == "workstation"
+
+    - name: Configurar DNS en workstation
+      copy:
+        content: |
+          nameserver 10.10.2.10
+          nameserver 8.8.8.8
+          nameserver 8.8.4.4
+          search bancodelsol.local
+        dest: /etc/resolv.conf
+        owner: root
+        group: root
+        mode: '0644'
+      when: inventory_hostname == "workstation"
+
+    # =========================================================
+    # CONFIGURACION DE CAPTURA DE TRAFICO
+    # =========================================================
+    - name: Crear directorio para capturas de trafico
+      file:
+        path: /var/log/traffic_captures
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Crear script de captura de trafico DNS
+      copy:
+        content: |
+          #!/bin/bash
+          # Captura de trafico DNS para analisis de exfiltracion
+          CAPTURE_DIR="/var/log/traffic_captures"
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          
+          # Capturar trafico DNS con suficiente espacio para analisis
+          tcpdump -i any port 53 -w "${CAPTURE_DIR}/dns_capture_${TIMESTAMP}.pcap" -c 100000 &
+          TCPDUMP_PID=$!
+          
+          echo "Captura de trafico DNS iniciada"
+          echo "PID: ${TCPDUMP_PID}"
+          echo "Archivo: ${CAPTURE_DIR}/dns_capture_${TIMCODE}.pcap"
+          echo "${TCPDUMP_PID}" > /tmp/dns_capture.pid
+          
+          # Mantener la captura activa
+          wait $TCPDUMP_PID
+        dest: /usr/local/bin/start_dns_capture.sh
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Iniciar captura de trafico DNS
+      command: /usr/local/bin/start_dns_capture.sh
+      async: 600
+      poll: 0
+      ignore_errors: yes
+
+    # =========================================================
+    # HABILITAR LOGGING EN TODOS LOS SISTEMAS
+    # =========================================================
+    - name: Configurar rsyslog para logs centralizados
+      lineinfile:
+        path: /etc/rsyslog.conf
+        line: "*.* @@10.10.2.10:514"
+        state: present
+      ignore_errors: yes
+
+    - name: Habilitar audit logging
+      command: auditctl -e 1
+      ignore_errors: yes
+
+    - name: Configurar audit rules para archivos sensibles
+      lineinfile:
+        path: /etc/audit/rules.d/banco.rules
+        line: "{{ item }}"
+        state: present
+        create: yes
+      loop:
+        - "-w /etc/passwd -p wa -k identity"
+        - "-w /etc/shadow -p wa -k identity"
+        - "-w /var/log/ -p wa -k logs"
+      ignore_errors: yes
+
+    # =========================================================
+    # VERIFICACION DE CONFIGURACION
+    # =========================================================
+    - name: Verificar servicios ejecutandose
+      command: systemctl is-active {{ item.service }}
+      register: service_check
+      failed_when: service_check.rc != 0
+      loop:
+        - { service: "ssh" }
+        - { service: "bind9", when: "inventory_hostname == 'domaincontroller'" }
+        - { service: "mysql", when: "inventory_hostname == 'database'" }
+        - { service: "smbd", when: "inventory_hostname == 'fileserver'" }
+      when: item.when is not defined or item.when | bool
+
+    - name: Reportar estado de configuracion
+      debug:
+        msg: >
+          [{{ inventory_hostname }}] Configuracion base completada.
+          Servicios activos verificados.

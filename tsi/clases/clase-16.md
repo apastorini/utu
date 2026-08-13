@@ -1,4 +1,4 @@
-# Clase 16: Inyeccion SQL Avanzada y NoSQL
+# Clase 16: OWASP Top 10 - Vision General + Inyeccion SQL
 
 **Duracion:** 2 horas
 
@@ -6,616 +6,493 @@
 
 ## Objetivos de Aprendizaje
 
-1. Comprender y ejecutar tecnicas de inyeccion SQL a ciegas (Blind SQL)
-2. Diferenciar entre Blind SQL basada en booleanos y basada en tiempo
-3. Identificar y explotar inyeccion NoSQL en MongoDB
-4. Implementar defensa en profundidad contra todo tipo de inyecciones
+1. Conocer la historia y el proposito del OWASP Top 10
+2. Identificar los 10 riesgos de seguridad mas criticos en aplicaciones web
+3. Comprender en profundidad la inyeccion SQL y sus variantes
+4. Implementar mitigaciones efectivas contra inyeccion: prepared statements, parametrizacion, ORM
 
 ---
 
 ## Contenido Detallado
 
-### 1. Inyeccion SQL a Ciegas (Blind SQL Injection)
+### 1. Historia del OWASP Top 10
 
-Ocurre cuando la aplicacion no muestra datos de la BD directamente, pero el comportamiento cambia segun si la consulta es verdadera o falsa.
+OWASP (Open Web Application Security Project) es una comunidad global sin fines de lucro dedicada a mejorar la seguridad del software. El Top 10 es su proyecto mas conocido: un documento que identifica los 10 riesgos de seguridad mas criticos en aplicaciones web.
 
-#### Blind SQL Basada en Booleanos
-
-El atacante envia preguntas de si/no y observa la respuesta de la aplicacion (carga diferente, mensaje de error diferente, redireccion diferente).
-
-```
-Consulta original:  SELECT * FROM productos WHERE id = 1
-Respuesta:          Muestra producto normal
-
-Consulta inyectada: SELECT * FROM productos WHERE id = 1 AND 1=1
-Respuesta:          Misma respuesta (siempre verdadero)
-
-Consulta inyectada: SELECT * FROM productos WHERE id = 1 AND 1=2
-Respuesta:          No muestra nada (siempre falso)
-
-Diferencia:         La app es vulnerable a Blind SQL!
-```
-
-**Extrayendo datos caracter por caracter:**
-
-```sql
--- ?La primera letra del password del admin es 'a'?
-SELECT * FROM productos WHERE id = 1 AND
-    SUBSTRING((SELECT password FROM usuarios WHERE username='admin'), 1, 1) = 'a'
-
--- Si muestra producto: la letra es 'a'
--- Si no muestra: no es 'a', probar 'b', 'c', etc.
-
--- ?El password tiene mas de 5 caracteres?
-SELECT * FROM productos WHERE id = 1 AND
-    LENGTH((SELECT password FROM usuarios WHERE username='admin')) > 5
-```
-
-**Proceso completo de extraccion:**
-1. Determinar longitud del valor: preguntar > 1, > 2, > 3... hasta encontrar el limite
-2. Extraer caracter 1: probar 'a', 'b', 'c'... hasta encontrar match
-3. Repetir para cada caracter hasta la longitud total
-
-#### Blind SQL Basada en Tiempo (Time-based)
-
-Cuando la app no muestra diferencias en la respuesta (misma pagina, mismos errores), se usa retardos provocados por funciones como SLEEP(), WAITFOR DELAY, pg_sleep.
-
-```sql
--- MySQL
-SELECT * FROM productos WHERE id = 1 AND IF(1=1, SLEEP(5), 0)
-
--- SQL Server
-SELECT * FROM productos WHERE id = 1; WAITFOR DELAY '0:0:5'
-
--- PostgreSQL
-SELECT * FROM productos WHERE id = 1 AND pg_sleep(5)
-
--- ?La primera letra del password es 'a'?
-SELECT * FROM productos WHERE id = 1 AND
-    IF(SUBSTRING((SELECT password FROM usuarios WHERE username='admin'),1,1)='a',
-       SLEEP(5), 0)
--- Si tarda 5 segundos: la letra es 'a'
--- Si responde inmediato: no es 'a'
-```
-
-### 2. Inyeccion NoSQL en MongoDB
-
-MongoDB usa un lenguaje de consulta basado en JSON/BSON. Las inyecciones ocurren cuando los parametros del usuario se concatenan directamente en las consultas.
-
-#### Como funciona MongoDB
-
-```javascript
-// Consulta normal en MongoDB
-db.usuarios.find({ username: "admin", password: "secreto" })
-
-// Operadores especiales
-db.usuarios.find({ username: "admin", password: { $ne: "" } })
-// $ne = not equal -> devuelve cualquier usuario cuyo password no este vacio
-```
-
-#### Inyeccion en Consultas con String Concatenation
-
-**Vulnerable (Node.js):**
-```javascript
-const username = req.body.username;
-const password = req.body.password;
-
-// VULNERABLE: concatenacion en string JSON
-const query = `{ username: '${username}', password: '${password}' }`;
-db.collection('usuarios').find(JSON.parse(query)).toArray((err, users) => {
-    if (users.length > 0) {
-        // Login exitoso!
-    }
-});
-```
-
-**Explotacion:**
-```
-Enviar como username: admin
-Enviar como password: $ne}  (cierra el JSON y anade operador)
-El JSON resultante:   { username: 'admin', password: '$ne'}  }
-
-Pero mejor, explotar la inyeccion directa:
-
-username = admin
-password = { "$ne": "" }
-
-Si no hay validacion de tipos, se pasa objeto directamente:
-query = { username: 'admin', password: { "$ne": "" } }
-```
-
-**Explotacion tipica en APIs REST:**
-```json
-// Peticion POST a /api/login
-// Payload malicioso:
-{
-    "username": "admin",
-    "password": { "$ne": "" }
-}
-
-// Consulta generada:
-db.usuarios.findOne({
-    "username": "admin",
-    "password": { "$ne": "" }
-})
-// Devuelve admin si existe (bypass de autenticacion)
-```
-
-#### Inyeccion $where
-
-El operador `$where` permite ejecutar JavaScript arbitrario en la BD.
-
-```javascript
-// VULNERABLE
-db.usuarios.find({ $where: "this.username == '" + username + "'" });
-
-// Explotacion
-username = "' || true || '"
-// Resultado: this.username == '' || true || ''
-// Devuelve todos los usuarios!
-
-// RCE via $where
-username = "'; return 'a' == 'a"
-// O incluso inyectar codigo mas complejo
-```
-
-### 3. Herramientas: SQLMap
-
-SQLMap es la herramienta mas popular para detectar y explotar automaticamente inyecciones SQL.
-
-**Uso basico:**
-```bash
-# Detectar si una URL es vulnerable
-sqlmap -u "http://target.com/producto.php?id=1"
-
-# Con cookie de sesion
-sqlmap -u "http://target.com/producto.php?id=1" --cookie="session=abc123"
-
-# Extraer bases de datos
-sqlmap -u "http://target.com/producto.php?id=1" --dbs
-
-# Extraer tablas de una BD
-sqlmap -u "http://target.com/producto.php?id=1" -D nombre_bd --tables
-
-# Extraer datos de una tabla
-sqlmap -u "http://target.com/producto.php?id=1" -D nombre_bd -T usuarios --dump
-
-# Modo de riesgo alto
-sqlmap -u "http://target.com/producto.php?id=1" --level=5 --risk=3
-```
-
-**Flags importantes:**
-- `--level`: Profundidad de pruebas (1-5, default 1)
-- `--risk`: Riesgo de pruebas (1-3, default 1)
-- `--technique`: Tecnica especifica (B: Boolean, T: Time, E: Error, U: Union, S: Stacked)
-- `--threads`: Hilos para acelerar
-- `--batch`: Modo no interactivo
-- `--dump-all`: Extraer todo
-
-**Demo educativa:**
-```bash
-# Probar con parametro POST
-sqlmap -u "http://testapp.com/login" --data="username=admin&password=test"
-
-# Blind SQL time-based
-sqlmap -u "http://testapp.com/producto.php?id=1" --technique=T --time-sec=3
-```
-
-### 4. Defensa en Profundidad contra Inyecciones
+**Evolucion:**
+- 2003: Primera version
+- 2004, 2007, 2010, 2013, 2017: Actualizaciones
+- 2021: Version mas reciente (cambio significativo: 3 nuevos items, datos basados en 500,000+ aplicaciones)
 
 ```
-CAPAS DE DEFENSA
-+----------------------------------------------------------+
-|  Capa 1: Prepared Statements/Parametrizacion (obligatorio)|
-+----------------------------------------------------------+
-|  Capa 2: Validacion de entrada (whitelist)                |
-+----------------------------------------------------------+
-|  Capa 3: ORM con configuracion segura                     |
-+----------------------------------------------------------+
-|  Capa 4: WAF (ModSecurity, Cloudflare)                    |
-+----------------------------------------------------------+
-|  Capa 5: Minimo privilegio en BD                          |
-+----------------------------------------------------------+
-|  Capa 6: Monitoreo y logging                              |
-+----------------------------------------------------------+
+OWASP Top 10: 2021 vs 2017
++----+----------------------------+----+----------------------------+
+|2021| Riesgo                     |2017| Riesgo                     |
++----+----------------------------+----+----------------------------+
+| A01| Broken Access Control      | A01| Broken Access Control      |
+| A02| Cryptographic Failures     | A02| Cryptographic Failures    |
+| A03| Injection                  | A03| Injection (baja del #1)   |
+| A04| Insecure Design            | A04| Insecure Design (nuevo)    |
+| A05| Security Misconfiguration  | A05| Security Misconfiguration |
+| A06| Vulnerable Components      | A06| Vulnerable Components     |
+| A07| Auth Failures              | A07| Auth Failures             |
+| A08| Software/Data Integrity    | A08| Software/Data Integrity   |
+| A09| Logging Failures           | A09| Logging Failures          |
+| A10| SSRF                       | A10| SSRF (nuevo)              |
++----+----------------------------+----+----------------------------+
 ```
 
-**Stored Procedures (con parametros):**
-```sql
-CREATE PROCEDURE sp_login
-    @username NVARCHAR(50),
-    @password NVARCHAR(50)
-AS
-BEGIN
-    SELECT * FROM usuarios WHERE username = @username AND password_hash = @password
-END
+### 2. Vision General de los 10 Riesgos (OWASP Top 10 2021)
+
+#### A01: Broken Access Control
+Fallos en la autorizacion: usuarios acceden a recursos que no deberian.
+- IDOR (Insecure Direct Object References): cambiar un ID en la URL
+- Ej: `/api/usuario/123` - cambiar a `/api/usuario/456`
+
+#### A02: Cryptographic Failures
+Fallas en cifrado: datos sensibles no cifrados, algoritmos debiles, certificados expirados.
+- Ej: Contrasenas almacenadas con MD5, HTTP en vez de HTTPS
+
+#### A03: Injection
+Inyeccion de codigo: SQL, NoSQL, OS Command, LDAP.
+- **Foco de esta clase:** Inyeccion SQL
+
+#### A04: Insecure Design
+Fallas en el diseno arquitectonico del sistema.
+- Ej: No tener rate limiting en login, no separar datos por tenant
+
+#### A05: Security Misconfiguration
+Configuracion insegura de servidores, BD, frameworks.
+- Ej: Default credentials, directorios listables, errores detallados
+
+#### A06: Vulnerable and Outdated Components
+Uso de librerias y frameworks con vulnerabilidades conocidas.
+- Ej: Log4j, Struts, versiones antiguas de jQuery
+
+#### A07: Identification and Authentication Failures
+Fallos en autenticacion: credenciales debiles, sesiones inseguras.
+- Ej: Permitir contrasenas debiles, no invalidar sesion al cerrar
+
+#### A08: Software and Data Integrity Failures
+Falta de verificacion de integridad en actualizaciones, CI/CD, pipelines.
+- Ej: No verificar firma de paquetes, supply chain attacks
+
+#### A09: Security Logging and Monitoring Failures
+No registrar eventos de seguridad ni detectar incidentes.
+- Ej: No loguear intentos fallidos de login, no tener alertas
+
+#### A10: Server-Side Request Forgery (SSRF)
+El servidor realiza peticiones a recursos internos basado en input del usuario.
+- Ej: Ataque a metadata de cloud (AWS, GCP, Azure)
+
+### 3. Inyeccion SQL en Profundidad
+
+#### Que es Inyeccion SQL?
+
+Es una tecnica donde el atacante inserta codigo SQL malicioso en los parametros de entrada de una aplicacion, aprovechando que los datos ingresados se concatenan directamente en consultas SQL sin sanitizacion.
+
+```
+Entrada del usuario:  ' OR '1'='1
+Consulta generada:    SELECT * FROM usuarios WHERE user = '' OR '1'='1' AND pass = 'x'
+Resultado:            Devuelve todos los usuarios (bypass de autenticacion)
 ```
 
-**WAF Reglas (ModSecurity):**
-```apache
-# Prevenir inyeccion SQL
-SecRule REQUEST_COOKIES|REQUEST_HEADERS|ARGS "@detectSQLi" \
-    "id:942100,severity:CRITICAL,block,msg:'SQL Injection Detected'"
+#### Tipos de Inyeccion SQL
 
-# Prevenir inyeccion NoSQL
-SecRule REQUEST_BODY "@detectNoSQLi" \
-    "id:942200,severity:CRITICAL,block,msg:'NoSQL Injection Detected'"
+**1. Inyeccion en el WHERE (bypass de autenticacion)**
+```
+SELECT * FROM usuarios WHERE username = 'admin' AND password = 'cualquiercosa' OR '1'='1'
 ```
 
----
+**2. Inyeccion UNION (robo de datos)**
+```
+SELECT nombre, precio FROM productos WHERE id = 1 UNION SELECT username, password FROM usuarios
+```
 
-## Ejercicio 1: Login Seguro con Parametros (Python + SQLite)
+**3. Inyeccion a ciegas (Blind SQL)**
+Sin salida visible de datos, el atacante pregunta verdadero/falso.
+```
+SELECT * FROM productos WHERE id = 1 AND SUBSTRING((SELECT password FROM usuarios WHERE id=1),1,1) = 'a'
+```
+Si la pagina carga normal, la primera letra es 'a'; si no, es otra.
 
-Crear un script completo de login seguro con las siguientes caracteristicas:
-- Registro de usuarios con contrasena hasheada (bcrypt)
-- Login con consultas parametrizadas
-- Proteccion contra fuerza bruta (limite de intentos)
-- Mensajes de error genericos
-- Logging de intentos sin datos sensibles
+**4. Time-based Blind SQL**
+Similar pero usa retardos:
+```
+SELECT * FROM productos WHERE id = 1 AND IF(SUBSTRING((SELECT password FROM usuarios WHERE id=1),1,1)='a', SLEEP(5), 0)
+```
+
+**5. SQL Injection en INSERT/UPDATE/DELETE**
+```
+INSERT INTO usuarios VALUES ('admin', 'hacked')  -- Inserta usuario malicioso
+UPDATE productos SET precio = 0.01 WHERE id = 1   -- Modifica precio
+DELETE FROM usuarios WHERE id = 1                 -- Elimina datos
+```
+
+**6. Second-Order SQL Injection**
+El payload se almacena en BD y se ejecuta en una consulta posterior.
+```
+Fase 1: INSERT INTO usuarios (username) VALUES ('admin'--')
+Fase 2: SELECT * FROM usuarios WHERE username = 'admin'--'   (Se comenta el resto)
+```
+
+#### Consecuencias de la Inyeccion SQL
+
+- **Bypass de autenticacion:** Acceso sin credenciales
+- **Robo de datos:** Exfiltracion de BD completas
+- **Modificacion de datos:** Alterar registros, precios, saldos
+- **Destruccion de datos:** DROP TABLE, DELETE masivo
+- **Ejecucion remota de comandos:** En algunos motores (xp_cmdshell en SQL Server)
+- **Compromiso total del servidor:** Si la BD se ejecuta con altos privilegios
+
+#### Ejemplo Vulnerable: Python con SQLite
 
 ```python
 import sqlite3
-import hashlib
-import os
-import time
-import re
-
-DB_PATH = 'safe_login.db'
-MAX_ATTEMPTS = 5
-LOCKOUT_TIME = 300  # 5 minutos en segundos
-
-def init_db():
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            salt TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    ''')
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS login_attempts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT NOT NULL,
-            attempt_time INTEGER NOT NULL,
-            success INTEGER NOT NULL,
-            ip_address TEXT
-        )
-    ''')
-    conn.commit()
-    conn.close()
-
-def hash_password(password, salt=None):
-    if salt is None:
-        salt = os.urandom(32).hex()
-    # PBKDF2 con SHA-256 (similar a como funciona internamente bcrypt)
-    pwd_hash = hashlib.pbkdf2_hmac(
-        'sha256',
-        password.encode('utf-8'),
-        salt.encode('utf-8'),
-        100000  # 100,000 iteraciones
-    ).hex()
-    return f"{salt}${pwd_hash}"
-
-def verify_password(password, stored_hash):
-    salt, pwd_hash = stored_hash.split('$')
-    return hash_password(password, salt) == stored_hash
-
-def is_locked_out(username):
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    current_time = int(time.time())
-    lockout_time = current_time - LOCKOUT_TIME
-
-    cursor.execute('''
-        SELECT COUNT(*) FROM login_attempts
-        WHERE username = ? AND attempt_time > ? AND success = 0
-    ''', (username, lockout_time))
-
-    count = cursor.fetchone()[0]
-    conn.close()
-    return count >= MAX_ATTEMPTS
-
-def register(username, password):
-    if not re.match(r'^[a-zA-Z0-9_]{3,20}$', username):
-        return "Error: Username debe tener 3-20 caracteres alfanumericos"
-
-    if len(password) < 8:
-        return "Error: Password debe tener al menos 8 caracteres"
-
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-
-    try:
-        pwd_hash = hash_password(password)
-        cursor.execute(
-            "INSERT INTO usuarios (username, password_hash) VALUES (?, ?)",
-            (username, pwd_hash)
-        )
-        conn.commit()
-        return "Usuario registrado exitosamente"
-    except sqlite3.IntegrityError:
-        return "Error: El usuario ya existe"
-    finally:
-        conn.close()
 
 def login(username, password):
-    # Verificar lockout
-    if is_locked_out(username):
-        return "Cuenta temporalmente bloqueada. Intente en 5 minutos."
-
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect('tienda.db')
     cursor = conn.cursor()
+    # VULNERABLE: concatenacion directa
+    query = f"SELECT * FROM usuarios WHERE username = '{username}' AND password = '{password}'"
+    print(f"Ejecutando: {query}")
+    cursor.execute(query)
+    return cursor.fetchone() is not None
 
-    # Consulta parametrizada (segura contra SQLi)
-    cursor.execute(
-        "SELECT password_hash FROM usuarios WHERE username = ?",
-        (username,)
-    )
-    result = cursor.fetchone()
-
-    current_time = int(time.time())
-
-    if result and verify_password(password, result[0]):
-        # Login exitoso
-        cursor.execute(
-            "INSERT INTO login_attempts (username, attempt_time, success) VALUES (?, ?, 1)",
-            (username, current_time)
-        )
-        conn.commit()
-        conn.close()
-        return "Login exitoso. Bienvenido!"
-    else:
-        # Login fallido - registrar intento
-        cursor.execute(
-            "INSERT INTO login_attempts (username, attempt_time, success) VALUES (?, ?, 0)",
-            (username, current_time)
-        )
-        conn.commit()
-        conn.close()
-        return "Credenciales invalidas"  # Mensaje generico, no revela que fallo
-
-# Demo
-if __name__ == "__main__":
-    init_db()
-
-    # Registrar usuario
-    print(register("admin", "MiPasswordSegura123!"))
-
-    # Login correcto
-    print(login("admin", "MiPasswordSegura123!"))
-
-    # Login incorrecto (intento de inyeccion SQL)
-    print(login("admin", "' OR '1'='1"))  # No bypassea, busca como literal
-
-    # Probar lockout por fuerza bruta
-    for i in range(5):
-        result = login("admin", "wrongpass")
-        print(f"Intento {i+1}: {result}")
-    # El sexto intento deberia estar bloqueado
-    print(login("admin", "MiPasswordSegura123!"))  # Bloqueado
+# Prueba con inyeccion
+print(login("admin", "' OR '1'='1"))  # Devuelve True (bypasseado!)
 ```
 
-### Explicacion de la Solucion
+#### Ejemplo Vulnerable: Java con JDBC
 
-1. **Parametrizacion:** Todas las consultas SQL usan `?` placeholders
-2. **Hashing:** Se usa PBKDF2 con SHA-256, salt unico de 32 bytes, 100,000 iteraciones
-3. **Lockout:** 5 intentos fallidos bloquean por 5 minutos
-4. **Mensajes genericos:** No se revela si el usuario existe o no
-5. **Logging:** Se registran todos los intentos con timestamp
-6. **Validacion de username:** Solo caracteres alfanumericos y guion bajo
+```java
+String username = request.getParameter("username");
+String password = request.getParameter("password");
+
+// VULNERABLE
+String query = "SELECT * FROM usuarios WHERE username = '" + username + "' AND password = '" + password + "'";
+Statement stmt = connection.createStatement();
+ResultSet rs = stmt.executeQuery(query);
+```
+
+### 4. Mitigaciones
+
+#### Prepared Statements (Consultas Parametrizadas)
+
+**Python con SQLite:**
+```python
+import sqlite3
+
+def login_seguro(username, password):
+    conn = sqlite3.connect('tienda.db')
+    cursor = conn.cursor()
+    query = "SELECT * FROM usuarios WHERE username = ? AND password = ?"
+    cursor.execute(query, (username, password))
+    return cursor.fetchone() is not None
+
+# La inyeccion ya no funciona: ' OR '1'='1 se trata como literal
+print(login_seguro("admin", "' OR '1'='1"))  # Busca contrasena literal, no bypassea
+```
+
+**Java con JDBC:**
+```java
+String query = "SELECT * FROM usuarios WHERE username = ? AND password = ?";
+PreparedStatement stmt = connection.prepareStatement(query);
+stmt.setString(1, username);
+stmt.setString(2, password);
+ResultSet rs = stmt.executeQuery();
+```
+
+**Python con MySQL (mysql-connector):**
+```python
+import mysql.connector
+query = "SELECT * FROM usuarios WHERE username = %s AND password = %s"
+cursor.execute(query, (username, password))
+```
+
+**Node.js con MySQL:**
+```javascript
+const query = 'SELECT * FROM usuarios WHERE username = ? AND password = ?';
+connection.query(query, [username, password], (err, results) => { ... });
+```
+
+#### Uso de ORM (Object-Relational Mapping)
+
+Los ORM (SQLAlchemy, Hibernate, Entity Framework, Prisma) generalmente usan parametrizacion internamente, pero no son invulnerables si se usan consultas raw.
+
+```python
+# SQLAlchemy (seguro)
+usuario = session.query(Usuario).filter(
+    Usuario.username == username,
+    Usuario.password == password
+).first()
+
+ # SQLAlchemy raw (cuidado: requiere parametros explicitos)
+session.execute(text("SELECT * FROM usuarios WHERE username = :user"),
+                {"user": username})
+```
+
+#### Validacion de Entrada (como capa adicional)
+
+```python
+import re
+
+def validar_username(username):
+    # Solo letras, numeros y guion bajo
+    return bool(re.match(r'^[a-zA-Z0-9_]{3,20}$', username))
+
+# Sanitizacion (NO es sustituto de prepared statements)
+import html
+username_sanitizado = html.escape(username)  # Solo previene XSS, no inyeccion SQL
+```
+
+#### Otras Defensas
+
+- **Stored Procedures:** Si se implementan sin SQL dinamico, tambien son seguros
+- **Least Privilege en BD:** La cuenta de la app solo debe tener los permisos minimos necesarios (no DROP, no CREATE)
+- **WAF (Web Application Firewall):** Reglas para detectar patrones de inyeccion
+- **Escapado de caracteres:** Funciona pero es menos confiable que parametrizacion
+- **Lista blanca:** Permitir solo valores conocidos (ej: IDs numericos)
 
 ---
 
-## Ejercicio 2: Migrar Codigo MongoDB Vulnerable a Parametros Seguros
+## Ejercicio 1: Reescribir Codigo Vulnerable con Consultas Parametrizadas
 
 **Codigo vulnerable:**
-```javascript
-// VULNERABLE: Node.js + MongoDB
-const express = require('express');
-const MongoClient = require('mongodb').MongoClient;
+```python
+import sqlite3
 
-app.post('/api/login', async (req, res) => {
-    const { username, password } = req.body;
-    const db = await MongoClient.connect('mongodb://localhost:27017/mydb');
+conn = sqlite3.connect('inventario.db')
+cursor = conn.cursor()
 
-    // VULNERABLE: concatenacion directa
-    const query = `{ "username": "${username}", "password": "${password}" }`;
-    const user = await db.collection('usuarios').findOne(JSON.parse(query));
+# Crear tabla
+cursor.execute('''CREATE TABLE IF NOT EXISTS productos
+                  (id INTEGER PRIMARY KEY, nombre TEXT, precio REAL)''')
 
-    if (user) {
-        res.json({ success: true, token: generateToken(user) });
-    } else {
-        res.json({ success: false, message: 'Credenciales invalidas' });
-    }
-});
+def buscar_producto(nombre):
+    query = f"SELECT * FROM productos WHERE nombre = '{nombre}'"
+    cursor.execute(query)
+    return cursor.fetchall()
+
+def agregar_producto(nombre, precio):
+    query = f"INSERT INTO productos (nombre, precio) VALUES ('{nombre}', {precio})"
+    cursor.execute(query)
+    conn.commit()
+
+def actualizar_precio(nombre, nuevo_precio):
+    query = f"UPDATE productos SET precio = {nuevo_precio} WHERE nombre = '{nombre}'"
+    cursor.execute(query)
+    conn.commit()
 ```
 
-**Codigo corregido con parametros seguros:**
-```javascript
-const express = require('express');
-const MongoClient = require('mongodb').MongoClient;
-const bcrypt = require('bcrypt');
-const crypto = require('crypto');
+**Solucion completa con parametrizacion:**
+```python
+import sqlite3
 
-const app = express();
-app.use(express.json());  // Importante: parsear JSON correctamente
+conn = sqlite3.connect('inventario.db')
+conn.execute("PRAGMA journal_mode=WAL")  # Mejor rendimiento y seguridad en escritura
+cursor = conn.cursor()
 
-// Conexion con configuracion segura
-const DB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/mydb';
+cursor.execute('''CREATE TABLE IF NOT EXISTS productos
+                  (id INTEGER PRIMARY KEY, nombre TEXT, precio REAL)''')
 
-function sanitizeInput(input) {
-    if (typeof input !== 'string') {
-        return '';
-    }
-    // Remover caracteres que podrian usarse en inyeccion NoSQL
-    return input.replace(/[\$\{\}\(\)]/g, '');
-}
+def buscar_producto(nombre):
+    query = "SELECT * FROM productos WHERE nombre = ?"
+    cursor.execute(query, (nombre,))
+    return cursor.fetchall()
 
-function generateToken(user) {
-    return crypto.randomBytes(32).toString('hex');
-}
+def agregar_producto(nombre, precio):
+    # Validacion adicional: precio debe ser numero
+    if not isinstance(precio, (int, float)):
+        raise ValueError("El precio debe ser un numero")
+    if not nombre or len(nombre.strip()) == 0:
+        raise ValueError("El nombre no puede estar vacio")
+    query = "INSERT INTO productos (nombre, precio) VALUES (?, ?)"
+    cursor.execute(query, (nombre, precio))
+    conn.commit()
 
-app.post('/api/login', async (req, res) => {
-    try {
-        const { username, password } = req.body;
+def actualizar_precio(nombre, nuevo_precio):
+    if not isinstance(nuevo_precio, (int, float)):
+        raise ValueError("El precio debe ser un numero")
+    query = "UPDATE productos SET precio = ? WHERE nombre = ?"
+    cursor.execute(query, (nuevo_precio, nombre))
+    conn.commit()
 
-        // Validar que sean strings
-        if (typeof username !== 'string' || typeof password !== 'string') {
-            return res.status(400).json({
-                success: false,
-                message: 'Credenciales invalidas'
-            });
-        }
+def obtener_productos_seguros():
+    """Devuelve productos con campos sanitizados para mostrar"""
+    cursor.execute("SELECT * FROM productos")
+    productos = cursor.fetchall()
+    return productos
 
-        // Sanitizar (capa adicional)
-        const safeUsername = sanitizeInput(username);
+# Pruebas
+if __name__ == "__main__":
+    # Insertar datos de prueba
+    agregar_producto("Laptop", 999.99)
+    agregar_producto("Mouse", 29.99)
 
-        // Usar el driver de MongoDB con parametros (NO concatenacion)
-        const client = await MongoClient.connect(DB_URI);
-        const db = client.db();
+    # Busqueda segura (intento de inyeccion tratado como literal)
+    resultados = buscar_producto("' OR '1'='1")  # No devuelve resultados
+    print(f"Busqueda inyectada: {resultados}")   # [] - vacio
 
-        // SEGURO: pasar valores como propiedades, NO como string JSON
-        const user = await db.collection('usuarios').findOne({
-            username: safeUsername
-        });
+    resultado_normal = buscar_producto("Laptop")
+    print(f"Busqueda normal: {resultado_normal}")  # [(1, 'Laptop', 999.99)]
 
-        if (user && await bcrypt.compare(password, user.passwordHash)) {
-            const token = generateToken(user);
-            await db.collection('sesiones').insertOne({
-                userId: user._id,
-                token: token,
-                createdAt: new Date(),
-                expiresAt: new Date(Date.now() + 3600000) // 1 hora
-            });
-
-            client.close();
-            return res.json({
-                success: true,
-                token: token
-            });
-        }
-
-        client.close();
-        return res.status(401).json({
-            success: false,
-            message: 'Credenciales invalidas'
-        });
-
-    } catch (error) {
-        console.error('Error en login:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: 'Error interno del servidor'
-        });
-    }
-});
-
-// Registro seguro
-app.post('/api/register', async (req, res) => {
-    try {
-        const { username, password } = req.body;
-
-        if (typeof username !== 'string' || typeof password !== 'string') {
-            return res.status(400).json({
-                success: false,
-                message: 'Datos invalidos'
-            });
-        }
-
-        if (password.length < 8) {
-            return res.status(400).json({
-                success: false,
-                message: 'Password debe tener al menos 8 caracteres'
-            });
-        }
-
-        const safeUsername = sanitizeInput(username);
-        const saltRounds = 12;
-        const passwordHash = await bcrypt.hash(password, saltRounds);
-
-        const client = await MongoClient.connect(DB_URI);
-        const db = client.db();
-
-        // SEGURO: parametros como objeto, no string
-        await db.collection('usuarios').insertOne({
-            username: safeUsername,
-            passwordHash: passwordHash,
-            createdAt: new Date()
-        });
-
-        client.close();
-        return res.status(201).json({
-            success: true,
-            message: 'Usuario registrado'
-        });
-
-    } catch (error) {
-        if (error.code === 11000) { // Duplicate key
-            return res.status(409).json({
-                success: false,
-                message: 'El usuario ya existe'
-            });
-        }
-        console.error('Error en registro:', error.message);
-        return res.status(500).json({
-            success: false,
-            message: 'Error interno del servidor'
-        });
-    }
-});
+    print("Sistema seguro contra inyeccion SQL!")
 ```
 
-### Principios aplicados en la correccion:
+**Explicacion de la solucion:**
+1. Se reemplazo la concatenacion `f"...{variable}"` por `?` placeholders
+2. Los valores se pasan como tupla separada: `cursor.execute(query, (valor1, valor2))`
+3. La BD trata los valores como datos literales, no como parte del SQL
+4. Se agregaron validaciones de tipo y contenido como capa adicional
+5. Se elimino la posibilidad de que un payload malicioso modifique la consulta
 
-1. **Objetos literales en vez de strings JSON:** `{ username: safeUsername }` es seguro porque el driver no evalua los valores como codigo
-2. **bcrypt:** Hashing de contrasenas con factor de costo 12
-3. **Validacion de tipos:** Asegurar que username y password son strings
-4. **Sanitizacion:** Remover caracteres especiales NoSQL ($, {, }, (, ))
-5. **Mensajes genericos:** No revelar si el usuario existe
-6. **Manejo de errores:** No exponer detalles tecnicos
-7. **Rate limiting implicito:** El cliente puede anadirlo como middleware
+---
+
+## Ejercicio 2: Identificar y Corregir 3 Tipos de Inyeccion
+
+**Fragmento vulnerable:**
+```python
+import os
+import subprocess
+
+# Contexto: herramienta de administracion de servidores
+
+def get_user_info(user_id):
+    # CONSULTA 1
+    conn = sqlite3.connect('users.db')
+    cursor = conn.cursor()
+    query = f"SELECT * FROM users WHERE id = {user_id}"
+    cursor.execute(query)
+    return cursor.fetchone()
+
+def ping_host(host):
+    # CONSULTA 2 (OS Command Injection)
+    result = subprocess.run(f"ping -n 3 {host}", shell=True, capture_output=True)
+    return result.stdout
+
+def find_user_ldap(search_term):
+    # CONSULTA 3 (LDAP Injection)
+    import ldap
+    conn = ldap.initialize('ldap://ldap.company.com')
+    base_dn = 'ou=users,dc=company,dc=com'
+    filter_str = f'(uid={search_term})'
+    result = conn.search_s(base_dn, ldap.SCOPE_SUBTREE, filter_str)
+    return result
+```
+
+### Identificacion de Vulnerabilidades
+
+| Consulta | Tipo de Inyeccion | Explicacion |
+|----------|-------------------|-------------|
+| Consulta 1 | **SQL Injection** | `user_id` se concatena directamente. Atacante puede enviar `1 UNION SELECT username, password FROM admins` |
+| Consulta 2 | **OS Command Injection** | `host` se pasa a shell. Atacante puede enviar `google.com & del /F /Q C:\Windows\System32\*` |
+| Consulta 3 | **LDAP Injection** | `search_term` se concatena en filtro LDAP. Atacante puede enviar `*)(uid=*))(|(uid=*` para listar todos los usuarios |
+
+### Solucion Completa
+
+```python
+import os
+import subprocess
+import sqlite3
+import ldap
+import re
+
+# CONFIGURACION
+DB_PATH = 'users.db'
+
+def get_user_info(user_id):
+    """CORREGIDO: SQL Injection mitigado con parametrizacion"""
+    if not isinstance(user_id, int):
+        try:
+            user_id = int(user_id)
+        except (ValueError, TypeError):
+            return None
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    query = "SELECT * FROM users WHERE id = ?"
+    cursor.execute(query, (user_id,))
+    return cursor.fetchone()
+
+def ping_host(hostname):
+    """CORREGIDO: Command Injection mitigado sin shell=True"""
+    # Validar que solo contiene caracteres permitidos para un hostname
+    if not re.match(r'^[a-zA-Z0-9\.\-]+$', hostname):
+        return b"Error: hostname invalido"
+
+    # Usar lista de argumentos en vez de string con shell=True
+    result = subprocess.run(
+        ["ping", "-n", "3", hostname],
+        capture_output=True,
+        timeout=10
+    )
+    return result.stdout
+
+def find_user_ldap(search_term):
+    """CORREGIDO: LDAP Injection mitigado con escapado"""
+    # Escapar caracteres especiales LDAP
+    def escape_ldap(s):
+        # LDAP special characters: * ( ) \ NUL
+        chars_to_escape = ['\\', '*', '(', ')', '\x00']
+        for c in chars_to_escape:
+            s = s.replace(c, '\\' + c)
+        return s
+
+    conn = ldap.initialize('ldap://ldap.company.com')
+    base_dn = 'ou=users,dc=company,dc=com'
+
+    # Escapar el termino de busqueda
+    safe_term = escape_ldap(search_term)
+    filter_str = f'(uid={safe_term})'
+
+    # Alternativa mas segura: filtro de lista blanca
+    # Solo buscar por atributos especificos con validacion
+    if not re.match(r'^[a-zA-Z0-9_\-\s]+$', search_term):
+        return "Error: caracteres no permitidos en la busqueda"
+
+    result = conn.search_s(base_dn, ldap.SCOPE_SUBTREE, filter_str)
+    return result
+```
 
 ---
 
 ## Preguntas y Respuestas
 
 ### Pregunta 1
-**Cual es la diferencia practica entre Blind SQL basada en booleanos y basada en tiempo?**
+**Por que usar prepared statements es la mejor defensa contra inyeccion SQL? Que hace internamente?**
 
-**Respuesta:** La Blind SQL booleana usa diferencias observables en la respuesta (contenido HTML, codigos HTTP, redirecciones) para inferir verdadero/falso. La Blind SQL basada en tiempo se usa cuando NO hay diferencias observables, introduciendo retardos (SLEEP, WAITFOR) para inferir. La basada en tiempo es mas lenta (cada pregunta requiere 5+ segundos de espera) pero funciona en escenarios donde la booleana no es posible.
+**Respuesta:** Los prepared statements separan la estructura SQL de los datos. Internamente, el motor de BD compila la consulta con los placeholders (`?`) primero (definiendo la estructura fija), y luego los parametros se pasan como datos literales. Esto significa que aunque el parametro contenga comillas o palabras SQL, se tratara como un valor literal, no como parte del comando SQL. Es la mejor defensa porque aborda la causa raiz: la mezcla de codigo con datos.
 
 ### Pregunta 2
-**Por que la inyeccion NoSQL en MongoDB puede ser mas peligrosa que la SQL tradicional?**
+**Es suficiente con validar las entradas del usuario para prevenir inyeccion SQL?**
 
-**Respuesta:** En MongoDB, el operador `$where` permite ejecutar JavaScript arbitrario en el motor de BD, lo que puede llevar a RCE (Remote Code Execution) completa, no solo a robo de datos. Ademas, las inyecciones NoSQL pueden explotar operadores como `$ne`, `$regex`, `$gt` para manipular la logica de consultas de formas que no tienen equivalente directo en SQL.
+**Respuesta:** No. La validacion de entrada es una capa de defensa util, pero no debe ser la unica. Los atacantes encuentran formas de evadir filtros (encoding, bypass de regex, caracteres Unicode). Ademas, la validacion protege contra ataques conocidos pero no necesariamente contra variantes nuevas. La defensa principal debe ser prepared statements/parametrizacion, con la validacion de entrada como capa adicional (defense in depth).
 
 ### Pregunta 3
-**SQLMap puede automatizar Blind SQL injection. Como lo hace internamente?**
+**Que es un ataque de "Second-Order SQL Injection" y por que es mas dificil de detectar?**
 
-**Respuesta:** SQLMap primero determina si el parametro es vulnerable enviando payloads que causan diferencias detectables (como `1=1` vs `1=2`). Luego, para Blind SQL basada en booleanos, usa busqueda binaria para determinar cada caracter del valor extraido (no prueba letra por letra, sino que usa comparaciones mayor/menor ASCII para converger mas rapido). Para Time-based, mide el tiempo de respuesta con alta precision y usa retardos controlados. SQLMap tambien puede usar tecnicas de inferencia estadistica cuando las diferencias son sutiles.
+**Respuesta:** En el second-order SQL injection, el payload malicioso se almacena en la BD en una primera operacion (ej: registro de usuario con nombre que contiene codigo SQL) y se ejecuta en una consulta posterior (ej: al buscar usuarios por nombre). Es mas dificil de detectar porque: (1) las herramientas de escaneo solo ven la consulta actual, no la historia de los datos; (2) el desarrollador asume que los datos de la BD son "seguros" (cuando deberia tratarlos como no confiables igual que los inputs); (3) las mitigaciones en el punto de entrada no protegen si la segunda consulta tambien es vulnerable.
 
 ### Pregunta 4
-**Que es el operador $regex en MongoDB y como puede explotarse?**
+**Los ORM (como SQLAlchemy o Hibernate) protegen automaticamente contra inyeccion SQL?**
 
-**Respuesta:** `$regex` permite busquedas por expresion regular en MongoDB. Puede explotarse si el atacante controla el patron regex. Por ejemplo, si la app construye: `{ username: { $regex: input } }`, el atacante puede enviar `^a.*` para encontrar usuarios que empiecen con 'a', `^admin` para el admin, etc. Es similar a un "Blind SQL" donde se puede inferir informacion caracter por caracter. La mitigacion es nunca permitir que el usuario controle operadores de MongoDB directamente.
+**Respuesta:** Generalmente si, cuando se usan correctamente. Los ORM generan consultas parametrizadas internamente. Sin embargo, la proteccion se pierde si se usan funciones "raw" del ORM (ej: `execute()` con concatenacion de strings), o si se usan caracteristicas como `text()` en SQLAlchemy sin parametros. El desarrollador debe evitar las opciones que permiten SQL sin parametrizar y siempre pasar valores como parametros separados.
 
 ### Pregunta 5
-**Teniendo prepared statements, es necesario ademas tener WAF y validacion de entrada? No es redundante?**
+**Cual es la diferencia entre inyeccion SQL y NoSQL? Mencione una similitud.**
 
-**Respuesta:** No es redundante, es defense in depth. Los prepared statements protegen contra inyeccion SQL en la capa de BD, pero un WAF puede bloquear ataques antes de que lleguen a la aplicacion, protegiendo contra: (1) ataques a otros componentes que no usan prepared statements, (2) vulnerabilidades en el ORM o en consultas raw residuales, (3) ataques de inyeccion NoSQL, (4) ataques de tipo log4j que no estan relacionados con BD. La validacion de entrada protege contra otros vectores (XSS, path traversal, command injection). Las capas de defensa cubren diferentes vectores y se complementan.
+**Respuesta:** La diferencia principal es el lenguaje: la inyeccion SQL ataca bases relacionales con SQL; la inyeccion NoSQL ataca bases documentales (MongoDB, CouchDB) usando su sintaxis de consulta ($where, $ne, $regex). La similitud: ambas ocurren cuando los datos del usuario se concatenan directamente en la construccion de la consulta sin sanitizacion ni parametrizacion. La mitigacion es conceptualmente la misma: usar el API parametrizada que provee el driver de la BD.
 
 ---
 
 ## Tarea / Lectura Recomendada
 
-1. **Leer:** OWASP NoSQL Injection Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/NoSQL_Injection_Cheat_Sheet.html
-2. **Practicar:** Blind SQL injection labs en PortSwigger Web Security Academy
-3. **Experimentar:** Instalar SQLMap en un entorno controlado y practicar contra DVWA (Damn Vulnerable Web Application) en Docker
-4. **Profundizar:** Leer "MongoDB Security Reference" - https://www.mongodb.com/docs/manual/security/
-5. **Herramienta:** Configurar ModSecurity con OWASP CRS (Core Rule Set) en un servidor local
+1. **Leer:** OWASP Top 10 2021 - https://owasp.org/Top10/
+2. **Leer:** OWASP SQL Injection Prevention Cheat Sheet - https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+3. **Practicar:** PortSwigger Web Security Academy - SQL Injection Labs (gratuito) - https://portswigger.net/web-security/sql-injection
+4. **Profundizar:** Leer sobre inyeccion en diferentes motores de BD (MySQL, PostgreSQL, SQL Server, Oracle)
+5. **Herramienta:** Probar OWASP ZAP para escanear una app de prueba en busca de inyeccion SQL
+
 
 

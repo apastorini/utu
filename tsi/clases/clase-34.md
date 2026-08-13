@@ -1,1247 +1,879 @@
-# Clase 34: DAST - Dynamic Application Security Testing
+# Clase 34: SAST - Static Application Security Testing
 
-**Numero de clase:** 24
+**Numero de clase:** 23
 **Duracion:** 2 horas
 
 ## Objetivos de Aprendizaje
 
-- Comprender que es DAST y como funciona (analisis desde afuera, black-box)
-- Usar OWASP ZAP para escanear aplicaciones web vulnerables
-- Diferenciar entre DAST autenticado y no autenticado
-- Interpretar reportes DAST y clasificar hallazgos por severidad
-- Automatizar escaneos DAST via API de ZAP desde Python
+- Comprender que es SAST y como funciona (analisis de codigo sin ejecucion)
+- Usar herramientas SAST: Bandit, Semgrep, SonarQube
+- Diferenciar falsos positivos de verdaderos positivos
+- Integrar SAST en IDE y CI/CD
+- Crear reglas personalizadas de Semgrep para detectar vulnerabilidades
 
 ## Contenido Detallado
 
-### 1. Que es DAST?
+### 1. Que es SAST?
 
-DAST (Dynamic Application Security Testing) analiza una aplicacion en ejecucion desde la perspectiva de un atacante externo. No tiene acceso al codigo fuente (black-box testing).
+SAST (Static Application Security Testing) analiza el codigo fuente, bytecode o binarios de una aplicacion SIN ejecutarlos, buscando patrones que indican vulnerabilidades de seguridad.
 
 **Caracteristicas:**
-- Black-box: no conoce el codigo fuente interno
-- Prueba la aplicacion en su estado real (en produccion o staging)
-- Detecta vulnerabilidades en tiempo de ejecucion
-- Simula ataques reales contra la aplicacion
+- White-box testing: tiene acceso completo al codigo fuente
+- Se ejecuta temprano en el ciclo de desarrollo (Shift-Left)
+- Detecta vulnerabilidades en tiempo de escritura de codigo
+- Escalable a proyectos grandes
 
 **Lo que detecta:**
-- Cross-Site Scripting (XSS) reflejado y almacenado
-- Inyeccion SQL
-- Command Injection
-- Path Traversal
-- Server-Side Request Forgery (SSRF)
-- Cross-Site Request Forgery (CSRF)
-- Problemas de configuracion (headers inseguros, TLS debil)
-- Exposicion de informacion sensible
+- Inyecciones (SQL, Command, LDAP, XML)
+- Cross-Site Scripting (XSS)
+- Buffer overflows
+- Hardcoded secrets
+- Uso de funciones peligrosas
+- Configuracion insegura
+- Validacion incorrecta de entradas
 
-### 2. Herramientas DAST
+### 2. Herramientas SAST Populares
 
-| Herramienta | Tipo | Licencia | Caracteristicas |
-|-------------|------|----------|-----------------|
-| OWASP ZAP | Proxy + Scanner | Open Source | La mas popular, API completa, plugins |
-| Burp Suite | Proxy + Scanner | Community/Pro | La mas usada en pentesting profesional |
-| Nikto | Scanner web | Open Source | Rapido, detecta configuracion insegura |
-| w3af | Framework | Open Source | Modular, extensible |
-| Acunetix | Scanner | Comercial | Cobertura amplia, bajo FP |
-| Netsparker | Scanner | Comercial | Confirmacion automatica de vulnerabilidades |
+| Herramienta | Lenguaje | Tipo | Caracteristicas |
+|------------|----------|------|-----------------|
+| SonarQube | Multi-lenguaje | Comercial/Community | Analisis continuo, deuda tecnica, quality gates |
+| Semgrep | Multi-lenguaje | Open Source | Reglas custom, patrones, integracion CI/CD |
+| Bandit | Python | Open Source | Disenado para Python, OWASP Top 10 |
+| FindSecBugs | Java (FindBugs plugin) | Open Source | Seguridad para Java/Kotlin |
+| Brakeman | Ruby on Rails | Open Source | Especializado en Rails |
+| Checkmarx | Multi-lenguaje | Comercial | Cobertura amplia, correlacion de flujos |
+| Fortify | Multi-lenguaje | Comercial | Analisis profundo, cumplimiento normativo |
 
-### 3. DAST vs SAST
+### 3. Falsos Positivos vs. Verdaderos Positivos
 
-| Aspecto | SAST | DAST |
-|---------|------|------|
-| Perspectiva | White-box (ve el codigo) | Black-box (ve desde afuera) |
-| Momento | Build / Commit | Testing / Staging / Produccion |
-| Acceso | Codigo fuente | URL de la app |
-| Falsos positivos | Altos | Medios |
-| Cobertura | Lineas de codigo | Endpoints y funcionalidades |
-| Detecta | Bugs de codigo | Bugs de ejecucion y configuracion |
-| Integracion | CI/CD temprano | CI/CD tardio (staging) |
+| Tipo | Descripcion | Que hacer |
+|------|-------------|-----------|
+| Verdadero Positivo (TP) | Vulnerabilidad real | Corregir inmediatamente |
+| Falso Positivo (FP) | No es vulnerabilidad, el analisis se equivoco | Marcar como falso positivo |
+| Verdadero Negativo (TN) | No hay vulnerabilidad y el analisis no reporto | Correcto, sin accion |
+| Falso Negativo (FN) | Hay vulnerabilidad pero el analisis no la detecto | El peor caso, mejorar reglas |
 
-### 4. Tipos de Escaneo DAST
+**Como reducir falsos positivos:**
+- Ajustar niveles de confianza (confidence level)
+- Usar reglas especificas del proyecto
+- Combinar con revision manual
+- Mantener una base de conocimiento de FP conocidos
 
-**Autenticado vs. No Autenticado:**
-- **No autenticado:** Escanea solo lo accesible sin login. Menor cobertura.
-- **Autenticado:** Escanea areas que requieren sesion de usuario. Mayor cobertura.
+### 4. SAST vs SCA vs DAST
 
-**Crawling vs Scanning:**
-- **Crawling:** Navega la aplicacion descubriendo endpoints y formularios.
-- **Scanning:** Ejecuta ataques contra los endpoints descubiertos.
+| Aspecto | SAST | SCA | DAST |
+|---------|------|-----|------|
+| Que analiza | Codigo fuente | Dependencias | App en ejecucion |
+| Cuando | Build/Commit | Build | Testing/Staging |
+| Perspectiva | White-box | Componentes | Black-box |
+| Detecta | Vulnerabilidades en codigo propio | CVEs en librerias de terceros | Vulnerabilidades en entorno y config |
+| Falsos positivos | Altos | Bajos | Medios |
 
-### 5. Limitaciones de DAST
+### 5. Integracion en IDE y CI/CD
 
-- **Cobertura limitada:** Solo prueba funcionalidades accesibles via HTTP
-- **Falsos positivos:** Algunos ataques pueden no ser aplicables al contexto
-- **Lentitud:** Escaneos profundos pueden tomar horas
-- **No ve codigo:** No puede detectar vulnerabilidades que no se reflejan en la respuesta HTTP
-- **Requiere app funcional:** No sirve en etapas tempranas del desarrollo
+**IDE:**
+- SonarLint (VSCode, IntelliJ, Eclipse)
+- Semgrep VSCode Extension
+- Bandit como plugin en linter (flake8-bandit)
 
-## Ejercicio 1: Instalar OWASP ZAP y Escanear App Vulnerable Local
+**CI/CD:**
+- GitHub Actions: `semgrep-action`, `bandit-action`
+- GitLab CI/CD: `semgrep.gitlab-ci.yml`
+- Jenkins: Plugins de SonarQube, Semgrep
 
-```bash
-# ============================================================
-# INSTALACION DE OWASP ZAP (Docker)
-# ============================================================
-
-# Opcion 1: Usar Docker (recomendado)
-docker pull ghcr.io/zaproxy/zaproxy:stable
-
-# Iniciar ZAP en modo daemon (escucha en puerto 8080)
-docker run -d \
-  --name zap \
-  -p 8080:8080 \
-  -v zap-data:/home/zap/.ZAP \
-  ghcr.io/zaproxy/zaproxy:stable \
-  zap.sh -daemon -host 0.0.0.0 -port 8080 -config api.key=changeme
-
-# Opcion 2: Instalar ZAP Desktop
-# Descargar de: https://www.zaproxy.org/download/
-# Ejecutar el instalador
-
-# ============================================================
-# APP VULNERABLE LOCAL (DVWA simplificada en Flask)
-# ============================================================
-```
+## Ejercicio 1: Proyecto Python Vulnerable + Ejecutar Bandit
 
 ```python
-# app_vulnerable_dast.py - App vulnerable para escaneo DAST
-from flask import Flask, request, render_template_string, jsonify
-import sqlite3
-import subprocess
+# proyecto_vulnerable.py - Proyecto con vulnerabilidades para analisis SAST
+import hashlib
 import os
+import subprocess
+import sqlite3
+import pickle
+import yaml
+import requests
 
-app = Flask(__name__)
+# ============================================================
+# VULNERABILIDAD 1: Hash inseguro (MD5)
+# ============================================================
 
-# Inicializar BD
-def init_db():
-    conn = sqlite3.connect(':memory:')
-    conn.execute('''CREATE TABLE usuarios
-                    (id INTEGER PRIMARY KEY,
-                     username TEXT,
-                     password TEXT,
-                     email TEXT)''')
-    conn.execute("INSERT INTO usuarios VALUES (1, 'admin', 'flag{un3z4k0}', 'admin@test.com')")
-    conn.execute("INSERT INTO usuarios VALUES (2, 'user', 'password123', 'user@test.com')")
-    conn.commit()
-    return conn
-
-db = init_db()
-
-
-@app.route('/')
-def index():
-    return '''
-    <h1>App Vulnerable para DAST</h1>
-    <ul>
-        <li><a href="/sqli?user=admin">SQL Injection</a></li>
-        <li><a href="/xss?name=test">XSS Reflejado</a></li>
-        <li><a href="/command?ip=127.0.0.1">Command Injection</a></li>
-        <li><a href="/path?file=test.txt">Path Traversal</a></li>
-        <li><a href="/headers">Ver Headers de Seguridad</a></li>
-        <li><a href="/form">Formulario Vulnerable</a></li>
-    </ul>
-    <p>Bandera escondida: <!-- flag{3st0_n0_s3_v3} --></p>
-    '''
+def hash_contrasena_md5(contrasena):
+    """Vulnerabilidad: MD5 es debil para contrasenas."""
+    return hashlib.md5(contrasena.encode()).hexdigest()
 
 
 # ============================================================
-# VULNERABILIDAD 1: SQL Injection
+# VULNERABILIDAD 2: Inyeccion SQL
 # ============================================================
-@app.route('/sqli')
-def sql_injection():
-    user = request.args.get('user', '')
-    query = f"SELECT * FROM usuarios WHERE username = '{user}'"
 
-    try:
-        cursor = db.execute(query)
-        results = cursor.fetchall()
-        return f'''
-        <h2>SQL Injection</h2>
-        <p>Query: {query}</p>
-        <p>Resultados: {results}</p>
-        <form><input name="user" placeholder="Username"><button>Buscar</button></form>
-        '''
-    except Exception as e:
-        return f'<p>Error: {str(e)}</p>'
+def buscar_usuario(nombre):
+    """Vulnerabilidad: concatenacion directa en consulta SQL."""
+    conn = sqlite3.connect('usuarios.db')
+    cursor = conn.cursor()
 
+    query = f"SELECT * FROM usuarios WHERE nombre = '{nombre}'"
+    cursor.execute(query)  # Inyeccion SQL
 
-# ============================================================
-# VULNERABILIDAD 2: XSS Reflejado
-# ============================================================
-@app.route('/xss')
-def xss_reflejado():
-    name = request.args.get('name', 'Invitado')
-    return f'''
-    <h2>XSS Reflejado</h2>
-    <p>Hola, {name}!</p>
-    <form><input name="name" placeholder="Tu nombre"><button>Saludar</button></form>
-    '''
+    return cursor.fetchall()
 
 
 # ============================================================
 # VULNERABILIDAD 3: Command Injection
 # ============================================================
-@app.route('/command')
-def command_injection():
-    ip = request.args.get('ip', '127.0.0.1')
-    try:
-        result = subprocess.check_output(f'ping -n 1 {ip}', shell=True, timeout=5)
-        return f'<pre>{result.decode()}</pre>'
-    except Exception as e:
-        return f'<p>Error: {str(e)}</p>'
+
+def ejecutar_comando(comando):
+    """Vulnerabilidad: ejecuta comandos sin validar."""
+    resultado = subprocess.check_output(comando, shell=True)
+    return resultado.decode()
 
 
 # ============================================================
-# VULNERABILIDAD 4: Path Traversal
+# VULNERABILIDAD 4: Hardcoded password
 # ============================================================
-@app.route('/path')
-def path_traversal():
-    file = request.args.get('file', '')
-    try:
-        with open(file, 'r') as f:
-            content = f.read()
-        return f'<pre>{content}</pre>'
-    except Exception as e:
-        return f'<p>Error: {str(e)}</p>'
+
+DB_PASSWORD = "admin123"  # Contrasena hardcodeada
+
+def conectar_bd():
+    """Usa contrasena hardcodeada."""
+    conn = sqlite3.connect(f'db://admin:{DB_PASSWORD}@localhost:5432/prod')
+    return conn
 
 
 # ============================================================
-# VULNERABILIDAD 5: Headers de seguridad faltantes
+# VULNERABILIDAD 5: Pickle inseguro
 # ============================================================
-@app.route('/headers')
-def headers():
-    return jsonify({
-        'mensaje': 'Faltan headers de seguridad',
-        'x-frame-options': 'NO PRESENTE',
-        'x-content-type-options': 'NO PRESENTE',
-        'strict-transport-security': 'NO PRESENTE',
-        'content-security-policy': 'NO PRESENTE'
-    })
+
+def cargar_datos(archivo):
+    """Pickle puede ejecutar codigo arbitrario al deserializar."""
+    with open(archivo, 'rb') as f:
+        return pickle.load(f)  # Inseguro
 
 
 # ============================================================
-# VULNERABILIDAD 6: Formulario sin CSRF
+# VULNERABILIDAD 6: Uso de eval
 # ============================================================
-@app.route('/form', methods=['GET', 'POST'])
-def formulario():
-    if request.method == 'POST':
-        nombre = request.form.get('nombre', '')
-        comentario = request.form.get('comentario', '')
-        return f'<p>Gracias {nombre}. Comentario recibido: {comentario}</p>'
-    return '''
-    <h2>Formulario sin CSRF</h2>
-    <form method="POST">
-        <input name="nombre" placeholder="Nombre"><br>
-        <textarea name="comentario" placeholder="Comentario"></textarea><br>
-        <button>Enviar</button>
-    </form>
-    '''
+
+def evaluar_expresion(expresion):
+    """eval() ejecuta codigo Python arbitrario."""
+    return eval(expresion)
 
 
 # ============================================================
-# VULNERABILIDAD 7: Informacion expuesta
+# VULNERABILIDAD 7: YAML unsafe load
 # ============================================================
-@app.route('/robots.txt')
-def robots():
-    return '''User-agent: *
-Disallow: /admin
-Disallow: /config
-Disallow: /backup.sql
-'''
+
+def cargar_config_yaml(archivo):
+    """yaml.load() sin Loader seguro puede ejecutar codigo."""
+    with open(archivo, 'r') as f:
+        return yaml.load(f)  # yaml.safe_load() es seguro
 
 
-@app.route('/admin')
-def admin():
-    return '<h1>Panel de Administracion</h1><p>Usuario: root</p>'
+# ============================================================
+# VULNERABILIDAD 8: HTTP en lugar de HTTPS
+# ============================================================
+
+def obtener_datos():
+    """HTTP sin TLS expone datos en transito."""
+    response = requests.get('http://api-insegura.com/data')  # HTTP no HTTPS
+    return response.json()
 
 
-@app.route('/config')
-def config():
-    return jsonify({
-        'db_host': 'localhost',
-        'db_name': 'prod_db',
-        'db_user': 'root',
-        'app_version': '1.0.0-beta',
-        'secret_key': 'super-secret-key-12345'
-    })
+# ============================================================
+# VULNERABILIDAD 9: Path Traversal
+# ============================================================
+
+def leer_archivo(nombre):
+    """Path traversal: no valida que el archivo este en el directorio permitido."""
+    with open(nombre, 'r') as f:
+        return f.read()
 
 
-@app.route('/backup.sql')
-def backup_db():
-    return '''-- Backup de base de datos
-CREATE TABLE usuarios (
-    id INT PRIMARY KEY,
-    username VARCHAR(50),
-    password VARCHAR(50),  -- Texto plano!
-    email VARCHAR(100)
-);
-INSERT INTO usuarios VALUES (1, 'admin', 'supersecret', 'admin@example.com');
-INSERT INTO usuarios VALUES (2, 'developer', 'devpass123', 'dev@example.com');
-'''
+# ============================================================
+# VULNERABILIDAD 10: Assert usado como validacion
+# ============================================================
+
+def validar_usuario(usuario):
+    """assert se desactiva con -O, no es seguro para validacion."""
+    assert usuario.rol == 'admin', "No autorizado"  # No usar assert para seguridad
+    return True
 
 
 if __name__ == '__main__':
-    print("=" * 60)
-    print("App Vulnerable para escaneo DAST")
-    print("Escuchando en: http://localhost:5000")
-    print("=" * 60)
-    app.run(debug=True, port=5000)
+    print("Proyecto vulnerable para analisis SAST con Bandit")
+
+    # Pruebas (no ejecutar en produccion)
+    print(hash_contrasena_md5("test"))
+    print(ejecutar_comando("echo test"))
+    print(evaluar_expresion("1+1"))
 ```
 
-**Comandos de escaneo con ZAP:**
+**Comandos para analizar con Bandit:**
 ```bash
-# ============================================================
-# ESCANEO CON OWASP ZAP
-# ============================================================
+# Instalar Bandit
+pip install bandit
 
-# 1. Iniciar la app vulnerable
-python app_vulnerable_dast.py
+# 1. Escaneo basico
+bandit -r .
 
-# 2. Escaneo pasivo (solo navega, no ataca)
-curl "http://localhost:8080/JSON/pscan/action/enableAllScanners/?apikey=changeme"
+# 2. Escaneo con nivel de confianza especifico
+bandit -r . --confidence-level high --severity-level high
 
-# 3. Escaneo activo completo desde linea de comandos
-docker run -t ghcr.io/zaproxy/zaproxy:stable \
-  zap-full-scan.py \
-  -t http://host.docker.internal:5000 \
-  -r zap-report.html \
-  -x zap-report.xml \
-  -m 5 \
-  -d
+# 3. Escaneo con formato JSON (para procesamiento)
+bandit -r . -f json -o bandit-report.json
 
-# 4. Escaneo AJAX (para SPAs)
-docker run -t ghcr.io/zaproxy/zaproxy:stable \
-  zap-ajax-scan.py \
-  -t http://host.docker.internal:5000 \
-  -r zap-ajax-report.html
+# 4. Escaneo excluyendo ciertos tests
+bandit -r . --skip B101,B105,B108
 
-# 5. Escaneo con autenticacion
-docker run -t ghcr.io/zaproxy/zaproxy:stable \
-  zap-full-scan.py \
-  -t http://host.docker.internal:5000 \
-  -r zap-auth-report.html \
-  -U "admin" \
-  -P "flag{un3z4k0}"
+# 5. Escaneo con contexto y linea de codigo
+bandit -r . -ll -ii -n 5
 
-# 6. Escaneo API (para APIs REST)
-docker run -t ghcr.io/zaproxy/zaproxy:stable \
-  zap-api-scan.py \
-  -t http://host.docker.internal:5000/openapi.json \
-  -f openapi \
-  -r zap-api-report.html
+# 6. Reporte HTML
+bandit -r . -f html -o bandit-report.html
 ```
 
-**Interpretacion de resultados:**
+**Interpretacion del reporte de Bandit:**
 ```
-REPORTE ZAP - HALLZAGOS PRINCIPALES
+>> Issue: [B303:blacklist] Use of insecure MD4, MD5, or SHA1 hash function.
+   Severity: Medium   Confidence: High
+   Location: proyecto_vulnerable.py:13
+   12  def hash_contrasena_md5(contrasena):
+   13      return hashlib.md5(contrasena.encode()).hexdigest()
 
-Alto riesgo:
-- SQL Injection (/sqli): Severidad ALTA
-  Descripcion: La aplicacion permite inyeccion SQL concatenando
-  parametros directamente en la consulta.
-  Parametro: user
-  Payload: admin' OR '1'='1
-  URL: http://localhost:5000/sqli?user=admin' OR '1'='1
-  Evidencia: La query devuelve todos los registros de usuarios
+>> Issue: [B611:sql_injection] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: High
+   Location: proyecto_vulnerable.py:24
+   23      query = f"SELECT * FROM usuarios WHERE nombre = '{nombre}'"
+   24      cursor.execute(query)
 
-- Cross-Site Scripting (XSS) Reflejado (/xss): Severidad ALTA
-  Descripcion: El parametro name se refleja sin escapar en HTML.
-  Parametro: name
-  Payload: <script>alert(1)</script>
-  URL: http://localhost:5000/xss?name=<script>alert(1)</script>
-  Evidencia: El script se ejecuta en el navegador
+>> Issue: [B602:subprocess_popen_with_shell_equals_true] subprocess call with shell=True seems safe...
+   Severity: High   Confidence: High
+   Location: proyecto_vulnerable.py:33
+   32  def ejecutar_comando(comando):
+   33      resultado = subprocess.check_output(comando, shell=True)
 
-- Command Injection (/command): Severidad ALTA
-  Descripcion: El parametro ip se pasa a shell=True sin sanitizar.
-  Parametro: ip
-  Payload: 127.0.0.1 & dir
-  URL: http://localhost:5000/command?ip=127.0.0.1%20%26%20dir
-  Evidencia: Se ejecuta el comando 'dir'
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'admin123'
+   Severity: Medium   Confidence: Medium
+   Location: proyecto_vulnerable.py:41
+   41  DB_PASSWORD = "admin123"
 
-Medio riesgo:
-- Path Traversal (/path): Severidad MEDIA
-  Descripcion: El parametro file permite leer archivos fuera del directorio.
-  Payload: ../../../etc/passwd
-  URL: http://localhost:5000/path?file=../../../etc/passwd
-  Evidencia: Contenido del archivo /etc/passwd
+>> Issue: [B301:pickle] Pickle and modules that wrap it can be unsafe...
+   Severity: Medium   Confidence: High
+   Location: proyecto_vulnerable.py:51
+   51      return pickle.load(f)
 
-- Information Disclosure (/admin, /config, /backup.sql): Severidad MEDIA
-  Descripcion: Directorios y archivos sensibles expuestos publicamente.
-  Evidencia: /config expone configuracion de BD y secret key.
+>> Issue: [B307:eval] Use of possibly insecure function - consider using safer ast.literal_eval.
+   Severity: Medium   Confidence: High
+   Location: proyecto_vulnerable.py:60
+   60      return eval(expresion)
 
-- Missing Security Headers: Severidad MEDIA
-  Headers faltantes:
-  - X-Frame-Options (protege contra clickjacking)
-  - X-Content-Type-Options (protege contra MIME sniffing)
-  - Strict-Transport-Security (fuerza HTTPS)
-  - Content-Security-Policy (protege contra XSS)
-
-- X-Frame-Options Header Missing: Severidad MEDIA
-  Descripcion: La pagina puede ser cargada en un iframe,
-  permitiendo clickjacking.
-
-Bajo riesgo:
-- Cookies sin Secure/HttpOnly flag: Severidad BAJA
-  Descripcion: Las cookies de sesion no tienen flags de seguridad.
-- Server Version Disclosure: Severidad BAJA
-  Descripcion: El header Server revela la version del servidor web.
-- Informative: robots.txt expone paths sensibles.
+>> Issue: [B506:yaml_load] Use of yaml.load() without a Loader parameter...
+   Severity: Medium   Confidence: High
+   Location: proyecto_vulnerable.py:69
+   69      return yaml.load(f)
 ```
-
-## Ejercicio 2: ZAP API desde Python para Escaneo Automatizado
 
 ```python
-# zap_automation.py - Escaneo automatizado con API de OWASP ZAP
-import time
+# proyecto_corregido.py - Version corregida del codigo vulnerable
+import hashlib
+import os
+import subprocess
+import sqlite3
+import json
+import yaml
+import requests
+from ast import literal_eval
+
+# ============================================================
+# CORRECCION 1: Hash seguro con bcrypt/argon2
+# ============================================================
+
+import bcrypt
+
+def hash_contrasena(contrasena):
+    """OK: Usa bcrypt con salt y factor de costo."""
+    return bcrypt.hashpw(
+        contrasena.encode(),
+        bcrypt.gensalt(rounds=12)
+    ).decode()
+
+
+# ============================================================
+# CORRECCION 2: SQL parametrizado
+# ============================================================
+
+def buscar_usuario_seguro(nombre):
+    """OK: Usa parametros en lugar de concatenacion."""
+    conn = sqlite3.connect('usuarios.db')
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT * FROM usuarios WHERE nombre = ?",
+        (nombre,)
+    )
+    return cursor.fetchall()
+
+
+# ============================================================
+# CORRECCION 3: Sin shell=True
+# ============================================================
+
+def ejecutar_comando_seguro(lista_comandos):
+    """OK: Usa lista en lugar de string y shell=False."""
+    resultado = subprocess.check_output(lista_comandos, shell=False)
+    return resultado.decode()
+
+
+# ============================================================
+# CORRECCION 4: Secretos desde entorno
+# ============================================================
+
+def conectar_bd_segura():
+    """OK: Lee credenciales de variables de entorno."""
+    db_host = os.environ.get('DB_HOST', 'localhost')
+    db_user = os.environ.get('DB_USER', 'app')
+    db_pass = os.environ.get('DB_PASSWORD', '')
+
+    if not db_pass:
+        raise ValueError("DB_PASSWORD no configurada en variables de entorno")
+
+    conn = sqlite3.connect(f'db://{db_user}:****@{db_host}:5432/prod')
+    return conn
+
+
+# ============================================================
+# CORRECCION 5: JSON en lugar de Pickle
+# ============================================================
+
+def cargar_datos_seguro(archivo):
+    """OK: JSON no ejecuta codigo arbitrario."""
+    with open(archivo, 'r') as f:
+        return json.load(f)
+
+
+# ============================================================
+# CORRECCION 6: literal_eval en lugar de eval
+# ============================================================
+
+def evaluar_expresion_segura(expresion):
+    """OK: literal_eval solo evalua literales, no ejecuta codigo."""
+    try:
+        return literal_eval(expresion)
+    except (ValueError, SyntaxError):
+        return None
+
+
+# ============================================================
+# CORRECCION 7: yaml.safe_load
+# ============================================================
+
+def cargar_config_yaml_seguro(archivo):
+    """OK: safe_load no permite ejecucion de codigo."""
+    with open(archivo, 'r') as f:
+        return yaml.safe_load(f)
+
+
+# ============================================================
+# CORRECCION 8: HTTPS
+# ============================================================
+
+def obtener_datos_seguro():
+    """OK: Usa HTTPS para cifrar la comunicacion."""
+    response = requests.get('https://api-segura.com/data')
+    return response.json()
+
+
+# ============================================================
+# CORRECCION 9: Path traversal prevenido
+# ============================================================
+
+DIRECTORIO_BASE = os.path.abspath('data')
+
+def leer_archivo_seguro(nombre):
+    """OK: Valida que el archivo este dentro del directorio permitido."""
+    # Sanitizar path
+    ruta = os.path.normpath(os.path.join(DIRECTORIO_BASE, nombre))
+
+    # Verificar que este dentro del directorio base
+    if not ruta.startswith(DIRECTORIO_BASE):
+        raise PermissionError("Acceso denegado: fuera del directorio permitido")
+
+    if not os.path.exists(ruta):
+        raise FileNotFoundError("Archivo no encontrado")
+
+    with open(ruta, 'r') as f:
+        return f.read()
+
+
+# ============================================================
+# CORRECCION 10: Validacion explicita
+# ============================================================
+
+def validar_usuario_seguro(usuario):
+    """OK: Validacion explicita, no depende de assert."""
+    if not hasattr(usuario, 'rol'):
+        return False
+    if usuario.rol != 'admin':
+        return False
+    return True
+```
+
+## Ejercicio 2: Reglas Personalizadas de Semgrep para Detectar Hardcoded Passwords
+
+```yaml
+# semgrep-rules/hardcoded-passwords.yaml
+# Reglas Semgrep personalizadas para detectar secretos hardcodeados
+
+rules:
+  # =============================================
+  # Regla 1: Contrasenas en variables
+  # =============================================
+  - id: hardcoded-password-variable
+    pattern-either:
+      - pattern: |
+          $VAR = "..."
+      - pattern: |
+          $VAR = '...'
+    patterns:
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: (?i).*(password|passwd|pwd|secret|api_key|apikey).*
+      - metavariable-regex:
+          metavariable: $VAL
+          regex: (?i).*(password|passwd|pwd|secret|api_key|apikey).*
+    message: >
+      Posible secreto hardcodeado encontrado en la variable $VAR.
+      Los secretos deben leerse de variables de entorno o
+      un gestor de secretos (Vault, Azure Key Vault).
+    severity: ERROR
+    languages:
+      - python
+      - javascript
+      - typescript
+      - java
+      - go
+      - ruby
+    metadata:
+      category: security
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: "A2:2021 - Cryptographic Failures"
+
+  # =============================================
+  # Regla 2: Contrasenas en diccionarios de configuracion
+  # =============================================
+  - id: hardcoded-password-dict
+    pattern-either:
+      - pattern: |
+          {
+            ...,
+            "$KEY": "...",
+            ...
+          }
+      - pattern: |
+          {
+            ...,
+            '$KEY': '...',
+            ...
+          }
+    patterns:
+      - metavariable-regex:
+          metavariable: $KEY
+          regex: (?i).*(password|passwd|secret|api_key|apikey|token|secret_key).*
+      - metavariable-regex:
+          metavariable: $VAL
+          regex: (?i).*(password|passwd|secret|api_key|apikey|token|secret_key).*
+    message: >
+      Secreto hardcodeado encontrado en diccionario de configuracion.
+      Usa variables de entorno o un gestor de secretos.
+    severity: ERROR
+    languages:
+      - python
+      - javascript
+      - typescript
+      - java
+      - ruby
+
+  # =============================================
+  # Regla 3: Conexion a BD con contrasena en texto plano
+  # =============================================
+  - id: hardcoded-db-connection-string
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $FUNC("$URL", ...)
+          - pattern: |
+              $FUNC('$URL', ...)
+      - metavariable-regex:
+          metavariable: $URL
+          regex: (?i).*(postgres|mysql|mongodb|sqlite|oracle)://.*:.*@.*
+    message: >
+      Conexion a base de datos con credenciales en texto plano
+      en la URL de conexion. Las credenciales deben pasarse
+      por parametros separados desde variables de entorno.
+    severity: WARNING
+    languages:
+      - python
+      - javascript
+      - typescript
+      - java
+      - go
+
+  # =============================================
+  # Regla 4: Funciones criptograficas debiles
+  # =============================================
+  - id: weak-crypto-md5-sha1
+    pattern-either:
+      - pattern: hashlib.md5(...)
+      - pattern: hashlib.sha1(...)
+      - pattern: Crypto.Cipher.DES(...)
+      - pattern: Crypto.Cipher.ARC4(...)
+    message: >
+      Uso de algoritmo criptografico debil. MD5 y SHA-1 tienen
+      colisiones demostradas. DES y RC4 son vulnerables.
+      Usa SHA-256/3 para hash, AES-GCM para cifrado.
+    severity: ERROR
+    languages:
+      - python
+    metadata:
+      cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+
+  # =============================================
+  # Regla 5: SQL Injection detectado
+  # =============================================
+  - id: sql-injection-concatenation
+    pattern-either:
+      - pattern: |
+          $DB.execute("..." + $VAR + "...")
+      - pattern: |
+          $DB.execute(f"...{$VAR}...")
+      - pattern: |
+          $DB.execute('...' + $VAR + '...')
+    message: >
+      Posible inyeccion SQL detectada. No concatenes variables
+      en queries SQL. Usa consultas parametrizadas (? o %s).
+    severity: ERROR
+    languages:
+      - python
+    metadata:
+      cwe: "CWE-89: SQL Injection"
+      owasp: "A3:2021 - Injection"
+
+  # =============================================
+  # Regla 6: Debug/INFO en produccion
+  # =============================================
+  - id: debug-enabled-production
+    patterns:
+      - pattern: |
+          app.run(debug=True, ...)
+    message: >
+      Modo DEBUG activado. No usar debug=True en produccion.
+      Expone stack traces al usuario y permite ejecucion
+      remota de codigo.
+    severity: ERROR
+    languages:
+      - python
+
+  # =============================================
+  # Regla 7: eval() detectado
+  # =============================================
+  - id: dangerous-eval
+    pattern: eval(...)
+    message: >
+      Uso de eval() detectado. eval() ejecuta codigo Python
+      arbitrario. Usa ast.literal_eval() si necesitas evaluar
+      literales, o parseadores especificos.
+    severity: ERROR
+    languages:
+      - python
+    metadata:
+      cwe: "CWE-95: Eval Injection"
+```
+
+**Como ejecutar las reglas personalizadas:**
+```bash
+# Ejecutar Semgrep con reglas personalizadas
+semgrep --config=semgrep-rules/hardcoded-passwords.yaml --error --strict .
+
+# Ejecutar con output JSON
+semgrep --config=semgrep-rules/hardcoded-passwords.yaml --json -o semgrep-hallazgos.json .
+
+# Ejecutar combinando reglas personalizadas y publicas
+semgrep --config=semgrep-rules/ --config=p/owasp-top-ten --config=p/python .
+
+# Ejecutar en modo CI (solo mostrar hallazgos)
+semgrep --config=semgrep-rules/hardcoded-passwords.yaml --ci .
+```
+
+## Ejercicio 3: Analisis y Correccion de Reporte SonarQube
+
+```python
+# sonarqube_analysis.py - Script para procesar reporte de SonarQube
 import json
 import logging
-from typing import Optional, Dict, List
-import requests
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class ZAPAutomation:
+class AnalizadorSonarQube:
     """
-    Automatizacion de escaneo DAST usando la API REST de OWASP ZAP.
-    ZAP debe estar corriendo en modo daemon (-daemon).
-    """
-
-    def __init__(
-        self,
-        zap_url: str = "http://localhost:8080",
-        api_key: str = "changeme"
-    ):
-        self.zap_url = zap_url.rstrip('/')
-        self.api_key = api_key
-        self.api_base = f"{self.zap_url}/JSON"
-        self.session = requests.Session()
-        self.context_id: Optional[int] = None
-
-    def _api_request(self, endpoint: str, params: dict = None) -> dict:
-        """Realiza una request a la API de ZAP."""
-        if params is None:
-            params = {}
-        params['apikey'] = self.api_key
-
-        url = f"{self.api_base}/{endpoint}"
-        response = self.session.get(url, params=params, timeout=30)
-
-        if response.status_code != 200:
-            raise RuntimeError(
-                f"Error API ZAP ({response.status_code}): {response.text}"
-            )
-        return response.json()
-
-    # ==========================================
-    # METODOS DE CONFIGURACION
-    # ==========================================
-
-    def crear_contexto(self, nombre: str) -> int:
-        """
-        Crea un contexto en ZAP para aislar el escaneo.
-
-        El contexto define los limites del escaneo: URLs incluidas,
-        autenticacion, etc.
-        """
-        result = self._api_request(
-            'context/action/newContext/',
-            {'contextName': nombre}
-        )
-        self.context_id = result.get('contextId')
-
-        if self.context_id:
-            logger.info("Contexto creado: %s (ID: %s)", nombre, self.context_id)
-        return self.context_id
-
-    def incluir_en_contexto(self, url_pattern: str):
-        """Incluye URLs que coinciden con el patron en el contexto."""
-        if not self.context_id:
-            raise RuntimeError("Debes crear un contexto primero")
-
-        self._api_request('context/action/includeInContext/', {
-            'contextName': f'Context{self.context_id}',
-            'regex': url_pattern
-        })
-        logger.info("Patron incluido en contexto: %s", url_pattern)
-
-    def configurar_autenticacion(
-        self,
-        login_url: str,
-        user_field: str,
-        password_field: str,
-        username: str,
-        password: str
-    ):
-        """
-        Configura autenticacion basada en formulario.
-        Permite escanear areas que requieren login.
-        """
-        if not self.context_id:
-            raise RuntimeError("Debes crear un contexto primero")
-
-        # Configurar indicador de sesion (lo que aparece cuando hay sesion)
-        session_indicator_method = 'response'
-        session_indicator_param = 'logout'
-
-        self._api_request('authentication/action/setAuthenticationMethod/', {
-            'contextId': self.context_id,
-            'authMethodName': 'formBasedAuthentication',
-            'authMethodConfigParams': (
-                f'loginUrl={login_url}&'
-                f'loginRequestData={user_field}%3D%7B%25username%25%7D'
-                f'%26{password_field}%3D%7B%25password%25%7D'
-            )
-        })
-
-        # Configurar credenciales del usuario
-        self._api_request('users/action/newUser/', {
-            'contextId': self.context_id,
-            'name': 'test-user'
-        })
-
-        self._api_request('users/action/setAuthenticationCredentials/', {
-            'contextId': self.context_id,
-            'userId': 0,
-            'username': username,
-            'password': password
-        })
-
-        logger.info("Autenticacion configurada para: %s", login_url)
-
-    # ==========================================
-    # METODOS DE ESCANEO
-    # ==========================================
-
-    def abrir_url(self, url: str) -> bool:
-        """
-        Abre una URL en ZAP para que sea explorada (spidered).
-        ZAP seguira enlaces y descubrira endpoints.
-        """
-        result = self._api_request('core/action/accessUrl/', {
-            'url': url,
-            'followRedirects': True
-        })
-        logger.info("URL abierta: %s", url)
-        return result.get('Result', '').startswith('OK')
-
-    def spider_scan(self, url: str, max_children: int = 10) -> int:
-        """
-        Ejecuta spider scan para descubrir endpoints.
-
-        Returns:
-            ID del scan (para monitorear progreso)
-        """
-        result = self._api_request('spider/action/scan/', {
-            'url': url,
-            'maxChildren': max_children,
-            'contextId': self.context_id or ''
-        })
-        scan_id = result.get('scanId')
-
-        if scan_id:
-            logger.info("Spider scan iniciado ID: %s para URL: %s", scan_id, url)
-        return scan_id
-
-    def active_scan(self, url: str) -> int:
-        """
-        Ejecuta escaneo activo contra la URL.
-        Este es el escaneo que realmente ejecuta ataques.
-
-        Returns:
-            ID del scan (para monitorear progreso)
-        """
-        result = self._api_request('ascan/action/scan/', {
-            'url': url,
-            'recurse': True,
-            'inScopeOnly': True if self.context_id else False,
-            'scanPolicyName': ''
-        })
-        scan_id = result.get('scan')
-
-        if scan_id:
-            logger.info("Active scan iniciado ID: %s para URL: %s", scan_id, url)
-        return scan_id
-
-    # ==========================================
-    # METODOS DE MONITOREO
-    # ==========================================
-
-    def esperar_spider(self, scan_id: int, timeout: int = 300):
-        """Espera a que el spider scan termine."""
-        inicio = time.time()
-        while True:
-            result = self._api_request('spider/view/status/', {
-                'scanId': scan_id
-            })
-            status = int(result.get('status', 0))
-            logger.info("Spider progress: %d%%", status)
-
-            if status >= 100:
-                logger.info("Spider scan completado")
-                return True
-
-            if time.time() - inicio > timeout:
-                raise TimeoutError("Spider scan excedio el tiempo limite")
-            time.sleep(5)
-
-    def esperar_active_scan(self, scan_id: int, timeout: int = 600):
-        """Espera a que el active scan termine."""
-        inicio = time.time()
-        while True:
-            result = self._api_request('ascan/view/status/', {
-                'scanId': scan_id
-            })
-            status = int(result.get('status', 0))
-            logger.info("Active scan progress: %d%%", status)
-
-            if status >= 100:
-                logger.info("Active scan completado")
-                return True
-
-            if time.time() - inicio > timeout:
-                raise TimeoutError("Active scan excedio el tiempo limite")
-            time.sleep(5)
-
-    # ==========================================
-    # METODOS DE REPORTES
-    # ==========================================
-
-    def obtener_alertas(self, risk_level: str = None) -> List[Dict]:
-        """
-        Obtiene todas las alertas generadas por el escaneo.
-
-        Args:
-            risk_level: Filtrar por nivel de riesgo
-                        (High, Medium, Low, Informational)
-
-        Returns:
-            Lista de alertas con: nombre, riesgo, url, descripcion, solucion
-        """
-        params = {}
-        if risk_level:
-            params['riskId'] = {'High': '3', 'Medium': '2',
-                                'Low': '1', 'Informational': '0'}.get(risk_level, '')
-
-        result = self._api_request('core/view/alerts/', params)
-        return result.get('alerts', [])
-
-    def generar_reporte_html(self) -> str:
-        """Genera reporte HTML completo."""
-        url = f"{self.zap_url}/OTHER/core/other/htmlreport/"
-        params = {'apikey': self.api_key}
-
-        response = self.session.get(url, params=params, timeout=30)
-        if response.status_code == 200:
-            return response.text
-        raise RuntimeError("Error al generar reporte HTML")
-
-    def clasificar_alertas(self) -> Dict:
-        """Clasifica alertas por severidad."""
-        alertas = self.obtener_alertas()
-        clasificacion = {'High': [], 'Medium': [], 'Low': [], 'Informational': []}
-
-        for alerta in alertas:
-            riesgo = alerta.get('risk', 'Informational')
-            if riesgo in clasificacion:
-                clasificacion[riesgo].append(alerta)
-            else:
-                clasificacion['Informational'].append(alerta)
-
-        return clasificacion
-
-
-# ============================================================
-# EJECUCION COMPLETA DEL ESCANEO AUTOMATIZADO
-# ============================================================
-if __name__ == '__main__':
-    print("=" * 60)
-    print("ESCANEO DAST AUTOMATIZADO CON OWASP ZAP")
-    print("=" * 60)
-
-    # Verificar que ZAP este corriendo
-    TARGET_URL = 'http://host.docker.internal:5000'
-    ZAP_URL = 'http://localhost:8080'
-    API_KEY = 'changeme'
-
-    try:
-        zap = ZAPAutomation(ZAP_URL, API_KEY)
-
-        # 1. Probar conexion con ZAP
-        logger.info("1. Verificando conexion con ZAP...")
-        version = zap._api_request('core/view/version/')
-        logger.info("   ZAP Version: %s", version.get('version', 'desconocida'))
-
-        # 2. Crear contexto
-        logger.info("\n2. Creando contexto de escaneo...")
-        zap.crear_contexto('Escaneo-DAST-Clase24')
-        zap.incluir_en_contexto(f'{TARGET_URL}.*')
-
-        # 3. Abrir URL objetivo
-        logger.info("\n3. Abriendo URL objetivo...")
-        zap.abrir_url(TARGET_URL)
-
-        # 4. Spider Scan (descubrimiento)
-        logger.info("\n4. Ejecutando Spider Scan...")
-        spider_id = zap.spider_scan(TARGET_URL, max_children=10)
-        if spider_id:
-            zap.esperar_spider(spider_id, timeout=120)
-
-        # 5. Active Scan (ataques)
-        logger.info("\n5. Ejecutando Active Scan...")
-        scan_id = zap.active_scan(TARGET_URL)
-        if scan_id:
-            zap.esperar_active_scan(scan_id, timeout=300)
-
-        # 6. Obtener y clasificar resultados
-        logger.info("\n6. Obteniendo resultados...")
-        clasificacion = zap.clasificar_alertas()
-
-        print("\n" + "=" * 60)
-        print("RESULTADOS DEL ESCANEO DAST")
-        print("=" * 60)
-
-        print(f"\nHIGH: {len(clasificacion['High'])}")
-        for a in clasificacion['High']:
-            print(f"  - {a.get('alert', 'N/A')}")
-            print(f"    URL: {a.get('url', 'N/A')}")
-
-        print(f"\nMEDIUM: {len(clasificacion['Medium'])}")
-        for a in clasificacion['Medium']:
-            print(f"  - {a.get('alert', 'N/A')}")
-            print(f"    URL: {a.get('url', 'N/A')}")
-
-        print(f"\nLOW: {len(clasificacion['Low'])}")
-        print(f"INFORMATIONAL: {len(clasificacion['Informational'])}")
-
-        # 7. Generar reporte HTML
-        logger.info("\n7. Generando reporte HTML...")
-        reporte_html = zap.generar_reporte_html()
-        with open('zap-dast-report.html', 'w') as f:
-            f.write(reporte_html)
-        logger.info("   Reporte guardado: zap-dast-report.html")
-
-    except requests.exceptions.ConnectionError:
-        logger.error(
-            "No se pudo conectar a ZAP en %s.\n"
-            "Asegurate de que ZAP este corriendo en modo daemon:\n"
-            "  docker run -d --name zap -p 8080:8080 "
-            "ghcr.io/zaproxy/zaproxy:stable "
-            "zap.sh -daemon -port 8080 -config api.key=changeme",
-            ZAP_URL
-        )
-    except Exception as e:
-        logger.error("Error durante el escaneo: %s", str(e))
-```
-
-## Ejercicio 3: Clasificar Reporte DAST con 10 Hallazgos y Proponer Correcciones
-
-```python
-# analisis_reporte_dast.py - Clasificar y corregir hallazgos DAST
-import json
-
-
-class ReporteDAST:
-    """
-    Procesa un reporte DAST (OWASP ZAP) y clasifica los hallazgos
-    por severidad con acciones de correccion sugeridas.
+    Procesa un reporte de SonarQube en formato JSON y prioriza
+    las vulnerabilidades para correccion.
     """
 
-    CORRECCIONES = {
-        'SQL Injection': {
-            'severidad': 'Alta',
-            'cwe': 'CWE-89',
-            'correccion': """
-CORRECCION SQL INJECTION:
-1. Usar consultas parametrizadas (prepared statements):
-   cursor.execute("SELECT * FROM usuarios WHERE username = ?", (user,))
+    def __init__(self, reporte_json: str):
+        with open(reporte_json, 'r') as f:
+            self.reporte = json.load(f)
 
-2. Usar un ORM (SQLAlchemy, Django ORM) que maneje parametrizacion
-   automaticamente.
+    def priorizar_vulnerabilidades(self) -> list:
+        """
+        Prioriza vulnerabilidades por severidad y tipo.
+        Retorna lista ordenada por criticidad.
+        """
+        issues = self.reporte.get('issues', [])
 
-3. Validar que los inputs solo contengan caracteres esperados
-   (whitelist de caracteres permitidos).
-
-4. Aplicar el principio de minimo privilegio en la cuenta de BD.
-"""
-        },
-        'Cross-Site Scripting (XSS)': {
-            'severidad': 'Alta',
-            'cwe': 'CWE-79',
-            'correccion': """
-CORRECCION XSS:
-1. Escapar toda salida HTML con html.escape() en Python o
-   autoescaping de Jinja2/Flask.
-
-2. Implementar Content-Security-Policy (CSP) header:
-   Content-Security-Policy: default-src 'self'
-
-3. No insertar datos del usuario directamente en HTML sin escapar.
-
-4. Usar plantillas con autoescaping (Jinja2, React con JSX).
-"""
-        },
-        'Command Injection': {
-            'severidad': 'Alta',
-            'cwe': 'CWE-78',
-            'correccion': """
-CORRECCION COMMAND INJECTION:
-1. NUNCA usar shell=True en subprocess con datos del usuario.
-
-2. Usar subprocess con lista de argumentos (sin shell=True):
-   subprocess.check_output(['ping', '-n', '1', ip])
-
-3. Validar el formato del input antes de usarlo:
-   import ipaddress
-   ipaddress.ip_address(ip)  # Lanza error si no es IP valida
-
-4. Preferir librerias Python nativas en lugar de comandos del sistema.
-"""
-        },
-        'Path Traversal': {
-            'severidad': 'Media',
-            'cwe': 'CWE-22',
-            'correccion': """
-CORRECCION PATH TRAVERSAL:
-1. Normalizar y validar la ruta antes de acceder al archivo:
-   ruta = os.path.normpath(os.path.join(BASE_DIR, nombre))
-   if not ruta.startswith(BASE_DIR):
-       raise PermissionError("Acceso denegado")
-
-2. Mantener un directorio base restringido para archivos.
-
-3. No permitir ".." en los nombres de archivo.
-
-4. Usar indentificadores numericos en lugar de nombres de archivo.
-"""
-        },
-        'Information Disclosure': {
-            'severidad': 'Media',
-            'cwe': 'CWE-200',
-            'correccion': """
-CORRECCION INFORMATION DISCLOSURE:
-1. No exponer rutas /admin, /config, /backup.sql publicamente.
-
-2. Implementar autenticacion y autorizacion en todas las rutas
-   administrativas.
-
-3. No incluir comentarios HTML con informacion sensible.
-
-4. Configurar el servidor para no revelar versiones:
-   - Deshabilitar Server header
-   - No mostrar stack traces en produccion
-   - No incluir versiones en headers HTTP
-"""
-        },
-        'Missing Security Headers': {
-            'severidad': 'Media',
-            'cwe': 'CWE-693',
-            'correccion': """
-CORRECCION HEADERS DE SEGURIDAD:
-Agregar los siguientes headers en todas las respuestas:
-
-1. X-Frame-Options: DENY
-   (Protege contra clickjacking)
-
-2. X-Content-Type-Options: nosniff
-   (Protege contra MIME sniffing)
-
-3. Strict-Transport-Security: max-age=31536000; includeSubDomains
-   (Fuerza HTTPS)
-
-4. Content-Security-Policy: default-src 'self'
-   (Protege contra XSS y data injection)
-
-5. X-XSS-Protection: 0
-   (Deshabilitar modo legacy de XSS filter)
-
-6. Referrer-Policy: strict-origin-when-cross-origin
-   (Controla informacion enviada en Referer)
-
-En Flask:
-    @app.after_request
-    def add_security_headers(response):
-        response.headers['X-Frame-Options'] = 'DENY'
-        response.headers['X-Content-Type-Options'] = 'nosniff'
-        response.headers['Strict-Transport-Security'] = \
-            'max-age=31536000; includeSubDomains'
-        response.headers['Content-Security-Policy'] = \
-            "default-src 'self'"
-        return response
-"""
-        },
-        'CSRF (Cross-Site Request Forgery)': {
-            'severidad': 'Media',
-            'cwe': 'CWE-352',
-            'correccion': """
-CORRECCION CSRF:
-1. Usar tokens CSRF en todos los formularios:
-   Flask-WTF: {{ form.hidden_tag() }}
-
-2. Validar el origen de las requests:
-   - Verificar header Origin o Referer
-   - Usar SameSite cookie attribute: SameSite=Lax
-
-3. Para APIs: usar tokens en headers personalizados
-   (X-CSRF-Token) en lugar de cookies.
-
-4. No aceptar requests POST sin token CSRF valido.
-"""
-        },
-        'Weak Password Policy': {
-            'severidad': 'Media',
-            'cwe': 'CWE-521',
-            'correccion': """
-CORRECCION POLITICA DE CONTRASENAS:
-1. Implementar requisitos minimos de contrasena:
-   - Minimo 8 caracteres
-   - Al menos 1 mayuscula, 1 minuscula, 1 numero, 1 especial
-
-2. Usar hash seguro (bcrypt/argon2) para almacenar contrasenas.
-
-3. No almacenar contrasenas en texto plano en BD o backups.
-
-4. Implementar rate limiting en login para prevenir fuerza bruta.
-"""
-        },
-        'SSL/TLS Weak Configuration': {
-            'severidad': 'Media',
-            'cwe': 'CWE-327',
-            'correccion': """
-CORRECCION TLS:
-1. Usar TLS 1.2 o 1.3 exclusivamente (deshabilitar TLS 1.0/1.1).
-
-2. Usar certificados validos de una CA confiable.
-
-3. Configurar ciphers seguros:
-   ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256
-
-4. Habilitar HSTS (HTTP Strict Transport Security) con
-   preload si es posible.
-
-5. Redirigir todo trafico HTTP a HTTPS automaticamente.
-"""
-        },
-        'Cookie Without Secure/HttpOnly': {
-            'severidad': 'Baja',
-            'cwe': 'CWE-614',
-            'correccion': """
-CORRECCION SEGURIDAD DE COOKIES:
-1. Agregar Secure flag: la cookie solo se envia por HTTPS.
-2. Agregar HttpOnly flag: la cookie no es accesible via JavaScript.
-3. Agregar SameSite flag: SameSite=Lax o Strict.
-4. Configurar Path y Domain especificos.
-
-En Flask:
-    app.config.update(
-        SESSION_COOKIE_SECURE=True,
-        SESSION_COOKIE_HTTPONLY=True,
-        SESSION_COOKIE_SAMESITE='Lax',
-        SESSION_COOKIE_PATH='/'
-    )
-"""
+        prioridad = {
+            'BLOCKER': 0,
+            'CRITICAL': 1,
+            'MAJOR': 2,
+            'MINOR': 3,
+            'INFO': 4
         }
-    }
 
-    def __init__(self, reporte: dict):
-        self.reporte = reporte
+        vulnerabilidades = []
+        for issue in issues:
+            if issue.get('type') == 'VULNERABILITY':
+                vulnerabilidades.append({
+                    'severidad': issue.get('severity', 'INFO'),
+                    'mensaje': issue.get('message', ''),
+                    'archivo': issue.get('component', ''),
+                    'linea': issue.get('line', 0),
+                    'regla': issue.get('rule', ''),
+                    'prioridad': prioridad.get(
+                        issue.get('severity', 'INFO'), 99
+                    ),
+                    'esfuerzo': issue.get('effort', '0min')
+                })
 
-    def clasificar_por_severidad(self) -> dict:
-        """Clasifica hallazgos por severidad."""
-        alertas = self.reporte.get('alerts', [])
+        vulnerabilidades.sort(key=lambda x: x['prioridad'])
+        return vulnerabilidades
 
-        clasificacion = {'Alta': [], 'Media': [], 'Baja': [], 'Info': []}
-        for alerta in alertas:
-            severidad = alerta.get('risk', 'Info')
-            clasificacion[severidad].append(alerta)
+    def resumen_ejecutivo(self) -> dict:
+        """Genera resumen del reporte."""
+        issues = self.reporte.get('issues', [])
 
-        return clasificacion
+        resumen = {
+            'total_issues': len(issues),
+            'total_vulnerabilidades': 0,
+            'total_bugs': 0,
+            'total_code_smells': 0,
+            'por_severidad': {'BLOCKER': 0, 'CRITICAL': 0,
+                             'MAJOR': 0, 'MINOR': 0, 'INFO': 0},
+            'por_tipo': {}
+        }
 
-    def generar_plan_accion(self) -> list:
-        """Genera plan de accion priorizado."""
-        alertas = self.reporte.get('alerts', [])
-        plan = []
+        for issue in issues:
+            tipo = issue.get('type', 'UNKNOWN')
+            severidad = issue.get('severity', 'INFO')
 
-        for alerta in alertas:
-            nombre = alerta.get('alert', 'Desconocido')
-            riesgo = alerta.get('risk', 'Info')
-            url = alerta.get('url', 'N/A')
-            descripcion = alerta.get('description', 'Sin descripcion')
+            resumen['por_severidad'][severidad] = \
+                resumen['por_severidad'].get(severidad, 0) + 1
 
-            correccion = self.CORRECCIONES.get(nombre, {}).get(
-                'correccion',
-                'No hay correccion predefinida. Revisar manualmente.'
-            )
+            if tipo == 'VULNERABILITY':
+                resumen['total_vulnerabilidades'] += 1
+            elif tipo == 'BUG':
+                resumen['total_bugs'] += 1
+            elif tipo == 'CODE_SMELL':
+                resumen['total_code_smells'] += 1
 
-            plan.append({
-                'vulnerabilidad': nombre,
-                'severidad': riesgo,
-                'url': url,
-                'descripcion': descripcion[:100],
-                'correccion': correccion.strip()
-            })
+            resumen['por_tipo'][tipo] = \
+                resumen['por_tipo'].get(tipo, 0) + 1
 
-        prioridad = {'Alta': 0, 'Media': 1, 'Baja': 2, 'Info': 3}
-        plan.sort(key=lambda x: prioridad.get(x['severidad'], 99))
-        return plan
+        return resumen
 
 
 # ============================================================
-# EJEMPLO DE REPORTE CON 10 HALLAZGOS
+# EJEMPLO DE REPORTE SIMULADO DE SONARQUBE
 # ============================================================
 
 reporte_ejemplo = {
-    "alerts": [
+    "issues": [
         {
-            "alert": "SQL Injection",
-            "risk": "Alta",
-            "url": "http://localhost:5000/sqli",
-            "description": "La aplicacion es vulnerable a SQL Injection",
-            "solution": "Usar consultas parametrizadas"
+            "type": "VULNERABILITY",
+            "severity": "BLOCKER",
+            "message": "Use of hardcoded password in database connection",
+            "component": "src/database.py",
+            "line": 42,
+            "rule": "python:S1313",
+            "effort": "5min"
         },
         {
-            "alert": "Cross-Site Scripting (XSS)",
-            "risk": "Alta",
-            "url": "http://localhost:5000/xss",
-            "description": "XSS Reflejado en parametro name",
-            "solution": "Escapar output con html.escape()"
+            "type": "VULNERABILITY",
+            "severity": "CRITICAL",
+            "message": "Make sure using the literal expression is safe here",
+            "component": "src/utils.py",
+            "line": 15,
+            "rule": "python:S1523",
+            "effort": "2min"
         },
         {
-            "alert": "Command Injection",
-            "risk": "Alta",
-            "url": "http://localhost:5000/command",
-            "description": "Command injection via parametro ip",
-            "solution": "No usar shell=True, validar input"
+            "type": "VULNERABILITY",
+            "severity": "MAJOR",
+            "message": "Use of MD5 hash function is not recommended",
+            "component": "src/auth.py",
+            "line": 23,
+            "rule": "python:S2070",
+            "effort": "10min"
         },
         {
-            "alert": "Path Traversal",
-            "risk": "Media",
-            "url": "http://localhost:5000/path",
-            "description": "Path traversal permite leer archivos del sistema",
-            "solution": "Validar y restringir rutas de archivos"
+            "type": "BUG",
+            "severity": "MAJOR",
+            "message": "This function does not return a value in all paths",
+            "component": "src/process.py",
+            "line": 87,
+            "rule": "python:S935",
+            "effort": "5min"
         },
         {
-            "alert": "Information Disclosure",
-            "risk": "Media",
-            "url": "http://localhost:5000/config",
-            "description": "Endpoint /config expone configuracion sensible",
-            "solution": "Proteger con autenticacion"
+            "type": "VULNERABILITY",
+            "severity": "MINOR",
+            "message": "Use of assert without error message",
+            "component": "src/validators.py",
+            "line": 34,
+            "rule": "python:S1871",
+            "effort": "1min"
         },
         {
-            "alert": "Missing Security Headers",
-            "risk": "Media",
-            "url": "http://localhost:5000/",
-            "description": "Faltan headers de seguridad en las respuestas",
-            "solution": "Agregar X-Frame-Options, CSP, HSTS, etc."
+            "type": "VULNERABILITY",
+            "severity": "CRITICAL",
+            "message": "This code uses SQL concatenation instead of prepared statements",
+            "component": "src/queries.py",
+            "line": 55,
+            "rule": "python:S2077",
+            "effort": "15min"
         },
         {
-            "alert": "CSRF (Cross-Site Request Forgery)",
-            "risk": "Media",
-            "url": "http://localhost:5000/form",
-            "description": "Formulario POST sin token CSRF",
-            "solution": "Implementar tokens CSRF con Flask-WTF"
-        },
-        {
-            "alert": "Weak Password Policy",
-            "risk": "Media",
-            "url": "http://localhost:5000/",
-            "description": "Contrasenas almacenadas en texto plano en backup.sql",
-            "solution": "Usar bcrypt para hash de contrasenas"
-        },
-        {
-            "alert": "Cookie Without Secure/HttpOnly",
-            "risk": "Baja",
-            "url": "http://localhost:5000/",
-            "description": "Cookies de sesion sin flags de seguridad",
-            "solution": "Agregar Secure, HttpOnly y SameSite flags"
-        },
-        {
-            "alert": "Server Version Disclosure",
-            "risk": "Baja",
-            "url": "http://localhost:5000/",
-            "description": "Header Server revela version de servidor web",
-            "solution": "Configurar servidor para ocultar version"
+            "type": "CODE_SMELL",
+            "severity": "MAJOR",
+            "message": "Function has too many parameters (8 > 5)",
+            "component": "src/handlers.py",
+            "line": 120,
+            "rule": "python:S107",
+            "effort": "20min"
         }
     ]
 }
 
 
+def corregir_vulnerabilidades_prioritarias():
+    """
+    Demostracion de correccion de las 5 vulnerabilidades
+    mas criticas del reporte.
+    """
+    analizador = AnalizadorSonarQube(reporte_ejemplo)
+    resumen = analizador.resumen_ejecutivo()
+
+    logger.info("RESUMEN DEL REPORTE SONARQUBE:")
+    logger.info(f"  Total issues: {resumen['total_issues']}")
+    logger.info(f"  Vulnerabilidades: {resumen['total_vulnerabilidades']}")
+    logger.info(f"  Bugs: {resumen['total_bugs']}")
+    logger.info(f"  Code Smells: {resumen['total_code_smells']}")
+    logger.info(f"  Por severidad: {resumen['por_severidad']}")
+
+    priorizadas = analizador.priorizar_vulnerabilidades()
+
+    logger.info("\nTOP 5 VULNERABILIDADES A CORREGIR:")
+    for i, vuln in enumerate(priorizadas[:5], 1):
+        logger.info(f"\n  {i}. [{vuln['severidad']}] {vuln['mensaje']}")
+        logger.info(f"     Archivo: {vuln['archivo']}:{vuln['linea']}")
+        logger.info(f"     Esfuerzo estimado: {vuln['esfuerzo']}")
+        logger.info(f"     Regla: {vuln['regla']}")
+
+    # Plan de accion
+    logger.info("\n--- PLAN DE ACCION ---")
+    logger.info("""
+    1. BLOCKER - Contrasena hardcodeada (database.py:42)
+       ACCION: Mover a variable de entorno/Vault.
+       CODIGO:
+         # Antes: DB_PASSWORD = "admin123"
+         # Despues: DB_PASSWORD = os.environ['DB_PASSWORD']
+
+    2. CRITICAL - eval() en utils.py:15
+       ACCION: Reemplazar con ast.literal_eval().
+       CODIGO:
+         # Antes: resultado = eval(expresion)
+         # Despues: resultado = ast.literal_eval(expresion)
+
+    3. CRITICAL - SQL concatenation (queries.py:55)
+       ACCION: Usar consultas parametrizadas.
+       CODIGO:
+         # Antes: cursor.execute(f"SELECT * FROM users WHERE id = {user_id}")
+         # Despues: cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+
+    4. MAJOR - MD5 hash (auth.py:23)
+       ACCION: Reemplazar con bcrypt o Argon2.
+       CODIGO:
+         # Antes: hashlib.md5(password.encode()).hexdigest()
+         # Despues: bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+
+    5. MINOR - assert sin mensaje (validators.py:34)
+       ACCION: Reemplazar con validacion explicita.
+       CODIGO:
+         # Antes: assert user.is_admin
+         # Despues: if not user.is_admin: raise PermissionError("No autorizado")
+    """)
+
+
 if __name__ == '__main__':
-    print("=" * 60)
-    print("CLASIFICACION Y CORRECCION DE REPORTE DAST")
-    print("=" * 60)
+    # Simular el reporte de SonarQube
+    with open('sonarqube-report.json', 'w') as f:
+        json.dump(reporte_ejemplo, f, indent=2)
 
-    analizador = ReporteDAST(reporte_ejemplo)
-    plan = analizador.generar_plan_accion()
-
-    print(f"\nTotal hallazgos: {len(plan)}")
-    print(f"  Altos: {len([p for p in plan if p['severidad'] == 'Alta'])}")
-    print(f"  Medios: {len([p for p in plan if p['severidad'] == 'Media'])}")
-    print(f"  Bajos: {len([p for p in plan if p['severidad'] == 'Baja'])}")
-
-    print("\n" + "=" * 60)
-    print("PLAN DE ACCION PRIORIZADO")
-    print("=" * 60)
-
-    for i, item in enumerate(plan, 1):
-        print(f"\n{i}. [{item['severidad'].upper()}] {item['vulnerabilidad']}")
-        print(f"   URL: {item['url']}")
-        print(f"   Descripcion: {item['descripcion']}")
-        print(f"   CORRECCION:\n{item['correccion']}")
-        print("-" * 60)
-
-
-# ============================================================
-# CODIGO CORREGIDO (version segura de la app vulnerable)
-# ============================================================
-
-def generar_app_segura():
-    """
-    Genera el codigo de la app corregida aplicando todas las
-    correcciones del plan de accion.
-    """
-    codigo = '''
-# app_segura_dast.py - Version corregida de la app vulnerable
-from flask import Flask, request, render_template_string, jsonify, session
-import sqlite3
-import subprocess
-import os
-import html
-import re
-
-app = Flask(__name__)
-
-# CORRECCION: Headers de seguridad
-@app.after_request
-def add_security_headers(response):
-    response.headers['X-Frame-Options'] = 'DENY'
-    response.headers['X-Content-Type-Options'] = 'nosniff'
-    response.headers['Strict-Transport-Security'] = 'max-age=31536000'
-    response.headers['Content-Security-Policy'] = "default-src 'self'"
-    response.headers['X-XSS-Protection'] = '0'
-    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-    # CORRECCION: No revelar version del servidor
-    response.headers['Server'] = 'WebServer'
-    return response
-
-# CORRECCION: Cookies seguras
-app.config.update(
-    SESSION_COOKIE_SECURE=True,
-    SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE='Lax',
-)
-
-# CORRECCION: Consultas parametrizadas (SQL Injection)
-def buscar_usuario(user):
-    conn = sqlite3.connect(':memory:')
-    cursor = conn.cursor()
-    cursor.execute(
-        "SELECT * FROM usuarios WHERE username = ?",
-        (user,)
-    )
-    return cursor.fetchall()
-
-# CORRECCION: Output encoding (XSS)
-@app.route('/xss')
-def xss_seguro():
-    name = request.args.get('name', 'Invitado')
-    name_seguro = html.escape(name)
-    return f'<p>Hola, {name_seguro}!</p>'
-
-# CORRECCION: Sin shell=True (Command Injection)
-import ipaddress
-@app.route('/command')
-def command_seguro():
-    ip = request.args.get('ip', '')
-    try:
-        ipaddress.ip_address(ip)
-        result = subprocess.check_output(
-            ['ping', '-n', '1', ip],
-            timeout=5
-        )
-        return f'<pre>{result.decode()}</pre>'
-    except (ValueError, ipaddress.AddressValueError):
-        return '<p>IP invalida</p>', 400
-
-# CORRECCION: Path sanitization (Path Traversal)
-BASE_DIR = os.path.abspath('data')
-@app.route('/path')
-def path_seguro():
-    file = request.args.get('file', '')
-    ruta = os.path.normpath(os.path.join(BASE_DIR, file))
-    if not ruta.startswith(BASE_DIR):
-        return '<p>Acceso denegado</p>', 403
-    if not os.path.exists(ruta):
-        return '<p>Archivo no encontrado</p>', 404
-    with open(ruta, 'r') as f:
-        return f'<pre>{html.escape(f.read())}</pre>'
-
-# CORRECCION: No exponer informacion
-@app.route('/config')
-def config_seguro():
-    # Requiere autenticacion
-    if not session.get('admin'):
-        return jsonify({'error': 'No autorizado'}), 403
-    return jsonify({'mensaje': 'Configuracion protegida'})
-
-# CORRECCION: Proteger rutas sensibles
-@app.route('/admin')
-def admin_seguro():
-    if not session.get('admin'):
-        return '<h1>Acceso denegado</h1>', 403
-    return '<h1>Panel de Administracion</h1>'
-
-# CORRECCION: Eliminar endpoints que exponen informacion
-# /backup.sql eliminado (no exponer backups)
-# /robots.txt no expone rutas sensibles
-'''
-    return codigo
+    corregir_vulnerabilidades_prioritarias()
 ```
 
 ## Preguntas y Respuestas
 
-**P1: Que es DAST y como funciona?**
-R: DAST (Dynamic Application Security Testing) es una tecnica de analisis de seguridad que prueba una aplicacion en ejecucion desde afuera (black-box), simulando ataques reales. Funciona enviando requests HTTP maliciosos a la aplicacion y analizando las respuestas para detectar vulnerabilidades como XSS, SQL Injection, Command Injection y problemas de configuracion.
+**P1: Que es SAST y en que se diferencia de DAST?**
+R: SAST (Static Application Security Testing) analiza el codigo fuente sin ejecutarlo, detectando vulnerabilidades en el codigo mismo. DAST (Dynamic Application Security Testing) analiza la aplicacion en ejecucion desde afuera. SAST es white-box (ve el codigo completo) y funciona temprano en el ciclo; DAST es black-box (solo ve respuestas HTTP) y requiere la app desplegada.
 
-**P2: Cual es la diferencia principal entre SAST y DAST?**
-R: SAST (Static) analiza el codigo fuente sin ejecutarlo, es white-box, se ejecuta temprano (build/commit), y detecta vulnerabilidades en el codigo mismo. DAST (Dynamic) analiza la aplicacion en ejecucion, es black-box, se ejecuta tarde (staging/produccion), y detecta vulnerabilidades en la configuracion y comportamiento en tiempo real. Son complementarios.
+**P2: Que es un falso positivo en SAST y como se maneja?**
+R: Un falso positivo es un resultado que SAST marca como vulnerabilidad pero que en realidad no lo es en el contexto del proyecto. Se maneja: (1) verificando manualmente el resultado, (2) marcandolo como falso positivo en la herramienta, (3) ajustando las reglas para reducir ruido, (4) manteniendo un registro de FP conocidos.
 
-**P3: Que tipos de escaneo DAST existen?**
-R: (1) No autenticado: escanea solo lo accesible sin login. (2) Autenticado: usa credenciales para acceder a areas protegidas. (3) Crawling: navega la app descubriendo endpoints y formularios. (4) Scanning (activo): ejecuta ataques contra los endpoints descubiertos. (5) API scanning: disenado para APIs REST/GraphQL.
+**P3: Cual es la diferencia entre SAST y SCA?**
+R: SAST analiza el codigo fuente propio de la aplicacion en busca de vulnerabilidades de diseno e implementacion. SCA (Software Composition Analysis) analiza las dependencias y librerias de terceros en busca de vulnerabilidades conocidas (CVE). SAST usa analisis de patrones y flujo de datos; SCA compara versiones de paquetes contra bases de datos de vulnerabilidades.
 
-**P4: Cuales son las limitaciones principales de DAST?**
-R: (1) Cobertura limitada a funcionalidades accesibles via HTTP. (2) Falsos positivos: algunos ataques pueden no ser aplicables. (3) Lentitud: escaneos profundos pueden tomar horas. (4) No detecta vulnerabilidades que no se reflejan en la respuesta HTTP (como business logic flaws). (5) Requiere la aplicacion funcionando y desplegada.
+**P4: Que es Bandit y que tipo de vulnerabilidades detecta?**
+R: Bandit es una herramienta SAST disenada especificamente para Python. Detecta: uso de funciones peligrosas (eval, exec, pickle), hashes inseguros (MD5, SHA-1), inyecciones SQL, hardcoded passwords, command injection, uso de assert para seguridad, configuraciones inseguras (debug=True), y otras vulnerabilidades del OWASP Top 10.
 
-**P5: Que es OWASP ZAP y que funcionalidades principales tiene?**
-R: OWASP ZAP (Zed Attack Proxy) es una herramienta DAST open source mantenida por OWASP. Funcionalidades: proxy interceptador, spider (crawling), escaneo activo, escaneo pasivo, soporte para autenticacion, API REST para automatizacion, plugins extensibles, generacion de reportes, modo daemon para CI/CD.
+**P5: Como se crea una regla personalizada en Semgrep?**
+R: Una regla Semgrep es un archivo YAML que define: (1) id unico de la regla, (2) pattern o patterns que describen el codigo a buscar (usando metavariables como $VAR, $EXPR), (3) message que se mostrara al encontrar el patron, (4) severity (ERROR, WARNING, INFO), (5) languages a los que aplica, (6) metadata opcional (CWE, OWASP).
 
-**P6: Que es un escaneo DAST autenticado y por que es importante?**
-R: Un escaneo autenticado usa credenciales de usuario (username/password o token) para navegar areas protegidas de la aplicacion despues del login. Es importante porque muchas vulnerabilidades solo existen en zonas autenticadas (perfil de usuario, panel de admin, configuracion). Sin autenticacion, la cobertura del escaneo es significativamente menor.
+**P6: Por que es importante integrar SAST en el IDE y no solo en CI/CD?**
+R: Integrar SAST en el IDE permite que el desarrollador reciba feedback inmediato mientras escribe codigo, en lugar de esperar al pipeline CI/CD. Esto sigue el principio Shift-Left: corregir la vulnerabilidad cuando el contexto del codigo esta fresco, reduciendo el tiempo y costo de correccion.
 
-**P7: Como se clasifican los hallazgos en un reporte DAST y como se priorizan?**
-R: Los hallazgos se clasifican por severidad: Alta (SQLi, XSS, Command Injection - corregir inmediatamente), Media (Path Traversal, Information Disclosure, Missing Headers - corregir pronto), Baja (Cookie flags, Server disclosure - corregir cuando sea posible), Informational. La priorizacion se basa en: severidad, exploitabilidad, impacto en el negocio, y si el activo esta expuesto a Internet.
+**P7: Que es SonarQube y que son los "Quality Gates"?**
+R: SonarQube es una plataforma de analisis continuo de calidad y seguridad de codigo. Los Quality Gates son conjuntos de criterios (ej: "0 vulnerabilidades BLOCKER", "cobertura de tests > 80%") que determinan si el codigo es aceptable. Si no se cumple el quality gate, el pipeline CI/CD se detiene y el cambio no se despliega.
 
 ## Tarea / Lectura Recomendada
 
-1. **OWASP ZAP Documentation:**
-   https://www.zaproxy.org/docs/
+1. **Bandit Documentation:**
+   https://bandit.readthedocs.io/en/latest/
 
-2. **OWASP ZAP API Reference:**
-   https://www.zaproxy.org/docs/api/
+2. **Semgrep Registry (Reglas publicas):**
+   https://semgrep.dev/explore
 
-3. **OWASP ZAP Full Scan Docker:**
-   https://github.com/zaproxy/zaproxy/wiki/Docker
+3. **Semgrep Writing Rules:**
+   https://semgrep.dev/docs/writing-rules/overview/
 
-4. **Burp Suite Community Edition:**
-   https://portswigger.net/burp/communitydownload
+4. **SonarQube Security Rules:**
+   https://rules.sonarsource.com/
 
-5. **Nikto Web Scanner:**
-   https://github.com/sullo/nikto
+5. **OWASP Source Code Analysis Tools:**
+   https://owasp.org/www-community/Source_Code_Analysis_Tools
 
-6. **OWASP Testing Guide:**
-   https://owasp.org/www-project-web-security-testing-guide/
+6. **Tarea practica:** Crear 3 reglas Semgrep adicionales para detectar: (a) uso de `requests` sin timeout, (b) archivos temporales en directorios inseguros, (c) comparacion de contrasenas sin timing-safe comparison.
 
-7. **Tarea practica:** Instalar DVWA (Damn Vulnerable Web Application) en Docker y ejecutar un escaneo DAST completo con ZAP, clasificando y corrigiendo los hallazgos.
+7. **Tarea practica:** Configurar SonarQube en Docker y ejecutar analisis sobre el proyecto vulnerable de la clase, corrigiendo las 10 vulnerabilidades.
 
-8. **Tarea practica:** Crear un script que automatice el escaneo DAST de 3 URLs diferentes usando la API de ZAP y genere un reporte comparativo.
 
 

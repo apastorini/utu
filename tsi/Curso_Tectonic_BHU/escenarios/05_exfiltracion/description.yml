@@ -1,0 +1,141 @@
+---
+name: dns_tunneling_exfiltracion
+description: |
+  Escenario de exfiltracion de datos mediante DNS tunneling contra la infraestructura
+  de Banco del Sol. Un actor malicioso ha comprometido una estacion de trabajo en la red
+  interna y utiliza un canal covert basado en consultas DNS para exfiltrar datos
+  sensibles hacia un servidor externo controlado por el atacante.
+
+  Los datos objetivo incluyen registros de clientes del servidor de base de datos
+  (numeros de cuenta, saldos, datos personales) y documentos confidenciales almacenados
+  en el servidor de archivos compartido por SMB.
+
+  La tecnica de DNS tunneling codifica los datos exfiltrados como subdominios en
+  consultas DNS (base64 encoded), aprovechando que el trafico DNS rara vez es
+  inspeccionado o filtrado en las redes corporativas.
+
+  Los estudiantes actuan como equipo azul (defensores) y deben detectar el canal
+  covert de exfiltracion, analizar el trafico DNS anomalo, contener la filtracion
+  y erradicar la amenaza.
+
+  Escenarios incluidos:
+  - Deteccion de trafico DNS con patrones anomalos
+  - Analisis de consultas DNS con subdominios codificados en base64
+  - Identificacion de abuso de registros TXT como canal de C2
+  - Decodificacion de datos exfiltrados a traves del trafico DNS
+  - Containment del canal de exfiltracion
+  - Aislamiento de la estacion de trabajo comprometida
+  - Bloqueo de resolucion DNS externa no autorizada
+
+tags:
+  - exfiltration
+  - dns-tunneling
+  - data-theft
+  - apt
+  - covert-channel
+  - dns
+  - base64
+  - incident-response
+
+difficulty: advanced
+estimated_time: "2.5 hours"
+
+learning_objectives:
+  - Comprender el mecanismo del DNS tunneling como metodo de exfiltracion de datos
+  - Detectar trafico DNS con patrones anomalos que indiquen un canal covert
+  - Identificar consultas DNS con subdominios excesivamente largos
+  - Reconocer el abuso de registros TXT como canal de command and control
+  - Analizar y decodificar datos exfiltrados en consultas DNS
+  - Implementar controles de seguridad en la resolucion DNS
+  - Contener un incidente de exfiltracion sin perder evidencia
+  - Aplicar mejores practicas de seguridad DNS en entornos corporativos
+  - Documentar correctamente un incidente de exfiltracion de datos
+  - Evaluar la necesidad de soluciones de DLP (Data Loss Prevention)
+
+infrastructure:
+  networks:
+    - name: DMZ
+      cidr: 10.10.1.0/24
+      description: Zona desmilitarada con servidores expuestos
+    - name: Internal
+      cidr: 10.10.2.0/24
+      description: Red interna con servidores de dominio y estaciones de trabajo
+    - name: Management
+      cidr: 10.10.0.0/24
+      description: Red de gestion y administracion
+    - name: Internet
+      cidr: 172.16.0.24
+      description: Simulacion de red externa e Internet
+
+  vms:
+    - name: attacker
+      role: Atacante
+      network: Management
+      ip: 10.10.0.10
+      description: Estacion Kali Linux del atacante
+    - name: webserver
+      role: Servidor Web
+      network: DMZ
+      ip: 10.10.1.10
+      description: Servidor web de la banca en linea
+    - name: mailserver
+      role: Servidor de Correo
+      network: DMZ
+      ip: 10.10.1.20
+      description: Servidor de correo corporativo
+    - name: fileserver
+      role: Servidor de Archivos
+      network: Internal
+      ip: 10.10.2.30
+      description: Servidor de archivos compartidos con documentos confidenciales
+    - name: database
+      role: Servidor de Base de Datos
+      network: Internal
+      ip: 10.10.2.40
+      description: Servidor de base de datos bancaria con datos sensibles de clientes
+    - name: domaincontroller
+      role: Controlador de Dominio
+      network: Internal
+      ip: 10.10.2.10
+      description: Controlador de dominio Active Directory
+    - name: workstation
+      role: Estacion de Trabajo
+      network: Internal
+      ip: 10.10.2.100
+      description: Estacion de trabajo comprometida con backdoor activo
+
+attack_narrative: |
+  El atacante obtuvo acceso inicial a la estacion de trabajo mediante credenciales
+  comprometidas. Una vez dentro de la red, establish un canal covert de exfiltracion
+  utilizando DNS tunneling. La herramienta de exfiltracion codifica datos sensibles
+  en subdominios base64 y los envia como consultas DNS a un dominio controlado por
+  el atacante (exfil.attacker.com). El servidor DNS externo responde con registros
+  TXT que funcionan como canal de command and control.
+
+  El atacante exfiltra registros de la base de datos bancaria (datos de clientes)
+  y documentos confidenciales del servidor de archivos. El trafico DNS se mezcla
+  con consultas normales dificultando su deteccion. Los estudiantes deben identificar
+  los patrones anomalos antes de que todos los datos sensibles sean comprometidos.
+
+blue_team_objectives: |
+  Como equipo azul, su mision es:
+  1. Detectar el trafico DNS anomalo mediante analisis de logs y captura de paquetes
+  2. Identificar las consultas DNS con subdominios codificados como canal de exfiltracion
+  3. Analizar y decodificar los datos que se estan exfiltrando
+  4. Mapear completamente el canal de command and control
+  5. Contener el incidente bloqueando el dominio de exfiltracion
+  6. Aislar la estacion de trabajo comprometida
+  7. Implementar controles de seguridad DNS
+  8. Erradicar la backdoor y verificar que no haya persistencia
+  9. Verificar que no haya datos adicionales comprometidos
+  10. Documentar el incidente completo para el reporte final
+
+evaluation_criteria:
+  - Deteccion temprana del trafico DNS anomalo
+  - Analisis correcto de los patrones de exfiltracion
+  - Decodificacion exitosa de los datos exfiltrados
+  - Identificacion completa del canal de command and control
+  - Containment efectivo bloqueando el dominio y aislando el sistema
+  - Implementacion de controles de seguridad DNS post-incidente
+  - Erradicacion completa de la backdoor
+  - Documentacion detallada del incidente y las lecciones aprendidas

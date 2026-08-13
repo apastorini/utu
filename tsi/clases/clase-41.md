@@ -1,6 +1,6 @@
-# Clase 41: Presentacion de Proyectos - Parte 1
+# Clase 41: Pruebas de Seguridad y Hacking Etico
 
-**Numero de clase:** 31  
+**Numero de clase:** 30  
 **Duracion:** 2 horas  
 **Curso:** Taller de Ciberseguridad Orientada al Desarrollo
 
@@ -8,239 +8,432 @@
 
 ## Objetivos de Aprendizaje
 
-- Presentar y defender proyectos de seguridad ante la clase
-- Evaluar proyectos utilizando una rubrica formal
-- Proporcionar y recibir feedback constructivo
-- Demostrar comprension de conceptos de DevSecOps
+- Distinguir entre pruebas de penetracion y pruebas automatizadas
+- Aplicar metodologia de pentesting: reconocimiento, escaneo, explotacion
+- Usar herramientas como nmap, curl, OWASP ZAP, Burp Suite
+- Probar ataques comunes contra la app segura
+- Demostrar que las defensas implementadas bloquean los ataques
 
 ---
 
 ## Contenido Detallado
 
-### 1. Estructura de la Sesion (15 min)
+### 1. Pentesting vs. Pruebas Automatizadas (15 min)
 
-**Organizacion del tiempo (2 horas):**
-- 10 min: Introduccion y recordatorio de criterios
-- 5 min por presentacion (x 10 grupos = 50 min)
-- 3 min de preguntas por presentacion (x 10 = 30 min)
-- 15 min: Feedback general y cierre
+| Aspecto | Pentesting Manual | Pruebas Automatizadas |
+|---------|------------------|----------------------|
+| Alcance | Profundo, especifico | Amplio, general |
+| Velocidad | Lenta | Rapida |
+| Creatividad | Alta (encadenamiento de vulnerabilidades) | Baja (patrones conocidos) |
+| Falsos positivos | Bajos | Pueden ser altos |
+| Costo | Alto | Bajo |
+| Cobertura | Logica de negocio, bypass creativo | Vulnerabilidades tecnicas comunes |
 
-**Material necesario:**
-- Proyector o pantalla compartida
-- Rubrica de evaluacion impresa o digital para cada estudiante
-- Cronometro visible para todos
-- Acceso al repositorio de cada grupo
+**Cuando usar cada una:**
+- Automatizadas: En CI/CD (SAST, DAST, SCA), escaneos regulares
+- Manual: Antes de releases criticos, aplicaciones con logica de negocio compleja, aplicaciones que manejan datos sensibles
 
-### 2. Criterios de Evaluacion - Proyecto Shift Left (5 min)
-
-| Criterio | Peso | Excelente (4) | Bueno (3) | Suficiente (2) | Insuficiente (1) |
-|----------|------|---------------|-----------|----------------|-------------------|
-| Codigo seguro | 25% | Sin vulnerabilidades, mejores practicas | Vulnerabilidades menores | Vulnerabilidades moderadas | Vulnerabilidades criticas |
-| Pipeline CI/CD | 25% | Pipeline completo con SAST, SCA, gates | Pipeline con SAST o SCA | Pipeline basico sin seguridad | Sin pipeline |
-| Documentacion | 15% | Completa, clara, con instrucciones | Adecuada | Incompleta | Ausente |
-| Defensas implementadas | 20% | Validacion, JWT, RBAC, rate limiting | 3 de 4 defensas | 2 de 4 defensas | 1 o menos defensas |
-| Presentacion | 15% | Clara, demostracion en vivo, responde preguntas | Buena exposicion | Presentacion basica | Sin preparacion |
-
-### 3. Rubrica de Evaluacion Detallada (10 min)
-
-**Rubrica para evaluacion por pares:**
+### 2. Metodologia de Pentesting (10 min)
 
 ```
-RUBRICA DE EVALUACION - PROYECTO SHIFT LEFT
-============================================
+1. Reconocimiento (Information Gathering)
+   -> nmap, whois, dnsrecon, sublist3r
 
-Grupo evaluado: _______________
-Evaluador: ____________________
+2. Escaneo (Scanning)
+   -> nmap -sV, gobuster, nikto, OWASP ZAP
 
-1. CODIGO SEGURO (25 puntos)
-   - Uso de consultas parametrizadas (0-5): ___
-   - Validacion de entrada (0-5): ___
-   - Manejo seguro de contrasenas (0-5): ___
-   - Control de acceso/autorizacion (0-5): ___
-   - Logging seguro (0-5): ___
-   Total: ___/25
+3. Explotacion (Exploitation)
+   -> SQLMap, Metasploit, Burp Suite Repeater
 
-2. PIPELINE CI/CD (25 puntos)
-   - Pipeline implementado y funcional (0-7): ___
-   - SAST integrado (Bandit, Semgrep, etc.) (0-6): ___
-   - SCA integrado (pip-audit, npm audit, etc.) (0-6): ___
-   - Quality gates con fail criteria (0-6): ___
-   Total: ___/25
+4. Post-Explotacion
+   -> Escalada de privilegios, persistencia, exfiltracion de datos
 
-3. DOCUMENTACION (15 puntos)
-   - README con instrucciones claras (0-5): ___
-   - Archivo .env.example y configuracion (0-5): ___
-   - Explicacion de decisiones de seguridad (0-5): ___
-   Total: ___/15
-
-4. DEFENSAS IMPLEMENTADAS (20 puntos)
-   - Autenticacion JWT (0-5): ___
-   - Hashing de contrasenas (0-5): ___
-   - Rate limiting (0-5): ___
-   - Security headers (0-5): ___
-   Total: ___/20
-
-5. PRESENTACION (15 puntos)
-   - Claridad y organizacion (0-5): ___
-   - Demostracion en vivo (0-5): ___
-   - Respuesta a preguntas (0-5): ___
-   Total: ___/15
-
-PUNTAJE TOTAL: ___/100
-
-COMENTARIOS:
-_________________________________________
-_________________________________________
+5. Reporte
+   -> Documentar hallazgos, evidencias, recomendaciones
 ```
 
-### 4. Guia para la Presentacion (10 min)
+### 3. Herramientas (15 min)
 
-**Estructura recomendada (5 min):**
+**nmap - Escaneo de puertos y servicios:**
+```bash
+# Escaneo basico de puertos
+nmap -sS -p- localhost
 
-1. **Introduccion (30 seg):** Nombre del proyecto, integrantes, tecnologias utilizadas
-2. **Demo de la app (1 min):** Mostrar que la aplicacion funciona
-3. **Defensas de seguridad (1.5 min):** Mostrar implementacion de JWT, validacion, RBAC
-4. **Pipeline CI/CD (1 min):** Mostrar el workflow de GitHub Actions funcionando
-5. **Lecciones aprendidas (30 seg):** Que aprendieron, que harian diferente
-6. **Preguntas (restante):** Responder preguntas del profesor y companeros
+# Escaneo de servicios y versiones
+nmap -sV -p 8000 localhost
 
-**Consejos para la presentacion:**
-- Tener la demo preparada y funcionando localmente
-- Tener el pipeline ya ejecutado (o ejecutar un commit en vivo)
-- Mostrar tanto los casos de exito como los fallos del pipeline
-- Si algo falla en vivo, explicar que esperaban y por que fallo
-- Responder honestamente si no saben algo
+# Escaneo con scripts de seguridad
+nmap -sV --script=http-enum,http-headers -p 8000 localhost
+```
 
-### 5. Preguntas Tecnicas para la Ronda (10 min)
+**gobuster - Fuzzing de directorios:**
+```bash
+gobuster dir -u http://localhost:8000 -w /usr/share/wordlists/dirb/common.txt
+```
 
-Banco de preguntas que el profesor puede hacer:
+**curl - Pruebas manuales:**
+```bash
+# GET basico
+curl -v http://localhost:8000/health
 
-1. "Por que eligieron esa herramienta SAST y no otra?"
-2. "Como manejarian un falso positivo de Bandit en el pipeline?"
-3. "Que pasaria si un atacante obtiene el JWT de un usuario?"
-4. "Como escalarian esta solucion a microservicios?"
-5. "Que mejoras de seguridad agregarian si tuvieran mas tiempo?"
-6. "Como protegen las claves de API en el pipeline de CI/CD?"
-7. "Que pasaria si la base de datos se compromete? Las contrasenas estan seguras?"
-8. "Como implementarian logging sin exponer datos personales?"
-9. "Que ocurre si el rate limiter falla? Como se recupera?"
-10. "Como verificarian que el contenedor desplegado es el mismo que se construyo?"
+# POST con datos
+curl -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"test","password":"test"}'
 
-### 6. Feedback Constructivo (10 min)
+# Con token
+curl -H "Authorization: Bearer TOKEN" http://localhost:8000/api/items/
+```
 
-**Metodo de feedback: "2 estrellas y 1 deseo"**
-- 2 aspectos positivos (estrellas)
-- 1 area de mejora con sugerencia concreta (deseo)
+**SQLMap - Deteccion de SQL Injection:**
+```bash
+sqlmap -u "http://localhost:8000/api/items/1" \
+  --cookie="access_token=TOKEN" \
+  --batch --level=2
+```
 
-**Ejemplos de feedback constructivo:**
+**OWASP ZAP - DAST automatizado:**
+```bash
+# Escaneo basico
+zap-baseline.py -t http://localhost:8000 -r report.html
 
-Positivo:
-- "Me gusto que implementaron rate limiting con Redis en vez de memoria"
-- "La documentacion del pipeline es clara y facil de seguir"
-- "Buena decision usar multi-stage build para reducir tamano de imagen"
+# Escaneo completo
+zap-full-scan.py -t http://localhost:8000 -r report.html
+```
 
-Constructivo:
-- "Podrian mejorar la validacion de entrada agregando expresiones regulares mas estrictas"
-- "Sugiero agregar un healthcheck al contenedor de la BD"
-- "El .env no deberia estar en el repositorio aunque sea de ejemplo sin valores reales"
+### 4. La App Segura como Objetivo (5 min)
+
+La aplicacion creada en las clases 28-29 tiene las siguientes defensas:
+
+- Autenticacion JWT con refresh tokens
+- Hashing de contrasenas con bcrypt
+- Validacion de entrada con Pydantic
+- Consultas parametrizadas (SQLAlchemy ORM)
+- Autorizacion con RBAC (roles user/admin)
+- Proteccion IDOR (verificacion de ownership)
+- Rate limiting en login
+- Security headers
+- Logging seguro
+- CORS restrictivo
 
 ---
 
-## Ejercicio: Evaluar usando la Rubrica
+## Ejercicio 1: Escanear la App con nmap y OWASP ZAP
 
-**Enunciado:** Los grupos que no estan presentando deben evaluar a sus companeros usando la rubrica proporcionada. Cada estudiante evalua al menos 2 presentaciones y entrega las rubricas completadas al final de la clase.
+**Enunciado:** Ejecutar nmap y OWASP ZAP contra la aplicacion segura, analizar los resultados.
 
-**Solucion - Rubrica de ejemplo completada:**
+**Solucion paso a paso:**
 
+**Paso 1: Iniciar la aplicacion**
+```bash
+cd secure-api
+uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
-RUBRICA DE EVALUACION - EJEMPLO COMPLETADO
-============================================
 
-Grupo evaluado: Los DevSecOps
-Evaluador: Estudiante X
+**Paso 2: Escaneo con nmap**
+```bash
+nmap -sV -p 8000 --script=http-enum,http-headers localhost
+```
 
-1. CODIGO SEGURO (25 puntos)
-   - Uso de consultas parametrizadas (0-5): 5
-   - Validacion de entrada (0-5): 5
-   - Manejo seguro de contrasenas (0-5): 4
-   - Control de acceso/autorizacion (0-5): 4
-   - Logging seguro (0-5): 3
-   Total: 21/25
+**Analisis de resultados esperados:**
+```
+PORT     STATE SERVICE VERSION
+8000/tcp open  http    uvicorn 0.27.0
+| http-headers:
+|   content-type: application/json
+|   x-content-type-options: nosniff
+|   x-frame-options: DENY
+|   x-xss-protection: 1; mode=block
+|   strict-transport-security: max-age=31536000; includeSubDomains
+|   content-security-policy: default-src 'self'
+|   referrer-policy: strict-origin-when-cross-origin
+|_  date: ...
+```
 
-2. PIPELINE CI/CD (25 puntos)
-   - Pipeline implementado y funcional (0-7): 7
-   - SAST integrado (0-6): 6
-   - SCA integrado (0-6): 6
-   - Quality gates con fail criteria (0-6): 5
-   Total: 24/25
+**Interpretacion:**
+- Solo un puerto abierto (8000) = superficie de ataque minima
+- Security headers presentes = proteccion contra clickjacking, XSS, MIME sniffing
+- Version de uvicorn expuesta = informacion para el atacante (podria ocultarse)
+- Sin directorios sensibles detectados
 
-3. DOCUMENTACION (15 puntos)
-   - README con instrucciones claras (0-5): 5
-   - Archivo .env.example y configuracion (0-5): 4
-   - Explicacion de decisiones de seguridad (0-5): 4
-   Total: 13/15
+**Paso 3: Escaneo con OWASP ZAP**
+```bash
+docker run --rm -v $(pwd):/zap/wrk ghcr.io/zaproxy/zaproxy:stable \
+  zap-baseline.py -t http://host.docker.internal:8000 -r zap-report.html
+```
 
-4. DEFENSAS IMPLEMENTADAS (20 puntos)
-   - Autenticacion JWT (0-5): 5
-   - Hashing de contrasenas (0-5): 5
-   - Rate limiting (0-5): 4
-   - Security headers (0-5): 4
-   Total: 18/20
+**Analisis de resultados esperados:**
+```
+PASS: Anti-CSRF tokens scanner
+PASS: Path Traversal scanner
+PASS: SQL Injection scanner
+PASS: XSS scanner
+WARN: Content Security Policy (CSP) could be strengthened
+INFO: Server leaks version via Server header
+```
 
-5. PRESENTACION (15 puntos)
-   - Claridad y organizacion (0-5): 4
-   - Demostracion en vivo (0-5): 5
-   - Respuesta a preguntas (0-5): 4
-   Total: 13/15
+**Interpretacion:**
+- PASS en las pruebas de inyeccion = las defensas funcionan
+- La advertencia de CSP es configuracion mejorable, no vulnerabilidad
+- La fuga de version del servidor es informativa, baja prioridad
 
-PUNTAJE TOTAL: 89/100
+---
 
-COMENTARIOS:
-Excelente trabajo en el pipeline CI/CD con Bandit y pip-audit. La
-demostracion en vivo fue clara y mostraron tanto exito como fallo.
-Sugerencia: agregar logging seguro usando la libreria 'structlog'
-para evitar exponer datos sensibles en los logs.
+## Ejercicio 2: Probar Ataques Comunes Contra la App Segura
+
+**Enunciado:** Ejecutar ataques de SQL injection, path traversal y XSS, demostrando que la app segura los bloquea.
+
+**Solucion paso a paso:**
+
+**Ataque 1: SQL Injection en login**
+```bash
+# Intento de SQL injection en username
+curl -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin' OR '1'='1", "password":"cualquiera"}'
+```
+
+**Resultado esperado:**
+```json
+{"detail":"Credenciales invalidas"}
+```
+
+**Por que falla el ataque:** La app NO concatena el string en la query SQL. Usa SQLAlchemy ORM con consultas parametrizadas:
+```python
+user = db.query(User).filter(User.username == username).first()
+```
+Esto escapa automaticamente los caracteres especiales. La inyeccion se convierte en una busqueda literal del username `"admin' OR '1'='1"`.
+
+**Ataque 2: Path traversal en endpoint de archivos**
+```bash
+# Asumiendo que intentamos leer /etc/passwd (si existiera un endpoint de archivos)
+curl -X GET "http://localhost:8000/api/files/read?filename=../../../etc/passwd" \
+  -H "Authorization: Bearer TOKEN"
+```
+
+**Resultado esperado:** 404 Not Found (el endpoint no existe) o 422 Validation Error.
+
+**Por que falla el ataque:** La app segura no expone endpoints que lean archivos del sistema. Si los tuviera, se implementaria sanitizacion con normalizacion de rutas y verificacion de directorio base.
+
+**Ataque 3: XSS en campos de texto**
+```bash
+# Registrar un item con codigo JS
+TOKEN=$(curl -s -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","password":"TestPass123"}' | \
+  python -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+
+curl -X POST http://localhost:8000/api/items/ \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"<script>alert(1)</script>","description":"<img src=x onerror=alert(2)>"}'
+```
+
+**Resultado esperado:** El item se crea correctamente, pero el contenido se devuelve escapado:
+```json
+{
+  "title": "<script>alert(1)</script>",
+  "description": "<img src=x onerror=alert(2)>"
+}
+```
+
+**Por que falla el ataque:** FastAPI con Pydantic escapa automaticamente los caracteres HTML en las respuestas JSON. El script se almacena como texto inofensivo. Si hubiera un frontend que renderice sin escapar, ahi estaria el riesgo, pero en la API solo se devuelve JSON.
+
+**Ataque 4: Fuerza bruta en login**
+```bash
+# Script simple de fuerza bruta (debe fallar por rate limiting)
+for i in $(seq 1 10); do
+  curl -s -X POST http://localhost:8000/auth/login \
+    -H "Content-Type: application/json" \
+    -d '{"username":"admin","password":"pass'$i'"}' &
+done
+```
+
+**Resultado esperado:** Despues de 5 intentos, retorna 429 Too Many Requests:
+```json
+{"detail":"Limite de requests excedido. Maximo: 5 por 60s"}
+```
+
+**Por que falla el ataque:** El rate limiter cuenta los intentos por IP y bloquea despues de 5 requests en 60 segundos.
+
+---
+
+## Ejercicio 3: Usar Burp Suite Proxy para Interceptar y Modificar Requests
+
+**Enunciado:** Configurar Burp Suite como proxy, interceptar un request de login y modificar parametros.
+
+**Solucion paso a paso:**
+
+**Paso 1: Configurar Burp Suite**
+1. Abrir Burp Suite (Community Edition es suficiente)
+2. Ir a la pestana Proxy > Options
+3. Por defecto escucha en 127.0.0.1:8080
+4. Ir a Proxy > Intercept y hacer clic en "Intercept is on"
+
+**Paso 2: Configurar el cliente para usar el proxy**
+```bash
+# Con curl usando proxy
+curl -x http://127.0.0.1:8080 \
+  -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","password":"TestPass123"}'
+```
+
+En Burp Suite, interceptar el request y modificarlo:
+- Cambiar el body a `{"username":"admin","password":"WrongPass"}`
+- Hacer clic en "Forward" para enviar el request modificado
+
+**Analisis:**
+- El request modificado debe ser rechazado con 401 si las credenciales son invalidas
+- La app no tiene vulnerabilidas de logica en la autenticacion
+- Burp permite ver los headers de seguridad en la respuesta
+
+**Paso 3: Probar manipulacion de JWT**
+1. Interceptar un request autenticado
+2. Modificar el token JWT (cambiar el payload en base64)
+3. Observar que la firma no valida y retorna 401
+
+```bash
+# Obtener token
+TOKEN=$(curl -s -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","password":"TestPass123"}' | \
+  python -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+
+# Decodificar payload (JWT es base64url)
+PAYLOAD=$(echo $TOKEN | cut -d. -f2 | base64 -d 2>/dev/null || \
+  echo $TOKEN | cut -d. -f2 | python -c "import sys,base64; print(base64.urlsafe_b64decode(sys.stdin.read() + '=='))")
+echo $PAYLOAD
+# {"sub":"1","exp":...,"type":"access","iat":...}
+
+# Modificar sub y re-encodear (la firma no va a validar)
+# El servidor detectara la manipulacion y retornara 401
+```
+
+---
+
+## Ejercicio 4: Demostrar que la App NO es Vulnerable
+
+**Enunciado:** Recorrer cada defensa implementada y demostrar que bloquea un ataque especifico.
+
+**Solucion:**
+
+| Defensa | Ataque que bloquea | Evidencia |
+|---------|-------------------|-----------|
+| Validacion Pydantic | Inyeccion de tipos, buffer overflow | Request con tipos invalidos retorna 422 |
+| SQLAlchemy ORM | SQL injection | Username `' OR '1'='1` no altera la query |
+| Password hashing (bcrypt) | Exposicion de contrasenas | BD almacena hash, no texto plano |
+| JWT con firma HMAC | Manipulacion de token | Token modificado retorna 401 |
+| Verificacion de ownership (IDOR) | Acceso a recursos ajenos | Cambiar item_id de otro usuario retorna 403 |
+| Role checker (RBAC) | Escalada de privilegios | Usuario user no puede acceder a rutas admin |
+| Rate limiting | Fuerza bruta | 5+ intentos por minuto retorna 429 |
+| Security headers | Clickjacking, XSS reflectivo | Headers presentes en cada respuesta |
+| CORS restrictivo | CSRF desde origenes no autorizados | Request desde otro origen es bloqueado por navegador |
+| Logging seguro | Exposicion de datos sensibles en logs | Contrasenas y tokens son redactados |
+
+**Demostracion en vivo del flujo completo:**
+
+```bash
+# 1. Escaneo inicial - SOLO un puerto abierto
+nmap -p- localhost
+
+# 2. Intento de SQL injection
+curl -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"'\'' OR 1=1 --","password":"x"}'
+# Respuesta: 401 Credenciales invalidas
+
+# 3. Registro con contrasena debil
+curl -X POST http://localhost:8000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@test.com","username":"test","password":"123"}'
+# Respuesta: 422 Validation Error
+
+# 4. Acceso sin token
+curl http://localhost:8000/api/items/
+# Respuesta: 401 Unauthorized
+
+# 5. Acceso con token manipulado
+curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIn0.firma" \
+  http://localhost:8000/api/items/
+# Respuesta: 401 Unauthorized
+
+# 6. Fuerza bruta
+for i in $(seq 1 6); do
+  curl -s -o /dev/null -w "%{http_code}\n" \
+    -X POST http://localhost:8000/auth/login \
+    -H "Content-Type: application/json" \
+    -d "{\"username\":\"admin\",\"password\":\"pass$i\"}"
+done
+# Output: 401, 401, 401, 401, 401, 429
+
+# 7. IDOR
+TOKEN=$(curl -s -X POST http://localhost:8000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","password":"TestPass123"}' | \
+  python -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:8000/api/items/9999
+# Respuesta: 404 Not Found (item no existe)
+
+# 8. Security headers
+curl -s -D - http://localhost:8000/health | head -n 20
+# Output incluye: x-content-type-options, x-frame-options, etc.
+```
+
+```bash
+# 9. Escaneo completo con OWASP ZAP (simulado)
+echo "Resumen del reporte ZAP:"
+echo "  SQL Injection: PASS (0 alertas)"
+echo "  XSS: PASS (0 alertas)"
+echo "  Path Traversal: PASS (0 alertas)"
+echo "  CSRF: PASS (0 alertas)"
+echo "  Security Headers: PASS (todos presentes)"
+echo "  Resultado: No se encontraron vulnerabilidades criticas"
 ```
 
 ---
 
 ## Preguntas y Respuestas
 
-**1. Que peso tiene cada criterio en la evaluacion del proyecto?**
+**1. Cual es la diferencia entre pentesting manual y automatizado?**
 
-Codigo seguro (25%), Pipeline CI/CD (25%), Defensas implementadas (20%), Documentacion (15%), Presentacion (15%).
+El pentesting manual es realizado por un humano que puede encadenar vulnerabilidades, entender logica de negocio y encontrar fallos creativos. El automatizado usa herramientas que buscan patrones conocidos y es mas rapido pero menos profundo. Ambos se complementan.
 
-**2. Que debe incluir la documentacion del proyecto?**
+**2. Que informacion proporciona nmap sobre la app y por que es util para un atacante?**
 
-README con instrucciones de instalacion y ejecucion, archivo .env.example, explicacion de las decisiones de seguridad tomadas, y ejemplo de uso de los endpoints.
+nmap revela: puertos abiertos, servicios y versiones, sistema operativo, scripts HTTP habilitados. Para un atacante, esto permite identificar posibles vectores de ataque (ej: version desactualizada de uvicorn, directorios expuestos).
 
-**3. Como se evalua el pipeline CI/CD?**
+**3. Por que SQLAlchemy ORM previene SQL injection?**
 
-Se evalua que este implementado y funcional (7 pts), que incluya SAST (6 pts), SCA (6 pts), y quality gates con criterios de fallo (6 pts).
+SQLAlchemy ORM usa consultas parametrizadas (prepared statements). Los valores de los parametros se envian por separado de la estructura SQL. El motor de BD trata los parametros como datos, no como codigo SQL ejecutable, haciendo imposible la inyeccion.
 
-**4. Que tipo de preguntas tecnicas se esperan en la ronda?**
+**4. Que es Burp Suite y como se usa en pentesting?**
 
-Preguntas sobre justificacion de herramientas, manejo de falsos positivos, escalabilidad, proteccion de secretos, logging seguro, y recuperacion ante fallos.
+Burp Suite es un proxy de interceptacion que se coloca entre el navegador y el servidor. Permite interceptar, inspeccionar y modificar requests HTTP/S. Incluye herramientas como Repeater (repetir requests), Intruder (ataques de fuerza bruta), Scanner (vulnerabilidades), Decoder.
 
-**5. Cual es el formato de feedback recomendado?**
+**5. Que demostro el rate limiting en el ejercicio de fuerza bruta?**
 
-"2 estrellas y 1 deseo": dos aspectos positivos y un area de mejora con sugerencia concreta. Esto asegura feedback balanceado y constructivo.
+Demostro que despues de 5 intentos de login en 60 segundos, el servidor retorna 429 Too Many Requests. Esto hace que los ataques de fuerza bruta sean impracticables: probar 10,000 contrasenas tomarias 33 horas minimo.
 
-**6. Que ocurre si un grupo no tiene el pipeline funcionando en la presentacion?**
+**6. Por que el JWT no puede ser manipulado aunque el payload sea visible?**
 
-Se evalua sobre lo que se presenta. Si el pipeline no funciona, la puntuacion en ese criterio sera baja o cero. Se recomienda tener una grabacion o capturas de pantalla como respaldo.
+El JWT tiene tres partes: header, payload y signature. El payload esta solo codificado en base64 (no cifrado), cualquiera puede leerlo. Pero la firma se genera con una clave secreta que solo el servidor conoce. Si se modifica el payload, la firma no coincide y el servidor rechaza el token.
 
-**7. Como se maneja el tiempo de presentacion?**
+**7. Que es OWASP ZAP y que tipo de pruebas realiza?**
 
-Cada grupo tiene exactamente 5 minutos mas 3 de preguntas. Se usa un cronometro visible. A los 4 minutos se avisa. A los 5 minutos se corta y se pasa a preguntas.
+OWASP ZAP (Zed Attack Proxy) es una herramienta DAST (Dynamic Application Security Testing) de codigo abierto. Realiza pruebas de SQL injection, XSS, path traversal, CSRF, configuracion insegura, y mas. Puede ejecutarse en modo automatico (zap-baseline, zap-full-scan) o manual.
 
 ---
 
 ## Tarea / Lectura Recomendada
 
-- Completar las rubricas de evaluacion de los grupos que presentaron
-- Preparar la presentacion del ataque Red Team para la clase 32 (grupos que presentan en la segunda sesion)
-- Leer: Recursos de OWASP para seguir aprendiendo despues del curso
-- Reflexionar: Que aprendiste en el curso? Que aplicaras en tu trabajo diario?
+- Ejecutar OWASP ZAP contra la app segura y analizar el reporte generado
+- Leer: OWASP Testing Guide (https://owasp.org/www-project-web-security-testing-guide/)
+- Leer: Metodologia de pentesting de PTES (http://www.pentest-standard.org/)
+- Practicar: Usar Burp Suite Repeater para modificar requests JWT
+- Preparacion: Tener listos los proyectos para la clase 31
+
 
 

@@ -1,0 +1,981 @@
+---
+# ============================================================
+# Escenario 02 - Ransomware
+# Configuracion Base - Banco del Sol
+# ============================================================
+# Este playbook configura la infraestructura base del escenario
+# antes de que se ejecute el ataque simulado.
+# ============================================================
+
+- name: Configuracion base - Banco del Sol
+  hosts: all
+  become: true
+  vars:
+    domain_name: "BancoDelSol.local"
+    domain_netbios: "BancoDelSol"
+    admin_password: "B@ncoDelSol2025!"
+    service_account_password: "S3rv1c32025!"
+    timezone: "America/Montevideo"
+
+  tasks:
+
+    # ============================================================
+    # Configuracion general - Todos los sistemas
+    # ============================================================
+
+    - name: Establecer zona horaria
+      community.windows.win_timezone:
+        timezone: "{{ timezone }}"
+      when: ansible_os_family == "Windows"
+
+    - name: Configurar hostname
+      ansible.windows.win_hostname:
+        name: "{{ inventory_hostname }}"
+      when: ansible_os_family == "Windows"
+      register: hostname_result
+
+    - name: Reiniciar si cambio hostname
+      ansible.windows.win_reboot:
+      when: hostname_result is changed
+
+    - name: Configurar DNS del dominio
+      ansible.windows.win_dns_client:
+        adapter_names: "*"
+        dns_servers:
+          - 10.10.2.10
+      when: ansible_os_family == "Windows"
+
+    # ============================================================
+    # Configuracion del Fileserver
+    # ============================================================
+
+    - name: Configurar Fileserver
+      block:
+        - name: Instalar caracteristicas de Windows Server
+          ansible.windows.win_feature:
+            name:
+              - FS-FileServer
+              - FS-SMB
+              - FS-VSS
+              - FS-Resource-Manager
+              - RSAT-AD-PowerShell
+            state: present
+
+        - name: Crear directorio de shares
+          ansible.windows.win_file:
+            path: "{{ item }}"
+            state: directory
+          loop:
+            - "C:\\Shares"
+            - "C:\\Shares\\Datos_Clientes"
+            - "C:\\Shares\\Reportes_Financieros"
+            - "C:\\Shares\\Recursos_Humanos"
+            - "C:\\Shares\\Backups"
+            - "C:\\Shares\\Logs"
+
+        - name: Crear grupo de seguridad para Finanzas
+          community.windows.win_group:
+            name: "Finanzas"
+            description: "Departamento de Finanzas - Acceso a reportes financieros"
+            state: present
+
+        - name: Crear grupo de seguridad para RRHH
+          community.windows.win_group:
+            name: "RRHH"
+            description: "Departamento de Recursos Humanos"
+            state: present
+
+        - name: Crear grupo de seguridad para Direccion
+          community.windows.win_group:
+            name: "Direccion"
+            description: "Direccion General del Banco"
+            state: present
+
+        - name: Configurar share Datos_Clientes
+          ansible.windows.win_shell: |
+            New-SmbShare -Name "Datos_Clientes" `
+              -Path "C:\Shares\Datos_Clientes" `
+              -Description "Datos de clientes del banco" `
+              -FullAccess "BancoDelSol\Finanzas" `
+              -ReadAccess "BancoDelSol\Empleados" `
+              -ChangeAccess "BancoDelSol\IT" `
+              -Force
+          args:
+            executable: powershell
+
+        - name: Configurar share Reportes_Financieros
+          ansible.windows.win_shell: |
+            New-SmbShare -Name "Reportes_Financieros" `
+              -Path "C:\Shares\Reportes_Financieros" `
+              -Description "Reportes financieros del banco" `
+              -FullAccess "BancoDelSol\Finanzas" `
+              -ReadAccess "BancoDelSol\Direccion" `
+              -Force
+          args:
+            executable: powershell
+
+        - name: Configurar share Recursos_Humanos
+          ansible.windows.win_shell: |
+            New-SmbShare -Name "Recursos_Humanos" `
+              -Path "C:\Shares\Recursos_Humanos" `
+              -Description "Documentacion de recursos humanos" `
+              -FullAccess "BancoDelSol\RRHH" `
+              -ReadAccess "BancoDelSol\Direccion" `
+              -Force
+          args:
+            executable: powershell
+
+        - name: Configurar permisos NTFS en Datos_Clientes
+          community.windows.win_file_acl:
+            path: "C:\\Shares\\Datos_Clientes"
+            rule:
+              - principal: "BancoDelSol\\Finanzas"
+                type: allow
+                rights: "FullControl"
+              - principal: "BancoDelSol\\Empleados"
+                type: allow
+                rights: "Read"
+              - principal: "BancoDelSol\\IT"
+                type: allow
+                rights: "Modify"
+
+        - name: Configurar permisos NTFS en Reportes_Financieros
+          community.windows.win_file_acl:
+            path: "C:\\Shares\\Reportes_Financieros"
+            rule:
+              - principal: "BancoDelSol\\Finanzas"
+                type: allow
+                rights: "FullControl"
+              - principal: "BancoDelSol\\Direccion"
+                type: allow
+                rights: "Read"
+
+        - name: Crear archivos dummy - Datos Clientes
+          ansible.windows.win_copy:
+            content: "{{ item.content }}"
+            dest: "C:\\Shares\\Datos_Clientes\\{{ item.name }}"
+          loop:
+            - name: "clientes_activos_2025_Q4.csv"
+              content: |
+                numero_cliente,nombre,apellido,documento,tipo_cuenta,saldo,fecha_apertura
+                1001,Carlos,Martinez,12345678,Cuenta Corriente,45230.50,2019-03-15
+                1002,Laura,Gonzalez,23456789,Caja de Ahorro,125800.00,2018-07-22
+                1003,Miguel,Rodriguez,34567890,Cuenta Corriente,8920.75,2020-11-03
+                1004,Ana,Lopez,45678901,Plazo Fijo,250000.00,2021-01-18
+                1005,Pedro,Fernandez,56789012,Caja de Ahorro,67430.25,2017-05-30
+                1006,Maria,Garcia,67890123,Cuenta Corriente,15620.80,2022-08-14
+                1007,Juan,Sanchez,78901234,Plazo Fijo,500000.00,2020-12-01
+                1008,Carmen,Diaz,89012345,Caja de Ahorro,23450.60,2019-06-25
+                1009,Roberto,Morales,90123456,Cuenta Corriente,7890.40,2023-02-10
+                1010,Lucia,Herrera,01234567,Plazo Fijo,180000.00,2021-09-05
+            - name: "transacciones_noviembre_2025.csv"
+              content: |
+                id_transaccion,fecha,hora,cliente_origen,cliente_destino,monto,tipo,estado
+                TX001,2025-11-01,09:15:32,1001,1003,5000.00,transferencia,completada
+                TX002,2025-11-01,10:22:45,1002,,1500.00,deposito,completada
+                TX003,2025-11-01,14:08:17,,1005,800.00,retiro,completada
+                TX004,2025-11-02,08:45:03,1004,1001,12000.00,transferencia,completada
+                TX005,2025-11-02,11:30:22,1006,,3500.00,deposito,completada
+                TX006,2025-11-03,09:05:44,1003,1007,2000.00,transferencia,pendiente
+                TX007,2025-11-03,16:22:11,,1009,450.00,retiro,completada
+                TX008,2025-11-04,10:15:33,1008,1002,7500.00,transferencia,completada
+                TX009,2025-11-04,13:40:55,1001,,10000.00,deposito,completada
+                TX010,2025-11-05,09:58:12,1010,1006,3200.00,transferencia,completada
+            - name: "kyc_documentos_pendientes.json"
+              content: |
+                {
+                  "empresa": "Banco del Sol",
+                  "departamento": "Cumplimiento",
+                  "documentos_pendientes": [
+                    {
+                      "cliente_id": 1003,
+                      "nombre": "Miguel Rodriguez",
+                      "documento": "34567890",
+                      "tipo_verificacion": "Actualizacion de domicilio",
+                      "fecha_limite": "2025-12-15",
+                      "estado": "pendiente"
+                    },
+                    {
+                      "cliente_id": 1006,
+                      "nombre": "Maria Garcia",
+                      "documento": "67890123",
+                      "tipo_verificacion": "Renovacion de cedula",
+                      "fecha_limite": "2025-12-20",
+                      "estado": "en_proceso"
+                    },
+                    {
+                      "cliente_id": 1009,
+                      "nombre": "Roberto Morales",
+                      "documento": "90123456",
+                      "tipo_verificacion": "Declaracion de origen de fondos",
+                      "fecha_limite": "2025-12-31",
+                      "estado": "pendiente"
+                    }
+                  ],
+                  "total_pendientes": 3
+                }
+            - name: "informe_auditoria_interna_Q3.docx"
+              content: "[ARCHIVO SIMULADO] Informe de auditoria interna Q3 2025 - Banco del Sol. Contenido clasificado."
+            - name: "backup_config_server.dat"
+              content: "[ARCHIVO SIMULADO] Configuracion de backup del servidor - No editar manualmente."
+
+        - name: Crear archivos dummy - Reportes Financieros
+          ansible.windows.win_copy:
+            content: "{{ item.content }}"
+            dest: "C:\\Shares\\Reportes_Financieros\\{{ item.name }}"
+          loop:
+            - name: "balance_general_octubre_2025.xlsx"
+              content: "[ARCHIVO SIMULADO] Balance General Banco del Sol - Octubre 2025. Activos: $45.230.000.000 | Pasivos: $38.910.000.000 | Patrimonio: $6.320.000.000"
+            - name: "estado_resultados_Q3_2025.xlsx"
+              content: "[ARCHIVO SIMULADO] Estado de Resultados Q3 2025 - Banco del Sol. Ingresos por intereses: $2.150.000.000 | Gastos operativos: $890.000.000 | Utilidad neta: $945.000.000"
+            - name: "proyecciones_2026_preliminar.pdf"
+              content: "[ARCHIVO SIMULADO] Proyecciones Financieras 2026 - Documento preliminar confidencial. Crecimiento estimado: 8.5% | ROI proyectado: 14.2%"
+            - name: "concentracion_cartera_noviembre.csv"
+              content: |
+                tipo_producto,cantidad_clientes,monto_total,porcentaje_cartera
+                Cuentas Corrientes,45230,1809200000.00,40.0
+                Cajas de Ahorro,38900,1945000000.00,43.0
+                Plazos Fijos,12450,622500000.00,13.8
+                Creditos Hipotecarios,3200,96000000.00,2.1
+                Creditos Personales,8900,89000000.00,2.0
+                Tarjetas de Credito,21000,52500000.00,1.2
+            - name: "inventario_activos_TIC.xlsx"
+              content: "[ARCHIVO SIMULADO] Inventario de Activos TIC - Banco del Sol. Total servidores: 47 | Total estaciones: 312 | Total switches: 28"
+
+        - name: Crear archivos dummy - Recursos Humanos
+          ansible.windows.win_copy:
+            content: "{{ item.content }}"
+            dest: "C:\\Shares\\Recursos_Humanos\\{{ item.name }}"
+          loop:
+            - name: "nomina_empleados_noviembre_2025.csv"
+              content: |
+                legajo,nombre,apellido,departamento,cargo,salario_bruto,bonificacion
+                EMP001,Carlos,Martinez,IT,Analista Senior,95000,12000
+                EMP002,Laura,Gonzalez,Finanzas,Contadora,105000,15000
+                EMP003,Miguel,Rodriguez,Ventas,Ejecutivo,78000,8000
+                EMP004,Ana,Lopez,RRHH,Coordinadora,88000,10000
+                EMP005,Pedro,Fernandez,IT,SysAdmin,110000,18000
+                EMP006,Maria,Garcia,Legal,Abogada,120000,20000
+                EMP007,Juan,Sanchez,Operaciones,Supervisor,72000,7000
+                EMP008,Carmen,Diaz,Marketing,Gerente,135000,25000
+                EMP009,Roberto,Morales,IT,Director TI,180000,35000
+                EMP010,Lucia,Herrera,Finanzas,CFO,220000,50000
+            - name: "registros_asistencia_octubre.csv"
+              content: |
+                legajo,fecha,entrada,salida,horas_extra,observaciones
+                EMP001,2025-10-01,08:55,17:05,0.5,
+                EMP002,2025-10-01,09:00,17:30,1.0,
+                EMP005,2025-10-01,08:30,22:15,3.75,incidente servidor
+                EMP009,2025-10-01,08:00,19:00,2.0,auditoria
+            - name: "politicas_seguridad_info_2025.pdf"
+              content: "[ARCHIVO SIMULADO] Politicas de Seguridad de la Informacion Banco del Sol 2025. Documento confidencial."
+
+        # --- Configuracion de VSS (Volume Shadow Copy) ---
+        - name: Verificar servicio VSS
+          ansible.windows.win_service:
+            name: VSS
+            state: started
+            start_mode: auto
+
+        - name: Crear tarea programada para VSS (cada 6 horas)
+          ansible.windows.win_scheduled_task:
+            name: "BancoDelSol_VSS_Backup"
+            description: "Copia de sombra automatica del volumen C:"
+            state: present
+            actions:
+              - path: "vssadmin.exe"
+                arguments: "create shadow /for=C:"
+            triggers:
+              - type: "daily"
+                start_time: "02:00:00"
+                repetition:
+                  interval: "PT6H"
+                  duration: "PT24H"
+                  stop_at_duration_end: false
+            principal:
+              user_id: "SYSTEM"
+              logon_type: "serviceAccount"
+              run_level: "highest"
+
+        - name: Ejecutar VSS inicial para crear primera copia de sombra
+          ansible.windows.win_command: vssadmin.exe create shadow /for=C:
+          register: vss_result
+
+        - name: Verificar copia de sombra creada
+          ansible.windows.win_command: vssadmin.exe list shadows
+          register: vss_list
+          changed_when: false
+
+        - name: Registrar estado de VSS
+          ansible.builtin.debug:
+            msg: "VSS configurado correctamente. Copias de sombra disponibles."
+
+        # --- Configuracion de Logging ---
+        - name: Configurar politica de auditoria de seguridad
+          ansible.windows.win_shell: |
+            # Habilitar auditoria de acceso a objetos
+            auditpol /set /subcategory:"File System" /success:enable /failure:enable
+            auditpol /set /subcategory:"Registry" /success:enable /failure:enable
+            auditpol /set /subcategory:"File Share" /success:enable /failure:enable
+
+            # Habilitar auditoria de inicio de sesion
+            auditpol /set /subcategory:"Logon" /success:enable /failure:enable
+            auditpol /set /subcategory:"Logoff" /success:enable
+
+            # Habilitar auditoria de cambios en cuentas
+            auditpol /set /subcategory:"User Account Management" /success:enable /failure:enable
+            auditpol /set /subcategory:"Security Group Management" /success:enable /failure:enable
+
+            # Habilitar auditoria de privilegios
+            auditpol /set /subcategory:"Sensitive Privilege Use" /success:enable /failure:enable
+
+            Write-Output "Politica de auditoria configurada correctamente"
+          args:
+            executable: powershell
+
+        - name: Configurar politica de eventos de seguridad
+          ansible.windows.win_shell: |
+            # Aumentar tamano del log de seguridad a 1GB
+            wevtutil sl Security /ms:1073741824
+            wevtutil sl System /ms:1073741824
+            wevtutil sl Application /ms:1073741824
+            wevtutil sl "Windows PowerShell" /ms:536870912
+            wevtutil sl "Microsoft-Windows-PowerShell/Operational" /ms:536870912
+
+            Write-Output "Tamanos de log configurados correctamente"
+          args:
+            executable: powershell
+
+        - name: Habilitar PowerShell Script Block Logging
+          ansible.windows.win_regedit:
+            path: HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging
+            name: EnableScriptBlockLogging
+            data: 1
+            type: dword
+
+        - name: Habilitar PowerShell Module Logging
+          ansible.windows.win_regedit:
+            path: HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging
+            name: EnableModuleLogging
+            data: 1
+            type: dword
+
+        - name: Configurar modulos de PowerShell para logging
+          ansible.windows.win_regedit:
+            path: HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ModuleLogging\ModuleNames
+            name: "*"
+            data: "*"
+            type: string
+
+        # --- Configuracion de Windows Defender ---
+        - name: Verificar Windows Defender activo
+          ansible.windows.win_shell: |
+            Get-MpComputerStatus | Select-Object -Property RealTimeProtectionEnabled, AntivirusEnabled
+          args:
+            executable: powershell
+          register: defender_status
+
+        - name: Actualizar definiciones de Windows Defender
+          ansible.windows.win_shell: Update-MpSignature
+          args:
+            executable: powershell
+          register: update_result
+
+        - name: Configurar exclusiones de Windows Defender para shares
+          ansible.windows.win_shell: |
+            # Excluir directorios de shares del escaneo en tiempo real
+            # (necesario para el funcionamiento del laboratorio)
+            Add-MpExclusion -ExclusionPath "C:\Shares\Backups"
+            Add-MpExclusion -ExclusionPath "C:\Shares\Logs"
+            Write-Output "Exclusiones de Defender configuradas"
+          args:
+            executable: powershell
+
+        - name: Habilitar proteccion de acceso a carpetas
+          ansible.windows.win_shell: |
+            Set-MpPreference -EnableControlledFolderAccess Disabled
+            Write-Output "Proteccion de carpetas deshabilitada para laboratorio"
+          args:
+            executable: powershell
+
+        # --- Configuracion de firewall ---
+        - name: Configurar reglas de firewall para SMB
+          ansible.windows.win_firewall_rule:
+            name: "SMB-In"
+            localport: 445,139
+            action: allow
+            direction: in
+            protocol: tcp
+            state: present
+            enabled: true
+
+        - name: Configurar reglas de firewall para RDP
+          ansible.windows.win_firewall_rule:
+            name: "RDP-In"
+            localport: 3389
+            action: allow
+            direction: in
+            protocol: tcp
+            state: present
+            enabled: true
+
+        - name: Configurar reglas de firewall para WinRM
+          ansible.windows.win_firewall_rule:
+            name: "WinRM-In"
+            localport: 5985,5986
+            action: allow
+            direction: in
+            protocol: tcp
+            state: present
+            enabled: true
+
+        # --- Servicios adicionales ---
+        - name: Habilitar servicio de registro remoto
+          ansible.windows.win_service:
+            name: RemoteRegistry
+            state: started
+            start_mode: auto
+
+        - name: Habilitar WinRM
+          ansible.windows.win_shell: |
+            Enable-PSRemoting -Force -SkipNetworkProfileCheck
+            Set-Item WSMan:\localhost\Client\TrustedHosts -Value "*" -Force
+            winrm quickconfig -q
+            winrm set winrm/config/service '@{AllowUnencrypted="true"}'
+            winrm set winrm/config/service/auth '@{Basic="true"}'
+          args:
+            executable: powershell
+
+        # --- Crear directorio de evidencia ---
+        - name: Crear directorio para evidencia forense
+          ansible.windows.win_file:
+            path: "C:\\Forensics"
+            state: directory
+
+        - name: Crear directorio de backups
+          ansible.windows.win_file:
+            path: "C:\\Backups"
+            state: directory
+
+        - name: Crear script de recopilacion de evidencia
+          ansible.windows.win_copy:
+            content: |
+              # Script de Recopilacion de Evidencia - Banco del Sol
+              # Ejecutar como administrador
+              param(
+                  [string]$OutputDir = "C:\Forensics\Evidence_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+              )
+
+              New-Item -ItemType Directory -Path $OutputDir -Force | Out-Null
+
+              Write-Host "=== Recopilando evidencia del sistema ===" -ForegroundColor Green
+
+              # Informacion del sistema
+              Write-Host "[1/10] Recopilando informacion del sistema..."
+              systeminfo | Out-File "$OutputDir\systeminfo.txt"
+              ipconfig /all | Out-File "$OutputDir\network_config.txt"
+              netstat -ano | Out-File "$OutputDir\netstat.txt"
+              net user | Out-File "$OutputDir\users.txt"
+              net localgroup | Out-File "$OutputDir\groups.txt"
+              net share | Out-File "$OutputDir\shares.txt"
+
+              # Procesos
+              Write-Host "[2/10] Recopilando procesos..."
+              Get-Process | Format-Table -AutoSize | Out-File "$OutputDir\processes.txt"
+              Get-WmiObject Win32_Service | Format-Table -AutoSize | Out-File "$OutputDir\services.txt"
+
+              # Tareas programadas
+              Write-Host "[3/10] Recopilando tareas programadas..."
+              Get-ScheduledTask | Format-Table -AutoSize | Out-File "$OutputDir\scheduled_tasks.txt"
+
+              # Servicios VSS
+              Write-Host "[4/10] Verificando copias de sombra..."
+              vssadmin list shadows | Out-File "$OutputDir\vss_shadows.txt"
+              vssadmin list writers | Out-File "$OutputDir\vss_writers.txt"
+              vssadmin list providers | Out-File "$OutputDir\vss_providers.txt"
+
+              # Registry
+              Write-Host "[5/10] Recopilando entradas de registro..."
+              Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Run" | Out-File "$OutputDir\registry_run.txt"
+              Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce" | Out-File "$OutputDir\registry_runonce.txt"
+
+              # Logs de seguridad
+              Write-Host "[6/10] Exportando logs de seguridad..."
+              wevtutil epl Security "$OutputDir\security.evtx" /ow:true
+              wevtutil epl System "$OutputDir\system.evtx" /ow:true
+              wevtutil epl Application "$OutputDir\application.evtx" /ow:true
+              wevtutil epl "Windows PowerShell" "$OutputDir\powershell.evtx" /ow:true
+
+              # Archivos modificados
+              Write-Host "[7/10] Buscando archivos cifrados..."
+              Get-ChildItem -Path "C:\Shares" -Recurse -Filter "*.encrypted" |
+                  Format-Table FullName, Length, LastWriteTime -AutoSize |
+                  Out-File "$OutputDir\encrypted_files.txt"
+
+              # Ransom note
+              Write-Host "[8/10] Buscando nota de rescate..."
+              Get-ChildItem -Path "C:\Shares" -Recurse -Filter "README_RANSOM*" |
+                  ForEach-Object {
+                      Write-Host "  Encontrado: $($_.FullName)" -ForegroundColor Yellow
+                      Get-Content $_.FullName | Out-File "$OutputDir\ransom_note_$($_.Directory.Name).txt"
+                  }
+
+              # Hashes de archivos
+              Write-Host "[9/10] Calculando hashes de archivos..."
+              Get-ChildItem -Path "C:\Shares" -Recurse -File |
+                  ForEach-Object {
+                      [PSCustomObject]@{
+                          Path = $_.FullName
+                          Hash = (Get-FileHash $_.FullName -Algorithm MD5).Hash
+                          Size = $_.Length
+                          Modified = $_.LastWriteTime
+                      }
+                  } | Export-Csv "$OutputDir\file_hashes.csv" -NoTypeInformation
+
+              # Log de evento
+              Write-Host "[10/10] Generando reporte final..."
+              $report = @"
+              ================================================
+              REPORTE DE EVIDENCIA - BANCO DEL SOL
+              Fecha: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+              Equipo: $env:COMPUTERNAME
+              ================================================
+
+              Directorio de salida: $OutputDir
+              Total archivos recopilados: $((Get-ChildItem $OutputDir -Recurse -File).Count)
+              Tamano total: $([math]::Round((Get-ChildItem $OutputDir -Recurse -File | Measure-Object -Property Length -Sum).Sum / 1KB, 2)) KB
+              ================================================
+              "@
+              $report | Out-File "$OutputDir\REPORT.txt"
+
+              Write-Host "=== Evidencia recopilada en: $OutputDir ===" -ForegroundColor Green
+              Write-Host "Total archivos: $((Get-ChildItem $OutputDir -Recurse -File).Count)" -ForegroundColor Cyan
+            dest: "C:\\Forensics\\collect_evidence.ps1"
+
+        # --- Verificacion final ---
+        - name: Verificar configuracion completa
+          ansible.windows.win_shell: |
+            Write-Host "=== Verificacion de Configuracion - Fileserver ===" -ForegroundColor Green
+            Write-Host "Shares SMB:" -ForegroundColor Yellow
+            Get-SmbShare | Format-Table Name, Path, Description -AutoSize
+            Write-Host ""
+            Write-Host "Copias de sombra:" -ForegroundColor Yellow
+            vssadmin list shadows
+            Write-Host ""
+            Write-Host "Servicios clave:" -ForegroundColor Yellow
+            Get-Service VSS, WinRM, RemoteRegistry | Format-Table Name, Status, StartType -AutoSize
+            Write-Host ""
+            Write-Host "Archivos en shares:" -ForegroundColor Yellow
+            Get-ChildItem C:\Shares -Recurse -File | Measure-Object | Select-Object Count
+          args:
+            executable: powershell
+          register: verification_result
+
+      when: inventory_hostname == "fileserver"
+
+    # ============================================================
+    # Configuracion del Domain Controller
+    # ============================================================
+
+    - name: Configurar Domain Controller
+      block:
+        - name: Instalar Active Directory Domain Services
+          ansible.windows.win_feature:
+            name:
+              - AD-Domain-Services
+              - RSAT-AD-PowerShell
+              - RSAT-AD-AdminCenter
+              - DNS
+            state: present
+
+        - name: Verificar servicios de AD
+          ansible.windows.win_service:
+            name: "{{ item }}"
+            state: started
+            start_mode: auto
+          loop:
+            - NTDS
+            - DNS
+            - Kdc
+            - Netlogon
+            - W32Time
+
+        - name: Crear OU para Banco del Sol
+          community.windows.win_domain_object:
+            path: "DC=BancoDelSol,DC=local"
+            state: present
+            type: organizationalUnit
+            name: "BancoDelSol"
+
+        - name: Crear usuarios del dominio
+          community.windows.win_domain_user:
+            name: "{{ item.name }}"
+            sam_account_name: "{{ item.username }}"
+            password: "{{ item.password }}"
+            state: present
+            groups:
+              - "{{ item.groups | join(',') }}"
+          loop:
+            - name: "Carlos Martinez"
+              username: "cmartinez"
+              password: "C@rlos2025!"
+              groups: ["Domain Users"]
+            - name: "Laura Gonzalez"
+              username: "lgonzalez"
+              password: "L@ura2025!"
+              groups: ["Domain Users"]
+            - name: "Pedro Fernandez"
+              username: "pfernandez"
+              password: "P@dro2025!"
+              groups: ["Domain Users", "Domain Admins"]
+
+        - name: Crear grupos del dominio
+          community.windows.win_domain_group:
+            name: "{{ item.name }}"
+            scope: "global"
+            description: "{{ item.description }}"
+            state: present
+          loop:
+            - name: "IT"
+              description: "Personal de Tecnologia de la Informacion"
+            - name: "Finanzas"
+              description: "Departamento de Finanzas"
+            - name: "RRHH"
+              description: "Departamento de Recursos Humanos"
+            - name: "Ventas"
+              description: "Departamento de Ventas"
+            - name: "Legal"
+              description: "Departamento Legal"
+            - name: "Direccion"
+              description: "Direccion General"
+            - name: "Operaciones"
+              description: "Departamento de Operaciones"
+            - name: "Marketing"
+              description: "Departamento de Marketing"
+
+        - name: Configurar DNS para resolver nombres internos
+          community.windows.win_dns_zone:
+            name: "BancoDelSol.local"
+            state: present
+            type: primary
+
+        - name: Habilitar logs de autenticacion
+          ansible.windows.win_shell: |
+            auditpol /set /subcategory:"Logon" /success:enable /failure:enable
+            auditpol /set /subcategory:"Account Lockout" /success:enable /failure:enable
+            auditpol /set /subcategory:"Special Logon" /success:enable
+            Write-Output "Logs de autenticacion habilitados"
+          args:
+            executable: powershell
+
+      when: inventory_hostname == "domaincontroller"
+
+    # ============================================================
+    # Configuracion del Webserver
+    # ============================================================
+
+    - name: Configurar Webserver
+      block:
+        - name: Instalar nginx
+          apt:
+            name:
+              - nginx
+              - openssl
+            state: present
+            update_cache: yes
+
+        - name: Crear pagina de inicio de Banco del Sol
+          copy:
+            content: |
+              <!DOCTYPE html>
+              <html lang="es">
+              <head>
+                  <meta charset="UTF-8">
+                  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                  <title>Banco del Sol - Banca en Linea</title>
+                  <style>
+                      body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5; }
+                      .header { background-color: #1a237e; color: white; padding: 20px; text-align: center; }
+                      .container { max-width: 800px; margin: 50px auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                      h1 { color: #1a237e; }
+                      .notice { background-color: #fff3e0; border-left: 4px solid #ff9800; padding: 15px; margin: 20px 0; }
+                  </style>
+              </head>
+              <body>
+                  <div class="header">
+                      <h1>Banco del Sol</h1>
+                      <p>Sistema de Banca en Linea</p>
+                  </div>
+                  <div class="container">
+                      <h1>Bienvenido a Banco del Sol</h1>
+                      <div class="notice">
+                          <strong>Aviso:</strong> El sistema de banca en linea se encuentra en mantenimiento.
+                          Para emergencias contacte a soporte.
+                      </div>
+                      <p>Servicios disponibles:</p>
+                      <ul>
+                          <li>Consulta de cuentas</li>
+                          <li>Transferencias</li>
+                          <li>Pago de servicios</li>
+                          <li>Plazos fijos</li>
+                      </ul>
+                      <p><small>Este es un sistema de laboratorio para fines educativos.</small></p>
+                  </div>
+              </body>
+              </html>
+            dest: /var/www/html/index.html
+
+        - name: Configurar nginx
+          copy:
+            content: |
+              server {
+                  listen 80;
+                  server_name localhost;
+                  root /var/www/html;
+                  index index.html;
+
+                  location / {
+                      try_files $uri $uri/ =404;
+                  }
+
+                  location /api {
+                      return 200 '{"status":"ok","message":"API del Banco del Sol - Modo laboratorio"}';
+                      add_header Content-Type application/json;
+                  }
+              }
+            dest: /etc/nginx/sites-available/default
+          notify: Reload nginx
+
+        - name: Asegurar que nginx este ejecutando
+          service:
+            name: nginx
+            state: started
+            enabled: yes
+
+        - name: Crear directorio de logs
+          file:
+            path: /var/log/nginx/bancodelsol
+            state: directory
+
+        - name: Configurar logs de acceso
+          copy:
+            content: |
+              # Log de acceso - Banco del Sol
+              # Este log registra todas las peticiones al servidor web
+              access_log /var/log/nginx/bancodelsol/access.log combined;
+              error_log /var/log/nginx/bancodelsol/error.log;
+            dest: /etc/nginx/conf.d/logging.conf
+          notify: Reload nginx
+
+      handlers:
+        - name: Reload nginx
+          service:
+            name: nginx
+            state: reloaded
+
+      when: inventory_hostname == "webserver"
+
+    # ============================================================
+    # Configuracion del Mailserver
+    # ============================================================
+
+    - name: Configurar Mailserver
+      block:
+        - name: Instalar Postfix y Dovecot
+          apt:
+            name:
+              - postfix
+              - dovecot-core
+              - dovecot-imapd
+              - mailutils
+            state: present
+            update_cache: yes
+
+        - name: Configurar Postfix
+          copy:
+            content: |
+              # Configuracion Postfix - Banco del Sol
+              myhostname = mail.bancodelsol.local
+              mydomain = bancodelsol.local
+              myorigin = $mydomain
+              mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain
+              relay_domains =
+              mynetworks = 127.0.0.0/8, 10.10.0.0/24, 10.10.1.0/24, 10.10.2.0/24
+              mailbox_command =
+              home_mailbox = Maildir/
+              smtpd_banner = $myhostname ESMTP
+              maillog_file = /var/log/mail.log
+            dest: /etc/postfix/main.cf
+          notify: Reload postfix
+
+        - name: Configurar Dovecot
+          copy:
+            content: |
+              protocols = imap
+              listen = *,::
+              ssl = no
+              auth_mechanisms = plain login
+              disable_plaintext_auth = no
+              mail_location = maildir:~/Maildir
+              passdb {
+                driver = passwd-file
+              }
+              userdb {
+                driver = passwd-file
+              }
+            dest: /etc/dovecot/dovecot.conf
+          notify: Reload dovecot
+
+        - name: Crear buzones de correo para usuarios
+          ansible.builtin.user:
+            name: "{{ item.name }}"
+            home: "/home/{{ item.name }}"
+            shell: /bin/bash
+            create_home: yes
+          loop:
+            - { name: "cmartinez" }
+            - { name: "lgonzalez" }
+            - { name: "pfernandez" }
+
+        - name: Crear directorios Maildir
+          file:
+            path: "/home/{{ item }}/Maildir/{cur,new,tmp}"
+            state: directory
+            owner: "{{ item }}"
+            mode: '0700'
+          loop:
+            - cmartinez
+            - lgonzalez
+            - pfernandez
+
+        - name: Crear email de phishing simulado
+          copy:
+            content: |
+              From: soporte@bancodelsol-urgent.com
+              To: cmartinez@bancodelsol.local
+              Subject: [URGENTE] Actualizacion de credenciales - Accion requerida
+              Date: Mon, 01 Dec 2025 08:30:00 -0300
+              MIME-Version: 1.0
+              Content-Type: text/plain; charset=UTF-8
+
+              Estimado Carlos Martinez,
+
+              Como parte de nuestro proceso de actualizacion de seguridad, le solicitamos
+              que actualice sus credenciales de acceso lo antes posible.
+
+              Para realizar la actualizacion, haga clic en el siguiente enlace:
+              https://actualizar-credenciales.bancodelsol-secure.com/reset
+
+              Si no completa este proceso en las proximas 24 horas, su cuenta sera
+              bloqueada temporalmente.
+
+              Atentamente,
+              Departamento de Tecnologia
+              Banco del Sol
+
+              NOTA: Este es un correo automatico, no responda a este mensaje.
+            dest: /home/cmartinez/Maildir/new/1701412200.V802I00458B.mailsrv
+
+        - name: Asegurar que Postfix y Dovecot esten ejecutando
+          service:
+            name: "{{ item }}"
+            state: started
+            enabled: yes
+          loop:
+            - postfix
+            - dovecot
+
+      handlers:
+        - name: Reload postfix
+          service:
+            name: postfix
+            state: reloaded
+
+        - name: Reload dovecot
+          service:
+            name: dovecot
+            state: reloaded
+
+      when: inventory_hostname == "mailserver"
+
+    # ============================================================
+    # Configuracion de la Estacion de Trabajo
+    # ============================================================
+
+    - name: Configurar Workstation
+      block:
+        - name: Crear directorio de usuario
+          ansible.windows.win_file:
+            path: "C:\\Users\\cmartinez"
+            state: directory
+
+        - name: Crear carpeta Desktop
+          ansible.windows.win_file:
+            path: "C:\\Users\\cmartinez\\Desktop"
+            state: directory
+
+        - name: Crear archivo de accesos rapidos
+          ansible.windows.win_copy:
+            content: |
+              Acceso rapido a recursos - Banco del Sol
+              =========================================
+              Servidor de archivos: \\fileserver\Datos_Clientes
+              Reportes financieros: \\fileserver\Reportes_Financieros
+              Recursos humanos: \\fileserver\Recursos_Humanos
+              Correo: https://mail.bancodelsol.local
+              Intranet: https://intranet.bancodelsol.local
+            dest: "C:\\Users\\cmartinez\\Desktop\\acceso_rapido.txt"
+
+        - name: Mapear unidad de red S: (Datos_Clientes)
+          ansible.windows.win_shell: |
+            net use S: \\fileserver\Datos_Clientes /persistent:yes
+          args:
+            executable: powershell
+
+        - name: Mapear unidad de red R: (Reportes_Financieros)
+          ansible.windows.win_shell: |
+            net use R: \\fileserver\Reportes_Financieros /persistent:yes
+          args:
+            executable: powershell
+
+        - name: Configurar historial de PowerShell
+          ansible.windows.win_regedit:
+            path: HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell
+            name: ExecutionPolicy
+            data: "RemoteSigned"
+            type: string
+
+        - name: Habilitar RDP
+          ansible.windows.win_regedit:
+            path: HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server
+            name: fDenyTSConnections
+            data: 0
+            type: dword
+
+        - name: Configurar regla de firewall para RDP
+          ansible.windows.win_firewall_rule:
+            name: "AllowRDP"
+            localport: 3389
+            action: allow
+            direction: in
+            protocol: tcp
+            state: present
+            enabled: true
+
+        - name: Verificar conectividad al fileserver
+          ansible.windows.win_ping:
+          register: ping_result
+
+      when: inventory_hostname == "workstation"
+
+  post_tasks:
+    - name: Configuracion base completada
+      ansible.builtin.debug:
+        msg: |
+          ============================================
+          Configuracion base completada - Banco del Sol
+          ============================================
+          Host: {{ inventory_hostname }}
+          Rol: {{ role | default('N/A') }}
+          Estado: Configurado correctamente
+          ============================================

@@ -1,0 +1,254 @@
+# description.yml
+# Escenario 01 - Phishing y Reverse Shell
+# Curso: Ciberseguridad y Respuesta a Incidentes para el BHU
+# Plataforma: Tectonic Cyber Range
+
+name: "Escenario 01 - Phishing y Reverse Shell"
+slug: "01_phishing"
+version: "1.0.0"
+description: >
+  Escenario de laboratorio que simula un ataque de phishing dirigido contra
+  empleados de la entidad financiera virtual "Banco del Sol". Un atacante
+  externo envia un correo electronico de phishing que contiene un enlace
+  malicioso. Cuando el empleado victima hace click en el enlace, se ejecuta
+  un payload que establece una reverse shell hacia la maquina del atacante.
+  El equipo azul (defensores) debe detectar, analizar, contener y erradicar
+  el incidente utilizando las tecnicas y herramientas aprendidas en el curso.
+  Este escenario es el primero de la serie y permite practicar el ciclo
+  completo de respuesta a incidentes ante un vector de ataque de ingenieria
+  social.
+
+author:
+  name: "BHU - Universidad de la Republica"
+  department: "Departamento de Ciberseguridad"
+  country: "Uruguay"
+  email: "ciberseguridad@bhu.edu.uy"
+  url: "https://www.bhu.edu.uy"
+
+license: "Educational Use Only"
+repository: ""
+
+tags:
+  - "phishing"
+  - "social-engineering"
+  - "reverse-shell"
+  - "email-security"
+  - "incident-response"
+  - "blue-team"
+  - "endpoint-analysis"
+  - "log-analysis"
+
+categories:
+  - "attack-simulation"
+  - "defense-practice"
+  - "email-security"
+
+difficulty: "beginner-intermediate"
+estimated_time: "2 horas"
+max_students: 12
+
+# Requisitos previos para los estudiantes
+prerequisites:
+  - "Modulo 1: Fundamentos de Redes y Seguridad"
+  - "Modulo 2: Herramientas de Analisis de Red (Nmap, tshark, netcat)"
+  - "Conocimientos basicos de Linux (navegacion, archivos, procesos)"
+  - "Lectura previa del 03_CHEATSHEET.md"
+
+# VMs requeridas para este escenario
+required_vms:
+
+  - name: "attacker"
+    role: "Maquina atacante"
+    image: "kali-linux-2024.1"
+    os: "linux"
+    network: "Internet simulado (172.16.0.0/24)"
+    ip: "172.16.0.10"
+    description: "Kali Linux con herramientas ofensivas. Ejecuta el ataque de phishing y recibe la reverse shell."
+
+  - name: "webserver"
+    role: "Servidor web del banco"
+    image: "ubuntu-server-22.04"
+    os: "linux"
+    network: "DMZ (10.10.1.0/24)"
+    ip: "10.10.1.10"
+    description: "Apache HTTP server con la pagina web del Banco del Sol. Aloja el payload malicioso que el empleado descarga."
+
+  - name: "mailserver"
+    role: "Servidor de correo del banco"
+    image: "ubuntu-server-22.04"
+    os: "linux"
+    network: "DMZ (10.10.1.0/24)"
+    ip: "10.10.1.20"
+    description: "Postfix/Dovecot. Recibe y entrega el correo de phishing. Contiene logs criticos para la deteccion."
+
+  - name: "workstation"
+    role: "Estacion de trabajo del empleado victima"
+    image: "ubuntu-server-22.04"
+    os: "linux"
+    network: "Interna (10.10.2.0/24)"
+    ip: "10.10.2.100"
+    description: "Equipo del empleado Juan Perez (ventas). Es la victima del phishing. Se establece la reverse shell en esta maquina."
+
+  - name: "fileserver"
+    role: "Servidor de archivos"
+    image: "ubuntu-server-22.04"
+    os: "linux"
+    network: "Interna (10.10.2.0/24)"
+    ip: "10.10.2.10"
+    description: "Samba file server. Servicio minimo para completar la topologia interna."
+
+  - name: "database"
+    role: "Servidor de bases de datos"
+    image: "ubuntu-server-22.04"
+    os: "linux"
+    network: "Interna (10.10.2.0/24)"
+    ip: "10.10.2.20"
+    description: "MySQL/PostgreSQL. Servicio minimo para completar la topologia interna."
+
+  - name: "domaincontroller"
+    role: "Controlador de dominio"
+    image: "ubuntu-server-22.04"
+    os: "linux"
+    network: "Interna (10.10.2.0/24)"
+    ip: "10.10.2.5"
+    description: "Samba AD DC. DNS y autenticacion centralizada."
+
+  - name: "instructor"
+    role: "Maquina del instructor"
+    image: "ubuntu-server-22.04"
+    os: "linux"
+    network: "Management (10.10.0.0/24)"
+    ip: "10.10.0.10"
+    description: "Maquina de monitoreo y administracion del laboratorio."
+
+# Objetivos de aprendizaje
+learning_objectives:
+  - id: "LO-01"
+    description: "Identificar indicadores de compromiso de un ataque de phishing en logs de correo electronico"
+    bloom_level: "Analizar"
+
+  - id: "LO-02"
+    description: "Analizar headers de correo electronico para determinar la legitimidad de un mensaje"
+    bloom_level: "Analizar"
+
+  - id: "LO-03"
+    description: "Examinar logs de servidor web para identificar solicitudes sospechosas"
+    bloom_level: "Analizar"
+
+  - id: "LO-04"
+    description: "Detectar procesos y conexiones de red anormales en una estacion de trabajo comprometida"
+    bloom_level: "Evaluar"
+
+  - id: "LO-05"
+    description: "Aplicar tecnicas de contencion para aislar un sistema comprometido sin perder evidencia"
+    bloom_level: "Aplicar"
+
+  - id: "LO-06"
+    description: "Eliminar artefactos de un ataque de phishing y verificar la limpieza del sistema"
+    bloom_level: "Aplicar"
+
+  - id: "LO-07"
+    description: "Documentar un incidente de phishing siguiendo el marco NIST SP 800-61"
+    bloom_level: "Crear"
+
+  - id: "LO-08"
+    description: "Explicar el concepto de reverse shell y su funcionamiento en el contexto de un ataque de phishing"
+    bloom_level: "Comprender"
+
+# Fases del escenario
+scenario_phases:
+
+  - phase: 1
+    name: "Preparacion del ataque"
+    description: "El atacante configura su maquina y prepara el correo de phishing"
+    executed_by: "instructor (automatico via after_clone.yml)"
+    duration: "5 minutos"
+
+  - phase: 2
+    name: "Envio del phishing"
+    description: "Se envia el correo de phishing al empleado victima"
+    executed_by: "instructor (automatico via after_clone.yml)"
+    duration: "2 minutos"
+
+  - phase: 3
+    name: "Click de la victima"
+    description: "El empleado hace click en el enlace malicioso y se descarga el payload"
+    executed_by: "instructor (automatico via after_clone.yml)"
+    duration: "1 minuto"
+
+  - phase: 4
+    name: "Reverse shell activa"
+    description: "Se establece la conexion inversa desde la workstation hacia el atacante"
+    executed_by: "instructor (automatico via after_clone.yml)"
+    duration: "1 minuto"
+
+  - phase: 5
+    name: "Deteccion y respuesta"
+    description: "Los estudiantes (equipo azul) detectan el incidente y ejecutan el procedimiento de respuesta"
+    executed_by: "estudiantes"
+    duration: "1 hora 30 minutos"
+
+# Indicadores de compromiso (IOC) esperados
+indicators_of_compromise:
+
+  network:
+    - " Conexion TCP saliente desde 10.10.2.100 hacia 172.16.0.10:4444"
+    - " Resoluciones DNS a dominios sospechosos"
+    - " Trafico HTTP con descarga de archivo .sh o .elf desde 10.10.1.10"
+
+  host:
+    - " Proceso /bin/bash o /bin/sh ejecutado con argumentos de red en workstation"
+    - " Archivo /tmp/.update o similar creado en workstation"
+    - " Cron job sospechoso en workstation"
+    - " Modificacion de /etc/hosts en workstation"
+
+  email:
+    - " Correo desde soporte@bancodel-sol.com.uy (dominio con guion)"
+    - " Asunto relacionado con actualizacion de credenciales o verificacion de cuenta"
+    - " Enlace hacia 10.10.1.10/descargar.php o URL similar"
+
+  logs:
+    - " Registro de login IMAP fallido seguido de exito desde IP externa"
+    - " Peticion GET a /descargar.php en webserver access.log"
+    - " Proceso nc o ncat en lista de procesos de workstation"
+    - " Conexion ESTABLISHED a puerto 4444 en workstation"
+
+# Credenciales del escenario (para el instructor)
+credentials:
+
+  attacker:
+    username: "kali"
+    password: "kali"
+    ssh_port: 22
+
+  webserver:
+    username: "webadmin"
+    password: "webadmin123"
+    ssh_port: 22
+
+  mailserver:
+    username: "mailadmin"
+    password: "mailadmin123"
+    ssh_port: 22
+
+  workstation:
+    username: "empleado"
+    password: "empleado123"
+    ssh_port: 22
+
+  mail_users:
+    - username: "juan.perez"
+      password: "Mail2024!"
+      email: "juan.perez@bancodelsol.local"
+
+    - username: "maria.garcia"
+      password: "Mail2024!"
+      email: "maria.garcia@bancodelsol.local"
+
+    - username: "pedro.lopez"
+      password: "Mail2024!"
+      email: "pedro.lopez@bancodelsol.local"
+
+# Marca temporal
+created: "2026-07-13"
+last_modified: "2026-07-13"
