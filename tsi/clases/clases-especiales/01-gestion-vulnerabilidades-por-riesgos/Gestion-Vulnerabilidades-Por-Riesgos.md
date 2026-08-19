@@ -330,28 +330,31 @@ El Responsable de Seguridad de la Informacion debe:
 | **EPSS API** | https://api.first.org/data/v1/epss | API para consultas automatizadas |
 | **NVD + EPSS** | https://nvd.nist.gov/ (integrado) | CVSS + EPSS en un solo lugar |
 
-### 6.4 Scanners de Vulnerabilidades (Software Libre)
+### 6.4 Scanners de Vulnerabilidades (Software Libre o Gratuito)
 
-| Herramienta | URL | Tipo | Ventajas |
-|-------------|-----|------|----------|
-| **OpenVAS/Greenbone** | https://www.greenbone.net/ | Community Edition | Alternativa gratuita a Nessus |
-| **Nmap + NSE** | https://nmap.org/ | Escaneo de red y scripts | Extremeflexible |
-| **Nuclei** | https://github.com/projectdiscovery/nuclei | Escaneo basado en templates | Comunidad activa |
-| **Trivy** | https://github.com/aquasecurity/trivy | Analisis de contenedores | Integracion CI/CD |
+| Herramienta | URL | Plataforma | Costo | Ventajas |
+|-------------|-----|------------|-------|----------|
+| **OpenVAS/Greenbone** | https://www.greenbone.net/ | Linux | 100% open source | Scanner completo, sin limites de IPs |
+| **Nessus Essentials** | https://www.tenable.com/products/nessus/nessus-essentials | Windows/Linux | Gratuito (hasta 16 IPs) | Fácil de usar, plugins actualizados |
+| **Nmap + NSE** | https://nmap.org/ | Windows/Linux | 100% open source | Escaneo de red y scripts |
+| **Nuclei** | https://github.com/projectdiscovery/nuclei | Windows/Linux | 100% open source | Basado en templates, comunidad activa |
+| **Trivy** | https://github.com/aquasecurity/trivy | Windows/Linux | 100% open source | Analisis de contenedores, integracion CI/CD |
 
 ### 6.5 Plataformas de Gestion y Dashboard
 
-| Herramienta | URL | Tipo | Uso Principal |
-|-------------|-----|------|---------------|
-| **DefectDojo** | https://defectdojo.org/ | Open Source | Gestion de hallazgos de seguridad |
-| **TheHive** | https://thehive-project.org/ | Open Source | Gestion de incidentes |
-| **Grafana** | https://grafana.com/ | Open Source | Visualizacion y dashboards |
-| **Elastic Stack** | https://www.elastic.co/ | Open Source | SIEM, busqueda, visualizacion |
-| **MISP** | https://www.misp-project.org/ | Open Source | Sharing de indicadores |
+| Herramienta | URL | Tipo | Plataforma | Uso Principal |
+|-------------|-----|------|------------|---------------|
+| **DefectDojo** | https://defectdojo.org/ | Open Source | Windows/Linux (Docker) | Gestion de hallazgos de seguridad |
+| **TheHive** | https://thehive-project.org/ | Open Source | Windows/Linux (Docker) | Gestion de incidentes |
+| **Grafana OSS** | https://grafana.com/ | Open Source | Windows/Linux | Visualizacion y dashboards |
+| **Elastic Stack** | https://www.elastic.co/ | Free tier | Windows/Linux | SIEM, busqueda, visualizacion |
+| **MISP** | https://www.misp-project.org/ | Open Source | Linux | Sharing de indicadores |
 
 ---
 
 ## 7. Dashboard Paso a Paso con Software Libre
+
+> **Importante:** Esta guia incluye instrucciones para **Windows** y **Linux** por separado. Todas las herramientas listadas son **gratuitas de forma permanente** (sin periodo de prueba ni licencias temporales). Elija la guia segun su sistema operativo.
 
 ### 7.1 Arquitectura del Dashboard
 
@@ -361,7 +364,7 @@ El Responsable de Seguridad de la Informacion debe:
 +-----------------------------------------------------------------+
 |                                                                 |
 |  +-------------+    +-------------+    +-------------+          |
-|  |   OPENVAS   |    |    NVD      |    |  CISA KEV   |          |
+|  |  SCANNER    |    |    NVD      |    |  CISA KEV   |          |
 |  |  (Escaneo)  |    |  (CVSS)     |    |  (Explotado)|          |
 |  +------+------+    +------+------+    +------+------+          |
 |         |                  |                  |                  |
@@ -388,9 +391,28 @@ El Responsable de Seguridad de la Informacion debe:
 +-----------------------------------------------------------------+
 ```
 
-### 7.2 Paso 1: Instalar OpenVAS (Escanner de Vulnerabilidades)
+### 7.2 Resumen de Herramientas por Plataforma
 
-#### Instalacion en Ubuntu/Debian
+| Componente | Linux | Windows |
+|------------|-------|---------|
+| **Scanner de vulnerabilidades** | OpenVAS/Greenbone (100% open source) | Nessus Essentials (gratuito, hasta 16 IPs) |
+| **Gestion de hallazgos** | DefectDojo (Docker) | DefectDojo (Docker Desktop) |
+| **SIEM + Indexacion** | Elastic Stack (paquetes .tar.gz) | Elastic Stack (instaladores .msi) |
+| **Dashboard/Visualizacion** | Grafana OSS (paquete .deb) | Grafana OSS (instalador .msi) |
+
+> **Nota sobre Windows:** OpenVAS no tiene instalador nativo para Windows. En Windows se usa **Nessus Essentials** que es gratuito para hasta 16 IPs activas (suficiente para laboratorios y clases). Para escaneos de mayor alcance, se puede ejecutar OpenVAS en una VM Linux o en WSL2.
+
+---
+
+### Paso 1: Instalar Scanner de Vulnerabilidades
+
+---
+
+#### Opcion A: Linux - Instalar OpenVAS/Greenbone
+
+OpenVAS es 100% open source y funciona exclusivamente en Linux.
+
+##### Instalacion en Ubuntu/Debian
 
 ```bash
 # Actualizar sistema
@@ -403,35 +425,113 @@ sudo apt install -y wget gnupg2 lsb-release
 sudo apt update
 sudo apt install -y gvm
 
-# Configurar GVM
+# Configurar GVM (toma 10-30 min)
 sudo gvm-setup
 
-# Iniciar servicios
+# Verificar instalacion
 sudo gvm-check-setup
+
+# Iniciar servicios
 sudo gvm-start
 ```
 
-#### Acceso por primera vez
+##### Acceso por primera vez
 
-1. Acceder a `https://127.0.0.1:9392`
+1. Abrir navegador en `https://127.0.0.1:9392`
 2. Crear usuario administrador
-3. Esperar la actualizacion de feeds (puede tomar 30-60 minutos)
+3. Esperar actualizacion de feeds (30-60 min la primera vez)
 
-#### Configuracion inicial
+##### Configuracion inicial
 
 ```
-1. Ir a Administration -> Feed Management
-2. Actualizar:
-   - NVT Feed (Scripts de escaneo)
+1. Administration -> Feed Management -> Actualizar todos los feeds
+   - NVT Feed (scripts de escaneo)
    - SCAP Feed (CVSS, CPE, OVAL)
    - CERT Feed
-3. Ir a Scans -> Tasks
-4. Crear nuevo escaneo completo
+2. Scans -> Tasks -> Nuevo escaneo
+3. Seleccionar targets -> Agregar host(s) a escanear
+4. Ejecutar escaneo
 ```
 
-### 7.3 Paso 2: Instalar DefectDojo (Gestion de Hallazgos)
+##### Alternativa: OpenVAS en Docker (cualquier distribucion)
 
-#### Instalacion con Docker
+```bash
+# Ejecutar Greenbone Community Edition en Docker
+docker run -d -p 9392:9392 --name greenbone \
+  -v gvmd_data:/var/lib/gvm \
+  -v openvas_data:/var/lib/openvas \
+  -v redis_data:/var/lib/redis \
+  greenbone/greenbone-community-edition
+
+# Acceder a https://localhost:9392
+```
+
+---
+
+#### Opcion B: Windows - Instalar Nessus Essentials
+
+Nessus Essentials es la version gratuita de Tenable. Es **permanente** (sin expiracion) y cubre **hasta 16 IPs activas**.
+
+##### Paso 1: Descargar
+
+1. Ir a `https://www.tenable.com/products/nessus/nessus-essentials`
+2. Completar formulario con email institucional
+3. Seleccionar version **Windows x64 (.msi)**
+4. Descargar el instalador
+
+##### Paso 2: Instalar
+
+```
+1. Ejecutarnessessentials-x.x.x-x64.msi
+2. Accept License Agreement
+3. Seleccionar carpeta de instalacion (default: C:\Program Files\Tenable\Nessus)
+4. Click Install
+5. Click Finish cuando termine
+```
+
+##### Paso 3: Configurar
+
+```
+1. Abrir navegador en https://localhost:8834
+2. Accept the security warning (certificado autofirmado)
+3. Crear usuario administrador
+4. Seleccionar "Nessus Essentials" como tipo de escaneo
+5. Ingresar codigo de activacion (llega por email)
+6. Esperar descarga de plugins (10-20 min)
+```
+
+##### Paso 4: Primer escaneo
+
+```
+1. Click "New Scan"
+2. Seleccionar "Basic Network Scan"
+3. Name: "Primer Escaneo"
+4. Target: ingresa IP o rango (ej: 192.168.1.0/24, max 16 IPs)
+5. Click "Launch"
+6. Esperar resultado (5-30 min segun rango)
+```
+
+##### Limitaciones de Nessus Essentials (vs OpenVAS)
+
+| Aspecto | Nessus Essentials | OpenVAS |
+|---------|-------------------|---------|
+| **Costo** | Gratuito | Gratuito |
+| **IPs maximas** | 16 | Ilimitadas |
+| **Funciones** | Escaneo basico | Escaneo completo |
+| **Plugins** | Actualizados | Actualizados |
+| **Ideal para** | Laboratorios, clases | Produccion, organizaciones |
+
+---
+
+### Paso 2: Instalar DefectDojo (Gestion de Hallazgos)
+
+DefectDojo corre en Docker, por lo que funciona igual en ambas plataformas.
+
+---
+
+#### Opcion A: Linux
+
+##### Instalacion con Docker
 
 ```bash
 # Clonar repositorio
@@ -445,57 +545,150 @@ docker-compose -f docker-compose.yml up -d
 docker-compose exec uwsgi python manage.py createsuperuser
 ```
 
-#### Configuracion inicial
+##### Configuracion inicial
 
 ```
 1. Acceder a http://localhost:8080
-2. Ir a Settings -> System Settings
-3. Configurar:
-   - Zona horaria
-   - Formato de fecha
-   - Notificaciones
-4. Ir a Configuration -> Defect Dojo
-5. Crear Product (ej: "Produccion", "Desarrollo")
-6. Crear Engagement (ej: "Escaneo Mensual")
+2. Settings -> System Settings -> Configurar zona horaria y formato
+3. Configuration -> Defect Dojo -> Crear Products:
+   - "Produccion"
+   - "Desarrollo"
+4. Crear Engagement (ej: "Escaneo Mensual")
 ```
 
-#### Importar resultados de OpenVAS
+##### Importar resultados de OpenVAS
 
 ```
-1. Ir a Engagement -> Import Scan Results
-2. Seleccionar formato: "Greenbone (OpenVAS) CSV"
+1. Engagement -> Import Scan Results
+2. Formato: "Greenbone (OpenVAS) CSV"
 3. Subir archivo CSV exportado de OpenVAS
 4. DefectDojo consolidara automaticamente los hallazgos
 ```
 
-### 7.4 Paso 3: Instalar Elastic Stack (SIEM + Indexacion)
+---
+
+#### Opcion B: Windows
+
+##### Requisito previo: Instalar Docker Desktop
+
+1. Descargar Docker Desktop: `https://www.docker.com/products/docker-desktop/`
+2. Ejecutar instalador
+3. Seguir asistente (activar WSL2 si se ofrece)
+4. Reiniciar si se solicita
+5. Abrir Docker Desktop y verificar que este corriendo (icono en barra de tareas)
+
+##### Instalacion de DefectDojo
+
+```powershell
+# Abrir PowerShell como Administrador
+
+# Clonar repositorio
+git clone https://github.com/DefectDojo/django-DefectDojo.git
+cd django-DefectDojo
+
+# Instalar con Docker Compose
+docker-compose -f docker-compose.yml up -d
+
+# Crear usuario inicial
+docker-compose exec uwsgi python manage.py createsuperuser
+```
+
+##### Configuracion inicial
+
+```
+1. Acceder a http://localhost:8080
+2. Settings -> System Settings -> Configurar zona horaria
+3. Configuration -> Defect Dojo -> Crear Products
+4. Crear Engagement
+```
+
+##### Importar resultados de Nessus
+
+```
+1. Engagement -> Import Scan Results
+2. Formato: "Nessus"
+3. Subir archivo .nessus exportado de Nessus Essentials
+4. DefectDojo consolidara los hallazgos
+```
+
+---
+
+### Paso 3: Instalar Elastic Stack (SIEM + Indexacion)
+
+---
+
+#### Opcion A: Linux
 
 ```bash
-# Instalar Elasticsearch
+# Descargar Elasticsearch
 wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-8.10.2-linux-x86_64.tar.gz
 tar -xzf elasticsearch-8.10.2-linux-x86_64.tar.gz
 cd elasticsearch-8.10.2
 
 # Configurar
 nano config/elasticsearch.yml
+# Agregar:
 # network.host: 0.0.0.0
 # discovery.type: single-node
 
 # Iniciar
 ./bin/elasticsearch
 
-# Instalar Logstash
+# En otra terminal: Descargar e instalar Logstash
 wget https://artifacts.elastic.co/downloads/logstash/logstash-8.10.2-linux-x86_64.tar.gz
 tar -xzf logstash-8.10.2-linux-x86_64.tar.gz
 
-# Instalar Kibana
+# En otra terminal: Descargar e instalar Kibana
 wget https://artifacts.elastic.co/downloads/kibana/kibana-8.10.2-linux-x86_64.tar.gz
 tar -xzf kibana-8.10.2-linux-x86_64.tar.gz
 ```
 
-#### Configurar Logstash
+---
 
-Crear archivo `config/logstash.conf`:
+#### Opcion B: Windows
+
+##### Paso 1: Instalar Elasticsearch
+
+```
+1. Descargar desde https://www.elastic.co/downloads/elasticsearch
+   Seleccionar "Windows x64.zip"
+2. Extraer el zip en C:\elastic\
+3. Abrir PowerShell como Administrador
+4. Navegar a la carpeta:
+   cd C:\elastic\elasticsearch-8.10.2
+5. Iniciar:
+   .\bin\elasticsearch.bat
+6. Verificar en http://localhost:9200
+```
+
+##### Paso 2: Instalar Logstash
+
+```
+1. Descargar desde https://www.elastic.co/downloads/logstash
+   Seleccionar "Windows x64.zip"
+2. Extraer en C:\elastic\
+3. Crear archivo C:\elastic\logstash-8.10.2\config\logstash.conf (ver abajo)
+4. Iniciar:
+   .\bin\logstash.bat -f .\config\logstash.conf
+```
+
+##### Paso 3: Instalar Kibana
+
+```
+1. Descargar desde https://www.elastic.co/downloads/kibana
+   Seleccionar "Windows x64.zip"
+2. Extraer en C:\elastic\
+3. Editar config\kibana.yml:
+   server.port: 5601
+   elasticsearch.hosts: ["http://localhost:9200"]
+4. Iniciar:
+   .\bin\kibana.bat
+5. Acceder a http://localhost:5601
+```
+
+##### Archivo de configuracion Logstash
+
+Crear `C:\elastic\logstash-8.10.2\config\logstash.conf`:
 
 ```
 input {
@@ -521,7 +714,13 @@ output {
 }
 ```
 
-### 7.5 Paso 4: Instalar Grafana (Visualizacion)
+---
+
+### Paso 4: Instalar Grafana (Visualizacion)
+
+---
+
+#### Opcion A: Linux
 
 ```bash
 # Agregar repositorio
@@ -538,7 +737,28 @@ sudo systemctl start grafana-server
 sudo systemctl enable grafana-server
 ```
 
-**Acceso:** `http://localhost:3000` (admin/admin)
+---
+
+#### Opcion B: Windows
+
+```
+1. Descargar desde https://grafana.com/grafana/download?edition=oss
+   Seleccionar "Windows x64.zip" o "Installer (.msi)"
+2a. Si es .msi: Ejecutar instalador, seguir asistente
+2b. Si es .zip: Extraer en C:\grafana\
+3. Abrir PowerShell:
+   Si es .msi:
+     net start grafana-server
+   Si es .zip:
+     cd C:\grafana
+     .\bin\grafana-server.exe --config=.\conf\custom.ini
+4. Acceder a http://localhost:3000
+5. Login: admin / admin (cambiar despues)
+```
+
+---
+
+**Acceso (ambas plataformas):** `http://localhost:3000` (admin/admin)
 
 ### 7.6 Paso 5: Crear el Dashboard
 
@@ -1082,7 +1302,9 @@ with open("nvd_con_epss_simulado.json", "w") as f:
 
 - [ ] Inventario de activos completo y actualizado
 - [ ] Definicion de activos criticos
-- [ ] Instalacion de OpenVAS/Greenbone
+- [ ] Instalacion de scanner de vulnerabilidades
+  - **Linux:** OpenVAS/Greenbone (`sudo apt install gvm`)
+  - **Windows:** Nessus Essentials (descargar desde tenable.com)
 - [ ] Primer escaneo completo
 - [ ] Clasificacion de vulnerabilidades iniciales
 
@@ -1090,14 +1312,18 @@ with open("nvd_con_epss_simulado.json", "w") as f:
 
 - [ ] Integracion de feeds EPSS
 - [ ] Integracion de CISA KEV
-- [ ] Instalacion de DefectDojo
+- [ ] Instalacion de DefectDojo (Docker en ambas plataformas)
 - [ ] Importacion de resultados historicos
 - [ ] Configuracion de alertas
 
 ### Fase 3: Visualizacion (Semanas 9-12)
 
 - [ ] Instalacion de Elastic Stack
+  - **Linux:** Paquetes .tar.gz
+  - **Windows:** Paquetes .zip desde elastic.co
 - [ ] Instalacion de Grafana
+  - **Linux:** Paquete .deb desde repositorio
+  - **Windows:** Instalador .msi o .zip desde grafana.com
 - [ ] Creacion de dashboards
 - [ ] Configuracion de reportes automaticos
 - [ ] Capacitacion del equipo
