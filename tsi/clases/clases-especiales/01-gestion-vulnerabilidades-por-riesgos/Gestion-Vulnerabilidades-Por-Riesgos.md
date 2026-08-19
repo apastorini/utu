@@ -359,36 +359,44 @@ El Responsable de Seguridad de la Informacion debe:
 ### 7.1 Arquitectura del Dashboard
 
 ```
-+-----------------------------------------------------------------+
-|                    ARQUITECTURA RBVM DASHBOARD                   |
-+-----------------------------------------------------------------+
-|                                                                 |
-|  +-------------+    +-------------+    +-------------+          |
-|  |  SCANNER    |    |    NVD      |    |  CISA KEV   |          |
-|  |  (Escaneo)  |    |  (CVSS)     |    |  (Explotado)|          |
-|  +------+------+    +------+------+    +------+------+          |
-|         |                  |                  |                  |
-|         +------------------+------------------+                  |
-|                            |                                    |
-|                   +----------------+                            |
-|                   |  DEFECTDOJO    |                            |
-|                   |  (Consolidacion|                            |
-|                   |   de hallazgos)|                            |
-|                   +-------+--------+                            |
-|                           |                                     |
-|                   +----------------+                            |
-|                   | ELASTIC STACK  |                            |
-|                   |  (Indexacion y |                            |
-|                   |   busqueda)    |                            |
-|                   +-------+--------+                            |
-|                           |                                     |
-|                   +----------------+                            |
-|                   |    GRAFANA     |                            |
-|                   |  (Dashboard    |                            |
-|                   |  visualizacion)|                            |
-|                   +----------------+                            |
-|                                                                 |
-+-----------------------------------------------------------------+
++-----------------------------------------------------------------------+
+|                    ARQUITECTURA RBVM DASHBOARD (COMPLETA)              |
++-----------------------------------------------------------------------+
+|                                                                       |
+|  +----------+   +----------+   +----------+   +-----------+          |
+|  | SCANNER  |   |   NVD    |   | CISA KEV |   |  SURICATA |          |
+|  | (Escaneo)|   |  (CVSS)  |   |(Explotado)|   |  (Red IDS)|          |
+|  +----+-----+   +----+-----+   +----+-----+   +-----+-----+          |
+|       |               |              |               |                |
+|       +---------------+--------------+---------------+                |
+|                              |                                        |
+|                   +-------------------+                              |
+|                   |    DEFECTDOJO     |                              |
+|                   | (Consolidacion    |                              |
+|                   |  de hallazgos)    |                              |
+|                   +--------+----------+                              |
+|                            |                                         |
+|              +-------------+-------------+                           |
+|              |                           |                           |
+|    +-------------------+      +-------------------+                 |
+|    |    ELASTIC STACK  |      |      GRAFANA      |                 |
+|    |  (Indexacion y    |      |   (Dashboard      |                 |
+|    |   busqueda)       |      |   visualizacion)  |                 |
+|    +-------------------+      +-------------------+                 |
+|                                                                       |
+|  CAPAS DE SEGURIDAD EN ENDPOINTS:                                    |
+|                                                                       |
+|  +------------------+  +------------------+  +------------------+    |
+|  |     CLAMAV       |  |      YARA        |  |      WAZUH       |    |
+|  | (Anti-Malware    |  | (Deteccion de    |  | (HIDS + FIM +    |    |
+|  |  Open Source)    |  |  patrones)       |  |  Anti-Ransomware)|    |
+|  +------------------+  +------------------+  +------------------+    |
+|                                   |                  |               |
+|                                   |     +-----------+-------+       |
+|                                   |     |  SYSMON (Windows) |       |
+|                                   |     +-------------------+       |
+|                                                                       |
++-----------------------------------------------------------------------+
 ```
 
 ### 7.2 Resumen de Herramientas por Plataforma
@@ -396,6 +404,10 @@ El Responsable de Seguridad de la Informacion debe:
 | Componente | Linux | Windows |
 |------------|-------|---------|
 | **Scanner de vulnerabilidades** | OpenVAS/Greenbone (100% open source) | Nessus Essentials (gratuito, hasta 16 IPs) |
+| **Deteccion de intrusiones de red (IDS)** | Suricata (open source, completo) | Suricata (instalador nativo) |
+| **Anti-Malware** | ClamAV (open source, sin limites) | ClamWin/ClamAV (frontend gratuito) |
+| **Deteccion de patrones de malware** | YARA (open source) | YARA (binario portable) |
+| **HIDS + Anti-Ransomware** | Wazuh Manager + Agent | Wazuh Agent + Sysmon |
 | **Gestion de hallazgos** | DefectDojo (Docker) | DefectDojo (Docker Desktop) |
 | **SIEM + Indexacion** | Elastic Stack (paquetes .tar.gz) | Elastic Stack (instaladores .msi) |
 | **Dashboard/Visualizacion** | Grafana OSS (paquete .deb) | Grafana OSS (instalador .msi) |
@@ -812,7 +824,691 @@ Metricas: % P1 en <24h, % P2 en <7d, % P3 en <30d
 Colores: >90% verde, 70-90% amarillo, <70% rojo
 ```
 
-### 7.7 Scripts de Integracion EPSS
+#### Panel 7: Eventos de Red - Deteccion de Anomalias (Suricata)
+
+```
+Tipo de grafico: Time Series + Table
+Metricas:
+- Alertas de IDS por hora/dia
+- Top 10 IPs origen de alertas
+- Top 10 tipos de amenaza (clasificacion Suricata)
+- Trafico anomalo detectado (volumen inusual)
+
+Colores por severidad:
+- Rojo: Intrusion confirmada
+- Naranja: Sospechoso alto
+- Amarillo: Sospechoso medio
+- Verde: Informativo
+```
+
+#### Panel 8: Deteccion de Malware (ClamAV + YARA)
+
+```
+Tipo de grafico: Gauge + Table
+Metricas:
+- Archivos escaneados (total)
+- Archivos infectados detectados
+- Archivos limpiados automaticamente
+- Ultima actualizacion de firmas
+- Top 10 archivos sospechosos
+
+Colores:
+- Rojo: Infeccion activa
+- Verde: Sistema limpio
+```
+
+#### Panel 9: Comportamiento Anomalo y Anti-Ransomware (Wazuh)
+
+```
+Tipo de grafico: Alert Stream + Bar Chart
+Metricas:
+- Alertas de integridad de archivos (FIM)
+- Cambios en registros criticos del sistema
+- Procesos inusuales detectados
+- Intentos de cifrado masivo (ransomware)
+- Actividad fuera de horario laboral
+- Top 10 agentes con mas alertas
+
+Colores:
+- Rojo: Intento de ransomware / cambio critico
+- Naranja: Comportamiento anomalo
+- Amarillo: Cambio no autorizado
+- Verde: Todo normal
+```
+
+---
+
+### 7.7 Paso 6: Escaneo de Red y Deteccion de Anomalias (Suricata)
+
+Suricata es un motor de deteccion de intrusiones (IDS/IPS) open source que analiza el trafico de red en tiempo real. Detecta escaneos de puertos, malware, intrusions y comportamientos anomales de red.
+
+**Que detecta:**
+- Escaneo de puertos y redes
+- Intentos de explotacion de vulnerabilidades
+- Comunicacion con servidores C2 (Command and Control)
+- Descarga de malware
+- Exfiltracion de datos
+- Trafico cifrado sospechoso
+- Firmas de amenazas conocidas (Snort/Suricata rules)
+
+---
+
+#### Opcion A: Linux
+
+##### Instalacion en Ubuntu/Debian
+
+```bash
+# Actualizar sistema
+sudo apt update && sudo apt upgrade -y
+
+# Instalar Suricata
+sudo apt install -y suricata
+
+# Descargar reglas actualizadas (OISF)
+sudo suricata-update
+
+# Verificar instalacion
+suricata --build-info | grep "Suricata version"
+```
+
+##### Configuracion basica
+
+Editar `/etc/suricata/suricata.yaml`:
+
+```yaml
+# Interfaz de red a monitorear
+vars:
+  address-groups:
+    HOME_NET: "[192.168.0.0/16,10.0.0.0/8]"
+    EXTERNAL_NET: "!$HOME_NET"
+
+# Habilitar alertas
+outputs:
+  - fast:
+      enabled: yes
+      filename: fast.log
+      append: yes
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+      types:
+        - alert
+        - anomaly
+        - http
+        - dns
+        - tls
+        - files
+
+# Motor de deteccion
+detect:
+  profile: medium
+  custom-values:
+    toclient-src-groups: 100
+    toclient-dst-groups: 100
+```
+
+##### Ejecutar en modo IDS (monitoreo)
+
+```bash
+# Ejecutar Suricata en modo pasivo (solo detecta, no bloquea)
+sudo suricata -c /etc/suricata/suricata.yaml -i eth0
+
+# Ver alertas en tiempo real
+sudo tail -f /var/log/suricata/fast.log
+```
+
+##### Ejecutar en modo IPS (bloquea automaticamente)
+
+```bash
+# Requiere NFQUEUE para bloqueo activo
+sudo suricata -c /etc/suricata/suricata.yaml -i eth0 --nfqueue
+
+# Configurar iptables para redirigir trafico
+sudo iptables -A FORWARD -j NFQUEUE --queue-num 0
+```
+
+##### Ver resultados en Eve JSON
+
+```bash
+# Ver alertas en formato estructurado
+sudo cat /var/log/suricata/eve.json | jq 'select(.event_type=="alert")'
+
+# Ver anomalias de red
+sudo cat /var/log/suricata/eve.json | jq 'select(.event_type=="anomaly")'
+
+# Ver conexiones sospechosas
+sudo cat /var/log/suricata/eve.json | jq 'select(.event_type=="dns")'
+```
+
+---
+
+#### Opcion B: Windows
+
+##### Instalacion
+
+```
+1. Descargar desde https://suricata.io/download/
+   Seleccionar "Windows Installer" (.exe)
+2. Ejecutar el instalador
+3. Seguir asistente (default: C:\Program Files\Suricata)
+4. Durante la instalacion, seleccionar componentes:
+   - Suricata engine
+   - Reglas base
+   - Herramientas de linea de comandos
+```
+
+##### Configuracion
+
+```
+1. Navegar a C:\Program Files\Suricata\
+2. Editar suricata.yaml con un editor de texto (como Administrador):
+   - Cambiar vars HOME_NET por tu rango de red
+   - Configurar outputs (fast.log, eve.json)
+3. Descargar reglas actualizadas:
+   .\suricata-update.exe
+```
+
+##### Ejecutar
+
+```powershell
+# Abrir PowerShell como Administrador
+
+# Modo IDS (monitoreo pasivo)
+cd "C:\Program Files\Suricata"
+.\suricata.exe -c suricata.yaml -i "Ethernet" -v
+
+# Ver alertas en tiempo real
+Get-Content .\fast.log -Wait
+```
+
+##### Verificar reglas cargadas
+
+```powershell
+# Listar reglas activas
+.\suricata.exe -c suricata.yaml --list-keywords | Select-String "alert"
+
+# Contar reglas por clasificacion
+Select-String -Path .\rules\*.rules -Pattern "^alert" | Group-Object { $_.Line -replace '.*classtype:([^;]+);.*','$1' } | Sort-Object Count -Descending
+```
+
+---
+
+### 7.8 Paso 7: Controles Anti-Malware (ClamAV + YARA)
+
+#### 7.8.1 ClamAV - Antivirus Open Source
+
+ClamAV es un antivirus open source que detecta virus, malware, troyanos y otros programas maliciosos. Funciona en Windows y Linux.
+
+---
+
+##### Linux - Instalacion y Uso
+
+```bash
+# Instalar ClamAV
+sudo apt install -y clamav clamav-daemon
+
+# Actualizar firmas (IMPORTANTE: hacerlo antes de usar)
+sudo freshclam
+
+# Verificar actualizaciones
+sudo freshclam --check-version
+
+# Escanear un directorio completo
+sudo clamscan -r /home
+
+# Escanear y limpiar automaticamente infectados
+sudo clamscan -r --remove /home
+
+# Escanear archivos comprimidos
+sudo clamscan -r --unzip /var/www
+
+# Escanear todo el sistema (largo)
+sudo clamscan -r --bell --move=/tmp/clam-infected /
+```
+
+##### Programar escaneos automaticos con cron
+
+```bash
+# Escaneo diario a las 3:00 AM
+crontab -e
+
+# Agregar linea:
+0 3 * * * /usr/bin/clamscan -r --move=/var/quarantine --log=/var/log/clamav/scan-$(date +\%Y\%m\%d).log /home /var/www /tmp
+```
+
+---
+
+##### Windows - Instalacion y Uso
+
+```
+1. Descargar ClamWin desde https://www.clamwin.com/
+   (ClamAV no tiene interfaz nativa para Windows, ClamWin es el frontend gratuito)
+2. Ejecutar clamwin-0.x-setup.exe
+3. Seguir asistente
+4. Durante instalacion, seleccionar:
+   - Actualizar firmas automaticamente
+   - Integrar con Explorer (click derecho -> escanear)
+```
+
+##### Escaneo desde linea de comandos (Windows)
+
+```powershell
+# Navegar a la carpeta de ClamWin
+cd "C:\Program Files (x86)\ClamWin\bin"
+
+# Escanear una carpeta
+.\clamscan.exe -r "C:\Users"
+
+# Escanear y eliminar infectados
+.\clamscan.exe -r --remove "C:\Users\Downloads"
+
+# Generar reporte
+.\clamscan.exe -r --log="C:\logs\clamav-report.txt" "C:\"
+```
+
+##### Programar escaneos en Windows
+
+```
+1. Abrir Programador de Tareas (taskschd.msc)
+2. Crear tarea nueva
+3. Nombre: "Escaneo ClamAV Diario"
+4. Trigger: Diariamente a las 3:00 AM
+5. Accion: Iniciar programa
+   Programa: "C:\Program Files (x86)\ClamWin\bin\clamscan.exe"
+   Argumentos: -r --remove --log="C:\logs\clamav.log" "C:\Users" "C:\Windows\Temp"
+6. Guardar
+```
+
+---
+
+#### 7.8.2 YARA - Deteccion de Patrones de Malware
+
+YARA es una herramienta de identificacion y clasificacion de malware basada en patrones de texto o binario. Es como "regex para malware".
+
+---
+
+##### Instalacion en Ambas Plataformas
+
+**Linux:**
+```bash
+# Instalar YARA
+sudo apt install -y yara
+
+# Verificar
+yara --version
+```
+
+**Windows:**
+```
+1. Descargar desde https://github.com/VirusTotal/yara/releases
+   Seleccionar: yara-x.x.x-win64.zip
+2. Extraer en C:\yara\
+3. Agregar al PATH del sistema:
+   - Click derecho en "Este Equipo" -> Propiedades
+   - Variables de entorno -> Path -> Editar
+   - Agregar: C:\yara
+4. Verificar en PowerShell:
+   yara --version
+```
+
+##### Crear reglas YARA
+
+Crear archivo `malware_rules.yar`:
+
+```
+rule Ransomware_Extension_Change
+{
+    meta:
+        description = "Detecta cambios masivos de extensiones de archivos (ransomware)"
+        author = "RSI"
+        date = "2026-01-01"
+        severity = "critical"
+
+    strings:
+        $ext1 = ".locked" ascii nocase
+        $ext2 = ".encrypted" ascii nocase
+        $ext3 = ".crypto" ascii nocase
+        $ext4 = ".crypted" ascii nocase
+        $ext5 = ".enc" ascii nocase
+        $ransom_note = "YOUR FILES HAVE BEEN ENCRYPTED" ascii nocase
+
+    condition:
+        3 of ($ext*) or $ransom_note
+}
+
+rule Suspicious_Powershell_Execution
+{
+    meta:
+        description = "Detecta ejecucion sospechosa de PowerShell"
+        author = "RSI"
+        severity = "high"
+
+    strings:
+        $ps1 = "powershell.exe" ascii nocase
+        $ps2 = "-enc" ascii nocase
+        $ps3 = "bypass" ascii nocase
+        $ps4 = "hidden" ascii nocase
+        $ps5 = "downloadstring" ascii nocase
+        $ps6 = "invoke-expression" ascii nocase
+        $ps7 = "iex" ascii nocase
+
+    condition:
+        $ps1 and 2 of ($ps3, $ps4, $ps5, $ps6, $ps7)
+}
+
+rule Credential_Dump_Tool
+{
+    meta:
+        description = "Detecta herramientas de extraccion de credenciales"
+        author = "RSI"
+        severity = "high"
+
+    strings:
+        $mimikatz = "mimikatz" ascii nocase
+        $procdump = "procdump" ascii nocase
+        $psexec = "psexec" ascii nocase
+        $hashdump = "hashdump" ascii nocase
+        $lsass = "lsass" ascii nocase
+
+    condition:
+        $mimikatz or $hashdump or ($lsass and 2 of ($procdump, $psexec))
+}
+```
+
+##### Ejecutar YARA
+
+**Linux:**
+```bash
+# Escanear un directorio con reglas
+yara malware_rules.yar /home/user/Downloads
+
+# Escanear archivos individuales
+yara malware_rules.yar suspicious_file.exe
+
+# Buscar recursivamente
+yara -r malware_rules.yar /var/www
+```
+
+**Windows:**
+```powershell
+# Escanear directorio
+yara malware_rules.yar "C:\Users"
+
+# Escanear archivo especifico
+yara malware_rules.yar "C:\Users\Downloads\sospechoso.exe"
+
+# Buscar recursivamente
+yara -r malware_rules.yar "C:\"
+```
+
+---
+
+### 7.9 Paso 8: Anti-Ransomware y Comportamiento Anomalo (Wazuh)
+
+Wazuh es una plataforma de seguridad open source que combina:
+- **HIDS** (Host-based Intrusion Detection System)
+- **FIM** (File Integrity Monitoring) - detecta cambios en archivos criticos
+- **Comportamiento anomalo** - detecta patrones inusuales
+- **Anti-ransomware** - detecta cifrado masivo de archivos
+- **Cumplimiento normativo** - verifica configuraciones
+
+**Que detecta especificamente contra ransomware:**
+- Cambios masivos en extensiones de archivos
+- Modificaciones en registros del sistema
+- Creacion de archivos .onion o .lockbit
+- Procesos que cifran archivos rapidamente
+- Eliminacion de copias de seguridad (VSS)
+- Actividad fuera de horario laboral
+
+---
+
+#### Opcion A: Linux - Wazuh Manager + Agent
+
+##### Instalar Wazuh Manager
+
+```bash
+# Agregar repositorio Wazuh
+curl -sO https://packages.wazuh.com/4.7/wazuh-key.gpg
+sudo cp wazuh-key.gpg /usr/share/keyrings/wazuh-keyring.gpg
+
+echo "deb [signed-by=/usr/share/keyrings/wazuh-keyring.gpg] https://packages.wazuh.com/4.x/apt/ stable main" | sudo tee /etc/apt/sources.list.d/wazuh.list
+
+# Instalar
+sudo apt update
+sudo apt install -y wazuh-manager
+
+# Iniciar
+sudo systemctl start wazuh-manager
+sudo systemctl enable wazuh-manager
+```
+
+##### Configurar deteccion de ransomware
+
+Editar `/var/ossec/etc/ossec.conf`:
+
+```xml
+<ossec_config>
+  <!-- File Integrity Monitoring -->
+  <syscheck>
+    <frequency>3600</frequency>
+    <scan_on_start>yes</scan_on_start>
+    
+    <!-- Monitorear directorios criticos -->
+    <directories check_all="yes" realtime="yes">/home,/root,/etc</directories>
+    <directories check_all="yes" realtime="yes">/var/www,/var/lib</directories>
+    
+    <!-- Alertas en tiempo real -->
+    <alert_new_files>yes</alert_new_files>
+    
+    <!-- Ignorar archivos normales -->
+    <ignore>/etc/mtab</ignore>
+    <ignore type="sregex">.log$|.swp$</ignore>
+  </syscheck>
+
+  <!-- Comando para ejecutar ante sospecha de ransomware -->
+  <command>
+    <name>firewall-drop</name>
+    <executable>firewall-drop.sh</executable>
+    <expect>srcip</expect>
+    <timeout_allowed>yes</timeout_allowed>
+  </command>
+
+  <!-- Regla personalizada anti-ransomware -->
+  <rule>
+    <rule id="100100" level="12">
+      <if_sid>550</if_sid>
+      <match>modified</match>
+      <description>ALERTA: Cambio detectado en archivo critico - posible ransomware</description>
+    </rule>
+  </rule>
+</ossec_config>
+```
+
+##### Ver alertas
+
+```bash
+# Ver alertas en tiempo real
+tail -f /var/ossec/logs/alerts/alerts.log
+
+# Ver alertas de integridad
+grep "syscheck" /var/ossec/logs/alerts/alerts.log
+
+# Ver alertas criticas
+grep "level: 12" /var/ossec/logs/alerts/alerts.log
+```
+
+---
+
+#### Opcion B: Windows - Wazuh Agent + Sysmon
+
+##### Instalar Wazuh Agent
+
+```
+1. Descargar desde https://packages.wazuh.com/4.x/windows/
+   Seleccionar: wazuh-agent-4.x-x.msi
+2. Ejecutar el instalador
+3. Durante instalacion, configurar:
+   - Wazuh Manager IP: [IP del servidor Wazuh]
+   - Agente grupo: "windows"
+4. Iniciar servicio:
+   net start wazuhsvc
+```
+
+##### Instalar Sysmon (complemento para deteccion avanzada)
+
+Sysmon es una herramienta de Microsoft que monitorea procesos, conexiones de red y cambios en archivos/registros. Wazuh lo usa para deteccion avanzada.
+
+```
+1. Descargar Sysmon desde https://docs.microsoft.com/en-us/sysinternals/downloads/sysmon
+2. Descargar reglas de SwiftOnSecurity:
+   https://raw.githubusercontent.com/SwiftOnSecurity/sysmon-config/master/sysmonconfig-export.xml
+3. Ejecutar como Administrador:
+   sysmon.exe -accepteula -i sysmonconfig-export.xml
+4. Verificar:
+   sysmon.exe -status
+```
+
+##### Configurar Wazuh Agent para usar Sysmon
+
+Editar `C:\Program Files (x86)\ossec-agent\ossec.conf`:
+
+```xml
+<ossec_config>
+  <!-- Integrar logs de Sysmon -->
+  <localfile>
+    <location>Microsoft-Windows-Sysmon/Operational</location>
+    <log_format>eventchannel</log_format>
+  </localfile>
+
+  <!-- Monitorear cambios en archivos criticos -->
+  <syscheck>
+    <frequency>3600</frequency>
+    <directories realtime="yes" check_all="yes">C:\Users</directories>
+    <directories realtime="yes" check_all="yes">C:\Windows\System32\config</directories>
+    <directories realtime="yes" check_all="yes">C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Startup</directories>
+  </syscheck>
+</ossec_config>
+```
+
+##### Verificar estado
+
+```powershell
+# Verificar servicio Wazuh
+Get-Service wazuhsvc
+
+# Ver logs del agente
+Get-Content "C:\Program Files (x86)\ossec-agent\logs\*.log" -Tail 50
+
+# Verificar Sysmon
+Get-Service Sysmon
+Get-WinEvent -LogName "Microsoft-Windows-Sysmon/Operational" -MaxEvents 10
+```
+
+---
+
+#### 7.9.1 Reglas Anti-Ransomware Personalizadas
+
+Crear archivo `/var/ossec/etc/rules/local_rules.xml` (Linux) o `C:\Program Files (x86)\ossec-agent\rules\local_rules.xml` (Windows):
+
+```xml
+<group name="ransomware,">
+  <!-- Detectar cambio masivo de extensiones -->
+  <rule id="100200" level="12">
+    <if_sid>550</if_sid>
+    <frequency>10</frequency>
+    <timepan>60</timespan>
+    <match>file</match>
+    <description>RANSOMWARE: Multiples archivos modificados en 1 minuto - posible cifrado masivo</description>
+    <group>ransomware,pci_dss_11.4,</group>
+  </rule>
+
+  <!-- Detectar eliminacion de copias de seguridad -->
+  <rule id="100201" level="12">
+    <if_sid>553</if_sid>
+    <match>shadow|backup|vssadmin</match>
+    <description>RANSOMWARE: Intento de eliminar copias de seguridad del sistema</description>
+    <group>ransomware,</group>
+  </rule>
+
+  <!-- Detectar extensiones tipicas de ransomware -->
+  <rule id="100202" level="14">
+    <if_sid>550</if_sid>
+    <regex>\.(locked|encrypted|crypto|crypted|enc|lockbit|ryuk|conti|darkside)$</regex>
+    <description>RANSOMWARE CRITICO: Archivo con extension de ransomware detectado</description>
+    <group>ransomware,critical,</group>
+  </rule>
+
+  <!-- Detectar proceso sospechoso de cifrado -->
+  <rule id="100203" level="14">
+    <if_sid>550</if_sid>
+    <match>aes256|rsa2048|encrypt|cipher</match>
+    <description>RANSOMWARE CRITICO: Proceso ejecutando operaciones de cifrado</description>
+    <group>ransomware,critical,</group>
+  </rule>
+
+  <!-- Actividad fuera de horario -->
+  <rule id="100204" level="8">
+    <if_sid>550</if_sid>
+    <time>19:00 - 07:00</time>
+    <frequency>5</frequency>
+    <timepan>30</timepan>
+    <description>ANOMALIA: Actividad fuera de horario laboral en archivos criticos</description>
+    <group>anomaly,</group>
+  </rule>
+</group>
+```
+
+---
+
+### 7.10 Paso 9: Integrar Todo en el Dashboard de Grafana
+
+#### Panels Adicionales para las Nuevas Capas
+
+##### Panel Suricata: Alertas de Red por Hora
+
+```
+Tipo: Time Series
+Fuente: Elasticsearch (indice suricata-*)
+Metrica: Conteo de alertas por hour
+Segmentar por: clasificacion de amenaza
+```
+
+##### Panel ClamAV: Estado de Proteccion
+
+```
+Tipo: Stat
+Metricas:
+- Total de archivos escaneados (ultima semana)
+- Infecciones detectadas
+- Ultima actualizacion de firmas
+- % de sistemas protegidos
+```
+
+##### Panel Wazuh: Alertas Anti-Ransomware
+
+```
+Tipo: Alert List
+Filtro: group = ransomware OR group = anomaly
+Ordenar: severity DESC
+Mostrar: timestamp, rule.description, agent.name, rule.level
+```
+
+##### Panel Integrado: Vista de Seguridad General
+
+```
+Tipo: Singlestat / Gauge
+Metricas consolidadas:
+- Vulnerabilidades criticas pendientes (Rojo/Naranja/Verde)
+- Alertas de red activas
+- Infecciones de malware
+- Alertas de comportamiento anomalo
+- Estado de todos los agentes Wazuh
+```
+
+---
+
+### 7.11 Scripts de Integracion EPSS
 
 ```python
 import requests
