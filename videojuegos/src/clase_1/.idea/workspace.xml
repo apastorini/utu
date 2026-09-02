@@ -5,15 +5,32 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a2679b74-4f39-4068-9802-75b9ad9d724e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/clase_1.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/copilot.data.migration.agent.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/clase_3_4_a.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/clase_3_4_b.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/clase_3_4_c.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/clase_3_4_d.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/Collectible.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/Player.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/utils/Colors.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/utils/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../nosql/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/../../../nosql/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../nosql/clase-01-sql-vs-nosql.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../nosql/clase-02-acid-cap-consistencia.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../nosql/clase-03-normalizacion.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../nosql/clase-04-indexacion.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../nosql/clase-05-wal-bloom-filters.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../nosql/clase-06-mongodb-avanzado.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../nosql/clase-07-mongodb-replicacion.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../nosql/clase-08-sharding.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../nosql/clase-09-redis.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../nosql/clase-10-cassandra.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../nosql/clase-11-neo4j.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../tsi/Clases_variosenfoques/Banco-Inicia/09_Docx/curso-infra/03-Firewalls-DMZ-y-Segmentacion.docx" beforeDir="false" afterPath="$PROJECT_DIR$/../../../tsi/Clases_variosenfoques/Banco-Inicia/09_Docx/curso-infra/03-Firewalls-DMZ-y-Segmentacion.docx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../tsi/Clases_variosenfoques/Banco-Inicia/09_Docx/curso-infra/04-Firmware-y-Hardening.docx" beforeDir="false" afterPath="$PROJECT_DIR$/../../../tsi/Clases_variosenfoques/Banco-Inicia/09_Docx/curso-infra/04-Firmware-y-Hardening.docx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../tsi/Clases_variosenfoques/actividades-clase/Actividad_07_Analisis_semgrep.docx" beforeDir="false" afterPath="$PROJECT_DIR$/../../../tsi/Clases_variosenfoques/actividades-clase/Actividad_07_Analisis_semgrep.docx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/clase_1_2.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -42,9 +59,14 @@
   "keyToString": {
     "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Python.clase_3_4.executor": "Run",
+    "Python.clase_3_4_c.executor": "Run",
+    "Python.clase_3_4_d.executor": "Run",
+    "Python.clase_3_a_b.executor": "Run",
     "Python.main.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
     "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
     "git-widget-placeholder": "main",
     "junie.onboarding.icon.badge.shown": "true",
@@ -52,8 +74,8 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager">
-    <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+  <component name="RunManager" selected="Python.clase_3_4_d">
+    <configuration name="clase_1_2" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="clase_1" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -66,7 +88,95 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/main.py" />
+      <option name="SCRIPT_NAME" value="C:\utu\utu\videojuegos\src\clase_1\clase_1_2.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="clase_3_4_a" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="clase_1" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="C:\utu\utu\videojuegos\src\clase_1\clase_3_4_a.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="clase_3_4_b" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="clase_1" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="C:\utu\utu\videojuegos\src\clase_1\clase_3_4_b.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="clase_3_4_c" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="clase_1" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/clase_3_4_c.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="clase_3_4_d" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="clase_1" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/clase_3_4_d.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -77,7 +187,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.main" />
+        <item itemvalue="Python.clase_3_4_d" />
+        <item itemvalue="Python.clase_3_4_c" />
+        <item itemvalue="Python.clase_3_4_b" />
+        <item itemvalue="Python.clase_3_4_a" />
+        <item itemvalue="Python.clase_1_2" />
       </list>
     </recent_temporary>
   </component>
