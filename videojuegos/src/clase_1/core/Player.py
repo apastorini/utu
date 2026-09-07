@@ -1,12 +1,12 @@
 import pygame
 
-
 class Player:
-    # El "constructor": se ejecuta UNA VEZ al crear el objeto
-    def __init__(self, x, y, ancho, alto, color):
-        # self se refiere al objeto específico que se está creando
-        self.rect = pygame.Rect(x, y, ancho, alto)
-        self.color = color
+    def __init__(self, x, y):
+        # Cargamos la imagen y obtenemos su rectángulo
+        self.image = pygame.image.load('assets/mario.jpg').convert_alpha()
+        self.rect = self.image.get_rect()
+        # Posicionamos el rectángulo donde nos digan
+        self.rect.topleft = (x, y)
         self.velocidad = 5
 
     # Un "método": una función que pertenece a la clase
@@ -21,4 +21,5 @@ class Player:
             self.rect.y += self.velocidad
 
     def dibujar(self, superficie):
-        pygame.draw.rect(superficie, self.color, self.rect)
+        # En lugar de dibujar un rect, dibujamos la imagen en la posición del rect
+        superficie.blit(self.image, self.rect)

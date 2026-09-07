@@ -184,7 +184,7 @@ Desventajas: Dependencia del proveedor, riesgo de breach del servidor
 ┌─────────────────┐         ┌─────────────────┐
 │  PC del Usuario  │◄───────►│  Vaultwarden    │
 │  (caché local)  │  Sync   │  (servidor      │
-└─────────────────┘         │   propio BHU)   │
+└─────────────────┘         │   propio)   │
                             └────────┬────────┘
                                      │
                             ┌────────▼────────┐

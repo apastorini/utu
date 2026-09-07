@@ -41,8 +41,8 @@ Antes de comenzar, revisar los conceptos de:
 
 ```powershell
 # Crear directorio del proyecto
-mkdir C:\vaultwarden-bhu
-cd C:\vaultwarden-bhu
+mkdir C:\vaultwarden-bu
+cd C:\vaultwarden-bu
 
 # Crear subdirectorios
 mkdir config
@@ -62,16 +62,16 @@ mkdir logs
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 `
     -keyout certs/vaultwarden.key `
     -out certs/vaultwarden.crt `
-    -subj "/C=UY/ST=Montevideo/L=Montevideo/O=BHU/CN=vaultwarden.local"
+    -subj "/C=UY/ST=Montevideo/L=Montevideo/O=bu/CN=vaultwarden.local"
 ```
 
 ### Paso 3: Crear Archivo de Variables de Entorno
 
-Crear archivo `C:\vaultwarden-bhu\.env`:
+Crear archivo `C:\vaultwarden-bu\.env`:
 
 ```env
 # ============================================
-# Vaultwarden - Variables de Entorno BHU
+# Vaultwarden - Variables de Entorno bu
 # ============================================
 
 # Dominio y URLs
@@ -94,11 +94,11 @@ SENDY_INSTALLATION_KEY=00000000000000000000000000000000
 # Correo (para notificaciones)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
-SMTP_USERNAME=notificaciones@bhu.uy
+SMTP_USERNAME=notificaciones@bu.uy
 SMTP_PASSWORD=TU_PASSWORD_SMTP
 SMTP_SECURITY=starttls
-SMTP_FROM=notificaciones@bhu.uy
-SMTP_FROM_NAME=BHU Vaultwarden
+SMTP_FROM=notificaciones@bu.uy
+SMTP_FROM_NAME=bu Vaultwarden
 
 # Notificaciones
 INVITATIONS_ALLOWED=true
@@ -123,7 +123,7 @@ openssl rand -base64 48
 
 ### Paso 5: Crear Docker Compose
 
-Crear archivo `C:\vaultwarden-bhu\docker-compose.yml`:
+Crear archivo `C:\vaultwarden-bu\docker-compose.yml`:
 
 ```yaml
 version: '3.8'
@@ -134,7 +134,7 @@ services:
   # ============================================
   vaultwarden:
     image: vaultwarden/server:latest
-    container_name: vaultwarden-bhu
+    container_name: vaultwarden-bu
     restart: unless-stopped
     environment:
       - DOMAIN=${DOMAIN}
@@ -231,7 +231,7 @@ volumes:
 
 ### Paso 6: Configurar NGINX
 
-Crear archivo `C:\vaultwarden-bhu\config\nginx.conf`:
+Crear archivo `C:\vaultwarden-bu\config\nginx.conf`:
 
 ```nginx
 events {
@@ -305,7 +305,7 @@ http {
 ### Paso 7: Levantar los Servicios
 
 ```powershell
-cd C:\vaultwarden-bhu
+cd C:\vaultwarden-bu
 
 # Verificar que Docker está corriendo
 docker info
@@ -349,19 +349,19 @@ curl -k https://localhost:8080/alive
 
 ## Fase 3: Configuración de Usuarios (30 min)
 
-### Paso 10: Crear Organización "BHU"
+### Paso 10: Crear Organización "bu"
 
 ```
 1. Registrar primer usuario (será el Owner):
-   - Email: admin@bhu.uy
-   - Nombre: Administrador BHU
+   - Email: admin@bu.uy
+   - Nombre: Administrador bu
    - Master Password: [generar ≥20 caracteres]
 
 2. En la web de Vaultwarden:
    - Ir a Settings → Organizations
    - Click "Create Organization"
-   - Nombre: BHU
-   - Billing Email: admin@bhu.uy
+   - Nombre: bu
+   - Billing Email: admin@bu.uy
    - Plan: Free (suficiente para empezar)
 
 3. Verificar que la organización se creó correctamente
@@ -370,7 +370,7 @@ curl -k https://localhost:8080/alive
 ### Paso 11: Crear Estructura de Colecciones
 
 ```
-Dentro de BHU (Organización), crear:
+Dentro de bu (Organización), crear:
 
 📁 Administración
    - Propósito: Contraseñas de administración general
@@ -399,17 +399,17 @@ Dentro de BHU (Organización), crear:
 Invitar usuarios (Settings → Members → Invite):
 
 1. Juan Pérez (TI)
-   - Email: juan.perez@bhu.uy
+   - Email: juan.perez@bu.uy
    - Colección: TI, Compartida General
    - Permisos: Manager en TI
 
 2. María García (Ventas)
-   - Email: maria.garcia@bhu.uy
+   - Email: maria.garcia@bu.uy
    - Colección: Ventas, Compartida General
    - Permisos: User
 
 3. Carlos López (Admin)
-   - Email: carlos.lopez@bhu.uy
+   - Email: carlos.lopez@bu.uy
    - Colección: Todas
    - Permisos: Admin
 ```
@@ -419,21 +419,21 @@ Invitar usuarios (Settings → Members → Invite):
 En la colección "Compartida General":
 
 ```
-📄 WiFi Oficina BHU
-   - Usuario: BHU-WiFi
-   - Contraseña: W1f1_S3gur4_BHU_2024!
+📄 WiFi Oficina bu
+   - Usuario: bu-WiFi
+   - Contraseña: W1f1_S3gur4_bu_2024!
    - Notas: Red corporativa, cambiar cada 180 días
    - URL: N/A
 
 📄 Impresora Principal
    - Usuario: admin
-   - Contraseña: Pr1nt3r_BHU_2024
+   - Contraseña: Pr1nt3r_bu_2024
    - Notas: HP LaserJet, piso 2
 
 📄 Portal de Email
-   - Usuario: soporte@bhu.uy
+   - Usuario: soporte@bu.uy
    - Contraseña: [generar]
-   - URL: https://mail.bhu.uy
+   - URL: https://mail.bu.uy
 ```
 
 En la colección "TI":
@@ -444,11 +444,11 @@ En la colección "TI":
    - Contraseña: [generar 24 caracteres]
    - Notas: 192.168.1.10, acceso SSH
 
-📄 GitHub BHU
-   - Usuario: bhu-devops
+📄 GitHub bu
+   - Usuario: bu-devops
    - Contraseña: [generar]
-   - Notas: Organización BHU en GitHub
-   - URL: https://github.com/bhu-uy
+   - Notas: Organización bu en GitHub
+   - URL: https://github.com/bu-uy
 
 📄 API Stripe (Producción)
    - Usuario: sk_live_[key]
@@ -516,7 +516,7 @@ El .env ya tiene configurado SMTP. Verificar:
 
 ```powershell
 # Verificar conexión SMTP
-docker exec vaultwarden-bhu curl -v smtp://smtp.gmail.com:587
+docker exec vaultwarden-bu curl -v smtp://smtp.gmail.com:587
 
 # Probar enviando email de invitación a un usuario
 # Settings → Members → Invite → enviar invitación
@@ -560,14 +560,14 @@ Para integración con sistemas internos:
 
 ### Paso 21: Configurar Respaldo Automático
 
-Crear script `C:\vaultwarden-bhu\backup.ps1`:
+Crear script `C:\vaultwarden-bu\backup.ps1`:
 
 ```powershell
 # ============================================
-# Script de Respaldo Vaultwarden BHU
+# Script de Respaldo Vaultwarden bu
 # ============================================
 
-$BACKUP_DIR = "C:\vaultwarden-bhu\backups"
+$BACKUP_DIR = "C:\vaultwarden-bu\backups"
 $DATE = Get-Date -Format "yyyy-MM-dd_HH-mm"
 $BACKUP_NAME = "vaultwarden-backup-$DATE"
 
@@ -580,14 +580,14 @@ docker exec vaultwarden-db pg_dump -U vaultwarden vaultwarden | `
 
 # 2. Respaldar vault de Vaultwarden
 Write-Host "2. Respaldo de Vaultwarden data..."
-Copy-Item -Path "C:\vaultwarden-bhu\data" `
+Copy-Item -Path "C:\vaultwarden-bu\data" `
     -Destination "$BACKUP_DIR\$BACKUP_NAME-data" -Recurse
 
 # 3. Respaldar configuración
 Write-Host "3. Respaldo de configuración..."
-Copy-Item -Path "C:\vaultwarden-bhu\config" `
+Copy-Item -Path "C:\vaultwarden-bu\config" `
     -Destination "$BACKUP_DIR\$BACKUP_NAME-config" -Recurse
-Copy-Item -Path "C:\vaultwarden-bhu\.env" `
+Copy-Item -Path "C:\vaultwarden-bu\.env" `
     -Destination "$BACKUP_DIR\$BACKUP_NAME.env"
 
 # 4. Comprimir
@@ -616,7 +616,7 @@ if ($backups.Count -gt 7) {
 # Crear tarea programada para respaldo diario a las 2:00 AM
 $action = New-ScheduledTaskAction `
     -Execute "powershell.exe" `
-    -Argument "-File C:\vaultwarden-bhu\backup.ps1"
+    -Argument "-File C:\vaultwarden-bu\backup.ps1"
 
 $trigger = New-ScheduledTaskTrigger `
     -Daily -At 2am
@@ -630,7 +630,7 @@ Register-ScheduledTask `
     -Action $action `
     -Trigger $trigger `
     -Settings $settings `
-    -Description "Respaldo diario de Vaultwarden BHU"
+    -Description "Respaldo diario de Vaultwarden bu"
 ```
 
 ### Paso 23: Probar Recuperación
@@ -664,7 +664,7 @@ Write-Host "Prueba de recuperación completada"
 |---|-------------|--------|-------|
 | 1 | Vaultwarden accesible en https://vaultwarden.local | ☐ | |
 | 2 | Login exitoso con credenciales de admin | ☐ | |
-| 3 | Organización "BHU" creada | ☐ | |
+| 3 | Organización "bu" creada | ☐ | |
 | 4 | 3 colecciones creadas | ☐ | |
 | 5 | 3 usuarios de prueba invitados | ☐ | |
 | 6 | 3 contraseñas de ejemplo creadas | ☐ | |
@@ -751,4 +751,3 @@ entrega-actividad/
 
 > **Tiempo total estimado: 3.5 horas**
 >
-> **Nota**: Esta actividad debe realizarse en un entorno controlado (laboratorio). En producción, se requiere hardening adicional, certificados de CA confiable, y monitoreo continuo.
