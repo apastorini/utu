@@ -5,11 +5,29 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a2679b74-4f39-4068-9802-75b9ad9d724e" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/clase_5_a.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/core/PlayerRect.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../../../tsi/Clases_variosenfoques/Banco-Inicia/09_Docx/curso-infra/~$-Laboratorio-Paso-a-Paso.docx" beforeDir="false" />
+      <change afterPath="$PROJECT_DIR$/arkanoid/core_arkanoid/Ball.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/arkanoid/core_arkanoid/Brick.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/arkanoid/core_arkanoid/Player.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/arkanoid/core_arkanoid/SpriteSheet.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/arkanoid/core_arkanoid/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/arkanoid/core_arkanoid/sprite_sheet/Ball.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/arkanoid/core_arkanoid/sprite_sheet/Brick.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/arkanoid/core_arkanoid/sprite_sheet/Game.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/arkanoid/core_arkanoid/sprite_sheet/Player.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/arkanoid/core_arkanoid/sprite_sheet/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/arkanoid/core_arkanoid/sprite_sheet/visor_sprites.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/clase_5_1.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/clase_5_2.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/clase_6_a.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/Colors.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/utils/__init__.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/core/utils/utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../tsi/tareas/tarea1-gestor-contrasenas/LETRA.docx" beforeDir="false" afterPath="$PROJECT_DIR$/../../../tsi/tareas/tarea1-gestor-contrasenas/LETRA.docx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../tsi/tareas/tarea2-gestion-rsi/LETRA.docx" beforeDir="false" afterPath="$PROJECT_DIR$/../../../tsi/tareas/tarea2-gestion-rsi/LETRA.docx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../tsi/tareas/tarea3-infra-red-segura/LETRA.docx" beforeDir="false" afterPath="$PROJECT_DIR$/../../../tsi/tareas/tarea3-infra-red-segura/LETRA.docx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/core/Player.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/Player.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/clase_5_a.py" beforeDir="false" afterPath="$PROJECT_DIR$/arkanoid/core_arkanoid/clase_7_arkanoid.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/core/Enemy.py" beforeDir="false" afterPath="$PROJECT_DIR$/core/Enemy.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -34,28 +52,45 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "Python.clase_3_4.executor": "Run",
-    "Python.clase_3_4_c.executor": "Run",
-    "Python.clase_3_4_d.executor": "Run",
-    "Python.clase_3_a_b.executor": "Run",
-    "Python.clase_5_a.executor": "Run",
-    "Python.main.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "git-widget-placeholder": "main",
-    "junie.onboarding.icon.badge.shown": "true",
-    "to.speed.mode.migration.done": "true",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.Game.executor&quot;: &quot;Run&quot;,
+    &quot;Python.clase_3_4.executor&quot;: &quot;Run&quot;,
+    &quot;Python.clase_3_4_c.executor&quot;: &quot;Run&quot;,
+    &quot;Python.clase_3_4_d.executor&quot;: &quot;Run&quot;,
+    &quot;Python.clase_3_a_b.executor&quot;: &quot;Run&quot;,
+    &quot;Python.clase_5_1.executor&quot;: &quot;Run&quot;,
+    &quot;Python.clase_5_2.executor&quot;: &quot;Run&quot;,
+    &quot;Python.clase_5_a.executor&quot;: &quot;Run&quot;,
+    &quot;Python.clase_7_arkanoid.executor&quot;: &quot;Run&quot;,
+    &quot;Python.main.executor&quot;: &quot;Run&quot;,
+    &quot;Python.visor_sprites.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/utu/utu/videojuegos/src/clase_1/arkanoid/core&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
-  <component name="RunManager" selected="Python.clase_5_a">
-    <configuration name="clase_3_4_a" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\utu\utu\videojuegos\src\clase_1\arkanoid\core" />
+      <recent name="C:\utu\utu\videojuegos\src\clase_1" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\utu\utu\videojuegos\src\clase_1\arkanoid\core_arkanoid" />
+      <recent name="C:\utu\utu\videojuegos\src\clase_1\arkanoid\core" />
+      <recent name="C:\utu\utu\videojuegos\src\clase_1\arkanoid" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Python.visor_sprites">
+    <configuration name="Game" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="clase_1" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -64,11 +99,11 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/arkanoid/core_arkanoid/sprite_sheet" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="C:\utu\utu\videojuegos\src\clase_1\clase_3_4_a.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/arkanoid/core_arkanoid/sprite_sheet/Game.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -77,7 +112,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="clase_3_4_b" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="clase_5_1" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="clase_1" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -90,7 +125,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="C:\utu\utu\videojuegos\src\clase_1\clase_3_4_b.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/clase_5_1.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -99,7 +134,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="clase_3_4_c" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="clase_5_2" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="clase_1" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -112,7 +147,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/clase_3_4_c.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/clase_5_2.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -121,7 +156,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="clase_3_4_d" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="clase_7_arkanoid" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="clase_1" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -130,11 +165,11 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/arkanoid/core_arkanoid" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/clase_3_4_d.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/arkanoid/core_arkanoid/clase_7_arkanoid.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -143,7 +178,7 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="clase_5_a" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+    <configuration name="visor_sprites" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="clase_1" />
       <option name="ENV_FILES" value="" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -152,11 +187,11 @@
         <env name="PYTHONUNBUFFERED" value="1" />
       </envs>
       <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/arkanoid/core_arkanoid/sprite_sheet" />
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/clase_5_a.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/arkanoid/core_arkanoid/sprite_sheet/visor_sprites.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -167,11 +202,11 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.clase_5_a" />
-        <item itemvalue="Python.clase_3_4_d" />
-        <item itemvalue="Python.clase_3_4_c" />
-        <item itemvalue="Python.clase_3_4_b" />
-        <item itemvalue="Python.clase_3_4_a" />
+        <item itemvalue="Python.visor_sprites" />
+        <item itemvalue="Python.Game" />
+        <item itemvalue="Python.clase_7_arkanoid" />
+        <item itemvalue="Python.clase_5_2" />
+        <item itemvalue="Python.clase_5_1" />
       </list>
     </recent_temporary>
   </component>
