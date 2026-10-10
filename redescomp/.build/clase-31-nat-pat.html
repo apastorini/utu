@@ -1,0 +1,1164 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 31 — NAT, PAT y sus hacks</h1>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 820 400" style="max-width:820px"><rect width="820" height="400" fill="#ffffff"/><text x="410.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Red privada con dos subredes detras de un NAT</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><rect x="30" y="150" width="300" height="180" rx="8" fill="#f5f9fc" stroke="#7aa7c4" stroke-width="1.5" stroke-dasharray="6 4"/><text x="42" y="172" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#14507a">LAN 1   192.168.1.0/24</text><rect x="490" y="150" width="300" height="180" rx="8" fill="#f5f9fc" stroke="#7aa7c4" stroke-width="1.5" stroke-dasharray="6 4"/><text x="502" y="172" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#14507a">LAN 2   192.168.2.0/24</text><rect x="60" y="194" width="120" height="42" rx="4" fill="#eaf2f7" stroke="#b8cfdb" stroke-width="1.2"/><text x="120.0" y="212.0" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">192.168.1.25</text><text x="120.0" y="225.0" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">MAC_H</text><rect x="60" y="258" width="120" height="42" rx="4" fill="#eaf2f7" stroke="#b8cfdb" stroke-width="1.2"/><text x="120.0" y="276.0" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">192.168.1.40</text><text x="120.0" y="289.0" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">servidor</text><rect x="580" y="194" width="120" height="42" rx="4" fill="#eaf2f7" stroke="#b8cfdb" stroke-width="1.2"/><text x="640.0" y="218.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">192.168.2.25</text><rect x="580" y="258" width="120" height="42" rx="4" fill="#eaf2f7" stroke="#b8cfdb" stroke-width="1.2"/><text x="640.0" y="282.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">192.168.2.40</text><rect x="375" y="212" width="76" height="60" rx="6" fill="#f7d9c8" stroke="#c8621a" stroke-width="1.2"/><text x="413.0" y="238.55" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#1a1a1a">R1</text><text x="413.0" y="254.55" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#1a1a1a">NAT</text><line x1="190" y1="242" x2="369" y2="228" stroke="#14507a" stroke-width="1.8" marker-end="url(#po)"/><line x1="457" y1="228" x2="570" y2="242" stroke="#14507a" stroke-width="1.8" marker-end="url(#po)"/><text x="413" y="206" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="700" fill="#c8621a">192.168.1.1</text><text x="413" y="288" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="700" fill="#c8621a">192.168.2.1</text><ellipse cx="415" cy="70" rx="190" ry="32" fill="#e9f4ed" stroke="#2e7d4f" stroke-width="1.6"/><text x="415" y="66" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="13" font-weight="700" fill="#2e7d4f">Internet</text><text x="415" y="86" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#2e7d4f">servidor web  219.41.31.21</text><line x1="415" y1="102" x2="415" y2="206" stroke="#2e7d4f" stroke-width="2.4"/><text x="425" y="194" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#2e7d4f">IP publica de R1:  220.10.10.30</text><text x="30" y="364" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#0b3d5c">Tabla NAT de R1:</text><text x="30" y="384" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">(192.168.1.25 : 51000)  -&gt;  (220.10.10.30 : 40001)</text><text x="30" y="402" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">(192.168.1.25 : 51002)  -&gt;  (220.10.10.30 : 40002)</text><text x="30" y="420" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">(192.168.1.40 : 33333)  -&gt;  (220.10.10.30 : 40003)</text><text x="30" y="448" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">Al salir R1 cambia la IP origen y el puerto origen.</text><text x="30" y="466" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">Al volver busca la entrada y cambia destino IP y puerto.</text></svg></p>
+<p><strong>Bloque:</strong> D (Capa de Red) · <strong>Semana:</strong> 11 · <strong>Duración estimada:</strong> 120 min
+<strong>Correlativa:</strong> Clase 30 (tablas de enrutamiento, next hop y ARP) · <strong>Sigue con:</strong> Clase 32 (enrutamiento por vector de distancias)
+<strong>Material de referencia:</strong> Tanenbaum cap. 5 · Exámenes <code>sirc1102</code>, <code>sirc1103</code>, <code>sirc0812</code> · RFC 8200, RFC 7915</p>
+<blockquote>
+<p>🔍 = RFC <strong>no verificado</strong> en <code>ACTUALIZACIONES.md</code>: no lo cites sin confirmarlo.</p>
+</blockquote>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 760 350" style="max-width:760px"><rect width="760" height="350" fill="#ffffff"/><text x="380.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Tabla NAT con traduccion de puertos (PAT)</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><rect x="24" y="46" width="236" height="30" rx="4" fill="#0b3d5c" stroke="#0b3d5c" stroke-width="1.2"/><text x="142.0" y="64.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#ffffff">IP privada : puerto</text><rect x="268" y="46" width="236" height="30" rx="4" fill="#0b3d5c" stroke="#0b3d5c" stroke-width="1.2"/><text x="386.0" y="64.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#ffffff">IP publica : puerto</text><rect x="512" y="46" width="236" height="30" rx="4" fill="#0b3d5c" stroke="#0b3d5c" stroke-width="1.2"/><text x="630.0" y="64.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#ffffff">estado</text><rect x="24" y="82" width="236" height="30" rx="3" fill="#eaf2f7" stroke="#b8cfdb" stroke-width="1.2"/><text x="142.0" y="100.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">192.168.1.25 : 51000</text><rect x="268" y="82" width="236" height="30" rx="3" fill="#eaf2f7" stroke="#b8cfdb" stroke-width="1.2"/><text x="386.0" y="100.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">220.10.10.30 : 40001</text><rect x="512" y="82" width="236" height="30" rx="3" fill="#eaf2f7" stroke="#b8cfdb" stroke-width="1.2"/><text x="630.0" y="100.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">activa</text><rect x="24" y="115" width="236" height="30" rx="3" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="142.0" y="133.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">192.168.1.25 : 51002</text><rect x="268" y="115" width="236" height="30" rx="3" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="386.0" y="133.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">220.10.10.30 : 40002</text><rect x="512" y="115" width="236" height="30" rx="3" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="630.0" y="133.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">activa</text><rect x="24" y="148" width="236" height="30" rx="3" fill="#eaf2f7" stroke="#b8cfdb" stroke-width="1.2"/><text x="142.0" y="166.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">192.168.1.40 : 33333</text><rect x="268" y="148" width="236" height="30" rx="3" fill="#eaf2f7" stroke="#b8cfdb" stroke-width="1.2"/><text x="386.0" y="166.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">220.10.10.30 : 40003</text><rect x="512" y="148" width="236" height="30" rx="3" fill="#eaf2f7" stroke="#b8cfdb" stroke-width="1.2"/><text x="630.0" y="166.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">activa</text><rect x="24" y="181" width="236" height="30" rx="3" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="142.0" y="199.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">192.168.1.77 : 8080</text><rect x="268" y="181" width="236" height="30" rx="3" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="386.0" y="199.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">220.10.10.30 : 40004</text><rect x="512" y="181" width="236" height="30" rx="3" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="630.0" y="199.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">timeout 300 s</text><text x="24" y="248" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">La clave de la tabla es (IP privada, puerto privado). El puerto es lo que permite</text><text x="24" y="264" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">multiplexar many-to-one: 3 sesiones, 1 sola IP publica.</text><text x="24" y="290" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">Al volver un paquete se busca (IP publica, puerto publico) y se traducen</text><text x="24" y="306" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">la IP destino y el puerto destino.</text><text x="24" y="332" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#c8621a">Ese es el motivo por el que NAT rompe el aislamiento de capas:</text><text x="24" y="348" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#c8621a">el router tiene que entender TCP/UDP para funcionar.</text></svg></p>
+<ol>
+<li><strong>Explicar</strong> por qué existe la NAT: escasez de IPv4 y direcciones privadas que no se rutean.</li>
+<li><strong>Distinguir</strong> traducción de <strong>dirección</strong> de traducción de <strong>puerto</strong> (PAT / NAPT), y armar una tabla NAT con varias sesiones simultáneas.</li>
+<li><strong>Describir las tres fases</strong>: salida, entrada y <em>timeout</em>.</li>
+<li><strong>Describir campo por campo</strong> qué cambia un router NAT en cada sentido, y resolver el <code>2011-03 Problema 2c</code>.</li>
+<li><strong>Justificar</strong> por qué la NAT <strong>rompe el aislamiento de capas</strong>, que es el <code>2011-02 P4b</code>.</li>
+<li><strong>Explicar las tres soluciones</strong> para que un cliente con IP pública alcance a un servidor privado, que es el <code>2011-02 P4c</code>.</li>
+<li><strong>Explicar</strong> el <em>hairpinning</em> y el <strong>CGNAT</strong> con sus tres problemas.</li>
+<li><strong>Resolver entero</strong> el <code>2008-12 Problema 1</code> (30 pts): NAT para balanceo de carga.</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2011-03 Problema 2 c</code> (NAT + tabla), <code>2011-02 P4</code> (10 pts),
+<code>2008-12 Problema 1</code> (30 pts), <code>2010-03 P1</code> (subredes privadas y NAT).</p>
+</blockquote>
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 Qué es la NAT y por qué apareció</h2>
+<p><strong>NAT</strong> (<em>Network Address Translation</em>) es una función de un <strong>router</strong> que <strong>reescribe las
+direcciones IP</strong> de los paquetes que lo atraviesan. Las dos razones por las que existe, y
+hay que decir las dos:</p>
+<div class="codehilite"><pre><span></span><code>  1. ESCASEZ DE IPv4.   Hay 2³² ≈ 4 300 millones de direcciones y el mundo
+                        las consumió: el RIPE NCC hizo su última asignación
+                        /22 el 25-nov-2019. APNIC se agotó en abr-2011, ARIN
+                        en sept-2015, LACNIC en 2020 y AfriNIC en abr-2017.
+
+  2. DIRECCIONES PRIVADAS QUE NO SE RUTEAN.  10.0.0.0/8, 172.16.0.0/12 y
+                       192.168.0.0/16 son de uso interno y NO se propagan por
+                       Internet, así que una empresa puede reutilizar el mismo
+                       direccionamiento en todas sus sedes.
+</code></pre></div>
+
+<p><strong>El punto clave:</strong> la NAT <strong>no es seguridad</strong>, es <strong>escasez</strong>. Se hizo "hacia atrás"
+(era un truco de transiciones) y terminó siendo la razón por la que IPv4 sobrevivió
+quince años más.</p>
+<h3>⚠️ Actualización a 2026</h3>
+<p><strong>Sigue igual:</strong> los tres bloques privados, la idea de la traducción y los puertos privados.</p>
+<p><strong>Cambió:</strong>
+- <strong>El agotamiento de IPv4 es un hecho consumado.</strong> RIPE hizo su última asignación <code>/22</code> el <strong>25-nov-2019</strong> y hoy mantiene una <em>waiting list</em> para un único <code>/24</code> recuperado.
+- <strong>IPv6 dejó de ser "el futuro".</strong> El <strong>28 de marzo de 2026</strong> el acceso a Google por IPv6 <strong>superó el 50 % por primera vez (50,10 %)</strong>. Pero es desigual: Francia e India por encima del 70 %, China por debajo del 5 %. <strong>La cifra depende de qué se mida</strong>: Cloudflare (tráfico por bytes) rondaba el 40 %.
+- <strong>La meta de IPv6 es eliminar la NAT</strong>, porque rompe la <strong>extensibilidad extremo a extremo</strong>, no es <em>stateful-friendly</em> con IPsec, y obliga a los hosts IPv6-only a usar 464XLAT para alcanzar contenido IPv4.
+- <strong>NAT64 (<code>RFC 6146</code>) y DNS64 (<code>RFC 6147</code>)</strong> maduraron con el prefijo <code>64:ff9b::/96</code> (<code>RFC 6052</code>) y <code>RFC 8880</code>. <strong>SIIT (<code>RFC 6145</code>) quedó obsoleto por <code>RFC 7915</code></strong>. <strong>464XLAT sigue en borrador</strong>: la transición no cerró.</p>
+<h2>1.2 Traducción de dirección contra traducción de puerto</h2>
+<div class="codehilite"><pre><span></span><code>  TRADUCCIÓN DE DIRECCIÓN SOLA
+     H1 .10 ──▶ R1 .200 ──▶ S:80          ⇐ UNA sola sesión: todas salen
+                                             iguales desde afuera. Y un
+                                             navegador abre 6 al mismo servidor.
+
+  TRADUCCIÓN DE DIRECCIÓN + PUERTO (PAT / NAPT)
+   ┌──────┐                                  ┌──────┐
+   │ H1   │ .10:40000 ──▶ R1 .200:50001 ──▶ │  S   │ :80
+   │ H1   │ .10:40001 ──▶ R1 .200:50002 ──▶ │      │
+   │ H2   │ .11:40000 ──▶ R1 .200:50003 ──▶ │      │
+   └──────┘                                  └──────┘
+
+  ⇐ Cada sesión tiene un PAR (IP pública, puerto público) ÚNICO, así que R1
+     soporta miles simultáneas (hasta ~64 000 por IP pública).
+</code></pre></div>
+
+<p><strong>El nombre correcto:</strong> <code>PAT</code> (<em>Port Address Translation</em>) o <code>NAPT</code>. <strong>En los exámenes de FING,
+"NAT" significa PAT</strong>: se cambia IP <strong>y</strong> puerto.</p>
+<h3>La tabla NAT, con 3 sesiones simultáneas</h3>
+<div class="codehilite"><pre><span></span><code>  ┌────────────────────────────────────────────────────────────────────────┐
+  │  (IP origen, puerto origen)   →  (IP pública, puerto público)          │
+  │  ───────────────────────────      ──────────────────────────────────   │
+  │  (192.168.1.25, 40000)        →  (220.10.10.30, 50001)                 │
+  │  (192.168.1.25, 40001)        →  (220.10.10.30, 50002)                 │
+  │  (192.168.1.26, 40000)        →  (220.10.10.30, 50003)                 │
+  │                                                                        │
+  │  La clave es el PAR interno; el valor es el PAR externo.               │
+  └────────────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Las tramas de los dos sentidos</strong>, para la sesión de <code>192.168.1.25:40000</code>:</p>
+<div class="codehilite"><pre><span></span><code>  ⇐ SALIENTE (H → servidor)          ⇐ ENTRANTE (servidor → H)
+
+  IP   192.168.1.25   TCP src 40000   IP   220.10.10.30   TCP src    80
+  IP   219.41.31.21   TCP dst    80   IP   219.41.31.21   TCP dst 50001
+             ──NAT──▶                                ◀──NAT──
+  Eth  MAC_H1 → MAC_R1                   IP   192.168.1.25   TCP src    80
+                                          Eth  MAC_R1 → MAC_H1  TCP dst 40000
+</code></pre></div>
+
+<p>⚠️ <strong>El campo que el router mira para decidir el sentido es el puerto de destino.</strong> Por eso
+hace falta traducir puertos: la IP de destino sola no distingue tres sesiones al mismo
+servidor.</p>
+<h2>1.3 Las tres fases de la NAT</h2>
+<div class="codehilite"><pre><span></span><code>  1. SALIDA     Llega paquete de la LAN. ¿(IP priv, port priv) está en la
+                 tabla?  NO → SE CREA entrada con puerto público nuevo.
+  2. ENTRADA    Llega paquete de Internet. ¿(IP pub, port pub) está en la
+                 tabla?  NO → SE DESCARTA.  SÍ → se traduce destino y puerto.
+  3. TIMEOUT    Pasan TIMEOUT s sin tráfico en esa entrada → se BORRA y el
+                 puerto público vuelve al pool.
+</code></pre></div>
+
+<p><strong>Por qué hace falta el timeout:</strong> sin él la tabla crecería sin límite. <strong>Pero</strong> es un compromiso:
+corto, se pierde la correspondencia de una conexión larga; largo, la tabla se llena. Eso se
+llama <strong>UDP hole punching</strong> y es lo que rompe al P2P.</p>
+<h2>1.4 Por qué la NAT rompe el aislamiento de capas</h2>
+<p>Este es el <code>2011-02 P4b</code> (10 puntos) y es <strong>el mejor punto conceptual de la clase</strong>.</p>
+<div class="codehilite"><pre><span></span><code>  El AISLAMIENTO DE CAPAS consiste en que cada capa use a la de abajo como un
+  servicio opaco. En particular, la capa 3 decide el reenvío mirando SOLO la
+  dirección IP destino. ⇐ Un router NO necesita entender TCP para reenviar un
+  paquete TCP.
+
+  ─────────────────────────────────────────────────────────────────────
+
+  CON NAT, un paquete que ENTRA al router tiene:
+
+       IP destino = 220.10.10.30    ← es la IP DEL PROPIO ROUTER, y es ÚNICA
+                                       para toda la LAN
+
+  ⇐ La IP destino NO dice a qué máquina interna va. La única información que lo
+     dice es el PUERTO DE DESTINO:
+
+       puerto destino = 50001 → buscar en la tabla → 192.168.1.25:40000
+
+  ⇐ Para decidir eso el router tiene que LEER EL PUERTO TCP/UDP, campo de la
+     CABECERA TCP: es información de CAPA 4. Un dispositivo de capa 3
+     dependiendo de un protocolo de capa 4
+     ⇐ ESO ES ROMPER EL AISLAMIENTO DE CAPAS.
+</code></pre></div>
+
+<p><strong>Las tres consecuencias concretas, que son lo que suma puntos:</strong></p>
+<div class="codehilite"><pre><span></span><code>  1. ROMPE LA EXTENSIBILIDAD.  Cada capa debe poder cambiar sin romper las de
+     arriba; con NAT no alcanza con "dejar pasar" lo que no se entiende: hay
+     que INTERPRETARLO.
+  2. ROMPE LA TRANSPARENCIA.  El cliente ve su socket en 192.168.1.25:40000 y
+     el servidor ve 220.10.10.30:50001. Ninguna es la dirección "verdadera":
+     eso rompe IPsec en modo ESP (que cifra las cabeceras IP).
+  3. ROMPE EL P2P.  Como la traducción solo se crea al INICIAR una conexión
+     saliente, un host detrás de la NAT no puede iniciar nada hacia afuera
+     por su cuenta (ver §1.5).
+</code></pre></div>
+
+<p><strong>La frase de cierre, que es lo que el corrector quiere leer:</strong></p>
+<blockquote>
+<p>La NAT rompe el aislamiento de capas porque un router que solo debería mirar la dirección
+IP destino se ve obligado a <strong>mirar el puerto TCP/UDP</strong> para saber a qué host interno
+corresponde el paquete. Eso convierte a un dispositivo de capa 3 en uno que depende de un
+protocolo de capa 4, y por lo tanto <strong>cualquier protocolo nuevo de capa superior que no sea
+TCP o UDP deja de funcionar detrás de una NAT</strong> sin que el router lo entienda.</p>
+<p>⚠️ <strong>Errores conceptuales típicos:</strong> (i) decir que rompe el aislamiento porque "el router
+mira la IP privada" — falso, la IP es de capa 3 y es lo que siempre hace; lo que rompe es
+mirar <strong>el puerto</strong>; (ii) decir que rompe porque "el servidor ve otra IP" — eso es el
+síntoma, no la causa; (iii) olvidar el caso <strong>ESP</strong>.</p>
+</blockquote>
+<h2>1.5 Las tres soluciones para que un cliente con IP pública alcance a un servidor privado</h2>
+<p>Este es el <code>2011-02 P4c</code>. Hay que presentarlas <strong>como están</strong>, pero nombrándolas bien.</p>
+<h3>La solución 1 — <em>Port forwarding</em> (NAT estática, o DNAT)</h3>
+<div class="codehilite"><pre><span></span><code>        Internet                          LAN privada
+      ┌────────┐        ┌────────┐      ┌───────────────┐
+      │ cliente│───▶ R1 :8080 ───────▶ │ S 10.0.0.5:80 │
+      │ público│◀───     │         │◀─────│               │
+      └────────┘        └────────┘      └───────────────┘
+
+  Todo lo que entre por el puerto público 8080 se reenvía a 10.0.0.5:80.
+  La entrada NAT es FIJA.
+</code></pre></div>
+
+<p><strong>Requisitos:</strong> el servidor privado necesita <strong>IP privada estable</strong> (un DHCP <em>reservation</em>
+alcanza) y hay que <strong>saber de antemano</strong> puerto y protocolo. <strong>No sirve para conexiones salientes
+de la LAN</strong>: solo traduce en un sentido.</p>
+<h3>La solución 2 — NAT sin traducción (<em>full-cone NAT</em> o <em>endpoint-independent mapping</em>)</h3>
+<div class="codehilite"><pre><span></span><code>        Internet                          LAN privada
+      ┌────────┐                          ┌─────────────┐
+      │ cliente│──────────────────────▶  │ S 10.0.0.5  │
+      │ público│◀──────────────────────  │             │
+      └────────┘   (misma IP de origen y destino) └─────────────┘
+
+  ⇐ El servidor tiene una dirección que el cliente PÚBLICO puede usar
+     directamente, o hay un mapeo 1:1 declarado de antemano.
+</code></pre></div>
+
+<p><strong>Cuándo se usa:</strong> cuando el servidor tiene dirección pública propia pero su <strong>gateway por
+defecto</strong> es un router que hace NAT (una máquina en la nube con IP elástica, por ejemplo).
+<strong>Limitación:</strong> alguien tiene que <strong>configurar el mapeo de antemano</strong>; si no, el paquete nunca
+vuelve (ver §1.6).</p>
+<h3>La solución 3 — El servidor inicia: invertir quién origina la conexión</h3>
+<div class="codehilite"><pre><span></span><code>  EL SERVIDOR PRIVADO ABRE UNA CONEXIÓN SALIENTE; EL ROUTER GUARDA LA
+  ENTRADA Y EL CLIENTE PÚBLICO CONTESTA A ESA CONEXIÓN.
+
+  paso 1 (SALIENTE)  10.0.0.5:40000 ─▶ R1 220.10.10.30:50007 ─▶ S:80
+                     se CREA la entrada NAT; el servidor externo abre la
+                     conexión de retorno.
+  paso 2 (ENTRANTE)  CLIENTE ─▶ R1 220.10.10.30:50007 ─▶ 10.0.0.5:40000
+                     se busca (IP pub, port pub) en la tabla y se traduce.
+</code></pre></div>
+
+<p><strong>Por qué es la más usada:</strong> la NAT solo traduce lo que <strong>sale</strong>. Si el servidor privado manda
+primero un paquete (un keep-alive, un <code>REGISTER</code> de SIP, un <em>binding request</em> de STUN), la
+entrada queda creada y <strong>cualquier paquete que entre desde Internet con ese par</strong> se reenvía
+adentro. <strong>Es la base de SIP, ICE (WebRTC), STUN y TURN</strong>.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>1. <em>Port forwarding</em></th>
+<th>2. NAT sin traducción</th>
+<th>3. El servidor inicia</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Quién configura</strong></td>
+<td>el administrador</td>
+<td>el administrador</td>
+<td><strong>nadie</strong></td>
+</tr>
+<tr>
+<td><strong>Tabla NAT</strong></td>
+<td>entrada fija</td>
+<td>no hay traducción</td>
+<td>entrada <strong>dinámica</strong></td>
+</tr>
+<tr>
+<td><strong>IP del servidor</strong></td>
+<td>privada</td>
+<td>mapeo 1:1 declarado</td>
+<td>privada</td>
+</tr>
+<tr>
+<td><strong>Sin tocar nada</strong></td>
+<td>no</td>
+<td>no</td>
+<td><strong>sí</strong></td>
+</tr>
+<tr>
+<td><strong>Uso típico</strong></td>
+<td>servidores web, cámaras</td>
+<td>IP elástica</td>
+<td><strong>VoIP, WebRTC, P2P</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Regla mental:</strong> si <strong>alguien tiene que configurar algo</strong>, es la solución 1 o la 2; si
+<strong>no hay que configurar nada</strong>, es la 3.</p>
+<h2>1.6 <em>NAT hairpinning</em> (el bucle hacia atrás)</h2>
+<p><strong>El problema.</strong> Un cliente de la LAN quiere alcanzar a <strong>otro cliente de la misma LAN</strong> a
+través de la <strong>IP pública</strong> del router:</p>
+<div class="codehilite"><pre><span></span><code>  ┌──────┐                                                    ┌──────┐
+  │  A   │ .10 ──▶ R1 ──(IP pública 220.10.10.30)──▶ R1 ─────▶│  B   │ .11
+  └──────┘                                                    └──────┘
+</code></pre></div>
+
+<p>⇐ A manda a 220.10.10.30:50002. El paquete <strong>llega físicamente al router</strong>, porque esa IP
+     pública es de R1. La entrada NAT de B existe (se creó cuando B salió), así que
+     <strong>debería</strong> funcionar.
+  ⚠️ PERO muchos routers NO lo hacen: la entrada se creó para tráfico hacia afuera, y se
+     descarta por seguridad todo paquete que llega por la INTERFAZ EXTERNA con destino una
+     IP pública PROPIA.</p>
+<p><strong>La solución: el <em>hairpin</em> (o <em>NAT loopback</em>).</strong> El router reconoce que <strong>el destino es él
+mismo</strong> y, en vez de rechazar, <strong>traduce igualmente</strong> y reenvía por la interfaz <strong>interna</strong>:</p>
+<div class="codehilite"><pre><span></span><code>  ┌──────┐        ┌────────────────────────────────────────────┐  ┌──────┐
+  │  A   │───▶ R1 │ reconoce que 220.10.10.30 es SUYA          │─▶│  B   │
+  └──────┘        │ busca (220.10.10.30, 50002) en la tabla    │  └──────┘
+                  │ la encuentra → traduce a 192.168.1.11:40002│
+                  │ y reenvía POR DENTRO (LAN)                 │
+                  └────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Sin hairpin se rompen dos casos:</strong> un servidor interno que publica un servicio en su IP
+pública y es accedido por otro equipo de la misma LAN, y <strong>el P2P entre dos equipos de la
+misma LAN</strong>, que directamente no se ven.</p>
+<h2>1.7 CGNAT: la NAT del operador</h2>
+<p><strong>CGNAT</strong> (<em>Carrier-Grade NAT</em>) es la misma técnica, pero <strong>aplicada por el operador</strong> a toda
+la base de clientes:</p>
+<div class="codehilite"><pre><span></span><code>  TU CASA                  LA RED DEL ISP                   INTERNET
+  ┌────────┐              ┌──────────────────┐             ┌────────┐
+  │ tu     │ .10 ──▶ R1 ─▶│  CGNAT del ISP  │────────────▶│  S     │
+  │ router │   (tu NAT)   │ .100.0.0.0/10   │ (2ª NAT)    │        │
+  └────────┘              └──────────────────┘             └────────┘
+
+  ⇐ HAY DOS TRADUCCIONES SEGUIDAS: la de tu router y la del ISP. Cada una
+     rompe el aislamiento de capas por separado.
+</code></pre></div>
+
+<p><strong>Por qué se volvió ubicuo:</strong> por el mismo motivo que la NAT, y con más fuerza. Cuando el RIPE
+hizo su última asignación en 2019, los operadores dejaron de poder entregar una IP pública a
+cada casa y pasaron a entregar un prefijo de la <strong>red privada del operador</strong>, con CGNAT.</p>
+<h3>Los tres problemas del CGNAT</h3>
+<p><strong>Problema 1 — Rompe la conectividad entrante.</strong> La tabla del CGNAT <strong>solo se llena
+cuando el cliente sale</strong>, y sin <em>port forwarding</em> <strong>nadie de Internet puede iniciar
+una conexión</strong> hacia tu casa. Impacto: <strong>VoIP, juegos, SSH, servidores domésticos y
+cámaras IP</strong>.</p>
+<p><strong>Problema 2 — Complica la señalización.</strong> SIP/IMS mandan la dirección <strong>pública</strong> dentro de
+los mensajes y usan cabeceras <code>Contact</code>, <code>Via</code> y <code>Record-Route</code> para saber por dónde volver. Con
+CGNAT esa dirección es <strong>la del CGNAT</strong>, y los elementos de ruta apuntan a una dirección que
+<strong>no existe</strong> en la red del operador: hay que agregar un <strong>outbound proxy</strong>.</p>
+<p><strong>Problema 3 — Rompe IPsec en ESP.</strong> En modo <strong>ESP</strong> el cifrado cubre la cabecera IP completa:</p>
+<div class="codehilite"><pre><span></span><code>  ⚠️ El host mete IP_priv en su ESP; el CGNAT la reescribe a IP_publica DESPUÉS de que
+     el ESP se armó. El receptor descifra y encuentra una cabecera que NO coincide con
+     la que ve por fuera.
+     ⇐ FALLA LA AUTENTICACIÓN. Y el CGNAT no puede recalcular el ESP, porque no tiene
+        la clave.
+
+  Por eso con IPsec + CGNAT funciona AH (Authentication Header), que no cifra la cabecera
+  IP, o NAT-T (RFC 3948 🔍), que encapsula el paquete ya traducido en un ESP nuevo.
+</code></pre></div>
+
+<blockquote>
+<p>⚠️ <strong>RFCs no verificados:</strong> la especificación clásica de NAT tradicional (<code>RFC 3022</code>), el
+<em>shared address space</em> del CGNAT (<code>RFC 6598</code>), los requisitos del CGN (<code>RFC 6888</code>) y el
+NAT-T (<code>RFC 3948</code>) <strong>NO están en <code>ACTUALIZACIONES.md</code></strong>: <strong>verificar</strong> en <code>rfc-editor.org</code>
+antes de citarlos. Lo verificado de esta clase: <code>RFC 8200</code>, <code>RFC 6146</code>, <code>RFC 6147</code>,
+<code>RFC 6052</code>, <code>RFC 8880</code>, <code>RFC 7915</code>, <code>RFC 6333</code>, <code>RFC 9000</code>.</p>
+<p><strong>El dato de 2026 que reencuadra todo:</strong> el <strong>NAT rebinding</strong> (el operador cambia el puerto de
+la tabla a mitad de una conexión) <strong>rompe TCP</strong>, y por eso los clientes reconectan
+(<code>RFC 8443</code> 🔍). <strong>Con QUIC no rompe nada</strong>, porque el <strong>Connection ID</strong> (<code>RFC 9000</code> §5.1)
+identifica la conexión con independencia de las direcciones. <strong>Ése es el cambio de
+paradigma:</strong> la identidad de la conexión deja de ser la IP.</p>
+</blockquote>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — Armar la tabla NAT con 4 sesiones simultáneas</h2>
+<p><strong>Datos.</strong> Router <code>R1</code> con IP pública <code>220.10.10.30</code>. LAN <code>192.168.1.0/24</code>. Cuatro
+conexiones salientes simultáneas, todas hacia <code>219.41.31.21:80</code>.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Host interno</th>
+<th>Puerto origen</th>
+<th>Puerto público asignado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>192.168.1.25</code></td>
+<td>1024</td>
+<td>50001</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>192.168.1.25</code></td>
+<td>1025</td>
+<td>50002</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>192.168.1.26</code></td>
+<td>1024</td>
+<td>50003</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>192.168.1.30</code></td>
+<td>51000</td>
+<td>50004</td>
+</tr>
+</tbody>
+</table>
+<p><strong>La tabla NAT completa:</strong></p>
+<div class="codehilite"><pre><span></span><code>  ┌────┬────────────────────────────┬──────────────────────────────┬────────┐
+  │ #  │ (IP origen int, port int) │ → (IP pública, port público) │ estado │
+  ├────┼────────────────────────────┼──────────────────────────────┼────────┤
+  │  1 │ (192.168.1.25, 1024)      │ → (220.10.10.30, 50001)      │ ACTIVA │
+  │  2 │ (192.168.1.25, 1025)      │ → (220.10.10.30, 50002)      │ ACTIVA │
+  │  3 │ (192.168.1.26, 1024)      │ → (220.10.10.30, 50003)      │ ACTIVA │
+  │  4 │ (192.168.1.30, 51000)     │ → (220.10.10.30, 50004)      │ ACTIVA │
+  └────┴────────────────────────────┴──────────────────────────────┴────────┘
+</code></pre></div>
+
+<p><strong>Las tres observaciones que hacen los puntos:</strong> (1) el mismo host <code>192.168.1.25</code> tiene
+<strong>DOS entradas</strong> porque el puerto de origen es distinto (1024 y 1025). (2) El mismo puerto
+(1024) lo usan <strong>dos hosts distintos</strong> (<code>.25</code> y <code>.26</code>) sin conflicto, porque la clave es el
+<strong>PAR</strong>. (3) Todos los puertos públicos son distintos aunque la IP pública sea una sola.</p>
+<p><strong>Las tramas de los dos sentidos para la sesión 3</strong> (la que repite puerto interno):</p>
+<div class="codehilite"><pre><span></span><code>  ⇐ H → S (salida)                    ⇐ S → H (entrada)
+
+  IP  192.168.1.26   TCP src 1024      IP  220.10.10.30   TCP src    80
+  IP  219.41.31.21   TCP dst   80      IP  219.41.31.21   TCP dst 50003
+  Eth MAC_H26 → MAC_R1                          NAT─▶ IP 192.168.1.26  TCP src 80
+                    ──NAT──▶           Eth  MAC_R1 → MAC_H26   TCP dst 1024
+</code></pre></div>
+
+<h2>2.2 Ejercicio 2 — ¿Por qué no funciona el P2P detrás de un CGNAT?</h2>
+<div class="codehilite"><pre><span></span><code>  Paso 1: A (LAN hogareña) manda su descubrimiento a B. Sale por su router
+          → se crea la entrada NAT de A.
+
+  Paso 2: B (detrás del CGNAT) manda su descubrimiento a A.
+          ⇐ FALLA AQUÍ. El CGNAT residential no ofrece port forwarding: la
+             entrada de B existe solo para tráfico SALIENTE, así que nadie
+             de Internet puede iniciar nada hacia B.
+
+  Paso 3: aunque el paquete de B llegara, el de A no llegaría a B, porque el
+          CGNAT no tiene entrada para (IP pública de A, puerto destino).
+
+  ⇐ CONCLUSIÓN: la única dirección alcanzable es la que el propio cliente descubrió
+     de sí mismo. Y esa dirección cambia cada vez que la entrada expira y se
+     renueva (NAT REBINDING), que es lo que rompe el TCP.
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Solución</th>
+<th>Costo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Port forwarding manual</strong></td>
+<td>El usuario tiene que abrirlo, y solo sirve para su IP, que puede cambiar.</td>
+</tr>
+<tr>
+<td><strong>Rendezvous / TURN</strong></td>
+<td><strong>Todo el tráfico pasa por el relay</strong>: costo y latencia.</td>
+</tr>
+<tr>
+<td><strong>STUN + ICE + hole punching</strong></td>
+<td>No sirve con NAT simétrico ni con CGNAT que filtre lo no iniciado.</td>
+</tr>
+<tr>
+<td><strong>IPv6</strong></td>
+<td>Sin traducción; pero no todo el mundo lo tiene.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>La frase del examen:</strong> el P2P falla porque <strong>detrás de un CGNAT el cliente no puede
+iniciar conexiones entrantes</strong>: la tabla solo se llena cuando el cliente <strong>sale</strong>. Por eso
+todo P2P real usa un <strong>servidor de rendezvous</strong> (o TURN, que además relay) para que alguien
+publicable le diga a los demás cuál es su dirección alcanzable.</p>
+</blockquote>
+<h2>2.3 Ejercicio 3 — Por qué la NAT rompe IPsec en ESP</h2>
+<div class="codehilite"><pre><span></span><code>  El ESP CIFRA LA CABECERA IP COMPLETA (direcciones de origen y destino) y el
+  receptor valida que coincida con la que ve por fuera.
+
+  El emisor mete IP_priv en su ESP; la NAT reescribe a IP_publica. El receptor
+  descifra, encuentra IP_priv y ve IP_publica por fuera.
+  ⇐ LA AUTENTICACIÓN FALLA, y es IRREVERSIBLE: la NAT no puede recalcular el ESP.
+</code></pre></div>
+
+<p><strong>Las dos soluciones, que son la respuesta completa:</strong> (1) <strong>modo AH</strong> (<em>Authentication
+Header</em>, protocolo 51), que autentica el datagrama IP entero pero <strong>no lo cifra</strong>, así que la
+NAT puede reescribir y recalcular; funciona, pero sin confidencialidad. (2) <strong>NAT-T</strong> (<code>RFC 3948</code>
+🔍), que encapsula el paquete <strong>ya traducido</strong> dentro de un ESP con la dirección pública;
+funciona, pero agrega 24 bytes por paquete.</p>
+<h2>2.4 Ejercicio 4 — ¿Cuál de las tres soluciones corresponde a cada escenario?</h2>
+<table>
+<thead>
+<tr>
+<th>Escenario</th>
+<th>Solución</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Servidor web interno alcanzable desde Internet</td>
+<td><strong>1. <em>Port forwarding</em></strong> (puerto fijo e IP privada estable)</td>
+</tr>
+<tr>
+<td>Máquina en la nube con <strong>IP elástica</strong> que se quiere exponer</td>
+<td><strong>2. NAT sin traducción</strong> (mapeo 1:1)</td>
+</tr>
+<tr>
+<td>Teléfono VoIP detrás de la NAT que quiere recibir llamadas</td>
+<td><strong>3. El servidor inicia</strong> (el <code>REGISTER</code> de SIP)</td>
+</tr>
+<tr>
+<td>WebRTC entre dos navegadores detrás de un CGNAT</td>
+<td><strong>3 + TURN</strong></td>
+</tr>
+<tr>
+<td>Dos equipos de la misma LAN que se quieren ver por la IP pública</td>
+<td><strong>3 + <em>hairpinning</em></strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐⭐ Examen 2011-02, Pregunta 4 (10 puntos) — NAT, capas y las tres soluciones</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc1102</code> / <code>sirc1102</code> — 3 de febrero de 2011, Pregunta 4 (10 puntos).
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1102.pdf</p>
+</blockquote>
+<h3>Enunciado (texto literal del examen)</h3>
+<blockquote>
+<p><strong>a)</strong> Describa la técnica denominada NAT, explicando las modificaciones que un router NAT
+debe realizar sobre los paquetes salientes y entrantes.</p>
+<p><strong>b)</strong> De una justificación para la siguiente frase: <em>"NAT no respeta el principio de
+aislación de capas"</em>.</p>
+<p><strong>c)</strong> Describa brevemente las tres soluciones planteadas en el teórico para atravesar un
+router NAT por parte de un cliente que se encuentra en una red con direcciones públicas y
+quiere contactar a un servidor que está en una red con direcciones privadas.</p>
+</blockquote>
+<h3>Sobre la solución oficial</h3>
+<p>El PDF de <code>sirc1102</code> <strong>no trae la solución publicada de esta pregunta</strong>: trae el enunciado y
+remite a las diapositivas del teórico. Las tres resoluciones de abajo son <strong>solución propia</strong>.</p>
+<h3>Parte a) — Qué es la NAT y qué cambia en cada sentido (≈4 puntos)</h3>
+<p>La <strong>NAT</strong> es una función de un <strong>router de borde</strong> que <strong>reescribe las direcciones IP</strong> de
+los paquetes, sustituyendo las direcciones <strong>privadas</strong> (que no se rutean en Internet) por
+una <strong>dirección pública</strong> del propio router. Para sostener <strong>muchas sesiones simultáneas</strong>
+con una sola dirección pública traduce además el <strong>puerto</strong> de origen: eso es la <strong>PAT</strong>.</p>
+<div class="codehilite"><pre><span></span><code>  ⇐ SENTIDO SALIENTE  (LAN → Internet)
+
+  ETIQUETA IP                              TCP/UDP
+  origen      : IP PRIVADA   → IP PÚBLICA  ← SE CAMBIA
+  puerto origen: puerto PRIVADO → puerto PÚBLICO  ← SE CAMBIA
+  destino     : sin cambios                 ← no se toca
+  puerto destino: sin cambios               ← no se toca
+
+  Además: se CREA una entrada en la tabla NAT
+          (IP priv, port priv) → (IP pública, port público)
+
+  ⇐ SENTIDO ENTRANTE  (Internet → LAN)
+
+  origen      : sin cambios                 ← no se toca
+  puerto origen: sin cambios                 ← no se toca
+  destino     : IP PÚBLICA   → IP PRIVADA   ← SE CAMBIA
+  puerto destino: puerto PÚBLICO → puerto PRIVADO  ← SE CAMBIA
+
+  El router busca la entrada por (IP pública, puerto destino). Si NO la
+  encuentra, DESCARTA el paquete.
+</code></pre></div>
+
+<p><strong>El porqué de que el puerto destino sea la clave de búsqueda</strong> es lo que da el apartado b):
+todos los paquetes que entran tienen <strong>la misma IP de destino</strong> (la pública del router), y lo
+único que los distingue es el <strong>puerto de destino</strong>, campo de la cabecera TCP/UDP.</p>
+<p><strong>Para los 4 puntos:</strong> nombre de la técnica, por qué existe, tabla de campos por sentido,
+creación y consulta de la tabla, y el descarte.</p>
+<h3>Parte b) — Por qué la NAT no respeta el aislamiento de capas (≈3 puntos)</h3>
+<blockquote>
+<p>El aislamiento de capas consiste en que <strong>cada capa use a la de abajo como un servicio
+opaco</strong>, y en que la capa 3 decida el reenvío mirando <strong>solo la dirección IP destino</strong>.</p>
+<p>Con NAT, un paquete que llega desde Internet tiene como destino la <strong>dirección pública del
+propio router</strong>, que es <strong>única para toda la red interna</strong>. Para saber a qué máquina de la
+LAN debe ir, el router tiene que consultar su tabla NAT, y esa tabla está indexada por el
+<strong>puerto TCP/UDP de destino</strong>.</p>
+<p>Por lo tanto el router, que es un dispositivo de <strong>capa 3</strong>, se ve obligado a <strong>leer un
+campo de la cabecera de capa 4</strong> para tomar su decisión de reenvío. Eso es una <strong>invasión de
+capas</strong>: el comportamiento de la capa 3 queda atado a un protocolo concreto de capa 4.</p>
+<p>Las consecuencias son: (i) <strong>cualquier protocolo de capa superior que no sea TCP o UDP deja
+de funcionar</strong> detrás de una NAT sin que el router lo sepa; (ii) se rompe la
+<strong>extensibilidad</strong>, porque al agregar una capa nueva hay que modificar también la capa 3; y
+(iii) se rompe la <strong>transparencia extremo a extremo</strong>, como se ve con IPsec en modo ESP, que
+cifra la cabecera IP y por lo tanto no tolera que se reescriban las direcciones.</p>
+</blockquote>
+<p><strong>Puntos clave:</strong> (1) la definición del aislamiento, (2) que el destino es la IP del router y
+hace falta el puerto, (3) que el puerto es de capa 4, (4) la consecuencia.</p>
+<h3>Parte c) — Las tres soluciones (≈3 puntos)</h3>
+<p>Las tres están desarrolladas en el <strong>§1.5</strong>, con diagramas y límites. En el examen:</p>
+<blockquote>
+<p><strong>1) <em>Port forwarding</em> (NAT estática).</strong> El administrador configura en el router un mapeo
+explícito: "todo lo que entre por el puerto público 8080, mandalo a <code>10.0.0.5:80</code>". La
+entrada de la tabla NAT es fija y siempre existe. Requiere IP privada estable en el servidor
+y conocer de antemano puerto y protocolo.</p>
+<p><strong>2) NAT sin traducción</strong> (a veces <em>full-cone NAT</em> o <em>endpoint-independent mapping</em>). El
+router <strong>no cambia nada</strong> y deja pasar el paquete, con la IP de origen intacta. Sirve cuando
+el servidor tiene una dirección pública propia (por ejemplo una IP elástica en la nube) y
+lo que hace falta es que el router no reescriba. También requiere que el mapeo esté
+declarado de antemano.</p>
+<p><strong>3) El servidor inicia la conexión</strong> (inversión de quién origina). El servidor privado
+<strong>abre una conexión saliente</strong>; el router guarda la entrada en su tabla NAT. A partir de ahí,
+cualquier paquete que <strong>entre</strong> desde Internet con ese mismo par <code>(IP pública, puerto
+público)</code> se traduce y se entrega al servidor. El cliente público "contesta" a una conexión
+que él no abrió. Es la base de SIP, ICE/WebRTC, STUN y TURN, y es la única que <strong>no requiere
+configurar nada</strong>.</p>
+</blockquote>
+<h2>3.2 ⭐ Examen 2011-03, Problema 2, apartado c — las modificaciones de R1</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc1103</code> / <code>sirc1103</code> — 21 de febrero de 2011, Problema 2, apartado c.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1103.pdf</p>
+</blockquote>
+<h3>Contexto del problema (los apartados a y b están resueltos en la Clase 30)</h3>
+<blockquote>
+<p>Una empresa tiene una red A (LAN Ethernet con direccionamiento privado) con 15 servidores y
+70 puestos de trabajo, y se desea que puedan acceder a un servidor web en Internet con
+dirección IP <code>219.41.31.21</code>. Para ello el router <code>R1</code> implementa NAT utilizando su dirección
+IP pública.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code>     Red A (privada)                     Red pública
+   ┌────────────────────┐             ┌─────────────────────┐
+   │  H          R1     │═════════════│  219.41.31.21        │
+   │ 192.168.1.25  .1   │  220.10.10.28/30                   │
+   │            .28     │             │  (servidor web)      │
+   └────────────────────┘             └─────────────────────┘
+      MAC 2           MAC 1               MAC de R1 (exterior)
+</code></pre></div>
+
+<p><strong>La tabla de enrutamiento</strong> (resuelta en la Clase 30 §3): R1 tiene <code>192.168.1.0/24</code> y
+<code>220.10.10.28/30</code> conectadas, y <code>0.0.0.0/0</code> por <code>220.10.10.29</code>. El host H tiene
+<code>192.168.1.0/24</code> conectada y <code>0.0.0.0/0</code> por <code>192.168.1.1</code>.</p>
+<h3>Enunciado del apartado c (texto literal)</h3>
+<blockquote>
+<p><strong>c)</strong> Especifique las modificaciones que realizará R1 en los paquetes de datos que viajan
+entre Host H y Servidor Web. Considerar ambos sentidos.</p>
+</blockquote>
+<h3>Solución oficial (textual)</h3>
+<blockquote>
+<p><strong>Sentido host H → Servidor Web:</strong> <em>"Datagramas con dirección IP de origen 192.168.1.25 y
+dirección IP de destino 219.41.31.21. R1 sustituye la IP de origen por 220.10.10.30, y el
+puerto de origen (port #) por un puerto nuevo (new port #) asignado por R1."</em> Y: <em>"El router
+R1 tendrá una tabla de NAT con los siguientes datos: (Dirección IP origen, port #),
+(220.10.10.30, new port #)"</em>.</p>
+<p><strong>Sentido servidor Web → host H:</strong> <em>"Datagramas con dirección IP de origen 219.41.31.21,
+dirección IP de destino 220.10.10.30, y puerto de destino new port #. A partir de la tabla
+de NAT, R1 sustituye la IP de destino por 192.168.1.25, y el puerto de destino por port #."</em></p>
+</blockquote>
+<h3>Análisis de la solución oficial</h3>
+<p><strong>Lo que está bien:</strong> (1) nombra <strong>exactamente los dos campos</strong> que se cambian en cada
+sentido; (2) dice explícitamente que <strong>se crea una tabla NAT</strong> con la correspondencia de
+puertos, sin la cual la entrada no se puede resolver; (3) en el sentido entrante nombra los
+<strong>tres campos que hay que mirar</strong> antes de sustituir dos.</p>
+<p><strong>Lo que falta y son los puntos que se ganan:</strong>
+1. <strong>No da valores concretos</strong> para el puerto asignado: dice "new port #" en vez de, por ejemplo, 50001. El enunciado no lo fuerza, pero <strong>inventar un número concreto</strong> muestra que entendiste que es una asignación del router.
+2. <strong>No dice qué pasa si no hay entrada en la tabla</strong> (sentido entrante): el paquete <strong>se descarta</strong>.
+3. <strong>No dice qué NO se modifica.</strong> Decir "la IP de destino en la salida y la IP de origen en la entrada <strong>no se tocan</strong>" es lo que hace la respuesta completa.
+4. <strong>No menciona el <em>timeout</em></strong> de la entrada, ni que se rehacen las tramas Ethernet.</p>
+<h3>Mi resolución completa del apartado c</h3>
+<p><strong>Sentido 1 — H → Servidor Web (salida).</strong></p>
+<div class="codehilite"><pre><span></span><code>  LLEGA A R1:  IP  origen 192.168.1.25  destino 219.41.31.21
+               TCP origen 1024          destino 80
+               Eth origen MAC 2         destino MAC 1 (R1, red A)
+
+  ACCIÓN: R1 busca (192.168.1.25, 1024) en la tabla NAT.
+    · Si NO está → reserva un puerto público libre (ej. 50001), CREA la
+      entrada y traduce.   · Si ya está → la reutiliza.
+
+  SALE DE R1:   IP  origen 220.10.10.30  destino 219.41.31.21   ← CAMBIA
+               TCP origen 50001          destino 80            ← CAMBIA
+               Eth origen MAC 1 → destino MAC de R1 en 220.10.10.28/30
+
+  ENTRADA CREADA: (192.168.1.25, 1024) → (220.10.10.30, 50001)  con TIMEOUT
+  ⚠️ NO SE TOCA: la IP de DESTINO (219.41.31.21) ni el puerto de DESTINO (80).
+</code></pre></div>
+
+<p><strong>Sentido 2 — Servidor Web → H (entrada).</strong></p>
+<div class="codehilite"><pre><span></span><code>  LLEGA A R1:  IP  origen 219.41.31.21  destino 220.10.10.30
+               TCP origen 80             destino 50001
+               Eth destino = MAC de R1 en 220.10.10.28/30
+
+  BÚSQUEDA: (220.10.10.30, 50001) en la tabla NAT.
+    ⚠️ por eso hace falta traducir PUERTOS: la IP de destino es la misma
+       para todas las entradas.
+    · Si NO está → R1 DESCARTA el paquete.
+    · Si está → refresca el TIMEOUT y traduce.
+
+  SALE DE R1:   IP  origen 219.41.31.21  destino 192.168.1.25    ← CAMBIA
+               TCP origen 80             destino 1024           ← CAMBIA
+               Eth origen MAC 1 → destino MAC 2 (host H)
+
+  ⚠️ NO SE TOCA: la IP de ORIGEN ni el puerto de ORIGEN. El servidor web no
+     tiene por qué enterarse de que hubo NAT.
+</code></pre></div>
+
+<p><strong>La tabla resumen, que es lo que el corrector busca:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Salida (H → S)</th>
+<th>Entrada (S → H)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IP <strong>origen</strong></td>
+<td><code>192.168.1.25</code> → <strong><code>220.10.10.30</code></strong></td>
+<td><code>219.41.31.21</code> → sin cambio</td>
+</tr>
+<tr>
+<td><strong>puerto origen</strong></td>
+<td><code>1024</code> → <strong><code>50001</code></strong></td>
+<td><code>80</code> → sin cambio</td>
+</tr>
+<tr>
+<td>IP <strong>destino</strong></td>
+<td><code>219.41.31.21</code> → sin cambio</td>
+<td><code>220.10.10.30</code> → <strong><code>192.168.1.25</code></strong></td>
+</tr>
+<tr>
+<td><strong>puerto destino</strong></td>
+<td><code>80</code> → sin cambio</td>
+<td><code>50001</code> → <strong><code>1024</code></strong></td>
+</tr>
+<tr>
+<td><strong>Tabla NAT</strong></td>
+<td>se <strong>crea</strong> la entrada</td>
+<td>se <strong>busca</strong> y se refresca el timeout; si no está, <strong>descarte</strong></td>
+</tr>
+<tr>
+<td><strong>Ethernet</strong></td>
+<td>MAC destino = MAC de R1 en <code>220.10.10.28/30</code></td>
+<td>MAC destino = MAC 2 (host H)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Nota sobre la oficial:</strong> coincide exactamente con mi resolución en los dos sentidos. La
+oficial <strong>no da valores concretos</strong> para el puerto asignado y <strong>no menciona el descarte</strong>;
+esas dos son las adiciones que suman puntos.</p>
+</blockquote>
+<h2>3.3 ⭐⭐ Examen 2008-12, Problema 1 (30 puntos) — NAT para balanceo de carga</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0812</code> / <code>sirc0812</code> — 20 de diciembre de 2008, Problema 1 (30 puntos).
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0812.pdf</p>
+</blockquote>
+<h3>Enunciado (texto literal del examen)</h3>
+<blockquote>
+<p>Se desea utilizar una variante del protocolo NAT para realizar balanceo de carga entre tres
+servidores instalados en una red privada. Los servidores tienen direcciones privadas <code>IP_1</code>,
+<code>IP_2</code>, <code>IP_3</code>, y publican un servicio en el puerto <code>PORT</code>. El servicio es conocido en
+Internet a través del sistema Acceso, router de la red privada, cuya dirección pública es
+<code>IP_SERVICIO</code>. Se utiliza el mismo puerto <code>PORT</code> para accederlo.</p>
+<p>Al llegar una solicitud de servicio a Acceso, se debe redireccionar la misma al servidor que
+se encuentre atendiendo menor número de requerimientos. Una vez establecida una
+correspondencia entre un cliente y un servidor, debe mantenerse mientras se mantenga el
+flujo de tráfico. Se considera que el flujo ha terminado cuando transcurrieron <code>TIMEOUT</code>
+segundos sin tráfico.</p>
+<p><strong>a)</strong> Indique qué campos deben modificarse en los paquetes que llegan a Acceso para lograr
+el redireccionamiento especificado. ¿Es necesario modificar los encabezados de capa 4 o
+solamente los de capa 3? Justifique su respuesta.</p>
+<p><strong>b)</strong> En base a la respuesta anterior, especifique las estructuras que necesita almacenar
+Acceso para realizar la traducción de direcciones y el balanceo de carga.</p>
+<p><strong>c)</strong> Especifique, en un lenguaje de alto nivel, el procedimiento que debe ejecutar Acceso
+cada vez que recibe un paquete, para cumplir la funcionalidad descrita.</p>
+</blockquote>
+<h3>Solución oficial (completa, textual)</h3>
+<p><strong>a)</strong></p>
+<blockquote>
+<p><em>"Solamente necesitamos modificar campos de capa 3. Cuando llega un paquete IP de un host
+externo, elegimos el servidor menos cargado y pisamos la IP de destino del paquete poniendo
+la IP del servidor elegido. Cuando un paquete viene de un servidor interno y va hacia fuera
+sólo es necesario pisar la IP de origen y poner la del router. No es necesario modificar los
+puertos de origen y destino de los paquetes, pero sí es necesario guardarlos en la tabla de
+NAT para poder enviar los datos de una misma conexión TCP siempre hacia el mismo servidor."</em></p>
+</blockquote>
+<p><strong>b)</strong></p>
+<div class="codehilite"><pre><span></span><code>  struct NATRegister {
+    int32 srcIP;
+    int32 dstIP;
+    int16 srcPort;
+    int16 dstPort;
+    long  timestamp;
+  }
+  Map&lt;{int32, int16}, NATRegister&gt; NATTable;
+  // usamos una tabla indizada por el par {ip, puerto} de origen
+  Map&lt;int32, int&gt; cantidadConexiones;
+  // esta tabla nos indica cuántas conexiones tenemos por cada servidor
+</code></pre></div>
+
+<p><strong>c)</strong></p>
+<div class="codehilite"><pre><span></span><code>  void acceso() {
+    NATTable = new Map&lt;{int32, int16}, NATRegister&gt;();
+    cantidadConexiones = new Map&lt;int32, int&gt;();
+    while (true) {
+      PacketIP p = receiveFromNetwork();
+      cleanTimeoutRegisters();
+      if (p.srcIP in [IP_1, IP_2, IP_3]) {         // respuesta de un servidor
+        NATRegister reg = NATTable.get(p.dstIP, p.dstPort);
+        if (reg != null) reg.timestamp = now();
+        p.srcIP = IP_SERVICIO;                      // ◄── pisa el ORIGEN
+        sendToNetwork(p);
+      } else {                                       // viene de afuera
+        NATRegister reg = NATTable.get(p.srcIP, p.srcPort);
+        if (reg == null) {
+          int32 srvIP = cantidadConexiones.findMinimum();
+          reg = new NATRegister();
+          reg.srcIP = p.srcIP;  reg.srcPort = p.srcPort;
+          reg.dstIP = srvIP;    reg.dstPort = PORT;
+          NATTable.put({p.srcIP, p.srcPort}, reg);
+        }
+        reg.timestamp = now();
+        p.dstIP = reg.srcIP;                         // ◄── BUG: debe ser reg.dstIP
+        sendToNetwork(p);
+      }
+    }
+  }
+  void cleanTimeoutRegisters() {
+    long maxTime = now() + TIMEOUT;
+    for each NATRegister reg in NATTable {
+      if (maxTime &gt; reg.timestamp) {                 // ◄── BUG: condición invertida
+        NATTable.remove(reg);
+        cantidadConexiones[reg.dstIP]--;              // ◄── pero NUNCA se suma
+      }
+    }
+  }
+</code></pre></div>
+
+<h3>Análisis de la solución oficial</h3>
+<p><strong>Lo que está muy bien:</strong>
+1. <strong>Responde el apartado a) con el criterio correcto</strong> ("solamente campos de capa 3") y da la <strong>razón profunda</strong>: los puertos <strong>no se modifican</strong> pero <strong>sí se guardan</strong> en la tabla, "para poder enviar los datos de una misma conexión TCP siempre hacia el mismo servidor". <strong>Esa frase vale los puntos del apartado.</strong>
+2. <strong>La estructura del <code>NATRegister</code> es la correcta</strong>: IP y puerto de <strong>origen</strong> (el cliente externo), IP de destino (el servidor elegido), ambos puertos y un <code>timestamp</code>.
+3. <strong>El índice de la tabla es el correcto</strong>: el par <code>{ip, puerto}</code> de <strong>origen</strong>, porque es lo único que llega sin traducir.
+4. <strong>La segunda estructura es la clave del balanceo</strong>: un mapa servidor → cantidad de conexiones, con una operación de mínimo.</p>
+<p>🔴 <strong>Errores reales en el pseudocódigo de la oficial (señalarlos suma puntos):</strong></p>
+<ol>
+<li><strong><code>p.dstIP = reg.srcIP;</code> está al revés.</strong> En la rama de "viene de afuera" hay que pisar <strong>el servidor elegido</strong>, o sea <code>reg.dstIP</code>. Con <code>reg.srcIP</code> el paquete vuelve al cliente externo con su propia IP de destino. La oficial <strong>se contradice con su propio apartado a)</strong>.</li>
+<li><strong>Nunca se incrementa <code>cantidadConexiones</code>.</strong> La tabla de carga se crea pero el código <strong>no la suma</strong> en ningún lado: el balanceo nunca elige el menos cargado.</li>
+<li><strong>La condición del timeout está invertida.</strong> <code>maxTime &gt; reg.timestamp</code> compara la hora actual <strong>más</strong> el timeout contra el timestamp: si <code>timestamp</code> es mayor, la entrada es <strong>nueva</strong>. Lo correcto es <code>now() - reg.timestamp &gt; TIMEOUT</code>.</li>
+<li><strong><code>cleanTimeoutRegisters()</code> se llama una vez por paquete</strong>, es decir <strong>O(n) por paquete</strong>. Con miles de flujos activos corresponde barrer la tabla <strong>periódicamente</strong> o usar una cola ordenada por timestamp.</li>
+<li><strong><code>NATTable.get(p.dstIP, p.dstPort)</code></strong> le pasa dos argumentos a una tabla indexada por un <strong>par</strong>, y si un paquete de un servidor llega <strong>sin entrada</strong> (porque expiró a mitad de un flujo) el código lo reenvía igual con <code>srcIP = IP_SERVICIO</code> sin avisar.</li>
+</ol>
+<h3>Mi resolución completa (para los 30 puntos)</h3>
+<h4>Parte a) — Qué campos se modifican</h4>
+<div class="codehilite"><pre><span></span><code>  ⇐ ENTRANTE (cliente externo → Acceso → servidor)
+
+  LLEGA:  IP origen = cliente externo ; IP destino = IP_SERVICIO
+          TCP origen = cPort ;         TCP destino = PORT
+          Eth destino = MAC de Acceso
+
+  ACCIÓN: si (IP origen, cPort) NO está en la tabla:
+              srvIP = el servidor con MENOR cantidadConexiones
+              crear reg = { src=(IP origen, cPort), dst=(srvIP, PORT), t=now() }
+              cantidadConexiones[srvIP]++        ◄── ¡FALTA EN LA OFICIAL!
+          si ya está: se reutiliza la entrada, SIN volver a elegir servidor.
+
+  SALE:   IP origen = cliente externo   (NO se toca)
+          IP destino = srvIP           ◄── SE PISA
+          TCP origen = cPort ; destino = PORT   (NO se tocan)
+          Eth destino = MAC de srvIP
+
+  ⚠️ POR QUÉ NO HAY QUE TOCAR LOS PUERTOS:
+     El cliente pidió el puerto PÚBLICO (PORT). Si Acceso cambiase el puerto de destino, el
+     cliente no reconocería la respuesta (su socket espera en PORT). ⇐ El TRUCO: se guardan
+     los puertos REALES en la tabla y se usan para mandar la respuesta al servidor correcto.
+     Como el puerto público coincide con el privado (PORT = PORT), el paquete sale sin
+     traducción de capa 4. ⇐ OJO: esto solo funciona porque el enunciado dice "el mismo
+     puerto PORT". Si el servidor escuchara en otro, habría que traducir capa 4.
+
+  ⇐ ENTRANTE (servidor → Acceso → cliente externo)
+
+      IP origen = srvIP                 ◄── SE PISA por IP_SERVICIO
+      IP destino = cliente externo      (NO se toca)
+      TCP origen = PORT ; destino = cPort   (NO se tocan)
+</code></pre></div>
+
+<p><strong>La respuesta al "¿es necesario modificar los encabezados de capa 4?":</strong> <strong>No, solamente
+capa 3</strong>, porque los puertos se <strong>guardan</strong> en la tabla NAT y la correspondencia
+cliente-servidor se mantiene por sesión sin traducirlos. Es el mismo criterio que usa un
+balanceador que <strong>no</strong> quiere terminar TLS: termina solo en capa 3 o 4.</p>
+<h4>Parte b) — Estructuras de datos</h4>
+<div class="codehilite"><pre><span></span><code>  1) REGISTRO DE UNA SESIÓN
+       struct NATRegister {
+           ip_addr srcIP;     // IP del cliente externo (no se traduce)
+           ip_addr dstIP;     // IP del servidor PRIVADO elegido
+           uint16  srcPort;   // puerto origen real del cliente
+           uint16  dstPort;   // puerto destino real (PORT)
+           long    timestamp; // último instante con tráfico
+       };
+
+  2) TABLA DE SESIONES, indexada por el par {srcIP, srcPort}
+       Map&lt;{ip_addr, uint16}, NATRegister&gt;  NAT;
+
+  3) CONTADOR POR SERVIDOR (lo que permite el balanceo)
+       Map&lt;ip_addr, int&gt;  Carga;   // IP_1 → 120, IP_2 → 87, ...
+
+  4) (recomendable) COLA DE EXPIRACIÓN ordenada por timestamp, para no barrer
+     toda la tabla en cada paquete.
+</code></pre></div>
+
+<p><strong>Por qué la clave es <code>{srcIP, srcPort}</code> y no <code>dstIP</code>:</strong> porque <code>dstIP</code> es siempre
+<code>IP_SERVICIO</code>, la misma para todas las entradas, y no distingue nada. Lo único que <strong>llega
+intacto</strong> y es único por cliente es <code>(IP origen, puerto origen)</code>. Si un cliente abre dos
+conexiones simultáneas tiene dos puertos de origen distintos, y por eso van a entradas (y a
+servidores) distintos.</p>
+<p><strong>Por qué hace falta <code>dstPort</code> en el registro si no se traduce:</strong> para distinguir tres
+servidores que <strong>escuchan en el mismo puerto</strong>, que es justo el caso del enunciado.</p>
+<h4>Parte c) — El procedimiento</h4>
+<div class="codehilite"><pre><span></span><code>  // ---- Estado persistente ----
+  Tabla&lt;Par{ip,uint16}, NATRegister&gt;  NAT;      // clave = (srcIP, srcPort)
+  Tabla&lt;ip, int&gt;                      Carga;     // servidor → conexiones activas
+  Cola&lt;timestamp, Par&gt;               Expiran;   // barrido eficiente
+
+  bool esServidorPropio(ip a):
+      return (a == IP_1 || a == IP_2 || a == IP_3)
+
+  ip elegirServidor():
+      mejor = IP_1
+      for srv in {IP_1, IP_2, IP_3}:
+          if Carga[srv] &lt; Carga[mejor]:  mejor = srv      // desempate por IP
+      return mejor
+
+  void refresh(NATRegister r):
+      r.timestamp = now()
+
+  void limpiarExpirados():       // barra solo lo vencido, con una cola ordenada
+      while Expiran no vacía and Expiran.menor().timestamp &lt; now() - TIMEOUT:
+          k = Expiran.extraer()
+          r = NAT.buscar(k)
+          if r != null and r.timestamp &lt; now() - TIMEOUT:
+              NAT.eliminar(k)
+              Carga[r.dstIP] = Carga[r.dstIP] - 1      ◄── ¡FALTA EN LA OFICIAL!
+
+  void acceso():
+      NAT = nueva Tabla()
+      Carga = { IP_1→0, IP_2→0, IP_3→0 }
+      Expiran = nueva Cola()
+
+      while (true):
+          p = recibirPaqueteDeLaRed()
+          limpiarExpirados()
+
+          if esServidorPropio(p.srcIP):
+              // ===== SENTIDO SALIENTE (servidor → cliente) =====
+              r = NAT.buscar({ p.dstIP, p.dstPort })     // dstIP = IP_SERVICIO
+              if r == null:
+                  descartar(p)      // el cliente cerró y la entrada expiró
+                  continue
+              refresh(r)            // la sesión sigue viva
+              p.srcIP = IP_SERVICIO                     // ◄── SE PISA el origen
+              enviarPaqueteALaRed(p)                    // destino y puertos, igual
+
+          else:
+              // ===== SENTIDO ENTRANTE (cliente → servidor) =====
+              k = { p.srcIP, p.srcPort }
+              r = NAT.buscar(k)
+              if r == null:
+                  // ===== flujo NUEVO: acá está el BALANCEO =====
+                  srv = elegirServidor()
+                  r = new NATRegister()
+                  r.srcIP = p.srcIP ; r.srcPort = p.srcPort
+                  r.dstIP = srv                         // ◄── EL SERVIDOR ELEGIDO
+                  r.dstPort = p.dstPort
+                  NAT.insertar(k, r)
+                  Carga[srv] = Carga[srv] + 1           ◄── ¡FALTA EN LA OFICIAL!
+              refresh(r)
+              p.dstIP = r.dstIP                          // ◄── SE PISA el destino
+              enviarPaqueteALaRed(p)
+</code></pre></div>
+
+<p><strong>Puntos (30):</strong> (a) qué campos y por qué no los puertos (8), (b) las dos estructuras y la
+justificación de la clave (10), (c) el procedimiento con los dos sentidos, el <em>timeout</em> y el
+contador (12).</p>
+<blockquote>
+<p><strong>Nota final sobre la oficial:</strong> la solución oficial tiene <strong>cuatro errores reales</strong> en el
+pseudocódigo (el <code>p.dstIP = reg.srcIP</code> invertido, el contador que nunca se incrementa, la
+condición de <em>timeout</em> invertida y el barrido O(n) por paquete). <strong>El enunciado, la parte a)
+y la parte b) de la oficial están bien.</strong> Si tu respuesta los señala, sumás puntos: a la
+cátedra le importa que entiendas el mecanismo, no que copies.</p>
+</blockquote>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen</h2>
+<ol>
+<li><strong>NAT</strong> = traducción de direcciones; existe por la <strong>escasez de IPv4</strong> y porque las <strong>direcciones privadas no se rutean</strong>. No es seguridad, es escasez.</li>
+<li>La traducción de <strong>dirección sola</strong> soporta <strong>una</strong> sesión por IP pública; la <strong>PAT/NAPT</strong> soporta miles. En FING, "NAT" significa <strong>PAT</strong>.</li>
+<li><strong>Tres fases:</strong> <strong>salida</strong> (se crea la entrada), <strong>entrada</strong> (se busca por <code>(IP pública, puerto destino)</code>; si no está, <strong>se descarta</strong>) y <strong>timeout</strong>.</li>
+<li><strong>Salida:</strong> cambian <strong>IP origen</strong> y <strong>puerto origen</strong>. <strong>Entrada:</strong> cambian <strong>IP destino</strong> y <strong>puerto destino</strong>. Nada más.</li>
+<li><strong>Rompe el aislamiento de capas</strong> porque un router de capa 3 tiene que <strong>leer el puerto TCP/UDP</strong> (capa 4) para saber a qué host interno va.</li>
+<li><strong>Las tres soluciones:</strong> <strong>port forwarding</strong>, <strong>NAT sin traducción</strong> (1:1 declarado) y <strong>el servidor inicia</strong> (la entrada se crea sola; base de SIP, ICE y TURN).</li>
+<li><strong>Hairpinning</strong> permite que un cliente de la LAN alcance a otro por la IP pública del router.</li>
+<li><strong>CGNAT</strong>: sus tres problemas son <strong>conectividad entrante rota</strong>, <strong>señalización complicada</strong> e <strong>IPsec ESP roto</strong>.</li>
+<li>Con IPv6 <strong>no hay traducción</strong>: por eso la meta es <strong>eliminarla</strong>, y el <code>Connection ID</code> de QUIC hace que el <em>NAT rebinding</em> ya no rompa las conexiones.</li>
+<li><strong>IPv4 se agotó</strong>: el RIPE hizo su última asignación <code>/22</code> el <strong>25-nov-2019</strong>, y el acceso a Google por IPv6 superó el <strong>50 % el 28-mar-2026</strong>.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> En la tabla NAT, dos sesiones salen del mismo host <code>192.168.1.25</code> con puertos de origen
+1024 y 1025. ¿Cuántas entradas hay y por qué dos?</p>
+<details><summary>Respuesta</summary>
+
+**Dos entradas**, porque la clave es el **par** `(IP origen, puerto origen)`, no la IP sola:
+`(192.168.1.25, 1024) → (220.10.10.30, 50001)` y `(192.168.1.25, 1025) → (220.10.10.30, 50002)`.
+Un navegador abre varias conexiones al mismo servidor y cada una necesita su puerto de origen.
+Si la tabla se indexara solo por IP, la segunda conexión **reutilizaría** la primera y las dos
+irían al mismo servidor, que es justo lo que se quiere evitar.
+
+</details>
+
+<p><strong>2.</strong> En el sentido de entrada, ¿qué pasa con un paquete cuyo par <code>(IP pública, puerto público)</code>
+<strong>no está</strong> en la tabla?</p>
+<details><summary>Respuesta</summary>
+
+**Se descarta.** El router solo tiene entradas para las sesiones que él abrió (o que algún host
+de la LAN abrió saliendo). Es la base del **CGNAT**: como la tabla del operador solo se llena
+cuando el cliente sale, **nadie de Internet puede iniciar una conexión** hacia la casa del
+cliente, y por eso VoIP, juegos y servidores domésticos no funcionan detrás de un CGNAT.
+
+</details>
+
+<p><strong>3.</strong> ¿Por qué la NAT rompe el aislamiento de capas? Formulá la respuesta en dos frases.</p>
+<details><summary>Respuesta</summary>
+
+> Un router de capa 3 debería decidir el reenvío mirando **solo la dirección IP destino**, pero
+> con NAT todos los paquetes entrantes tienen como destino la **IP pública del propio router**,
+> que es única para toda la red interna.
+
+> Para saber a qué máquina interna va cada paquete, el router tiene que consultar el **puerto
+> TCP/UDP de destino**, que es un campo de **capa 4**. Un dispositivo de capa 3 dependiendo de
+> un protocolo de capa 4 es justamente una invasión de capas.
+
+Las consecuencias que suman puntos: **cualquier protocolo de capa superior que no sea TCP o
+UDP deja de funcionar**, se rompe la **extensibilidad** del modelo, y se rompe la
+**transparencia extremo a extremo** (IPsec en modo ESP cifra la cabecera IP, y una NAT la
+reescribe, así que la autenticación falla).
+
+</details>
+
+<p><strong>4.</strong> ¿Cuál es el problema del P2P detrás de un CGNAT, y por qué el <em>hole punching</em> no
+siempre lo resuelve?</p>
+<details><summary>Respuesta</summary>
+
+El cliente **no puede iniciar conexiones entrantes**: la tabla del CGNAT solo se llena cuando sale,
+y el operador residencial no ofrece *port forwarding*.
+
+El **STUN con *hole punching*** funciona porque el cliente consulta a un STUN su **dirección
+pública**, los dos se la pasan y golpean el hueco. Pero **falla** contra un **NAT simétrico**
+(asigna un puerto distinto según el destino) y contra un CGNAT que **filtra** el tráfico no
+iniciado. Ahí solo queda el **TURN**, que relay, con su costo y su latencia.
+
+</details>
+
+<p><strong>5.</strong> ¿Qué tres cosas hay que mantener en un balanceador de carga tipo <code>2008-12 Problema 1</code>?
+Mencioná los dos errores del pseudocódigo oficial.</p>
+<details><summary>Respuesta</summary>
+
+**Tres cosas:** (1) indexar la tabla por el par **`(IP origen, puerto origen)`** del cliente
+externo, que es lo único que llega sin traducir; (2) guardar en cada registro la **IP del
+servidor privado elegido**, porque con `dstIP` siempre igual (`IP_SERVICIO`) no se distingue
+nada; (3) mantener un **contador de conexiones por servidor** para elegir el menos cargado, y
+un **`timestamp`** por entrada para el *timeout*.
+
+**Los dos errores de la oficial:** (i) escribe `p.dstIP = reg.srcIP` cuando lo que hay que pisar
+es **`reg.dstIP`** (el servidor elegido), contradiciendo su propio apartado a); y (ii)
+**nunca incrementa `cantidadConexiones`**, así que el balanceo nunca elige el menos cargado.
+
+</details>
+
+<p><strong>6.</strong> Un amigo te dice: <em>"configurá port forwarding y el problema de que no te puedan llegar
+adentro desaparece para siempre"</em>. ¿Qué le responderías?</p>
+<details><summary>Respuesta</summary>
+
+Que el *port forwarding* **solo alcanza para el servidor al que apunte**, y mientras nadie
+mantenga viva la entrada de la tabla NAT para esa combinación de puertos el problema vuelve:
+cubre un puerto (o un rango), cada conexión nueva de otro cliente necesita su propia entrada,
+las entradas **caducan** a los `TIMEOUT` segundos, y el router tiene un **pool finito de
+puertos** (unos 64 000 por IP pública) que con CGNAT comparte con todos los clientes.
+
+La solución que de verdad resuelve el "que me lleguen adentro" es la **solución 3**: que el
+servidor (o el propio cliente) **inicie** la conexión, como hacen SIP, ICE y TURN.
+
+</details>
+
+<p><strong>7.</strong> ¿Qué cambia con IPv6, y por qué la meta del IPv6 es eliminar la NAT?</p>
+<details><summary>Respuesta</summary>
+
+Con IPv6 hay `2¹²⁸` direcciones: **no hace falta traducción**. Y no se traduce porque hay
+**espacio de sobra**, porque la NAT **rompe la extensibilidad extremo a extremo** (cabeceras de
+extensión y movilidad necesitan ver la IP real), porque **no es *stateful-friendly* con IPsec**
+(rompe ESP) y porque un host IPv6-only necesitaría **464XLAT** para el contenido IPv4.
+
+**El dato que lo confirma:** el 28-mar-2026 el acceso a Google por IPv6 superó el **50 %** por
+primera vez (50,10 %). Es desigual (Francia e India sobre el 70 %, China bajo el 5 %), y **el
+CGNAT es el nuevo default de la capa 3 de acceso** mientras tanto.
+
+</details>
+
+<p><strong>8.</strong> ¿Qué es el <em>hairpinning</em> y por qué hace falta?</p>
+<details><summary>Respuesta</summary>
+
+Es el ajuste del router NAT que le permite a un cliente de la LAN alcanzar a **otro cliente de
+la misma LAN** usando la **IP pública** del router. Sin él, el paquete que A manda a
+`220.10.10.30:50002` (la dirección pública de B) no llega a B: el router no lo reenvía por la
+LAN, y muchos descartan por seguridad todo paquete que entra por la **interfaz externa** con
+destino una IP pública **propia**.
+
+Con *hairpin*, el router reconoce que **el destino es él mismo**, busca el par en la tabla
+NAT, lo encuentra y **hace la traducción igual**, reenviando por la **interfaz interna**. Es lo
+que permite el P2P entre dos equipos de la misma LAN sin abrir puertos a mano.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<p><strong>Exámenes</strong>
+- <code>eirc1102</code> / <code>sirc1102</code> (3-feb-2011) — <strong>P4 (10 pts): NAT, por qué rompe el aislamiento de capas, y las tres soluciones</strong>. §3.1.
+- <code>eirc1103</code> / <code>sirc1103</code> (21-feb-2011) — <strong>Problema 2 c: qué campos cambia R1 en cada sentido + tabla NAT</strong>. §3.2. (Los apartados a y b están en la Clase 30.)
+- <code>eirc0812</code> / <code>sirc0812</code> (20-dic-2008) — <strong>Problema 1 (30 pts): variante de NAT para balanceo de carga entre tres servidores privados</strong>, con pseudocódigo. §3.3.
+- <code>sirc1003</code> (mar-2010) P1: subredes privadas y NAT. <code>sirc0903</code> (feb-2009) Problema 2: NAT como proxy.</p>
+<p><strong>Bibliografía</strong>
+- Tanenbaum &amp; Wetherall, <em>Redes de computadoras</em>, 5ª ed., cap. 5.</p>
+<p><strong>RFCs verificados en <code>ACTUALIZACIONES.md</code></strong>
+- <code>RFC 8200</code> — IPv6 (2017, <em>Internet Standard</em>): por qué no hace falta traducción.
+- <code>RFC 6146</code> — NAT64 (2011) y <code>RFC 6147</code> — DNS64 (2011), con <code>RFC 6052</code> y <code>RFC 8880</code>.
+- <code>RFC 7915</code> — SIIT (2016), que <strong>obsoleta</strong> a la <code>RFC 6145</code>.
+- <code>RFC 6333</code> — DS-Lite (2011): dual-stack <em>stateless</em>.
+- <code>RFC 9000</code> — QUIC (2021) §5.1: el <strong>Connection ID</strong> hace que el <em>NAT rebinding</em> no rompa las conexiones.
+- <code>draft-ietf-v6ops-464xlat</code> — 464XLAT, <strong>sigue en borrador</strong>.</p>
+<p><strong>RFCs NO verificados (no los cites sin confirmar)</strong>
+- NAT tradicional (<code>RFC 3022</code>), espacio compartido del CGNAT (<code>RFC 6598</code>), requisitos del CGN
+(<code>RFC 6888</code>), NAT-T (<code>RFC 3948</code>) y detección de <em>NAT rebinding</em> (<code>RFC 8443</code>): <strong>verificar</strong>.</p>
+<p><strong>Clases relacionadas</strong>
+- Clase 26, 27 y 29 (IPv4 y subnetting) · Clase 30 (enrutamiento y ARP) · Clase 36 (IPv6) · Clase 44 (VoIP).</p></body></html>

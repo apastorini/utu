@@ -1,0 +1,1907 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 34 — BGP y el enrutamiento entre operadores</h1>
+<p><strong>Bloque:</strong> D (Capa de red) · <strong>Semana:</strong> 12 · <strong>Duración estimada:</strong> 115 min
+<strong>Correlativa:</strong> Clase 33 (link-state, Dijkstra y OSPF) · <strong>Sigue con:</strong> Clase 35 (fragmentación, MTU y path MTU)
+<strong>Material de referencia:</strong> Tanenbaum cap. 5 (§5.6.4 BGP, "A Case Study in Internet Routing") · RFC 4271, RFC 4456, RFC 5396, RFC 6793, RFC 1997, RFC 2385, RFC 9234, RFC 6810, RFC 6811</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Explicar por qué Internet <strong>no es un grafo único</strong> y por qué en el nivel inter-AS hace falta <strong>política</strong> y no solo un camino más corto.</li>
+<li>Definir un <strong>Sistema Autónomo (AS)</strong> y un <strong>ASN</strong>, explicar cómo se asignan y por qué hoy son <strong>32 bits</strong>.</li>
+<li>Describir <strong>BGP-4</strong>: la sesión entre vecinos, el <strong>handshake</strong> completo y la máquina de estados.</li>
+<li>Explicar por qué BGP es <strong>path-vector</strong> y no distance-vector, y por qué la detección de loops con <code>AS_PATH</code> es <strong>exacta</strong> y no probabilística.</li>
+<li>Recitar la <strong>tabla de desempates</strong> de atributos de decisión en el orden correcto y aplicarla a un caso con cuatro rutas candidatas.</li>
+<li>Distinguir <strong>eBGP</strong> de <strong>iBGP</strong>, explicar la regla del <strong>full-mesh iBGP</strong> y qué problema resuelve <strong>Route Reflection</strong>.</li>
+<li>Explicar el <strong>"hot potato"</strong> con números, y cómo lo corrige el atributo <strong>MED</strong>.</li>
+<li>Describir la <strong>seguridad de BGP</strong>: por qué TCP no alcanza, qué son <strong>RPKI/ROA</strong>, qué son los <strong>roles BGP</strong> y por qué los <strong>route leaks</strong> son el fallo más común.</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2009-03 Pregunta 2</code> (10 pts — enrutamiento jerárquico, IGP con jerarquías y <strong>hot-potato routing</strong>), <code>2001-08 Problema 2</code> (30 pts — enrutamiento jerárquico y tablas de ruteo), <code>eirc0702 Problema 2</code> (apartado e — enrutamiento hacia Internet con rutas por defecto), <code>2007-03 Problema 2a</code> (IGP con jerarquías y la frontera interior/exterior), <code>2006-08 P3</code> (distance-vector: el contraste con BGP). Todos se resuelven en §3.</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 El problema: Internet no es una red de redes con un grafo, sino con una política</h2>
+<p>La clase anterior terminó con un OSPF corriendo Dijkstra sobre <strong>un</strong> grafo. Todo estaba bien porque había <strong>un solo dominio administrativo</strong>: un área, un LSDB, un árbol.</p>
+<p>Internet no es eso. Internet es <strong>decenas de miles de dominios administrativos independientes</strong>, cada uno con sus equipos, su política, sus acuerdos comerciales y su dinero. Cada uno decide <strong>a quién le anuncia qué</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   Un AS (proveedor de Internet grande), esquemático:
+
+   ┌──────────────────── AS 20070 ────────────────────┐
+   │                                                      │
+   │   [red de clientes]  ── AS 20070 ── AS 20071        │
+   │        BGP                 BGP          BGP         │
+   │         │                   │           │           │
+   │      eBGP ─────────────── iBGP ───── eBGP          │
+   │      (TCP 179)          (TCP 179)    (TCP 179)     │
+   │                                                      │
+   │   OSPF / IS-IS adentro: un solo grafo, un solo SPF   │
+   │   BGP afuera: decenas de rutas, cada una con         │
+   │   atributos de política que nadie más puede ver      │
+   └──────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>El número.</strong> En el momento en que se da esta clase, el número de sistemas autónomos visibles en la tabla global de BGP ronda los <strong>setenta mil</strong>. Ese número cambia todos los meses, así que <strong>medilo vivo</strong> en la página de stats de APNIC o en Cloudflare Radar antes de citar un número, y decí siempre <strong>qué</strong> estás contando (AS activos en la tabla global, no "empresas que tienen internet"). En el curso de 2011 la cifra era de unos treinta mil: <strong>ha más que duplicado</strong>, y esa es la razón por la que BGP no escala como los protocolos que usamos adentro.</p>
+<blockquote>
+<p>⚠️ <strong>Trampa conceptual clásica.</strong> Decir que "Internet es una red de redes" es correcto pero inútil, igual que decir "una LAN es una red de redes de una sola máquina". Lo que hace especial a Internet es que cada red de redes tiene <strong>una política distinta</strong>, y esa política es lo que se negocia.</p>
+</blockquote>
+<h3>Por qué no alcanza con "el camino más corto"</h3>
+<div class="codehilite"><pre><span></span><code>   En un grafo, la pregunta es:        ¿cuál es el camino más corto?
+     → hay UNA respuesta
+     → el algoritmo la calcula
+
+   En Internet, la pregunta es:         ¿cuál de los 300 caminos
+                                          que tengo hasta tu red
+                                          quiero usar HOY?
+     → hay TRESCIENTAS respuestas válidas
+     → y todas dan un resultado
+     → la elección es un ACTO DE POLÍTICA, no un cálculo
+</code></pre></div>
+
+<p>Las tres razones por las que el camino más corto <strong>no</strong> es la respuesta correcta en el nivel inter-AS:</p>
+<table>
+<thead>
+<tr>
+<th>Razón</th>
+<th>Consecuencia práctica</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Coste económico</strong></td>
+<td>El enlace tránsit <strong>se paga</strong>. Mandar por el más corto puede es exactamente lo que nadie quiere.</td>
+</tr>
+<tr>
+<td><strong>Relaciones comerciales</strong></td>
+<td>Un AS transita de other's traffic solo si tiene peering o acuerdo.</td>
+</tr>
+<tr>
+<td><strong>Latencia y riesgo</strong></td>
+<td>El camino más corto en número de saltos puede pasar por un enlace transatlántico de 3 saltos.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>La frase para el examen:</strong> <em>"BGP no es el algoritmo más corto de Internet: es el protocolo que permite a cada AS expresar su propia política de alcanzabilidad, y por eso siempre encuentra una respuesta, aunque no sea la de menor costo."</em></p>
+</blockquote>
+<h2>1.2 El Sistema Autónomo y el ASN</h2>
+<p>Un <strong>sistema autónomo (AS, Autonomous System)</strong> es <strong>un conjunto de prefijos IP y un conjunto de routers que los anuncia con una política única y consistente</strong>. Es una noción <strong>administrativa</strong>, no técnica.</p>
+<div class="codehilite"><pre><span></span><code>   ¿Qué hace que un conjunto de prefijos sea UN AS?
+   ────────────────────────────────────────────────────────────
+   · un solo Routing Policy declarado
+   · un único ORIGIN de las rutas en BGP
+   · routing autónomo: decide qué anuncia y a quién,
+     y sobre qué NumericRoutesMinúsculas puede contar de forma razonable
+   · un ASN que lo identifica en el plano de control
+
+   (lo que NO define un AS: la tecnología de los enlaces,
+    el IGP que usen adentro, o el número de routers)
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Cómo se asigna</th>
+<th>Detalle</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>RIR → ISP</strong></td>
+<td>Los cinco RIR (ARIN, RIPE NCC, APNIC, LACNIC, AFRINIC) asignan bloques <strong>públicos</strong> de IPv4 y /32 de IPv6</td>
+</tr>
+<tr>
+<td><strong>ISP grande → cliente</strong></td>
+<td>Un operador que ya tiene un AS puede delegar un <strong>propio ASN</strong> a un cliente grande. El cliente es un AS <strong>independiente</strong></td>
+</tr>
+<tr>
+<td><strong>Multihoming</strong></td>
+<td>Un cliente con <strong>dos</strong> proveedores tiene su propio ASN y dos sesiones eBGP, y elige qué se anuncia a quién</td>
+</tr>
+<tr>
+<td><strong>Privado</strong></td>
+<td>Hay rangos reservados para uso <strong>privado</strong>: se usan en redes grandes que no tocan Internet</td>
+</tr>
+</tbody>
+</table>
+<h3>El ASN: de 16 a 32 bits</h3>
+<div class="codehilite"><pre><span></span><code>   AS de 16 bits (2 bytes)   ── el clásico
+   ──────────────────────────────────────
+   Rango 1 .. 65535
+   65535 valores. Agotado a fines de los '90.
+
+   AS de 32 bits (4 bytes)   ── el vigente
+   ──────────────────────────────────────
+   Rango 1 .. 4294967295
+   65536 valores nuevos, más los 65535 viejos reasignados.
+
+   Notación decimal "asdot":   1.10   o  1.0.0.10
+   Notación decimal "asplain":  65546 (o 1.0.0.10 en_configs)
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Documento</th>
+<th>Qué dice</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>RFC 4893</code></strong></td>
+<td>El <strong>problema</strong>: el campo de 2 octetos del AS_PATH ya no alcanza</td>
+</tr>
+<tr>
+<td><strong><code>RFC 6793</code></strong></td>
+<td>El <strong>mecanismo</strong>: se agrega una <strong>capacidad opcional</strong> (Capability TLV) al mensaje OPEN que dice "soporte AS de 4 octetos", y un atributo opcional con el AS de 32 bits</td>
+</tr>
+<tr>
+<td><strong><code>RFC 5396</code></strong></td>
+<td>La <strong>notación decimal</strong> (<code>asdot</code> y <code>asplain</code>)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>El detalle fino, que es lo que se pregunta:</strong> los dos routers que se hablan <strong>tienen que ponerse de acuerdo</strong>. El router que anuncia un ASN mayor que 65535 tiene que announce la <strong>Capacidad</strong> en el OPEN. Si el vecino es viejo y no entiende la capacidad, la sesión <strong>no se establece</strong>: no hay un modo degradado. Por eso la transición del AS de 16 al de 32 bits tardó años, y no fue un problema de falta de números sino de <strong>interoperabilidad del handshake</strong>.</p>
+<blockquote>
+<p><strong>No inventar:</strong> <code>AS_SET</code> (cuando una ruta atraviesa un AS que no anuncia prefijo, se agrupa en un AS_SET) y el tema de los <strong>private ASNs</strong> existen, pero el número de RFC que reserva los rangos privados <strong>no está</strong> en nuestra lista de referencia: verificar en <code>rfc-editor.org</code> antes de citarlo en un examen.</p>
+</blockquote>
+<h2>1.3 BGP-4 y la sesión entre vecinos</h2>
+<p><strong>BGP-4 (<code>RFC 4271</code>)</strong> es el protocolo de enrutamiento <strong>entre</strong> sistemas autónomos. Corre <strong>directamente sobre TCP</strong>, en el <strong>puerto 179</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   ¿Por qué TCP y no un protocolo como UDP o como el de OSPF?
+
+   ┌──────────────────────────────┬───────────────────────────┐
+   │  Lo que BGP NECESITA         │  Lo que TCP LE DA         │
+   ├──────────────────────────────┼───────────────────────────┤
+   │  que los mensajes lleguen    │  fiabilidad (retransmisión)│
+   │  y en orden                 │                           │
+   │  que no se dupliquen ni      │  orden (números de        │
+   │  se pierdan fragmentos       │  secuencia TCP)           │
+   │  control de congestión       │  control de flujo +       │
+   │  (Internet es best effort,   │  control de congestión    │
+   │  pero BGP no debe sumar      │  (ventana)                │
+   │  carga extra al backbone)   │                           │
+   │  NO hay flooding: cada       │  conexión punto a punto   │
+   │  vecino recibe solo lo      │  con un solo vecino        │
+   │  que le corresponde         │                           │
+   └──────────────────────────────┴───────────────────────────┘
+</code></pre></div>
+
+<p>Esa última fila es la clave conceptual: <strong>BGP no inunda nada</strong>. El flooding de LSA es un mecanismo de capa 3 con TTL y multidifusión; BGP usa una <strong>sesión punto a punto TCP por vecino</strong>. El precio es que hay que configurar los vecinos a mano (o por algún protocolo de configuración), y el beneficio es que el control de congestión de TCP protege el backbone de la señalización.</p>
+<p><strong>El modelo de datos:</strong> BGP es un <strong>vecino a vecino</strong> (<em>neighbor-to-neighbor</em>), no un <strong>nodo a nodo</strong> (<em>node-to-node</em>).</p>
+<div class="codehilite"><pre><span></span><code>   La diferencia es brutal:
+
+   LINK-STATE (nodo a nodo):
+      R1 inunda a R2, R3, R4...  →  TODOS quedan con la MISMA base.
+      Después cada uno calcula lo mismo. El resultado es idéntico.
+
+   BGP (vecino a vecino):
+      R1 habla con R2.  R2 habla con R3.  R3 habla con R1. ...
+      Cada sesión es una relación PRIVADA entre dos routers.
+      R1 puede estar informado de algo que R4 no sabe, y al revés.
+      ⇒ NO hay una base común, y por eso cada router decide con SU
+        propia política. Esa es la razón de que BGP pueda tener
+        "decisiones contradictorias" sin que nada esté roto.
+</code></pre></div>
+
+<blockquote>
+<p><strong>Lo que esto implica para el forwarding:</strong> las dos mejores rutas de BGP pueden <strong>disputar el tráfico</strong>. Si los routers vecinos toman cada uno un camino distinto para el mismo prefijo, el resultado es un <strong>laqueo</strong> (<em>load-balancing</em>) o un <strong>tráfico en la dirección equivocada</strong>. BGP resuelve eso en §1.7 con el <strong>full-mesh iBGP</strong> y el <strong>NEXT_HOP</strong> inalterado.</p>
+</blockquote>
+<h2>1.4 Path-vector: la diferencia clave con distance-vector</h2>
+<p>Un protocolo <strong>path-vector</strong> no manda "a la red X estoy a distancia 4". Manda <strong>el camino completo</strong>.</p>
+<h3>AS_PATH: la lista, no el número</h3>
+<div class="codehilite"><pre><span></span><code>   Lo que BGP anuncia:
+
+     NLRI:      192.0.2.0/24          (el prefijo)
+     AS_PATH:   20070  15169  20115   (por dónde se llegó)
+
+   ... y el router receptor le PREPEND a su propio ASN cuando
+   re-anuncia la ruta:
+
+     AS_PATH:   20115  20070  15169  20115     ← ¡no!  se rechaza. Ver abajo.
+</code></pre></div>
+
+<p>La regla que define a BGP es una sola:</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────────────────────────────────────┐
+   │  Un router NO ACEPTA ni REEVALUA una ruta cuyo AS_PATH   │
+   │  contenga su PROPIO ASN.                                  │
+   │                                                          │
+   │  "Si mi ASN ya está en el camino que me ofrecen, alguien  │
+   │   me está devolviendo una ruta que yo mismo anuncié.      │
+   │   Eso solo puede significar un bucle, así que la descarto." │
+   └──────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p>Veamos el mecanismo paso a paso, que es lo que hay que saber dibujar:</p>
+<div class="codehilite"><pre><span></span><code>   t0   AS 20070 anuncia a AS 15169:   AS_PATH = [20070]
+   t1   AS 15169 anuncia a AS 20115:   AS_PATH = [15169, 20070]
+   t2   AS 20115 anuncia a AS 33000:   AS_PATH = [20115, 15169, 20070]
+   t3   AS 33000 anuncia a AS 20070:   AS_PATH = [33000, 20115, 15169, 20070]
+        ┌──────────────────────────────────────────────────────────┐
+        │  20070 RECHAZA la ruta: su propio ASN (20070) ya está  │
+        │  en el AS_PATH. No la acepta, no la instala, no la     │
+        │  anuncia. Fin. NO se genera ningún bucle.                │
+        └──────────────────────────────────────────────────────────┘
+
+   t4   20115 EXPIRA y avisa a 15169:   "dejá de usar la ruta por mí"
+        15169 la borra y avisa a 33000, que la borra, que avisa a
+        20070 (que ya nunca la tenía). Todo el camino se deshace
+        solo, SIN conteo a infinito y SIN split horizon.
+</code></pre></div>
+
+<h3>Por qué es <strong>exacto</strong> y no probabilístico</h3>
+<p>Esta es la diferencia de fondo, y es la que más se pregunta.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Distance-vector</strong> (clase 32)</th>
+<th><strong>Path-vector</strong> (BGP)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Qué viaja</td>
+<td><strong>Una estimación de distancia</strong>, que puede estar vieja</td>
+<td><strong>La historia exacta</strong> del camino, que no puede envejecer</td>
+</tr>
+<tr>
+<td>Cómo se detecta un bucle</td>
+<td><strong>Contando</strong>: si el costo sube, "algo anda mal". Con <em>hold-down</em> y <em>poison reverse</em>, es <strong>probabilístico</strong>: funciona en la mayoría de los casos y falla en algunos</td>
+<td><strong>Mirando</strong>: si mi ASN está en la lista, es un bucle. <strong>Exacto, siempre</strong></td>
+</tr>
+<tr>
+<td>Qué pasa con el rumor incorrecto</td>
+<td>Se <strong>realimenta</strong>: <code>R2</code> le dice a <code>R1</code> que llega a destino a 3 usando a <code>R1</code>, y los dos suben la cuenta</td>
+<td>No hay rumor de rutas, así que no hay nada que realimentar</td>
+</tr>
+<tr>
+<td>Split horizon</td>
+<td><strong>Imprescindible</strong></td>
+<td><strong>Innecesario</strong>, y no porque sea un parche que se olvidó</td>
+</tr>
+<tr>
+<td>Convergencia con un error</td>
+<td>Puede quedar oscilando entre dos valores para siempre</td>
+<td>Converge al camino <strong>más corto en número de AS</strong> que la política permita</td>
+</tr>
+<tr>
+<td>Límite de hops</td>
+<td>RIP: 15, y el 16 es "infinito"</td>
+<td><strong>No hay límite.</strong> El AS_PATH crece, pero no hay tope duro</td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code>   ¿Por qué BGP no cuenta a infinito? Porque no hay información
+   derivada que realimentarse.
+
+   El AS_PATH es un REGISTRO de lo que realmente pasó. Cuando AS
+   20070 recibe una ruta que dice "pasé por 20070", no está leyendo
+   un rumor UpdatedByR3: está leyendo un hecho físico que él mismo
+   genero. La información es verificable por construcción.
+</code></pre></div>
+
+<p><strong>Y el corolario incómodo, que hay que decir:</strong> BGP es exacto contra bucles, pero <strong>no es exacto contra errores de configuración</strong>. Si <code>AS 20070</code> anuncia por error el prefijo de otro, ese error se propaga <strong>a toda la Internet</strong> en cuestión de segundos, sin que ningún mecanismo de conteo a infinito lo frene. La diferencia es que un bucle se autodetiene; <strong>una mentira no</strong>.</p>
+<h2>1.5 El handshake: OPEN → OPEN/ACK → UPDATE → KEEPALIVE</h2>
+<div class="codehilite"><pre><span></span><code>   Los cuatro tipos de mensaje de BGP (header de 19 bytes: marker,
+   length, type):
+
+   1 = OPEN       2 = UPDATE      3 = NOTIFICATION
+   4 = KEEPALIVE  5 = ROUTE-REFRESH
+</code></pre></div>
+
+<h3>El diagrama del establecimiento</h3>
+<div class="codehilite"><pre><span></span><code>   R1 (AS 20070)                                    R2 (AS 15169)
+        │                                                │
+        │  ══ TCP three-way handshake sobre puerto 179 ══▶│
+        │        (el socket lo abre el que decide iniciar)│
+        │                                                │
+        │──── ① OPEN ────────────────────────────────────▶│
+        │      version = 4                               │
+        │      my AS    = 20070                          │
+        │      hold time = 180 s  (por omisión)          │
+        │      BGP Identifier = 10.0.0.1                  │
+        │      Optional Parameters:                       │
+        │        Capability: AS de 4 octetos  ← §1.2      │
+        │        Capability: route refresh (RFC 2918)      │
+        │                                                │
+        │◀─── ② OPEN + KEEPALIVE ─────────────────────────│
+        │      (el OPEN de R2, y en el mismo TCP segment   │
+        │       un KEEPALIVE como respuesta al OPEN, para   │
+        │       confirmar que el OPEN se recibió completo   │
+        │       y que la conexión está viva)               │
+        │                                                │
+        │──── ③ UPDATE ───────────────────────────────────▶│
+        │      Withdrawn Routes: (vacío al principio)       │
+        │      Path Attributes: ORIGIN, AS_PATH, NEXT_HOP,  │
+        │                    LOCAL_PREF                     │
+        │      NLRI: 192.0.2.0/24                          │
+        │             203.0.113.0/24                         │
+        │                                                │
+        │◀─── ③ UPDATE ────────────────────────────────────│
+        │      NLRI: 198.51.100.0/24                       │
+        │                                                │
+        │──── ④ KEEPALIVE, cada 60 s ─────────────────────▶│
+        │◀─── ④ KEEPALIVE, cada 60 s ──────────────────────│
+        │                                                │
+        │      Hold Timer: 180 s sin KEEPALIVE → la sesión │
+        │      se cae y TODAS las rutas aprendidas por ella │
+        │      se borran de la RIB.                        │
+</code></pre></div>
+
+<blockquote>
+<p>⚠️ <strong>No inventar el número de RFC.</strong> El <em>capability</em> de <strong>route refresh</strong> está definido por <code>RFC 2918</code>; ese número <strong>no está</strong> en nuestra lista de referencia, así que en el examen conviene nombrarlo sin número, o verificarlo antes. Todo lo demás que aparece acá (<code>OPEN</code>, <code>UPDATE</code>, <code>KEEPALIVE</code>, el hold time de 180 s y el keepalive de 60 s) está en <code>RFC 4271</code>.</p>
+</blockquote>
+<h3>La máquina de estados</h3>
+<div class="codehilite"><pre><span></span><code>   Idle
+     │  (evento manual: se quiere hablar con este vecino)
+     │  se abre el socket TCP al puerto 179
+     ▼
+   Connect
+     │  (se espera a que el TCP se complete)
+     │  si falla, se reintenta cada ConnectRetryTime (120 s)
+     ▼
+   Active
+     │  (el OPEN fue enviado; se espera el OPEN del vecino)
+     │  ⚠ En eBGP, si el OPEN no llega, se vuelve a Connect:
+     │    el que no tiene el socket pasivo espera al que sí lo tiene.
+     ▼
+   OpenSent
+     │  (se recibió el OPEN: se comparan AS, version, hold time,
+     │   Router ID. Si no coinciden → NOTIFICATION y Idle)
+     │  se manda el KEEPALIVE de respuesta
+     ▼
+   OpenConfirm
+     │  (se espera el KEEPALIVE del vecino)
+     ▼
+   Established   ← ACÁ se procesan los UPDATE y se anuncian rutas
+     │
+     └── si expira el Hold Timer, o llega un NOTIFICATION,
+         o se cierra el TCP  →  Idle
+</code></pre></div>
+
+<blockquote>
+<p><strong>El detalle que se pregunta:</strong> el estado <code>Active</code> existe porque en <strong>eBGP</strong> los dos extremos no siempre pueden abrir la conexión al mismo tiempo (el "passive" no acepta). El que no está en <em>passive</em> espera; el otro lo busca. Sin ese estado, un router nunca se conectaría a uno que espera.</p>
+</blockquote>
+<h2>1.6 Los atributos de decisión y la tabla de desempates</h2>
+<p>BGP recibe <strong>muchas</strong> rutas al mismo prefijo y tiene que elegir una. Lo hace con un <strong>proceso de decisión</strong> determinista que evalúa atributos en un orden fijo.</p>
+<h3>Los atributos, uno por uno</h3>
+<table>
+<thead>
+<tr>
+<th>Atributo</th>
+<th>Significado</th>
+<th>Dirección del criterio</th>
+<th>Dónde se usa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Weight</strong> (no estándar)</td>
+<td>Preferencia <strong>local</strong> del router</td>
+<td><strong>Mayor</strong> gana</td>
+<td>Solo iBGP, y es propiedad del <em>vendor</em></td>
+</tr>
+<tr>
+<td><strong>LOCAL_PREF</strong></td>
+<td>Preferencia que el AS le da a una ruta</td>
+<td><strong>Mayor</strong> gana</td>
+<td><strong>Solo iBGP</strong>. El valor por omisión es 100</td>
+</tr>
+<tr>
+<td><strong>Origen local</strong></td>
+<td>¿La ruta nació en este AS?</td>
+<td><strong>Local gana</strong> sobre todo lo demás</td>
+<td>El atajo para no elegir un camino que vuelva a uno mismo</td>
+</tr>
+<tr>
+<td><strong>AS_PATH length</strong></td>
+<td>Cantidad de AS por los que pasó</td>
+<td><strong>Menor</strong> gana</td>
+<td>eBGP e iBGP. <strong>Es el criterio clásico de "corto"</strong></td>
+</tr>
+<tr>
+<td><strong>Origin</strong></td>
+<td>Cómo entró la ruta en BGP</td>
+<td><code>IGP</code> &lt; <code>EGP</code> &lt; <code>Incomplete</code> (en ese orden de preferencia)</td>
+<td>Se usa si todo lo anterior empata</td>
+</tr>
+<tr>
+<td><strong>MED</strong> (<em>Multi-Exit Disc</em>)</td>
+<td>Métrica del AS <strong>vecino</strong></td>
+<td><strong>Menor</strong> gana</td>
+<td><strong>Solo comparable entre rutas del mismo AS vecino</strong></td>
+</tr>
+<tr>
+<td><strong>eBGP sobre iBGP</strong></td>
+<td>Origen de la sesión</td>
+<td><strong>eBGP gana</strong></td>
+<td>Se usa si todo lo anterior empata</td>
+</tr>
+<tr>
+<td><strong>Métrica IGP al NEXT_HOP</strong></td>
+<td>Costo interno hasta el siguiente salto</td>
+<td><strong>Menor</strong> gana</td>
+<td>El "hot potato" de §1.8</td>
+</tr>
+<tr>
+<td><strong>Router ID más bajo</strong></td>
+<td>Desempate final</td>
+<td><strong>Menor</strong> gana</td>
+<td>Solo para que sea <strong>determinista</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>La tabla de desempates, en orden</h3>
+<p>Esto es literal de <code>RFC 4271</code> más las extensiones, y es lo que hay que recite:</p>
+<div class="codehilite"><pre><span></span><code>   Bajar por la lista y quedarse con la que gana en el primer
+   criterio donde haya diferencia. Todas las rutas que ganan los
+   criterios anteriores siguen compitiendo.
+
+   1. Weight                    mayor gana       (local, no estándar)
+   2. LOCAL_PREF                mayor gana       (solo iBGP)
+   3. Ruta originada localmente local gana
+   4. AS_PATH más corto         menor gana       ★ el criterio clásico
+   5. ORIGIN                    IGP &gt; EGP &gt; Incomplete
+   6. MED                       menor gana       ★ solo entre el mismo AS vecino
+   7. eBGP sobre iBGP           eBGP gana
+   8. Métrica IGP al NEXT_HOP   menor gana       ★ el hot potato
+   9. Router ID más bajo        menor gana       (determinismo)
+</code></pre></div>
+
+<h3>NEXT_HOP y ORIGIN, en detalle</h3>
+<div class="codehilite"><pre><span></span><code>   NEXT_HOP: la dirección IP a la que hay que enviar el paquete para
+   seguir por esta ruta.
+
+   · En eBGP, el que anuncia pone SU PROPIA dirección en el NEXT_HOP.
+     "Si querés llegar por acá, entrá por mí."
+   · En iBGP, el que anuncia NO cambia el NEXT_HOP. Deja el que
+     aprendió del eBGP de entrada.
+     ⇒ de ahí sale la necesidad del **NEXT_HOP self** (§1.7).
+
+   ORIGIN: dice cómo se originó la ruta.
+     IGP         → la ruta entró por un IGP (OSPF, IS-IS) [la mejor]
+     EGP         → la ruta entró por un EGP legado, hoy es rarísimo
+     Incomplete  → la ruta se redistribuyó desde otro protocolo, o el
+                   AS no lo originatorió: es el peor de los tres.
+</code></pre></div>
+
+<h3>Communities (<code>RFC 1997</code>)</h3>
+<p>Un atributo de 32 bits que lleva <strong>etiquetas</strong> que los routers interpretan con reglas. Es la forma de decir "trato especial" sin tocar la configuración de cada router:</p>
+<table>
+<thead>
+<tr>
+<th>Community</th>
+<th>Significado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NO_EXPORT</code></td>
+<td>No la anuncies <strong>fuera</strong> de este AS</td>
+</tr>
+<tr>
+<td><code>NO_ADVERTISE</code></td>
+<td>No la anuncies <strong>a nadie</strong></td>
+</tr>
+<tr>
+<td><code>NO_EXPORT_SUBCONFED</code></td>
+<td>No la anuncies fuera de la confederación</td>
+</tr>
+<tr>
+<td><code>65000:100</code> (formato <code>AS:value</code>)</td>
+<td><strong>Definida por el operador</strong>, con el AS como espacio de nombres</td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code>   Ejemplo real: un AS de tránsito marca con NO_EXPORT las rutas de
+   sus clientes directos. El resultado es que ese cliente es
+   alcanzable por los peers de ese AS, pero que los peers NO lo
+   anuncian hacia afuera. Es una forma de aplicar "hot potato"
+   invertido sin tocar una sola métrica.
+</code></pre></div>
+
+<p><strong>Y <code>AS_PATH prepending</code></strong>, que es lo que hace el 95 % de lasYPE policy en la práctica y que no es un atributo sino un <strong>truco</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   Un AS que quiere salir menos por un vecino anuncia la misma ruta
+   VARIAS VECES con su propio ASN repetido al principio:
+
+      AS_PATH real:       20070  15169  20115            (3 saltos)
+      AS_PATH prepended:  20070  20070  20070  15169  20115   (5 saltos)
+
+   Los vecinos que usan "menor AS_PATH gana" lo evitan. No obliga a
+   nadie: un vecino que prefiera otra cosa (menor MED, mayor
+   LOCAL_PREF, o que tenga un peering con vos) lo ignora.
+</code></pre></div>
+
+<h2>1.7 eBGP, iBGP, full-mesh y Route Reflection</h2>
+<h3>eBGP contra iBGP</h3>
+<div class="codehilite"><pre><span></span><code>   eBGP:  entre routers de AS DISTINTOS
+          ├─ el que anuncia REESCRIBE el NEXT_HOP con su propia IP
+          ├─ el AS_PATH se le PREPENDea con su ASN
+          ├─ el TTL del paquete BGP pasa a 1 (no sale del AS)
+          └─ el LOCAL_PREF y el WEIGHT no se anuncian
+
+   iBGP:  entre routers del MISMO AS
+          ├─ el que anuncia NO toca el NEXT_HOP
+          ├─ el AS_PATH NO cambia (ya incluye el ASN propio)
+          ├─ sí puede anunciar LOCAL_PREF
+          └─ ⚠ REGLA CRÍTICA: una ruta aprendida de un iBGP NO se
+             puede re-anunciar a OTRO iBGP
+</code></pre></div>
+
+<h3>La regla y por qué existe el full-mesh</h3>
+<div class="codehilite"><pre><span></span><code>   La regla: "lo que aprendí de un vecino iBGP no se lo cuento a otro
+   vecino iBGP". Sin esta regla, un router que aprendió una ruta de
+   R1 se la pasa a R3, que se la pasa a R5, que se la pasa a R2, que
+   se la pasa a R1...  BUCLE. Y como el NEXT_HOP no se reescribe, los
+   paquetes se mandan en círculos.
+
+   Con la regla, ¿qué pasa?
+   R2 aprende de R1.
+   R3 NO puede aprender de R2.  ✗  ⇒ R2 y R3 no coinciden.
+
+   La solución clásica: que R1 se lo cuente a TODOS los demás.
+
+          R1  ────────►  R2
+          │  ╲           │
+          │    ╲         │
+          │      ╲       │
+          ▼        ╲     ▼
+          R3  ────────►  R4
+
+   El FULL-MESH: todos con todos.
+</code></pre></div>
+
+<p><strong>El costo, que es la razón por la que existe Route Reflection:</strong></p>
+<div class="codehilite"><pre><span></span><code>   Sesiones iBGP necesarias =  N(N−1)/2
+
+   N = 5    →  10 sesiones
+   N = 10   →  45 sesiones
+   N = 20   → 190 sesiones
+   N = 50   → 1225 sesiones
+   N = 100  → 4950 sesiones
+   N = 200  → 19.900 sesiones
+
+   Con Route Reflection:  O(N)
+</code></pre></div>
+
+<h3>Route Reflection (<code>RFC 4456</code>)</h3>
+<p>La idea: un router puede hacer de <strong>espejo</strong> de otro, y entonces sí puede pasarle rutas.</p>
+<div class="codehilite"><pre><span></span><code>   ┌────────┐   ◄── cliente ──►   ┌──────────┐   ◄── cliente ──►  ┌────────┐
+   │  R2    │                       │    RR    │                    │  R4    │
+   └────────┘                       └──────────┘                    └────────┘
+                                       ▲
+                                       │ (leLearn de él, y le reenvía)
+                                       │
+       R2 aprende de R1 (eBGP) ───────┘ y el RR lo reenvía a R4
+</code></pre></div>
+
+<p><strong>Los dos atributos que hacen que el diseño sea seguro</strong> — y son 2 preguntas de examen ensured:</p>
+<table>
+<thead>
+<tr>
+<th>Atributo</th>
+<th>Para qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ORIGINATOR_ID</strong></td>
+<td>Identifica al router del cluster que <strong>originó</strong> la ruta. Si un cliente recibe por reflection una ruta cuyo <code>ORIGINATOR_ID</code> es él mismo, <strong>la descarta</strong>. Es el split horizon del path-vector</td>
+</tr>
+<tr>
+<td><strong>CLUSTER_LIST</strong></td>
+<td>Lista de los <code>CLUSTER_ID</code>s por los que pasó la ruta. Si vuelve a aparecer uno, <strong>la descarta</strong>. Evita bucles entre route reflectors</td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code>   Las dos reglas del protocolo:
+
+   1. Una ruta aprendida de un cliente iBGP NO se reenvía a los
+      OTROS clientes (sí a los demás peers y al resto del cluster).
+      → es la regla original, adaptada
+
+   2. Una ruta aprendida de un peer iBGP o de un cliente NO se
+      reenvía a ningún otro cliente.
+
+   Y las dos reglas de NO reenvío:
+   · si mi ORIGINATOR_ID == el de la ruta → no la reenvío
+   · si mi CLUSTER_ID ya está en el CLUSTER_LIST → no la reenvío
+</code></pre></div>
+
+<p><strong>Y el detalle de implementación que se pregunta siempre:</strong> con route reflection, el <strong>NEXT_HOP sigue siendo el del eBGP de entrada</strong>. El router interior que recibe la ruta tiene que <strong>resolver ese NEXT_HOP</strong> usando su IGP, o cambiarlo a sí mismo con <strong>NEXT_HOP self</strong> en su <code>UPDATE</code>. Sin eso, el router no tiene por dónde mandar el paquete.</p>
+<h2>1.8 "Hot potato": por qué un AS prefiere salir por el vecino más cercano</h2>
+<div class="codehilite"><pre><span></span><code>   El caso clásico, que hay que dibujar:
+
+   ┌──────────────── AS 20070 ─────────────────┐
+   │                                             │
+   │   [servidor local]                          │
+   │        │                                    │
+   │        ├────────── enlace a AS 15169 ───────┼──►  destino
+   │        │      10 Mb/s   ·   1 hop           │    (en Internet)
+   │        │                                    │
+   │        └────────── enlace a AS 20115 ───────┼──►  destino
+   │               1 Mb/s    ·   3 hops          │
+   └─────────────────────────────────────────────┘
+
+   El servidor quiere alcanzar un destino que ambos vecinos
+   anuncian. Por cuál sale el router de borde?
+
+   La respuesta "obvia": por 15169, que a 10 Mb/s y a 1 hop.
+
+   La respuesta de BGP: por 20115, el que está MÁS LEJOS.
+</code></pre></div>
+
+<p><strong>¿Por qué?</strong> Porque en la <strong>última milla</strong> no hay ancho de banda gratis. La conexión de <strong>10 Mb/s</strong> de <code>20070</code> a <code>15169</code> es un recurso que el operador tiene que pagar y mantener <strong>entero</strong>. Todo el tráfico que salga por ese enlace, aunque el cliente se vaya enseguida, consume ancho de banda propio y su capacidad de subida.</p>
+<div class="codehilite"><pre><span></span><code>   La analogía: un Starbucks en la esquina de tu casa y otraStarbucks
+   en la esquina de al lado de tu trabajo. El café de la esquina de tu
+   casa es más cómodo. El de tu trabajo es más barato para la empresa
+   porque ya está pagado de antemano por el alquiler de la oficina.
+
+   "hot potato" = "pasame la papa caliente":
+   sacala de tu casa y pasámela a quien está más lejos,
+   mientras la tuya se enfría en el escritorio.
+</code></pre></div>
+
+<h3>Cómo lo corrige el MED</h3>
+<p><code>MED</code> (<em>Multi-Exit Disc</em>) es el atributo que le dice al AS vecino: <strong>"salí por mí, y te paso el costo de salir por mí"</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   El proveedor 15169 anuncia a 20070 dos veces la misma ruta:
+
+     Anuncio 1:  AS_PATH = [15169, 20115]        MED = 50
+     Anuncio 2:  AS_PATH = [15169, 33000]       MED = 200
+
+   Con MED = 50, 20070 tiene un incentivo de 50 para salir por 15169,
+   que es la puerta de salida más barata para él.
+   Con MED = 200, el vecindario prefiere salir por la otra parte.
+</code></pre></div>
+
+<p><strong>Las dos trampas del MED</strong>, que son pregunta clásica:</p>
+<div class="codehilite"><pre><span></span><code>   1. COMPARABLE SOLO DENTRO DEL MISMO AS VECINO.
+      El RFC dice: comparar MED solo entre rutas que vinieron del
+      MISMO neighbour AS. Si no, un vecino con MED = 0 (porque en
+      SU red es normal) te va a ganar todas las comparaciones y te
+      va a arrastrar a un camino objetivamente peor.
+
+      Por eso todos los proveedores grandes tienen una
+      CONFIGURACIÓN: "always compare med" / "never compare med" /
+      "compare only if from the same AS". Es política, no estándar.
+
+   2. NO ES TRANSITIVO NI ORDENABLE.
+      El MED compara ORIGENES (el vecindario), no la red de destino.
+      Que AS-A tenga MED 50 hacia destino X y AS-B tenga MED 80
+      hacia destino X no dice NADA sobre cuál tiene un camino más
+      corto hasta Y. El MED es un número sin unidad: no se suman,
+      no se promedian, no se propagan hacia atrás.
+</code></pre></div>
+
+<p><strong>Y el detalle que le da la vuelta a la aguja:</strong> el "hot potato" se puede invertir <strong>desde el lado del vecino</strong> con <code>LOCAL_PREF</code>. Un AS puede subirle el <code>LOCAL_PREF</code> a las rutas que le llegan por un vecino determinado para que <strong>todo su tráfico de salida</strong> se vaya por ahí, sin tocar la configuración del vecino. Por eso <code>LOCAL_PREF</code> es el atributo <strong>más usado</strong> en la práctica y <code>MED</code> es el segundo.</p>
+<h2>1.9 Por qué BGP no cuenta a infinito ni necesita split horizon</h2>
+<p>Recapitulamos, porque es el cierre conceptual de las clases 32, 33 y 34:</p>
+<div class="codehilite"><pre><span></span><code>   DISTANCE-VECTOR                        LINK-STATE              PATH-VECTOR
+   ───────────────                        ──────────              ───────────
+   viaja: una ESTIMACIÓN                 viaja: un HECHO          viaja: un HECHO
+           de distancia                         local                  de historia
+
+   ¿se puede realimentar?  SÍ             ¿se puede realimentar?  NO
+   ¿qué lo detecta?        CONTAR          ¿qué lo detecta?        NADA: el árbol
+   ¿cuán exacto es?        PROBABILÍSTICO  ¿qué lo detecta?        NO HAY CAMINO
+                            (split horizon,                           QUE VOLVER
+                            hold-down)                                (es un árbol)
+
+   rip → split horizon → pero igual         ospf → flooded →         bgp → AS_PATH →
+   puede oscilar                              inundación O(N)           rechazo exacto
+</code></pre></div>
+
+<p><strong>El argumento completo, en tres pasos, que es lo que hay que escribir:</strong></p>
+<ol>
+<li>
+<p><strong>No hay estimación que realimentarse.</strong> En DV, el problema es que <code>R2</code> comunica a <code>R1</code> una distancia <strong>calculada</strong>, que puede estar vieja y que incluye a <code>R1</code> en el camino. En BGP, lo que viaja es el <strong>AS_PATH</strong>, que es un <strong>registro verificable</strong> de los AS por los que pasó el anuncio. No hay nada derivado.</p>
+</li>
+<li>
+<p><strong>El lazo se reconoce por inspección.</strong> Cuando <code>AS 20070</code> recibe un AS_PATH que contiene <code>20070</code>, el ciclo <strong>está escrito en el mensaje</strong>. No hace falta detectarlo contando: se lee.</p>
+</li>
+<li>
+<p><strong>La detección es estructural, no estadística.</strong> El <em>split horizon</em> de DV es una <strong>heurística</strong>: "no le digas a nadie lo que te llega por él" funciona en el 99 % de los casos y falla en algunos. El filtro de <code>AS_PATH</code> funciona en el <strong>100 %</strong>, porque la condición que chequea es <strong>necesaria y suficiente</strong> para que exista un lazo. No es "una buena heurística contra bucles": es <strong>la definición</strong> del bucle.</p>
+</li>
+</ol>
+<div class="codehilite"><pre><span></span><code>   Y hay una diferencia más, que es la que más se olvida:
+
+   BGP NO TIENE CONVERGENCIA EN EL SENTIDO DE OSPF.
+
+   En OSPF, cuando el flooding termina, TODOS los routers tienen el
+   MISMO árbol. En BGP, cuando "terminó", cada router tiene SU propio
+   mejor camino según SU política, y puede ser distinto del de su
+   vecino. Eso no es un bug: es el diseño.
+
+   El resultado es que BGP no tiene una noción de "estado estable
+   global", y por eso el tráfico puede oscilar entre dos rutas
+   válidos durante minutos (y a veces, con prefijos anunciados y
+   retirados rapidísimo, durante días).
+</code></pre></div>
+
+<h2>1.10 Seguridad: por qué BGP no es seguro</h2>
+<p>BGP corre sobre <strong>TCP/179</strong>, y <strong>TCP no cifra ni autentica nada</strong>. Todo lo que viaja entre dos routers BGP es <strong>texto claro y sin firma</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────────────────────────────────────┐
+   │  LO QUE TCP TE DA          │  LO QUE BGP NECESITA       │
+   │  · fiabilidad              │  · que el vecino SEA        │
+   │  · orden                  │    quien dice ser           │
+   │  · control de flujo       │  · que el CAMINO que dice   │
+   │                            │    sea el que realmente     │
+   │                            │    recorrió                │
+   │                            │  · que NADIE más haya       │
+   │                            │    interceptado el mensaje  │
+   └──────────────────────────────────────────────────────────┘
+                    ↑ ↑ ↑
+        ninguna de las tres cosas la da TCP
+</code></pre></div>
+
+<p><strong>Los dos ataques[I] que eso habilita</strong>, y que hay que nombrar:</p>
+<table>
+<thead>
+<tr>
+<th>Ataque</th>
+<th>Qué hace</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Hijacking de sesión / MITM</strong></td>
+<td>Alguien en el camino intercepta el TCP y manda mensajes BGP falsos. Como no hay cifrado, puede <strong>injectar rutas</strong> y <strong>redirigir tráfico</strong></td>
+</tr>
+<tr>
+<td><strong>Route leak</strong></td>
+<td>Un AS <strong>legítimo y bien configurado</strong> anuncia prefijos que no le pertenecen. No hay ataque: es un error (o una ambición desmedida). Es <strong>el fallo más común de BGP en la práctica</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>El mecanismo clásico: MD5 de sesión (<code>RFC 2385</code>)</h3>
+<p>La primera respuesta fue <strong>firmar cada mensaje</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   · Se calcula un MD5 sobre (password + mensaje BGP) y se lo manda.
+   · El vecino recalcula y compara.
+   · Si no coincide, el mensaje se descarta.
+   · Se protege contra el MITM. NO protege contra nadie que esté
+     legítimamente en el camino y tenga la clave.
+   · Es un mecanismo SIMÉTRICO: ambas partes tienen la misma clave.
+</code></pre></div>
+
+<p>Es <code>RFC 2385</code> (2000), y fue <strong>el</strong> mecanismo de BGP security durante dos décadas.</p>
+<h3>La respuesta moderna: los roles BGP (<code>RFC 9234</code>, 2022)</h3>
+<div class="codehilite"><pre><span></span><code>   La idea: en lugar de PROBAR quién es el vecino (con criptografía),
+   DECLARAR qué relación comercial se supone que hay entre los dos,
+   y rechazar cualquier mensaje que la contradiga.
+
+   ┌──────────────────────────────────────────────────────────┐
+   │  ROLES (declarados en el OPEN y en cada UPDATE)           │
+   │                                                          │
+   │  Provider  → "soy tu proveedor (tú me pagás)"            │
+   │  Customer  → "soy tu cliente (me pagás vos)"              │
+   │  Peer      → "somos pares, ninguno le paga al otro"      │
+   │  RS        → "Route Server"                               │
+   │  RS-Client → " soy cliente de un Route Server"            │
+   │  Lateral   → relación interna de confianza               │
+   │  Internal  → uso interno del AS                          │
+   └──────────────────────────────────────────────────────────┘
+
+   EJEMPLO, que es el que hay que saber:
+
+   ANTES (solo MD5):
+      AS A es cliente de AS B. B anuncia a A un prefijo que en
+      realidad es de C, que es cliente de A.
+      Con MD5, A no tiene forma de saberlo: el mensaje es
+      criptográficamente válido. A lo acepta y lo anuncia. LEAK.
+
+   DESPUÉS (roles):
+      B anuncia a A el prefijo de C con ROL = Provider.
+      A mira su configuración: "B es mi proveedor", y los clientes de
+      A (como C) NUNCA se anuncian por un proveedor. CONTRADICCIÓN.
+      A rechaza la ruta.
+
+   ⇒ El rol es una AFIRMACIÓN VERIFICABLE CONTRA LA CONFIGURACIÓN
+     LOCAL. Y la configuración local es lo único que no se puede
+     falsear con un ataque en el camino.
+</code></pre></div>
+
+<p><code>RFC 9234</code> es de <strong>mayo de 2022</strong>. Su texto dice explícitamente que reemplaza al <code>RFC 2385</code> como mecanismo de referencia: hoy MD5 es <strong>legado</strong>.</p>
+<h3>RPKI / ROA: validar el origen del prefijo</h3>
+<p>MD5 y los roles protegen <strong>el camino</strong>. RPKI protege <strong>la cosa misma</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   El problema que MD5 y los roles NO resuelven:
+
+   AS A (legítimo, bien configurado, sin bugs) anuncia el prefijo
+   203.0.113.0/24, que NO le pertenece. Legalmente puede hacerlo:
+   nadie se lo impide. Y lo anuncia a todo el mundo.
+
+   ¿Cómo sabemos que no le pertenece? Porque hay un REGISTRO.
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Pieza</th>
+<th>Qué es</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ROA</strong> (<em>Resource Origin Authorization</em>)</td>
+<td>Un documento firmado digitalmente que dice: <strong>"el AS X está autorizado a originar el prefijo P"</strong>. Cada RIR lo publica</td>
+</tr>
+<tr>
+<td><strong>RPKI</strong> (<em>Resource PKI Infrastructure</em>)</td>
+<td>La <strong>infraestructura de claves públicas</strong> que firma los ROA. Equivale a la PKI del DNI, pero para prefijos</td>
+</tr>
+<tr>
+<td><strong>RTR</strong> (<em>RPKI to Router</em>)</td>
+<td>El <strong>protocolo</strong> que le lleva los ROA al router, para que pueda validarlos. <code>RFC 6810</code></td>
+</tr>
+<tr>
+<td><strong>Validación</strong></td>
+<td>El router recibe el ROA de un prefijo y de su AS de origen, y lo compara con la ruta que le llega. <code>RFC 6811</code></td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code>   Los tres resultados posibles de la validación de una ruta:
+
+   VALID       el prefijo tiene un ROA y el AS de origen coincide
+   INVALID     el prefijo tiene un ROA y el AS de origen NO coincide
+               → el AS está anunciando algo que no le pertenece. Es un
+                 ataque o un error. → DESCARTA.
+
+   NOT FOUND   el prefijo no tiene ROA. No dice nada. → "no sé", y
+               BGP sigue con su decisión de todas formas.
+
+   ⚠ Y ACÁ ESTÁ LA TRAMPA que hay que aclarar siempre: si el 99 % de
+   los prefijos de Internet están "Not Found", RPKI no cambia
+   ABSOLUTAMENTE NADA para ese 99 %. Solo sirve donde hay ROA. Es
+   por eso que la despliegue real es bajo: no falla, pero tampoco
+   hace casi nada todavía.
+</code></pre></div>
+
+<p><strong>El punto clave para el examen:</strong> RPKI <strong>no cifra ni autentica la sesión</strong>. Valida el <strong>origen declarado del prefijo</strong>, leyendo una cadena de confianza externa a BGP. Es <strong>ortogonal</strong> a MD5 y a los roles: los tres resuelven cosas distintas y ninguno reemplaza a los otros.</p>
+<h3>⚠️ Actualización a 2026</h3>
+<p><strong>Sigue igual — de memoria, sin dudar:</strong>
+- <strong>BGP-4 (<code>RFC 4271</code>)</strong> sigue siendo la especificación vigente. El "4" es la versión, y desde 1994 no cambió el formato.
+- <strong><code>AS_PATH</code> es un <em>path-vector</em></strong>: la lista de AS por los que pasa la ruta, y <strong>un AS no acepta una ruta cuyo AS_PATH contenga su propio AS</strong>. Eso es lo que hace que BGP sea <em>path-vector</em> y no <em>distance-vector</em>.
+- <strong>Sesión sobre TCP/179</strong>: OPEN → OPEN/ACK → UPDATE → KEEPALIVE. Hold time 180 s, keepalive 60 s.
+- <strong>eBGP contra iBGP</strong>; la regla de "no re-anunciar a iBGP lo aprendido de un iBGP" obliga al <strong>full-mesh iBGP</strong>, y de ahí salen las <strong>Route Reflection (<code>RFC 4456</code>)</strong>.
+- <strong>Atributos</strong>: <code>LOCAL_PREF</code> (↑ mejor), longitud de <code>AS_PATH</code> (↓ mejor), <code>MED</code> (↓ mejor, <strong>comparable solo entre rutas del mismo AS vecino</strong>), <code>ORIGIN</code>, <code>NEXT_HOP</code>, <strong>Communities (<code>RFC 1997</code>)</strong>.
+- <strong>"Hot potato"</strong>: cada AS prefiere salir por el eBGP de <strong>menor métrica IGP</strong>. <strong><code>MED</code></strong> es la herramienta para anular esa preferencia.
+- <strong>OSPFv2 (<code>RFC 2328</code>)</strong> = link-state, SPF/Dijkstra, áreas, DR election, multicast 224.0.0.5/6, TTL 1 en el hello.
+- <strong>RIPv2 (<code>RFC 2453</code>)</strong>: métrica ≤ 15, poison reverse (16), split horizon, triggered updates, hold-down. <strong>Sigue siendo <em>Internet Standard</em>, pero está deprecado de facto en Internet</strong>: sobrevive en laboratorios y campus.</p>
+<p><strong>Cambió:</strong></p>
+<ul>
+<li><strong><code>RFC 9234</code> (may-2022): BGP sin MD5 de sesión.</strong> Define <strong>roles BGP</strong> (Provider / Customer / Peer / Lateral / Internal) declarados en OPEN y UPDATE para prevenir y detectar <em>route leaks</em>. Reemplaza al <code>RFC 2385</code> (MD5 de sesión) como mecanismo de referencia.</li>
+<li><strong>RPKI / ROA</strong>: <code>RFC 6810</code> (RTR) y <strong><code>RFC 6811</code></strong> (BGP Prefix Origin Validation). Maduró de idea a <strong>despliegue real</strong>, pero con el matiz de cobertura de §1.10: sin ROA no hay validación. La seguridad de BGP pasó de "confiar en AS_PATH" a "<strong>validar origen con RPKI</strong>".</li>
+<li><strong><code>BGP-LS</code> → <code>RFC 9552</code></strong> (dic-2023), obsoleta RFC 7752.</li>
+<li><strong>EVPN (<code>RFC 7432</code>) + VXLAN (<code>RFC 7348</code>)</strong>: hoy son <strong>el estándar de overlay de datacenter</strong>, no solo académico. Y como el plano de control de EVPN es <strong>BGP</strong>, esto es lo que se conoce como <strong>"BGP para datacenters"</strong>.</li>
+<li><strong>Segment Routing</strong>: <code>RFC 8402</code> (arquitectura, 2018), <code>RFC 8660</code> (SR-MPLS), <strong><code>RFC 8986</code></strong> (SRv6). Es el <strong>sucesor de facto</strong> de MPLS LDP/RSVP-TE en despliegues nuevos: <em>source routing</em> con SIDs y <strong>estado solo en el borde de ingreso</strong>. SRv6 codifica los SIDs en la cabecera IPv6 y <strong>elimina el MPLS por completo</strong>.</li>
+<li><strong>OSPFv3 (<code>RFC 5340</code>)</strong>, IS-IS para IPv6 (<code>RFC 5308</code>): mecanismos idénticos, independientes de IPv6.</li>
+<li><strong>AS de 32 bits</strong>: <code>RFC 4893</code> + <code>RFC 6793</code>; notación decimal <code>RFC 5396</code>. <strong>Ya no existe el problema del AS de 16 bits.</strong></li>
+<li><strong>BMP (<code>RFC 7854</code>)</strong> para monitorear BGP desde fuera.</li>
+</ul>
+<p><strong>Consecuencia para el examen:</strong> si el enunciado dice "describa BGP" o "explique el path-vector", la respuesta con <code>AS_PATH</code> + rechazo del propio ASN + "no cuenta a infinito porque no viaja ninguna estimación" es la que suma. Si menciona seguridad, sumá que <strong>MD5 es legado</strong> y que hoy el mecanismo de referencia son los <strong>roles BGP de <code>RFC 9234</code></strong>, con <strong>RPKI</strong> validando el origen del prefijo.</p>
+<h2>1.11 La tabla resumen: link-state, distance-vector y path-vector</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Distance-vector</strong> (RIP)</th>
+<th><strong>Link-state</strong> (OSPF, IS-IS)</th>
+<th><strong>Path-vector</strong> (BGP)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Qué viaja</strong></td>
+<td>Vector de distancias</td>
+<td>Un <strong>LSA</strong> (hecho local)</td>
+<td>El <strong>AS_PATH</strong> (historia del camino)</td>
+</tr>
+<tr>
+<td><strong>Qué calcula</strong></td>
+<td>Bellman-Ford (iterativo)</td>
+<td>Dijkstra (SPF)</td>
+<td>Proceso de decisión por atributos</td>
+</tr>
+<tr>
+<td><strong>Alcance</strong></td>
+<td>Un AS</td>
+<td>Un área / un IGP</td>
+<td><strong>Internet</strong></td>
+</tr>
+<tr>
+<td><strong>Topología</strong></td>
+<td>No la conoce</td>
+<td><strong>Idéntica en todos</strong> del área</td>
+<td>Cada vecino ve una <strong>vista distinta</strong></td>
+</tr>
+<tr>
+<td><strong>¿Hay bucle?</strong></td>
+<td><strong>Sí</strong>, conteo a infinito</td>
+<td>No (árbol)</td>
+<td>No (rechazo por <code>AS_PATH</code>)</td>
+</tr>
+<tr>
+<td><strong>¿Cómo se rompe?</strong></td>
+<td>Split horizon, hold-down</td>
+<td>Los tres controles del flooding</td>
+<td>Exacta, no probabilística</td>
+</tr>
+<tr>
+<td><strong>¿Quién decide?</strong></td>
+<td>La distancia mínima</td>
+<td>El costo de la métrica</td>
+<td><strong>La política</strong>, atributo por atributo</td>
+</tr>
+<tr>
+<td><strong>Transporte</strong></td>
+<td>UDP 520</td>
+<td>IP protocolo 89</td>
+<td><strong>TCP 179</strong></td>
+</tr>
+<tr>
+<td><strong>Escala</strong></td>
+<td>LAN / campus</td>
+<td>Red corporativa, backbone</td>
+<td><strong>Los ~70.000 AS</strong></td>
+</tr>
+<tr>
+<td><strong>Ejemplo del curso</strong></td>
+<td><code>RFC 2453</code></td>
+<td><code>RFC 2328</code></td>
+<td><code>RFC 4271</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — La tabla de desempates aplicada a cuatro rutas</h2>
+<p><strong>Datos.</strong> En el router <code>R7</code> del AS <strong>20070</strong> llegan cuatro rutas al prefijo <code>198.51.100.0/24</code>, todas aprendidas por <strong>iBGP</strong> de <code>R1</code>, <code>R3</code>, <code>R5</code> y <code>R6</code> respectivamente:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Vecino que la trajo</th>
+<th><code>WEIGHT</code></th>
+<th><code>LOCAL_PREF</code></th>
+<th><code>AS_PATH</code></th>
+<th><code>ORIGIN</code></th>
+<th><code>MED</code></th>
+<th>Tipo de sesión</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td><code>R1</code></td>
+<td>100</td>
+<td>100</td>
+<td><code>20115 15169 20070</code></td>
+<td>IGP</td>
+<td>50</td>
+<td>iBGP</td>
+</tr>
+<tr>
+<td>B</td>
+<td><code>R3</code></td>
+<td>100</td>
+<td><strong>200</strong></td>
+<td><code>33000 20115 20070</code></td>
+<td>IGP</td>
+<td>10</td>
+<td>iBGP</td>
+</tr>
+<tr>
+<td>C</td>
+<td><code>R5</code></td>
+<td><strong>300</strong></td>
+<td>100</td>
+<td><code>15169 20070</code></td>
+<td>Incomplete</td>
+<td>5</td>
+<td>iBGP</td>
+</tr>
+<tr>
+<td>D</td>
+<td><code>R6</code></td>
+<td>100</td>
+<td>100</td>
+<td><code>20115 15169 20070</code></td>
+<td>IGP</td>
+<td>50</td>
+<td>iBGP</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Resolución paso a paso, aplicando el orden de §1.6.</strong></p>
+<p><strong>Paso 1 — <code>WEIGHT</code> (mayor gana).</strong> C tiene 300, los otros 100. <strong>C queda primera; A, B y D siguen.</strong></p>
+<p><em>Interpretación:</em> el <code>Weight</code> es el primer corte y es <strong>local</strong>: no se anuncia a nadie. Configurarlo es la forma más rápida de forzar una salida.</p>
+<p><strong>Paso 2 — <code>LOCAL_PREF</code> (mayor gana).</strong> Solo compite entre las que pasaron el paso 1: B tiene 200, A y D tienen 100. <strong>Gana B.</strong></p>
+<p><em>Interpretación:</em> <code>LOCAL_PREF</code> solo se usa en iBGP y es <strong>la</strong> herramienta de política interna. Acá dice: "la ruta que me trajo <code>R3</code> es la que yo prefiero", aunque el <code>AS_PATH</code> sea más largo.</p>
+<p><strong>Paso 3 — <code>AS_PATH</code> más corto.</strong> Se descarta C (perdió en el paso 1) y se comparan las que quedan: A y D tienen <code>20115 15169 20070</code> (<strong>3 AS</strong>), B tiene <code>33000 20115 20070</code> (<strong>3 AS</strong>). <strong>Empate, todas siguen.</strong></p>
+<p><em>Interpretación:</em> ojo con esto. B tiene el <code>LOCAL_PREF</code> más alto pero <strong>el mismo número de saltos</strong>. Si tuviera 4, seguiría ganando: el <code>LOCAL_PREF</code> gana <strong>antes</strong> que la longitud del <code>AS_PATH</code>. Eso es exactamente lo que significa "el <code>LOCAL_PREF</code> es la política del AS, y el <code>AS_PATH</code> es solo un criterio de desempate".</p>
+<p><strong>Paso 4 — <code>ORIGIN</code> (IGP &gt; EGP &gt; Incomplete).</strong> A, B y D tienen IGP. <strong>Empate, todas siguen.</strong></p>
+<p><em>Interpretación:</em> C tenía <code>Incomplete</code> porque la ruta fue redistribuida desde otro protocolo. Habría sido eliminada en este paso <strong>si no hubiera perdido antes</strong>. El orden importa: el <code>ORIGIN</code> se mira <strong>después</strong> del <code>AS_PATH</code>, no antes.</p>
+<p><strong>Paso 5 — <code>MED</code> (menor gana).</strong> A y D tienen 50, B tiene 10. <strong>Gana B.</strong></p>
+<p><strong>Paso 6 — eBGP sobre iBGP.</strong> Las tres son iBGP. Empate.</p>
+<p><strong>Paso 7 — Métrica IGP al <code>NEXT_HOP</code> (menor gana).</strong> Supongamos que la ruta de B tiene <code>NEXT_HOP = 192.0.2.7</code>, que está a <strong>8 saltos</strong> por el IGP, mientras que las de A y D apuntan a <code>192.0.2.3</code>, a <strong>3 saltos</strong>.</p>
+<p><strong>¡B gana el paso 7!</strong> Y es acá donde aparece la paradoja:</p>
+<div class="codehilite"><pre><span></span><code>   B llegó en el paso 2 por tener LOCAL_PREF más alto.
+   B llega al final porque su NEXT_HOP está más lejos dentro del AS.
+
+   Si el operador NO hubiera configurado LOCAL_PREF en R3,
+   el resultado habría sido A (o D), que sale por el vecino de 3 hops.
+
+   O sea: el "hot potato" (§1.8) gana por DEFAULT, y los operadores
+   lo deshacen a propósito subiendo LOCAL_PREF para el vecino que
+   les conviene. Configurar LOCAL_PREF es, literalmente,
+   comprarle el tráfico a otro AS.
+</code></pre></div>
+
+<p><strong>Paso 8 — <code>Router ID</code> más bajo.</strong> Si A y D siguen empatadas (mismo <code>MED</code>, mismo <code>NEXT_HOP</code>), <strong>gana la que tenga el Router ID más bajo</strong>. Existe solo para que el resultado sea <strong>determinista</strong>: dos routers con la misma configuración tienen que elegir lo mismo, o el tráfico se parte al azar entre dos caminos.</p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Comparar <code>MED</code> entre rutas de AS vecinos distintos.</strong> No se puede (§1.8).</li>
+<li><strong>Confundir <code>LOCAL_PREF</code> con <code>AS_PATH length</code>.</strong> El primero se mira <strong>primero</strong> y gana aunque el segundo sea peor.</li>
+<li><strong>Asumir que el <code>AS_PATH</code> más corto gana siempre.</strong> No: solo después de <code>WEIGHT</code> y <code>LOCAL_PREF</code>.</li>
+<li><strong>Olvidar el paso 8.</strong> Los desempates tienen que ser deterministas o los routers vecinos toman caminos distintos y se rompe el forwarding.</li>
+</ul>
+<h2>2.2 Ejercicio 2 — Topología de tres AS, paso a paso</h2>
+<p><strong>Datos.</strong> Topología:</p>
+<div class="codehilite"><pre><span></span><code>        ┌──────────┐        ┌──────────┐
+        │  AS 15169│◄──eBGP─►│  AS 20115│        15169 y 20115 son PEERS
+        │  (ISP A) │        │  (ISP B) │        (no se pagan entre sí)
+        └────┬─────┘        └─────┬─────┘
+             │   ╲ eBGP         │ eBGP ╱
+             │    ╲             │    ╱
+             │     ╲ 20115      │  ╱
+             │      ╲◄─────────►╱   │         AS 20115 es PROVEEDOR
+             │   (20115 es el   │               de AS 15169
+             │    proveedor    │
+             │    de 15169)    │
+        ┌────┴─────┐        ┌───┴──────┐
+        │  AS 33000│        │  AS 64500│
+        │ (ISP C) │        │ (cliente │
+        │          │        │  de 20115)
+        └──────────┘        └──────────┘
+</code></pre></div>
+
+<p><strong>a) ¿Cómo ve el prefijo de <code>AS 64500</code> cada router?</strong></p>
+<p>El orden de propagación importa: primero <code>64500</code> se lo dice a <code>20115</code>; <code>20115</code> decide si lo anuncia a <code>15169</code> y a <code>33000</code>; y cada uno de esos lo anuncia o no a sus clientes.</p>
+<table>
+<thead>
+<tr>
+<th>Quien anuncia</th>
+<th><code>AS_PATH</code> que genera</th>
+<th>Nota</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>64500</code> → <code>20115</code></td>
+<td><code>64500</code></td>
+<td>eBGP: el que anuncia preprende su ASN</td>
+</tr>
+<tr>
+<td><code>20115</code> → <code>15169</code></td>
+<td><code>20115 64500</code></td>
+<td>Decisión: es cliente, <strong>lo anuncia</strong></td>
+</tr>
+<tr>
+<td><code>15169</code> → <code>33000</code></td>
+<td><code>15169 20115 64500</code></td>
+<td>Decisión: tránsito, <strong>lo anuncia</strong> (si lo vende)</td>
+</tr>
+<tr>
+<td><code>20115</code> → <code>33000</code></td>
+<td><code>20115 64500</code></td>
+<td><strong>También se lo anuncia directo</strong></td>
+</tr>
+</tbody>
+</table>
+<p><em>Interpretación:</em> <code>33000</code> recibe <strong>dos</strong> rutas al mismo prefijo: una de largo 3 y otra de largo 2. Se queda con la de <strong>2</strong> (<code>20115 64500</code>), porque es su vecino directo y ya tiene el prefijo en su tabla. Y <code>15169</code> prefirió <strong>no</strong> anunciárselo a <code>33000</code> (decisión de política: <code>20115</code> no le vende tránsito a un competidor).</p>
+<p><strong>b) El <code>AS_PATH</code> que recibe <code>33000</code> es <code>20115 64500</code>. ¿Y si <code>64500</code> se cae?</strong></p>
+<div class="codehilite"><pre><span></span><code>   64500 cae y abre una sesión con 33000 (multihoming).
+   Ahora 33000 tiene DOS proveedores para el mismo prefijo.
+
+   64500 → 20115 → 15169 → (vuelta a 33000):  RECHAZADO. 64500 ya está
+   en el AS_PATH. Exactamente el mecanismo de §1.4.
+
+   64500 → 33000 (directo):   AS_PATH = [64500]. Aceptada.
+   → 33000 prefiere 1 salto sobre 4. Decide mal, pero es SU decisión.
+</code></pre></div>
+
+<p><strong>c) ¿Qué pasa si <code>20115</code> anuncia a <code>15169</code> el prefijo de <code>64500</code> con un <code>LOCAL_PREF</code> bajo?</strong></p>
+<div class="codehilite"><pre><span></span><code>   15169 recibe AS_PATH = [20115, 64500] con LOCAL_PREF = 150.
+   15169 ya tenía su propia ruta hacia ese prefijo? NO: 64500 es
+   cliente de 20115, no de 15169.
+
+   → 15169 la acepta, la instala, y la anuncia a 33000 con
+     LOCAL_PREF = 150 (propagando el valor).
+
+   OJO: 15169 NO le puede cambiar el AS_PATH. Sigue siendo
+   [15169, 20115, 64500]. Lo único que controla es a quién se lo
+   anuncia y con qué LOCAL_PREF.
+
+   Y acá está la diferencia con el AS_PATH: el AS_PATH describe el
+   CAMINO FÍSICO (no se puede mentir sin romper la detección de
+   bucles); el LOCAL_PREF describe la INTENCIÓN (que se puede mentir,
+   pero solo en tu propio AS: es una política interna).
+</code></pre></div>
+
+<p><strong>d) Sumá Route Reflection al mismo dibujo, con <code>15169</code> como reflector.</strong></p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────┐        ┌──────────┐
+   │  AS 15169│◄──eBGP─►│  AS 20115│
+   │ (RR)     │        │  (ISP B) │
+   └──┬────┬──┘        └─────┬────┘
+      │    │                 │
+      │    │ eBGP            │ eBGP
+      ▼    ▼                 ▼
+   ┌──────────┐         ┌──────────┐
+   │  AS 33000│         │  AS 64500│
+   │ (cliente)│         │ (cliente)│
+   └──────────┘         └──────────┘
+
+   15169 aprende el prefijo de 64500 de 20115 por eBGP.
+   15169 NO se lo anuncia a 64500 (es su cliente y no tiene sentido).
+   15169 se lo anuncia a 33000 como cliente suyo, por REFLECTION,
+   con AS_PATH = [15169, 20115, 64500] y ORIGINATOR_ID = 15169.
+
+   Ahora el agregado: en lugar de 3 sesiones iBGP (full-mesh)
+   hay 2. Con N routers en el cluster: N en lugar de N(N−1)/2.
+</code></pre></div>
+
+<h2>2.3 Ejercicio 3 — Por qué BGP necesita full-mesh iBGP y qué rompe Route Reflection</h2>
+<p><strong>Enunciado.</strong> En un AS con <code>R1, R2, R3, R4</code>, <code>R1</code> aprende una ruta de un vecino <strong>eBGP</strong>. Explicá por qué <code>R2</code> y <code>R3</code> no pueden learnla el uno del otro, qué problema crea eso, y qué rompe exactamente Route Reflection.</p>
+<p><strong>a) Por qué la regla "no re-anuncio lo aprendido de un iBGP".</strong></p>
+<div class="codehilite"><pre><span></span><code>   R1 (eBGP)  ── ruta r ──►  R2
+   R1          ── ruta r ──►  R3
+   R1          ── ruta r ──►  R4
+
+   R2 y R3 son iBGP entre sí. Si R2 le dijera a R3 "ruta r":
+      · R3 la aprende y la anuncia a R1 (que es su vecino iBGP)
+      · R1 ya la tiene, pero no puede distinguir "la que yo anuncié"
+        de "la que me devolvió R3"
+      · el NEXT_HOP no cambió: sigue siendo el del eBGP de entrada
+      · ⇒ R3 manda el paquete a un vecino que se lo devuelve a R3.
+        BUCLE DE PAQUETES.
+
+   Y el AS_PATH no lo detiene, porque el bucle es entre routers
+   DEL MISMO AS: el AS_PATH es idéntico en los dos caminos.
+   Es un bucle de capa 3, no de capa 2.
+</code></pre></div>
+
+<p><strong>b) El problema que crea la regla.</strong></p>
+<div class="codehilite"><pre><span></span><code>   Con la regla, R2 NO puede obtener la ruta de R3, ni R3 de R2.
+   Para que todos tengan la MISMA tabla (que es lo que exige un
+   protocolo de enrutamiento: forwarding consistente), R1 tiene
+   que anunciársela a CADA uno.
+
+   Sesiones necesarias = N(N−1)/2, todos contra todos.
+
+   Consecuencias:
+   · N = 50  →  1225 sesiones TCP, cada una con su temporizador,
+                su buffer y su CPU de keepalive.
+   · En un operador grande, N puede ser 200: 19.900 sesiones. Y cada
+     router tiene que mantenerlas todas vivas.
+   · Cada caída de una sesión obliga a recalcular.
+</code></pre></div>
+
+<p><strong>c) Qué rompe Route Reflection, y la respuesta corta es "nada, pero con dos excepciones".</strong></p>
+<div class="codehilite"><pre><span></span><code>   Route Reflection agrega una excepción a la regla: el RR (Route
+   Reflector) SÍ puede pasarle a sus clientes una ruta que aprendió
+   de un peer o de otro cliente.
+
+   Eso no rompe nada siempre que se respeten las DOS reglas nuevas:
+
+   ┌─ EXCEPCIÓN 1: ORIGINATOR_ID ───────────────────────────────────┐
+   │ Si una ruta llega a un cliente con ORIGINATOR_ID = MI PROPIO   │
+   │ Router ID, el cliente la DESCARTA.                             │
+   │                                                                  │
+   │ Por qué: es el split horizon del cluster. Si R3 learns de R2   │
+   │ una ruta que R2 reflejó desde R1, y esa ruta dice              │
+   │ ORIGINATOR_ID = R3, es porque el camino pasó por R3. Aceptarla  │
+   │ es aceptar un bucle.                                            │
+   └──────────────────────────────────────────────────────────────────┘
+
+   ┌─ EXCEPCIÓN 2: CLUSTER_LIST ────────────────────────────────────┐
+   │ Si mi CLUSTER_ID YA ESTÁ en el CLUSTER_LIST de la ruta, la     │
+   │ DESCARTO.                                                       │
+   │                                                                  │
+   │ Por qué: si el CLUSTER_LIST vuelve a aparecer, la ruta pasó     │
+   │ por un route reflector del MISMO cluster. Entre dos reflectores │
+   │ del mismo cluster se usa una sesión iBGP normal (con la regla    │
+   │ original), así que eso es un bucle.                             │
+   │                                                                  │
+   │ El CLUSTER_ID se configura. Lo normal es poner el Router ID del  │
+   │ RR, para que un solo reflector sea un solo cluster. Si querés   │
+   │ que dos reflectores redundantes NO se confirmen entre sí, les ponés  │
+   │ el mismo CLUSTER_ID.                                             │
+   └──────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>d) El problema que Route Reflection NO resuelve, y que es la pregunta fina.</strong></p>
+<div class="codehilite"><pre><span></span><code>   ⚠ Route Reflection no arregla la CONSISTENCIA de la tabla.
+
+   Con full-mesh, TODOS los routers del AS tienen exactamente la
+   misma tabla (dentro de lo que la política permita).
+
+   Con route reflection, cada router tiene una tabla CORRECTA pero
+   DISTINTA de la de su vecino: le falta lo que seannounced por el
+   camino que no pasó por él.
+
+   Eso está bien mientras cada router use la ruta para DECIDIR. Pero
+   si un router usa su tabla para REANUNCIAR hacia afuera sin pasar
+   por un RR, rompe el modelo. Por eso los RR solo se usan DENTRO del
+   AS, y los routers de borde (BORDER routers) estántightmente
+   controlados.
+</code></pre></div>
+
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2001-08, Problema 2 — Implementar un algoritmo de ruteo jerárquico</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0108</code>, 20 de agosto de 2001 (2 páginas).
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0108.pdf
+<strong>Texto del examen:</strong></p>
+<blockquote>
+<p>Implementar un algoritmo de ruteo jerárquico para una red de datagramas. Definir la estructura de las tablas de ruteo y los paquetes utilizados.</p>
+</blockquote>
+<p>⚠ <strong>Nota:</strong> el PDF <strong>no publica solución</strong> de este problema (el examen viene sin soluciones). Lo que sigue es <em>(solución propia)</em>, y es central para esta clase porque <strong>es literalmente lo que hace BGP</strong>: particionar el espacio de direcciones en dominios administrativos y que cada dominio anuncie el resto como un <strong>agregado</strong>, en vez de que cada router conozca cada ruta.</p>
+</blockquote>
+<h3>El enunciado, reencuadrado</h3>
+<p>El problema pide un algoritmo de <strong>ruteo jerárquico</strong>. Hay que justificar tres cosas:</p>
+<ol>
+<li><strong>Qué es jerárquico</strong> y por qué no alcanza con un grafo plano.</li>
+<li><strong>La estructura de las tablas</strong>.</li>
+<li><strong>Los paquetes</strong> del protocolo.</li>
+</ol>
+<h3>a) Por qué jerárquico, y no plano</h3>
+<p><strong>Un grafo plano no escala.</strong> Supongamos la red del problema: <code>N</code> routers, cada uno con una entrada por cada destino. La tabla tiene <code>N</code> filas, y <strong>cambia completa cada vez que cambia un enlace</strong>: <code>O(N)</code> actualizaciones, cada una de <code>O(N)</code> filas.</p>
+<p>La idea de jerarquizar es agrupar los destinos en <strong>grupos</strong> y anunciar el grupo entero como una sola entrada:</p>
+<div class="codehilite"><pre><span></span><code>   SIN JERARQUÍA (plano):                    CON JERARQUÍA:
+   ───────────────────────                   ──────────────────
+   tabla de R1:                             tabla de R1:
+     red_A → 10.0.0.2                          10.0.0.0/8   → 10.0.0.2
+     red_B → 10.0.0.2                          (un prefijo que
+     red_C → 10.0.0.2                           cubre TODO)
+     ...
+     red_Z → 10.0.0.2
+   N entradas, N cambios por evento
+
+   El interior de 10.0.0.0/8 NO se anuncia hacia afuera:
+   los routers de la red "de arriba" (el AS vecino, el router de
+   borde) solo saben que "todo lo que empieza con 10. está detrás
+   de 10.0.0.2". No saben cuántas redes hay ni dónde.
+</code></pre></div>
+
+<p><strong>Las dos propiedades que hace aparecer la jerarquía</strong>, y que son las que hay que nombrar:</p>
+<ol>
+<li><strong>Agregación</strong>: varios prefijos se announced como <strong>un</strong> superprefijo. El borde anuncia <code>10.0.0.0/8</code> y se olvida de los detalles.</li>
+<li><strong>Ocultamiento de la topología interna</strong>: los routers externos <strong>no</strong> conocen ni la topología ni el número de prefijos del dominio. Solo conocen <strong>un punto de entrada</strong>.</li>
+</ol>
+<div class="codehilite"><pre><span></span><code>   Y acá aparece la diferencia con el jerarquizado "de áreas" de OSPF,
+   que es la que más se confunde:
+
+   ┌────────────────────────┬──────────────────────────────────────┐
+   │  ÁREA de OSPF          │  JERARQUÍA DE BGP                   │
+   ├────────────────────────┼──────────────────────────────────────┤
+   │ se announce la           │ se announce un SUPERPREFIJO         │
+   │ INFORMACIÓN (cada LSA)  │ (la métrica y el resultado)          │
+   │ del interior             │                                      │
+   │                          │                                      │
+   │ los routers internos     │ los routers externos no saben       │
+   │ necesitan la información │ ni la topología ni el detalle       │
+   │ completa para calcular   │                                      │
+   │ el camino ÓPTIMO         │                                      │
+   │                          │                                      │
+   │ se pierde optimalidad     │ no hay "camino óptimo" que           │
+   │ DENTRO del área           │ perder: la agregación es correcta   │
+   │                          │ por definición                      │
+   │                          │                                      │
+   │ el estado es por ENLACE  │ lo que se announce es la RUTA        │
+   │ y hay que calcularlo     │ AGREGADA y su política               │
+   └────────────────────────┴──────────────────────────────────────┘
+</code></pre></div>
+
+<blockquote>
+<p><strong>Ésta es la respuesta conceptual más importante del problema:</strong> OSPF jerarquiza <strong>para escalar el cálculo</strong> y BGP jerarquiza <strong>para escalar el announcement</strong>. Los dos resuelven el mismo problema (la tabla plana no escala) con herramientas opuestas: uno publica los hechos y esconde el camino, el otro publica el camino y esconde los hechos.</p>
+</blockquote>
+<h3>b) Estructura de las tablas de ruteo</h3>
+<p>Como no hay texto de apoyo en el enunciado, <strong>hago las suposiciones y las justifico</strong>, que es lo que el propio examen pide en otros problemas.</p>
+<p><strong>Suposición 1: la jerarquía se define por un prefijo de la dirección IP.</strong> Es lo coherente con el modelo TCP/IP del curso, y evita tener que inventar un esquema de nombres nuevo.</p>
+<p><strong>Suposición 2: cada router tiene tres tablas</strong>, porque en un protocolo jerárquico hay tres preguntas distintas:</p>
+<table>
+<thead>
+<tr>
+<th>Tabla</th>
+<th>Qué contiene</th>
+<th>Tamaño</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>T_int</strong> (intradominio)</td>
+<td>Las rutas <strong>exactas</strong> de todos los prefijos del dominio propio</td>
+<td>Grande: <code>O(n)</code></td>
+</tr>
+<tr>
+<td><strong>T_agg</strong> (agregados)</td>
+<td>Los superprefijos que este router <strong>anuncia hacia afuera</strong></td>
+<td>Chica: <code>O(g)</code>, con <code>g ≪ n</code></td>
+</tr>
+<tr>
+<td><strong>T_ext</strong> (externos)</td>
+<td>Los superprefijos de los dominios vecinos</td>
+<td>Chica: <code>O(d)</code></td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────────────────────────────────────┐
+   │  Tabla T_AGG, formato de una entrada:                    │
+   │                                                          │
+   │   prefijo_agregado   →  siguiente_salto  (interfaz)     │
+   │   10.0.0.0/8          →  10.0.0.2        eth0           │
+   │   172.16.0.0/12      →  10.0.0.3        eth1           │
+   │   192.168.0.0/16     →  10.0.0.4        eth2           │
+   │                                                          │
+   │  Y ENCIMA, una entrada que ES el comportamiento de       │
+   │  rejeción, que es lo que hace que todo esto sea          │
+   │  jerárquico y no una mera etiqueta:                      │
+   │                                                          │
+   │   DEFAULT            →  10.0.0.9        eth0   (al AS vecino)│
+   └──────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>El formato de la entrada de tabla</strong> (esto es lo que la cátedra corrige en los problemas de tablas):</p>
+<div class="codehilite"><pre><span></span><code>   Red Destino (X.Y.Z.W/N)  |  Siguiente Salto  |  Métrica  |  Interfaz
+
+   · Red Destino: SIEMPRE en notación CIDR, nunca "clase A".
+   · Siguiente Salto: dirección IP del router, o la interfaz si es
+     un enlace punto a punto sin direccionar.
+   · Métrica: en jerarquía suele ser el CONTADOR DE GRUPOS atravesados,
+     no los hops. Es la métrica "distance to boundary router".
+</code></pre></div>
+
+<p><strong>La regla de decisión, en pseudocode</strong>, que es lo que el enunciado pide "implementar":</p>
+<div class="codehilite"><pre><span></span><code><span class="cm">/* ==============================================================</span>
+<span class="cm">   Rutina de decisión de una red de datagramas con ruteo jerárquico.</span>
+<span class="cm">   El orden de las pruebas es lo importante: primero el dominio</span>
+<span class="cm">   propio (más específico), después los agregados, al final el</span>
+<span class="cm">   default. Es longest-prefix match, y en jerarquía es el que hace</span>
+<span class="cm">   que "todo lo que empieza con 10." no tape los prefijos internos.</span>
+<span class="cm">   ============================================================== */</span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">entrada</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="kt">char</span><span class="w">  </span><span class="n">prefijo</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span><span class="w">      </span><span class="cm">/* "10.0.0.0/8", "0.0.0.0/0"        */</span>
+<span class="w">    </span><span class="kt">int</span><span class="w">   </span><span class="n">longitud_mascara</span><span class="p">;</span><span class="w"> </span><span class="cm">/* 8, 12, 16, 0                     */</span>
+<span class="w">    </span><span class="kt">char</span><span class="w">  </span><span class="n">siguiente_salto</span><span class="p">[</span><span class="mi">16</span><span class="p">];</span>
+<span class="w">    </span><span class="kt">int</span><span class="w">   </span><span class="n">interfaz</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">int</span><span class="w">   </span><span class="n">grupos</span><span class="p">;</span><span class="w">           </span><span class="cm">/* métrica: nº de dominios atravesados */</span>
+<span class="p">};</span>
+
+<span class="k">struct</span><span class="w"> </span><span class="nc">tabla</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">entrada</span><span class="w"> </span><span class="n">T_intro</span><span class="p">[</span><span class="w"> </span><span class="n">MAX_INTRO</span><span class="w"> </span><span class="p">];</span><span class="w">   </span><span class="cm">/* Prefijos del dominio  */</span>
+<span class="w">    </span><span class="kt">int</span><span class="w">            </span><span class="n">n_intro</span><span class="p">;</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">entrada</span><span class="w"> </span><span class="n">T_agreg</span><span class="p">[</span><span class="w"> </span><span class="n">MAX_AGREG</span><span class="w"> </span><span class="p">];</span><span class="w">   </span><span class="cm">/* Lo que anuncio afuera */</span>
+<span class="w">    </span><span class="kt">int</span><span class="w">            </span><span class="n">n_agreg</span><span class="p">;</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">entrada</span><span class="w"> </span><span class="n">T_extern</span><span class="p">[</span><span class="w"> </span><span class="n">MAX_EXTERN</span><span class="w"> </span><span class="p">];</span><span class="w">  </span><span class="cm">/* Superprefijos vecinos  */</span>
+<span class="w">    </span><span class="kt">int</span><span class="w">            </span><span class="n">n_extern</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">rutear</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">tabla</span><span class="w"> </span><span class="o">*</span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="n">ip_destino</span><span class="p">[])</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">mejor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">.</span><span class="n">prefijo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"0.0.0.0/0"</span><span class="p">,</span><span class="w"> </span><span class="p">.</span><span class="n">siguiente_salto</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">NULL</span><span class="p">,</span>
+<span class="w">              </span><span class="p">.</span><span class="n">longitud_mascara</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="w"> </span><span class="p">};</span><span class="w">        </span><span class="cm">/* el default, SIEMPRE */</span>
+
+<span class="w">    </span><span class="cm">/* 1. Dominio propio: prefijo más largo que coincida */</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">t</span><span class="o">-&gt;</span><span class="n">n_intro</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">e</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">t</span><span class="o">-&gt;</span><span class="n">T_intro</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">coincide</span><span class="p">(</span><span class="n">ip_destino</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="o">-&gt;</span><span class="n">prefijo</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="o">-&gt;</span><span class="n">longitud_mascara</span><span class="p">))</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">e</span><span class="o">-&gt;</span><span class="n">longitud_mascara</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">mejor</span><span class="p">.</span><span class="n">longitud_mascara</span><span class="p">)</span>
+<span class="w">                </span><span class="n">mejor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">*</span><span class="n">e</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/* 2. Agregados que anuncia este dominio */</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">t</span><span class="o">-&gt;</span><span class="n">n_agreg</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">e</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">t</span><span class="o">-&gt;</span><span class="n">T_agreg</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">coincide</span><span class="p">(</span><span class="n">ip_destino</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="o">-&gt;</span><span class="n">prefijo</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="o">-&gt;</span><span class="n">longitud_mascara</span><span class="p">))</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">e</span><span class="o">-&gt;</span><span class="n">longitud_mascara</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">mejor</span><span class="p">.</span><span class="n">longitud_mascara</span><span class="p">)</span>
+<span class="w">                </span><span class="n">mejor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">*</span><span class="n">e</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/* 3. Superprefijos de los dominios vecinos */</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">t</span><span class="o">-&gt;</span><span class="n">n_extern</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">e</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">t</span><span class="o">-&gt;</span><span class="n">T_extern</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">coincide</span><span class="p">(</span><span class="n">ip_destino</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="o">-&gt;</span><span class="n">prefijo</span><span class="p">,</span><span class="w"> </span><span class="n">e</span><span class="o">-&gt;</span><span class="n">longitud_mascara</span><span class="p">))</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">e</span><span class="o">-&gt;</span><span class="n">longitud_mascara</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">mejor</span><span class="p">.</span><span class="n">longitud_mascara</span><span class="p">)</span>
+<span class="w">                </span><span class="n">mejor</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">*</span><span class="n">e</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="cm">/* 4. Si no coincidió nada y no hay default: se descarta */</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">mejor</span><span class="p">.</span><span class="n">siguiente_salto</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">DESCARTAR</span><span class="p">;</span>
+
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">enviar</span><span class="p">(</span><span class="n">mejor</span><span class="p">.</span><span class="n">interfaz</span><span class="p">,</span><span class="w"> </span><span class="n">mejor</span><span class="p">.</span><span class="n">siguiente_salto</span><span class="p">,</span><span class="w"> </span><span class="n">ip_destino</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><em>Por qué el orden importa:</em> si el default (<code>/0</code>) se evaluara <strong>primero</strong>, el <code>longest prefix match</code> lo elegiría siempre, porque <code>0</code> es el prefijo más corto. El <code>if (e-&gt;longitud_mascara &gt; mejor.longitud_mascara)</code> es lo que resuelve todo: <strong>gana siempre el prefijo más específico</strong>, sin importar el orden de recorrido.</p>
+<h3>c) Los paquetes del protocolo</h3>
+<p>Un protocolo jerárquico necesita <strong>cuatro</strong> tipos de mensaje, y esta taxonomía es exactamente la de BGP:</p>
+<table>
+<thead>
+<tr>
+<th>Paquete</th>
+<th>Función</th>
+<th>Análogo en BGP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>HELLO</strong></td>
+<td>Descubrir vecinos y mantener la relación viva</td>
+<td><strong>OPEN</strong> + <strong>KEEPALIVE</strong></td>
+</tr>
+<tr>
+<td><strong>UPDATE</strong></td>
+<td>Anunciar o retirar un <strong>agregado</strong> (con su métrica y el camino)</td>
+<td><strong>UPDATE</strong></td>
+</tr>
+<tr>
+<td><strong>REQUEST</strong></td>
+<td>Pedir el estado completo de un dominio vecino, para el arranque</td>
+<td><strong>UPDATE</strong> con todas las rutas</td>
+</tr>
+<tr>
+<td><strong>ACK / ERROR</strong></td>
+<td>Confirmar o reportar un error (prefijo duplicado, incoherencia)</td>
+<td><strong>NOTIFICATION</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>El paquete UPDATE, que es el que define el protocolo</strong>, y que hay que dibujar:</p>
+<div class="codehilite"><pre><span></span><code>   ┌────────────────────────────────────────────────────────────┐
+   │  PAQUETE DE ENRUTAMIENTO JERÁRQUICO  (UPDATE)              │
+   │                                                            │
+   │  ┌──────────┬──────────────────────────────────────────┐  │
+   │  │ TIPO = 2 │ 1 = HELLO   2 = UPDATE   3 = REQUEST      │  │
+   │  │          │                 4 = ACK   5 = ERROR       │  │
+   │  ├──────────┼──────────────────────────────────────────┤  │
+   │  │ EMISOR   │ Router ID de quien envía                   │  │
+   │  ├──────────┼──────────────────────────────────────────┤  │
+   │  │ DOMINIO  │ Identificador del dominio del emisor       │  │
+   │  │          │ (en BGP: su ASN)                           │  │
+   │  ├──────────┼──────────────────────────────────────────┤  │
+   │  │ RUTAS A  │ Lista de SUPERPREFIJOS anunciados          │  │
+   │  │ ANUNCIAR │   prefijo | métrica | próximo salto        │  │
+   │  │          │   10.0.0.0/8  |   1   | 10.0.0.2          │  │
+   │  │          │   192.168.0.0/16 | 3 | 10.0.0.4          │  │
+   │  ├──────────┼──────────────────────────────────────────┤  │
+   │  │ RUTAS A  │ Lista de superprefijos que el emisor ya   │  │
+   │  │ RETIRAR  │ NO QUIERE seguir anunciando                │  │
+   │  │          │   (en BGP: Withdrawn Routes del UPDATE)    │  │
+   │  ├──────────┼──────────────────────────────────────────┤  │
+   │  │ CAMINO   │ La lista de dominios por los que pasó.    │  │
+   │  │          │   [ 20070 , 15169 , 20115 ]                │  │
+   │  │          │ (en BGP: es exactamente el AS_PATH)       │  │
+   │  ├──────────┼──────────────────────────────────────────┤  │
+   │  │ MÉTRICA  │ Política / preferencia del emisor          │  │
+   │  │ POLÍTICA │ (en BGP: LOCAL_PREF, MED, communities)    │  │
+   │  └──────────┴──────────────────────────────────────────┘  │
+</code></pre></div>
+
+<p><strong>Y la regla que cierra el circuito con el protocolo real</strong>, y que es el corazón de §1.4:</p>
+<div class="codehilite"><pre><span></span><code>   Al recibir un UPDATE, el dominio receptor:
+
+     1. RECHAZA la ruta si el CAMINO contiene su propio identificador
+        de dominio.                    ← prevents bucles, exacto
+
+     2. RECHAZA la ruta si ya tiene, para ese prefijo, una ruta cuyo
+        camino sea MENOR número de dominios.   ← el "camino más corto"
+
+     3. Si no, la ACEPTA, la preprendea con su identificador de
+        dominio y la anuncia a sus vecinos.
+
+   El paso 1 es el que hace que el sistema sea ACÍCLICO por
+   construcción. Y es el mismo paso que BGP llama "el AS_PATH no
+   contiene mi ASN".
+</code></pre></div>
+
+<h3>d) Análisis comparativo con OSPF (el remate que suma puntos)</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Jerarquía tipo BGP (este problema)</strong></th>
+<th><strong>Jerarquía tipo OSPF (áreas)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Qué se publica</td>
+<td>La <strong>ruta agregada</strong></td>
+<td>La <strong>información de enlaces</strong></td>
+</tr>
+<tr>
+<td>Qué se oculta</td>
+<td>La topología interna</td>
+<td>El camino, hasta que se calcula</td>
+</tr>
+<tr>
+<td>Métrica</td>
+<td>Número de dominios atravesados, <strong>más política</strong></td>
+<td>Costo de interfaz</td>
+</tr>
+<tr>
+<td>Pérdida de información</td>
+<td><strong>Ninguna</strong>: la agregación es exacta</td>
+<td><strong>Se pierde optimalidad intra-área</strong></td>
+</tr>
+<tr>
+<td>Cálculo</td>
+<td>No hay cálculo: se copia la decisión</td>
+<td>Hay <strong>SPF en cada router</strong></td>
+</tr>
+<tr>
+<td>Escala</td>
+<td><strong>Internet</strong> (~70.000 dominios)</td>
+<td>Red corporativa, backbone de operador</td>
+</tr>
+</tbody>
+</table>
+<p><strong>El remate que hay que escribir para cerrar los 30 puntos:</strong> <em>"El jerarquizado por agregación no pierde información: si <code>10.0.0.0/8</code> está detrás de <code>10.0.0.2</code>, el camino más corto a cualquier prefijo de ese bloque es exactamente el mismo. Por eso el protocolo jerárquico no necesita calcular nada: el cálculo se hizo una vez, en el borde, y el resultado es correcto para todo el bloque. El jerarquizado por ocultamiento de información, en cambio, obliga a recalcular en cada nodo y acepta perder optimalidad a cambio de escalabilidad. Son dos respuestas al mismo problema con compromisos opuestos."</em></p>
+<h2>3.2 Examen 2007-02, Problema 2 — El enrutamiento hacia Internet con ruta por defecto</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0702</code>, julio de 2007, apartado e) iii.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0702.pdf
+<strong>Texto del examen (apartado e):</strong></p>
+<blockquote>
+<p>iii) El enrutamiento hacia Internet se realiza utilizando "rutas por defecto". Indique qué entrada/s debe agregar a cada tabla de enrutamiento de cada router.</p>
+</blockquote>
+<p>⚠ <strong>Nota:</strong> la parte numérica depende de la figura de la red corporativa, que no se reproduce acá; lo que se resuelve es la <strong>estructura</strong> de la entrada de ruta por defecto y su relación con BGP, que es lo que la pregunta realmente apunta. Es <em>(solución propia)</em> para la parte estructural.</p>
+</blockquote>
+<p><strong>a) La forma de la entrada.</strong> En la notación de la cátedra:</p>
+<div class="codehilite"><pre><span></span><code>   Red Destino             Siguiente Salto    Métrica    Interfaz
+   ────────────────────────────────────────────────────────────────
+   0.0.0.0/0               &lt;ISP&gt;              &lt;saltos&gt;    &lt;puerto&gt;
+</code></pre></div>
+
+<p><strong>Por qué <code>0.0.0.0/0</code> y no "default":</strong> es el prefijo que coincide con <strong>todas</strong> las direcciones, con longitud de máscara <strong>0</strong>. Como el forwarding es <em>longest prefix match</em>, <code>0.0.0.0/0</code> es el prefijo <strong>menos específico que existe</strong>: gana contra cualquier otro prefijo, siempre que ningún otro coincida. Por eso se la pone <strong>al final</strong> de la tabla.</p>
+<p><strong>b) Dónde va cada entrada.</strong> La respuesta completa a "qué entrada debe agregar en cada router" es:</p>
+<table>
+<thead>
+<tr>
+<th>Router</th>
+<th>Entrada</th>
+<th>Justificación</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong> (el que tiene la interfaz al ISP)</td>
+<td><code>0.0.0.0/0 → ISP, métrica 1</code></td>
+<td>Es el único que ve al ISP, y ve al ISP <strong>directamente</strong>: 1 hop</td>
+</tr>
+<tr>
+<td><strong>Todos los demás</strong></td>
+<td><code>0.0.0.0/0 → R1, métrica 2</code> (o la que corresponda)</td>
+<td>No ven al ISP: lo alcanzan vía R1</td>
+</tr>
+</tbody>
+</table>
+<p><em>Justificación:</em> la métrica es la <strong>cantidad de saltos</strong> hasta el router de borde, porque para ir a Internet <strong>todos los caminos sirven igual</strong>. No hay ningún destino específico que requiera un camino mejor. Ese es el sentido de una <strong>ruta por defecto</strong>: no afirma que exista un camino óptimo, afirma que <strong>no importa cuál</strong>.</p>
+<p><strong>c) El error clásico que hay que corregir.</strong> Un router <strong>no</strong> puede tener una ruta por defecto que apunte a sí mismo. Si <code>R1</code> tuviera <code>0.0.0.0/0 → R1</code>, un paquete con destino desconocido se le mandaría a sí mismo, loop <strong>infijo</strong>, y como la ruta por defecto nunca expira, <strong>no se detectaría nunca</strong>. Por eso el <code>Siguiente Salto</code> de un default tiene que ser <strong>un router alcanzable por un camino no por defecto</strong>.</p>
+<p><strong>d) Y cómo se relaciona con BGP — que es el puente hacia esta clase.</strong></p>
+<div class="codehilite"><pre><span></span><code>   El ejemplo (e) es "ruteo hacia Internet con ruta por defecto".
+   La versión real de BGP hace lo mismo pero CON POLÍTICA:
+
+     ┌──────────────────────────────────────────────────────────┐
+     │  El router de borde NO anuncia "0.0.0.0/0 a todos".      │
+     │  Annuncia 0.0.0.0/0 a los clientes y solo a los peers,   │
+     │  y NO lo anuncia a los proveedores: "no te doy tránsito  │
+     │  por mí, andá a buscarlo".                                 │
+     │                                                          │
+     │  Esa decisión se toma con LOCAL_PREF, con communities     │
+     │  (NO_EXPORT) y con la selección de DEFAULT ROUTE.        │
+     └──────────────────────────────────────────────────────────┘
+
+   O sea: la ruta por defecto es el caso DEGRADADO del proceso de
+   decisión de BGP. En BGP, 0.0.0.0/0 es "la última entrada", y se
+   aplica a todo lo que no ForwardMatcheó con una ruta más específica.
+   Lo que cambia no es el mecanismo: es que hay ~70.000 defaults
+   simultáneos y cada uno tiene SU política.
+</code></pre></div>
+
+<h2>3.3 ⭐ Examen 2009-03, Pregunta 2 (10 puntos) — jerarquía, IGP con jerarquías y <em>hot-potato</em></h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0903</code> / <code>sirc0903</code> — 20 de febrero de 2009.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0903.pdf
+<strong>Texto del examen:</strong></p>
+<blockquote>
+<p><em>a) Explique el concepto de enrutamiento jerárquico.</em>
+<em>b) Describa un protocolo de enrutamiento interno (IGP) que utiliza jerarquías.</em>
+<em>c) ¿En qué consiste el mecanismo de "hot-potato routing"?</em></p>
+</blockquote>
+<p><em>(La solución publicada en <code>sirc0903</code> remite a las clases de teórico de Capa de Red para los tres apartados. Es </em><em>el</em><em> problema de BGP del corpus de FING, y vale 10 puntos.)</em></p>
+</blockquote>
+<p><strong>a) Enrutamiento jerárquico.</strong> El §3.1 lo desarrolla con <code>2001-08 P2</code>. En BGP la jerarquía son los <strong>AS con superprefijos agregados</strong>: en vez de anunciar <code>10.1.2.0/24</code> y <code>10.1.3.0/24</code> por separado, se anuncia <strong>un solo superprefijo</strong> <code>10.0.0.0/8</code>, y los routers externos <strong>no necesitan conocer la topología interna</strong>. La optimalidad global <strong>no se pierde</strong>, porque la agregación es correcta por definición.</p>
+<p>⚠️ <strong>El contraste que hay que dar</strong> (es lo que separa un 6 de un 10): OSPF jerarquiza <strong>para escalar el cálculo</strong> y BGP jerarquiza <strong>para escalar el anuncio</strong>. Los dos resuelven el mismo problema con herramientas <strong>opuestas</strong>: OSPF publica los <strong>hechos</strong> y esconde el camino; BGP publica el <strong>camino</strong> y esconde los hechos.</p>
+<p><strong>b) Un IGP que utiliza jerarquías.</strong> La respuesta de la cátedra es <strong>OSPF</strong> (<code>RFC 2328</code>), y su jerarquía son las <strong>áreas</strong>: un <strong>ABR</strong> (<em>Area Border Router</em>) anuncia <strong>LSA de tipo 3</strong> (summary) y <strong>de tipo 4</strong> hacia las otras áreas, y esos LSA <strong>no se inundan</strong> dentro del área destino. Por eso un cambio en un área <strong>no obliga a recalcular</strong> en las otras. Alternativa: <strong>IS-IS</strong>, con <em>Level 1</em> (dentro del área) y <em>Level 2</em> (el backbone).</p>
+<p>⚠️ <strong>El detalle que liga con la parte a):</strong> el IGP jerarquiza <strong>por dentro</strong> del AS; el EGP jerarquiza <strong>por fuera</strong>. Son dos jerarquías <strong>perpendiculares</strong>, y por eso en un operador hay que configurar las dos.</p>
+<p><strong>c) Hot-potato routing.</strong> El §1.8 lo desarrolla con números. La respuesta de examen:</p>
+<blockquote>
+<p><strong>Un router prefiere reenviar el tráfico por el vecino eBGP cuya métrica IGP interna sea MENOR</strong>, aunque el camino total sea más largo. Es un mecanismo de <strong>pasame la papa caliente</strong>: el router quiere <strong>quedarse con el paquete el menor tiempo posible</strong>. Se implementa en el <strong>paso 7 de la tabla de decisión</strong> (la métrica IGP hacia el <code>NEXT_HOP</code>), es decir, <strong>el último antes del Router ID</strong>.</p>
+</blockquote>
+<p>⚠️ <strong>Los tres puntos que hay que sumar:</strong></p>
+<ol>
+<li><strong>Es el ÚLTIMO desempate, no el primero.</strong> Precedido por <code>WEIGHT</code>, <code>LOCAL_PREF</code>, origen local, longitud de <code>AS_PATH</code>, <code>ORIGIN</code>, <code>MED</code> y eBGP-vs-iBGP. Un AS <strong>nunca</strong> prefiere "la ruta más cercana en hops" por sobre "la de menos ASes de por medio".</li>
+<li><strong>Se puede anular con <code>MED</code></strong> (dentro del mismo AS vecino) o con <strong><code>LOCAL_PREF</code> / <code>COMMUNITY</code></strong> (entre vecinos distintos). La tabla de §2.1 lo demuestra numéricamente.</li>
+<li><strong>Por qué existe:</strong> el router quiere <strong>sacarse el paquete de encima</strong> lo más rápido posible, porque el costo interno de su red es gratis para él y el del vecino es problema del vecino. El hot-potato es la traducción de ese comportamiento egoísta a la tabla de decisión.</li>
+</ol>
+<h2>3.4 Nota: qué hay de BGP en el corpus de exámenes</h2>
+<p>Verificado sobre todos los archivos de <code>material-oficial/examenes/txt</code>: <code>sirc0903</code> <strong>P2 (10 pts)</strong> es la pregunta de BGP del corpus (§3.3); <code>eirc0108</code> <strong>Problema 2 (30 pts)</strong> es el de <strong>enrutamiento jerárquico</strong>, la otra mitad de BGP (§3.1); <code>eirc0702</code> <strong>Problema 2, apartado e</strong> es enrutamiento hacia Internet con <strong>rutas por defecto</strong> (§1.2 y §1.5); y <code>sirc0208</code> / <code>sirc0812</code> la mencionan de pasada.</p>
+<p><strong>Qué preguntar en el examen entonces</strong>, y cómo se responde:</p>
+<table>
+<thead>
+<tr>
+<th>Si el enunciado dice...</th>
+<th>La respuesta que suma puntos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"explique el enrutamiento entre redes"</td>
+<td><strong>Autonomous System</strong> + agregación de prefijos + <strong>política</strong> + <strong>path-vector</strong>. Es el de <code>2001-08 P2</code>.</td>
+</tr>
+<tr>
+<td>"explique por qué Internet escala"</td>
+<td>Porque está <strong>jerarquizado</strong> en ~70.000 ASes que anuncian <strong>agregados</strong>, no rutas individuales. §3.1.</td>
+</tr>
+<tr>
+<td>"explique el hot-potato routing"</td>
+<td>Salir por el eBGP de <strong>menor métrica IGP</strong>; es el <strong>paso 7</strong> (último antes del Router ID). §1.8 y §3.3.</td>
+</tr>
+<tr>
+<td>"diferencie RIP, OSPF y BGP"</td>
+<td>La tabla de §1.11, con las columnas <strong>qué viaja</strong>, <strong>qué algoritmo</strong>, <strong>qué transporte</strong>, <strong>qué escala</strong>.</td>
+</tr>
+<tr>
+<td>"qué es un sistema autónomo"</td>
+<td>Conjunto de prefijos + routers con <strong>una única política de ruteo</strong> y un <strong>identificador (ASN)</strong>.</td>
+</tr>
+<tr>
+<td>"por qué BGP no tiene conteo a infinito"</td>
+<td>Porque lo que viaja es un <strong>registro de hechos</strong> (<code>AS_PATH</code>), no una <strong>estimación derivada</strong>. Rechazo exacto, no heurístico. §1.4.</td>
+</tr>
+<tr>
+<td>"cómo se protege BGP"</td>
+<td><strong>No cifra ni autentica.</strong> <code>RFC 2385</code> (MD5) es <strong>legado</strong>; hoy el mecanismo de referencia son los <strong>roles BGP de <code>RFC 9234</code></strong>; <strong>RPKI/ROA</strong> (<code>RFC 6810</code>/<code>RFC 6811</code>) valida el <strong>origen del prefijo</strong>. Y el <strong>route leak</strong> es el fallo más común. §1.10.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen en 10 líneas</h2>
+<ol>
+<li><strong>Internet es una red de redes con ~70.000 sistemas autónomos</strong> (medilo vivo), y no hay un grafo único: hace falta <strong>política</strong>, no solo camino más corto.</li>
+<li>El <strong>AS</strong> es un dominio <strong>administrativo</strong> (una sola política de ruteo) y el <strong>ASN</strong> su identificador. Hoy son <strong>32 bits</strong> (<code>RFC 4893</code> + <code>RFC 6793</code>), con notación decimal <code>RFC 5396</code>.</li>
+<li><strong>BGP-4 (<code>RFC 4271</code>)</strong> corre sobre <strong>TCP/179</strong> y es <strong>vecino a vecino</strong>: no hay flooding, no hay base común, cada router decide con su propia política.</li>
+<li><strong>Path-vector</strong> significa que lo que viaja es el <strong><code>AS_PATH</code></strong>, no una distancia. La regla es una: <strong>no aceptar una ruta cuyo AS_PATH contenga mi propio ASN</strong>.</li>
+<li>Eso hace que BGP <strong>no cuente a infinito y no necesite split horizon</strong>: la detección es <strong>exacta</strong>, no probabilística. Pero <strong>sí</strong> propaga errores de configuración a toda la Internet.</li>
+<li>El <strong>handshake</strong> es <code>OPEN</code> → <code>OPEN</code>+<code>KEEPALIVE</code> → <code>UPDATE</code> → <code>KEEPALIVE</code> cada 60 s, con hold time de 180 s, a través de los estados <code>Idle</code>, <code>Connect</code>, <code>Active</code>, <code>OpenSent</code>, <code>OpenConfirm</code>, <code>Established</code>.</li>
+<li>El <strong>proceso de decisión</strong> desempata en orden fijo: <code>WEIGHT</code> → <code>LOCAL_PREF</code> → origen local → longitud de <code>AS_PATH</code> → <code>ORIGIN</code> → <code>MED</code> → eBGP/iBGP → métrica IGP al <code>NEXT_HOP</code> → Router ID.</li>
+<li>La regla <strong>"no re-anuncio a iBGP lo aprendido de un iBGP"</strong> obliga al <strong>full-mesh</strong> (<code>N(N−1)/2</code> sesiones). <strong>Route Reflection (<code>RFC 4456</code>)</strong> lo baja a <code>O(N)</code>, y se protege con <strong><code>ORIGINATOR_ID</code></strong> y <strong><code>CLUSTER_LIST</code></strong>.</li>
+<li><strong>"Hot potato"</strong>: un AS sale por el vecino más cercano porque el último tramo lo paga él. <strong><code>MED</code></strong> (menor gana, comparable <strong>solo entre rutas del mismo AS vecino</strong>) y <strong><code>LOCAL_PREF</code></strong> son las dos herramientas.</li>
+<li><strong>BGP no cifra ni autentica.</strong> MD5 (<code>RFC 2385</code>) es legado; hoy son los <strong>roles BGP de <code>RFC 9234</code></strong>; <strong>RPKI/ROA</strong> (<code>RFC 6810</code>/<code>RFC 6811</code>) valida el origen del prefijo. El fallo más común es el <strong>route leak</strong>.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> ¿Por qué en el nivel inter-AS no se puede correr Dijkstra?</p>
+<details><summary>Respuesta</summary>
+
+Por tres razones, y ninguna es "porque es muy grande":
+
+1. **No hay un grafo único.** Cada router BGP solo ve lo que le cuentan sus vecinos. No existe una LSDB común (esa es la diferencia con link-state), así que no hay grafo sobre el que calcular.
+2. **Los costos no son públicos.** El costo de un enlace entre dos operadores es un acuerdo comercial secreto. Sin costos comunes no hay camino mínimo.
+3. **El objetivo no es el camino mínimo.** Cada AS quiere **minimizar su propio costo**, y a veces eso es exactamente maximizar la cantidad de tránsito que vende.
+
+La respuesta corta para el examen: *"no hay grafo único, no hay costos comunes, y el objetivo es la política de cada AS, no la longitud del camino"*.
+
+</details>
+
+<p><strong>2.</strong> ¿Qué es un Sistema Autónomo y qué lo define?</p>
+<details><summary>Respuesta</summary>
+
+Un **AS** es un conjunto de prefijos IP y de routers que los anuncia bajo **una sola política de ruteo**, homogénea y consistente.
+
+Lo que **define** un AS: una única política de announcement declarada, un **origen** único en BGP (su ASN), autonomía de ruteo (decide qué anuncia y a quién), y un identificador. Lo que **no** lo define: la tecnología de los enlaces, el IGP que usen adentro, ni el número de routers. Un AS puede tener 2 routers con enlaces de 56 kbit/s y un IGP de RIP.
+
+El identificador es el **ASN**, que hoy son **32 bits** (rango 1 a 4.294.967.295), con `RFC 4893` y `RFC 6793` para el mecanismo de transición y `RFC 5396` para la notación decimal.
+
+</details>
+
+<p><strong>3.</strong> Explique por qué BGP no cuenta a infinito, y por qué eso es cualitativamente diferente de las soluciones de distance-vector.</p>
+<details><summary>Respuesta</summary>
+
+Porque en BGP **lo que viaja es un registro de hechos, no una estimación**. El `AS_PATH` dice exactamente por qué AS pasó el anuncio. Cuando un AS recibe una ruta cuyo `AS_PATH` contiene su propio ASN, no está **estimando** que haya un bucle: está **leyendo** el bucle escrito en el mensaje. La condición que chequea es necesaria y suficiente.
+
+Las soluciones de DV son **heurísticas**: el *split horizon* dice "no le digas a nadie lo que te llega por él", y funciona en la enorme mayoría de los casos pero **no siempre**; el *poison reverse* y el *hold-down* también son intentos estadísticos de romper la realimentación. Son defences contra un síntoma.
+
+La diferencia cualitativa: **BGP es exacto y DV es probable**. Y el corolario incómodo es que BGP, al ser exacto contra bucles, **no detecta las mentiras**: si un AS anuncia de verdad un prefijo que no le pertenece, ese error se propaga a toda la Internet sin que nada lo frene. Un bucle se autodetiene; una mentira no.
+
+</details>
+
+<p><strong>4.</strong> Escribí el orden completo de los atributos de decisión de BGP.</p>
+<details><summary>Respuesta</summary>
+
+1. **`WEIGHT`** — mayor gana. Local, no estándar, no se anuncia.
+2. **`LOCAL_PREF`** — mayor gana. Solo iBGP.
+3. **Origen local** — la ruta nativa del AS gana.
+4. **Longitud del `AS_PATH`** — menor gana.
+5. **`ORIGIN`** — `IGP` > `EGP` > `Incomplete`.
+6. **`MED`** — menor gana. **Solo comparable entre rutas del mismo AS vecino.**
+7. **eBGP sobre iBGP** — eBGP gana.
+8. **Métrica IGP al `NEXT_HOP`** — menor gana. Es el "hot potato".
+9. **`Router ID` más bajo** — menor gana. Existe solo por determinismo.
+
+Se baja por la lista y se gana en el primer criterio con diferencia. Un detalle que se pregunta: el `LOCAL_PREF` (2) gana **antes** que la longitud del `AS_PATH` (4), así que una ruta de 4 saltos con `LOCAL_PREF` 200 le gana a una de 3 con `LOCAL_PREF` 100.
+
+</details>
+
+<p><strong>5.</strong> Explique el "hot potato" y cómo lo corrigen <code>MED</code> y <code>LOCAL_PREF</code>.</p>
+<details><summary>Respuesta</summary>
+
+Un AS prefiere salir por el vecino **más cercano**, porque la conexión del último tramo la paga él: es un recurso propio, con ancho de banda limitado, y todo el tráfico que pasa por ahí lo consume, aunque después siga su camino por otro lado.
+
+`MED` (*Multi-Exit Disc*) lo corrige **desde el vecino**: el proveedor anuncia el mismo prefijo por dos eBGP con distinto `MED`, y así le dice "salí por mí" (MED bajo) o "andá por el otro" (MED alto). Tiene dos trampas: es **comparable solo entre rutas del mismo AS vecino**, y **no es transitivo ni ordenable** (no tiene unidad, no se suma).
+
+`LOCAL_PREF` lo corrige **desde adentro**: subirle el `LOCAL_PREF` a las rutas que llegan por un vecino determinado hace que todo el tráfico de salida de ese AS se vaya por ahí, sin tocar la configuración del vecino. Por eso `LOCAL_PREF` es el atributo más usado en la práctica.
+
+</details>
+
+<p><strong>6.</strong> ¿Por qué BGP necesita full-mesh iBGP, y qué rompe Route Reflection?</p>
+<details><summary>Respuesta</summary>
+
+Porque la regla es "lo que aprendí de un iBGP **no** se lo cuento a otro iBGP". Sin ella, `R2` le pasa a `R3` una ruta de `R1`, `R3` se la pasa a `R1`, y los paquetes circulan en círculo: el `AS_PATH` es idéntico en los dos caminos porque el bucle es **dentro del mismo AS**, así que el filtro de bucles no lo detiene.
+
+Con la regla, para que todos tengan la misma tabla, `R1` tiene que anunciársela a cada uno: `N(N−1)/2` sesiones (con `N = 200`, casi 20.000).
+
+**Route Reflection** agrega una excepción: el RR sí puede pasar a sus clientes lo que aprendió de un peer. Y **no rompe nada**, siempre que se respeten dos reglas:
+- **`ORIGINATOR_ID`**: si una ruta llega a un cliente con su propio Router ID como originator, la descarta. Es el split horizon del cluster.
+- **`CLUSTER_LIST`**: si mi `CLUSTER_ID` ya está en la lista, la descarta. Evita bucles entre reflectores del mismo cluster.
+
+Lo que Route Reflection **no** arregla: la **consistencia** de la tabla. Cada router tiene una tabla correcta pero distinta de la de su vecino, porque le falta lo que se anunció por el camino que no pasó por él.
+
+</details>
+
+<p><strong>7.</strong> ¿Por qué <code>MED</code> solo se compara entre rutas del mismo AS vecino?</p>
+<details><summary>Respuesta</summary>
+
+Porque el `MED` es **una declaración de cada vecino sobre su propio interior**, no una medida del camino real. El vecino A puede anunciar `MED = 0` para todo lo que le llega por un enlace que para él es su enlace troncal, y `MED = 500` por uno que para él es un acceso de cliente. Esos números **no son comparables** con los que emite el vecino B, que tiene otra red y otra numerología.
+
+Si compararas entre vecinos distintos, el vecino que numera todo con ceros **ganaría todas las comparaciones** y te arrastraría a un camino objetivamente peor, aunque desde tu punto de vista el número sea menor.
+
+Por eso todos los proveedores grandes tienen una **configuración** explícita ("always compare med", "never compare med", "compare only from the same AS"), que es política, no estándar.
+
+Y el remate: el `MED` **no es transitivo ni ordenable**. No tiene unidad, no se suma, no se promedia, y comparar el `MED` de dos vecinos sobre destinos distintos no dice absolutamente nada.
+
+</details>
+
+<p><strong>8.</strong> ¿Por qué BGP es inseguro y qué hace cada mecanismo de seguridad?</p>
+<details><summary>Respuesta</summary>
+
+Porque **TCP no cifra ni autentica**. Todo lo que BGP dice al mundo es texto claro, sin firma. Un atacante en el camino puede inyectar rutas y redirigir tráfico, y un AS legítimo mal configurado puede filtrar prefijos que no le pertenecen. Los tres mecanismos atacan problemas distintos:
+
+| Mecanismo | Qué protege | Qué **NO** protege |
+|---|---|---|
+| **MD5 de sesión (`RFC 2385`)** | Que nadie **en el camino** haya sustituido los mensajes | Contra quien tenga la clave; es simétrico y hay que configurarlo |
+| **Roles BGP (`RFC 9234`, 2022)** | **Route leaks**: contradicciones entre lo que un AS anuncia y su relación comercial declarada | No autentica la sesión; es una declaración, no una criptografía |
+| **RPKI / ROA (`RFC 6810`, `RFC 6811`)** | Que un AS **no anuncie un prefijo que no le pertenece** | Los prefijos sin ROA ("Not Found"), que son la mayoría: ahí no hace nada |
+
+Los dos primeros fueron el mecanismo de referencia y **MD5 hoy es legado**: `RFC 9234` lo reemplaza explícitamente. Y el **route leak** (un AS anunciando prefijos de otro) es el fallo más común en la práctica, no un ataque sino un error o una mala configuración.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>eirc0108</code></strong> (20-ago-2001) — Problema 2: <em>implementar un algoritmo de ruteo jerárquico para una red de datagramas; definir la estructura de las tablas de ruteo y los paquetes utilizados</em>. Es la idea de fondo de BGP. ⚠ El PDF <strong>no publica solución</strong>; §3.1 es <em>(solución propia)</em>.</li>
+<li><strong>Examen <code>eirc0702</code></strong> (jul-2007) — Problema 2, apartado e: enrutamiento hacia Internet con <strong>rutas por defecto</strong>.</li>
+<li><strong><code>eirc0903</code> / <code>sirc0903</code></strong> — Pregunta 2 (10 pts): enrutamiento jerárquico, IGP que utiliza jerarquías (OSPF) y <strong>hot-potato routing</strong>. Resuelto en §3.3.</li>
+<li><strong>Nota:</strong> el corpus no tiene un problema <em>de programación</em> sobre BGP, pero sí las preguntas teóricas de <code>2009-03 P2</code> y los dos problemas de jerarquías (<code>2001-08 P2</code>, <code>eirc0702 P2e</code>). Verificado sobre <code>material-oficial/examenes/txt</code>.</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 5 §5.6 "Algorithms for routing": §5.6.4 "BGP: The Border Gateway Protocol" y el <em>case study</em> de enrutamiento entre backbone de Internet.</li>
+<li><strong><code>RFC 4271</code></strong> — BGP-4: los cuatro tipos de mensaje, la máquina de estados, el proceso de decisión y el <code>AS_PATH</code>.</li>
+<li><strong><code>RFC 4456</code></strong> — BGP Route Reflection: <code>ORIGINATOR_ID</code>, <code>CLUSTER_LIST</code>, reglas de no reenvío.</li>
+<li><strong><code>RFC 1997</code></strong> — BGP Communities (<code>NO_EXPORT</code>, <code>NO_ADVERTISE</code>, <code>NO_EXPORT_SUBCONFED</code>) y el formato <code>AS:value</code>.</li>
+<li><strong><code>RFC 4893</code></strong> — el problema del AS de 2 octetos · <strong><code>RFC 6793</code></strong> — el Capability de 4 octetos · <strong><code>RFC 5396</code></strong> — notación decimal <code>asdot</code> / <code>asplain</code>.</li>
+<li><strong><code>RFC 2385</code></strong> — MD5 para BGP: <strong>el mecanismo clásico, hoy legado</strong> · <strong><code>RFC 9234</code></strong> (2022) — <strong>roles BGP</strong>, reemplazo de referencia.</li>
+<li><strong><code>RFC 6810</code></strong> — RTR (RPKI to Router) · <strong><code>RFC 6811</code></strong> — BGP Prefix Origin Validation (ROA).</li>
+<li><strong><code>RFC 7854</code></strong> — BMP, monitoreo de BGP desde fuera.</li>
+<li><strong><code>RFC 9552</code></strong> — BGP-LS (dic-2023), obsoleta <code>RFC 7752</code> · <strong><code>RFC 7432</code></strong> — EVPN · <strong><code>RFC 7348</code></strong> — VXLAN · <strong><code>RFC 8402</code></strong>, <strong><code>RFC 8660</code></strong>, <strong><code>RFC 8986</code></strong> — Segment Routing / SRv6.</li>
+<li><strong>Clase anterior:</strong> 33 — Enrutamiento link-state, Dijkstra y OSPF</li>
+<li><strong>Clase siguiente:</strong> 35 — Fragmentación, MTU y path MTU</li>
+</ul></body></html>

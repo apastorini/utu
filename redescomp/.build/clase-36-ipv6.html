@@ -1,0 +1,1868 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 36 — IPv6</h1>
+<p><strong>Bloque:</strong> D (Capa de Red) · <strong>Semana:</strong> 12 · <strong>Duración estimada:</strong> 120 min
+<strong>Correlativa:</strong> Clase 35 (Fragmentación, MTU y Path MTU) · <strong>Sigue con:</strong> Clase 37 (ICMP, ping y traceroute + Repaso y Simulacro 4)
+<strong>Material de referencia:</strong> Tanenbaum cap. 5 (§5.6) · RFC 8200, RFC 4443, RFC 6437, RFC 8201</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Explicar <strong>por qué</strong> existe IPv6, con los datos de despliegue de 2026 y <strong>diciendo explícitamente que la cifra depende de qué se mide</strong>.</li>
+<li>Dibujar la <strong>cabecera IPv6</strong> campo por campo y <strong>compararla lado a lado con la IPv4</strong>: qué desapareció y qué es nuevo.</li>
+<li>Explicar para qué sirve el <strong>Flow Label</strong> (<code>RFC 6437</code>) y por qué no alcanza la 5-tupla.</li>
+<li>Describir la <strong>cadena de cabeceras de extensión</strong> por <code>Next Header</code>, y el bug histórico del <code>Payload Length</code>.</li>
+<li>Explicar los <strong>3 modelos de comunicación</strong> y demostrar por qué <strong>anycast no es un tipo de dirección</strong>.</li>
+<li>Enumerar los <strong>tipos de dirección</strong> y explicar por qué el <strong><code>/64</code> es la unidad de subred</strong>.</li>
+<li>Describir <strong>ICMPv6</strong> y explicar por qué <strong>no es opcional</strong>.</li>
+<li>Describir <strong>Neighbor Discovery</strong> y enumerar <strong>los 5 cambios frente a ARP</strong> (el apartado que más puntos da).</li>
+<li>Explicar <strong>DAD</strong> y por qué no existe en IPv4.</li>
+<li>Describir los <strong>3 esquemas de transición</strong> con sus ejemplos.</li>
+</ol>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 780 340" style="max-width:780px"><rect width="780" height="340" fill="#ffffff"/><text x="390.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Unicast, multicast y anycast en IPv6</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><rect x="34" y="48" width="210" height="34" rx="5" fill="#14507a" stroke="#14507a" stroke-width="1.2"/><text x="139.0" y="69.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#ffffff">Unicast</text><text x="139.0" y="104" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">un emisor -&gt; un receptor</text><rect x="49" y="118" width="180" height="30" rx="4" fill="#eaf2f7" stroke="#b8cfdb" stroke-width="1.2"/><text x="139.0" y="136.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">2001:db8::1</text><circle cx="139.0" cy="205" r="17" fill="#fff" stroke="#14507a" stroke-width="2.2"/><line x1="139.0" y1="152" x2="139.0" y2="183" stroke="#14507a" stroke-width="1.8" marker-end="url(#po)"/><rect x="289" y="48" width="210" height="34" rx="5" fill="#2e7d4f" stroke="#2e7d4f" stroke-width="1.2"/><text x="394.0" y="69.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#ffffff">Multicast</text><text x="394.0" y="104" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">ff00::/8 con jerarquia de ambito</text><rect x="304" y="118" width="180" height="30" rx="4" fill="#eaf2f7" stroke="#b8cfdb" stroke-width="1.2"/><text x="394.0" y="136.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">ff02::1:ff00:1</text><circle cx="394.0" cy="205" r="17" fill="#fff" stroke="#2e7d4f" stroke-width="2.2"/><line x1="394.0" y1="152" x2="394.0" y2="183" stroke="#2e7d4f" stroke-width="1.8" marker-end="url(#po)"/><rect x="544" y="48" width="210" height="34" rx="5" fill="#c8621a" stroke="#c8621a" stroke-width="1.2"/><text x="649.0" y="69.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#ffffff">Anycast</text><text x="649.0" y="104" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">varios nodos con la MISMA IP</text><rect x="559" y="118" width="180" height="30" rx="4" fill="#eaf2f7" stroke="#b8cfdb" stroke-width="1.2"/><text x="649.0" y="136.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">2001:db8::1</text><circle cx="597.0" cy="205" r="17" fill="#fff" stroke="#c8621a" stroke-width="2.2"/><circle cx="649.0" cy="205" r="17" fill="#fff" stroke="#c8621a" stroke-width="2.2"/><circle cx="701.0" cy="205" r="17" fill="#fff" stroke="#c8621a" stroke-width="2.2"/><line x1="649.0" y1="152" x2="649.0" y2="183" stroke="#c8621a" stroke-width="1.8" marker-end="url(#po)"/><text x="649.0" y="245" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="9" font-weight="700" fill="#c8621a">el router elige el mas cercano</text><text x="390.0" y="296" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#b3261e">anycast NO es un tipo de direccion: es un SERVICIO que se le da a un grupo de nodos.</text><text x="390.0" y="314" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">Es lo que usan los root servers de DNS y los resolvers publicos (1.1.1.1, 8.8.8.8).</text></svg></p>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2010-12 P5</code> (8 pts — stacks de referencia, coexistencia y <strong>ND vs. ARP con ≥4 cambios</strong>), <code>2009-12 P5</code> (6 pts — DAD y NDP), <code>2010-07 P5</code> (8 pts — <strong>3 modelos de comunicación</strong>, <strong>3 tipos de dirección</strong>, <strong>3 esquemas de transición</strong>), <code>2007-03 P3</code> (10 pts — RARP), <code>2009-07 P5</code> (ventajas y desventajas de IPv6).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 Por qué IPv6: del "futuro" al presente consumado</h2>
+<p><strong>El agotamiento es un hecho, no una predicción.</strong> IPv4 tiene 2³² = 4.294.967.296
+direcciones, y no dan. El agotamiento ocurrió por regiones, en este orden:</p>
+<table>
+<thead>
+<tr>
+<th>RIR</th>
+<th>Se agotó</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>APNIC</strong> (Asia-Pacífico)</td>
+<td>abril de 2011</td>
+</tr>
+<tr>
+<td><strong>ARIN</strong> (Norteamérica)</td>
+<td>septiembre de 2015</td>
+</tr>
+<tr>
+<td><strong>AfriNIC</strong> (África)</td>
+<td>abril de 2017</td>
+</tr>
+<tr>
+<td><strong>LACNIC</strong> (Latinoamérica)</td>
+<td>2020</td>
+</tr>
+<tr>
+<td><strong>RIPE NCC</strong> (Europa)</td>
+<td><strong>25 de noviembre de 2019</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>El dato para el aula:</strong> RIPE NCC hizo su <strong>última asignación /22 el 25-nov-2019</strong>
+a las 15:35 CET. Hoy mantiene una <em>waiting list</em> para un único /24 recuperado.
+IPv4 no "se está agotando": <strong>ya se agotó</strong>. IPv6 tiene 2¹²⁸ direcciones.</p>
+</blockquote>
+<h3>El despliegue real en 2026, con el número exacto</h3>
+<blockquote>
+<p><strong>El 28 de marzo de 2026, el acceso a Google por IPv6 superó el 50 % por
+primera vez: 50,10 %.</strong> Fuentes: Internet Society Pulse, APNIC (abr-2026),
+The Register (abr-2026).</p>
+</blockquote>
+<p><strong>Y lo importante es esto: la respuesta a "¿cuánto IPv6 hay?" es "depende de qué
+midás".</strong> Se pregunta:</p>
+<table>
+<thead>
+<tr>
+<th>Quién mide</th>
+<th><strong>Qué</strong> mide</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Google</strong> (<code>stats.google.com/ipv6</code>)</td>
+<td><strong>usuarios</strong> que acceden a Google por IPv6</td>
+<td><strong>50,10 %</strong> (mar-2026)</td>
+</tr>
+<tr>
+<td><strong>APNIC</strong></td>
+<td><strong>cobertura de capacidad</strong> (qué % de redes tiene IPv6)</td>
+<td>~<strong>42-43 %</strong></td>
+</tr>
+<tr>
+<td><strong>Cloudflare Radar</strong></td>
+<td><strong>tráfico por bytes</strong></td>
+<td>~<strong>40 %</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Y es desigual:</strong> leaders Francia ~73 %, India ~72 %, Arabia Saudita ~65 %;
+rezagados Italia ~17 %, España ~10 %, Egipto ~4 %, <strong>China &lt; 5 %</strong>.</p>
+<blockquote>
+<p><strong>Respuesta modelo para el examen (2012 vs. 2026):</strong> en 2012 el curso decía
+"IPv6 llega en 10 años". La respuesta correcta hoy es: <strong>"ya pasó la mitad en
+los usuarios de Google, pero es desigual, China sigue en menos del 5 %, y la
+cifra depende de qué se mida"</strong>. Una definición de "cuánto IPv6 hay" sin decir
+qué se midió es una respuesta incompleta.</p>
+</blockquote>
+<h3>⚠️ Actualización a 2026</h3>
+<ul>
+<li><strong>IPv6 dejó de ser "el futuro".</strong> No hay fecha de cierre de IPv4, y no la habrá
+  pronto.</li>
+<li><strong>CGNAT (<em>Carrier-Grade NAT</em>) es ubicuo en los ISP</strong>: es el nuevo default de la
+  capa 3 de acceso. Rompe conectividad entrante, complica la señalización
+  (SIP/IMS), rompe IPsec y rompe peer-to-peer.</li>
+<li><strong><code>RFC 6177</code> (2011)</strong> ya no recomienda <code>/48</code> por sitio final; los RIR asignan
+  <code>/48</code> (a veces <code>/56</code>) al <strong>operador</strong>, que reparte.</li>
+<li><strong>NDP se amplió en 2026:</strong> <strong><code>RFC 9926</code></strong> (feb-2026) permite registrar un prefijo
+  en los routers vecinos.</li>
+<li><strong>Por qué NAT rompe IPv6:</strong> NAT depende de direcciones privadas y reescritura de
+  puertos para multiplexar. IPv6 no <strong>necesita</strong> traducción; peor, NAT rompe la
+  <strong>extensibilidad extremo a extremo</strong> (cabeceras de extensión, movilidad), no es
+  <em>stateful-friendly</em> con IPsec, y obliga a los hosts IPv6-only a usar
+  464XLAT/PLAT para alcanzar contenido IPv4. <strong>⇒ La meta de IPv6 es eliminar el
+  NAT.</strong></li>
+</ul>
+<h2>1.2 La cabecera IPv6</h2>
+<p>En IPv4 la cabecera mide de 20 a 60 bytes y hay que mirar el <code>IHL</code> para saber
+dónde termina. En IPv6 son <strong>40 bytes fijos</strong>, y lo que sigue son <strong>cabeceras de
+extensión</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   Cabecera IPv6 — 40 bytes fijos
+
+&lt;svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 740 280" style="max-width:740px"&gt;&lt;rect width="740" height="280" fill="#ffffff"/&gt;&lt;text x="370.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c"&gt;Cabecera IPv6, campo por campo&lt;/text&gt;&lt;defs&gt;&lt;marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"&gt;&lt;path d="M0,0 L10,5 L0,10 z" fill="#14507a"/&gt;&lt;/marker&gt;&lt;marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"&gt;&lt;path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/&gt;&lt;/marker&gt;&lt;marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"&gt;&lt;path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/&gt;&lt;/marker&gt;&lt;/defs&gt;&lt;rect x="40.0" y="70" width="87.5" height="30" rx="3" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/&gt;&lt;text x="83.75" y="88.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a"&gt;Version&lt;/text&gt;&lt;rect x="127.5" y="70" width="175.0" height="30" rx="3" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/&gt;&lt;text x="215.0" y="88.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a"&gt;Traffic Class&lt;/text&gt;&lt;rect x="302.5" y="70" width="437.5" height="30" rx="3" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/&gt;&lt;text x="521.25" y="88.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a"&gt;Flow Label&lt;/text&gt;&lt;rect x="40.0" y="104" width="350.0" height="30" rx="3" fill="#dceaf3" stroke="#7aa7c4" stroke-width="1.2"/&gt;&lt;text x="215.0" y="122.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a"&gt;Payload Length&lt;/text&gt;&lt;rect x="390.0" y="104" width="175.0" height="30" rx="3" fill="#dceaf3" stroke="#7aa7c4" stroke-width="1.2"/&gt;&lt;text x="477.5" y="122.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a"&gt;Next Header&lt;/text&gt;&lt;rect x="565.0" y="104" width="175.0" height="30" rx="3" fill="#dceaf3" stroke="#7aa7c4" stroke-width="1.2"/&gt;&lt;text x="652.5" y="122.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a"&gt;Hop Limit&lt;/text&gt;&lt;rect x="40.0" y="138" width="2800.0" height="30" rx="3" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/&gt;&lt;text x="1440.0" y="156.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a"&gt;Source Address&lt;/text&gt;&lt;rect x="40.0" y="172" width="2800.0" height="30" rx="3" fill="#dceaf3" stroke="#7aa7c4" stroke-width="1.2"/&gt;&lt;text x="1440.0" y="190.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a"&gt;Destination Address&lt;/text&gt;&lt;text x="40" y="56" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666"&gt;cabecera fija de 40 bytes (5 filas), sin opciones&lt;/text&gt;&lt;text x="40" y="242" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#666"&gt;Desaparecen frente a IPv4: el checksum de cabecera, el IHL y el Fragment Offset.&lt;/text&gt;&lt;text x="40" y="264" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#2e7d4f"&gt;Aparece: el Flow Label de 20 bits, que identifica un flujo sin mirar el 5-tupla.&lt;/text&gt;&lt;text x="40" y="286" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#c8621a"&gt;El Payload Length excluye las cabeceras de extensión.&lt;/text&gt;&lt;/svg&gt;
+
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|Version| Traffic Class |           Flow Label                  |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|         Payload Length        |  Next Header  |   Hop Limit   |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
++                          Source Address                        +
+|                          (16 bytes = 128 bits)                 |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                                                               |
++                       Destination Address                      +
+|                       (16 bytes = 128 bits)                    |
+|                                                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Bits</th>
+<th>Qué es</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Version</strong></td>
+<td>4</td>
+<td>Siempre <strong>6</strong>.</td>
+</tr>
+<tr>
+<td><strong>Traffic Class</strong></td>
+<td>8</td>
+<td>Equivale a <strong>DSCP + ECN</strong> de IPv4 (6 + 2 bits).</td>
+</tr>
+<tr>
+<td><strong>Flow Label</strong></td>
+<td>20</td>
+<td><strong>Nuevo.</strong> Identifica un flujo (ver §1.3).</td>
+</tr>
+<tr>
+<td><strong>Payload Length</strong></td>
+<td>16</td>
+<td>Largo del payload en bytes, <strong>sin</strong> las cabeceras de extensión.</td>
+</tr>
+<tr>
+<td><strong>Next Header</strong></td>
+<td>8</td>
+<td>Sustituye al <code>Protocol</code> <strong>y</strong> al <code>IHL</code>: dice qué va después (TCP=6, UDP=17, ICMPv6=58, o una extensión).</td>
+</tr>
+<tr>
+<td><strong>Hop Limit</strong></td>
+<td>8</td>
+<td>Equivale al <code>TTL</code>. Se decrementa en <strong>cada</strong> router.</td>
+</tr>
+<tr>
+<td><strong>Source / Destination</strong></td>
+<td>128 c/u</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3>IPv4 contra IPv6, lado a lado</h3>
+<div class="codehilite"><pre><span></span><code> IPv4 (20–60 bytes, IHL variable)      IPv6 (40 bytes fijos)
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3          0 1 2 3 4 5 6 7 8 9 0 1 2 3
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|Ver|  IHL  |DSCP|ECN|     Total     |Ver| Traffic Class|  Flow Label |
+|         Length            |       |               |            |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|     Identification    |Fl|  FrO  |         Payload Length    |NH|HL|
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|  TTL   |  Prot  | Hdr Checksum   |  Source Address (128 bits)    |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|      Source Address                |                               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   |  Destination Address           |
+|    Destination Address            |  (128 bits)                    |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|   Options (0–40 bytes)            |  ⇐ no hay: van encadenadas     |
+</code></pre></div>
+
+<p><strong>Qué DESAPARECIÓ y por qué:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Desaparecido</th>
+<th>Por qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>Header Checksum</code></strong></td>
+<td><strong>Era un desperdicio de CPU</strong> y había que recalcular en <strong>cada</strong> salto porque el TTL cambia. Ahora <strong>el checksum lo pone la capa 4</strong> (TCP, UDP), que verifica <strong>una sola vez extremo a extremo</strong>. Cada router verifica ~0 y el error se detecta igual, pero al final de la tubería.</td>
+</tr>
+<tr>
+<td><strong><code>IHL</code></strong></td>
+<td>La cabecera siempre mide 40 bytes. El campo <code>Next Header</code> cumple la función doble.</td>
+</tr>
+<tr>
+<td><strong><code>Fragment Offset</code></strong></td>
+<td><strong>IPv6 no fragmenta en los routers.</strong> Los routers solo decrecantan <code>Hop Limit</code> y descartan con <strong>Packet Too Big</strong> (tipo 2). Solo el origen fragmenta, con una cabecera de extensión.</td>
+</tr>
+<tr>
+<td><strong><code>Options</code></strong></td>
+<td>Se fueron a las cabeceras de extensión. El motivo: en IPv4 una opción <strong>dentro</strong> de la cabecera obligaba a que <strong>todos</strong> los routers la entendieran (o descartaran el paquete). En IPv6 se procesan <strong>solo donde corresponde</strong>.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Qué es NUEVO:</strong> el <strong><code>Flow Label</code></strong> (20 bits) y las <strong>cabeceras de extensión
+encadenadas</strong>, que dan <strong>extensibilidad sin cambiar el formato base</strong>.</p>
+<p><strong>El argumento profundo:</strong> IPv4 optimizó la cabecera para la <strong>velocidad del
+router</strong> (checksum barato, todo en un lugar). IPv6 la optimizó para la
+<strong>extensibilidad</strong>, y movió el costo de la verificación al final de la tubería.</p>
+<h2>1.3 El Flow Label (<code>RFC 6437</code>)</h2>
+<p>Son <strong>20 bits</strong> que el emisor pone para <strong>identificar un flujo</strong>, y que los
+routers pueden usar <strong>sin conocer la conexión</strong>.</p>
+<p><strong>El problema que resuelve.</strong> Un router hace QoS (ECN, remarked DSCP, ECMP por
+flujo) y necesita saber "este paquete es del mismo flujo que aquél". La forma
+clásica es la <strong>5-tupla</strong> <code>(IP origen, puerto origen, IP destino, puerto destino,
+protocolo)</code>, que <strong>no siempre se puede construir</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   1. PAQUETE FRAGMENTADO: solo el PRIMER fragmento tiene la cabecera de
+      transporte. Los otros no. Un router que debe hacer ECMP no puede hashear
+      un fragmento contra otro sin el Flow Label.
+
+   2. PAQUETE CIFRADO: si el transporte va cifrado (IPsec, WireGuard), los
+      puertos son ilegibles. El Flow Label está en la cabecera IP, que NO se
+      cifra: es visible para un router de medio aunque el payload no lo sea.
+</code></pre></div>
+
+<p><strong>Reglas de <code>RFC 6437</code>:</strong> el Flow Label <strong>solo significa algo para un par
+(origen, destino)</strong>, así que el router identifica el flujo con
+<code>(Flow Label, Src, Dst)</code>; el emisor puede <strong>cambiarlo</strong> cuando cambian los
+atributos del flujo; los routers que no lo entienden <strong>lo ignoran</strong> (retrocompatible
+por diseño); y <strong>no es una etiqueta de seguridad</strong>, cualquiera puede poner lo que
+quiera.</p>
+<h2>1.4 Cabeceras de extensión y el <code>Payload Length</code></h2>
+<p>Cuando el <code>Next Header</code> no es un protocolo de transporte, <strong>es una cabecera de
+extensión</strong>. Se encadenan: cada una apunta con su <code>Next Header</code> a la siguiente, y
+la última al protocolo real.</p>
+<div class="codehilite"><pre><span></span><code>  ┌──────────────────────┐  ┌──────────────────────┐  ┌─────────┐
+  │ Cabecera IP fija     │  │ Cabecera de          │  │  TCP    │
+  │ 40 bytes             │─►│ extensión 1          │─►│  (6)    │
+  │ Next Header = 0      │  │ Next Header = 6      │  │  datos  │
+  │ (Hop-by-Hop)         │  │ (Destination Options)│  │         │
+  └──────────────────────┘  └──────────────────────┘  └─────────┘
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Nombre</th>
+<th><code>Next Header</code></th>
+<th>Para qué</th>
+<th>¿Quién la procesa?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Hop-by-Hop Options</strong></td>
+<td><strong>0</strong></td>
+<td>Opciones que deben ver <strong>todos</strong> los routers</td>
+<td>Todos</td>
+</tr>
+<tr>
+<td><strong>Routing</strong></td>
+<td><strong>43</strong></td>
+<td>Encaminamiento explícito. El <strong>tipo 0 fue deprecado</strong> (<code>RFC 5095</code>)</td>
+<td>Los routers indicados</td>
+</tr>
+<tr>
+<td><strong>Fragment</strong></td>
+<td><strong>44</strong></td>
+<td>Solo si el <strong>origen</strong> fragmenta</td>
+<td>Solo el destino final</td>
+</tr>
+<tr>
+<td><strong>Destination Options</strong></td>
+<td><strong>60</strong></td>
+<td>Opciones para el destino</td>
+<td>Solo el destino final</td>
+</tr>
+<tr>
+<td><strong>AH</strong></td>
+<td><strong>51</strong></td>
+<td>Integridad y autenticidad</td>
+<td>Los que entiendan AH</td>
+</tr>
+<tr>
+<td><strong>ESP</strong></td>
+<td><strong>50</strong></td>
+<td>Confidencialidad + integridad + anti-replay</td>
+<td>Solo el destino final</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ <strong>El bug histórico del <code>Payload Length</code>.</strong> En la especificación original
+(<code>RFC 2460</code>, 1998) el <code>Payload Length</code> incluía <strong>las cabeceras de extensión</strong>.
+Eso obligaba a que el nodo que fragmentaba conociera el largo de las cabeceras
+de extensión de los paquetes que iba a producir. <strong>Era un error de diseño</strong>, y
+<code>RFC 2719</code> (1999) lo corrigió: <strong>el <code>Payload Length</code> excluye las cabeceras de
+extensión</strong>. Si hay 8 bytes de extensión y 1000 de datos, <code>Payload Length =
+1000</code>. La vigente, <code>RFC 8200</code> (2017), ya trae la corrección.</p>
+</blockquote>
+<p><strong>Por qué son la gran victoria de diseño de IPv6:</strong> en IPv4, para agregar una
+opción había que modificar el formato de la cabecera, y <strong>cualquier router que no
+la entendiera tenía que descartar el paquete</strong>. En IPv6, un router que no
+entiende una extensión simplemente <strong>la salta</strong> (salvo Hop-by-Hop y Fragment, que
+son obligatorias). <strong>Las nuevas funciones se pueden agregar sin romper Internet.</strong></p>
+<h2>1.5 Los 3 modelos de comunicación</h2>
+<p>Este es el <code>2010-07 P5 a)</code>.</p>
+<h3>1) Unicast — un emisor, un receptor</h3>
+<p>El modelo clásico: cada dirección identifica <strong>exactamente un</strong> nodo.</p>
+<div class="codehilite"><pre><span></span><code>   H1 (2001:db8::1)  ──────────────►  S (2001:db8::2)
+        emisor                      receptor
+</code></pre></div>
+
+<p>La dirección de <strong>destino</strong> identifica al destino, la de <strong>origen</strong> al emisor, y
+ambos van en la cabecera. Es el 99 % del tráfico.</p>
+<h3>2) Multicast — un emisor, muchos receptores</h3>
+<p><strong>Prefijo <code>ff00::/8</code></strong>: el primer byte de la dirección es <code>ff</code>.</p>
+<div class="codehilite"><pre><span></span><code>   |1111 1111| 4 bits de ámbito (scope) | 4 bits de flag | 112 bits de ID |
+   └ ff ────┘                        └── flags ──────────┴── del grupo ───┘
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Ámbito</th>
+<th>Prefijo</th>
+<th>Significado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td><code>ff00::/8</code></td>
+<td>Reservado</td>
+</tr>
+<tr>
+<td>1</td>
+<td><code>ff01::/16</code></td>
+<td><strong>Node-local</strong> (solo en el propio host)</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong><code>ff02::/16</code></strong></td>
+<td><strong>Link-local</strong>: solo en el mismo enlace</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>ff05::/16</code></td>
+<td>Site-local (dentro de un sitio)</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>ff08::/16</code></td>
+<td>Organization-local</td>
+</tr>
+<tr>
+<td>14</td>
+<td><code>ff0e::/16</code></td>
+<td><strong>Global</strong></td>
+</tr>
+<tr>
+<td>15</td>
+<td><code>ff0f::/16</code></td>
+<td>Reservado</td>
+</tr>
+</tbody>
+</table>
+<p>⚠️ <strong><code>site-local</code> (<code>fec0::/10</code>) está DEPRECADO</strong>: se reemplaza por <strong>unique
+local</strong> (<code>fc00::/7</code>).</p>
+<p><strong>La jerarquía:</strong> un router que recibe tráfico para <code>ff02::/16</code> <strong>no lo reenvía
+fuera del enlace</strong>. Uno que recibe para <code>ff0e::/16</code> lo reenvía por Internet.</p>
+<p><strong>Ejemplo real:</strong> IPv6 usa multicast siempre, aunque el usuario no lo sepa
+(<code>ff02::1</code> = todos los nodos del enlace, <code>ff02::2</code> = todos los routers del
+enlace, <code>ff01::1</code> = el propio nodo).</p>
+<h3>3) Anycast — muchos emisores, muchos receptores</h3>
+<blockquote>
+<p>⚠️ <strong>Punto clave, y es un error clásico de examen: el anycast NO es un tipo de
+dirección.</strong> Es un <strong>servicio</strong> que se le asigna a un grupo de nodos que tienen
+<strong>la misma dirección unicast</strong>, y el router encamina al <strong>más cercano</strong>.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code>   ⇐ TODOS tienen la MISMA dirección: 2001:db8::1
+   ⇐ NO hay prefijo especial, NO hay multicast, NO hay bit que lo marque
+
+   ┌──────────┐   ┌──────────┐   ┌──────────┐
+   │ Nodo A   │   │ Nodo B   │   │ Nodo C   │
+   │ 2001:db8 │   │ 2001:db8 │   │ 2001:db8 │
+   │   ::1    │   │   ::1    │   │   ::1    │
+   └────┬─────┘   └────┬─────┘   └────┬─────┘
+        └──────────────┼──────────────┘
+                       ▼
+              ┌─────────────────┐
+              │ "encaminá a      │
+              │  2001:db8::1 al │
+              │  más cercano"    │
+              └─────────────────┘
+</code></pre></div>
+
+<p><strong>¿Por qué no es un tipo de dirección?</strong></p>
+<ol>
+<li><strong>No hay prefijo ni bit que lo marque.</strong> Es una dirección unicast normal, asignada a varios nodos a la vez. La tabla de ruteo es la de siempre.</li>
+<li><strong>La decisión es del router, no del paquete.</strong> El paquete <strong>no sabe</strong> que hay más de uno.</li>
+<li><strong>El receptor no se identifica.</strong> El emisor no puede saber a cuál de los tres le llegó.</li>
+</ol>
+<p><strong>¿Cómo es posible?</strong> Porque en ruteo <strong>la dirección destino identifica un
+destino lógico, no un host físico</strong>: con BGP, un AS anuncia el prefijo desde
+<strong>varios puntos</strong> del mundo y el cliente elige el más cercano.</p>
+<p><strong>Dónde se usa:</strong> los <strong>13 root servers de DNS</strong> (todos con <code>198.41.0.4</code> y
+<code>2001:503:ba3e::2:30</code>), los <strong>resolvers públicos</strong> (<code>8.8.8.8</code>, <code>1.1.1.1</code>), y
+<strong>los CDNs</strong>.</p>
+<p><strong>La comparación clave (multicast vs. anycast):</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Multicast</strong></th>
+<th><strong>Anycast</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>¿Tipo de dirección?</strong></td>
+<td><strong>Sí</strong>: <code>ff00::/8</code></td>
+<td><strong>NO</strong> — servicio sobre unicast</td>
+</tr>
+<tr>
+<td><strong>¿A quién llega?</strong></td>
+<td>A <strong>todos</strong> del grupo</td>
+<td>Al <strong>más cercano</strong> (uno solo)</td>
+</tr>
+<tr>
+<td><strong>¿Cómo lo decide?</strong></td>
+<td>El <strong>paquete</strong> (dirección)</td>
+<td>El <strong>router</strong> (encaminamiento)</td>
+</tr>
+<tr>
+<td><strong>Configuración</strong></td>
+<td>Requiere <strong>IGMP/MLD</strong> y ruteo multicast</td>
+<td><strong>Ninguna</strong>: es ruteo normal</td>
+</tr>
+<tr>
+<td><strong>Ejemplo</strong></td>
+<td><code>ff02::1</code></td>
+<td><code>8.8.8.8</code></td>
+</tr>
+</tbody>
+</table>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Decir que anycast es un tipo de dirección.</strong> No existe prefijo anycast.</li>
+<li><strong>Confundir los bits de ámbito con los de flag</strong> en la dirección multicast.</li>
+<li><strong>Decir que site-local es válido.</strong> Está deprecado; se usa <code>unique local</code>.</li>
+</ul>
+<h2>1.6 Los tipos de dirección IPv6</h2>
+<p>El enunciado de <code>2010-07 P5 a)</code> pide tres; la realidad son cuatro. Los tres que
+el curso emphasizes:</p>
+<table>
+<thead>
+<tr>
+<th>Tipo</th>
+<th>Prefijo</th>
+<th>Alcance</th>
+<th>¿Cómo se obtiene?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Unicast global</strong></td>
+<td><strong><code>2000::/3</code></strong></td>
+<td>Internet entero</td>
+<td>Asignado por un RIR a través de un ISP</td>
+</tr>
+<tr>
+<td><strong>Link-local</strong></td>
+<td><strong><code>fe80::/10</code></strong></td>
+<td><strong>Solo en el mismo enlace</strong></td>
+<td><strong>Se genera sola</strong> en cada interfaz</td>
+</tr>
+<tr>
+<td><strong>Multicast</strong></td>
+<td><strong><code>ff00::/8</code></strong></td>
+<td>Según el ámbito</td>
+<td>Configurado por la aplicación</td>
+</tr>
+<tr>
+<td><strong>Unique local</strong></td>
+<td><strong><code>fc00::/7</code></strong></td>
+<td>Prefijo único de la organización</td>
+<td>Análogo a las privadas IPv4</td>
+</tr>
+</tbody>
+</table>
+<p><strong>La link-local <code>fe80::/10</code> deserves atención:</strong> <strong>se genera automáticamente</strong> en
+cada interfaz sin configurar nada; <strong>no se enruta</strong> (un router jamás reenvía un
+paquete link-local fuera del enlace, por diseño); y es la dirección que la máquina
+usa <strong>antes</strong> de tener dirección global y para hablar con sus vecinos.</p>
+<p><strong>El formato, de memoria:</strong></p>
+<div class="codehilite"><pre><span></span><code>   |3 bits|  | 13 bits prefijo        |            64 bits IID             |
+   2000::/3 →  001  0000 0000 0000     |  Interface Identifier             |
+
+   Ejemplo:  2001:0db8:0000:0000:0000:ff00:0042:8329
+              └─/48 RIR──┘└─/16 ISP─┘└───── /64 subred ──────────────┘
+</code></pre></div>
+
+<h3>El <code>/64</code> como unidad de subred, y por qué</h3>
+<p><strong>Regla que hay que saber de memoria: en IPv6 el <code>/64</code> es la unidad de subred.</strong>
+No el <code>/48</code>, no el <code>/56</code>: <strong>el <code>/64</code></strong>.</p>
+<p><strong>¿Por qué 64 bits de IID?</strong> Porque la generación automática (<em>SLAAC</em>) necesita
+<strong>64 bits</strong> para el identificador de interfaz:</p>
+<div class="codehilite"><pre><span></span><code>   1. EUI-64 (derivado de la MAC):
+        MAC:  00:1B:44:11:3A:B7
+        Se invierte el primer byte y se inserta FF:FE en el medio:
+        IID:  02:1B:44:FF:FE:11:3A:B7
+        ⚠️ Desventaja: preserva la MAC ⇒ la dirección ES un identificador
+           único persistente ⇒ Privacy Extensions lo resolvió.
+
+   2. Privacy Extensions (RFC 4941): el default actual.
+        IID ALEATORIO de 64 bits, que cambia cada cierto tiempo (días u horas),
+        para que un observador externo NO pueda correlacionar la actividad a
+        lo largo del tiempo. Default en Windows, macOS y Linux.
+</code></pre></div>
+
+<p><strong>Los prefijos reservados y de uso, de memoria:</strong></p>
+<div class="codehilite"><pre><span></span><code>   2000::/3   Unicast global          ← el 99 % de las direcciones
+   fc00::/7   Unique Local            ← como las privadas IPv4
+   fe80::/10  Link-Local              ← se genera sola
+   ff00::/8   Multicast               ← los grupos
+   (el resto: reservado para uso futuro)
+</code></pre></div>
+
+<h2>1.7 ICMPv6 (<code>RFC 4443</code>)</h2>
+<blockquote>
+<p>⚠️ <strong>ICMPv6 NO es opcional: es parte esencial de IPv6.</strong> Un host IPv6 sin
+ICMPv6 <strong>no funciona</strong>: no resuelve direcciones de capa 2, no se configura
+solo, no sabe si un paquete es demasiado grande.</p>
+</blockquote>
+<p><strong>La razón profunda:</strong> IPv6 absorbió lo que en IPv4 eran <strong>protocolos
+independientes</strong> (ARP, RARP, ICMP) y lo <strong>integró en un solo</strong>, reduciendo el
+número de protocolos de la pila.</p>
+<p>El formato del mensaje es el de ICMPv4 (tipo, código, checksum, cuerpo), con un
+campo de 32 bits obligatorio que identifica la cabecera IPv6 que generó el error.</p>
+<table>
+<thead>
+<tr>
+<th>Tipo</th>
+<th>Nombre</th>
+<th>Para qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1</strong></td>
+<td>Destination Unreachable</td>
+<td>Análogo al tipo 3 de IPv4</td>
+</tr>
+<tr>
+<td><strong>2</strong></td>
+<td><strong>Packet Too Big</strong></td>
+<td>Lo emite el router cuando el paquete no entra. <strong>Lleva el MTU</strong>, y el origen <strong>tiene que fragmentar</strong></td>
+</tr>
+<tr>
+<td><strong>3</strong></td>
+<td>Time Exceeded</td>
+<td>Análogo al tipo 11. Lo usa <code>traceroute</code></td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td>Parameter Problem</td>
+<td>Análogo al tipo 12</td>
+</tr>
+<tr>
+<td><strong>128</strong></td>
+<td><strong>Echo Request</strong></td>
+<td><code>ping6</code></td>
+</tr>
+<tr>
+<td><strong>129</strong></td>
+<td><strong>Echo Reply</strong></td>
+<td>Respuesta de <code>ping6</code></td>
+</tr>
+<tr>
+<td><strong>133</strong></td>
+<td><strong>Router Solicitation</strong></td>
+<td>El host pide routers del enlace</td>
+</tr>
+<tr>
+<td><strong>134</strong></td>
+<td><strong>Router Advertisement</strong></td>
+<td>El router se anuncia y manda prefijo y MTU</td>
+</tr>
+<tr>
+<td><strong>135</strong></td>
+<td><strong>Neighbor Solicitation</strong></td>
+<td>"Who has X?" — el <strong>ARP request</strong> de IPv6</td>
+</tr>
+<tr>
+<td><strong>136</strong></td>
+<td><strong>Neighbor Advertisement</strong></td>
+<td>"This is me" — el <strong>ARP reply</strong> de IPv6</td>
+</tr>
+<tr>
+<td><strong>137</strong></td>
+<td><strong>Redirect</strong></td>
+<td>El router sugiere un mejor camino</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Los cambios de numeración que hay que tener claros:</strong></p>
+<div class="codehilite"><pre><span></span><code>   ICMPv4      ICMPv6        Cambio
+   ──────      ──────        ─────────────────────────────────────
+   Tipo 0      Tipo 129      Echo Reply:   0 → 129
+   Tipo 8      Tipo 128      Echo Request: 8 → 128
+   Tipo 3/4    Tipo 2        "Frag Needed" → "Packet Too Big"
+   Tipo 11     Tipo 3        Time Exceeded: 11 → 3
+   Tipo 12     Tipo 4        Parameter Problem: 12 → 4
+   (n/a)       Tipo 133-137  Neighbor Discovery (nuevo)
+</code></pre></div>
+
+<p><strong>La diferencia crítica del tipo 2 frente al 3/4 de IPv4:</strong></p>
+<div class="codehilite"><pre><span></span><code>   IPv4, tipo 3 código 4:  el router DICE "necesitás 1492" y el emisor
+                           AJUSTA su MSS. El paquete NO se fragmenta más.
+
+   IPv6, tipo 2:           el router DICE "no entra, te paso 1280" y el
+                           ORIGEN tiene que FRAGMENTAR él mismo (porque los
+                           routers IPv6 NO pueden fragmentar). Después el
+                           siguiente paquete va más chico, y así.
+</code></pre></div>
+
+<h2>1.8 Neighbor Discovery vs. ARP — el apartado que más puntos da</h2>
+<p>Este es el <code>2010-12 P5 b)</code>, que pide "<strong>no menos de 4 cambios significativos</strong>".
+La solución oficial lista 5.</p>
+<p><strong>ARP (<code>RFC 826</code>)</strong> responde una pregunta: "<strong>¿qué MAC corresponde a esta IP?</strong>",
+usando <strong>broadcast</strong> de capa 2, y es un <strong>protocolo independiente</strong> definido
+aparte de IP.</p>
+<p><strong>Neighbor Discovery (ND)</strong> es parte de <strong>ICMPv6</strong> y resuelve <strong>tres</strong> preguntas:</p>
+<div class="codehilite"><pre><span></span><code>   ARP resuelve UNA cosa:
+       1. ¿Qué MAC corresponde a esta IP?          (resolución de dirección)
+
+   ND resuelve TRES cosas:
+       1. ¿Qué MAC corresponde a esta IP?          (resolución de dirección)
+       2. ¿Qué prefijo y qué parámetros hay acá?   (autoconfiguración SLAAC)
+       3. ¿Hay alguien más con MI dirección?       (detección de duplicados DAD)
+</code></pre></div>
+
+<h3>Los 5 cambios significativos</h3>
+<p><strong>(1) ND es parte de ICMPv6; ARP es un protocolo independiente.</strong></p>
+<div class="codehilite"><pre><span></span><code>   IPv4:  App ─ TCP ─ IP ─ ICMP     ARP vive APARTE, en un ethertype distinto
+                                     (0x0806), con su propio formato.
+
+   IPv6:  App ─ TCP ─ IPv6 ─ ICMPv6
+                                 └── ND (tipos 133-137) vive AQUÍ ADENTRO.
+                                     No existe "ARP" en IPv6.
+
+   Por qué importa: una sola pila de protocolos, menos superficie de ataque,
+   menos código en el kernel, y **es imposible desactivar ND sin romper IPv6**.
+</code></pre></div>
+
+<p><strong>(2) ND usa MULTICAST en lugar de BROADCAST.</strong></p>
+<div class="codehilite"><pre><span></span><code>   ARP request:  FF:FF:FF:FF:FF:FF  (broadcast). TODOS lo reciben y lo procesan.
+
+   ND request:   dirección multicast SOLICITED-NODE,  ff02::1:ffxx:xxxx
+                 Se toman los últimos 24 bits de la IPv6 buscada y se anteponen
+                 ff02:0:0:0:0:1:ff00:
+
+                 Ejemplo: buscar 2001:db8::1234:5678:9abc
+                   últimos 24 bits:              34:5678:9abc
+                   solicitation:      ff02::1:ff00:34:5678:9abc
+
+   ¿Por qué es mejor? Porque los routers NO reenvían ese multicast, así que el
+   scope NO sale del enlace. Con el broadcast de ARP, un router con proxy ARP
+   responde y el broadcast inunda cada segmento. El multicast es más eficiente
+   y más seguro: solo los nodos INTERESADOS responden.
+</code></pre></div>
+
+<p><strong>(3) Los mapeos son link-layer ↔ IPv6 en vez de link-layer ↔ IPv4.</strong></p>
+<p>Cambio directo: ND mapea <strong>MAC ↔ IPv6</strong>, no IPv4. En la misma red pueden
+coexistir ARP (para IPv4) y ND (para IPv6), con cachés separadas.</p>
+<p><strong>(4) ND combina la resolución con la AUTOCONFIGURACIÓN y la DETECCIÓN DE
+DUPLICADOS.</strong></p>
+<p>Es el cambio conceptual más grande. En IPv4, ARP <strong>solo resuelve MACs</strong>: para
+tener una IP hay que usar DHCP o configurar a mano. En IPv6, ND hace las tres
+cosas, lo que permite <strong>IPv6 <em>zero-touch</em></strong>: el host se enchufa y <strong>se configura
+solo</strong>.</p>
+<p><strong>(5) Los nodos pueden usar mensajes NS para propagar cambios en su
+configuración.</strong></p>
+<div class="codehilite"><pre><span></span><code>   En IPv4, si un host cambia su IP (failover de cluster, cambio de VLAN), los
+   demás se quedan con la caché ARP vieja hasta que expira. ARP no tiene un
+   "anuncio" de la IP nueva.
+
+   En IPv6, ND permite:
+     - Anunciar la dirección nueva proactivamente (NA no solicitado) para que
+       los vecinos actualicen su Neighbor Cache.
+     - Detectar un nodo que se va (responde al NS con NA con Override = 1).
+     - Detectar duplicados.
+</code></pre></div>
+
+<p><strong>Tabla comparativa completa (esto es lo que hay que saber de memoria):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Aspecto</th>
+<th><strong>ARP (IPv4)</strong></th>
+<th><strong>Neighbor Discovery (IPv6)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>¿Qué protocolo es?</strong></td>
+<td>Independiente, <code>RFC 826</code></td>
+<td><strong>Parte de ICMPv6</strong> (<code>RFC 4443</code>)</td>
+</tr>
+<tr>
+<td><strong>Corre sobre</strong></td>
+<td>El enlace (Ethernet)</td>
+<td><strong>IPv6</strong></td>
+</tr>
+<tr>
+<td><strong>Identificador</strong></td>
+<td>Ethertype <code>0x0806</code></td>
+<td>Tipo ICMPv6 <strong>135</strong> (NS) / <strong>136</strong> (NA)</td>
+</tr>
+<tr>
+<td><strong>Solicitud</strong></td>
+<td><strong>Broadcast</strong> (<code>FF:FF:...</code>)</td>
+<td><strong>Multicast</strong> a <code>ff02::1:ffxx:xxxx</code></td>
+</tr>
+<tr>
+<td><strong>Respuesta</strong></td>
+<td>Unicast</td>
+<td>Unicast (o multicast con Override)</td>
+</tr>
+<tr>
+<td><strong>Mapeo</strong></td>
+<td>MAC ↔ <strong>IPv4</strong></td>
+<td>MAC ↔ <strong>IPv6</strong></td>
+</tr>
+<tr>
+<td><strong>Funciones</strong></td>
+<td><strong>1</strong>: resolución</td>
+<td><strong>3</strong>: resolución + <strong>autoconfig</strong> + <strong>DAD</strong></td>
+</tr>
+<tr>
+<td><strong>Detección de duplicados</strong></td>
+<td><strong>No</strong></td>
+<td><strong>Sí</strong> (DAD)</td>
+</tr>
+<tr>
+<td><strong>Autoconfiguración</strong></td>
+<td><strong>No</strong> (DHCP o manual)</td>
+<td><strong>Sí</strong> (SLAAC vía RA)</td>
+</tr>
+<tr>
+<td><strong>Proxy ARP</strong></td>
+<td><strong>Sí</strong>, muy usado</td>
+<td><strong>No</strong> (el modelo es punto a punto)</td>
+</tr>
+<tr>
+<td><strong>Mensajes</strong></td>
+<td>2 (request, reply)</td>
+<td><strong>5</strong> (RS, RA, NS, NA, Redirect)</td>
+</tr>
+<tr>
+<td><strong>Seguridad</strong></td>
+<td>Cero: ARP spoofing trivial</td>
+<td>Similar; <strong>secg</strong> lo extiende</td>
+</tr>
+</tbody>
+</table>
+<h2>1.9 DAD — Duplicate Address Detection</h2>
+<p><strong>El problema que resuelve.</strong> En IPv4, si dos equipos tienen la misma IP, el
+resultado es errático (cada uno contesta por su tabla ARP) y <strong>nadie te avisa</strong>.</p>
+<p>En IPv6 esto sería inaceptable, porque <strong>las direcciones se generan
+automáticamente</strong>: es muy probable que dos hosts generen la misma. <strong>Por eso
+existe DAD.</strong></p>
+<div class="codehilite"><pre><span></span><code>   Un host H quiere usar la dirección X (link-local o SLAAC).
+
+   Paso 1:  H pone X en estado "Tentative": todavía no la usa para nada.
+            Arranca el RetransTimer en 1 segundo.
+
+   Paso 2:  H manda un Neighbor Solicitation (NS) para X, a la dirección
+            solicited-node de X: "¿hay alguien con X?"
+
+   Paso 3:  H espera 1 segundo.
+
+   Paso 4:  ¿Recibió algún Neighbor Advertisement?
+              - SÍ → alguien tiene esa dirección  ⇐  H NO USA X, elige otra.
+              - NO → nadie la tiene           ⇐  X pasa a "Preferred" y se usa.
+</code></pre></div>
+
+<p><strong>¿Por qué DAD no existe en IPv4?</strong> Tres razones:</p>
+<ol>
+<li><strong>En IPv4 la dirección se configura manualmente o por DHCP.</strong> Dos hosts con la misma IP es un error humano raro. En IPv6 con <strong>SLAAC</strong> la dirección se genera automáticamente, así que la colisión es <strong>estructuralmente más frecuente</strong>.</li>
+<li><strong>Dos NICs que comparten la MAC</strong> (fallo de hardware, VM mal configurada) generan <strong>exactamente la misma dirección</strong>. <strong>DAD detecta eso.</strong></li>
+<li><strong>DAD necesita multicast</strong> (NS/NA) para funcionar, y en IPv4 el ARP request es un <strong>broadcast</strong> que no sirve así (el ARP resuelve <em>después</em> de que la IP ya está en uso). <strong>DAD inherentemente necesita el modelo de IPv6.</strong></li>
+</ol>
+<h2>1.10 Los 3 esquemas de transición</h2>
+<p>Este es el <code>2010-07 P5 b)</code>.</p>
+<h3>(a) Dual-stack — IPv4 e IPv6 en paralelo</h3>
+<p>Ambos protocolos en el mismo host y en la misma red. El tráfico elige versión
+según lo que se pueda resolver.</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────┐
+   │ Servidor dual-   │   ✅ Simple, ✅ una red migra por partes
+   │ stack: AAAA + A  │   ❌ Caro de operar: mantener DOS redes
+   └────────┬─────────┘   ❌ No alcanza contenido IPv4-only
+         │        │
+     IPv6│        │IPv4
+         ▼        ▼
+   ┌─────────┐  ┌─────────┐
+   │ Redes   │  │ Redes   │
+   │ IPv6    │  │ IPv4    │
+   └─────────┘  └─────────┘
+</code></pre></div>
+
+<p><strong>Ejemplo:</strong> hoy casi todo servidor web tiene <strong>AAAA y A</strong>. El navegador, con
+<strong>Happy Eyeballs</strong> (<code>RFC 8305</code>), los prueba en paralelo.</p>
+<h3>(b) Tunnelling — encapsular IPv6 dentro de IPv4</h3>
+<div class="codehilite"><pre><span></span><code>   Paquete IPv6 normal:
+   ┌────────────────────────────────┐
+   │ IPv6 hdr 40 | payload          │
+   └────────────────────────────────┘
+
+   Dentro del túnel:
+   ┌─────────────┬──────────────────┬────────────────────────────┐
+   │ IPv4 hdr 20 │ IPv6 hdr 40      │ payload                    │
+   │ (túnel)     │ (dentro)         │                            │
+   └─────────────┴──────────────────┴────────────────────────────┘
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Túnel</th>
+<th>Qué es</th>
+<th>Para qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Teredo</strong></td>
+<td>IPv6 dentro de IPv4 sobre <strong>UDP/3544</strong></td>
+<td><strong>NAT traversal</strong>: dar IPv6 a hosts detrás de NAT IPv4. Asigna la IPv6 desde un servidor Teredo (<code>2001::/32</code>)</td>
+</tr>
+<tr>
+<td><strong>6to4</strong></td>
+<td>IPv6 dentro de IPv4 (protocolo 41)</td>
+<td>Conectar <strong>sitios IPv6 a través de la IPv4 Internet</strong>, sin servidor. El prefijo IPv6 <strong>embebe</strong> el IPv4 público del sitio (<code>2002::/16</code>)</td>
+</tr>
+<tr>
+<td><strong>ISATAP</strong></td>
+<td>IPv6 dentro de IPv4 en el <strong>mismo enlace</strong></td>
+<td>Traducir IPv4↔IPv6 <strong>dentro de una LAN</strong>. IPv6 derivada del IPv4 del host</td>
+</tr>
+</tbody>
+</table>
+<h3>(c) Traducción — NAT64 / DNS64</h3>
+<div class="codehilite"><pre><span></span><code>   ┌───────────┐      IPv6      ┌────────────┐     IPv4     ┌───────────┐
+   │  Host     ├───────────────►│  NAT64     ├─────────────►│  Servidor │
+   │  IPv6     │                │  Gateway   │              │  IPv4     │
+   │ (solo    │◄───────────────┤            │◄─────────────┤  (solo    │
+   │  IPv6)    │                │            │              │   IPv4)   │
+   └───────────┘                └────────────┘              └───────────┘
+</code></pre></div>
+
+<p><strong>El problema de DNS64:</strong> para que el host IPv6-only convierta un nombre a IPv6,
+el DNS64 devuelve una dirección IPv6 <strong>sintetizada</strong> que contiene la IPv4 real:</p>
+<div class="codehilite"><pre><span></span><code>   Prefijo bien conocido de NAT64:  64:ff9b::/96     (RFC 6052)
+
+   Servidor real IPv4:              192.0.2.33
+   Dirección IPv6 sintetizada:      64:ff9b::c000:221
+                                        └─────┬─────┘
+                                        c000:0221 = 192.0.2.33
+
+   El host pide example.com → DNS64 responde:
+       AAAA: 64:ff9b::c000:221     (dirección inventada que "contiene" al IPv4)
+   El host conecta → NAT64 ve los últimos 32 bits = 192.0.2.33 → traduce y envía.
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Protocolo</th>
+<th>RFC</th>
+<th>Año</th>
+<th>Qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>NAT64</strong></td>
+<td><strong><code>RFC 6146</code></strong></td>
+<td>2011</td>
+<td>Traducción IPv6↔IPv4</td>
+</tr>
+<tr>
+<td><strong>DNS64</strong></td>
+<td><strong><code>RFC 6147</code></strong></td>
+<td>2011</td>
+<td>Síntesis de registros AAAA</td>
+</tr>
+<tr>
+<td>Prefijo <code>64:ff9b::/96</code></td>
+<td><strong><code>RFC 6052</code></strong></td>
+<td>2010</td>
+<td>El prefijo bien conocido</td>
+</tr>
+<tr>
+<td><code>ipv4only.arpa</code></td>
+<td><code>RFC 8880</code></td>
+<td>2020</td>
+<td>Preguntar si un dominio tiene IPv4</td>
+</tr>
+<tr>
+<td><strong>SIIT</strong></td>
+<td><code>RFC 6145</code> → <strong><code>RFC 7915</code></strong></td>
+<td>2011→2016</td>
+<td>Traducción <em>stateless</em> (obsoleto)</td>
+</tr>
+<tr>
+<td><strong>DS-Lite</strong></td>
+<td><strong><code>RFC 6333</code></strong></td>
+<td>2011</td>
+<td>Dual-stack <em>stateless</em> ligero</td>
+</tr>
+<tr>
+<td><strong>464XLAT</strong></td>
+<td><strong>sigue en borrador</strong></td>
+<td>—</td>
+<td>Traducción en el <strong>host</strong>, no en la red</td>
+</tr>
+</tbody>
+</table>
+<p><strong>464XLAT en dos palabras:</strong> el <strong>PLAT</strong> (en el router de casa) traduce la
+salida, y el <strong>CLAT</strong> (en el dispositivo) traduce las apps que no soportan IPv6.
+Sirve para que un dispositivo <strong>IPv6-only</strong> alcance contenido <strong>IPv4-only</strong>.
+<strong>La transición no cerró</strong>, y ese es el dato de 2026.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Dual-stack</strong></th>
+<th><strong>Tunnelling</strong></th>
+<th><strong>Traducción</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Qué hace</strong></td>
+<td>Ambos en paralelo</td>
+<td>Encapsula IPv6 en IPv4</td>
+<td>Traduce IPv6↔IPv4</td>
+</tr>
+<tr>
+<td><strong>Ejemplo</strong></td>
+<td>Servidor con AAAA + A</td>
+<td>Teredo, 6to4, ISATAP</td>
+<td>NAT64/DNS64, 464XLAT</td>
+</tr>
+<tr>
+<td><strong>Alcanza IPv4-only</strong></td>
+<td>❌</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><strong>IPv6 nativo</strong></td>
+<td>✅</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>Rompe el extremo a extremo</strong></td>
+<td>No</td>
+<td>Sí (túnel)</td>
+<td><strong>Sí</strong></td>
+</tr>
+</tbody>
+</table>
+<h2>1.11 La fragmentación en IPv6: el router NUNCA fragmenta</h2>
+<div class="codehilite"><pre><span></span><code>   IPv4:  el ORIGEN manda un paquete grande
+            ↓  el router lo FRAGMENTA si no cabe (con DF = 0)
+          el destino REENSAMBLA
+
+   IPv6:  el ORIGEN manda un paquete grande
+            ↓  el router NO PUEDE fragmentar
+            ↓  lo DESCARTA y manda ICMPv6 "Packet Too Big" (tipo 2)
+            ↓  el ORIGEN, avisado, FRAGMENTA con la cabecera de extensión
+            ↓  y si tampoco entra, repite con un tamaño menor
+</code></pre></div>
+
+<p><strong>¿Por qué?</strong> Porque la fragmentación en los routers es <strong>el peor problema de
+IPv4</strong> (overhead, solapamiento como agujero de seguridad, evasión de filtros,
+pérdida de un fragmento = pérdida del datagrama). <strong>IPv6 lo elimina de raíz.</strong></p>
+<p><strong>Consecuencias positivas:</strong> routers <strong>más simples y rápidos</strong> (sin estado de
+reensamblaje ni offsets); el <strong>ataque de fragmentación en capas desaparece</strong>; el
+<strong>PMTUD es obligatorio y bien definido</strong>; y el <strong>solapamiento se prohíbe</strong> por
+diseño (<code>RFC 5722</code>).</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>IPv4</strong></th>
+<th><strong>IPv6</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>¿Quién fragmenta?</strong></td>
+<td>El <strong>router</strong> (si <code>DF = 0</code>)</td>
+<td><strong>Solo el origen</strong></td>
+</tr>
+<tr>
+<td><strong>¿Cómo se señala?</strong></td>
+<td>Flags + Fragment Offset</td>
+<td><strong>Cabecera de extensión Fragment</strong> (44)</td>
+</tr>
+<tr>
+<td><strong>Si no cabe</strong></td>
+<td>Con <code>DF=1</code> descarta + ICMP 3/4; con <code>DF=0</code> <strong>fragmenta</strong></td>
+<td>Siempre descarta + <strong>ICMPv6 tipo 2</strong></td>
+</tr>
+<tr>
+<td><strong>Solapamiento</strong></td>
+<td>Permitido en la práctica (agujero de seguridad)</td>
+<td><strong>Prohibido</strong> (<code>RFC 5722</code>)</td>
+</tr>
+<tr>
+<td><strong>Fragmentos atómicos</strong></td>
+<td>No existen</td>
+<td>Sí, por compatibilidad (<code>RFC 6946</code>)</td>
+</tr>
+<tr>
+<td><strong>MTU mínimo</strong></td>
+<td>68 absoluto, 576 práctico</td>
+<td><strong>1280</strong> obligatorio</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ <strong>IPv6 fragmenta de otra manera:</strong> en IPv4, si un paquete pasa por 3 routers
+con MTUs decrecientes, se fragmenta <strong>en cada salto</strong>, generando una cascada de
+fragmentos. En IPv6 el origen prueba, recibe el aviso del primer router que no
+pasa, y produce <strong>todos los fragmentos de una vez</strong>.</p>
+</blockquote>
+<h2>1.12 Actualización a 2026 — IPv6</h2>
+<p><strong>Lo que sigue igual, de memoria, sin dudar:</strong></p>
+<ul>
+<li>Dirección de <strong>128 bits</strong>, notación hex y compresión con <code>::</code>.</li>
+<li><strong>Cabecera fija de 40 bytes</strong>: Version, Traffic Class, <strong>Flow Label</strong>, Payload Length, Next Header, Hop Limit, Src, Dst.</li>
+<li><strong>Cabeceras de extensión</strong> encadenadas por <code>Next Header</code>. El <strong>Payload Length excluye</strong> las cabeceras de extensión.</li>
+<li><strong>Ámbitos</strong>: unicast global <code>2000::/3</code>, <strong>link-local <code>fe80::/10</code></strong>, unique local <code>fc00::/7</code>, multicast <code>ff00::/8</code>. <strong>Site-local está deprecado.</strong></li>
+<li><strong><code>/64</code> es la unidad de subred</strong> estándar.</li>
+<li><strong>ICMPv6 (<code>RFC 4443</code>)</strong>: ND (RS/RA/NS/NA, Redirect), <strong>Packet Too Big (tipo 2)</strong>, Destination Unreachable (1), Time Exceeded (3), Parameter Problem (4).</li>
+<li><strong>ND es "ARP para IPv6"</strong> pero en <strong>multicast sobre ICMPv6</strong>, e incluye <strong>autoconfiguración</strong> y <strong>DAD</strong>.</li>
+<li><strong>Un router IPv6 NO fragmenta.</strong> El <strong>origen</strong> fragmenta.</li>
+<li><strong>MTU mínimo absoluto de IPv6 = 1280</strong> (<code>RFC 8200 §5</code>, verificado textualmente).</li>
+</ul>
+<p><strong>Lo que cambió respecto de 2012:</strong></p>
+<ul>
+<li><strong>IPv6 dejó de ser "el futuro"</strong>: el número del 28-mar-2026 y sus matices (§1.1).</li>
+<li><strong>El agotamiento de IPv4 es un hecho consumado</strong> (RIPE, 25-nov-2019).</li>
+<li><strong>CGNAT es ubicuo en los ISP.</strong></li>
+<li><strong>NAT64/DNS64 (<code>RFC 6146</code>/<code>6147</code>) maduraron</strong>; prefijo <code>64:ff9b::/96</code> = <code>RFC 6052</code>; <code>RFC 8880</code> (<code>ipv4only.arpa</code>).</li>
+<li><strong>SIIT <code>RFC 6145</code> → obsoleto por <code>RFC 7915</code></strong> (2016).</li>
+<li><strong>464XLAT sigue en borrador</strong> — la transición no cerró.</li>
+<li><strong>DS-Lite = <code>RFC 6333</code></strong>.</li>
+<li><strong>NDP se amplió: <code>RFC 9926</code></strong> (feb-2026) registra prefijos entre routers vecinos.</li>
+<li><strong><code>RFC 6177</code></strong> ya no recomienda <code>/48</code> por sitio final.</li>
+</ul>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — Escribir una cabecera IPv6 a partir de datos</h2>
+<p><strong>Datos.</strong> Versión 6 · Traffic Class <code>0x93</code> (DSCP 0b100100 = 36 = AF31, ECN = 11 =
+CE) · Flow Label <code>0x0ABCDE</code> · Payload Length <strong>1440</strong> · Next Header <strong>6</strong> (TCP) ·
+Hop Limit <strong>64</strong> · Src <code>2001:0DB8:0001:0000:0000:0000:0000:0001</code> ·
+Dst <code>2001:0DB8:0002:0000:0000:0000:0000:0002</code>.</p>
+<p><strong>a) Campo por campo.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Valor</th>
+<th>En hexadecimal</th>
+<th>Bytes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Version</td>
+<td>6 (4 bits) = <code>0110</code></td>
+<td>—</td>
+<td>byte 0 (nibble alto)</td>
+</tr>
+<tr>
+<td>Traffic Class</td>
+<td><code>0x93</code></td>
+<td><code>93</code></td>
+<td>byte 0 (nibble bajo) + byte 1</td>
+</tr>
+<tr>
+<td>Flow Label</td>
+<td><code>0x0ABCDE</code> (20 bits)</td>
+<td><code>0A BC DE</code></td>
+<td>bytes 2, 3, 4</td>
+</tr>
+<tr>
+<td>Payload Length</td>
+<td>1440</td>
+<td><strong><code>05 A0</code></strong></td>
+<td>bytes 5, 6</td>
+</tr>
+<tr>
+<td>Next Header</td>
+<td>6</td>
+<td><code>06</code></td>
+<td>byte 7</td>
+</tr>
+<tr>
+<td>Hop Limit</td>
+<td>64</td>
+<td><code>40</code></td>
+<td>byte 8</td>
+</tr>
+<tr>
+<td>Source Address</td>
+<td><code>2001:0DB8:0001::1</code></td>
+<td>ver abajo</td>
+<td>bytes 9–24</td>
+</tr>
+<tr>
+<td>Destination Address</td>
+<td><code>2001:0DB8:0002::2</code></td>
+<td>ver abajo</td>
+<td>bytes 25–40</td>
+</tr>
+</tbody>
+</table>
+<p><strong>b) Las direcciones, byte a byte.</strong> Cada grupo de 4 hex es un <code>uint16</code>:</p>
+<div class="codehilite"><pre><span></span><code>   2001:0DB8:0001:0000:0000:0000:0000:0001
+   ↓     ↓     ↓     ↓     ↓     ↓     ↓     ↓
+   20 01  0D B8  00 01  00 00  00 00  00 00  00 00  00 01
+</code></pre></div>
+
+<p><strong>c) Los 40 bytes completos, en hex y en orden:</strong></p>
+<div class="codehilite"><pre><span></span><code>   Bytes  0-1:  69 3A          (Version 6, TC 0x93)
+   Bytes  2-4:  0A BC DE       (Flow Label 0x0ABCDE)
+   Bytes  5-6:  05 A0          (Payload Length = 1440)
+   Byte   7:    06             (Next Header = TCP)
+   Byte   8:    40             (Hop Limit = 64)
+   Bytes  9-24: 20 01 0D B8 00 01 00 00 00 00 00 00 00 00 00 01
+   Bytes 25-40: 20 01 0D B8 00 02 00 00 00 00 00 00 00 00 00 00 02
+</code></pre></div>
+
+<p><strong>d) Verificación del <code>Payload Length</code>.</strong></p>
+<div class="codehilite"><pre><span></span><code>   0x05A0 = 5 × 256 + 10 × 16 + 0 = 1280 + 160 = 1440  ✓
+</code></pre></div>
+
+<p><strong>Interpretación.</strong> La cabecera ocupa <strong>40 bytes fijos</strong>. El <code>Payload Length</code> de
+1440 <strong>no incluye</strong> esos 40: es el contenido. El <strong>datagrama completo mide 1480
+bytes</strong> (40 + 1440). Si pasa por un enlace de MTU 1400, el router <strong>descartará</strong> y
+mandará <strong>ICMPv6 tipo 2</strong>.</p>
+<p><strong>e) ¿Y el MSS?</strong> En Ethernet (MTU 1500) el MSS TCP sería
+<code>1500 − 40 − 20 = 1420</code>, no 1460 como en IPv4. <strong>Esa es la penalización del
+overhead:</strong> 20 bytes más de cabecera IP.</p>
+<h2>2.2 Ejercicio 2 — Multicast vs. anycast: por qué anycast no es un tipo de dirección</h2>
+<p><strong>a) Las diferencias.</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Multicast</strong></th>
+<th><strong>Anycast</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>¿Tipo de dirección?</strong></td>
+<td><strong>Sí</strong> (prefijo <code>ff00::/8</code>)</td>
+<td><strong>No.</strong> Servicio sobre unicast</td>
+</tr>
+<tr>
+<td><strong>¿Prefijo que lo marque?</strong></td>
+<td><strong>Sí</strong>: <code>ff</code></td>
+<td><strong>No</strong></td>
+</tr>
+<tr>
+<td><strong>¿Lo sabe el emisor?</strong></td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td><strong>¿Lo sabe el router?</strong></td>
+<td>Por el prefijo <code>ff</code></td>
+<td>Por la <strong>tabla de ruteo</strong> (varios puntos anuncian el prefijo)</td>
+</tr>
+<tr>
+<td><strong>¿A cuántos destinatarios?</strong></td>
+<td><strong>Todos</strong> del grupo</td>
+<td><strong>Solo al más cercano</strong></td>
+</tr>
+<tr>
+<td><strong>Configuración</strong></td>
+<td>Ruteo multicast (IGMP/MLD)</td>
+<td><strong>Ninguna</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>b) El argumento formal.</strong> Un <strong>tipo de dirección</strong> es un <strong>prefijo reservado</strong>
+que le dice a la red "esto es especial": <code>ff00::/8</code> es multicast y <strong>cualquier
+router lo reconoce por el primer byte</strong>; <code>fe80::/10</code> es link-local y los primeros
+10 bits lo dicen.</p>
+<div class="codehilite"><pre><span></span><code>   IPv6 multicast:   |1111 1111| ...   ⇐ el primer byte ES ff, se ve
+   IPv6 link-local:  1111 1110 10..    ⇐ los primeros 10 bits lo dicen
+   IPv6 unicast:     001 ...            ⇐ 2000::/3
+
+   IPv6 anycast:     001 ...            ⇐ EXACTAMENTE IGUAL que un unicast
+                                        ⇐ No hay nada que lo distinga
+</code></pre></div>
+
+<p><strong>El anycast no tiene prefijo reservado. La unicidad la resuelve el ROUTEO, no
+la numeración.</strong> El router ve que el prefijo está anunciado desde varios AS y
+elige el más cercano. El <strong>paquete no sabe</strong> que hay más de un destino: son
+<strong>varios nodos que comparten la misma dirección</strong>.</p>
+<p><strong>c) El ejemplo: los root servers de DNS.</strong></p>
+<div class="codehilite"><pre><span></span><code>   Los 13 root servers de DNS tienen TODOS la misma dirección IPv4: 198.41.0.4
+   y la misma IPv6: 2001:503:ba3e::2:30
+
+   Cada uno está en un lugar distinto del mundo. Un ISP anuncia el prefijo
+   198.41.0.0/24 desde CUALQUIERA de sus puntos de presencia.
+
+   ⇐ Tu consulta DNS va al root MÁS CERCANO, no al "primero" de la lista.
+   ⇐ "Any" = cualquiera de los 13; "cast" = difundir.
+</code></pre></div>
+
+<p><strong>d) Consecuencia práctica: anycast es un servicio de red, no una propiedad de
+la dirección.</strong></p>
+<div class="codehilite"><pre><span></span><code>   ✅ Puedo poner la MISMA dirección en 5 servidores míos y funciona: es anycast.
+   ❌ NO puedo "convertir" una dirección existente en anycast sin anunciarla en
+      BGP desde 5 puntos distintos. Eso es una decisión de RUTEEO.
+   ⚠️ Si el anycast está mal configurado (vos y tu vecino anuncian el prefijo),
+      algunos routers pueden enviar tráfico al lugar equivocado. Eso es un
+      problema de BGP, no de IPv6.
+</code></pre></div>
+
+<h2>2.3 Ejercicio 3 — ND vs. ARP en tabla comparativa completa</h2>
+<p>Este es el <code>2010-12 P5 b)</code>, con la respuesta lista para el examen.</p>
+<p><strong>a) El reemplazo de ARP: Neighbor Discovery (ND).</strong> Un <strong>conjunto de 5
+mensajes de ICMPv6</strong>: RS (133), RA (134), NS (135), NA (136) y Redirect (137).</p>
+<p><strong>b) Los 5 cambios significativos (los de la solución oficial):</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Cambio</th>
+<th>Por qué importa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>ND es parte de ICMPv6, en su totalidad; se transporta sobre IPv6</strong></td>
+<td>ARP era independiente, sobre el enlace. ND vive dentro de ICMPv6. Menos protocolos, y <strong>no se puede desactivar sin romper IPv6</strong>.</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Se utiliza multicast para Neighbor Solicitation en vez de broadcast</strong></td>
+<td>Va a <code>ff02::1:ffxx:xxxx</code> (multicast link-local), no a <code>FF:FF:FF:FF:FF:FF</code>. Los routers <strong>no reenvían</strong> ese multicast: <strong>no hay inundo de broadcast</strong>.</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Los mapeos son de direcciones link-layer a IPv6 en vez de link-layer a IPv4</strong></td>
+<td>Cambio directo: ND resuelve MAC ↔ IPv6.</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>ND combina la resolución de direcciones con autoconfiguración y detección de duplicados</strong></td>
+<td>ARP solo resuelve MACs. ND además <strong>configura el host</strong> (SLAAC) y <strong>detecta colisiones</strong> (DAD). Habilita el IPv6 <em>zero-touch</em>.</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Los nodos pueden usar mensajes NS para propagar cambios en su configuración</strong></td>
+<td>Si un host cambia de dirección, manda un <strong>NA no solicitado</strong> para actualizar la caché de los vecinos. Con ARP, los demás quedan con la caché vieja hasta que expira.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>c) La tabla comparativa completa</strong> está en §1.8 (última tabla), con 12 filas:
+protocolo, capa, identificador, solicitud, respuesta, mapeo, funciones, DAD,
+autoconfiguración, proxy ARP, cantidad de mensajes y seguridad.</p>
+<h2>2.4 Ejercicio 4 — Los stacks de referencia IPv4 e IPv6</h2>
+<p>Este es el <code>2010-12 P5 a)</code>.</p>
+<div class="codehilite"><pre><span></span><code>   Stack IPv4 (referencia)              Stack IPv6 (referencia)
+   ─────────────────────                 ──────────────────────
+   Aplicación:                           Aplicación:
+     HTTP, FTP, SMTP, DNS, SNMP,           HTTP, FTP, SMTP, DNS,
+     Telnet                               SNMP, Telnet
+
+   Transporte:                          Transporte:
+     TCP (6), UDP (17)                     TCP (6), UDP (17)
+
+   Red:                                 Red:
+     IPv4 + ICMPv4                        IPv6 + ICMPv6
+     (puede fragmentar en routers)        (NUNCA fragmenta; ICMPv6 obligatorio)
+
+   Enlace:                              Enlace:
+     Ethernet (802.3), PPP, HDLC,         Ethernet (802.3), PPP,
+     Frame Relay, ATM, 802.11             ATM, 802.11
+
+   Física:                              Física:
+     cobre, fibra, radio, satélite        cobre, fibra, radio, satélite
+</code></pre></div>
+
+<p><strong>Protocolos de capa SUPERIOR con los que coexisten (≥2):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Protocolo</th>
+<th>Puerto</th>
+<th>¿Coexiste con IPv6?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>TCP</strong></td>
+<td>6</td>
+<td><strong>Sí</strong>, es el mismo. Solo cambia la cabecera IP que lo lleva</td>
+</tr>
+<tr>
+<td><strong>UDP</strong></td>
+<td>17</td>
+<td><strong>Sí</strong>, igual</td>
+</tr>
+<tr>
+<td><strong>DNS</strong></td>
+<td>53</td>
+<td><strong>Sí</strong>, con los registros <strong>AAAA</strong> además de <strong>A</strong></td>
+</tr>
+<tr>
+<td><strong>HTTP</strong></td>
+<td>80</td>
+<td><strong>Sí</strong>, el mismo protocolo; cambia solo el transporte debajo</td>
+</tr>
+<tr>
+<td><strong>SNMP</strong></td>
+<td>161</td>
+<td><strong>Sí</strong>, con <em>discovery</em> IPv6</td>
+</tr>
+<tr>
+<td><strong>DHCP</strong></td>
+<td>67/68</td>
+<td>En IPv6 se usa <strong>DHCPv6</strong> (546/547), que es un protocolo <strong>distinto</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Protocolos de capa INFERIOR con los que coexisten (≥2):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Protocolo</th>
+<th>Por qué coexiste</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Ethernet (802.3)</strong></td>
+<td>Los dos tipos de paquete viajan por el mismo cable; se distinguen por el <strong>Ethertype</strong>: <code>0x0800</code> = IPv4, <strong><code>0x86DD</code> = IPv6</strong></td>
+</tr>
+<tr>
+<td><strong>PPP</strong></td>
+<td>Un enlace PPP negocia <strong>IPCP</strong> (IPv4) y <strong>IPV6CP</strong> (IPv6) en la misma conexión</td>
+</tr>
+<tr>
+<td><strong>802.11 (Wi-Fi)</strong></td>
+<td>Un access point transmite IPv4 e IPv6 indistintamente</td>
+</tr>
+<tr>
+<td><strong>ATM / MPLS</strong></td>
+<td>Los túneles llevan IPv4 o IPv6 con la misma encapsulación</td>
+</tr>
+</tbody>
+</table>
+<p><strong>d) El punto clave: la capa 2 no cambia.</strong> Ethernet y Wi-Fi son <strong>agnósticos</strong>
+del contenido: solo miran el Ethertype. En IPv6 los dispositivos de capa 2
+(switches, bridges) <strong>no se modifican</strong>; solo cambian los de capa 3 y 4. Esto es
+muy distinto de la era de NAT con IPv4, donde el CGN es un problema de capa 3
+que <strong>no existe en IPv6 puro</strong>.</p>
+<p><strong>e) Por qué la coexistencia es obligatoria:</strong> (1) no todos los dispositivos
+soportan IPv6, y la transición tarda años; (2) la Internet actual es IPv4, así
+que un host IPv6-only necesita traducir o tunelizar; (3) <strong>es la única migración
+posible</strong>: no se cambia Internet de un día para otro, se hace dual-stack primero,
+túnel o transición después, y IPv6-only al final.</p>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2010-12, Pregunta 5 (8 puntos) — IPv4 vs. IPv6, ND vs. ARP</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc1012</code> / <code>sirc1012</code> — 17 de diciembre de 2010.</p>
+<p><strong>a)</strong> Presente los stacks de referencia de ambos protocolos. Ejemplifique al
+menos dos protocolos con los que ambos coexisten de capa superior y al menos
+dos protocolos de capa inferior.
+<strong>b)</strong> Algunos protocolos definidos dentro de ICMP debieron ser re-definidos
+en ICMPv6. Mencione el reemplazo del protocolo ARP y describa no menos de 4
+cambios significativos en su implementación en Ipv6.</p>
+</blockquote>
+<h3>Parte a) — Stacks de referencia</h3>
+<p>Resuelto en <strong>§2.4</strong>: los dos stacks completos, los dos protocolos de capa
+superior (<strong>TCP</strong> y <strong>UDP</strong> son los más claros; <strong>DNS</strong> con AAAA también), los
+dos de capa inferior (<strong>Ethernet</strong> y <strong>PPP</strong>), y la mención de que coexisten en
+la misma red física, distinguidos por el Ethertype (<code>0x0800</code> / <code>0x86DD</code>).</p>
+<p><strong>Puntos clave:</strong> los dos stacks, los 2 protocolos de capa superior, los 2 de
+capa inferior, y que <strong>la capa 2 no cambia</strong>. Con eso están los 4 puntos.</p>
+<h3>Parte b) — El reemplazo de ARP y los 4 cambios</h3>
+<p>Resuelto en <strong>§2.3</strong>; transcribo la respuesta lista para el examen:</p>
+<p><strong>El reemplazo:</strong> <strong>Neighbor Discovery (ND)</strong>, un <strong>conjunto de 5 mensajes de
+ICMPv6</strong>: RS (133), RA (134), NS (135), NA (136) y Redirect (137).</p>
+<p><strong>Los cambios (los 5 de la solución oficial):</strong></p>
+<ol>
+<li><strong>ND es parte de ICMPv6, en su totalidad, y se transporta sobre IPv6.</strong> No es un protocolo independiente como ARP: vive dentro de ICMPv6.</li>
+<li><strong>Se utiliza multicast para Neighbor Solicitation en vez de broadcast.</strong> El NS va a <code>ff02::1:ffxx:xxxx</code> (link-local), no a <code>FF:FF:FF:FF:FF:FF</code>.</li>
+<li><strong>Los mapeos son de direcciones link-layer a IPv6 en vez de link-layer a IPv4.</strong></li>
+<li><strong>ND combina la resolución de direcciones con la autoconfiguración y la detección de duplicados.</strong> ARP solo resuelve; ND además configura el host (SLAAC) y detecta colisiones (DAD).</li>
+<li><strong>Los nodos pueden usar mensajes NS para propagar cambios en su configuración.</strong></li>
+</ol>
+<p><strong>Justificaciones que suman puntos</strong> (no están en la lista oficial, pero
+demuestran comprensión):</p>
+<ul>
+<li><strong>Del cambio 2:</strong> los routers <strong>no reenvían</strong> ese multicast, así que el scope <strong>no sale del enlace</strong>. Con ARP (broadcast) un router con <em>proxy ARP</em> responde y el broadcast inunda. El multicast es <strong>más eficiente y más seguro</strong>: solo los interesados responden.</li>
+<li><strong>Del cambio 4:</strong> ND habilita el <strong>IPv6 zero-touch</strong>: el host se enchufa y se configura solo, sin DHCP.</li>
+<li><strong>Sobre el cambio 5:</strong> con ARP, si un host cambia su IP (failover, roaming), los demás quedan con la caché vieja hasta que expira. Con ND, manda un <strong>NA no solicitado</strong> para actualizarla proactivamente.</li>
+</ul>
+<blockquote>
+<p><strong>Nota sobre la solución oficial:</strong> la parte a) de la solución oficial está
+<strong>vacía</strong> en el PDF (solo viene la b). Si en el examen te piden a) y b),
+resolvé a) por tu cuenta con los stacks de referencia, que es estándar de la
+materia.</p>
+</blockquote>
+<h2>3.2 Examen 2009-12, Pregunta 5 (6 puntos) — DAD y NDP</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc0912</code> — diciembre 2009.
+<strong>Enunciado:</strong> Considere ICMPv6, familia de protocolos de control en IPv6. El
+mismo implementa diversos protocolos… a) [mencione dos protocolos que usan
+NS/NA]. b) DAD no está implementado en IPv4. NDP es la versión IPv6 de ARP, que
+en vez de ser un protocolo independiente de IPv(v4), también utiliza mensajes
+IPv6 para su implementación.</p>
+</blockquote>
+<p><strong>Respuesta oficial:</strong></p>
+<blockquote>
+<p><strong>a)</strong> <strong>DAD</strong> – Duplicated Address Detection protocol y <strong>NDP</strong> – Neighbor
+Discovery Protocol.
+<strong>b)</strong> DAD no está implementado en IPv4. NDP es la versión IPv6 de ARP, que en
+vez de ser un protocolo independiente de IP(v4), también utiliza mensajes IPv6
+para su implementación.</p>
+</blockquote>
+<p><strong>Ampliación del apartado a): los dos protocolos de ICMPv6 que usan NS/NA.</strong></p>
+<ol>
+<li><strong>DAD (Duplicate Address Detection).</strong> Usa <strong>Neighbor Solicitation (135)</strong> para preguntar si una dirección ya está en uso, y espera un <strong>Neighbor Advertisement (136)</strong>. Es la única función que consulta <em>proactivamente</em> si su <strong>propia</strong> dirección está libre.</li>
+<li><strong>NDP (Neighbor Discovery).</strong> Usa <strong>NS/NA</strong> para el mapeo MAC ↔ IPv6 (resolución), y además para la autoconfiguración y la detección de duplicados.</li>
+</ol>
+<p><strong>Comparación con IPv4:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Aspecto</th>
+<th><strong>IPv4</strong></th>
+<th><strong>IPv6</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ARP</strong></td>
+<td>Protocolo independiente (<code>RFC 826</code>)</td>
+<td><strong>Parte de ICMPv6</strong> (<code>RFC 4443</code>)</td>
+</tr>
+<tr>
+<td><strong>DAD</strong></td>
+<td><strong>No existe</strong></td>
+<td><strong>Sí</strong>, todo host lo hace antes de usar una dirección</td>
+</tr>
+<tr>
+<td><strong>Solicitud</strong></td>
+<td><strong>Broadcast</strong></td>
+<td><strong>Multicast</strong> (solicited-node)</td>
+</tr>
+<tr>
+<td><strong>Proxy ARP</strong></td>
+<td><strong>Sí</strong></td>
+<td><strong>No</strong></td>
+</tr>
+<tr>
+<td><strong>Autoconfiguración</strong></td>
+<td>No (DHCP o manual)</td>
+<td><strong>Sí</strong> (SLAAC)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>¿Por qué DAD no existe en IPv4?</strong> Las tres razones de §1.9: (1) en IPv4 la
+dirección se configura manualmente o por DHCP, así que la colisión es un error
+humano raro, mientras que con <strong>SLAAC</strong> es estructuralmente frecuente; (2) dos
+NICs con la misma MAC generan <strong>exactamente la misma dirección</strong>, y DAD lo
+detecta; (3) <strong>DAD necesita multicast</strong> (NS/NA), y en IPv4 el ARP request es un
+<strong>broadcast</strong> que no sirve así.</p>
+<h2>3.3 Examen 2010-07, Pregunta 5 (8 puntos) — modelos, tipos y transición</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc1007</code> — julio 2010.</p>
+<p><strong>a)</strong> En el curso se presentaron los tres modelos de comunicación soportados
+por IPv6, con sus correspondientes tres tipos de direcciones. Mencione cada uno
+de los tres tipos y descríbalos en una o dos frases a cada uno.
+<strong>b)</strong> Los esquemas de transición pueden agruparse en tres tipos principales.
+Descríbalos brevemente y da un ejemplo de cada uno.
+<strong>c)</strong> Suponga que se transmite un segmento UDP de 1000 bytes de largo sobre
+IPv4 y sobre IPv6. ¿En qué caso se transmiten más bytes? Fundamente.</p>
+</blockquote>
+<p><strong>Respuesta oficial:</strong> a) y b) remiten a las transparencias; <strong>c)</strong> "Sin
+opciones, un cabezal IPv6 tiene 40 bytes de largo y el cabezal IPv4 tiene 20
+bytes de largo. A mismo payload, IPv6 tiene mayor overhead. Por consiguiente, se
+transmitirán más bytes con IPv6."</p>
+<h3>Parte a) — Los 3 modelos y los 3 tipos</h3>
+<p>Resueltos en <strong>§1.5</strong> y <strong>§1.6</strong>. Resumen para el examen:</p>
+<table>
+<thead>
+<tr>
+<th>Modelo</th>
+<th>Tipo de dirección</th>
+<th>En una frase</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Unicast</strong></td>
+<td><strong>Unicast global</strong> (<code>2000::/3</code>)</td>
+<td>Un emisor, un receptor; cada dirección identifica un nodo. El 99 % del tráfico</td>
+</tr>
+<tr>
+<td><strong>Multicast</strong></td>
+<td><strong>Multicast</strong> (<code>ff00::/8</code>)</td>
+<td>Un emisor, muchos receptores; el prefijo <code>ff</code> limita la difusión según el ámbito (<code>ff02::/16</code> = enlace)</td>
+</tr>
+<tr>
+<td><strong>Anycast</strong></td>
+<td><em>(no es un tipo de dirección)</em></td>
+<td>Muchos emisores, muchos receptores; <strong>varios nodos con la MISMA dirección unicast</strong>, y el router encamina al más cercano</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Punto clave:</strong> aunque el enunciado dice "tres modelos con sus correspondientes
+tres tipos de direcciones", <strong>el anycast no tiene tipo de dirección propio</strong>: usa
+una dirección unicast normal. Si hay que forzar la correspondencia, el "tipo" del
+anycast es <strong>unicast</strong>, y lo especial es que <strong>varios nodos la comparten</strong>.</p>
+<h3>Parte b) — Los 3 esquemas de transición</h3>
+<p>Resueltos en <strong>§1.10</strong>: <strong>dual-stack</strong> (ej: servidor con AAAA + A),
+<strong>tunnelling</strong> (ej: Teredo, 6to4, ISATAP) y <strong>traducción</strong> (ej: NAT64/DNS64,
+<code>RFC 6146</code>/<code>6147</code>). Para el apartado basta una frase por esquema y un ejemplo.</p>
+<h3>Parte c) — El cálculo del overhead</h3>
+<div class="codehilite"><pre><span></span><code>   Segmento UDP de 1000 bytes de payload.
+
+   Sobre IPv4:
+      cabecera IP  = 20 bytes (sin opciones)
+      segmento UDP = 8 (cabecera UDP) + 1000 (payload) = 1008
+      TOTAL        = 20 + 1008 = 1028 bytes
+
+   Sobre IPv6:
+      cabecera IP  = 40 bytes (fija)
+      segmento UDP = 8 + 1000 = 1008
+      TOTAL        = 40 + 1008 = 1048 bytes
+
+   ⇐ Se transmiten MÁS BYTES con IPv6: 1048 &gt; 1028
+   Diferencia exacta = 40 − 20 = 20 bytes = 20/1028 = 1,9 % de overhead extra.
+</code></pre></div>
+
+<p><strong>Interpretación.</strong> Es el <strong>costo perenne</strong> de la transición: 20 bytes más de
+cabecera por datagrama. En conexiones con muchos paquetes chicos eso <strong>consume
+ancho de banda</strong>. Las mitigaciones: las cabeceras de extensión agregan overhead
+por otro lado, y las <strong>jumbograms</strong> (<code>Payload Length = 0</code> con la opción Jumbo
+Payload) permiten datagramas tan grandes que el overhead relativo es despreciable.</p>
+<h2>3.4 Examen 2007-03, Pregunta 3 (10 puntos) — RARP</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc0703</code> — marzo 2007.
+<strong>Enunciado:</strong> Describa en que escenario se utiliza el protocolo RARP y su
+funcionamiento.</p>
+</blockquote>
+<p><strong>Respuesta oficial:</strong></p>
+<blockquote>
+<p>ARP resuelve el problema de encontrar <strong>qué</strong> dirección Ethernet corresponde a
+una dirección IP dada. A veces se debe resolver el problema <strong>reverso</strong>: dada
+una dirección Ethernet, ¿cuál es la dirección IP que le corresponde?</p>
+<p>Esto ocurre por ejemplo en el escenario en que hay <strong>estaciones de trabajo
+tontas</strong>, sin disco, que deben ser reiniciadas. Dicha máquina normalmente obtiene
+la imagen del sistema operativo de un archivo remoto, pero <strong>antes debe tener
+una dirección IP</strong>.</p>
+<p>La primera solución que se encontró fue usar <strong>RARP</strong>. Este protocolo permitía
+a las máquinas reiniciadas hacer un <strong>broadcast de Ethernet</strong> enviando una
+consulta de IP con su dirección Ethernet. Un servidor de RARP recibe la
+solicitud, realiza una búsqueda en sus archivos de configuración y envía una
+respuesta con la dirección IP.</p>
+<p>Usar RARP es <strong>mejor que grabar la IP en la imagen del sistema operativo</strong> ya
+que permite <strong>usar la misma imagen para todos los equipos</strong>.</p>
+<p>La <strong>desventaja</strong> de RARP es que los <strong>broadcast Ethernet no son reenviados por
+los routers</strong>, por lo que se necesita un <strong>servidor RARP en cada subred</strong>. Por
+ello se diseñaron otros protocolos como <strong>BOOTP y DHCP</strong>.</p>
+</blockquote>
+<p><strong>Análisis y ampliación para los 10 puntos.</strong></p>
+<p>Los tres elementos que se piden están en la oficial: el <strong>escenario</strong>
+(workstation tonta sin disco, boot remoto), el <strong>funcionamiento</strong> (broadcast de
+Ethernet con la MAC → el servidor busca en su tabla → responde con la IP) y la
+<strong>comparación con ARP</strong> (ARP va de IP → MAC; <strong>RARP va de MAC → IP</strong>, el problema
+inverso).</p>
+<p><strong>Lo que agrego:</strong></p>
+<p><strong>(a) El escenario exacto.</strong> Un equipo sin disco no tiene dónde guardar su
+configuración de red. Necesita (1) una IP para hablar con la red, y (2) después,
+la imagen del OS por TFTP. <strong>RARP resolvía el punto (1)</strong>, y TFTP el (2).</p>
+<p><strong>(b) Por qué es mejor que la IP fija en la imagen.</strong> Es una razón de
+<strong>mantenimiento</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   Con IP fija en la imagen:
+     Cada equipo tiene una imagen DISTINTA (con su IP adentro).
+     500 PCs = 500 imágenes que mantener.
+     Cambiar el plan de numeración = rehacer 500 imágenes.
+
+   Con RARP:
+     Todos usan LA MISMA imagen genérica.
+     El plan de numeración vive SOLO en el servidor RARP.
+     ⇐ Un solo lugar que actualizar.
+</code></pre></div>
+
+<p><strong>(c) Las limitaciones que prepping su sucesión:</strong></p>
+<ol>
+<li><strong>No se reenvía por los routers.</strong> Un broadcast de Ethernet <strong>se queda en el enlace</strong> ⇒ <strong>un servidor RARP por subred</strong>. Con muchos enlaces, son muchos servidores.</li>
+<li><strong>RARP solo devuelve la IP.</strong> No devuelve máscara de subred, ni gateway, ni DNS. Para eso están BOOTP y DHCP.</li>
+<li><strong>⚠️ Tema en desuso.</strong> RARP es de <strong>1984</strong> y <strong>hoy está completamente reemplazado por DHCP</strong>, que hace todo lo que RARP hacía y mucho más. No se despliega. Se pregunta por historia y por el <strong>concepto</strong> de "resolver el problema inverso", que reaparece en el <strong>DHCP Discover</strong>: el cliente (que solo tiene su MAC) pregunta "soy esta MAC, ¿qué configuración me corresponde?", y el servidor responde con IP, máscara, gateway, DNS y la <strong>duración</strong> del lease.</li>
+</ol>
+<p><strong>La línea histórica que hay que llevarse:</strong></p>
+<div class="codehilite"><pre><span></span><code>   RARP (1984)     →  resuelve solo la IP
+       ↓
+   BOOTP (1984)    →  IP + más parámetros, pero con la IP fija en el archivo
+       ↓
+   DHCP (1993)     →  IP + máscara + gateway + DNS + duración del lease + más
+       ↓
+   SLAAC (IPv6)    →  el host se autoconfigura SOLO, leyendo los RA de los
+                      routers, y DAD verifica que no haya colisión
+</code></pre></div>
+
+<p><strong>Dato clave:</strong> el <strong>DHCP Discover es, en esencia, un RARP mejorado</strong>.</p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen</h2>
+<ol>
+<li><strong>El agotamiento de IPv4 es un hecho</strong>: RIPE cerró su última asignación /22 el <strong>25-nov-2019</strong>. El <strong>28-mar-2026</strong> IPv6 superó el <strong>50,10 %</strong> de acceso a Google, pero <strong>la cifra depende de qué se mide</strong> y es desigual (China &lt; 5 %).</li>
+<li>La <strong>cabecera IPv6 son 40 bytes fijos</strong>. <strong>Desaparecen</strong> <code>Header Checksum</code>, <code>IHL</code>, <code>Fragment Offset</code> y <code>Options</code>. <strong>Aparece</strong> el <strong>Flow Label</strong> de 20 bits.</li>
+<li>El <strong>Flow Label</strong> (<code>RFC 6437</code>) identifica un flujo <strong>sin la 5-tupla</strong>, útil con tráfico <strong>fragmentado</strong> o <strong>cifrado</strong>. Retrocompatible: si nadie lo usa, se comporta como IPv4.</li>
+<li>Las <strong>cabeceras de extensión</strong> se encadenan por <code>Next Header</code>, y el <strong><code>Payload Length</code> las EXCLUYE</strong> (bug de <code>RFC 2460</code>, corregido por <code>RFC 2719</code>).</li>
+<li>Los <strong>3 modelos</strong>: <strong>unicast</strong> (1→1), <strong>multicast</strong> (<code>ff00::/8</code>, 1→muchos, con ámbito), <strong>anycast</strong> (muchos→muchos). <strong>Anycast NO es un tipo de dirección</strong>: es un servicio sobre unicast.</li>
+<li>Los <strong>tipos de dirección</strong>: unicast global <code>2000::/3</code>, <strong>link-local <code>fe80::/10</code></strong> (se genera sola), multicast <code>ff00::/8</code>, <strong>unique local <code>c00::/7</code>. </strong>Site-local está deprecado.**</li>
+<li>El <strong><code>/64</code> es la unidad de subred</strong>, porque SLAAC necesita 64 bits de IID (EUI-64, o aleatorio con Privacy Extensions, que es el default actual).</li>
+<li><strong>ICMPv6 es esencial</strong>: Packet Too Big (2), Destination Unreachable (1), Time Exceeded (3), Parameter Problem (4), Echo (128/129), ND (133-137).</li>
+<li><strong>ND vs. ARP</strong>: ND es parte de ICMPv6, usa <strong>multicast</strong>, mapea ↔IPv6, <strong>combina 3 funciones</strong> y <strong>propaga cambios</strong>. Son 5 mensajes (RS, RA, NS, NA, Redirect).</li>
+<li><strong>DAD</strong> detecta duplicados con NS + temporizador de 1 s. No existe en IPv4 porque las direcciones se configuran manualmente. Los <strong>3 esquemas de transición</strong> son <strong>dual-stack</strong>, <strong>tunnelling</strong> (Teredo, 6to4, ISATAP) y <strong>traducción</strong> (NAT64/DNS64, 464XLAT).</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p><strong>1.</strong> ¿Por qué desapareció el <code>Header Checksum</code> de la cabecera IPv6? ¿No es un problema no verificarlo?</p>
+<details><summary>Respuesta</summary>
+
+Es un problema, pero se **movió de lugar**, no desapareció. En IPv4 había que recalcular el checksum **en cada router** (porque el TTL cambiaba), y en los 90 era de las operaciones más caras del router.
+
+En IPv6 **la verificación la hace la capa 4** (TCP, UDP) **una sola vez, extremo a extremo**. Resultado: **cada router verifica ~0**, pero el error de cabecera se detecta igual (por el checksum de transporte), y se gana rendimiento en toda la red.
+
+</details>
+
+<p><strong>2.</strong> ¿Qué es el <code>Flow Label</code> y para qué sirve, si ya tenemos la 5-tupla?</p>
+<details><summary>Respuesta</summary>
+
+Son **20 bits** que el emisor pone para identificar un flujo, y que los routers pueden usar **sin conocer la conexión**.
+
+**La 5-tupla falla en dos casos concretos:**
+1. **Paquete fragmentado:** solo el primer fragmento tiene la cabecera de transporte; los siguientes no. Un router que debe hacer ECMP no puede hashear un fragmento contra otro si no ve los puertos.
+2. **Paquete cifrado:** con IPsec o WireGuard los puertos son invisibles. El Flow Label está en la cabecera IP, que **no se cifra**, así que sigue visible para un router de medio.
+
+Es **retrocompatible**: un router que no lo entiende lo **ignora**, como hoy ignora el DSCP.
+
+</details>
+
+<p><strong>3.</strong> ¿Por qué anycast no es un tipo de dirección?</p>
+<details><summary>Respuesta</summary>
+
+Porque **no hay un prefijo reservado que lo marque**. Un tipo de dirección es un prefijo del espacio de numeración que le dice a la red "esto es especial": `ff00::/8` es multicast y **cualquier router lo reconoce por el primer byte**; `fe80::/10` es link-local y los primeros 10 bits lo dicen. El anycast usa una dirección **unicast normal**, y **no hay ningún bit** en ella que diga "esto es anycast".
+
+**La unicidad la resuelve el ROUTEO, no la numeración.** El router ve que el prefijo está anunciado desde varios AS y encamina al más cercano. El **paquete no sabe** que hay más de un destino: son **varios nodos que comparten la misma dirección**.
+
+**Decir que "anycast es un tipo de dirección" es un error clásico de examen.**
+
+</details>
+
+<p><strong>4.</strong> ¿Por qué existe DAD en IPv6 y no en IPv4?</p>
+<details><summary>Respuesta</summary>
+
+Tres razones:
+
+1. **En IPv4 la dirección se configura manualmente o por DHCP.** Dos hosts con la misma IP es un error humano raro. En IPv6, con **SLAAC**, la dirección se genera automáticamente, así que la colisión es **estructuralmente más frecuente**.
+2. **Dos NICs que comparten la MAC** (fallo de hardware, VM mal configurada) generan **exactamente la misma dirección**. DAD detecta eso.
+3. **DAD necesita multicast** (NS/NA) para funcionar, y en IPv4 el ARP request es un **broadcast** que no sirve así (el ARP resuelve *después* de que la IP ya está en uso). **DAD inherentemente necesita el modelo de IPv6.**
+
+</details>
+
+<p><strong>5.</strong> ¿Qué diferencia hay entre <code>Packet Too Big</code> (ICMPv6 tipo 2) y <code>Fragmentation Needed and DF set</code> (ICMPv4 tipo 3 código 4)?</p>
+<details><summary>Respuesta</summary>
+
+**En IPv4:** el router dice "necesitás 1492" y el emisor **ajusta su MSS**. El paquete **no se fragmenta**; el origen simplemente manda cosas más chicas.
+
+**En IPv6:** el router dice "no entra, te paso 1280" y el origen **tiene que fragmentar él mismo**, porque los routers IPv6 no pueden. Usa la cabecera de extensión Fragment, y **repite el proceso** hasta que el fragmento quepa.
+
+La diferencia clave: en IPv4 el ajuste es **en el tamaño de transporte**; en IPv6 es **fragmentar el datagrama de origen** y producir el siguiente más pequeño.
+
+</details>
+
+<p><strong>6.</strong> ¿Por qué el <code>Payload Length</code> de IPv6 excluye las cabeceras de extensión? ¿Qué problema resuelve?</p>
+<details><summary>Respuesta</summary>
+
+Porque la especificación original (`RFC 2460`, 1998) lo definía **incluyéndolas**, lo que obligaba a que el nodo que fragmentaba conociera el largo de las cabeceras de extensión de los paquetes que iba a producir. **Era un error de diseño.**
+
+`RFC 2719` (1999) lo corrigió: el `Payload Length` es **solo el payload**. Ejemplo: 8 bytes de extensión + 1000 de datos = `Payload Length = 1000`. La vigente, `RFC 8200` (2017), ya trae la corrección.
+
+</details>
+
+<p><strong>7.</strong> ¿Por qué un router IPv6 nunca fragmenta? ¿Qué consecuencias tiene?</p>
+<details><summary>Respuesta</summary>
+
+Porque la fragmentación en los routers es **el peor problema de IPv4**: overhead de cabeceras, solapamiento como agujero de seguridad, evasión de firewalls, pérdida de un fragmento = pérdida del datagrama entero. **IPv6 lo elimina de raíz.**
+
+**Consecuencias positivas:**
+- Routers **más simples y rápidos**: sin estado de reensamblaje ni offsets.
+- El **ataque de fragmentación en capas desaparece**: un datagrama es un datagrama.
+- El **PMTUD es obligatorio**: si el paquete no pasa, **tiene** que mandar el `Packet Too Big` con el MTU, y el origen se ajusta.
+- El **solapamiento se prohíbe** (`RFC 5722`).
+
+</details>
+
+<p><strong>8.</strong> En el esquema <strong>dual-stack</strong>, ¿qué ventaja y qué desventaja tiene para un operador?</p>
+<details><summary>Respuesta</summary>
+
+**Ventaja:** es la **única migración posible sin romper nada**. Una red migra a IPv6 **por partes**: algunos servicios quedan en IPv4, otros pasan a IPv6, y los dos conviven.
+
+**Desventaja:** es **operativamente caro**. Hay que mantener **dos redes** (dos rutas, dos DNS, dos políticas de firewall), y el consumo de memoria del router **se duplica** (dos tablas de FIB, dos cachés de vecinos). Y **no escala a IPv4-only**: el contenido IPv4 sigue siendo IPv4-only.
+
+Es la **primera etapa** de cualquier transición realista: dual-stack primero, túnel o traducción después, IPv6-only al final.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>eirc1012</code> / <code>sirc1012</code></strong> — P5 (8 pts: stacks de referencia, coexistencia, <strong>ND vs. ARP con ≥4 cambios</strong>)</li>
+<li><strong>Examen <code>sirc0912</code></strong> — P5 (6 pts: DAD y NDP, comparación con IPv4)</li>
+<li><strong>Examen <code>sirc1007</code></strong> — P5 (8 pts: 3 modelos de comunicación, 3 tipos de dirección, 3 esquemas de transición, overhead IPv4 vs. IPv6)</li>
+<li><strong>Examen <code>sirc0703</code></strong> — P3 (10 pts: RARP, escenario y funcionamiento)</li>
+<li><strong>Examen <code>sirc0907</code></strong> — P5 (ventajas y desventajas de IPv6)</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 5 §5.6 (IPv6)</li>
+<li><strong>RFC 8200</strong> — Internet Protocol, Version 6 (2017, <em>Internet Standard</em>; <strong>obsoleta RFC 2460</strong>; §5 fija el <strong>MTU mínimo de 1280</strong>)</li>
+<li><strong>RFC 4443</strong> — ICMPv6 for IPv6 (tipos 1-4 y 128-137)</li>
+<li><strong>RFC 6437</strong> — Flow Label (2012)</li>
+<li><strong>RFC 2719</strong> — Corrección del bug del <code>Payload Length</code> de <code>RFC 2460</code></li>
+<li><strong>RFC 6052</strong> — Prefijo bien conocido <code>64:ff9b::/96</code> para NAT64 (2010)</li>
+<li><strong>RFC 6146</strong> — NAT64 (2011) · <strong>RFC 6147</strong> — DNS64 (2011)</li>
+<li><strong>RFC 7915</strong> — SIIT (2016, <strong>obsoleta RFC 6145</strong>) · <strong>RFC 6333</strong> — DS-Lite (2011)</li>
+<li><code>draft-ietf-v6ops-464xlat</code> — <strong>464XLAT sigue en borrador</strong></li>
+<li><strong>RFC 5722</strong> — Fragmentos solapados en IPv6 (prohibidos) · <strong>RFC 6946</strong> — Fragmentos atómicos · <strong>RFC 5095</strong> — depreca Routing Header tipo 0</li>
+<li><strong>RFC 8305</strong> — Happy Eyeballs (2017, <em>obsoleta RFC 6555</em>)</li>
+<li><strong>RFC 9926</strong> — NDP: registro de prefijos entre routers vecinos (feb-2026)</li>
+<li><strong>Clase siguiente:</strong> 37 — ICMP, ping y traceroute + Repaso y Simulacro 4</li>
+</ul></body></html>

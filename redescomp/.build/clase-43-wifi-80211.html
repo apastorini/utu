@@ -1,0 +1,1187 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 43 — Redes inalámbricas 802.11</h1>
+<p><strong>Bloque:</strong> E (Enlace) · <strong>Semana:</strong> 15 · <strong>Duración estimada:</strong> 120 min
+<strong>Correlativa:</strong> Clase 42 (switch, VLAN, STP) · <strong>Sigue con:</strong> Clase 44 (multimedia)
+<strong>Material de referencia:</strong> Tanenbaum cap. 4 · <code>ACTUALIZACIONES.md</code> §9</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Explicar por qué una red<Class0> wireless es un problema distinto y por qué en
+   ella <strong>no se puede detectar</strong> una colisión.</li>
+<li>Describir el mecanismo completo del <strong>CSMA/CA</strong> (DCF) paso a paso.</li>
+<li>Dibujar la <strong>estación oculta</strong> y explicar qué resuelve y qué no resuelve el
+   <strong>RTS/CTS</strong>.</li>
+<li>Explicar qué es el <strong>NAV</strong> y por qué se considera un "segundo sensor" del medio.</li>
+<li>Comparar las <strong>4 colas de EDCA</strong> y explicar por qué el video no va en la cola de
+   voz.</li>
+<li>Describir el problema de seguridad de <strong>WEP</strong>, qué resuelve WPA3 con <strong>SAE</strong>, y
+   qué protege <strong>802.11w</strong>.</li>
+</ol>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 780 380" style="max-width:780px"><rect width="780" height="380" fill="#ffffff"/><text x="390.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">CSMA/CA con RTS/CTS y estacion oculta</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><rect x="55" y="44" width="110" height="32" rx="5" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="110.0" y="64.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#1a1a1a">A</text><line x1="110" y1="76" x2="110" y2="300" stroke="#7aa7c4" stroke-width="1.3" stroke-dasharray="4 3"/><rect x="335" y="44" width="110" height="32" rx="5" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="390.0" y="64.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#1a1a1a">B</text><line x1="390" y1="76" x2="390" y2="300" stroke="#7aa7c4" stroke-width="1.3" stroke-dasharray="4 3"/><rect x="605" y="44" width="110" height="32" rx="5" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="660.0" y="64.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#1a1a1a">C (oculta)</text><line x1="660" y1="76" x2="660" y2="300" stroke="#7aa7c4" stroke-width="1.3" stroke-dasharray="4 3"/><line x1="110" y1="104" x2="390" y2="104" stroke="#c8621a" stroke-width="1.8" marker-end="url(#po)"/><text x="250.0" y="97" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#c8621a">RTS de A</text><line x1="390" y1="138" x2="660" y2="138" stroke="#2e7d4f" stroke-width="1.8" marker-end="url(#po)"/><text x="525.0" y="131" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#2e7d4f">CTS de B</text><line x1="110" y1="172" x2="390" y2="172" stroke="#14507a" stroke-width="1.8" marker-end="url(#po)"/><text x="250.0" y="165" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#14507a">trama de A</text><line x1="390" y1="206" x2="110" y2="206" stroke="#b3261e" stroke-width="1.8" marker-end="url(#po)"/><text x="250.0" y="199" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#b3261e">ACK de B</text><text x="70" y="216" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#2e7d4f">asi se resuelve la estacion oculta:</text><rect x="70" y="226" width="640" height="74" rx="5" fill="#eef7f0" stroke="#2e7d4f" stroke-width="1.2"/><text x="390.0" y="266.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">C no oye el RTS de A (no esta a su alcance), pero SI oye el CTS de B: se actualiza su NAV y espera sin transmitir.</text><line x1="660" y1="300" x2="660" y2="300" stroke="#2e7d4f" stroke-width="1.6"/><text x="60" y="338" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">En radio no se puede usar CSMA/CD: la antena es half-duplex, la potencia propia enmascera a los demas</text><text x="60" y="354" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">y no se puede transmitir y escuchar a la vez. Por eso WiFi no detecta colisiones: las EVITA.</text><text x="60" y="374" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#c8621a">Mecanismos: RTS/CTS, NAK, ACK por trama (no acumulado), espera aleatoria y EDCA con 4 colas.</text></svg></p>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2008-07 P3</code> (10 pts — CSMA/CA en modo
+infraestructura), <code>2006-12 P5</code> (6 pts — estación oculta), <code>2007-03 P5</code> (5 pts —
+CSMA/CA), <code>2010-07 P2</code> (8 pts — por qué no CSMA/CD en wireless).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 Por qué una red wireless es un problema distinto</h2>
+<p>En la Clase 41 vimos que <strong>Ethernet cableado</strong> puede usar <strong>CSMA/CD</strong>: detectar
+la colisión, abortar, hacer backoff y reintentar. Todo eso funciona porque el
+receptor es un <strong>cable</strong>: el que transmite puede <strong>escuchar su propia señal</strong> mientras
+transmite, y si oye otra cosa encima, es una colisión.</p>
+<p><strong>En radio ninguna de las tres condiciones se cumple:</strong></p>
+<p><strong>1. La antena es half-duplex.</strong> Un transceiver de radio <strong>no puede transmitir y
+recibir a la vez</strong>. Es como hablar y escuchar al mismo tiempo: no funciona. Y para
+detectar una colisión haría falta exactamente eso: hablar y escuchar.</p>
+<p><strong>2. La propia señal enmascera a las demás.</strong> Tu señal llega a la antena a unos
+30 dBm (1 vatio). La señal de otro emisor que vuelve por reflexión puede llegar a
+−90 dBm. La diferencia es de <strong>120 dB</strong>, que en potencia es un factor de
+<strong>10⁶</strong>. Tu propio receptor la ahoga por completo. Detectar la colisión por nivel
+de señal es <strong>físicamente imposible</strong> con esta tecnología.</p>
+<p><strong>3. El medio es invisible.</strong> Las ondas se propagan por el aire y <strong>no tienen
+frontera</strong>: alguien en la calle, detrás de una pared, transmite en el mismo canal y
+vos no lo sabés. En el cable el medio es <strong>punto a punto</strong> y no hay ambigüedad.</p>
+<blockquote>
+<p><strong>La conclusión es la clave de toda la clase:</strong> en radio <strong>no se puede DETECTAR
+una colisión</strong>. Entonces el protocolo tiene que hacer lo contrario: <strong>EVITARLA</strong>
+antes de que ocurra. De ahí <strong>A</strong> (<em>Avoid</em>) en lugar de <strong>D</strong> (<em>Detect</em>).</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code>   ETHERNET (cable)                        WI-FI (radio)
+   ──────────────                          ──────────────
+   CSMA/CD                                  CSMA/CA
+
+   ¿se detectó colisión?                    ¿se puede evitar?
+        │                                         │
+   SÍ ──┴── NO                              RTS/CTS
+        │                                    NAV
+   abortar                                 backoff largo
+   hacer backoff                           esperar
+   reintentar                             oler por el ACK
+        │                                         │
+   SE DETECTA                                NO SE DETECTA
+   la pérdida                                la pérdida
+</code></pre></div>
+
+<h2>1.2 Los dos problemas concretos</h2>
+<h3>La estación oculta (<em>hidden node</em>)</h3>
+<div class="codehilite"><pre><span></span><code>        ┌───────────────────┐
+        │    Router / AP    │
+        │        ●          │
+        └───┬───────────┬───┘
+            │           │
+        ┌───┴───┐   ┌───┴───┐
+        │   A   │   │   C   │        B más abajo, al
+        │       │   │       │        alcance del AP
+        └───────┘   └───────┘
+                 ╳      │
+              se      ┌─┴─┐
+            cortan    │ B │    A y C **NO SE VEN**
+            entre     └───┘    entre sí: un obstáculo
+            ellos
+</code></pre></div>
+
+<p><strong>El problema:</strong> A y C están <strong>los dos al alcance del AP</strong>, pero <strong>no se ven entre
+sí</strong>. Si A transmite su trama hacia el AP, C <strong>no la escucha</strong>, así que cree que
+el medio está libre y <strong>también transmite</strong>. Las dos tramas <strong>chocan en el AP</strong>,
+donde de hecho convergen.</p>
+<blockquote>
+<p><strong>La analogía correcta:</strong> es una conversación en una sala donde dos personas le
+hablar a alguien al fondo. Ellas no se escuchan entre sí, así que hablan los dos
+al mismo tiempo, y el del fondo entiende la mitad.</p>
+</blockquote>
+<p><strong>Y el agravante:</strong> el problema <strong>no es</strong> que A y C collagen entre sí (no se
+alcanzan). Es que <strong>colisionan en el AP</strong>, que es el punto donde convergen las dos.</p>
+<p><strong>La solución clásica: RTS/CTS</strong> (§1.5). Y la solución moderna: <strong>BSS coloring</strong>,
+que agrega un número de color a cada red para que las redes vecinas no se interfieran
+sin necesidad de negociar nada (§Actualización).</p>
+<h3>La estación expuesta (<em>exposed terminal</em>)</h3>
+<p>El problema inverso, y <strong>RTS/CTS no lo resuelve</strong>:</p>
+<div class="codehilite"><pre><span></span><code>        ┌───────────────────┐
+        │    Router / AP    │
+        └───┬───────────┬───┘
+            │           │
+        ┌───┴───┐   ┌───┴───┐
+        │   A   │   │   C   │
+        └───────┘   └───────┘
+           A quiere hablar con B      C quiere hablar con D
+           (B está abajo)             (D está en otra parte)
+
+   A y C SÍ se ven entre sí.
+   A transmite → C lo oye → C se calla.
+   PERO C podría haber transmitido a la vez, sin problema,
+   porque C y A van a DESTINOS DISTINTOS.
+</code></pre></div>
+
+<p><strong>El punto fino:</strong> la estación expuesta produce una <strong>ineficiencia</strong>, <strong>no una
+pérdida</strong>. Y cualquier solución que la arregle (como pedir RTS/CTS para todos los
+casos) <strong>empeora</strong> el caso de la estación oculta con más overhead. <strong>Es un
+compromiso, y no hay solución limpia.</strong> En un examen, mencionar esto suma.</p>
+<h2>1.3 CSMA/CA: el mecanismo completo (DCF)</h2>
+<p>DCF = <em>Distributed Coordination Function</em>. Es la forma <strong>distribuida</strong> de coordinar
+el acceso (no hay punto central que asigne turnos).</p>
+<h3>Los 4 espacios inter-trama</h3>
+<p>Antes de los espacios hay un pequeño <strong>silencio</strong> llamado <strong>SIFS</strong> (<em>Short Interframe
+Space</em>), que es el más corto. Sirve para las tramas de <strong>control</strong> que tienen que
+ir justo después de una de datos, sin que nadie más pueda interrumpir.</p>
+<div class="codehilite"><pre><span></span><code>   ┌───────┬───────┬───────┬───────┐
+   │  SIFS │  PIFS │  DIFS │  EIFS │
+   ├───────┼───────┼───────┼───────┤
+   │ 2μs   │ SIFS+1│ SIFS+2│ SIFS+3│
+   │       │       │       │       │
+   └───┬───┘   ┌───┘   ┌───┘   ┌───┘
+       │       │       │       │
+   ACK, CTS,  usado por  se espera  se espera tras
+   fragmentos  el punto  ANTES de    un FRAGMENTO
+   de un blo-  de acceso  intentar   recibido
+   que            transmitir   (exige silencio)
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Símbolo</th>
+<th>Significado</th>
+<th>Uso</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SIFS</strong></td>
+<td>Short InterFrame Space</td>
+<td>respuesta a una trama: <strong>ACK</strong>, <strong>CTS</strong>, fragmentos de un bloque. <strong>Nadie más espera</strong>: es el que garantiza que la respuesta gane el medio.</td>
+</tr>
+<tr>
+<td><strong>PIFS</strong></td>
+<td>PCF InterFrame Space</td>
+<td>reservado al punto de acceso en modo <strong>puntual</strong> (PCF). Poco usado.</td>
+</tr>
+<tr>
+<td><strong>DIFS</strong></td>
+<td>Distributed IFS</td>
+<td>lo espera una estación <strong>común</strong> antes de intentar transmitir.</td>
+</tr>
+<tr>
+<td><strong>EIFS</strong></td>
+<td>Extended IFS</td>
+<td>lo espera una estación que <strong>no entendió</strong> lo que recibió (o recibió un error). Es el más largo: penaliza.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>El orden importa</strong>: para empezar a transmitir se espera <strong>DIFS</strong>. Para <strong>responder</strong>
+se espera <strong>SIFS</strong>, que es <strong>más corto</strong>. Como todas las estaciones usan el mismo
+valor de SIFS, la respuesta pasa siempre primero. <strong>Eso es lo que hace posible el
+ACK</strong> sin que otra estación se meta.</p>
+<h3>Los 6 pasos de la transmisión</h3>
+<div class="codehilite"><pre><span></span><code>   1. SENSE          el medio está ocupado?
+                       SÍ ──▶ esperar hasta que se libere, y después
+                              esperar un DIFS
+                       NO ──▶ seguir al paso 2
+
+   2. BACKOFF        elegir un número entero al azar en [0, CW]
+                     → lo BAJAR de a uno, uno por cada slot time
+                       (slot time = 2 × tiempo de propagación)
+                       si el medio se ocupa → pausar el contador
+                       y recalcular al desbloquearse
+                     Cuando el contador llega a 0:
+
+   3. TRANSMITIR     mandar la trama
+                       AHORA PUEDE HABER UNA COLISIÓN Y NO LO VAMOS A SABER
+
+   4. ESPERAR        ¿llega el ACK?
+                     SÍ ──▶ listo, se INCREMENTA la CW (para la próxima trama
+                            tengo menos ganas de colisionar)
+                     NO ──▶ COLISIÓN (inferida)
+                            ──▶ RETRANSMITIR
+                            ──▶ DOBLAR la CW  ← esto es la detección
+
+   5. RETRANSMITIR   volver al paso 2 (con la CW nueva)
+                     hasta llegar a CWmax
+
+   6. LLEGAR A       si se llega a CWmax, se ABANDONA la trama
+      CWmax           (no se reintenta más) y se informa error
+</code></pre></div>
+
+<p><strong>Los valores de la contention window</strong> (CW), que es lo que hay que saber:</p>
+<table>
+<thead>
+<tr>
+<th>Intento</th>
+<th>CW</th>
+<th>Valores posibles</th>
+<th>Probabilidad de <strong>colisión</strong> (2 estaciones)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td><strong>16</strong></td>
+<td>0..15</td>
+<td>1/16 = 6,25 %</td>
+</tr>
+<tr>
+<td>1</td>
+<td><strong>32</strong></td>
+<td>0..31</td>
+<td>1/32 = 3,1 %</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>64</strong></td>
+<td>0..63</td>
+<td>1/64 = 1,6 %</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>128</strong></td>
+<td>0..127</td>
+<td>1/128 = 0,78 %</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>256</strong></td>
+<td>0..255</td>
+<td>0,39 %</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>512</strong></td>
+<td>0..511</td>
+<td>0,20 %</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>1023</strong></td>
+<td>0..1023</td>
+<td>0,10 %</td>
+</tr>
+<tr>
+<td>7+</td>
+<td><strong>1023</strong> (CWmax)</td>
+<td>0..1023</td>
+<td>se abandona</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>El razonamiento detrás de la fórmula:</strong> con dos estaciones que eligen
+<strong>uniformemente al azar</strong> en <code>[0, CW−1]</code>, colisionan si eligen <strong>el mismo número</strong>.
+Hay <code>CW</code> posibilidades y <code>CW</code> pares ordenados, así que la probabilidad de que
+elige <strong>el mismo</strong> es <code>1/CW</code>. Con CW = 16 es 1/16; con CW = 32 se <strong>reduce a la
+mitad</strong>. <strong>Por eso la CW se duplica</strong>: cada duplicación <strong>reduce a la mitad</strong> la
+probabilidad de volver a colisionar.</p>
+</blockquote>
+<p><strong>El ACK es por trama, no acumulado.</strong> Es una diferencia crítica con TCP: en WiFi
+<strong>cada trama</strong> que lleva datos es confirmada individualmente. Es lo que permite
+saber <strong>cuál</strong> se perdió y retransmitir solo esa.</p>
+<p><strong>Y el principio de por qué no es acumulada:</strong> con ACK acumulado, un solo ACK perdido
+haría retransmitir tramas que ya llegaron. Con ACK por trama hay más tráfico de
+control, pero <strong>se recupera más rápido</strong>. En una red con colisiones frecuentes, la
+recuperación rápida gana.</p>
+<h2>1.4 El NAV: el sensor virtual</h2>
+<p>El <strong>NAV</strong> (<em>Network Allocation Vector</em>) es un <strong>contador virtual</strong> que cada
+estación mantiene. Se actualiza con el campo <strong>Duration / ID</strong> del header de cada
+trama que se recibe.</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────────────────────────────────┐
+   │                  frame 802.11                       │
+   │  ┌─────────┬─────────┬───────────┬────────────────┐  │
+   │  │ Frame   │ Duration│   Frame   │   Body         │  │
+   │  │ Control │   /ID   │  Address  │                │  │
+   │  │ 2 bytes │ 2 bytes │  6 bytes  │                │  │
+   │  └─────────┴─────────┴───────────┴────────────────┘  │
+   │           ▲                                           │
+   │           └── Duration = 300 µs                      │
+   │               "el medio está reservado 300 µs más"    │
+   └──────────────────────────────────────────────────────┘
+
+   La estación que la escucha hace:   NAV ← 300 µs
+   y aunque no oiga NADA más, espera hasta que su NAV llegue a 0.
+</code></pre></div>
+
+<p><strong>Los dos sensores del medio:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Sensor</th>
+<th>Qué detecta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Physical carrier sensing</strong></td>
+<td>el receptor de radio</td>
+<td>una señal <strong>real</strong> en el aire</td>
+</tr>
+<tr>
+<td><strong>Virtual carrier sensing</strong></td>
+<td>el <strong>NAV</strong></td>
+<td>una <strong>reserva anunciada</strong> por alguien que lo oyó</td>
+</tr>
+</tbody>
+</table>
+<p><strong>El "virtual" es porque no hay señal: hay un número.</strong> Y es lo que resuelve la
+estación oculta: C <strong>no oye</strong> la trama de A (sensor físico inútil), pero <strong>sí oye</strong>
+el CTS de B, y ahí actualiza su NAV (sensor virtual).</p>
+<h3>Un detalle técnico sobre 802.11</h3>
+<p>A diferencia de Ethernet, que tiene <strong>una sola MAC</strong> (la de destino), <strong>802.11
+tiene hasta 4</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Sigla</th>
+<th>Significado</th>
+<th>Qué es</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>TA</strong></td>
+<td>Transmitter Address</td>
+<td>quién <strong>transmite</strong> la trama <strong>por radio</strong></td>
+</tr>
+<tr>
+<td><strong>RA</strong></td>
+<td>Receiver Address</td>
+<td>quién la <strong>recibe por radio</strong></td>
+</tr>
+<tr>
+<td><strong>SA</strong></td>
+<td>Source Address</td>
+<td>dirección MAC <strong>del origen original</strong> (puede venir de otro enlace)</td>
+</tr>
+<tr>
+<td><strong>DA</strong></td>
+<td>Destination Address</td>
+<td>dirección MAC <strong>del destino final</strong> (puede estar en otro enlace)</td>
+</tr>
+</tbody>
+</table>
+<p>Las 4 coinciden cuando la trama no se reenvía (uso directo: estación ↔ AP). Se
+difieren en el modo <strong>punto a punto / WDS</strong> o cuando un AP hace <strong>puente</strong>: ahí la
+<strong>SA</strong> es la del cliente (la que el cliente puso) y la <strong>TA</strong> es la del AP.</p>
+<blockquote>
+<p><strong>Esto aparece en el Examen 2011-02 Problema 2</strong> (IP Móvil), que pide
+explícitamente llenar TA, RA, SA y DA en cada segmento. <strong>No lo confundas</strong>: el
+<strong>TA/RA</strong> son de radio, el <strong>SA/DA</strong> son "de red".</p>
+</blockquote>
+<h2>1.5 RTS/CTS: la solución a la estación oculta</h2>
+<p><strong>RTS</strong> = <em>Request To Send</em>, <strong>CTS</strong> = <em>Clear To Send</em>.</p>
+<div class="codehilite"><pre><span></span><code>   A                 B (AP)                C (oculta)
+   │                    │                     │
+   │─── RTS ───────────▶│                     │   (no lo oye: está oculto)
+   │  Duration=300      │                     │
+   │                    │                     │
+   │  NAV=300           │                     │
+   │                    │◀──── C Sikuku ───────│   (C cree que el medio está libre)
+   │                    │      RTS ───────────▶
+   │                    │      duration=200   │
+   │  NAV=300           │      NAV=200        │
+   │                    │                     │
+   │                    │──── CTS ───────────▶│   ★ C lo OYE y actualiza NAV
+   │  NAV=200           │      duration=250   │
+   │                    │      NAV=250        │
+   │                    │                     │
+   │─── DATA ──────────▶│  (A transmitió)     │
+   │  ACK ─────────────▶│                     │
+</code></pre></div>
+
+<p><strong>Los 4 pasos y por qué funcionan:</strong></p>
+<ol>
+<li><strong>A manda un RTS</strong> al AP, con un <code>Duration</code> que declara cuánto va a durar la
+   transacción completa.</li>
+<li><strong>El AP responde con un CTS</strong>, también con <code>Duration</code>, y <strong>todos los que lo oyen</strong>
+   (incluido C) actualizan su NAV.</li>
+<li><strong>A manda la DATA</strong>. Como C tiene NAV &gt; 0, <strong>se calla</strong>.</li>
+<li><strong>El AP manda el ACK</strong>.</li>
+</ol>
+<p><strong>Tres decisiones de diseño, y las tres se preguntan:</strong></p>
+<p><strong>a) ¿Por qué el CTS es más corto que el RTS?</strong> Porque el CTS <strong>sólo necesita</strong>
+llegar a quien está en la zona de solapamiento (C, que está cerca del AP). El RTS
+tiene que llegar <strong>desde A</strong>, que puede estar lejos y atenuarse. <strong>Menos tiempo en el
+medio = menos probabilidad de colisión</strong> en el propio RTS/CTS.</p>
+<p><strong>b) ¿Por qué RTS/CTS es opcional?</strong> Porque <strong>cuesta</strong>: son dos tramas extra
+(RTS + CTS) por cada trama de datos. Si la trama es chica, el overhead es
+mayor que el dato. De ahí el <strong>umbral RTS</strong>: sólo se manda RTS si la trama supera
+una longitud mínima.</p>
+<p><strong>c) ¿Y si no hay ningún nodo oculto?</strong> En una red chica donde todos se ven,
+RTS/CTS es <strong>puro overhead</strong>. El estándar lo resuelve con el <strong>umbral RTS</strong>, que se
+configura (típicamente 500-2000 bytes).</p>
+<h2>1.6 Modo infraestructura</h2>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────────────────────────────────────┐
+   │  ESS  (Extended Service Set): varias celdas con roaming   │
+   │                                                          │
+   │  ┌── BSS ──────────┐      ┌── BSS ──────────┐            │
+   │  │   ● AP-1        │      │   ● AP-2        │            │
+   │  │    │            │      │    │            │            │
+   │  │  ▭ ▭ ▭          │      │  ▭ ▭            │            │
+   │  │  clientes      │      │  clientes       │            │
+   │  └─────────────────┘      └─────────────────┘            │
+   │     ESSID: "Red-FING"     mismo ESSID                    │
+   │     BSSID: MAC del AP     BSSID distinto                 │
+   └──────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Sigla</th>
+<th>Significado</th>
+<th>Qué es</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>BSS</strong></td>
+<td>Basic Service Set</td>
+<td>una celda: <strong>un</strong> AP + sus clientes</td>
+</tr>
+<tr>
+<td><strong>ESS</strong></td>
+<td>Extended Service Set</td>
+<td>varias BSS con <strong>el mismo ESSID</strong>, para roaming</td>
+</tr>
+<tr>
+<td><strong>ESSID</strong></td>
+<td>el "nombre" de la red</td>
+<td>lo que ves en la lista de WiFi</td>
+</tr>
+<tr>
+<td><strong>BSSID</strong></td>
+<td>la <strong>MAC del AP</strong></td>
+<td>identifica <strong>la celda</strong>, no la red</td>
+</tr>
+</tbody>
+</table>
+<h3>Las tramas de gestión y el proceso de asociación</h3>
+<div class="codehilite"><pre><span></span><code>   ┌────┐              ┌────┐
+   │ PC │              │ AP │
+   └───┘              └────┘
+     │                   │
+     │◀── Beacon (cada 100 ms, sin que nadie pregunte) ──│
+     │     "existo, mi ESSID es X, soporto tal cosa"      │
+     │                   │
+     │   Association      │
+     ├──────────────────▶│   (si es con seguridad: primero
+     │   Request          │    autenticación y se obtiene
+     │                   │    una clave)
+     │◀──────────────────┤
+     │   Association      │
+     │   Response         │
+     │                   │
+     │  [DHCP si la red lo tiene]                        │
+     │   ...WEP/WPA handshake si hay seguridad...         │
+     │                   │
+     │   DATA ◀─────────▶│   ¡AHORA SÍ!: puede mandar datos
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Trama</th>
+<th>Para qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Beacon</strong></td>
+<td>el AP <strong>anuncia</strong> su existencia periódicamente. <strong>No requiere</strong> que nadie pregunte.</td>
+</tr>
+<tr>
+<td><strong>Probe Request</strong></td>
+<td>el cliente <strong>pregunta</strong> si hay APs disponibles.</td>
+</tr>
+<tr>
+<td><strong>Probe Response</strong></td>
+<td>el AP <strong>responde</strong> a un Probe Request.</td>
+</tr>
+<tr>
+<td><strong>Association Request</strong></td>
+<td>el cliente <strong>pide</strong> asociarse a esa BSS.</td>
+</tr>
+<tr>
+<td><strong>Association Response</strong></td>
+<td>el AP <strong>acepta</strong> (o rechaza).</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>El Beacon es lo que hace que el roaming funcione</strong>: como se anuncia solo, un
+cliente que se mueve de celda <strong>descubre</strong> la nueva sin que nadie le avise. Y si
+la red tiene <strong>seguridad</strong>, el Beacon <strong>también anuncia si está cifrada</strong> — por
+eso una red WPA2 <strong>no muestra</strong> su ESSID en la lista pública.</p>
+</blockquote>
+<h2>1.7 EDCA: las 4 colas de acceso</h2>
+<p>Con EDCA hay <strong>4 colas de prioridad</strong>, cada una con su <strong>CWmin</strong> y <strong>CWmax</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Prioridad</th>
+<th>Cola</th>
+<th>Nombre</th>
+<th>CWmin</th>
+<th>CWmax</th>
+<th>Para qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0 (baja)</td>
+<td>AC_BK</td>
+<td><strong>Background</strong></td>
+<td>1024</td>
+<td>1024</td>
+<td>descargas, actualizaciones</td>
+</tr>
+<tr>
+<td>1</td>
+<td>AC_BE</td>
+<td><strong>Best Effort</strong></td>
+<td>1024</td>
+<td>1024</td>
+<td>navegación web</td>
+</tr>
+<tr>
+<td>2</td>
+<td>AC_VI</td>
+<td><strong>Video</strong></td>
+<td>128</td>
+<td>1024</td>
+<td>streaming</td>
+</tr>
+<tr>
+<td>3 (alta)</td>
+<td>AC_VO</td>
+<td><strong>Voice</strong></td>
+<td>16</td>
+<td>64</td>
+<td>VoIP</td>
+</tr>
+</tbody>
+</table>
+<p><strong>La regla de oro de EDCA:</strong> dentro de cada cola, el acceso es <strong>como CSMA/CA
+normal</strong> (backoff aleatorio entre 0 y CW). Entre colas, la de mayor prioridad
+<strong>gana</strong>.</p>
+<p><strong>El detalle fino que se pregunta: ¿por qué el video NO usa la cola de voz?</strong></p>
+<p>Porque <strong>el video no necesita baja latencia, necesita bajo jitter</strong>:</p>
+<ul>
+<li><strong>Voz</strong>: cada muestra de audio dura 20 ms. Si un paquete tarda 100 ms, la
+  conversación <strong>se corta</strong> y se nota muchísimo. La prioridad está en el
+  <strong>tiempo estricto</strong>.</li>
+<li><strong>Video</strong>: un frame que tarda 100 ms en llegar produce un <strong>artefacto visual</strong>
+  durante un frame (33 ms a 30 fps). Se nota, pero <strong>se recupera</strong>. Y un frame
+  atrasado que llega más tarde <strong>ya no sirve</strong>, así que la prioridad está en el
+  <strong>jitter</strong> y en el <strong>tasa</strong>, no en el retardo.</li>
+</ul>
+<blockquote>
+<p><strong>Decir esto es lo que diferencia</strong>: los dos son multimedia, los dos tienen
+retardo, pero <strong>el objetivo de QoS es diferente</strong>.</p>
+</blockquote>
+<p>Y sumá el <strong>Block ACK</strong>: en vez de confirmar cada trama, se confirman <strong>varias de
+una vez</strong> (con un <em>bitmap</em> de cuáles llegaron). Funciona bien en video (donde se
+pierde de vez en cuando) pero <strong>no</strong> en voz (donde cada trama es insustituible).</p>
+<h2>1.8 Seguridad</h2>
+<h3>WEP: no usarlo nunca</h3>
+<div class="codehilite"><pre><span></span><code>   Problema 1:  la clave se CIFRA con RC4, pero se transmite
+                junto a cada trama. Cualquiera que sniffe un
+                paquete obtiene la clave.
+
+   Problema 2:  el vector de inicialización (IV) tiene 24 bits.
+                Con muchas tramas se REPETEN, y dos textos
+                cifrados con la misma clave y el mismo IV se
+                anulan (ataque deKepto/keystream reuse).
+
+   Resultado:    se rompe en minutos con herramientas freely
+                disponibles. En 2001 se rompió en tiempo real.
+</code></pre></div>
+
+<h3>WPA2 (802.11i, 2004)</h3>
+<p>AES-CCMP, <strong>clave compartida (PSK)</strong> derivada por PBKDF2. Mejora real sobre WEP
+(CAMBIA la clave y usa IV de 48 bits), pero <strong>conserva el defecto de fondo</strong>: la
+clave se deriva de una <strong>passphrase corta</strong>, y con un <strong>ataque de diccionario
+offline</strong> contra el handshake se la puede recuperar. Ése era el punto débil.</p>
+<h3>WPA3 y SAE</h3>
+<ul>
+<li><strong>SAE</strong> (<em>Simultaneous Authentication of Equals</em>), basado en el protocolo
+  <strong>Dragonfly</strong>: la autenticación es <strong>resistente a ataques de diccionario
+  offline</strong>. Aunque alguien capture el handshake, <strong>no puede</strong> probar contraseñas
+  sin|label interacted con el servidor.</li>
+<li><strong>802.11w (PMF, Protected Management Frames)</strong>: obligatorio en WPA3. Protege las
+  <strong>tramas de administración</strong>, que en WPA2 iban <strong>en claro</strong> y permitían un
+  <strong>deauth flood</strong>: un atacante manda tramas de desautenticación falsos y
+  <strong>desconecta a los usuarios legítimos</strong>.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>WPA2</th>
+<th>WPA3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cifrado</td>
+<td>AES-CCMP</td>
+<td>AES-CCMP</td>
+</tr>
+<tr>
+<td>Clave</td>
+<td>PSK + PBKDF2 (4-way handshake)</td>
+<td><strong>SAE</strong> (Dragonfly)</td>
+</tr>
+<tr>
+<td>Ataque de diccionario</td>
+<td><strong>posible</strong> (offline)</td>
+<td><strong>imposible</strong> (offline)</td>
+</tr>
+<tr>
+<td>Tramas de gestión</td>
+<td><strong>en claro</strong></td>
+<td><strong>protegidas</strong> (802.11w obligatorio)</td>
+</tr>
+<tr>
+<td>Forward secrecy</td>
+<td><strong>no</strong></td>
+<td><strong>sí</strong></td>
+</tr>
+</tbody>
+</table>
+<h2>1.9 ⚠️ Actualización a 2026</h2>
+<p><strong>Sigue igual — de memoria:</strong>
+- <strong>CSMA/CA</strong> con DCF, el <strong>backoff aleatorio</strong> en <code>[0, CW]</code>, y la <strong>CW que se
+  duplica</strong> en cada retransmisión (CWmin = 16, CWmax = 1023).
+- <strong>SIFS / PIFS / DIFS / EIFS</strong>, y el hecho de que <strong>SIFS es el más corto</strong> y por
+  eso la respuesta pasa siempre antes que un nuevo intento de transmisión.
+- <strong>El ACK por trama</strong>, no acumulado.
+- <strong>NAV</strong>, y el <strong>virtual carrier sensing</strong> como segundo sensor.
+- <strong>RTS/CTS</strong> para la estación oculta, <strong>opcional</strong>, con el <strong>CTS más corto</strong> que el
+  RTS.
+- Los <strong>4 espacios inter-trama</strong> y el <strong>slot time</strong> = 2 × propagación.
+- El medio de 802.11 es <strong>half-duplex</strong>: no existe el full-duplex.
+- <strong>EDCA</strong>, las <strong>4 colas</strong>, y el <strong>Block ACK</strong>.
+- El concepto de <strong>BSS/ESS/ESSID/BSSID</strong>.
+- La <strong>estación oculta</strong> y la <strong>estación expuesta</strong>, y que RTS/CTS arregla la
+  primera y no la segunda.</p>
+<p><strong>Cambió — y es unaactly qué:</strong>
+- <strong>Wi-Fi 6 / 6E (<code>802.11ax</code>, 2020)</strong>: <strong>OFDMA</strong> (en uplink <strong>y</strong> downlink),
+  <strong>BSS coloring</strong>, 1024-QAM, <strong>TWT</strong> (<em>Target Wake Time</em>, para sleepy clients en
+  IoT). El <strong>BSS coloring</strong> es lo relevante para esta clase: <strong>resuelve la
+  interferencia entre redes vecinas</strong> etiquetando cada una con un color y usando
+  <strong>BSSID reutilizado</strong>, en vez de depender de RTS/CTS.
+- <strong>Wi-Fi 7 (<code>802.11be</code>)</strong>: aprobado por IEEE en <strong>sept-2024</strong>, publicado como
+  <code>IEEE 802.11be-2024</code> en <strong>jul-2025</strong>. <strong>320 MHz</strong> de canal, <strong>4096-QAM</strong> y <strong>MLO</strong>
+  (Multi-Link Operation: usar varias bandas a la vez).
+- <strong>Wi-Fi 8 (<code>802.11bn</code>)</strong>: en desarrollo, con foco en <strong>reliability</strong>, no en
+  throughput.
+- <strong><code>802.11bt</code></strong>: frente nuevo de <strong>criptografía post-cuántica</strong> en WiFi.
+- <strong>WPA3</strong> es hoy el estándar recomendado; WPA2 queda como legado aceptable.</p>
+<blockquote>
+<p><strong>Consecuencia para el examen:</strong> la Pregunta 3 de <code>2008-07</code> (CSMA/CA) y la P5 de
+  <code>2006-12</code> (estación oculta) <strong>se responden exactamente como en 2012</strong>. Lo único
+  que puede cambiar es que te pidan los <strong>valores de CWmin/CWmax</strong> o el <strong>orden
+  de los espacios inter-trama</strong>, que no cambiaron.</p>
+</blockquote>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — La estación oculta, paso a paso</h2>
+<p><strong>Datos.</strong> AP en el centro. Estaciones <strong>A</strong> y <strong>C</strong> a su alcance (pero no entre
+sí), y <strong>B</strong> al otro lado. Las tres quieren enviar.</p>
+<p><strong>Resolución:</strong></p>
+<div class="codehilite"><pre><span></span><code>   Paso 1:  A detecta el medio libre → transmite su trama a B.
+            C NO la oye (está oculta) → cree que el medio está libre.
+
+   Paso 2:  C transmite su trama al AP, AL MISMO TIEMPO que A.
+            Las dos tramas LLEGAN AL AP JUNTAS → COLISIÓN en el AP.
+            (No colisionan entre sí: nunca se encuentran en el aire.)
+
+   Paso 3:  El AP no les manda ACK a ninguna. Las dos tramas se perdieron.
+
+   Paso 4:  A y C, sin ACK, asumen colisión → retransmiten con CW mayor.
+            Como eligen números distintos al azar, esta vez no chocan.
+
+   CON RTS/CTS:  antes de los datos, A manda RTS; el AP responde CTS.
+                 C (que no oyó el RTS) SÍ oye el CTS → actualiza su NAV
+                 y se calla. No hay colisión.
+</code></pre></div>
+
+<p><strong>La frase para el examen:</strong> <em>"la colisión no ocurre entre A y C sino en el punto
+de convergencia, el AP; y el problema es que C no tiene forma de saber que A está
+transmitiendo."</em></p>
+<h2>2.2 Ejercicio 2 — El cálculo del NAV</h2>
+<p><strong>Datos.</strong> A manda un RTS con <code>Duration = 300 µs</code>. El CTS del AP trae
+<code>Duration = 250 µs</code>. El tiempo de propagación entre dos estaciones es <strong>2 µs</strong>.</p>
+<p><strong>Resolución — el NAV de cada estación:</strong></p>
+<div class="codehilite"><pre><span></span><code>   t = 0        A envía RTS
+   t = 2 µs     el AP lo recibe (tras 2 µs de propagación)
+   t = 4 µs     el AP envía el CTS
+   t = 6 µs     el CTS llega a todos los que lo oyen
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Estación</th>
+<th>¿Oye el RTS?</th>
+<th>¿Oye el CTS?</th>
+<th>NAV después</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A</strong></td>
+<td>sí (lo emitió)</td>
+<td>sí</td>
+<td>250 − (ya pasó algo de tiempo) ≈ 244 µs</td>
+</tr>
+<tr>
+<td><strong>B (AP)</strong></td>
+<td>sí</td>
+<td>sí (lo emitió)</td>
+<td>250 µs</td>
+</tr>
+<tr>
+<td><strong>C (oculta)</strong></td>
+<td><strong>NO</strong></td>
+<td><strong>sí</strong></td>
+<td><strong>250 µs</strong> ← el que lo resuelve</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Y cuando A manda la DATA:</strong> lleva su propio <code>Duration</code>, digamos 200 µs. Todas las
+estaciones que lo oyen actualizan su NAV.</p>
+<p><strong>El cálculo del overhead</strong> (que es lo que se pregunta):</p>
+<div class="codehilite"><pre><span></span><code>   Con RTS/CTS, para un dato de 1000 bytes:
+
+      RTS      =  20 bytes de headers  (14 bytes de 802.11 + 4 de FCS)
+      CTS      =  14 bytes
+      DATA     = 1000 + 30 bytes de headers = 1030 bytes
+      ACK      =  14 bytes
+      ────────────────────────────────────────
+      total    = 1078 bytes
+
+      eficiencia = 1000 / 1078 = 92,8 %
+
+   Con DATA sola (sin RTS/CTS):
+      DATA + ACK = 1030 + 14 = 1044
+      eficiencia = 1000 / 1044 = 95,8 %
+</code></pre></div>
+
+<p><strong>Conclusión, que es el punto del ejercicio:</strong> RTS/CTS <strong>cuesta 3 % de eficiencia</strong>.
+Si el umbral RTS está en 500 bytes y la trama es de <strong>100</strong>, el RTS/CTS <strong>no
+compensa</strong>: la probabilidad de que esa trama de 100 bytes colisione es muy baja, y
+el overhead no vale el riesgo evitado.</p>
+<h2>2.3 Ejercicio 3 — La tabla de CW y la probabilidad de colisión</h2>
+<p><strong>Datos.</strong> Dos estaciones. CWmin = 16, CWmax = 1023.</p>
+<p><strong>Resolución:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Intento</th>
+<th>CW</th>
+<th>Elecciones</th>
+<th>P(choque)</th>
+<th>P(éxito en este intento)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>16</td>
+<td>16</td>
+<td>1/16 = <strong>6,25 %</strong></td>
+<td>15/16 = 93,75 %</td>
+</tr>
+<tr>
+<td>1</td>
+<td>32</td>
+<td>32</td>
+<td>1/32 = <strong>3,125 %</strong></td>
+<td>97,9 %</td>
+</tr>
+<tr>
+<td>2</td>
+<td>64</td>
+<td>64</td>
+<td>1,56 %</td>
+<td>98,4 %</td>
+</tr>
+<tr>
+<td>3</td>
+<td>128</td>
+<td>128</td>
+<td>0,78 %</td>
+<td>99,2 %</td>
+</tr>
+<tr>
+<td>4</td>
+<td>256</td>
+<td>256</td>
+<td>0,39 %</td>
+<td>99,6 %</td>
+</tr>
+<tr>
+<td>5</td>
+<td>512</td>
+<td>512</td>
+<td>0,195 %</td>
+<td>99,8 %</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>1023</strong></td>
+<td>1023</td>
+<td>0,098 %</td>
+<td>99,9 %</td>
+</tr>
+</tbody>
+</table>
+<p><strong>La probabilidad de tener éxito en los primeros k intentos:</strong></p>
+<div class="codehilite"><pre><span></span><code>   k=1:  1 − 1/16                        = 93,75 %
+   k=2:  1 − (1/16)(1/32)                = 99,8 %
+   k=3:  1 − (1/16)(1/32)(1/64)          = 99,998 %
+</code></pre></div>
+
+<p><strong>El razonamiento que hay que decir:</strong> cada intento <strong>independiente</strong> falla con
+probabilidad <code>1/CW</code>, así que la probabilidad de fallar <strong>todos</strong> los primeros k es
+el <strong>producto</strong>. Como la CW <strong>se duplica</strong>, el producto <strong>decae exponencialmente</strong>:
+después de 3 intentos ya es despreciable. <strong>Por eso el backoff exponencial es tan
+efectivo</strong> y es el mismo principio que la retransmisión de TCP (clase 20).</p>
+<h2>2.4 Ejercicio 4 — ¿Por qué no se puede detectar la colisión en WiFi?</h2>
+<p><strong>Enunciado:</strong> <em>Explique por qué una estación WiFi no puede detectar una colisión
+como lo hace una estación Ethernet.</em></p>
+<p><strong>Resolución, los tres motivos:</strong></p>
+<ol>
+<li>
+<p><strong>Half-duplex físico.</strong> Para detectar una colisión hay que <strong>escuchar mientras se
+   transmite</strong>. La antena de radio no puede hacer las dos cosas: es como hablar y
+   escuchar a la vez. Ethernet también tiene unaLimitación similar (con CSMA/CD sobre
+   cable, se escucha la señal del propio cable, lo que es físicamente distinto).</p>
+</li>
+<li>
+<p><strong>Enmascaramiento por potencia.</strong> La señal propia llega al receptor a unos 30 dBm
+   (1 vatio a 30 cm). Una señal ajena que rebota puede llegar a −90 dBm. La
+   diferencia es de <strong>120 dB</strong>, o sea un factor de <strong>10⁶ en potencia</strong>. El ruido
+   de la señal propia es <strong>1 millón de veces</strong> mayor: no hay manera de escuchar por
+   debajo.</p>
+</li>
+<li>
+<p><strong>El medio es invisible.</strong> Las ondas atraviesan paredes y no tienen frontera. En
+   el cable, el medio es <strong>punto a punto</strong>: lo que sale de tu conector <strong>no puede</strong>
+   estar en el conector de otro. En radio, <strong>dos estaciones que no se ven</strong> pueden
+   estar usando el mismo canal y <strong>colisionar en un tercero</strong>.</p>
+</li>
+</ol>
+<blockquote>
+<p><strong>La frase que resume la clase:</strong> <em>en radio no se puede detectar la colisión
+porque no se puede escuchar mientras se transmite y porque la propia señal
+enmascera a las ajenas. Por eso WiFi en vez de detectar, </em><em>evita</em><em>: con
+backoff largo, con RTS/CTS y con el NAV.</em></p>
+</blockquote>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2008-07, Pregunta 3 (10 puntos) — CSMA/CA en modo infraestructura</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0807</code> / <code>sirc0807</code>, julio de 2008.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0807.pdf</p>
+</blockquote>
+<h3>Enunciado (texto del examen)</h3>
+<blockquote>
+<p>Explique el protocolo de acceso múltiple con evitado de colisiones (CSMA/CA)
+utilizado en las redes inalámbricas IEEE 802.11 (Wi-Fi) trabajando en modo
+infraestructura.</p>
+</blockquote>
+<h3>La solución, en 10 puntos</h3>
+<p><strong>1. Por qué evitado y no detección (1 pt).</strong> En radio no se puede detectar una
+colisión: el transceiver es <strong>half-duplex</strong> (no transmite y escucha a la vez) y la
+potencia de la señal propia enmascera la de los demás (unos 120 dB de diferencia).
+Por eso el protocolo <strong>evita</strong> la colisión en lugar de detectarla y recuperar.</p>
+<p><strong>2. El modo infraestructura (2 pts).</strong> Las estaciones son <strong>clientes</strong> de un
+<strong>punto de acceso (AP)</strong>. Todas las tramas pasan por el AP, que hace de puente
+entre la BSS y el resto de la red. El AP se anuncia periódicamente con <strong>tramas
+Beacon</strong> (cada ~100 ms), lo que permite el <strong>roaming</strong>: el cliente que se mueve
+descubre la nueva celda sin que nadie le avise. La celda es la <strong>BSS</strong>, con su
+<strong>BSSID</strong> (MAC del AP), y varias BSS con el mismo <strong>ESSID</strong> forman un <strong>ESS</strong>.</p>
+<p><strong>3. El mecanismo DCF, paso a paso (4 pts).</strong></p>
+<div class="codehilite"><pre><span></span><code>   1. Si el medio está libre, esperar un DIFS.
+   2. Elegir un entero al azar en [0, CW] y bajarlo de a uno
+      por cada slot time. Si el medio se ocupa, pausar el
+      contador y recalcular al desbloquearse.
+   3. Cuando el contador llega a 0, TRANSMITIR.
+      Puede haber colisión y no vamos a enterarnos.
+   4. Esperar el ACK (por trama, no acumulado).
+      - Si llega: la trama salió bien; se INCREMENTA la CW
+        (menos ganas de colisionar).
+      - Si NO llega: se infiere COLISIÓN; se RETRANSMITE
+        y se DOBLA la CW.
+   5. Si se alcanza CWmax, se abandona la trama.
+</code></pre></div>
+
+<p><strong>Los valores:</strong> <code>CWmin = 16</code>, <code>CWmax = 1023</code>. El backoff aleatorio en <code>[0, CW]</code>
+es lo que <strong>roba el medio sin necesidad de un planificador central</strong>.</p>
+<p><strong>4. Los espacios inter-trama (1 pt).</strong> <strong>SIFS</strong> (el más corto, para las
+respuestas: ACK, CTS, fragmentos), <strong>PIFS</strong> (para el punto de acceso en modo
+puntual), <strong>DIFS</strong> (antes de intentar transmitir una estación común), <strong>EIFS</strong> (tras
+un error o una trama que no se entendió; el más largo, porque penaliza). El
+<strong>slot time</strong> = 2 × el tiempo de propagación.</p>
+<p><strong>5. El control del nodo oculto (2 pts).</strong> Un <strong>nodo oculto</strong> es una estación que
+<strong>no escucha</strong> a otra aunque esté a su alcance del AP; si ambas transmiten, sus
+tramas <strong>colisionan en el AP</strong>. La solución son las tramas opcionales <strong>RTS</strong>
+(<em>Request To Send</em>) y <strong>CTS</strong> (<em>Clear To Send</em>): el CTS <strong>no lo emite quien pide</strong>
+sino el <strong>AP</strong>, que seLocated más cerca de todas, y por eso llega incluso a la
+estación oculta. Quien escucha el CTS actualiza su <strong>NAV</strong> (<em>Network Allocation
+Vector</em>), un contador virtual con la <strong>duración declarada</strong> en la trama, y espera.
+El RTS y el CTS son <strong>opcionales</strong> porque cuestan ancho de banda; se usan según el
+<strong>umbral RTS</strong>.</p>
+<p><strong>Frase de cierre que suma puntos:</strong> "el <strong>NAV</strong> funciona como un <strong>segundo sensor</strong>
+del medio: el <em>physical carrier sensing</em> detecta la señal real, y el <em>virtual
+carrier sensing</em> (el NAV) detecta una reserva anunciada por otro. Entre los dos,
+una estación sabe cuándo puede hablar."</p>
+<h2>3.2 Examen 2006-12, Pregunta 5 (6 puntos) — la estación oculta</h2>
+<blockquote>
+<p><strong>Enunciado:</strong> Describa el problema de "la estación oculta" que se presenta en las
+redes inalámbricas.</p>
+</blockquote>
+<p><strong>La solución, en 6 puntos:</strong></p>
+<p><strong>La definición (1 pt).</strong> En una red wireless en modo infraestructura, dos
+estaciones pueden estar <strong>dentro del alcance del punto de acceso</strong> pero <strong>fuera del
+alcance entre sí</strong> (por muro, por distancia, por orientación de antena). Decimos
+que una es <strong>oculta</strong> respecto de la otra.</p>
+<p><strong>El síntoma (2 pts).</strong> Si la estación A transmite, la estación oculta C <strong>no lo
+escucha</strong>, así que cree que el medio está libre y <strong>transmite también</strong>. Las dos
+tramas <strong>se superponen en el punto de acceso</strong>, que es donde convergen. La
+<strong>colisión ocurre en el AP</strong>, no entre las dos estaciones — que es lo confuso del
+tema.</p>
+<p><strong>Por qué es culpa de CSMA/CA y no del medio (1 pt).</strong> El CSMA/CA protege contra
+las colisiones que las estaciones <strong>detectan</strong> por other's silence. Pero la
+estación oculta no puede detectar nada: <strong>no escucha la señal</strong>. No es que el
+protocolo falle, es que <strong>no tiene información</strong>.</p>
+<p><strong>La solución (2 pts).</strong> <strong>RTS/CTS</strong>: la estación que va a transmitir pregunta
+primero con un <strong>RTS</strong>; el AP responde con un <strong>CTS</strong>. El <strong>CTS es más corto y lo
+emite el AP</strong>, que está en el centro geométrico de la red, así que <strong>también lo
+recibe la estación oculta</strong>. Al oírlo, la estación oculta actualiza su <strong>NAV</strong> y
+<strong>se abstiene de transmitir</strong>. Con esto, la estación oculta <strong>no transmite nunca
+en el medio</strong>, y desaparece la interferencia. El RTS/CTS es <strong>opcional</strong>: se activa
+sólo cuando el tamaño de la trama supera el <strong>umbral RTS</strong>, porque su costo en
+ancho de banda sólo se justifica con tramas grandes.</p>
+<p><strong>Lo que NO resuelve (el punto fino, 1 pt).</strong> El problema del <strong>nodo expuesto</strong> es
+<strong>el inverso</strong>: dos estaciones que se ven entre sí, pero que van a destinos
+distintos. Una se calla innecesariamente. El RTS/CTS <strong>no lo resuelve</strong>, porque la
+condición de que el CTS llegue no cambia nada. Es una limitación conocida del
+protocolo, y no tiene solución limpia.</p>
+<h2>3.3 Examen 2007-03, Pregunta 5 (5 puntos) — CSMA/CA</h2>
+<blockquote>
+<p><strong>Enunciado:</strong> Describa el mecanismo de acceso al medio CSMA/CA (Carrier Sense
+Multiple Access With Collision Avoidance).</p>
+</blockquote>
+<p><strong>La solución, en 5 puntos.</strong> Es el mismo desarrollo que en §3.1, en formato
+corto:</p>
+<ol>
+<li><strong>La idea:</strong> cada estación <strong>escucha</strong> el medio; si está libre, espera un <strong>DIFS</strong>
+   y luego espera un <strong>tiempo aleatorio</strong> (backoff) antes de transmitir, para
+   reducir la probabilidad de que dosstations hablen a la vez.</li>
+<li><strong>El backoff:</strong> entero aleatorio en <code>[0, CW]</code>; CW arranca en 16 y se <strong>duplica</strong>
+   en cada intento fallido hasta 1023. Esto es lo que <strong>evita</strong> la colisión.</li>
+<li><strong>La confirmación:</strong> cada trama de datos se confirma con un <strong>ACK individual</strong>; si
+   no llega, se asume colisión y se reintenta con CW mayor.</li>
+<li><strong>El RTS/CTS</strong> como mecanismo complementario para el nodo oculto.</li>
+<li><strong>El NAV</strong> para reservar el medio frente a estaciones que no pueden oír la señal
+   directa.</li>
+</ol>
+<blockquote>
+<p><strong>Tope para 5 puntos:</strong> los 5 puntos con el nombre de cada parámetro.</p>
+</blockquote>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen</h2>
+<ol>
+<li>En radio <strong>no se puede detectar</strong> una colisión: el transceiver es half-duplex y
+   la señal propia enmascera a las ajenas (~120 dB). Por eso WiFi <strong>evita</strong>, no
+   detecta.</li>
+<li><strong>CSMA/CA (DCF)</strong>: sense → DIFS → backoff aleatorio en <code>[0, CW]</code> → transmitir →
+   esperar ACK. Sin ACK ⇒ colisión ⇒ <strong>duplicar CW</strong> y reintentar.</li>
+<li><strong>CWmin = 16, CWmax = 1023</strong>. La probabilidad de colisión con 2 estaciones es
+   <code>1/CW</code>, y <strong>duplicar la CW la reduce a la mitad</strong>.</li>
+<li><strong>SIFS</strong> es el espacio más corto, y por eso <strong>las respuestas pasan siempre
+   antes</strong> que un nuevo intento de transmisión.</li>
+<li>El <strong>ACK de WiFi es por trama</strong>, no acumulado: se recupera más rápido.</li>
+<li><strong>Estación oculta</strong>: dos estaciones al alcance del AP que <strong>no se ven entre sí</strong>;
+   colisionan <strong>en el AP</strong>.</li>
+<li><strong>RTS/CTS</strong> la resuelve: el CTS lo emite el AP, que está más cerca de todos, y lo
+   oyen hasta las estaciones ocultas. <strong>Es opcional</strong>, con <strong>umbral RTS</strong>.</li>
+<li>El <strong>NAV</strong> es un sensor <strong>virtual</strong> del medio: guarda la duración <strong>declarada</strong> en
+   las tramas.</li>
+<li><strong>EDCA</strong> tiene <strong>4 colas</strong>; el video <strong>no</strong> usa la cola de voz porque la voz es
+   <strong>sensible al retardo</strong> y el video al <strong>jitter</strong>.</li>
+<li><strong>WPA3/SAE</strong> resuelve el ataque de diccionario offline de WPA2; <strong>802.11w</strong>
+    protege las tramas de administración (contra <em>deauth flood</em>).</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p><strong>1.</strong> ¿Por qué una estación WiFi no puede detectar una colisión como sí hace una
+Ethernet?</p>
+<details><summary>Respuesta</summary>
+
+Por **dos** razones físicas. Primera: el transceiver de radio es **half-duplex**, no
+puede transmitir y escuchar a la vez, y detectar una colisión exige exactamente eso.
+Segunda: aunque pudiera, la **señal propia** llega al receptor a unos 30 dBm y una
+señal ajena rebotada puede llegar a −90 dBm: **120 dB de diferencia**, un factor
+de **10⁶ en potencia**. La propia señal ahoga por completo la de los demás. En
+cable el problema es distinto: la señal del cable es la misma que se envía, y el
+dominio de colisión es **punto a punto**, así que se puede comparar.
+
+</details>
+
+<p><strong>2.</strong> Una estación elige un backoff de 24 en un intento donde la CW es 64. ¿Cuál es
+la probabilidad de que otra estación elija el mismo y colisionen?</p>
+<details><summary>Respuesta</summary>
+
+**1/64 = 1,5625 %**. Si ambas eligen uniformemente al azar en `[0, 63]`, hay
+**64** posibilidades para cada una y **64** pares ordenados, de los cuales **1** es
+`(24, 24)`. Por eso la probabilidad es exactamente `1/CW`. Y por eso **duplicar la
+CW** — pasar de 64 a 128 — la **reduce a la mitad**, que es el mecanismo
+completo del backoff exponencial.
+
+</details>
+
+<p><strong>3.</strong> ¿Por qué el <code>REQUEST</code> de DHCP va por broadcast aunque el cliente ya sepa la IP
+del servidor? ¿Y qué tiene que ver esto con el CSMA/CA?</p>
+<details><summary>Respuesta</summary>
+
+Porque el `REQUEST` es el **único** mecanismo por el que los servidores que hicieron
+`OFFER` y **no** fueron elegidos se enteran de que perdieron, y así liberan la
+dirección que habían reservado. Si fuera unicast, cada uno creería que ganó.
+
+Con el CSMA/CA la analogía es el **RTS/CTS**: el `REQUEST` de DHCP es
+funcionalmente un "anuncio para todos" y el CTS es el que llega a las estaciones que
+no oían el primero. En ambos casos, **anunciar el resultado a todo el mundo para
+que los perdedores liberen recursos** es la razón de ser del broadcast.
+
+</details>
+
+<p><strong>4.</strong> ¿Qué diferencia hay entre una estación oculta y una estación expuesta? ¿Cuál
+resuelve el RTS/CTS?</p>
+<details><summary>Respuesta</summary>
+
+**Oculta**: A y C están al alcance del AP pero **no se ven entre sí**. Si ambas
+transmiten, sus tramas **colisionan en el AP**. Es una **pérdida real**.
+
+**Expuesta**: A y C **sí** se ven, pero van a destinos distintos. Cuando A
+transmite, C se calla **innecesariamente**. Es una **ineficiencia**, no una
+pérdida.
+
+El **RTS/CTS resuelve la estación oculta**, porque el CTS lo emite el AP y llega a
+las dos. **No resuelve la expuesta**: el problema es que C se calla de más, y el
+RTS/CTS no cambia esa condición. Peor: activarlo sin necesidad agrega overhead al
+caso frecuente.
+
+</details>
+
+<p><strong>5.</strong> ¿Por qué el video no usa la cola de prioridad más alta (AC_VO) que la voz?</p>
+<details><summary>Respuesta</summary>
+
+Porque **el objetivo de QoS es distinto**. La voz es **sensible al retardo**: cada
+muestra dura 20 ms y si un paquete tarda 100 ms la conversación se corta y se nota
+mucho. El video es **sensible al jitter y a la tasa**: un frame que tarda 100 ms
+produce un artefacto durante un frame (~33 ms a 30 fps), se nota pero **se
+recupera**. Además, un frame que llega tarde ya **no sirve** para nada, así que
+priorizar el tiempo no ayuda: hay que priorizar que llegue **completo** el mayor
+número de frames. Por eso el video va a AC_VI y no a AC_VO.
+
+</details>
+
+<p><strong>6.</strong> ¿Qué es el NAV y por qué se lo llama "virtual carrier sensing"?</p>
+<details><summary>Respuesta</summary>
+
+El **NAV** (*Network Allocation Vector*) es un contador que cada estación mantiene
+actualizando con el campo **Duration/ID** de cada trama que recibe. Le dice "el medio
+está reservado por tanto tiempo más".
+
+Se lo llama **virtual** porque **no detecta ninguna señal**: es un número, no una
+medición de energía. Es el complemento del **physical carrier sensing** (que sí
+detecta la señal real en el aire). Los dos juntos dan a la estación la información
+completa: el sensor físico le dice si hay alguien transmitiendo ahora, y el virtual
+le dice si alguien **reservó** el medio para un rato.
+
+Es especialmente útil contra la estación oculta, que no puede usar el sensor
+físico para nada pero **sí** oye el CTS y actualiza su NAV.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>eirc0807</code> / <code>sirc0807</code></strong> — Pregunta 3 completa (10 pts, CSMA/CA en infraestructura)</li>
+<li><strong>Examen <code>eirc0612</code> / <code>sirc0612</code></strong> — Pregunta 5 (6 pts, estación oculta)</li>
+<li><strong>Examen <code>eirc0703</code> / <code>sirc0703</code></strong> — Pregunta 5 (5 pts, CSMA/CA)</li>
+<li><strong>Examen <code>eirc1007</code> / <code>sirc1007</code></strong> — Pregunta 2 (8 pts, por qué no CSMA/CD en wireless)</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 4 (subcapa MAC)</li>
+<li><strong><code>ACTUALIZACIONES.md</code> §9</strong> — Wi-Fi 6/7/8, BSS coloring, WPA3/SAE, 802.11bt</li>
+<li><strong>Clase siguiente:</strong> 44 — Multimedia: streaming, RTP y VoIP</li>
+</ul></body></html>

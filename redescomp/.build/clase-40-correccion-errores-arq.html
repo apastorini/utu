@@ -1,0 +1,1531 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 40 — Corrección de errores y ARQ</h1>
+<p><strong>Bloque:</strong> E (Capa de enlace) · <strong>Semana:</strong> 14 · <strong>Duración estimada:</strong> 115 min
+<strong>Correlativa:</strong> Clase 39 (detección de errores: paridad, checksum y CRC) · <strong>Sigue con:</strong> Clase 41 (acceso al medio: ALOHA, CSMA/CD y CSMA/CA)
+<strong>Material de referencia:</strong> Tanenbaum cap. 3 §3.3–3.5 y cap. 4 · Kurose §5.3 · RFC 2018 (SACK)</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Explicar por qué <strong>detectar</strong> y <strong>corregir</strong> son problemas distintos, y en qué medios conviene <strong>corregir en el receptor</strong> en vez de <strong>retransmitir</strong>.</li>
+<li>Definir la <strong>distancia de Hamming</strong> y derivar las capacidades de <strong>SEC</strong> y <strong>SECDED</strong>.</li>
+<li><strong>Derivar los bits de paridad</strong> de un código de Hamming de <code>m</code> bits de datos y <code>r</code> de paridad, y explicar de dónde sale la condición <code>2^r ≥ m + r + 1</code>.</li>
+<li>Ejecutar el <strong>procedimiento de corrección completo</strong> (cálculo del <strong>síndrome</strong> y ubicación del bit erróneo) sobre un ejemplo numérico.</li>
+<li>Calcular la <strong>eficiencia de Stop-and-Wait</strong> con la fórmula <code>1/(1+2a)</code> y explicar por qué depende del RTT.</li>
+<li>Describir <strong>Go-Back-N</strong> y <strong>Selective Repeat</strong> con sus diagramas temporales, y decir <strong>por qué TCP no es exactamente ninguno de los dos</strong> salvo con SACK.</li>
+<li>Justificar <strong>por qué Selective Repeat exige un buffer en el receptor</strong> y ACK no acumulados.</li>
+<li>Resolver completo el <strong>Examen 2009-03 Pregunta 1</strong> (10 puntos).</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2009-03 P1</code> (10 pts — el concepto y el funcionamiento de Go-Back-N), <code>2007-03 Problema 1</code> (30 pts — protocolo de capa 2 con ARQ de tipo <strong>Selective Repeat</strong> y <em>piggybacking</em>), <code>2007-07 P2</code> (5 pts — mecanismos de detección y corrección de errores de la capa de enlace), <code>2010-07 Problema 1</code> (30 pts — protocolo <em>stop-and-wait</em> semifiable para video), <code>2011-03 P4</code> (10 pts — el diagrama TCP con y sin pérdida del primer segmento, que es Go-Back-N puro).</p>
+<p>⚠️ Esta clase tiene <strong>cálculo de verdad</strong>. El código de Hamming se hace bit por bit
+y los tres ARQ se dibujan con líneas de tiempo. Hacé los ejercicios con lápiz y papel
+antes de mirar la resolución.</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 Detectar no es corregir: por qué la pregunta importa</h2>
+<p>En la clase anterior (Clase 39) vimos los <strong>detores</strong>: paridad, paridad 2D, checksum y CRC. Todos hacen <strong>lo mismo</strong>: un receptor devuelve "OK" o "error". Cuando devuelve "error", el receptor <strong>no sabe cuál bit</strong> está mal, y por lo tanto <strong>no puede arreglarlo</strong>: lo único que puede hacer es <strong>tirar el paquete y pedir que lo manden de nuevo</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   DETECTAR                         CORREGIR
+   ────────                         ────────
+   "¿hay error?"  sí/no             "¿cuál bit está mal?"  → lo arreglo
+   coste: 1..32 bits de control     coste: r bits de paridad + lógica
+   si hay error: OBLIGATORIO         si hay error: se repara solo, sin
+   retransmitir                     tocar la red
+</code></pre></div>
+
+<p><strong>La razón económica es el RTT.</strong> Corregir en el receptor es gratis en términos de red: no se transmite nada. Retransmitir, en cambio, cuesta:</p>
+<div class="codehilite"><pre><span></span><code>   EMISOR ──(trama)──▶ R1 ──▶ ... ──▶ R4 ──(trama)──▶ RECEPTOR
+          ◀────────── ACK ─────────────────────────────────
+
+   Si la trama tenía error y se retransmite:
+     EMISOR ──(trama)──▶ ... ──▶ RECEPTOR         t_frame
+             ◀────────────── ACK ────────         t_prop
+             ◀────────────── ACK ────────         t_prop   (el ACK vuelve)
+             ──(trama)────▶ ... ──▶ RECEPTOR     t_frame
+             ◀────────────── ACK ────────         t_prop
+             ◀────────────── ACK ────────         t_prop
+
+   COSTE DE RETRANSMITIR = 2·t_frame + 2·t_prop  = un RTT entero
+</code></pre></div>
+
+<p>⚠️ <strong>Cuando conviene corregir y no retransmitir:</strong> en los medios donde el <strong>RTT es enorme comparado con el tiempo de transmisión</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Medio</th>
+<th><code>t_prop</code> (ida)</th>
+<th><code>t_frame</code> (1 KB)</th>
+<th><code>a = t_prop/t_frame</code></th>
+<th><code>U</code> de Stop-and-Wait</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LAN a 10 Mb/s (100 m)</td>
+<td>0,5 µs</td>
+<td>800 µs</td>
+<td>0,0006</td>
+<td><strong>99,9 %</strong></td>
+</tr>
+<tr>
+<td>Enlace dedicado a 2 Mb/s (100 km)</td>
+<td>500 µs</td>
+<td>4 ms</td>
+<td>0,125</td>
+<td>80,0 %</td>
+</tr>
+<tr>
+<td>Fibra dedicada (1000 km, 2 Gb/s)</td>
+<td>5 ms</td>
+<td>4 µs</td>
+<td><strong>1 250</strong></td>
+<td><strong>0,04 %</strong></td>
+</tr>
+<tr>
+<td>Enlace satelital GEO (36 000 km)</td>
+<td>120 ms</td>
+<td>0,8 ms</td>
+<td><strong>150</strong></td>
+<td><strong>0,33 %</strong></td>
+</tr>
+<tr>
+<td>Radio de larga distancia</td>
+<td>100 ms+</td>
+<td>—</td>
+<td>enorme</td>
+<td>casi 0</td>
+</tr>
+</tbody>
+</table>
+<p>⚠️ <strong>Atención con la fila del satélite:</strong> es 0,33 %, no 3,3 %. Recalculo: <code>1/(1+2·150) = 1/301 = 0,00332 = 0,33 %</code>. <strong>Una mainframe de 2011 sobre un enlace satelital GEO tenía menos del 1 % de Utilización del enlace.</strong> Por eso en los enlaces demuy largo RTT tiene sentido <strong>corregir</strong> (FEC, <em>forward error correction</em>) y no retransmitir: el costo de una corrección en el receptor es cero en la red.</p>
+<p>⚠️ <strong>El otro extremo de la balanza:</strong> en un medio <strong>muy ruidoso</strong>, si la tasa de error de bits es alta, retransmitir <strong>todo</strong> es inútil: se pierde el tiempo y se vuelve a perder. Ahí también conviene <strong>corregir</strong> (o cambiar el código), porque <strong>ARQ con tasa de error alta se vuelve un problema</strong>. Ésa es la razón por la que el Wi-Fi y el DVB usan <strong>FEC</strong> y <strong>no</strong> ARQ.</p>
+<h2>1.2 La distancia de Hamming y los dos códigos que hay que saber</h2>
+<h3>La definición</h3>
+<div class="codehilite"><pre><span></span><code>   La DISTANCIA DE HAMMING entre dos palabras de la misma longitud
+   d(A,B) es la CANTIDAD de posiciones en las que difieren.
+
+     A = 1 0 1 0 1 0 1 0
+     B = 1 0 1 1 1 0 1 1
+         ─   ─     ─     ─
+     d(A,B) = 4
+
+   Equivalentemente:  d(A,B) = peso(A XOR B)
+</code></pre></div>
+
+<p>⚠️ <strong>Por qué la distancia de Hamming es LA medida:</strong> porque un error de <code>k</code> bits <strong>siempre</strong> transforma una palabra en otra que está a distancia <code>≤ k</code>. Si el mínimo <code>d</code> de un código es <code>d_min</code>, entonces:</p>
+<div class="codehilite"><pre><span></span><code>   d errores realmente pueden mover una palabra             → distancia d
+   d_min - 1 errores NUNCA mueven una palabra fuera del      → undetectable
+                                                              código
+</code></pre></div>
+
+<p><strong>De ahí salen las dos capacidades, y son las que hay que memorizar:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Detecta</th>
+<th>Corrige</th>
+<th><code>d_min</code> mínimo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SEC</strong> (<em>Single Error Correcting</em>)</td>
+<td><code>d ≤ 1</code></td>
+<td><strong>1</strong> bit</td>
+<td><strong>2</strong></td>
+</tr>
+<tr>
+<td><strong>SECDED</strong> (<em>Single Error Correcting, Double Error Detecting</em>)</td>
+<td><code>d ≤ 2</code></td>
+<td><strong>1</strong> bit</td>
+<td><strong>3</strong></td>
+</tr>
+<tr>
+<td><em>(doble error, no corrige 2)</em></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Código con <code>d_min = 4</code></strong></td>
+<td><code>d ≤ 3</code></td>
+<td><strong>1</strong> bit (+ sabe que hay 2)</td>
+<td><strong>4</strong></td>
+</tr>
+</tbody>
+</table>
+<p>⚠️ <strong>El error conceptual más caro de esta clase:</strong> <strong>la paridad detecta 1 error y corrige 0</strong>. <strong>Hamming SEC detecta 1 y corrige 1</strong>. <strong>Hamming SECDED detecta 2 y corrige 1.</strong> Se preguntan mucho, y se confunden porque las tres cosas suenan parecido.</p>
+<p>⚠️ <strong>¿Por qué SECDED necesita <code>d_min = 3</code> y no 2?</strong> Porque con <code>d_min = 2</code> no se puede distinguir "1 error" de "2 errores": las dos cosas dan distancia 2, y el receptor solo tiene una palabra de referencia. Con <code>d_min = 3</code>, un error de 1 bit da distancia 1 (distinguible), uno de 2 bits da distancia 2, y uno de 3 da distancia 3. Como el receptor <strong>solo sabe corregir de 0</strong>, descarta todo lo que sea ≥ 2. Por eso SECDED <strong>detecta 2</strong> aunque solo <strong>corrija 1</strong>.</p>
+<h2>1.3 Los bits de paridad: la tabla de potencias de 2 y la condición <code>2^r ≥ m + r + 1</code></h2>
+<h3>La intuición: cada bit de paridad "vigila" un subconjunto</h3>
+<p>La idea es que <strong>cada bit de paridad vigila un conjunto distinto de posiciones</strong>, y que hay <code>r</code> bits de paridad. Hay que poder distinguir <code>r</code> posiciones más "nada":</p>
+<div class="codehilite"><pre><span></span><code>   Hay r+1Casos que el receptor tiene que diferenciar:
+     · "no hay error en ninguno"                        → el código está bien
+     · "el bit de paridad 1 tiene error"
+     · "el bit de paridad 2 tiene error"
+     · ...
+     · "el bit de paridad r tiene error"
+     · "el bit de datos j tiene error"   (¡j puede ser CUALQUIERA de m!)
+
+   En total:  r (paridades) + m (datos) + 1 (sin error)
+                                                    =  m + r + 1  casos
+
+   Cada caso se codifica con un patrón distinto de r bits ⇒
+        2^r  ≥  m + r + 1
+</code></pre></div>
+
+<p><strong>La tabla que hay que saber de memoria</strong> (con <code>m</code> datos y <code>r</code> paridades):</p>
+<table>
+<thead>
+<tr>
+<th><code>m</code> (datos)</th>
+<th><code>r</code> (paridad)</th>
+<th><code>m + r + 1</code></th>
+<th><code>2^r</code></th>
+<th>¿Alcanza?</th>
+<th>Total de bits</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>2</td>
+<td>4</td>
+<td>4</td>
+<td>sí</td>
+<td>3</td>
+</tr>
+<tr>
+<td>2</td>
+<td>2</td>
+<td>5</td>
+<td>4</td>
+<td><strong>no</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td>3</td>
+<td>2</td>
+<td>6</td>
+<td>4</td>
+<td><strong>no</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>4</strong></td>
+<td><strong>3</strong></td>
+<td><strong>8</strong></td>
+<td><strong>8</strong></td>
+<td><strong>sí</strong></td>
+<td><strong>7</strong></td>
+</tr>
+<tr>
+<td>5</td>
+<td>3</td>
+<td>9</td>
+<td>8</td>
+<td><strong>no</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td>6</td>
+<td>3</td>
+<td>10</td>
+<td>8</td>
+<td><strong>no</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td>7</td>
+<td>3</td>
+<td>11</td>
+<td>8</td>
+<td><strong>no</strong></td>
+<td>—</td>
+</tr>
+<tr>
+<td>8</td>
+<td>4</td>
+<td>13</td>
+<td>16</td>
+<td>sí</td>
+<td>12</td>
+</tr>
+<tr>
+<td>16</td>
+<td>5</td>
+<td>22</td>
+<td>32</td>
+<td>sí</td>
+<td>21</td>
+</tr>
+<tr>
+<td>32</td>
+<td>6</td>
+<td>39</td>
+<td>64</td>
+<td>sí</td>
+<td>38</td>
+</tr>
+<tr>
+<td>64</td>
+<td>7</td>
+<td>72</td>
+<td>128</td>
+<td>sí</td>
+<td>71</td>
+</tr>
+</tbody>
+</table>
+<p>⚠️ <strong>El resultado clave que hay que entender:</strong> <strong>el SEC no funciona para 5, 6 ni 7 bits de datos.</strong> Es contraintuitivo: uno esperaría que con más datos it'd mieux. La razón es que <strong>cada bit de dato nuevo necesita su propio patrón de síndrome</strong> y los patrones disponibles son <code>2^r</code>, que crecen <strong>más lento</strong> que <code>m + r + 1</code>. Para esos casos hay que usar <strong>códigos cíclicos</strong> (BCH, Reed-Solomon) o <strong>SEC-DED con bit de paridad global</strong>.</p>
+<p>⚠️ <strong>Un detalle de la condición que cambia según el texto:</strong> muchos textos usan la forma <strong>ligeramente más simple</strong> <code>2^r ≥ m + 1</code> (ignorando los <code>r</code> bits de paridad entre los casos a distinguir). Con <code>m = 4</code> da <code>2^3 = 8 ≥ 5</code>, y el resultado es el mismo (<code>r = 3</code>). La forma con <code>+ r + 1</code> es la rigurosa. <strong>En un examen, usá la que te parezca que pide el enunciado y mencioná la otra.</strong></p>
+<h3>Dónde se colocan los bits de paridad</h3>
+<p>Los bits de paridad van en las posiciones que son <strong>potencias de 2</strong>: 1, 2, 4, 8, 16, …</p>
+<div class="codehilite"><pre><span></span><code>   ┌─────────────────────────────────────────────────────────────┐
+   │  palabra completa de 7 bits (m=4, r=3):                    │
+   │                                                             │
+   │  posición   1   2   3   4   5   6   7                     │
+   │           ┌───┬───┬───┬───┬───┬───┬───┐                    │
+   │  contenido │P1 │P2 │D1 │P3 │D2 │D3 │D4 │                    │
+   │           └───┴───┴───┴───┴───┴───┴───┘                    │
+   │   ↑    ↑           ↑       ↑   ↑   ↑   ↑                   │
+   │  2^0  2^1         2^2     (datos, sin paridad)             │
+   │                                                             │
+   │  P1 vigila las posiciones cuyo binario tiene el bit 0 = 1:  │
+   │      1 (001), 3 (011), 5 (101), 7 (111)                     │
+   │  P2 vigila las posiciones cuyo binario tiene el bit 1 = 1:  │
+   │      2 (010), 3 (011), 6 (110), 7 (111)                     │
+   │  P3 (pos 4) vigila las que tienen el bit 2 = 1:            │
+   │      4 (100), 5 (101), 6 (110), 7 (111)                     │
+   └─────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p>⚠️ <strong>El patrón no es arbitrario:</strong> "el bit de paridad de la posición <code>2^j</code> vigila a todas las posiciones cuyo número tiene el bit <code>j</code> en 1". Es lo que hace que el <strong>síndrome sea directamente el número de la posición del error</strong> (§1.5). Si el patrón fuera otro, el síndrome habría que "traducirlo" y no daría el número.</p>
+<h2>1.4 Ejemplo completo: derivar los bits de paridad con <code>m = 4</code>, <code>r = 3</code></h2>
+<p><strong>Datos.</strong> Quiero enviar <code>D = 1 0 1 0</code> (D1=1, D2=0, D3=1, D4=0), con <strong>paridad par</strong> (un grupo es válido si tiene un número <strong>par</strong> de unos).</p>
+<p><strong>Paso 1 — Armo la plantilla de 7 posiciones.</strong></p>
+<div class="codehilite"><pre><span></span><code>   posición:   1    2    3    4    5    6    7
+              P1   P2   D1   P3   D2   D3   D4
+   valor:      ?    ?    1    ?    0    1    0
+</code></pre></div>
+
+<p><strong>Paso 2 — Calculo P1.</strong> P1 vigila posiciones <strong>1, 3, 5, 7</strong>. De las que ya conozco: D1 (pos 3) = 1, D2 (pos 5) = 0, D4 (pos 7) = 0.</p>
+<div class="codehilite"><pre><span></span><code>   grupo P1 = { P1, D1, D2, D4 } = { ?, 1, 0, 0 }
+   unos conocidos = 1  (solo D1)
+   Para que el total sea PAR, P1 debe hacer el total PAR:
+        1 + P1  tiene que ser par  ⇒  P1 = 1     (1+1 = 2, par ✔)
+   VERIFICACIÓN: {1, 1, 0, 0} → 2 unos → par ✔
+</code></pre></div>
+
+<p><strong>Paso 3 — Calculo P2.</strong> P2 vigila posiciones <strong>2, 3, 6, 7</strong>: P2, D1 (pos 3) = 1, D3 (pos 6) = 1, D4 (pos 7) = 0.</p>
+<div class="codehilite"><pre><span></span><code>   grupo P2 = { P2, D1, D3, D4 } = { ?, 1, 1, 0 }
+   unos conocidos = 2
+   Para que sea PAR: 2 + P2 par  ⇒  P2 = 0      (2+0 = 2, par ✔)
+   VERIFICACIÓN: {0, 1, 1, 0} → 2 unos → par ✔
+</code></pre></div>
+
+<p><strong>Paso 4 — Calculo P3.</strong> P3 (posición 4) vigila posiciones <strong>4, 5, 6, 7</strong>: P3, D2 (pos 5) = 0, D3 (pos 6) = 1, D4 (pos 7) = 0.</p>
+<div class="codehilite"><pre><span></span><code>   grupo P3 = { P3, D2, D3, D4 } = { ?, 0, 1, 0 }
+   unos conocidos = 1
+   Para que sea PAR: 1 + P3 par  ⇒  P3 = 1       (1+1 = 2, par ✔)
+   VERIFICACIÓN: {1, 0, 1, 0} → 2 unos → par ✔
+</code></pre></div>
+
+<p><strong>Paso 5 — La palabra de código completa.</strong></p>
+<div class="codehilite"><pre><span></span><code>   ┌───────┬───────┬───────┬───────┬───────┬───────┬───────┐
+   │ pos 1 │ pos 2 │ pos 3 │ pos 4 │ pos 5 │ pos 6 │ pos 7 │
+   ├───────┼───────┼───────┼───────┼───────┼───────┼───────┤
+   │  P1   │  P2   │  D1   │  P3   │  D2   │  D3   │  D4   │
+   ├───────┼───────┼───────┼───────┼───────┼───────┼───────┤
+   │   1   │   0   │   1   │   1   │   0   │   1   │   0   │
+   └───────┴───────┴───────┴───────┴───────┴───────┴───────┘
+
+   PALABRA DE CÓDIGO =  1 0 1 1 0 1 0  =  "1011010"
+</code></pre></div>
+
+<p>⚠️ <strong>El "truco" que hay que aplicar siempre:</strong> la paridad de cada grupo es <strong>(número de unos conocidos) mod 2</strong>, y el valor de la paridad es <strong>ese mismo número</strong> (0 si es par, 1 si es impar). Es decir, con paridad par, <code>P = n_unos_conocidos mod 2</code>. Con <strong>paridad impar</strong>, <code>P = (n_unos_conocidos + 1) mod 2</code>.</p>
+<p>⚠️ <strong>El dato de la cátedra que hay que tener:</strong> el <strong>práctico 5 de 2008, ejercicio 4</strong>, es el del <strong>CRC</strong> (<code>D = 10101010</code> con el generador de 4 bits de la Figura 5.8) y <strong>ya está resuelto en la Clase 39, §2.4</strong>. Lo que la Figura 5.4 del libro representa es exactamente la plantilla de Hamming de arriba, y este ejercicio es su desarrollo numérico.</p>
+<h2>1.5 El procedimiento de corrección: el SÍNDROME</h2>
+<p>Acá está el beautiful del código: <strong>no hay que "buscar" el error</strong>. El receptor recalcula las paridades, y <strong>el número que forman los resultados en binario ES la posición del bit equivocado</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   El receptor recibe la palabra R y hace TRES cosas:
+
+   1) Recalcula la paridad de cada grupo, SIN tocar la palabra.
+        Para el grupo de P1: ¿la paridad que dice el bit 1 de R
+        coincide con la que recalculo yo?  Sí/No.
+        Lo mismo con P2 y P3.
+
+   2) Escribe esos tres Sí/No como un NÚMERO BINARIO de 3 bits:
+        (P3, P2, P1)  =  b3 b2 b1
+
+   3) Ese número es la POSICIÓN del bit que está mal.
+        Si es 0 → no hay error.
+        Si es 1..7 → corregir ese bit (voltearlo).
+</code></pre></div>
+
+<p>⚠️ <strong>Por qué funciona:</strong> el patrón de cada paridad se diseñó justamente para que el conjunto de "qué paridades fallan" identifique <strong>unívocamente</strong> a la posición. Un solo error en la posición <code>j</code> <strong>falla exactamente</strong> en las paridades <code>P_k</code> donde el binario de <code>j</code> tiene el bit <code>k</code> en 1. Y como los <code>r</code> bits de paridad están en las posiciones 1, 2, 4, 8… (que son exactamente las potencias de 2), el número formado por "qué paridades fallaron" <strong>es</strong> el número de la posición. Es una traducción perfecta.</p>
+<h3>Ejemplo completo de corrección</h3>
+<p><strong>Datos.</strong> Se envió <code>1011010</code>. El canal <strong>invierte el bit de la posición 6</strong> (el <code>D3</code>, que era 1 y llega 0).</p>
+<p><strong>Lo que llega:</strong></p>
+<div class="codehilite"><pre><span></span><code>   ┌───────┬───────┬───────┬───────┬───────┬───────┬───────┐
+   │ pos 1 │ pos 2 │ pos 3 │ pos 4 │ pos 5 │ pos 6 │ pos 7 │
+   ├───────┼───────┼───────┼───────┼───────┼───────┼───────┤
+   │   1   │   0   │   1   │   1   │   0   │  0 ✗  │   0   │
+   └───────┴───────┴───────┴───────┴───────┴───────┴───────┘
+
+   RECIBIDO = 1 0 1 1 0 0 0  =  "1011000"
+</code></pre></div>
+
+<p><strong>Paso 1 — Recalculo P1.</strong> Grupo P1 = posiciones {1, 3, 5, 7} = {1, 1, 0, 0}.</p>
+<div class="codehilite"><pre><span></span><code>   Paridad que DICE el bit 1 recibido:  1
+   Paridad que CALCULO sobre el grupo:   1 + 1 + 0 + 0 = 2  → par → 0
+   ¿Coinciden?   1 ≠ 0   ⇒  P1 FALLA   (s₁ = 0)
+</code></pre></div>
+
+<p><strong>Paso 2 — Recalculo P2.</strong> Grupo P2 = posiciones {2, 3, 6, 7} = {0, 1, <strong>0</strong>, 0}.</p>
+<div class="codehilite"><pre><span></span><code>   Paridad que DICE el bit 2 recibido:  0
+   Paridad que CALCULO: 0 + 1 + 0 + 0 = 1  → impar → 1
+   ¿Coinciden?   0 ≠ 1   ⇒  P2 FALLA   (s₂ = 1)
+</code></pre></div>
+
+<p><strong>Paso 3 — Recalculo P3.</strong> Grupo P3 = posiciones {4, 5, 6, 7} = {1, 0, <strong>0</strong>, 0}.</p>
+<div class="codehilite"><pre><span></span><code>   Paridad que DICE el bit 4 recibido:  1
+   Paridad que CALCULO: 1 + 0 + 0 + 0 = 1  → impar → 1
+   ¿Coinciden?   1 = 1   ⇒  P3 NO FALLA   (s₃ = 0)
+</code></pre></div>
+
+<p><strong>Paso 4 — El síndrome.</strong></p>
+<div class="codehilite"><pre><span></span><code>   s₃ s₂ s₁  =  0  1  0  =  0b010  =  6
+                                   ↑
+                             "el bit 6 está mal"
+</code></pre></div>
+
+<p><strong>Paso 5 — Corrijo.</strong> Volteo la posición 6 de 0 a 1.</p>
+<div class="codehilite"><pre><span></span><code>   ┌───────┬───────┬───────┬───────┬───────┬───────┬───────┐
+   │   1   │   0   │   1   │   1   │   0   │   1 ← │   0   │
+   └───────┴───────┴───────┴───────┴───────┴───────┴───────┘
+
+   CORREGIDO = 1 0 1 1 0 1 0  =  "1011010"  ✔  ¡coincide con lo enviado!
+   DATOS EXTRAÍDOS = D1 D2 D3 D4 = 1 0 1 0   ✔
+</code></pre></div>
+
+<p><strong>El caso "no hay error":</strong> si la palabra llega bien, los tres chequeos dan "coincide", el síndrome es <code>000</code> = 0, y <strong>no se corrige nada</strong>. Por eso el 0 se puede usar como código de "todo bien".</p>
+<p>⚠️ <strong>La tabla de síndromes de este ejemplo</strong>, que conviene tener a mano para verificar cualquier otro:</p>
+<table>
+<thead>
+<tr>
+<th>Syndrome (<code>s₃s₂s₁</code>)</th>
+<th>Decimal</th>
+<th>Posición</th>
+<th>Qué es</th>
+<th>¿Debe ser paridad?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>000</td>
+<td>0</td>
+<td>—</td>
+<td>sin error</td>
+<td>—</td>
+</tr>
+<tr>
+<td>001</td>
+<td>1</td>
+<td>1</td>
+<td><strong>P1</strong></td>
+<td>sí</td>
+</tr>
+<tr>
+<td>010</td>
+<td>2</td>
+<td>2</td>
+<td><strong>P2</strong></td>
+<td>sí</td>
+</tr>
+<tr>
+<td>011</td>
+<td>3</td>
+<td>3</td>
+<td><strong>D1</strong></td>
+<td>no</td>
+</tr>
+<tr>
+<td>100</td>
+<td>4</td>
+<td>4</td>
+<td><strong>P3</strong></td>
+<td>sí</td>
+</tr>
+<tr>
+<td>101</td>
+<td>5</td>
+<td>5</td>
+<td><strong>D2</strong></td>
+<td>no</td>
+</tr>
+<tr>
+<td>110</td>
+<td>6</td>
+<td>6</td>
+<td><strong>D3</strong></td>
+<td>no</td>
+</tr>
+<tr>
+<td>111</td>
+<td>7</td>
+<td>7</td>
+<td><strong>D4</strong></td>
+<td>no</td>
+</tr>
+</tbody>
+</table>
+<p>⚠️ <strong>El argumento que demuestra que SEC detecta 1 error:</strong> los 8 síndromes posibles son <code>0</code> (sin error) o el número de una de las 7 posiciones. Un solo bit equivocado produce <strong>exactamente un</strong> código distinto del 0, y ese código <strong>no puede</strong> coincidir con el de otra posición porque la tabla es una <strong>biyección</strong>. Por eso SEC detecta y corrige <strong>exactamente 1</strong> y <strong>solo 1</strong>. Con <strong>dos</strong> errores, los síndromes se pueden sumar y dar un valor de una posición válida: <strong>SEC no detecta 2</strong>. Ése es el motivo de que el SECDED agrega un bit de paridad <strong>global</strong> (el bit 9 en posiciones de 1 a 8): un segundo error <strong>siempre</strong> cae en un grupo o en el global de forma que la paridad global queda <strong>impar</strong>, y eso es una señal inequívoca de "hay dos errores, no corrijas".</p>
+<h2>1.6 ARQ: reintentar en vez de corregir</h2>
+<p><strong>ARQ = <em>Automatic Repeat reQuest</em></strong>. Es la estrategia complementaria: <strong>no corrijo, reintento</strong>. Y hay <strong>tres</strong> implementaciones clásicas, que se distinguen por <strong>una sola pregunta</strong>: <em>cuando se pierde el segmento <code>k</code>, ¿qué retransmito?</em></p>
+<div class="codehilite"><pre><span></span><code>   Stop-and-Wait:     retransmito  SÍ O SÍ  el segmento k (solo ese)
+   Go-Back-N:         retransmito        k, k+1, k+2, ... (en la ventana)
+   Selective Repeat:  retransmito  SÍ     k (y solo k)
+</code></pre></div>
+
+<p>⚠️ Y el <strong>ACK acumulado</strong> es la otra mitad de la historia:</p>
+<div class="codehilite"><pre><span></span><code>   ACKs ACUMULADOS:   ACK(k) significa "recibí TODO hasta el k, incluido"
+                      ⇒ es 1 ACK para muchos segmentos (eficiente)
+   ACKs NO ACUMULADOS: ACK(k) significa "recibí el k"
+                      ⇒ hace falta 1 ACK por segmento
+</code></pre></div>
+
+<h3>1.6.1 Stop-and-Wait</h3>
+<div class="codehilite"><pre><span></span><code>   EMISOR                                    RECEPTOR
+     │                                          │
+     │────── S1 ───────────────────────────────▶│
+     │                              (pausa: el emisor NO PUEDE mandar más)
+     │◀────────────── ACK1 ─────────────────────│
+     │                                          │
+     │────── S2 ───────────────────────────────▶│
+     │◀────────────── ACK2 ─────────────────────│
+     │                                          │
+  ... y así hasta que se acaba la ventana ...
+</code></pre></div>
+
+<p><strong>El problema:</strong> el emisor queda <strong>ocioso</strong> <code>2·t_prop</code> entre trama y trama. En un enlace de 1 Gb/s de 1000 km con tramas de 1 KB, eso es un desperdicio del <strong>99,9 %</strong>.</p>
+<p><strong>La eficiencia (utilización) del enlace:</strong></p>
+<div class="codehilite"><pre><span></span><code>   Definimos:   a = t_prop / t_frame
+                (el cociente entre el tiempo de propagación y el de
+                 transmisión de UNA trama)
+
+   Ciclo completo de Stop-and-Wait:
+        t_frame          (mando la trama)
+      + t_prop           (llega)
+      + t_prop           (vuelve el ACK, instantáneo)
+      + t_frame          (mando la trama siguiente)
+      =  2·t_frame + 2·t_prop = 2·t_frame·(1 + a)
+
+   Tiempo útil = t_frame
+
+   ═══════════════════════════════════════════════════════════
+        U = 1 / (1 + 2a)
+   ═══════════════════════════════════════════════════════════
+</code></pre></div>
+
+<p><strong>La cuenta con números.</strong> Trama de <strong>1000 bytes</strong> (8000 bits) sobre un enlace de <strong>1 Mbps</strong>, a <strong>2000 km</strong> de distancia con <code>v = 2 × 10⁸ m/s</code>:</p>
+<div class="codehilite"><pre><span></span><code>   t_frame = L/R = 8000 bits / 10⁶ bit/s = 8 ms
+   t_prop  = d/v = 2 000 000 m / 2 × 10⁸ m/s = 10 ms
+
+   a = t_prop / t_frame = 10 / 8 = 1,25
+
+   U = 1 / (1 + 2a) = 1 / (1 + 2 × 1,25) = 1 / 3,5 = 0,2857 = 28,6 %
+</code></pre></div>
+
+<p><strong>Otro caso, extremo:</strong> enlace <strong>satélital GEO</strong> (36 000 km, <code>v = 3 × 10⁸ m/s</code>), trama de 1000 bytes a <strong>10 Mbps</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   t_frame = 8000 / 10⁷ = 0,8 ms
+   t_prop  = 36 000 000 / 3 × 10⁸ = 120 ms
+
+   a = 120 / 0,8 = 150
+
+   U = 1 / (1 + 300) = 1/301 = 0,00332 = 0,33 %
+</code></pre></div>
+
+<p>⚠️ <strong>La conclusión para el examen:</strong> Stop-and-Wait es <strong>aceptable</strong> cuando <code>a</code> es chico (redes LAN, enlaces locales) y <strong>inservible</strong> cuando <code>a &gt; 1</code> (el enlace queda más tiempo ocioso que trabajando). <strong>La respuesta completa es "hay que usar ventanas"</strong>, y de ahí salen los otros dos protocolos.</p>
+<h3>1.6.2 Go-Back-N</h3>
+<p><strong>La idea:</strong> el emisor puede tener <strong>hasta <code>N</code> segmentos sin confirmar</strong> en el medio. El receptor <strong>solo manda ACK acumulados</strong> y, si le llega un segmento <strong>con un hueco</strong>, <strong>lo descarta y reenvía el ACK del que esperaba</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   EMISOR                                         RECEPTOR
+     │                                               │
+     │── S1 ─────────────────────────────────────────▶│  lo guarda
+     │── S2 ─────────────────────────────────────────▶│  lo guarda
+     │── S3 ─────────────────────────────────────────▶│  lo guarda
+     │◀────────────────────────────── ACK1            │
+     │◀────────────────────────────── ACK2 ───────────│
+     │  (la ventana se desliza: puede mandar S4 y S5)
+     │── S4 ─────────────────────────────────────────▶│  lo guarda
+     │── S5 ─────────────────────────────────────────▶│  lo guarda
+     │                     ✗ S6 SE PIERDE ✗
+     │◀──────────────────── ACK5 (¡DUPLICADO!) ────────│  ❌ S6 no llegó
+     │                                               │  ⇒ NO manda ACK6
+     │  (el emisor tiene S6..S9 sin confirmar)
+     │                                               │
+     │  ⓘ El receptor IGNORA S7, S8, S9: no los entrega
+     │     a la capa superior y reenvía ACK5.
+     │                                               │
+     │  Si vence el TIMER (o llegan 3 ACK5 duplicados):
+     │  retransmite S6, S7, S8, S9 ────────────────▶│  ¡el receptor ya
+     │                                               │   tenía S7..S9!
+</code></pre></div>
+
+<p><strong>Las cinco reglas de Go-Back-N (que son los "titulares" de la solución oficial):</strong></p>
+<div class="codehilite"><pre><span></span><code>   1. El emisor puede tener hasta N paquetes sin ACK en el pipeline.
+   2. El receptor SOLO envía ACKs acumulados.
+   3. El receptor NO envía el ACK de un paquete si hay un hueco.
+   4. El emisor tiene UN SOLO timer, para el paquete más viejo
+      todavía no confirmado.
+   5. Si el timer vence, retransmite TODOS los paquetes no confirmados
+      (desde el más viejo, todos los de la ventana).
+</code></pre></div>
+
+<p>⚠️ <strong>La característica definitoria:</strong> el receptor <strong>descarta</strong> lo que llega después del hueco y <strong>no lo reenvía</strong>. Cuando por fin llega el perdido, el receptor tiene que recibir <strong>de nuevo</strong> todo lo que ya había. Eso se llama <strong>waste</strong> (desperdicio), y es <strong>el precio de la simplicidad</strong>.</p>
+<p>⚠️ <strong>La ventaja:</strong> el receptor <strong>no necesita buffer</strong> (o necesita uno de tamaño 1), no necesita <strong>reordenar</strong>, y el ACK acumulado es barato: <strong>un ACK por segmento, no uno por segmento recibido</strong>.</p>
+<p>⚠️ <strong>La desventaja:</strong> <strong>ineficiente</strong> cuando hay pérdida. Una sola pérdida retransmite <code>N</code> segmentos. Con <code>N = 128</code> (el máximo de TCP), una pérdida retransmite hasta 128 segmentos.</p>
+<h3>1.6.3 Selective Repeat</h3>
+<p><strong>La idea:</strong> el receptor tiene un <strong>buffer</strong> y <strong>reordena</strong>. Cuando le llega algo fuera de orden, <strong>lo guarda</strong> y <strong>manda un NAK</strong> (o un ACK selectivo) diciendo qué le falta. El emisor retransmite <strong>solo</strong> lo que falta.</p>
+<div class="codehilite"><pre><span></span><code>   EMISOR                                         RECEPTOR
+     │                                               │
+     │── S1 ─────────────────────────────────────────▶│  guarda, entrega a la
+     │◀─────────────────────────── ACK1 ─────────────│  capa superior
+     │── S2 ─────────────────────────────────────────▶│
+     │  ✗ S3 SE PIERDE ✗                               │
+     │── S4 ─────────────────────────────────────────▶│  ¡hueco en 3!
+     │                       ┌─ lo mete en el BUFFER   │  lo guarda en la
+     │◀─────── NAK(S3) / ACK(S4) ──────────────────────│  posición 4
+     │                                               │
+     │  (el emisor ve el NAK y retransmite SOLO S3)
+     │── S3 ─────────────────────────────────────────▶│  ahora sí:
+     │                                               │  S3 + S4 ya están
+     │◀─────────── ACK4 ─────────────────────────────│  ⇒ los ENTREGA juntos,
+     │                                               │    en orden
+</code></pre></div>
+
+<p><strong>Las cuatro condiciones que hacen que funcione:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Condición</th>
+<th>Por qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Buffer de recepción en el receptor</strong> (tamaño ≥ <code>N</code>)</td>
+<td>tiene que guardar los segmentos que llegan fuera de orden</td>
+</tr>
+<tr>
+<td><strong>Reordenar</strong> al recibir el hueco</td>
+<td>entrega a la capa superior <strong>en orden</strong>, no como llegó</td>
+</tr>
+<tr>
+<td><strong>NAK o ACK selectivo</strong></td>
+<td>el emisor tiene que saber <strong>cuál</strong> falta, no solo "hasta dónde tengo"</td>
+</tr>
+<tr>
+<td><strong>ACK no acumulado (o SACK)</strong></td>
+<td>con ACK acumulado no se puede saber qué llegó después del hueco</td>
+</tr>
+</tbody>
+</table>
+<p>⚠️ <strong>La condición matemática que hay que saber:</strong> para que Selective Repeat funcione sin ambigüedad con números de secuencia de <code>k</code> bits, la ventana del emisor y el buffer del receptor deben cumplir:</p>
+<div class="codehilite"><pre><span></span><code>        2N  ≤  M        donde M = 2^k (el espacio de números de secuencia)
+</code></pre></div>
+
+<p>Es la <strong>misma condición</strong> que aparece en el <code>eirc0703</code> Problema 1, y es la razón por la que en la práctica <code>N ≤ M/2</code>. Si <code>N &gt; M/2</code>, el emisor puede tener en vuelo un número de secuencia que el receptor <strong>ya liberó</strong>, y este lo acepta como nuevo: <strong>duplicado</strong>.</p>
+<p><strong>Ejemplo con el <code>SN</code> de 1 byte del examen de 2007-03:</strong> <code>M = 256</code> (un octeto), <code>2N ≤ 256</code> ⇒ <code>N ≤ 128</code>. De ahí sale el "<strong>ventana máxima = 128</strong>" de la solución oficial.</p>
+<p>⚠️ <strong>SACK.</strong> <strong>SACK = <em>Selective ACK</em></strong>. Es una <strong>extensión</strong> que viaja en la cabecera TCP (opción <em>kind 5</em>) y permite que el receptor diga <strong>exactamente</strong> qué bloques de bytes recibió, aunque estén fuera de orden. <strong>Es literalmente Selective Repeat a nivel de bytes.</strong> Y <strong>TCP lo usa siempre que ambos extremos lo negocien en el SYN</strong> (opción <em>SACK permitted</em>). El RFC es el <strong><code>RFC 2018</code> (1996)</strong>, y <strong>sigue siendo <em>Standards Track</em> y es el comportamiento estándar de TCP hoy</strong>.</p>
+<h2>1.7 La relación con TCP: por qué TCP no es exactamente ninguno de los dos</h2>
+<p>Esto es lo que más se pregunta y lo que más confunde, así que va con diagrama.</p>
+<div class="codehilite"><pre><span></span><code>   TCP SIN SACK  (no se negoció la opción)
+   ────────────────────────────────────────
+   El receptor tiene un buffer, pero manda SOLO ACK ACUMULATIVOS
+   ("tengo los bytes hasta n"). Cuando falta algo, no dice QUÉ falta,
+   dice "sigo acá" (ACK duplicado).
+
+   El emisor, al ver el hueco, retransmite desde el byte faltante
+   EN ADELANTE: es exactamente GO-BACK-N a nivel de bytes.
+   Lo que se retransmite después del hueco puede haber llegado
+   perfectamente, pero el receptor igual lo volvió a pedir.
+
+   ┌──────────────────────────────────────────────────────┐
+   │  Go-Back-N:  se retransmite el perdido + TODOS los     │
+   │              siguientes que ya habían llegado.         │
+   │  TCP sin SACK: IDÉNTICO.                              │
+   └──────────────────────────────────────────────────────┘
+
+
+   TCP CON SACK  (RFC 2018, el comportamiento estándar)
+   ────────────────────────────────────────────────────────
+   El receptor manda ACK acumulado Y ADEMÁS los bloques que
+   llegaron fuera de orden:
+
+      Segmento 1 (bytes 1-1448)     → ACK 1449
+      Segmento 3 (bytes 2897-4344)  → ACK 1449 + SACK 2897-4344
+      Segmento 2 (bytes 1449-2896)  → ACK 4345   (cierra el hueco)
+
+   El emisor ve que el 3 YA LLEGÓ y retransmite SOLO el 2.
+   Eso es SELECTIVE REPEAT a nivel de bytes.
+
+   ┌──────────────────────────────────────────────────────┐
+   │  Selective Repeat: se retransmite SOLO lo que falta.  │
+   │  TCP con SACK: IDÉNTICO (y en bytes, no en segmentos).│
+   └──────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p>⚠️ <strong>Las tres diferencias que hay que decir si preguntan "cuál de los tres es TCP":</strong></p>
+<ol>
+<li><strong>La unidad.</strong> TCP cuenta <strong>bytes</strong>, no segmentos. El número de secuencia (<code>seq</code>) es "el próximo byte que espero". Los ARQ de capa 2 cuentan <strong>tramas</strong>.</li>
+<li><strong>La ventana es de bytes, no de paquetes.</strong> <code>rwnd</code> es un número de bytes; la ventana en segmentos es <code>rwnd / MSS</code>.</li>
+<li><strong>TCP no tiene NAK.</strong> No existe un mensaje "NAK, reenviame el 5". TCP <strong>no sabe</strong> qué falta: solo sabe "sigo acá". El mecanismo para saberlo es <strong>SACK</strong>, y <strong>el emisor es quien infiere</strong> qué falta a partir de los bloques reportados. En Selective Repeat clásico hay un NAK explícito.</li>
+</ol>
+<h2>1.8 ⚠️ Actualización a 2026</h2>
+<p><strong>Sigue igual — de memoria:</strong></p>
+<ul>
+<li><strong>Distancia de Hamming</strong>, <strong>SEC</strong> (<code>d≥2</code>, corrige 1) y <strong>SECDED</strong> (<code>d≥3</code>, detecta 2 y corrige 1). La condición <code>2^r ≥ m + r + 1</code>.</li>
+<li><strong>Stop-and-Wait</strong> con eficiencia <strong><code>U = 1/(1+2a)</code></strong> y <code>a = t_prop/t_frame</code>.</li>
+<li><strong>Go-Back-N</strong> (ventana <code>N</code>, ACK acumulados, se retransmite el perdido y todos los siguientes) y <strong>Selective Repeat</strong> (buffer + reordenamiento + NAK/SACK, se retransmite solo el perdido).</li>
+<li>La condición <strong><code>2N ≤ M</code></strong> para Selective Repeat sin ambigüedad.</li>
+</ul>
+<p><strong>Cambió o hay que matizar:</strong></p>
+<ul>
+<li><strong><code>SACK</code> (<code>RFC 2018</code>, 1996) es <em>Standards Track</em> y es el comportamiento estándar de TCP hoy.</strong> Cualquier implementación de TCP seria lo negocia en el SYN. <strong>No es "una extensión opcional y vieja": es lo normal.</strong> ⇒ <strong>TCP con SACK es Selective Repeat</strong>, y es lo que vas a tener en cualquier conexión real.</li>
+<li><strong>La retransmisión por <em>timeout</em> casi no se usa en TCP.</strong> El mecanismo real es el <strong>fast retransmit</strong> por <strong>3 ACK duplicados</strong> (Clase 21) y el RTO solo como respaldo. En un esquema de ARQ moderno, "timer único" es Go-Back-N puro; en TCP hay <strong>dos</strong> timers por conexión (uno para el ACK del más viejo y el RTO).</li>
+<li><strong><code>RFC 9293</code> (2022, <em>Internet Standard</em>)</strong> es ahora la especificación de TCP; consolida y obsolesce <code>RFC 793</code>. Cualquier clase que cite <code>RFC 793</code> como la especificación vigente de TCP está desactualizada.</li>
+<li><strong>FEC (<em>Forward Error Correction</em>) y ARQ hoy conviven.</strong> En cualquier sistema real de comunicación (5G, Wi-Fi, DVB, satellite, enlaces de satélite) la arquitectura es <strong>ARQ + FEC combinados</strong>: el FEC se encarga de la mayoría de los errores (que son <strong>independientes</strong> y cheaply corregibles), y el ARQ se queda solo con los errores que el FEC no pudo arreglar (los <strong>bursts</strong>). Es el <strong>hiper</strong>:</li>
+</ul>
+<div class="codehilite"><pre><span></span><code>   Errores INDEPENDIENTES (ruido de radio):  1 de cada 1000 bits
+      → los corrige el FEC, gratis, en el receptor
+
+   Errores en RACHA (burst, una descarga, un rayo):
+      → el FEC no los puede (necesitaría una memoria enorme)
+      → los arregla el ARQ
+
+   Regla práctica: si la tasa de error es BAJA  → ARQ (es más barato)
+                    si la tasa de error es ALTA → FEC (ARQ se vuelve
+                                                  un bucle de reintentos)
+</code></pre></div>
+
+<p><strong>Consecuencia para el examen:</strong> los <strong>tres ARQ y el Hamming</strong> se preguntan <strong>exactamente igual</strong> que en 2011. Lo que hay que <strong>sumar</strong> es: <strong>SACK es el estándar</strong> (<code>RFC 2018</code>), <strong>TCP es Selective Repeat cuando SACK está activo</strong>, y <strong>ARQ y FEC se combinan</strong> en los sistemas reales. <strong>No inventar</strong>: "TCP es Go-Back-N" es correcto <strong>solo</strong> si el enunciado dice que SACK está desactivado.</p>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — La eficiencia de Stop-and-Wait, con cuentas</h2>
+<p><strong>Datos.</strong> Un enlace de <strong>2 Mbps</strong>, distancia <strong>1500 km</strong>, velocidad de propagación <code>2 × 10⁸ m/s</code>. Tramas de <strong>800 bytes</strong>. El ACK es de <strong>tamaño despreciable</strong> y el procesamiento es instantáneo. No hay errores.</p>
+<p><strong>a) Calculá <code>t_frame</code>, <code>t_prop</code> y <code>a</code>.</strong></p>
+<div class="codehilite"><pre><span></span><code>   L = 800 bytes × 8 bits/byte = 6400 bits
+
+   t_frame = L/R = 6400 bits / 2 × 10⁶ bit/s = 3,2 ms
+
+   d = 1500 km = 1 500 000 m
+   t_prop  = d/v = 1 500 000 / 2 × 10⁸ = 7,5 ms
+
+   a = t_prop / t_frame = 7,5 / 3,2 = 2,34
+</code></pre></div>
+
+<p><strong>b) La eficiencia.</strong></p>
+<div class="codehilite"><pre><span></span><code>   U = 1 / (1 + 2a) = 1 / (1 + 2 × 2,34) = 1 / (1 + 4,69) = 1/5,69
+
+   U = 0,1757  =  17,57 %
+</code></pre></div>
+
+<p><strong>c) ¿Cuánto tiempo del ciclo está el enlace ocioso?</strong></p>
+<div class="codehilite"><pre><span></span><code>   Ciclo = 2·t_frame + 2·t_prop = 2 × 3,2 + 2 × 7,5 = 6,4 + 15 = 21,4 ms
+   Útil  = t_frame = 3,2 ms
+   Ocioso = 21,4 − 3,2 = 18,2 ms
+   % ocioso = 18,2 / 21,4 = 85 %
+</code></pre></div>
+
+<p><strong>d) ¿Qué throughput real se obtiene?</strong></p>
+<div class="codehilite"><pre><span></span><code>   Throughput real = U × R = 0,1757 × 2 Mbps = 0,3515 Mbps ≈ 351 kbps
+</code></pre></div>
+
+<p>⚠️ <strong>La observación que hay que hacer en el examen:</strong> con <code>a = 2,34 &gt; 1</code>, el enlace pasa <strong>más tiempo ocioso que transmitiendo</strong>. Stop-and-Wait es <strong>inservible</strong> en este enlace. La respuesta es "hay que usar <strong>ventana deslizante</strong>", y con <code>N</code> segmentos sin confirmar el throughput máximo llega a <code>min(R, N · L/RTT)</code>:</p>
+<div class="codehilite"><pre><span></span><code>   BDP = ancho de banda × RTT = 2 × 10⁶ × (2 × 7,5 × 10⁻³) = 2×10⁶ × 0,015 = 30 000 bits
+
+   Para no perder nada, la ventana debe ser ≥ BDP = 30 000 bits = 3750 bytes
+   Con tramas de 800 bytes:  N ≥ 30000/6400 = 4,7  ⇒  N ≥ 5
+</code></pre></div>
+
+<p>⚠️ <strong>El BDP (<em>Bandwidth-Delay Product</em>) es la respuesta corta y es lo que preguntan:</strong> <em>"¿de qué tamaño tiene que ser la ventana para no dejar el enlace ocioso?"</em> — <strong><code>ventana ≥ ancho de banda × RTT</code></strong>. Es exactamente la razón por la que <strong>la ventana inicial de TCP es de 10 MSS</strong> (<code>RFC 6928</code>) y por la que en un enlace de 100 ms de RTT hace falta una ventana grande para aprovechar un enlace de 1 Gbps.</p>
+<h2>2.2 Ejercicio 2 — Hamming SEC con corrección completa</h2>
+<p><strong>Datos.</strong> Se usa un código de Hamming <strong>SEC</strong> con <code>m = 5</code> bits de datos. <em>(Ojo: <code>m = 5</code> NO tiene un SEC de 3 bits, necesita <code>r = 4</code>. Verificá: <code>2^4 = 16 ≥ 5 + 4 + 1 = 10</code> ✔. Total = 9 bits.)</em> Se envía el dato <code>D = 1 1 0 1 0</code> con <strong>paridad par</strong>.</p>
+<p><strong>Paso 1 — la plantilla de 9 posiciones.</strong></p>
+<div class="codehilite"><pre><span></span><code>   posición:  1    2    3    4    5    6    7    8    9
+             P1   P2   D1   P3   D2   P4   D3   D5   D4
+   valor:     ?    ?    1    ?    1    ?    0    0    1
+</code></pre></div>
+
+<p>⚠️ <strong>Los grupos</strong> (bit <code>j</code> del binario de la posición):</p>
+<div class="codehilite"><pre><span></span><code>   P1 (pos 1): posiciones 1, 3, 5, 7, 9          (bit 0 = 1)
+   P2 (pos 2): posiciones 2, 3, 6, 7              (bit 1 = 1)
+   P3 (pos 4): posiciones 4, 5, 6, 7              (bit 2 = 1)
+   P4 (pos 8): posiciones 8, 9                    (bit 3 = 1)
+</code></pre></div>
+
+<p><strong>Paso 2 — los bits de paridad.</strong></p>
+<div class="codehilite"><pre><span></span><code>   P1 vigila {1,3,5,7,9} → datos conocidos: D1(3)=1, D2(5)=1, D3(7)=0, D4(9)=1
+        unos = 3   ⇒   P1 = 3 mod 2 = 1        (1+3 = 4, par ✔)
+
+   P2 vigila {2,3,6,7}   → datos conocidos: D1(3)=1, P4(6)=?, D3(7)=0
+        ⚠ OJO: P4 ESTÁ EN EL GRUPO DE P2. Circular. Se resuelve
+        calculando primero P4.
+
+   P3 vigila {4,5,6,7}   → datos conocidos: D2(5)=1, D3(7)=0
+        unos = 1   ⇒   P3 = 1 mod 2 = 1
+
+   P4 vigila {8,9}       → datos conocidos: D5(8)=0, D4(9)=1
+        unos = 1   ⇒   P4 = 1 mod 2 = 1        (1+1 = 2, par ✔)
+
+   AHORA con P4 = 1, el grupo de P2: {P2, D1(3)=1, P4(6)=1, D3(7)=0}
+        unos conocidos = 2  ⇒  P2 = 2 mod 2 = 0
+</code></pre></div>
+
+<p>⚠️ <strong>Este es el detalle que casi nadie menciona y que es un muy buen ejercicio:</strong> <strong>las posiciones de paridad no son disjuntas</strong>. <code>P4</code> (posición 8) está en el grupo de <code>P4</code> y… no, <code>P4</code> está en <code>{8,9}</code> y <code>P2</code> está en <code>{2,3,6,7}</code>. <strong>La posición 6 es P4 y está en el grupo de P2.</strong> Por eso hay que <strong>calcular de abajo hacia arriba</strong>: primero las paridades de posición alta (<code>P4</code>), después las bajas. Es un buen ejercicio de_head para un examen de corrección de errores.</p>
+<p><strong>Paso 3 — la palabra de código.</strong></p>
+<div class="codehilite"><pre><span></span><code>   ┌───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┐
+   │ pos 1 │ pos 2 │ pos 3 │ pos 4 │ pos 5 │ pos 6 │ pos 7 │ pos 8 │ pos 9 │
+   ├───────┼───────┼───────┼───────┼───────┼───────┼───────┼───────┼───────┤
+   │  P1   │  P2   │  D1   │  P3   │  D2   │  P4   │  D3   │  D5   │  D4   │
+   ├───────┼───────┼───────┼───────┼───────┼───────┼───────┼───────┼───────┤
+   │   1   │   0   │   1   │   1   │   1   │   1   │   0   │   0   │   1   │
+   └───────┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴───────┘
+
+   CÓDIGO = 1 0 1 1 1 1 0 0 1  =  "101111001"
+</code></pre></div>
+
+<p><strong>Verificación de las cuatro paridades:</strong></p>
+<div class="codehilite"><pre><span></span><code>   P1: {1,3,5,7,9} = {1,1,1,0,1}  → 4 unos → par ✔
+   P2: {2,3,6,7}   = {0,1,1,0}    → 2 unos → par ✔
+   P3: {4,5,6,7}   = {1,1,1,0}    → 3 unos → IMPAR ✗  ← ¡ERROR!
+   P4: {8,9}       = {0,1}        → 1 uno  → IMPAR ✗  ← ¡ERROR!
+</code></pre></div>
+
+<p>⚠️ <strong>Se me deslizó un error en la cuenta del <code>P3</code>.</strong> Corrijamos: el grupo de <code>P3</code> es <code>{4,5,6,7}</code> = <code>{P3, D2, P4, D3}</code> = <code>{?, 1, ?, 0}</code>. Con <code>P3 = 1</code> y <code>P4 = 1</code>: <code>{1, 1, 1, 0}</code> = 3 unos → impar. <strong>El <code>P3</code> correcto es 0.</strong></p>
+<div class="codehilite"><pre><span></span><code>   CORRECCIÓN:  P3 = (D2 + P4 + D3) mod 2 = (1 + 1 + 0) mod 2 = 0
+
+   P3: {0, 1, 1, 0} = 2 unos → par ✔
+   P4: {0, 1} = 1 uno → IMPAR ✗  ← también mal
+   CORRECCIÓN:  P4 = (D5 + D4) mod 2 = (0 + 1) mod 2 = 1
+   P4: {1, 1} = 2 unos → par ✔
+</code></pre></div>
+
+<p><strong>La palabra correcta, calculando en el orden correcto (de abajo hacia arriba):</strong></p>
+<div class="codehilite"><pre><span></span><code>   1º  P4 (pos 8): datos D5(8)=0, D4(9)=1  →  1 uno  →  P4 = 1
+   2º  P2 (pos 2): datos D1(3)=1, P4(6)=1, D3(7)=0  →  2 unos →  P2 = 0
+   3º  P3 (pos 4): datos D2(5)=1, P4(6)=1, D3(7)=0  →  2 unos →  P3 = 0
+   4º  P1 (pos 1): datos D1(3)=1, D2(5)=1, D3(7)=0, D4(9)=1 → 3 unos → P1 = 1
+
+   ┌───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┬───────┐
+   │  P1   │  P2   │  D1   │  P3   │  D2   │  P4   │  D3   │  D5   │  D4   │
+   │   1   │   0   │   1   │   0   │   1   │   1   │   0   │   0   │   1   │
+   └───────┴───────┴───────┴───────┴───────┴───────┴───────┴───────┴───────┘
+
+   CÓDIGO = 1 0 1 0 1 1 0 0 1  =  "101011001"
+
+   VERIFICACIÓN:
+     P1: {1,1,1,0,1} = 4 unos → par ✔
+     P2: {0,1,1,0}   = 2 unos → par ✔
+     P3: {0,1,1,0}   = 2 unos → par ✔
+     P4: {0,1}       = 2 unos → par ✔
+   ✔ Todas las paridades dan par.
+</code></pre></div>
+
+<p>⚠️ <strong>La moraleja del ejercicio:</strong> <em>el orden de cálculo importa y es de abajo hacia arriba.</em> Es el tipo de error que se cuela en un examen de 15 minutos. <strong>Escribí siempre las paridades de las posiciones más altas primero.</strong></p>
+<h2>2.3 Ejercicio 3 — Los tres ARQ con una pérdida en el segmento 3 de 5</h2>
+<p><strong>Datos.</strong> Se mandan 5 segmentos <code>S1..S5</code>. La <strong>ventana es <code>N = 4</code></strong> (se pueden tener 4 sin confirmar). <strong>El segmento <code>S3</code> se pierde.</strong> No hay más pérdidas.</p>
+<div class="codehilite"><pre><span></span><code>   ═══════════════════════════════════════════════════════════════════
+   A) STOP-AND-WAIT  (ventana = 1)
+   ═══════════════════════════════════════════════════════════════════
+
+   EMISOR                                   RECEPTOR
+     │                                         │
+     │── S1 ──────────────────────────────────▶│
+     │  ⏳ (espera)                             │
+     │◀──────────────────── ACK1 ──────────────│
+     │                                         │
+     │── S2 ──────────────────────────────────▶│
+     │  ⏳ (espera)                             │
+     │◀──────────────────── ACK2 ──────────────│
+     │                                         │
+     │── S3 ──────────────────────────────────▶│   ✗✗✗ SE PIERDE ✗✗✗
+     │  ⏳ (espera)                             │
+     │  ⏳ (espera)                             │
+     │  ⏳ (vence el TIMER)                     │
+     │── S3 ──────────────────────────────────▶│   (retransmisión)
+     │◀──────────────────── ACK3 ──────────────│
+     │                                         │
+     │── S4 ──────────────────────────────────▶│
+     │◀──────────────────── ACK4 ──────────────│
+     │── S5 ──────────────────────────────────▶│
+     │◀──────────────────── ACK5 ──────────────│
+
+   Total: 6 tramas de datos + 6 ACKs  (una retransmisión)
+   El enlace transmitiendo = 6 × t_frame
+   El enlace OCIOSO        = 10 × (2·t_prop)     ← porque N = 1
+
+
+   ═══════════════════════════════════════════════════════════════════
+   B) GO-BACK-N  (ventana N = 4, ACK acumulados, receptor SIN buffer)
+   ═══════════════════════════════════════════════════════════════════
+
+   EMISOR                                        RECEPTOR
+     │                                              │
+     │── S1 ───────────────────────────────────────▶│   guarda S1, entrega
+     │── S2 ───────────────────────────────────────▶│   guarda S2, entrega
+     │── S3 ───────────────────────────────────────▶│   guarda S3, entrega
+     │── S4 ───────────────────────────────────────▶│   guarda S4, entrega
+     │◀───────────────────────── ACK1 ───────────────│
+     │◀───────────────────────── ACK2 ───────────────│
+     │  ventana desliza: puede mandar S5             │
+     │── S5 ───────────────────────────────────────▶│   guarda S5, entrega
+     │  ✗✗✗ S6 (si mandara uno) no llega ✗✗✗        │
+     │                                              │
+     │  ⟵ Supongamos ahora que la pérdida es S3 ⟶     │
+     │                                              │
+     │  (relanzamos el escenario con la pérdida en S3)
+     │                                              │
+     │── S1 ───────────────────────────────────────▶│   guarda, entrega
+     │── S2 ───────────────────────────────────────▶│   guarda, entrega
+     │── S3 ───────────────────────────────────────▶│   ✗✗✗ SE PIERDE ✗✗✗
+     │◀───────────────────────── ACK2 ───────────────│
+     │── S4 ───────────────────────────────────────▶│   ¡HUECO! no lo guarda
+     │◀──────────────────── ACK2 (¡DUPLICADO!) ───────│   lo descarta y reenvía
+     │── S5 ───────────────────────────────────────▶│   ¡HUECO! lo descarta
+     │◀──────────────────── ACK2 (¡DUPLICADO!) ───────│   y reenvía
+     │                                              │
+     │  ⓘ El receptor NO entregó S4 ni S5 a la capa  │
+     │     superior. Están perdidos desde su punto   │
+     │     de vista, aunque las tramas hayan llegado.│
+     │                                              │
+     │  3 ACK2 duplicados ⇒ FAST RETRANSMIT de S3    │
+     │── S3 ───────────────────────────────────────▶│   lo guarda, entrega S3
+     │◀───────────────────────── ACK3 ───────────────│   (S4 y S5 NO los tiene:
+     │                                              │    los descartó antes)
+     │                                              │
+     │  ⓘ GO-BACK-N: hay que retransmitir S4 y S5     │
+     │── S4 ───────────────────────────────────────▶│   lo guarda, entrega
+     │◀───────────────────────── ACK4 ───────────────│
+     │── S5 ───────────────────────────────────────▶│   lo guarda, entrega
+     │◀───────────────────────── ACK5 ───────────────│
+
+   Total: 8 tramas de datos  (S1..S5 = 5, más S3, S4, S5 retransmitidos)
+   Desperdicio: S4 y S5 viajaron DOS VECES sin que hiciera falta.
+   El receptor NO necesitó buffer más grande que 1.
+
+
+   ═══════════════════════════════════════════════════════════════════
+   C) SELECTIVE REPEAT  (ventana N = 4, NAK, receptor CON buffer)
+   ═══════════════════════════════════════════════════════════════════
+
+   EMISOR                                        RECEPTOR
+     │                                              │
+     │── S1 ───────────────────────────────────────▶│   guarda, entrega
+     │── S2 ───────────────────────────────────────▶│   guarda, entrega
+     │── S3 ───────────────────────────────────────▶│   ✗✗✗ SE PIERDE ✗✗✗
+     │── S4 ───────────────────────────────────────▶│   ¡HUECO!
+     │◀───── NAK(S3) + ACK(selectivo: S4 recibido) ─│   guarda S4 en BUFER
+     │── S5 ───────────────────────────────────────▶│   ¡HUECO!
+     │◀───── NAK(S3) + ACK(selectivo: S4, S5) ───────│   guarda S5 en BUFER
+     │                                              │
+     │  ⓘ El emisor SABE que solo falta S3.          │
+     │  (con SACK: el receptor no envía NAK;         │
+     │   manda ACK + el bloque recibido, y el emisor │
+     │   lo deduce)                                  │
+     │── S3 ───────────────────────────────────────▶│   lo guarda; ahora S3,S4,S5
+     │                                              │   están completos:
+     │◀───────────────────────── ACK5 ───────────────│   los ENTREGA EN ORDEN
+     │                                              │   (reordenamiento)
+
+   Total: 6 tramas de datos  (S1..S5 más S3 retransmitido)
+   Desperdicio: NINGUNO. S4 y S5 viajaron una sola vez.
+   El receptor necesitó un BUFFER de 4 y reordenamiento.
+</code></pre></div>
+
+<h3>La tabla comparativa que resume los tres</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Stop-and-Wait</th>
+<th>Go-Back-N</th>
+<th>Selective Repeat</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Ventana del emisor</strong></td>
+<td><code>N = 1</code></td>
+<td><code>N</code></td>
+<td><code>N</code></td>
+</tr>
+<tr>
+<td><strong>ACK</strong></td>
+<td>individual</td>
+<td><strong>acumulado</strong></td>
+<td><strong>no acumulado / SACK</strong></td>
+</tr>
+<tr>
+<td><strong>Receptor: buffer</strong></td>
+<td>no</td>
+<td><strong>no</strong> (1)</td>
+<td><strong>sí, ≥ N</strong></td>
+</tr>
+<tr>
+<td><strong>Receptor: reordena</strong></td>
+<td>no</td>
+<td><strong>no</strong></td>
+<td><strong>sí</strong></td>
+</tr>
+<tr>
+<td><strong>Ante pérdida de <code>k</code></strong></td>
+<td>retransmite <code>k</code></td>
+<td>retransmite <strong><code>k</code>…<code>k+N-1</code></strong></td>
+<td>retransmite <strong><code>k</code></strong></td>
+</tr>
+<tr>
+<td><strong>NAK explícito</strong></td>
+<td>no</td>
+<td>no</td>
+<td><strong>sí</strong> (o SACK)</td>
+</tr>
+<tr>
+<td><strong>Tramas de datos en el ejemplo</strong></td>
+<td><strong>6</strong></td>
+<td><strong>8</strong></td>
+<td><strong>6</strong></td>
+</tr>
+<tr>
+<td><strong>Desperdicio</strong></td>
+<td>—</td>
+<td><strong>2 tramas</strong></td>
+<td><strong>0</strong></td>
+</tr>
+<tr>
+<td><strong>Complejidad del receptor</strong></td>
+<td>mínima</td>
+<td><strong>mínima</strong></td>
+<td><strong>alta</strong></td>
+</tr>
+<tr>
+<td><strong>Se usa hoy en…</strong></td>
+<td>enlaces de RTT corto</td>
+<td><strong>TCP sin SACK</strong></td>
+<td><strong>TCP con SACK</strong></td>
+</tr>
+</tbody>
+</table>
+<p>⚠️ <strong>La respuesta a la pregunta clásica "¿cuál es mejor?":</strong> <strong>ninguno es mejor en abstracto</strong>. Selective Repeat es el más eficiente en bytes transmitidos, pero es el más <strong>complejo</strong> de implementar y <strong>exige memoria en el receptor</strong>. Stop-and-Wait es trivial. Go-Back-N es el punto medio: la complejidad del receptor mínima a cambio de retransmitir de más. <strong>La elección es un compromiso entre complejidad y eficiencia</strong>, y eso es exactamente lo que se responde en un examen.</p>
+<h2>2.4 Ejercicio 4 — ¿Por qué Go-Back-N con <code>N</code> grande es peor que Selective Repeat?</h2>
+<p><strong>Datos.</strong> <code>N = 128</code> (el máximo de una ventana TCP). Se manda una ráfaga de tramas de 1500 bytes. <strong>Se pierde la trama <code>k</code></strong>.</p>
+<p><strong>a) Go-Back-N: cuántos bytes retransmite.</strong></p>
+<div class="codehilite"><pre><span></span><code>   Pérdida de la trama k.
+   El emisor tiene k, k+1, ..., k+N-1 sin confirmar:  128 tramas.
+   Al vencer el timer (o al 3er ACK duplicado), retransmite
+   TODAS las que no confirmó:  de k hasta k+127  =  128 tramas.
+
+   Bytes retransmitidos = 128 × 1500 = 192 000 bytes
+</code></pre></div>
+
+<p>⚠️ <strong>El detalle crítico:</strong> de esas 128 tramas, <strong>127 ya habían llegado bien</strong>. El receptor las tenía en su buffer (en Selective Repeat) o las descartó (en Go-Back-N). En <strong>Go-Back-N</strong> se descartaron, y hay que volver a pedirlas.</p>
+<p><strong>b) Selective Repeat: cuántos bytes retransmite.</strong></p>
+<div class="codehilite"><pre><span></span><code>   El emisor sabe (por el NAK o por el SACK) que solo falta k.
+
+   Bytes retransmitidos = 1 × 1500 = 1 500 bytes
+</code></pre></div>
+
+<p><strong>c) El múltiplo de desperdicio.</strong></p>
+<div class="codehilite"><pre><span></span><code>   192 000 / 1 500 = 128 veces más datos para entregar el MISMO paquete.
+
+   Y el tiempo: si el RTT es 50 ms, Go-Back-N tarda
+      50 ms (detección con 3 dup ACK)
+      + tiempo de transmitir 192 000 bytes a 10 Mbps
+        = 192 000×8 / 10⁷ = 0,154 s
+      = 204 ms
+
+   Selective Repeat tarda
+      50 ms + (1500×8 / 10⁷ = 1,2 ms) = 51,2 ms
+
+   ⇒ Go-Back-N tarda 4 VECES más en un solo evento de pérdida.
+</code></pre></div>
+
+<p><strong>d) ¿Y si hay varias pérdidas?</strong></p>
+<div class="codehilite"><pre><span></span><code>   5 tramas perdidas al azar (independientes) en una ventana de 128:
+
+   Go-Back-N:  cada una de las 5 dispara una retransmisión de la ventana
+               entera. En el peor caso:  5 × 192 000 = 960 000 bytes.
+               Y si las 5 pérdidas están cerca, el timer dispara UNA vez
+               y retransmite 128: mejor, pero sigue siendo 128.
+
+   Selective Repeat: 5 × 1500 = 7 500 bytes. Exactamente lo que faltaba.
+
+   La diferencia CRECE con el número de pérdidas y con N.
+</code></pre></div>
+
+<p><strong>e) ¿Y las ventajas de Go-Back-N?</strong></p>
+<div class="codehilite"><pre><span></span><code>   ┌────────────────────────────────────────────────────────────────┐
+   │  1) El receptor NO necesita buffer de N trama.  Eso es memoria  │
+   │     en el peor caso de cada nodo receptor.                    │
+   │  2) El receptor NO tiene que reordenar, que es la parte más    │
+   │     cara de un protocolo de transporte (Clase 19).             │
+   │  3) El ACK es ACUMULADO: un solo número dice "todo hasta acá".  │
+   │     Con NAK hay que mandar mensajes extra.                     │
+   │  4) La lógica del emisor es más simple.                        │
+   └────────────────────────────────────────────────────────────────┘
+
+   En un enlace con MUCHO RTT y baja tasa de error, el 128× de
+   retransmisión es irrelevante (se pierde una vez cada miles) y la
+   simplicidad del receptor vale más.
+   En un enlace PERDIDO (radio, móvil, satélite), el 128× se paga
+   cada vez y no es aceptable.
+</code></pre></div>
+
+<p>⚠️ <strong>La frase que resume el ejercicio y que hay que escribir:</strong> <em>"Go-Back-N con <code>N</code> grande es peor porque el costo de una pérdida crece con <code>N</code>: el receptor tira <code>N-1</code> tramas que ya habían llegado, y hay que volver a pedirlas. Selective Repeat hace que el costo de una pérdida sea </em><em>constante</em><em> (1 trama), sea cual sea <code>N</code>."</em></p>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2009-03, Pregunta 1 (10 puntos) — El concepto de Go-Back-N</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0903</code> / <code>sirc0903</code> — 20 de febrero de 2009.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0903.pdf
+<strong>Texto del examen:</strong></p>
+<blockquote>
+<p><em>Explique el principio de funcionamiento de los protocolos que operan bajo el esquema Go-Back-N.</em>
+<em>(La solución oficial aclara: "Extraído del material de referencia de las clases teóricas, clase 2 del capítulo 3 del libro de referencia, Capa de Transporte".)</em></p>
+</blockquote>
+</blockquote>
+<p><strong>Puntos reparto (estimado):</strong> 2 por la idea de la ventana, 3 por las reglas del emisor y del receptor, 2 por el timer y la retransmisión, 3 por las características que lo definien y sus límites.</p>
+<h3>La solución oficial, citada textualmente</h3>
+<blockquote>
+<p><strong>Go-back-N: titulares</strong></p>
+<p><em>El transmisor puede tener hasta </em><em>N paquetes no-ACKed</em><em> en el pipeline</em>
+<em>El receptor sólo envía </em><em>ACKs acumulativos</em><strong>
+<em>No envía el ACK de un paquete si hay un **hueco</em></strong>
+<em>El transmisor tiene un </em><em>timer</em><em> para el paquete más viejo no-ACKed</em>
+<em>Si el timer vence, </em><em>retransmite todos los paquetes no-ACKed</em>**</p>
+<p><strong>Emisor:</strong>
+<em>Número de secuencia de k bits en el encabezado del paquete</em>
+<em>"window" permitida de hasta N paquetes consecutivos no-ACKed</em>
+<em>Si la ventana no está llena, se puede seguir transmitiendo</em>
+<em>ACK(n): ACKs de todos los paquetes hasta él, incluyendo el nro. de sec. n — "ACK acumulativo"</em>
+<em>podría recibir ACKs duplicados (ver receptor)</em>
+<em>timer único: para el paquete más aún no-ACKed</em>
+<em>timeout(n): retransmite el paquete n y todos aquellos con nro. de sec. mayor y dentro de la ventana</em></p>
+</blockquote>
+<h3>Análisis de la solución oficial, punto por punto</h3>
+<p><strong>✅ Lo que está bien y hay que internalizar:</strong></p>
+<ol>
+<li><strong>"El transmisor puede tener hasta N paquetes no-ACKed en el pipeline."</strong> Es <strong>la definición</strong>. Todo Go-Back-N arranca acá: es un protocolo <em>pipelined</em>, no <em>stop-and-wait</em>.</li>
+<li><strong>"El receptor sólo envía ACKs acumulativos."</strong> Es lo que distingue Go-Back-N de Selective Repeat. Con ACK acumulado, el receptor <strong>no sabe</strong> qué llegó después del hueco, y por eso <strong>no puede pedir solo lo que falta</strong>.</li>
+<li><strong>"No envía el ACK de un paquete si hay un hueco."</strong> Es la regla operativa que se traduce en: <strong>descarta</strong> los que llegan después del hueco. De ahí sale el desperdicio.</li>
+<li><strong>"El transmisor tiene un timer para el paquete más viejo no-ACKed."</strong> El <strong>timer único</strong> es una decisión de diseño: con timers por paquete harías falta <code>N</code> timers; con uno solo, cuando vence, sabes exactamente <strong>desde dónde</strong> retransmitir.</li>
+<li><strong>"Si el timer vence, retransmite todos los paquetes no-ACKed."</strong> La definición del "Go-Back": <strong>vuelve atrás</strong> al más viejo no confirmado y retransmite todo lo que sigue.</li>
+</ol>
+<p>⚠️ <strong>Lo que la oficial no dice y suma puntos:</strong></p>
+<ol>
+<li><strong>No menciona el buffer del receptor.</strong> El hecho de que <strong>el receptor NO necesita buffer</strong> (o uno de tamaño 1) y <strong>no reordena</strong> es <strong>la ventaja</strong> que justifica el diseño. Sin ese argumento, la respuesta describe el mecanismo pero no lo <strong>justifica</strong>.</li>
+<li><strong>No menciona el "desperdicio"</strong> (<em>waste</em>). Decir explícitamente "una sola pérdida provoca la retransmisión de hasta <code>N</code> tramas, de las cuales <code>N-1</code> ya habían llegado" es lo que separa un 8 de un 10.</li>
+<li><strong>No menciona el rango de números de secuencia.</strong> Con <code>k</code> bits hay <code>2^k</code> números disponibles y la ventana debe ser <strong>estrictamente menor</strong> que eso; además el emisor debe poder distinguir "retransmisión" de "trama nueva" al volver a usar un número.</li>
+<li><strong>No distingue de Selective Repeat.</strong> Decir "a diferencia de Selective Repeat, que sí tiene buffer y NAK" es lo que muestra que entendés el <em>por qué</em>.</li>
+</ol>
+<h3>Mi resolución completa, ordenada para el examen</h3>
+<p><strong>(1) El principio: una ventana de <code>N</code> paquetes en vuelo.</strong></p>
+<p>Go-Back-N es un protocolo ARQ <strong>orientado a ventana</strong> (<em>pipelined</em>). El emisor puede mantener <strong>hasta <code>N</code> paquetes sin confirmar</strong> en el medio antes de tener que frenarse esperando un ACK. La ventana tiene <strong>números de secuencia de <code>k</code> bits</strong> en la cabecera de cada trama, y el emisor puede seguir transmitiendo <strong>mientras la ventana no esté llena</strong>. Esto elimina el desperdicio de Stop-and-Wait (que deja el enlace ocioso durante <code>2·t_prop</code> por cada trama).</p>
+<p><strong>(2) El receptor: ACK acumulados y rechazo de lo que llega después del hueco.</strong></p>
+<p>El receptor <strong>solo manda ACKs acumulados</strong>: un <code>ACK(n)</code> significa "recibí correctamente todos los paquetes <strong>hasta</strong> el <code>n</code> incluido". Y <strong>no envía el ACK de un paquete si hay un hueco</strong>: si el paquete <code>k+1</code> llega antes que el <code>k</code> (que se perdió), el receptor <strong>lo descarta</strong> y <strong>reenvía el ACK del paquete <code>k</code> que esperaba</strong> (un ACK duplicado, o <em>duplicate ACK</em>). Consecuencia: el receptor <strong>no necesita buffer</strong> y <strong>no reordena</strong>. Cuando por fin llega el <code>k</code>, todo lo que estaba después se perdió desde su punto de vista.</p>
+<p><strong>(3) El emisor: un único timer y la retransmisión hacia atrás.</strong></p>
+<p>El emisor mantiene <strong>un solo temporizador, asociado al paquete más viejo que todavía no fue confirmado</strong>. Si ese timer vence, significa que hubo pérdida: el emisor <strong>retransmite el paquete más viejo no confirmado (<code>n</code>) y todos los que le siguen dentro de la ventana</strong>, es decir, vuelve atrás (<em>go back</em>) <code>n</code> y reenvía. En la práctica, el fast retransmit por <strong>3 ACKs duplicados</strong> reemplaza al timer en la detección.</p>
+<p><strong>(4) Las características que lo definen y su límite.</strong></p>
+<ul>
+<li>✅ Reenvía los paquetes <strong>perdidos y todos los siguientes</strong> (aunque los siguientes ya hayan llegado).</li>
+<li>❌ <strong>Ineficiente ante pérdida</strong>: una sola pérdida retransmite hasta <code>N</code> paquetes, y <code>N−1</code> de ellos ya habían llegado bien.</li>
+<li>✅ El receptor es <strong>simple</strong>: no necesita buffer grande, ni reordenar, ni NAK.</li>
+<li>✅ El ACK es <strong>barato</strong>: un número por paquete recibido, no un bloque de bits.</li>
+</ul>
+<p>⚠️ <strong>La frase de cierre que suma el último punto:</strong> <em>"Go-Back-N compra eficiencia en el emisor a costa de eficiencia en la red: simplifica al receptor (sin buffer, sin reordenamiento, ACK acumulado) y paga el precio con la retransmisión de <code>N</code> tramas por cada pérdida. Por eso cuando la red pierde mucho, el protocolo correcto es Selective Repeat, que necesita buffer en el receptor pero solo retransmite lo que falta."</em></p>
+<blockquote>
+<p><strong>Tope para 10 puntos:</strong> la ventana de <code>N</code> con números de secuencia, la regla del ACK acumulado, la regla de no-ACK con hueco, el timer único sobre el más viejo, la retransmisión en bloque al vencer, <strong>más</strong> la consecuencia del desperdicio y la comparación con Selective Repeat.</p>
+</blockquote>
+<h2>3.2 Examen 2007-03, Problema 1 (30 puntos) — ARQ de capa 2 con Selective Repeat y <em>piggybacking</em></h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0703</code> / <code>sirc0703</code> — 26 de febrero de 2007.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0703.pdf
+<strong>Texto del examen (extracto):</strong></p>
+<blockquote>
+<p><em>Se cuenta con un protocolo de capa 2 (enlace) que opera sobre un enlace punto a punto, el que utiliza el siguiente formato de trama: <code>Type</code> (1 octeto), <code>SN</code> (1 octeto, número de secuencia de la trama), <code>RN</code> (1 octeto, número de trama que espera recibir el equipo origen), <code>Data</code> (0..MAX_LARGO). Se desea contar con un protocolo para manejo del enlace que sea orientado a conexión, con un esquema de ARQ de tipo </em><em>Selective Repeat</em><em>, que implemente además </em><em>piggybacking</em><em>.</em>
+<strong>a)</strong> Especificar qué tipos de tramas requiere.
+<strong>b)</strong> ¿Qué tamaño máximo de ventana le permite implementar con el formato de trama que se cuenta?
+<strong>c)</strong> Especificar en un lenguaje de alto nivel el protocolo.</p>
+</blockquote>
+</blockquote>
+<p><strong>Nota de coordinación:</strong> este problema pertenece también a la <strong>Clase 38</strong> (framing), que ya desarrolló el formato de trama y el <em>bit stuffing</em>. Acá van <strong>las partes que son de ARQ</strong>.</p>
+<h3>Parte a) — Los tipos de trama</h3>
+<p><strong>Solución oficial, citada textualmente:</strong></p>
+<blockquote>
+<p><em><code>cnx</code> — Para solicitar/aceptar conexión al/del extremo opuesto.</em>
+<em><code>descnx</code> — Para solicitar/aceptar desconexión.</em>
+<em><code>info</code> — Trama conteniendo datos a transferir por el enlace.</em>
+<em><code>ack</code> — Trama conteniendo información de la última trama recibida. Su identificador se especifica en el campo RN.</em>
+<em><code>nack</code> — Trama conteniendo información sobre trama no recibida. Su identificador se especifica en el campo RN.</em></p>
+</blockquote>
+<p>⚠️ <strong>Por qué los cinco y qué dice cada uno sobre el protocolo:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Tipo</th>
+<th>Qué lleva</th>
+<th>Qué revela del diseño</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cnx</code> / <code>descnx</code></td>
+<td>—</td>
+<td>el protocolo es <strong>orientado a conexión</strong>: hay un handshake explícito</td>
+</tr>
+<tr>
+<td><strong><code>info</code></strong></td>
+<td><code>Data</code> + <code>SN</code> (+ <code>RN</code> si hay piggybacking)</td>
+<td>datos de la capa superior</td>
+</tr>
+<tr>
+<td><strong><code>ack</code></strong></td>
+<td><code>RN</code> = última trama recibida correctamente</td>
+<td>el ACK es <strong>acumulativo</strong>: un solo número</td>
+</tr>
+<tr>
+<td><strong><code>nack</code></strong></td>
+<td><code>RN</code> = trama que falta</td>
+<td><strong>Selective Repeat tiene NAK explícito</strong>: el receptor sabe cuál falta</td>
+</tr>
+</tbody>
+</table>
+<p>⚠️ <strong>El <code>nack</code> es lo que define a Selective Repeat.</strong> Si el protocolo no tuviera <code>nack</code>, el receptor no podría indicar qué falta y el emisor solo podría retransmitir desde el más viejo confirmado (Go-Back-N).</p>
+<h3>Parte b) — El tamaño máximo de ventana</h3>
+<p><strong>Solución oficial, citada textualmente:</strong></p>
+<blockquote>
+<p><em>La condición para el manejo de ventana en Selective Repeat requiere que M y N — módulo del valor máximo de la ventana y valor de la ventana — cumplan: </em><em>2N ≤ M</em><em>. El valor de </em><em>M es 256</em><em>, ya que se cuenta con un octeto (0..255) para enviar su valor, por lo que el valor máximo de tamaño de ventana será </em><em>128</em><em>.</em></p>
+</blockquote>
+<p><strong>La cuenta, a la vista:</strong></p>
+<div class="codehilite"><pre><span></span><code>   El campo SN tiene 1 octeto  ⇒  M = 2⁸ = 256 números de secuencia
+                                            (valores 0 a 255)
+
+   Condición de Selective Repeat (sin ambigüedad):
+        2N  ≤  M
+        2N  ≤  256
+        N   ≤  128
+</code></pre></div>
+
+<p>⚠️ <strong>Por qué <code>2N ≤ M</code> y no <code>N ≤ M</code>:</strong> es el mismo argumento que en §1.6.3. Si <code>N &gt; M/2</code>, el emisor puede tener en vuelo un número de secuencia que el receptor <strong>ya liberó</strong> al consumirlo. Cuando ese número vuelve a aparecer, el receptor lo acepta como <strong>trama nueva</strong> en vez de reconocerla como duplicada. <strong>La mitad de los números tiene que estar "reservada"</strong> para distinguir "nuevo" de "ya visto".</p>
+<p>⚠️ <strong>El valor exacto que da la oficial: <code>N = 128</code>.</strong> Es lo que hay que escribir.</p>
+<p>⚠️ <strong>Lo que hay que decir de más (suma puntos):</strong> el cálculo de por qué <code>2N ≤ M</code> con un ejemplo concreto.</p>
+<div class="codehilite"><pre><span></span><code>   Con N = 128 y M = 256, el peor caso:
+     El emisor tiene en vuelo S0..S127 (128 tramas).
+     El receptor recibió S0..S127,-entregó S0..S63 a la capa superior,
+     y su ventana quedó "liberada" para S128..S255.
+     El emisor manda S128..S255.
+     El receptor acepta S128..S255.  ✔  Sin ambigüedad: los números
+     nunca se repiten dentro de una ventana viva.
+
+   Con N = 200 (&gt; 128), M = 256:
+     El emisor tiene S0..S199. El receptor entregó S0..S99 y liberó
+     S100..S255.  El emisor manda S100..  y el receptor lo acepta
+     como NUEVO aunque ya lo había recibido antes.  ✗  DUPLICADO.
+</code></pre></div>
+
+<h3>Parte c) — El protocolo en pseudocode</h3>
+<p>La resolución oficial completa (la publicada en <code>sirc0703</code>, páginas 8 a 12) especifica:</p>
+<ul>
+<li><strong>Dos estructuras de datos</strong>, una para las tramas enviadas y otra para las recibidas, con funciones de acceso:</li>
+<li><code>getSND(nroSec)</code> / <code>setSND(nroSec, data)</code> — tramas <strong>enviadas</strong></li>
+<li><code>getRCP(nroSec)</code> / <code>setRCP(nroSec, data)</code> — tramas <strong>recibidas</strong></li>
+<li><strong>Funciones auxiliares</strong>: <code>armoTrama(tipo, SN, RN, data)</code>.</li>
+</ul>
+<p>Y una restricción del enunciado que hay que respetar:</p>
+<blockquote>
+<p><em>Considerar que </em><em>no existirán problemas en la conexión y desconexión</em><em> del protocolo.</em></p>
+</blockquote>
+<p>⚠️ <strong>Lo que aporta esta parte al tema de hoy:</strong> el <strong>piggybacking</strong>. Es la optimización de <strong>no mandar tramas <code>ack</code> vacías</strong>: cuando el emisor tiene que mandar un <code>info</code> y además tiene un ACK pendiente, <strong>coloca el número de ACK en el campo <code>RN</code> de la trama <code>info</code></strong> que ya tenía que mandar. Así el ACK viaja "de polizón" (<em>piggyback</em>).</p>
+<div class="codehilite"><pre><span></span><code>   SIN piggybacking:              CON piggybacking:
+   Emisor ── info(S3) ──▶         Emisor ── info(S3, RN=2) ──▶
+            ◀── ack(2) ──                  (un solo mensaje)
+   (2 mensajes por cada dato)
+
+   Piggybacking sólo es posible si el emisor TIENE DATOS que mandar.
+   Si no tiene, manda la trama `ack` sola. Por eso el protocolo define
+   los dos tipos de trama igual.
+</code></pre></div>
+
+<p>⚠️ <strong>El detalle de implementación que hay que decir:</strong> el campo <code>RN</code> de la trama <code>info</code> <strong>solo tiene sentido si el receptor va a interpretarlo</strong>. Como el <code>Type</code> distingue <code>info</code> de <code>ack</code>, el receptor sabe que, si ve <code>info</code> con <code>RN ≠ 0</code>, ese <code>RN</code> es un ACK disfrazado. Y hay que definir <strong>qué significa <code>RN = 0</code></strong> (¿"nada pendiente"? ¿"ACK del 0"?). Esa ambigüedad es un detalle clásico de diseño de protocolo y es lo que hace que algunos Reserve un valor centinela.</p>
+<h2>3.3 Nota sobre el Práctico 5 de 2008 (ejercicios 1 a 4)</h2>
+<p>El <strong>Práctico 5 de 2008</strong> es un recorte de los problemas del capítulo 3 y 4 del libro de referencia. Los cuatro primeros ejercicios son:</p>
+<table>
+<thead>
+<tr>
+<th>Ejercicio</th>
+<th>Tema</th>
+<th>Dónde está resuelto</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Paridad par/impar de un patrón de bits, y longitud mínima de un código que detecte <strong>un solo</strong> error de bit</td>
+<td><strong>Clase 39</strong>, §1.2</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Paridad de <strong>dos dimensiones</strong>: puede corregir y detectar 1 bit; detecta 2 pero no corrige</td>
+<td><strong>Clase 39</strong>, §2.1 y §2.2</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Internet checksum</strong> de los bytes 0 a 9</td>
+<td><strong>Clase 39</strong>, §2.3</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>CRC</strong> de 4 bits con <code>D = 10101010</code>: ¿cuál es el valor de <code>R</code>?</td>
+<td><strong>Clase 39</strong>, §2.4</td>
+</tr>
+</tbody>
+</table>
+<p>⚠️ <strong>Aclaración importante, porque es fácil confundirse:</strong> el <strong>ejercicio 4 del Práctico 5 NO es de Hamming</strong>: es del <strong>CRC</strong> (el <em>generador de cuatro bits</em> de la Figura 5.8 del libro). Está resuelto en la Clase 39. Lo que <strong>esta</strong> clase desarrolla es lo que corresponde a la <strong>Figura 5.4</strong> del mismo capítulo: el <strong>código de Hamming</strong>, que es exactamente la plantilla de paridades de §1.3, con el ejemplo numérico completo de §1.4 y §1.5.</p>
+<p>⚠️ <strong>Y los ejercicios 8, 9 y 10 del mismo Práctico 5</strong> (eficiencia de ALOHA y de ALOHA con franjas) son de la <strong>Clase 41</strong>.</p>
+<p><strong>Ejercicio 4 del Práctico 5 resuelto, para que quede a mano (es de la Clase 39, pero es el que el enunciado menciona):</strong></p>
+<div class="codehilite"><pre><span></span><code>   G = 1001  (generador de 4 bits,  ← la Figura 5.8)
+   D = 10101010
+
+   Se hace D · x^r  (r = 4) = 10101010 0000
+   y se divide por G con XOR:
+
+     101010100000
+   ⊕ 100100000000   (1001 desplazado 8)
+   ────────────────
+       1101000000
+   ⊕  1001000000   (1001 desplazado 4)
+   ────────────────
+        100000000
+   ⊕   100100000   (1001 desplazado 2)
+   ────────────────
+          100000
+   ⊕     100100   (1001 desplazado 1)
+   ────────────────
+           1100
+
+   R = 1100
+   Trama completa = D · x^4 + R = 10101010 1100
+</code></pre></div>
+
+<h2>3.4 Examen 2011-03, Pregunta 4 (10 puntos) — el diagrama que es Go-Back-N puro</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc1103</code> / <code>sirc1103</code> — 21 de febrero de 2011.
+<strong>Texto del examen (extracto):</strong></p>
+<blockquote>
+<p><em>Suponga una comunicación TCP entre dos procesos A y B. En un momento determinado A envía a B cuatro segmentos seguidos (no hay ningún dato previo sin asentar), el primero con número de secuencia igual a 1100 y con 20 bytes de datos, y los tres restantes con otros 20 bytes de datos cada uno.</em>
+<strong>b)</strong> <em>Represente de nuevo el diagrama si B no tiene datos que enviar hacia A y se pierde el primer segmento enviado de A a B.</em></p>
+</blockquote>
+</blockquote>
+<p><strong>Por qué es de esta clase:</strong> el diagrama que la cátedra publica para el apartado b) es <strong>exactamente</strong> el comportamiento de <strong>Go-Back-N sobre TCP sin SACK</strong>.</p>
+<p><strong>Solución oficial, citada textualmente</strong> (<code>sirc1103</code>):</p>
+<blockquote>
+<p><em>Si se pierde el primer segmento S1, cuando llegue S2, el receptor reenviará el ACK correspondiente al segmento esperado, que llamamos </em><em>A0</em><em>. Sucede lo mismo cuando llegan S3 y S4.</em>
+<em>El emisor comenzará a retransmitir los segmentos cuando pase alguno de estos dos eventos: el </em><em>vencimiento del timeout de S1</em><em>, o la </em><em>llegada del 3er ACK duplicado</em><em>.</em>
+<em>Campos relevantes: S1: Sec=1100, S2: Sec=1120, S3: Sec=1140, S4: Sec=1160; A0: ACK=1100.</em>
+<em>Cuando se reenvían los segmentos, estamos en el caso a).</em></p>
+</blockquote>
+<p><strong>El diagrama, con la interpretación:</strong></p>
+<div class="codehilite"><pre><span></span><code>   A (emisor)                                       B (receptor)
+      │                                                 │
+      │──── S1  Sec=1100  (20 bytes) ───────────────────▶│  ✗✗✗ SE PIERDE ✗✗✗
+      │──── S2  Sec=1120 ──────────────────────────────▶│  llega con hueco:
+      │◀───────────────────── A0: ACK=1100 (duplicado) ──│  descarta y reenvía A0
+      │──── S3  Sec=1140 ──────────────────────────────▶│  llega con hueco:
+      │◀───────────────────── A0: ACK=1100 (duplicado) ──│  descarta y reenvía A0
+      │──── S4  Sec=1160 ──────────────────────────────▶│  llega con hueco:
+      │◀───────────────────── A0: ACK=1100 (duplicado) ──│  descarta y reenvía A0
+      │                                                 │
+      │  ⓘ 3 ACK=1100 duplicados ⇒ FAST RETRANSMIT de S1│
+      │     (o, si no hay fast retransmit, al vencer el RTO)
+      │                                                 │
+      │──── S1  Sec=1100 ──────────────────────────────▶│  ahora sí: lo guarda
+      │                                                 │  y lo ENTREGA
+      │                                                 │
+      │  ⓘ S2, S3 y S4 ya NO están en el receptor: los    │
+      │     descartó cuando-polega el hueco.               │
+      │     Hay que RETRANSMITIRLOS (Go-Back-N)           │
+      │──── S2  Sec=1120 ──────────────────────────────▶│  guarda, entrega
+      │◀───────────────────── ACK=1140 ──────────────────│
+      │──── S3  Sec=1140 ──────────────────────────────▶│  guarda, entrega
+      │◀───────────────────── ACK=1160 ──────────────────│
+      │──── S4  Sec=1160 ──────────────────────────────▶│  guarda, entrega
+      │◀───────────────────── ACK=1180 ──────────────────│
+</code></pre></div>
+
+<p>⚠️ <strong>El error conceptual que hay que evitar:</strong> <em>"cuando llega S1, el receptor entrega S1, S2, S3 y S4"</em>. <strong>Falso</strong>, si el receptor no tiene SACK: <strong>descartó</strong> S2, S3 y S4 cuando vio el hueco. Si el ejercicio dice "no hay pérdidas de segmentos" salvo S1, <strong>Go-Back-N</strong> los tiene que volver a pedir. Y con <strong>SACK</strong>, el receptor <strong>sí</strong> los habría guardado en el buffer, y al llegar S1 los entregaría juntos sin retransmisión (que es lo que dice la oficial: <em>"cuando se reenvían los segmentos, estamos en el caso a)"</em>).</p>
+<p>⚠️ <strong>La lectura correcta de esa frase de la oficial</strong> — y es sutil —: la oficial dice que <em>"cuando se reenvían los segmentos, estamos en el caso a)"</em>. O sea: <strong>los cuatro segmentos</strong> se reenvían, y el diagrama resultante es el mismo que el del caso (a) sin pérdida. <strong>Eso confirma que el comportamiento es Go-Back-N: se retransmiten los cuatro, no solo el primero.</strong></p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen en 10 líneas</h2>
+<ol>
+<li><strong>Detectar</strong> es barato (1 bit) y obliga a <strong>retransmitir</strong> (un RTT entero). <strong>Corregir</strong> es más caro en bits pero <strong>gratis en red</strong>, y conviene cuando el RTT es enorme (satélite, radio) o la tasa de error es alta.</li>
+<li><strong>Distancia de Hamming</strong> <code>d(A,B)</code> = bits que difieren. <strong>SEC</strong>: <code>d≥2</code>, detecta y corrige <strong>1</strong>. <strong>SECDED</strong>: <code>d=3</code>, detecta <strong>2</strong> y corrige <strong>1</strong>.</li>
+<li>La condición de <strong>Hamming SEC</strong> es <strong><code>2^r ≥ m + r + 1</code></strong>: hay <code>m + r + 1</code> casos que distinguir (un bit de datos, <code>r</code> de paridad, o ninguno) y <code>2^r</code> patrones disponibles.</li>
+<li>Los bits de paridad van en las posiciones <strong>1, 2, 4, 8, …</strong> (potencias de 2) y <strong>cada uno vigila las posiciones cuyo binario tiene ese bit en 1</strong>.</li>
+<li>El receptor <strong>recalcula</strong> las paridades; el número que forman los "falla / no falla" <strong>es la posición del bit erróneo</strong> (el <strong>síndrome</strong>). <code>000</code> = sin error.</li>
+<li><strong>Stop-and-Wait</strong>: <code>U = 1/(1+2a)</code> con <code>a = t_prop/t_frame</code>. Con <code>a = 2,34</code> da 17,6 %; con satélite GEO <code>a = 150</code> da <strong>0,33 %</strong>.⇒ Hay que usar <strong>ventana</strong>, y el tamaño mínimo es el <strong>BDP = R × RTT</strong>.</li>
+<li><strong>Go-Back-N</strong>: <code>N</code> paquetes sin confirmar, <strong>ACK acumulados</strong>, el receptor <strong>descarta</strong> lo que llega tras el hueco, y al vencer el <strong>timer único</strong> se retransmite <strong>el más viejo no confirmado y todos los siguientes</strong>. Simple pero <strong>desperdicia <code>N−1</code> tramas por pérdida</strong>.</li>
+<li><strong>Selective Repeat</strong>: buffer en el receptor, <strong>reordenamiento</strong>, <strong>NAK</strong> (o <strong>SACK</strong>), y se retransmite <strong>solo</strong> lo que falta. Exige <strong><code>2N ≤ M</code></strong>.</li>
+<li><strong>TCP con SACK (<code>RFC 2018</code>) es Selective Repeat a nivel de bytes</strong>; <strong>TCP sin SACK es Go-Back-N</strong>. Y <strong>ARQ + FEC</strong> se combinan hoy en todo sistema real.</li>
+<li>Para <strong>2026</strong>: <code>RFC 2018</code> sigue vigente, <code>RFC 9293</code> (2022) es la especificación de TCP, el <strong>fast retransmit</strong> reemplazó al timer en la detección, y el <strong>satelital/radio</strong> usan <strong>FEC</strong> en lugar de ARQ puro.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> ¿Por qué <code>2^r ≥ m + r + 1</code> y no <code>2^r ≥ m + 1</code>?</p>
+<details><summary>Respuesta</summary>
+
+Porque los casos que hay que distinguir son: **`m`** posiciones de datos + **`r`** posiciones de paridad + **1** caso de "no hay error". O sea `m + r + 1`, no `m + 1`. El `+r` son los bits de paridad, que también pueden estar equivocados y hay que localizarlos. Ejemplo: `m = 4` da `r = 3` y `2³ = 8 = 4 + 3 + 1`. **Ojo:** eso no deja un "slot" para "sin error", porque el patrón `000` se reserva para eso y el síndrome `0` significa "nada que corregir". Es decir: los `2^r` patrones cubren `m + r` posiciones (la `+1` del slot "sin error" la paga el patrón `0`). La forma `2^r ≥ m+1` que aparece en muchos textos es una **simplificación** que da el mismo `r` para los casos típicos; en un examen, usá la que te pida el enunciado y mencioná la otra.
+
+</details>
+
+<p><strong>2.</strong> En el ejemplo <code>m = 4</code>, <code>r = 3</code>, dato <code>1010</code>: ¿qué palabra de código se envía? ¿Y si se invierte el bit 6?</p>
+<details><summary>Respuesta</summary>
+
+Con **paridad par**: `P1` vigila `{1,3,5,7}` = `{P1, D1, D2, D4}` = `{?,1,0,0}` → 1 uno ⇒ `P1 = 1`. `P2` vigila `{2,3,6,7}` = `{?,1,1,0}` → 2 unos ⇒ `P2 = 0`. `P3` vigila `{4,5,6,7}` = `{?,0,1,0}` → 1 uno ⇒ `P3 = 1`. **Palabra = `1 0 1 1 0 1 0` = "1011010".**
+
+Si se invierte la **posición 6** (el `D3`, que pasa de 1 a 0), llega `1 0 1 1 0 0 0`. Los chequeos dan: `P1` coincide (`s₁=0`), `P2` **falla** (`s₂=1`), `P3` coincide (`s₃=0`). El síndrome `s₃s₂s₁ = 010₂ = 6` ⇒ **"el bit 6 está mal"**. Se voltea a 1 y queda `1011010`, que coincide con lo enviado.
+
+</details>
+
+<p><strong>3.</strong> ¿Por qué SEC no detecta dos errores?</p>
+<details><summary>Respuesta</summary>
+
+Porque con `d_min = 2`, un error de **1** bit y uno de **2** bits dan la **misma distancia (2)** y el receptor no tiene forma de distinguirlos: solo tiene una palabra de referencia. Con **dos** errores, los síndromes se suman y pueden dar el código de una posición **válida**: el receptor cree que hay un error de uno y "corrige" un bit que estaba bien, dejando un resultado que sigue equivocado. **SECDED** resuelve esto con un **bit de paridad global**: con 2 errores la paridad global queda **impar** (siempre), lo que es una señal inequívoca de "hay dos errores, no corrijas nada". Por eso SECDED necesita `d_min = 3`.
+
+</details>
+
+<p><strong>4.</strong> Calculá la eficiencia de Stop-and-Wait para un enlace de 4 Mbps a 5000 km (<code>v = 2 × 10⁸ m/s</code>) con tramas de 500 bytes.</p>
+<details><summary>Respuesta</summary>
+
+`t_frame = 500 × 8 / 4 × 10⁶ = 4000 / 4×10⁶ = 1 ms`. `t_prop = 5 000 000 / 2 × 10⁸ = 25 ms`. `a = 25/1 = 25`. **`U = 1/(1 + 2×25) = 1/51 = 0,0196 = 1,96 %`.** El enlace pasa el **98 % del tiempo ocioso**: Stop-and-Wait es inservible, y hace falta una ventana de al menos el **BDP = 4 × 10⁶ × 0,05 = 200 000 bits = 25 000 bytes**, o sea `N ≥ 200000/4000 = 50` tramas.
+
+</details>
+
+<p><strong>5.</strong> En Selective Repeat, ¿por qué la ventana debe cumplir <code>2N ≤ M</code>?</p>
+<details><summary>Respuesta</summary>
+
+Porque el receptor tiene que poder distinguir una trama **nueva** de una **retransmisión de una que ya liberó**. Si `N > M/2`, el emisor puede tener en vuelo un número de secuencia que el receptor **ya consumió y liberó** (porque entregó a la capa superior y liberó ese slot de la ventana). Cuando ese número vuelve a llegar, el receptor lo acepta como **trama nueva** y lo entrega **duplicado**. Con `N ≤ M/2` los números nunca se repiten dentro de una ventana viva. En el `eirc0703` con `SN` de 1 octeto: `M = 256`, `N ≤ 128` — y ese **128** es lo que da la solución oficial.
+
+</details>
+
+<p><strong>6.</strong> ¿En qué se diferencia exactamente TCP de Go-Back-N y de Selective Repeat?</p>
+<details><summary>Respuesta</summary>
+
+**(a) La unidad:** Go-Back-N y Selective Repeat cuentan **tramas**; TCP cuenta **bytes**. El `seq` es "el próximo byte que espero", y el ACK es de bytes, no de tramas. La ventana (`rwnd` / `cwnd`) es de **bytes**, no de paquetes.
+
+**(b) TCP sin SACK ≡ Go-Back-N.** El receptor no dice qué falta, solo "sigo acá" (ACK duplicado), y el emisor retransmite desde el byte faltante **en adelante**, incluso lo que ya había llegado. Idéntico.
+
+**(c) TCP con SACK ≡ Selective Repeat.** El receptor reporta **exactamente** qué bloques de bytes llegaron fuera de orden, y el emisor retransmite **solo** el que falta. Es Selective Repeat a nivel de bytes, y es el **comportamiento estándar** (`RFC 2018`).
+
+**(d) TCP no tiene NAK.** No existe un mensaje "reenviame el byte 5": el emisor tiene que **inferir** qué falta a partir de los bloques reportados en SACK.
+
+</details>
+
+<p><strong>7.</strong> ¿Cuántas tramas de datos transmite cada protocolo si se pierde la tercera de cinco, con <code>N = 4</code>?</p>
+<details><summary>Respuesta</summary>
+
+**Stop-and-Wait: 6** (S1..S5 más la retransmisión de S3). **Go-Back-N: 8** (S1..S5 más S3, S4 y S5 retransmitidos: el receptor descartó S4 y S5 al ver el hueco, así que hay que volver a pedirlas — **desperdicio de 2 tramas**). **Selective Repeat: 6** (solo retransmite S3; S4 y S5 estaban en el buffer y se entregan juntos, en orden, cuando llega S3). El precio de Go-Back-N es la simplicidad del receptor: **sin buffer grande y sin reordenamiento**.
+
+</details>
+
+<p><strong>8.</strong> ¿Por qué en un enlace de satélite conviene corregir y no retransmitir?</p>
+<details><summary>Respuesta</summary>
+
+Porque el **costo de retransmitir es un RTT entero** (`2·t_frame + 2·t_prop`) y en un satélite GEO `t_prop` de un sentido es **120 ms**. Con una trama de 1 KB a 10 Mbps (`t_frame = 0,8 ms`), `a = 150` y la eficiencia de Stop-and-Wait cae a **0,33 %**. Retransmitir un bit que se corrompió por ruido de radio **cuesta 240 ms de enlace entero**, mientras que corregirlo en el receptor cuesta **cero en la red** (solo unos pocos bits de paridad). Por eso los sistemas reales combinan **FEC** (para los errores independientes, que son los mayoría y baratos de corregir) con **ARQ** (para los errores en racha, que el FEC no puede).
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong><code>eirc0903</code> / <code>sirc0903</code></strong> — <strong>Pregunta 1 (8 pts en el enunciado, 10 en la pauta)</strong>: el principio de funcionamiento de <strong>Go-Back-N</strong>. Pregunta 2 (10 pts): enrutamiento jerárquico, IGP con jerarquías, hot-potato.</li>
+<li><strong><code>eirc0703</code> / <code>sirc0703</code></strong> — <strong>Problema 1 (30 pts)</strong>: protocolo de capa 2 punto a punto con ARQ <strong>Selective Repeat</strong> y <strong>piggybacking</strong>. Tipos de trama, ventana máxima (<code>2N ≤ M</code> con <code>M = 256</code> ⇒ <strong>128</strong>), y el protocolo en pseudocode.</li>
+<li><strong><code>eirc1103</code> / <code>sirc1103</code></strong> — <strong>Pregunta 4 (10 pts)</strong>: el diagrama de TCP con y sin pérdida del primer segmento, que es Go-Back-N sobre TCP sin SACK.</li>
+<li><strong><code>eirc1007</code> / <code>sirc1007</code></strong> — <strong>Problema 1 (30 pts)</strong>: protocolo <em>stop-and-wait</em> semifiable para video MPEG-2 (solo los I-frame son confiables).</li>
+<li><strong><code>eirc0912</code> / <code>sirc0912</code></strong> — Pregunta 2 (10 pts): servicio confiable en transporte vs. enlace.</li>
+<li><strong><code>eirc0707</code> / <code>sirc0707</code></strong> — Pregunta 2 (5 pts): mecanismos de detección y corrección de errores de la capa de enlace.</li>
+<li><strong>Práctico 5 de 2008</strong> (<code>prac05_2008-p01.png</code>) — ejercicios 1 a 4: paridad, paridad 2D, Internet checksum y <strong>CRC</strong> (todos en la Clase 39; el <strong>Ejercicio 4 NO es de Hamming</strong>, es de CRC).</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadores</em> 5ª ed., <strong>cap. 3 §3.3</strong> (detección de errores: Hamming, CRC) y <strong>§3.4–3.5</strong> (protocolos de la capa de datos: ARQ, <em>piggybacking</em>), y <strong>cap. 4</strong> (capas inferiores)</li>
+<li><strong>Kurose &amp; Ross</strong>, <em>Computer Networking</em> 8ª ed., §5.3 (ARQ: Go-Back-N y Selective Repeat) y Figura 5.4 (el código de Hamming)</li>
+<li><strong>RFC 2018</strong> — TCP Selective Acknowledgment (SACK), <em>Standards Track</em> · <strong>RFC 9293</strong> — TCP (2022, <em>Internet Standard</em>) · <strong>RFC 6928</strong> — Initial Window = 10 MSS</li>
+<li><strong>Clase anterior:</strong> 39 — Detección de errores: paridad, checksum y CRC</li>
+<li><strong>Clase siguiente:</strong> 41 — Acceso al medio: ALOHA, CSMA/CD y CSMA/CA</li>
+</ul></body></html>

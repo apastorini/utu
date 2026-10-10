@@ -1,0 +1,770 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 20 — Control de flujo vs. control de congestión</h1>
+<p><strong>Bloque:</strong> C (Transporte) · <strong>Semana:</strong> 7 · <strong>Duración estimada:</strong> 100 min
+<strong>Correlativa:</strong> Clase 19 (cómo garantiza TCP la fiabilidad) · <strong>Sigue con:</strong> Clase 21 (control de congestión en TCP: slow start, AIMD y ECN)
+<strong>Material de referencia:</strong> Tanenbaum cap. 6 (§6.7) · RFC 9293, RFC 7323, RFC 6928, RFC 5681, RFC 9438</p>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 740 440" style="max-width:740px"><rect width="740" height="440" fill="#ffffff"/><text x="370.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Evolucion de la ventana de congestion</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><rect x="90" y="80" width="560" height="250" fill="#fcfdfe" stroke="#b8cfdb"/><line x1="90" y1="330.0" x2="650" y2="330.0" stroke="#eef2f4"/><text x="80" y="334.0" text-anchor="end" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">0</text><line x1="90" y1="267.5" x2="650" y2="267.5" stroke="#eef2f4"/><text x="80" y="271.5" text-anchor="end" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">4</text><line x1="90" y1="205.0" x2="650" y2="205.0" stroke="#eef2f4"/><text x="80" y="209.0" text-anchor="end" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">8</text><line x1="90" y1="142.5" x2="650" y2="142.5" stroke="#eef2f4"/><text x="80" y="146.5" text-anchor="end" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">12</text><line x1="90" y1="80.0" x2="650" y2="80.0" stroke="#eef2f4"/><text x="80" y="84.0" text-anchor="end" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">16</text><line x1="90" y1="330" x2="650" y2="330" stroke="#666" stroke-width="1.5"/><line x1="90" y1="330" x2="90" y2="80" stroke="#666" stroke-width="1.5"/><text x="90" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">0</text><text x="124" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">1</text><text x="158" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">2</text><text x="192" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">3</text><text x="226" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">4</text><text x="260" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">5</text><text x="294" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">6</text><text x="328" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">7</text><text x="362" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">8</text><text x="396" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">9</text><text x="430" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">10</text><text x="464" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">11</text><text x="498" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">12</text><text x="532" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">13</text><text x="566" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">14</text><text x="600" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">15</text><text x="634" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">16</text><text x="44" y="201.0" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="12" font-weight="700" fill="#0b3d5c">cwnd</text><text x="44" y="217.0" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">(MSS)</text><text x="370.0" y="370" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="12" font-weight="700" fill="#0b3d5c">RTT</text><line x1="90" y1="205.0" x2="650" y2="205.0" stroke="#c8621a" stroke-width="1.5" stroke-dasharray="7 5"/><text x="644" y="197.0" text-anchor="end" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#c8621a">ssthresh = 8 MSS</text><polyline points="90,314.375 124,298.75 158,267.5 192,205.0" fill="none" stroke="#b3261e" stroke-width="2.8"/><circle cx="90" cy="314.375" r="4" fill="#b3261e"/><text x="99" y="308.375" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="700" fill="#b3261e">1</text><circle cx="124" cy="298.75" r="4" fill="#b3261e"/><text x="133" y="292.75" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="700" fill="#b3261e">2</text><circle cx="158" cy="267.5" r="4" fill="#b3261e"/><text x="167" y="261.5" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="700" fill="#b3261e">4</text><circle cx="192" cy="205.0" r="4" fill="#b3261e"/><text x="201" y="199.0" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="700" fill="#b3261e">8</text><text x="94" y="316.71875" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#b3261e">slow start:  cwnd += MSS por ACK  →  duplica cada RTT</text><polyline points="192,205.0 226,189.375 260,173.75 294,158.125 328,142.5 362,126.875" fill="none" stroke="#2e7d4f" stroke-width="2.8"/><text x="277.0" y="112.875" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#2e7d4f">congestion avoidance:  +1 MSS por RTT</text><line x1="192" y1="205.0" x2="192" y2="267.5" stroke="#b3261e" stroke-width="1.8" marker-end="url(#po)"/><text x="201" y="226.875" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#b3261e">3 ACK duplicados  →  fast retransmit</text><text x="201" y="241.875" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#b3261e">Tahoe: 1 MSS      Reno: 4 MSS  ( = cwnd/2 )</text><polyline points="192,267.5 226,251.875 260,236.25 294,220.625" fill="none" stroke="#e0913c" stroke-width="2.2" stroke-dasharray="5 3"/><line x1="294" y1="220.625" x2="294" y2="314.375" stroke="#b3261e" stroke-width="1.8" marker-end="url(#po)"/><text x="303" y="255.0" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#b3261e">timeout  →  Tahoe y Reno van los dos a 1 MSS</text><text x="90" y="392" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">Tahoe vuelve a 1 MSS ante cualquier perdida.</text><text x="90" y="409" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">Reno solo cae a cwnd/2 con 3 ACK duplicados; ante un timeout cae igual que Tahoe.</text></svg></p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Distinguir <strong>control de flujo</strong> de <strong>control de congestión</strong> y decir quién controla cada uno y con qué variable.</li>
+<li>Explicar cómo viaja el <code>rwnd</code> en la cabecera TCP y por qué el emisor <strong>no puede mandar más que el <code>rwnd</code></strong>.</li>
+<li>Justificar por qué la ventana efectiva es el <strong>mínimo</strong> de <code>cwnd</code> y <code>rwnd</code> y no la suma.</li>
+<li>Describir qué pasa cuando el <code>rwnd</code> llega a <strong>cero</strong>, qué son los <em>zero-window probes</em> y por qué eso <strong>no</strong> es control de congestión.</li>
+<li>Explicar el problema de los <strong>buffers de socket</strong> en los dos extremos y por qué el del emisor <strong>también</strong> es un problema de flujo.</li>
+<li>Calcular el <strong>throughput</strong> de una conexión cuando el límite es el <code>rwnd</code>, y decir cuál de los dos límites manda.</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2009-07 P1</code> (10 pts — flujo vs. congestión, y cómo detecta TCP la congestión), <code>2010-02 P5</code> (7 pts — el mecanismo de control de flujo de TCP), <code>2011-03 P4</code> (10 pts — el diagrama con <code>cwnd</code>), <code>2010-12 P4b</code> (los timers, que son del otro lado de la misma ecuación).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 Los dos problemas</h2>
+<p>Imaginá una descarga. Tu disco de 500 Mbps no te sirve de nada si el enlace de tu casa da 10 Mbps.
+Y al revés: un enlace de 100 Mbps que compartís con 40 personas te va a parecer lento. Son <strong>dos
+problemas distintos</strong>:</p>
+<div class="codehilite"><pre><span></span><code> ┌─ El emisor manda MÁS RÁPIDO de lo que el receptor puede absorber ──┐
+ │ → CONTROL DE FLUJO │   (lo arregla rwnd, esta clase)              │
+ └───────────────────────────────────────────────────────────────────┘
+ ┌─ La RED en el medio no tiene recursos para todo lo que todos mandan ┐
+ │ → CONTROL DE CONGESTIÓN │  (lo arregla cwnd, en la Clase 21)      │
+ └───────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>La tabla que usa el profesor para diferenciarlos.</strong> Esta es, literal, la que hay que aprender de
+memoria porque es la respuesta de <code>2009-07 P1a</code>:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Control de flujo</th>
+<th>Control de congestión</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>El problema es de</strong></td>
+<td>un <strong>host lento</strong></td>
+<td><strong>toda la red</strong></td>
+</tr>
+<tr>
+<td><strong>El síntoma es</strong></td>
+<td>el buffer del receptor se llena</td>
+<td>los buffers de <strong>los routers</strong> se llenan</td>
+</tr>
+<tr>
+<td><strong>La pérdida significa</strong></td>
+<td>"no leíste rápido"</td>
+<td>"<strong>la red está saturada</strong>"</td>
+</tr>
+<tr>
+<td><strong>La ventana la controla</strong></td>
+<td>el <strong>receptor</strong> (<code>rwnd</code>)</td>
+<td>el <strong>emisor</strong>, estimando (<code>cwnd</code>)</td>
+</tr>
+<tr>
+<td><strong>Se arregla con</strong></td>
+<td>ACK diferidos / zero-window probe</td>
+<td><strong>reducir el ritmo de envío</strong></td>
+</tr>
+<tr>
+<td><strong>Le importa el BDP</strong></td>
+<td>sí, mucho</td>
+<td>sí, pero como techo físico</td>
+</tr>
+</tbody>
+</table>
+<p><strong>La evidencia de que confundirlos es el error típico del examen.</strong> La razón de fondo es esta:
+<strong>TCP no puede distinguir una pérdida por buffer lleno del receptor de una pérdida en la red.</strong> Para
+TCP, un paquete perdido es un paquete perdido. Por eso el mismo mecanismo (disminuir la ventana)
+sirve para las dos cosas, y por eso la interpretación que TCP hace es conservadora:</p>
+<div class="codehilite"><pre><span></span><code>   bytes perdidos por un host lento  ──┐
+   bytes perdidos por la red (full)   ──┼──▶  ¿qué fue? ──▶ "no sé"
+   bytes perdidos por un error de CRC ──┘                    │
+                                                             ▼
+                                              bajar la ventana
+   ⇒ los dos se resuelven IGUAL, pero NO son lo mismo.
+</code></pre></div>
+
+<p>Y esto conecta con la pregunta 1c de <code>2009-07</code>, la más fina del tema: <strong>¿la pérdida siempre
+implica congestión? No.</strong> También por una capa de enlace defectuosa, un buffer del receptor lleno o
+un error de CRC. TCP <strong>asume</strong> que sí, porque asumir lo contrario sería peor en promedio: castigar
+a la red de vez en cuando sale más barato que saturarla.</p>
+<h2>1.2 El <code>rwnd</code>: el campo <em>window</em> de la cabecera</h2>
+<p><strong><code>rwnd</code></strong> (<em>receive window</em>) es la cantidad de bytes que el receptor dice que le entran en
+su buffer <strong>a partir del byte que está esperando</strong>. Viaja en el campo <code>window</code> de <strong>cada</strong>
+segmento TCP, y es de <strong>16 bits</strong> (0 a 65 535), multiplicado por el factor de escalado si se
+negoció <em>Window Scale</em>.</p>
+<p><strong>La cuenta del número de ventana.</strong> El receptor no anuncia "me quedan 40000 bytes de
+buffer". Anuncia <strong>cuántos bytes quiere recibir a partir del próximo que espera</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   rwnd = (espacio libre en el buffer) + (bytes ya recibidos sin entregar a la aplicación)
+</code></pre></div>
+
+<p>O sea, el <code>rwnd</code> cubre <strong>los dos</strong> casos: lo que ya llegó esperando <code>read()</code> y lo que
+puede llegar todavía. Esto es lo que hace que sea una cota <em>superior</em> y no una medida
+instantánea.</p>
+<p><strong>La restricción dura:</strong> el emisor <strong>no puede tener más de <code>rwnd</code> bytes sin confirmar</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   Emisor A                              Receptor B
+   ┌────────────────────┐                ┌──────────────────────────────┐
+   │ bytes enviados sin │──────────────▶ │ buffer de recepción           │
+   │ ACK ≤ rwnd         │                │  [.. recibidos ..][.. libre ..]│
+   └────────────────────┘                │            ▲                  │
+                                          │            │                  │
+                                          │   rwnd = libre + recibidos   │
+                                          └──────────────────────────────┘
+</code></pre></div>
+
+<h2>1.3 La ventana efectiva: por qué el mínimo y no la suma</h2>
+<div class="codehilite"><pre><span></span><code>   ventana efectiva = min(cwnd, rwnd)
+                      ─────    ─────
+                   congestión   flujo
+</code></pre></div>
+
+<p><strong>¿Por qué el mínimo?</strong> Porque <strong>las dos son cotas superiores independientes</strong>:</p>
+<ul>
+<li>el emisor no puede mandar más de lo que <strong>la red aguanta</strong> (<code>cwnd</code>), y</li>
+<li>no puede mandar más de lo que <strong>el receptor aguanta</strong> (<code>rwnd</code>).</li>
+</ul>
+<p><strong>¿Por qué no la suma?</strong> Este es el punto fino que más se pregunta. Si la ventana efectiva
+fuera <code>cwnd + rwnd</code>, el excedente que la red no pudo tomar <strong>se acumularía en el buffer del
+receptor y lo desbordaría</strong>. Y lo desbordaría <strong>justo cuando la red va peor</strong>, que es
+exactamente cuando el buffer del receptor ya está más lleno. El <code>min</code> es el que garantiza
+que <strong>nadie se desborda</strong>: ni la red (por <code>cwnd</code>), ni el receptor (por <code>rwnd</code>).</p>
+<div class="codehilite"><pre><span></span><code>   Ventana efectiva = cwnd + rwnd (¡MAL!)
+
+   A ──[──────────── cwnd ────────────][──── rwnd ────]──▶ B
+                                                   ╱ buffer de B
+                                                  ╱ se llena con lo que
+                                                 ╱ la red NO pudo tomar
+                                                  ↓
+                                          OVERFLOW de B
+
+   Ventana efectiva = min(cwnd, rwnd) (✔ correcto)
+
+   A ──[──── min(cwnd, rwnd) ────]──▶ B
+        todo lo que sale entra, y entra todo lo que sale
+</code></pre></div>
+
+<p><strong>En los exámenes</strong> los dos los llaman "ventana efectiva" o "ventana de congestión" según el
+caso. Si el enunciado habla de <strong>una sola</strong> ventana, asumí que <code>rwnd</code> es grande y el límite
+es <code>cwnd</code>.</p>
+<blockquote>
+<p>Todo el desarrollo del <code>cwnd</code> — slow start, congestion avoidance, fast recovery, ECN —
+está en la <strong>Clase 21</strong>. Esta clase se limita a explicar <strong>qué es</strong> y <strong>por qué son dos
+cosas</strong>.</p>
+</blockquote>
+<h2>1.4 Zero window: el receptor que no lee</h2>
+<p>El caso límite del control de flujo: el receptor <strong>dejó de leer</strong> y su buffer está lleno.</p>
+<div class="codehilite"><pre><span></span><code>   t0  B anuncia rwnd = 20 000      A manda 20 000 bytes      buffer de B: LLENO
+   t1  A manda otros 20 000         B NO asienta              rwnd = 0
+   t2  A no puede mandar nada                            ventana efectiva = min(cwnd, 0) = 0
+   t3  A queda en silencio...
+</code></pre></div>
+
+<p>Si A se quedara quieto para siempre, la conexión se <strong>cuelga</strong>, aunque el otro lado esté
+perfectamente sano. Para eso existe el <strong>persistence timer</strong> (<code>RFC 9293</code> §8.6): A manda
+<strong>zero-window probes</strong> (<em>sondas de ventana cero</em>).</p>
+<div class="codehilite"><pre><span></span><code>   A ─────[1 byte, seq=next]──▶ B    ¿podés volver a leer?
+   ◀──────[ACK, rwnd=0]────── A    "todavía no" → esperar más
+       (espera el doble: 1 s, 2 s, 4 s, 8 s... hasta un tope)
+   A ─────[1 byte, seq=next]──▶ B
+   ◀──────[ACK, rwnd=16384]── A    "ya, dale" → rwnd ≠ 0 → reanuda
+</code></pre></div>
+
+<p><strong>Las características de las sondas, que hay que saber:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Aspecto</th>
+<th>Detalle</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Tamaño</strong></td>
+<td><strong>1 byte</strong> (o el último byte recibido)</td>
+</tr>
+<tr>
+<td><strong>Cuándo</strong></td>
+<td>cuando expira el <em>persist timer</em>, no antes</td>
+</tr>
+<tr>
+<td><strong>Periodicidad</strong></td>
+<td><strong>exponencial</strong>: RTO, 2·RTO, 4·RTO… hasta un tope (~60 s)</td>
+</tr>
+<tr>
+<td><strong>Para qué</strong></td>
+<td>no es un retransmit: es una <strong>consulta</strong></td>
+</tr>
+<tr>
+<td><strong>Si B responde con <code>rwnd = 0</code></strong></td>
+<td>A vuelve a esperar otro intervalo</td>
+</tr>
+<tr>
+<td><strong>Riesgo</strong></td>
+<td>el <strong>deadlock permanente</strong>: si B cerró el socket, A queda sondeando para siempre (el <em>keepalive</em> es lo que corta esto)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Y acá está lo importante para el examen:</strong></p>
+<blockquote>
+<p>⚠️ <strong>Esto NO es control de congestión.</strong> Es control de flujo, y no confundirlo es
+explícitamente lo que se busca en <code>2009-07 P1a</code>. <strong>La red está perfecta</strong>: nadie está
+saturado, no hay congestión de ningún tipo. Lo que está lento es la <strong>aplicación del
+otro lado</strong>, que no está llamando a <code>read()</code>. Si TCP bajara el <code>cwnd</code> por esto, estaría
+castigando a la red por un problema del receptor, y además <strong>no arreglaría nada</strong>: el
+<code>cwnd</code> no puede hacer que una aplicación lea más rápido. <strong>Por eso son mecanismos
+separados.</strong></p>
+</blockquote>
+<h2>1.5 El otro lado: los buffers de socket del emisor</h2>
+<p>El <code>rwnd</code> protege el buffer <strong>del receptor</strong>. Pero hay un tercer buffer en la ecuación, y es
+el que se olvida: el <strong>buffer de envío del emisor</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   Aplicación A  ──write()──▶  buffer de envío de A  ──TCP──▶  ...  ──▶  buffer de B
+        │                        ▲                                              │
+        │                        │                                              ▼
+   si se llena →              TCP manda                        Aplicación B
+   write() BLOQUEA          lo que puede                    si no llama a read()
+   (o devuelve EAGAIN)      (ventana efectiva)              el buffer se llena → rwnd=0
+</code></pre></div>
+
+<p><strong>El caso del emisor.</strong> Si A escribe más rápido de lo que la conexión puede sacar (porque
+el <code>rwnd</code> de B es chico, o porque la red es lenta), el buffer de envío de A se llena. En un
+socket <strong>bloqueante</strong>, el <code>write()</code> <strong>se bloquea</strong>: la aplicación se frena. Esa es la otra
+mitad del control de flujo, y es puramente local: no hace falta ningún campo en la
+cabecera, es el sistema operativo frenando a la aplicación.</p>
+<p><strong>El caso del receptor.</strong> Simétrico: si B no llama a <code>read()</code>, su buffer se llena, el
+<code>rwnd</code> baja, y A se frena. Acá sí hay señalización en la red, porque <strong>el <code>rwnd</code> viaja en
+cada segmento</strong>.</p>
+<p><strong>Por qué importa decirlo:</strong> los dos casos producen el mismo síntoma observable ("no
+avanza") pero por mecanismos distintos, y solo uno de los dos necesita el campo <code>window</code> de
+la cabecera.</p>
+<h2>1.6 Quién controla qué</h2>
+<table>
+<thead>
+<tr>
+<th>Variable / mecanismo</th>
+<th>Lo decide</th>
+<th>Cómo se comunica</th>
+<th>Señal explícita</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>rwnd</code></strong></td>
+<td>el <strong>receptor</strong></td>
+<td>campo <code>window</code> de cada segmento</td>
+<td>sí, el receptor lo anuncia</td>
+</tr>
+<tr>
+<td><strong><code>cwnd</code></strong></td>
+<td>el <strong>emisor</strong></td>
+<td>nadie: es una hipótesis local</td>
+<td>no, se deduce de ACKs y timeouts</td>
+</tr>
+<tr>
+<td><strong>Buffer de envío</strong></td>
+<td>el <strong>emisor</strong> (local)</td>
+<td><code>write()</code> bloquea</td>
+<td>sí, al proceso</td>
+</tr>
+<tr>
+<td><strong>Buffer de recepción</strong></td>
+<td>el receptor</td>
+<td><code>read()</code> consume</td>
+<td>sí, al proceso</td>
+</tr>
+<tr>
+<td><strong>Segmentación</strong></td>
+<td>el <strong>emisor</strong> (MSS del receptor)</td>
+<td>opción MSS en el SYN</td>
+<td>sí, en el SYN</td>
+</tr>
+<tr>
+<td><strong>Cierre ordenado</strong></td>
+<td><strong>ambos</strong></td>
+<td>FIN / TIME-WAIT</td>
+<td>sí, FIN</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Detalle fino que se pregunta:</strong> el <code>rwnd</code> lo decide el receptor, <strong>pero es un campo en un
+segmento que manda el receptor, y lo lee el emisor</strong>. Nadie lo negocia explícitamente: el
+emisor simplemente obedece lo último que oyó.</p>
+<h3>⚠️ Actualización a 2026</h3>
+<p><strong>Sigue igual — de memoria:</strong>
+- <code>rwnd</code> viaja en el campo <strong><code>window</code></strong> (16 bits) de cada segmento TCP.
+- <strong><code>ventana efectiva = min(cwnd, rwnd)</code></strong>, y es un <strong>mínimo</strong> porque son cotas superiores.
+- El <strong>zero-window probe</strong> es de <strong>1 byte</strong>, con periodo <strong>exponencial</strong>, y sirve para destrabar,
+  no para retransmitir.
+- Congestión = problema de <strong>la red</strong>; flujo = problema del <strong>otro host</strong>.</p>
+<p><strong>Cambió o se afinó:</strong></p>
+<ul>
+<li>La especificación vigente es <strong><code>RFC 9293</code> (2022, <em>Internet Standard</em>)</strong>, que consolida <code>RFC 793</code></li>
+<li><code>RFC 879</code>, <code>2873</code>, <code>6093</code>, <code>6429</code>, <code>6528</code>, <code>6691</code> y cuyo §8.6 es el de la <strong>persistencia</strong>.
+  Citar <code>RFC 793</code> como "la especificación" en 2026 está desactualizado.</li>
+<li><strong><code>Window Scale</code> (<code>RFC 7323</code>, 2014)</strong> es lo que hace que el <code>rwnd</code> de 16 bits deje de ser un techo
+  real: se negocia un <em>shift</em> en el SYN y el campo queda multiplicado por <code>2^shift</code>, hasta <code>2³⁰</code>
+  bytes. Sin esto, con RTT de 80 ms el <code>rwnd</code> limitaría el throughput a 6,55 Mbit/s (Clase 19 §1.6).</li>
+<li><strong>El Initial Window es 10 MSS</strong> por defecto (<code>RFC 6928</code>, 2013), no 1. El <code>rwnd</code> inicial típico
+  sigue siendo 64 KiB en varias plataformas — que es justamente el valor que <strong>limita antes que el
+  <code>cwnd</code></strong> en conexiones de corta vida. ⇒ <strong>En una descarga corta de web, muchas veces el límite
+  es <code>rwnd</code>, no <code>cwnd</code>.</strong></li>
+<li><strong>El control de congestión por defecto hoy es CUBIC</strong> (<code>RFC 9438</code>, 2023, <em>Standards Track</em>), no
+  Reno ni Tahoe. Pero el <code>rwnd</code> y la fórmula <code>min(cwnd, rwnd)</code> <strong>no cambian</strong>: CUBIC decide el
+  valor de <code>cwnd</code>, y el mínimo con <code>rwnd</code> se sigue aplicando igual.
+  → <strong>Para el examen:</strong> si te piden "el mecanismo de control de congestión", respondé slow start /
+  congestion avoidance / fast retransmit / fast recovery (Clase 21), y si sobra lugar, una línea de
+  "hoy es CUBIC". Si te piden "control de flujo", es <code>rwnd</code> y punto.</li>
+<li><strong>QUIC (<code>RFC 9000</code>, 2021)</strong> no usa una única ventana global: maneja <strong>dos niveles</strong>, el de
+  <strong>conexión</strong> (<code>max_data</code>) y el de <strong>cada stream</strong> (<code>max_stream_data</code>), porque multiplexa muchos
+  streams en una sola conexión. El <em>Connection ID</em> además permite sobrevivir a cambios de topología
+  y al <em>NAT rebinding</em>. La idea es la misma; la estructura es otra.</li>
+</ul>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — Throughput con el <code>rwnd</code> limitado</h2>
+<p><strong>Datos.</strong> <code>rwnd = 16 KB = 16 384 bytes</code>, constante. RTT = 120 ms. El <code>cwnd</code> es grande
+(<code>cwnd = 1 MB</code>), así que <strong>no</strong> es el que limita.</p>
+<p><strong>a) ¿Cuál es la ventana efectiva?</strong></p>
+<div class="codehilite"><pre><span></span><code>   ventana efectiva = min(cwnd, rwnd) = min(1 048 576, 16 384) = 16 384 bytes
+   → manda el rwnd.
+</code></pre></div>
+
+<p><strong>b) ¿Cuál es el throughput máximo?</strong></p>
+<p><em>El throughput no es "bytes por RTT": es </em><em>cuántos bytes salen por segundo</em><em>. Con
+16 KiB cada 120 ms:</em></p>
+<div class="codehilite"><pre><span></span><code>   throughput = 16 384 B / 0,120 s = 136 533 B/s
+               = 136 533 · 8 bits/s = 1 092 267 bit/s
+               ≈ 1,09 Mbit/s
+</code></pre></div>
+
+<p><strong>c) ¿Qué <code>rwnd</code> necesitaría para alcanzar 10 Mbit/s con ese RTT?</strong></p>
+<p><em>Se despeja de <code>throughput = rwnd / RTT</code>:</em></p>
+<div class="codehilite"><pre><span></span><code>   rwnd = throughput · RTT = 10 · 10⁶ bits/s · 0,120 s / 8 = 150 000 bytes
+</code></pre></div>
+
+<p><strong>Interpretación — y el error conceptual que esconde.</strong> Con <code>cwnd = 1 MB</code>, <strong>duplicar el
+<code>cwnd</code> no mejora nada</strong>: el mínimo sigue siendo 16 KiB. El único camino es que <strong>el receptor
+abra el <code>rwnd</code></strong>, es decir que consuma más rápido (<code>read()</code> más seguido) o que tenga un
+buffer de recepción más grande (<code>SO_RCVBUF</code>). <strong>Ninguna acción sobre la red sirve para
+mejorar esto.</strong> Por eso se dice que el <code>rwnd</code> es "el grifo que abre el receptor": agrandarlo
+no le pide nada a nadie.</p>
+<h2>2.2 Ejercicio 2 — El receptor deja de leer a mitad de la transferencia</h2>
+<p><strong>Datos.</strong> <code>cwnd = 8 MSS</code> (8 KiB). El receptor anuncia <code>rwnd = 16 KiB</code> al principio. En un
+momento dado la aplicación de B deja de llamar a <code>read()</code> durante 3 segundos.</p>
+<p><strong>a) Evolución de la ventana efectiva y del <code>rwnd</code>, RTT por RTT.</strong></p>
+<p><em>Suposiciones (y hay que declararlas): MSS = 1 KiB, RTT = 50 ms, sin pérdidas, ACKs
+inmediatos. "Deja de leer" significa que el buffer de recepción de B </em><em>no se vacía</em><em>, pero B
+</em><em>sigue</em><em> mandando ACKs, porque TCP asienta por recepción de bytes, no por <code>read()</code>.</em></p>
+<div class="codehilite"><pre><span></span><code>   RTT 0: rwnd = 16 KiB (buffer vacío)     ventana = min(8, 16) = 8 KiB  ← manda cwnd
+   RTT 1: A manda 8 KiB                     ventana = 8 KiB
+   RTT 2: B tiene 16 KiB en buffer (8 + 8)  rwnd = 0  → ventana = min(8, 0) = 0
+   RTT 3..59: ventana = 0                   A NO MANDA NADA
+   RTT 60: expira el persist timer
+           A ──[1 byte, zero-window probe]──▶
+   ◀──[ACK=..., rwnd=0]── A                ventana = 0, espera el doble (100 ms)
+   ... se repite con 200 ms, 400 ms, 800 ms, 1600 ms ...
+</code></pre></div>
+
+<p><strong>b) ¿Cuántos bytes perdió A en el tiempo en que estuvo frenado?</strong></p>
+<div class="codehilite"><pre><span></span><code>   Bytes enviados antes de frenar = 16 KiB (lo que entró en el buffer de B)
+   Bytes enviados durante el freno = 0
+   → A "perdió" ≈ 3 s × 8 KiB/RTT = 3/0,050 × 8 KiB = 480 KiB de oportunidad perdida
+</code></pre></div>
+
+<p><em>cálculo de oportunidad, no de datos: esos 480 KiB no se mandaron, simplemente porque la
+ventana efectiva era 0.</em></p>
+<p><strong>c) ¿Cuándo se reanuda?</strong></p>
+<div class="codehilite"><pre><span></span><code>   A manda la sonda → B responde ACK con rwnd &gt; 0
+   → ventana efectiva = min(cwnd, rwnd) &gt; 0
+   → A reanuda a plena velocidad, sin evento de congestión de por medio
+</code></pre></div>
+
+<p><strong>d) ¿Qué NO pasó en esta historia?</strong></p>
+<div class="codehilite"><pre><span></span><code>   ✗ cwnd NO bajó           (no hubo pérdida: no hubo ni un paquete perdido)
+   ✗ No hubo RTO             (no hubo datos sin confirmar: no había nada en vuelo)
+   ✗ La red no se enteró     (no hubo congestión: ningún router bajó nada)
+   ✗ No hubo control de congestión en ningún momento
+</code></pre></div>
+
+<p><strong>Interpretación.</strong> Esta es la demostración más limpia de por qué los dos mecanismos tienen
+que estar separados. <strong>Todo el throughput perdido se recuperó instantáneamente</strong> en cuanto B
+volvió a leer, porque la red nunca estuvo congestionada y <code>cwnd</code> nunca bajó. Si TCP hubiera
+aplicado control de congestión, la ventana estaría artificialmente destruida y la
+recuperación habría tardado varios RTTs.</p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Bajar <code>cwnd</code> cuando el <code>rwnd</code> es 0.</strong> Es el error conceptual más caro del tema.</li>
+<li><strong>Asumir que B deja de mandar ACKs cuando deja de leer.</strong> Falso: TCP asienta por
+  <strong>recepción de bytes</strong>, no por entrega a la aplicación. Los ACKs siguen fluyendo (salvo
+  <em>delayed ACK</em>), lo que mantiene viva la conexión.</li>
+<li><strong>Confundir la sonda de 1 byte con una retransmisión.</strong> Es una <strong>consulta</strong>: el byte no
+  es un dato nuevo, es el que ya está confirmado, y su único objetivo es generar un ACK con
+  el <code>rwnd</code> actualizado.</li>
+</ul>
+<h2>2.3 Ejercicio 3 — <code>cwnd</code> grande y <code>rwnd</code> chico: cuánto throughput se pierde</h2>
+<p><strong>Datos.</strong> Enlace de 1 Gbps, RTT 50 ms. Se comparan tres configuraciones.</p>
+<p><strong>a) <code>cwnd = 1 MiB</code>, <code>rwnd = 8 KiB</code>.</strong></p>
+<div class="codehilite"><pre><span></span><code>   ventana efectiva = min(1 048 576, 8 192) = 8 192 bytes
+   throughput = 8 192 / 0,050 = 163 840 B/s = 1,31 Mbit/s
+   utilización del enlace = 1,31 / 1000 = 0,13 %
+</code></pre></div>
+
+<p><strong>b) <code>cwnd = 8 KiB</code>, <code>rwnd = 1 MiB</code>.</strong></p>
+<div class="codehilite"><pre><span></span><code>   ventana efectiva = min(8 192, 1 048 576) = 8 192 bytes
+   throughput = 163 840 B/s = 1,31 Mbit/s      ← ¡idéntico! y es otro problema
+</code></pre></div>
+
+<p><strong>c) <code>cwnd = 1 MiB</code>, <code>rwnd = 1 MiB</code>.</strong></p>
+<div class="codehilite"><pre><span></span><code>   ventana efectiva = 1 048 576 bytes
+   throughput = 1 048 576 / 0,050 = 20 971 520 B/s = 167,8 Mbit/s
+   utilización = 16,8 %
+</code></pre></div>
+
+<p><strong>d) Comparación y diagnóstico.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Configuración</th>
+<th>Ventana efectiva</th>
+<th>Throughput</th>
+<th>Utiliz.</th>
+<th><strong>Quién limita</strong></th>
+<th><strong>Qué se arregla</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cwnd</code>=1 MiB, <code>rwnd</code>=8 KiB</td>
+<td>8 192</td>
+<td>1,31 Mbit/s</td>
+<td>0,13 %</td>
+<td><strong>el receptor</strong></td>
+<td>que B lea más rápido / <code>SO_RCVBUF</code> mayor</td>
+</tr>
+<tr>
+<td><code>cwnd</code>=8 KiB, <code>rwnd</code>=1 MiB</td>
+<td>8 192</td>
+<td>1,31 Mbit/s</td>
+<td>0,13 %</td>
+<td><strong>el emisor</strong></td>
+<td>que la red dé más (o <code>cwnd</code> crezca)</td>
+</tr>
+<tr>
+<td><code>cwnd</code>=1 MiB, <code>rwnd</code>=1 MiB</td>
+<td>1 048 576</td>
+<td>167,8 Mbit/s</td>
+<td>16,8 %</td>
+<td><strong>el enlace</strong></td>
+<td>más ancho de banda</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Interpretación — y acá está la moraleja.</strong> Las dos primeras filas dan <strong>exactamente el mismo
+número</strong>, y sin embargo <strong>ninguna de las dos soluciones sirve para la otra</strong>: si en (a) agrandás
+<code>cwnd</code> a 1 MiB no cambia nada (el mínimo sigue siendo <code>rwnd</code>), y si en (b) agrandás <code>rwnd</code> a 1 MiB
+tampoco (ahora el mínimo pasa a ser <code>cwnd</code>). Y el 83 % del enlace sin usar en (c) tampoco es culpa de
+ninguna de las dos ventanas: es el <strong>BDP</strong> (<code>10⁹ · 0,050 / 8 = 6 250 000 bytes</code>), así que con 1 MiB de
+ventana seguís muy por debajo del techo físico.</p>
+<p><strong>El corolario práctico:</strong> siempre que veas un throughput bajo, <strong>lo primero es mirar los dos
+límites y ver cuál manda</strong>, antes de tocar nada. Es el mismo diagnóstico del ejercicio 2.2.</p>
+<h2>3.1 Examen 2009-07, Pregunta 1 (10 puntos)</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc0907</code> — 29 de julio de 2009.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0907.pdf
+<strong>Texto del examen:</strong></p>
+<p>En un protocolo de capa de transporte:
+a) ¿Cuál es la diferencia entre Control de Flujo y Control de Congestión?
+b) ¿Cómo hace TCP para detectar la existencia de congestión en la red?
+c) ¿La pérdida de paquetes siempre implica congestión? Justifique su respuesta.</p>
+</blockquote>
+<p><strong>Respuestas oficiales (textuales):</strong></p>
+<blockquote>
+<p>a) "El control de flujo intenta que el emisor no desborde el buffer del receptor
+transmitiendo muy rápido demasiados datos. El control de congestión intenta evitar que se
+pierdan paquetes debido a que hay demasiadas fuentes enviando muy rápido demasiado tráfico
+a ser manejado por la red."</p>
+<p>b) "TCP asume que la pérdida de paquetes (o grandes retardos) implican congestión."</p>
+<p>c) "No. La pérdida de paquetes también puede darse por una capa de enlace defectuosa, por
+ejemplo."</p>
+</blockquote>
+<h3>Parte a) — La diferencia (≈4 puntos)</h3>
+<p>Se responde con la tabla de §1.1. <strong>El punto clave para el profesor:</strong> los dos se resuelven
+reduciendo la ventana efectiva, pero por <strong>motivos distintos</strong>, y confundirlos es el error
+típico. Sumá que el flujo <strong>lo controla el receptor</strong> (y por eso puede anunciarse sin ambigüedad)
+mientras que la congestión <strong>la tiene que estimar el emisor</strong> (y por eso es una hipótesis,
+no una medición).</p>
+<h3>Parte b) — Cómo detecta TCP la congestión (≈3 puntos)</h3>
+<p><strong>Las dos señales</strong> (desarrolladas en la Clase 21):</p>
+<div class="codehilite"><pre><span></span><code>   ┌────────────────────────────────────────────────────────────────┐
+   │ 1. Timeout (vence el RTO)                                      │
+   │    → no llegó ni el ACK siguiente → pérdida GRAVE o ruta caída│
+   │                                                                │
+   │ 2. 3 ACKs duplicados                                           │
+   │    → el siguiente sí llegó → pérdida AISLADA, la red aguanta  │
+   └────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p>La respuesta oficial además menciona <strong>"(o grandes retardos)"</strong>, y eso vale: un RTT que sube
+mucho indica <strong>cola</strong> en los routers. Pero ojo, el enunciado es explícito: <em>"TCP </em><em>asume</em><em>
+que..."</em>. Es una <strong>inferencia</strong>, no una notificación. <strong>Con ECN hay una tercera vía</strong>: el
+router marca CE y el receptor avisa con CONG_DETECTED, que ya no es inferencia sino
+notificación explícita (Clase 21 §1.6).</p>
+<h3>Parte c) — ¿Siempre la pérdida implica congestión? (≈3 puntos)</h3>
+<p><strong>No.</strong> Fuentes de pérdida que <strong>no</strong> son congestión:</p>
+<ul>
+<li><strong>Errores de CRC</strong> en un enlace (ruido, cable malo): el paquete ni siquiera llegó a la
+  cola.</li>
+<li><strong>Buffer del receptor lleno</strong> (control de flujo): el paquete se descartó aguas abajo, pero
+  la red estaba perfecta.</li>
+<li><strong>Descarte por ACL / firewall / filtrado</strong> de un router intermedio.</li>
+<li><strong>Fragmentación descartada</strong> en IPv4 en un router que no tiene espacio para un fragmento.</li>
+<li><strong>Corte de un enlace</strong> (un cable, no la carga).</li>
+</ul>
+<p><strong>La justificación que da puntos:</strong> aunque la pérdida <em>no</em> siempre sea congestión, <strong>TCP
+asume que lo es</strong> porque es la apuesta con mejor promedio. Ante la duda entre "la red está
+saturada" y "fue un error puntual", <strong>bajar la ventana</strong> cuesta rendimiento en el caso "error
+puntual" pero <strong>salva la red</strong> en el caso "saturada". El error hacia el otro lado (mantener la
+ventana y saturar la red) es mucho más caro y además causa <em>bufferbloat</em> y colapso. La
+asimetría de costos justifica la apuesta conservadora.</p>
+<blockquote>
+<p><strong>Tope para 10 puntos:</strong> la definición de cada uno, la tabla de comparación, las dos
+señales de detección, y el "no" de (c) con al menos dos fuentes de pérdida no congestiva y
+la justificación de por qué TCP asume.</p>
+</blockquote>
+<h2>3.2 Examen 2010-02, Pregunta 5 (7 puntos) — el mecanismo de control de flujo</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc1002</code> — 2 de febrero de 2010.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1002.pdf</p>
+</blockquote>
+<p>⚠️ <strong>Nota de método, leela antes de estudiar esto:</strong> el <code>BANCO-EXAMENES.md</code> registra
+<code>2010-02 P5</code> como <em>"jitter vs. retardo"</em>, y el texto extraído del PDF confirma que ése es el
+tema. <strong>El enunciado de ese apartado NO es sobre control de flujo.</strong> Lo que sigue es una
+<strong>solución propia</strong> <em>(solución propia)</em> del mecanismo de control de flujo de TCP, desarrollada
+porque es un tema del bloque y porque aparece explícitamente en <code>2009-07 P1a</code>.</p>
+<p><strong>Respuesta (7 puntos):</strong> el control de flujo tiene <strong>un solo campo</strong>, el <strong><code>window</code></strong> de 16 bits
+en la cabecera, que rellena el <strong>receptor</strong> en cada segmento que manda.</p>
+<ul>
+<li><strong>a) Quién lo controla y cómo se comunica (2 pts).</strong> El <strong>receptor</strong> es el único que sabe cuánto
+  le queda en su buffer. Como no hay forma de que el emisor lo adivine, lo <strong>anuncia</strong> en el campo
+  <code>window</code> de cada segmento TCP que envía (ACKs incluidos), y el emisor <strong>lee</strong> ese campo y se
+  autoimpone el límite.</li>
+<li><strong>b) La fórmula y el sentido (2 pts).</strong> <code>rwnd = espacio libre en el buffer + bytes recibidos sin
+  entregar</code>, y <code>ventana efectiva = min(cwnd, rwnd)</code>. Es un <strong>mínimo</strong> porque ambas son cotas
+  superiores independientes: sumarlas desbordaría el buffer del receptor justo cuando la red va
+  peor.</li>
+<li><strong>c) El caso <code>rwnd = 0</code> (2 pts).</strong> Si el receptor no lee, su buffer se llena y el <code>rwnd</code> llega a
+  0. TCP entra en <strong>persistencia</strong> (<code>RFC 9293</code> §8.6): el emisor manda <strong>zero-window probes</strong> de
+  <strong>1 byte</strong>, con periodo <strong>exponencial</strong> (empieza en un RTO y duplica hasta un tope), hasta que el
+  receptor responda con un <code>rwnd &gt; 0</code>. <strong>No es control de congestión</strong>: la red no tiene nada
+  saturado y bajar el <code>cwnd</code> no haría que la aplicación del receptor lea más rápido.</li>
+<li><strong>d) El otro extremo (1 pt).</strong> Simétricamente, si el <strong>emisor</strong> escribe más rápido de lo que la
+  conexión puede sacar, su <strong>buffer de envío</strong> se llena y el <code>write()</code> se bloquea (o devuelve
+  <code>EAGAIN</code> en modo no bloqueante). Ese es el otro lado del control de flujo, puramente local.</li>
+</ul>
+<h2>3.3 Conexión con 2011-03 P4 (10 puntos)</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc1103</code> — 21 de febrero de 2011.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1103.pdf</p>
+</blockquote>
+<p>En el diagrama clásico de <code>2011-03 P4</code> (resuelto por completo en la <strong>Clase 22</strong>, Ejercicio
+3), el <code>cwnd</code> es lo que <strong>cambia</strong> entre los dos apartados:</p>
+<ul>
+<li><strong>Sin pérdida:</strong> el <code>cwnd</code> <strong>no baja</strong>, y los 4 segmentos salen en un solo vuelo.</li>
+<li><strong>Con pérdida del primer segmento:</strong> al detectar la pérdida, el <code>cwnd</code> <strong>se reduce</strong>
+  (<code>cwnd/2</code> en Reno por 3 dupACKs; <code>cwnd = 1 MSS</code> en Tahoe o ante timeout). Eso es control
+  de <strong>congestión</strong>, y es la razón por la que los cuatro segmentos <strong>no</strong> salen juntos.</li>
+</ul>
+<p><strong>Lo que hay que dejar claro para el examen:</strong> en <code>2011-03 P4a</code> los 4 segmentos salen juntos
+porque la ventana <strong>alcanzaba</strong>; en <code>2011-03 P4b</code> el primero se pierde, se detecta, y la
+ventana <strong>ya no alcanza para mandar todo de una</strong>. Un mismo <code>rwnd</code> en los dos casos; lo que
+cambia es el <code>cwnd</code>.</p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen en 10 líneas</h2>
+<ol>
+<li><strong>Flujo</strong> = el receptor no puede absorber → lo controla <code>rwnd</code>. <strong>Congestión</strong> = la red no puede transportar → lo controla <code>cwnd</code>.</li>
+<li>El <code>rwnd</code> viaja en el campo <strong><code>window</code></strong> (16 bits) de <strong>cada</strong> segmento que manda el receptor.</li>
+<li><code>rwnd = espacio libre + bytes recibidos sin entregar</code> → es una <strong>cota superior</strong>, no una medida instantánea.</li>
+<li><strong><code>ventana efectiva = min(cwnd, rwnd)</code></strong>: ambas son cotas, y el <code>min</code> garantiza que <strong>nadie se desborda</strong>.</li>
+<li><strong>No es la suma</strong>: con la suma, lo que la red no tomó se acumularía en el buffer del receptor y lo desbordaría <strong>justo cuando la red va peor</strong>.</li>
+<li><strong><code>rwnd = 0</code></strong> → <strong>persistencia</strong> → <strong>zero-window probes</strong> de <strong>1 byte</strong>, periodo <strong>exponencial</strong>.</li>
+<li>Eso <strong>NO es control de congestión</strong>: la red está perfecta y bajar <code>cwnd</code> no haría leer más rápido al otro.</li>
+<li>El otro lado: si el <strong>emisor</strong> no lee rápido, su buffer de envío se llena y el <code>write()</code> se <strong>bloquea</strong>.</li>
+<li><code>cwnd</code> grande y <code>rwnd</code> chico y <code>cwnd</code> chico con <code>rwnd</code> grande dan <strong>el mismo throughput</strong> y <strong>arreglos distintos</strong>: siempre hay que ver cuál limita.</li>
+<li>En 2026: <code>min(cwnd, rwnd)</code> no cambia; lo que cambió es <em>Window Scale</em> (<code>RFC 7323</code>), el IW de 10 MSS (<code>RFC 6928</code>) y que el <code>cwnd</code> lo maneja CUBIC (<code>RFC 9438</code>).</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> ¿Por qué la ventana efectiva es el <strong>mínimo</strong> y no la suma?</p>
+<details><summary>Respuesta</summary>
+
+Porque ambas son **cotas superiores independientes**: no se puede mandar más de lo que la
+red aguanta (`cwnd`) ni más de lo que el receptor aguanta (`rwnd`). Si las sumaras, el
+excedente que la red no pudo tomar se acumularía en el buffer del receptor y lo desbordarías
+**justo cuando la red va peor**, que es el peor momento posible. El `min` garantiza que
+nadie se desborda.
+
+</details>
+
+<p><strong>2.</strong> El receptor anuncia <code>rwnd = 0</code>. ¿Qué hace el emisor?</p>
+<details><summary>Respuesta</summary>
+
+Nada de datos: la ventana efectiva es `min(cwnd, 0) = 0`. Lo que hace es el **persistence
+timer**: al vencer, manda un **zero-window probe** de **1 byte** (el último byte recibido),
+que es una **consulta**, no una retransmisión. Si B responde con `rwnd = 0`, espera el doble
+de tiempo y vuelve a sondear; si responde con `rwnd > 0`, reanuda. Todo esto es control de
+**flujo**: la red está bien.
+
+</details>
+
+<p><strong>3.</strong> Una conexión tiene <code>cwnd = 64 KiB</code> y el receptor anuncia <code>rwnd = 4 KiB</code>. El
+throughput medido es <code>4 192 / 0,100 s = 41 920 B/s</code>. ¿Qué pasa si el <code>cwnd</code> sube a 1 MiB?</p>
+<details><summary>Respuesta</summary>
+
+**Nada.** La ventana efectiva es `min(64 KiB, 4 KiB) = 4 KiB`, y después
+`min(1 MiB, 4 KiB) = 4 KiB`. El mínimo sigue siendo el `rwnd`, así que el throughput
+sigue en 41 920 B/s. La única forma de mejorarlo es que el receptor **abra el `rwnd`**: que
+llame a `read()` más seguido o que tenga un buffer de recepción más grande.
+
+</details>
+
+<p><strong>4.</strong> ¿Por qué TCP asume que una pérdida de paquetes implica congestión, si no siempre es
+así?</p>
+<details><summary>Respuesta</summary>
+
+Porque es la apuesta con **mejor promedio**. Ante la duda entre "la red está saturada" y
+"fue un error puntual" (un CRC, un buffer del receptor lleno, una ACL), **bajar la ventana**
+cuesta rendimiento en el caso "error puntual" pero **salva la red** en el caso "saturada". El
+error hacia el otro lado —mantener la ventana y saturar la red— es mucho más caro: produce
+*bufferbloat*, colas enormes y colapso. La asimetría de costos justifica la conservador.
+
+</details>
+
+<p><strong>5.</strong> Nombra dos causas de pérdida de paquetes que <strong>no</strong> son congestión.</p>
+<details><summary>Respuesta</summary>
+
+(1) **Errores de CRC** en un enlace: el paquete ni siquiera llega a la cola. (2) **Buffer del
+receptor lleno**: es control de flujo, la red estaba perfecta. Otras válidas: descarte por
+ACL/firewall, fragmento descartado en IPv4, corte de un enlace.
+
+</details>
+
+<p><strong>6.</strong> ¿Quién decide el <code>rwnd</code>? ¿Cómo se lo comunica al emisor? ¿Y por qué el emisor no
+puede ignorarlo?</p>
+<details><summary>Respuesta</summary>
+
+Lo decide el **receptor**, que es el único que sabe cuánto le queda en su buffer. Se lo
+comunica **rellenando el campo `window`** de cada segmento que manda, ACKs incluidos. No puede
+ignorarlo porque el `rwnd` es una **cota superior** que el emisor se autoimpone: si mandara más, el
+excedente se acumularía en el buffer del receptor y lo desbordaría.
+
+</details>
+
+<p><strong>7.</strong> El <code>cwnd</code> es de 8 KiB y el <code>rwnd</code> de 1 MiB. El throughput es 1,31 Mbit/s con RTT
+50 ms. ¿Se arregla agrandando el <code>rwnd</code>?</p>
+<details><summary>Respuesta</summary>
+
+**No**, porque el mínimo sigue siendo el `cwnd` de 8 KiB:
+`min(8 192, 1 048 576) = 8 192`. Aunque el receptor levante la restricción al máximo, el
+límite pasa a ser el emisor, y la solución sería que `cwnd` crezca (que es lo que hace el
+control de congestión). El detalle pedagógico: **`cwnd` chico con `rwnd` grande y `cwnd`
+grande con `rwnd` chico dan el mismo throughput y necesitan arreglos opuestos.**
+
+</details>
+
+<p><strong>8.</strong> ¿Qué cambió entre 2011 y 2026 en este tema?</p>
+<details><summary>Respuesta</summary>
+
+El **marco normativo**: la especificación vigente es **`RFC 9293` (2022)**, no `RFC 793`,
+y su §8.6 es el de la persistencia. **Sobre el `rwnd` mismo no cambió nada**: sigue siendo el
+campo `window` de 16 bits, sigue siendo una cota superior, y la ventana efectiva sigue siendo
+`min(cwnd, rwnd)`. Lo que cambió: **Window Scale** (`RFC 7323`) multiplica el campo por
+`2^shift` y saca el techo de 64 KiB; el **Initial Window** son 10 MSS (`RFC 6928`), no 1; y
+hoy el `cwnd` lo maneja **CUBIC** (`RFC 9438`, *Standards Track*) en vez de Reno. En QUIC
+(`RFC 9000`) el control de flujo tiene **dos niveles**, por conexión y por stream.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>sirc0907</code></strong> — P1 (10 pts): flujo vs. congestión, detección de congestión, y si toda pérdida es congestión</li>
+<li><strong>Examen <code>sirc1002</code></strong> — P5: jitter vs. retardo (el <code>BANCO-EXAMENES.md</code> lo registra así; §3.2 desarrolla el control de flujo como solución propia)</li>
+<li><strong>Examen <code>sirc1103</code></strong> — P4 (10 pts): el diagrama de 4 segmentos y el papel del <code>cwnd</code></li>
+<li><strong>Examen <code>sirc0912</code></strong> — P2 (10 pts): fiabilidad en transporte vs. enlace</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 6 §6.7 "TCP Congestion Control" (pág. ~600 del PDF)</li>
+<li><strong><code>RFC 9293</code></strong> — TCP (2022, <em>Internet Standard</em>); §8.6 persistencia / <em>zero-window probes</em></li>
+<li><strong><code>RFC 7323</code></strong> — Timestamps y Window Scale (2014, obsolesce <code>RFC 1323</code>)</li>
+<li><strong><code>RFC 6928</code></strong> — Initial Window = 10 MSS (2013) · <strong><code>RFC 5681</code></strong> — TCP Congestion Control (2009)</li>
+<li><strong><code>RFC 9438</code></strong> — CUBIC (2023, <em>Standards Track</em>, obsolesce <code>RFC 8312</code>)</li>
+<li><strong><code>RFC 9000</code></strong> — QUIC (2021): control de flujo por conexión y por stream</li>
+<li><strong>Clase siguiente:</strong> 21 — Control de congestión en TCP: slow start, AIMD, fast recovery y ECN</li>
+</ul></body></html>

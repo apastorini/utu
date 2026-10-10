@@ -1,0 +1,2035 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 11 — DNS: iterativo vs. recursivo, caché y TTL</h1>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 1340 410" style="max-width:1340px"><rect width="1340" height="410" fill="#ffffff"/><text x="670.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Resolucion DNS iterativa sin cache (Examen 2010-07 P3)</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><rect x="34.0" y="38" width="200" height="36" rx="5" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="134.0" y="59.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">PC</text><line x1="134.0" y1="74" x2="134.0" y2="394" stroke="#7aa7c4" stroke-width="1.2" stroke-dasharray="4 3"/><rect x="302.0" y="38" width="200" height="36" rx="5" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="402.0" y="52.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">Servidor</text><text x="402.0" y="66.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">local</text><line x1="402.0" y1="74" x2="402.0" y2="394" stroke="#7aa7c4" stroke-width="1.2" stroke-dasharray="4 3"/><rect x="570.0" y="38" width="200" height="36" rx="5" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="670.0" y="59.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">Root</text><line x1="670.0" y1="74" x2="670.0" y2="394" stroke="#7aa7c4" stroke-width="1.2" stroke-dasharray="4 3"/><rect x="838.0" y="38" width="200" height="36" rx="5" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="938.0" y="59.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">TLD .edu</text><line x1="938.0" y1="74" x2="938.0" y2="394" stroke="#7aa7c4" stroke-width="1.2" stroke-dasharray="4 3"/><rect x="1106.0" y="38" width="200" height="36" rx="5" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="1206.0" y="59.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">Autoritativo</text><line x1="1206.0" y1="74" x2="1206.0" y2="394" stroke="#7aa7c4" stroke-width="1.2" stroke-dasharray="4 3"/><line x1="134.0" y1="100" x2="402.0" y2="100" stroke="#14507a" stroke-width="1.8" marker-end="url(#p)"/><text x="268.0" y="93" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#14507a">consulta A
+pruebaexamen.edu</text><line x1="402.0" y1="138" x2="670.0" y2="138" stroke="#14507a" stroke-width="1.8" marker-end="url(#p)"/><text x="536.0" y="131" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#14507a">¿quien es
+el .edu?</text><line x1="670.0" y1="176" x2="402.0" y2="176" stroke="#2e7d4f" stroke-width="1.8" marker-end="url(#po)"/><text x="536.0" y="169" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#2e7d4f">IP del TLD .edu
+solo una referencia</text><line x1="402.0" y1="214" x2="938.0" y2="214" stroke="#14507a" stroke-width="1.8" marker-end="url(#p)"/><text x="670.0" y="207" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#14507a">¿cual es el
+autoritativo?</text><line x1="938.0" y1="252" x2="402.0" y2="252" stroke="#2e7d4f" stroke-width="1.8" marker-end="url(#po)"/><text x="670.0" y="245" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#2e7d4f">IP del autoritativo
+referencia</text><line x1="402.0" y1="290" x2="1206.0" y2="290" stroke="#14507a" stroke-width="1.8" marker-end="url(#p)"/><text x="804.0" y="283" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#14507a">consulta A
+pruebaexamen.edu</text><line x1="1206.0" y1="328" x2="402.0" y2="328" stroke="#2e7d4f" stroke-width="1.8" marker-end="url(#po)"/><text x="804.0" y="321" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#2e7d4f">IP de pruebaexamen.edu
+con TTL</text><line x1="402.0" y1="366" x2="134.0" y2="366" stroke="#2e7d4f" stroke-width="1.8" marker-end="url(#po)"/><text x="268.0" y="359" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#2e7d4f">IP de pruebaexamen.edu
+la cachea antes de responder</text></svg></p>
+<p><strong>Bloque:</strong> B (Aplicación) · <strong>Semana:</strong> 4 · <strong>Duración estimada:</strong> 110 min
+<strong>Correlativa:</strong> Clase 10 (DNS: la base de datos distribuida) · <strong>Sigue con:</strong> Clase 12 (el resolver DNS en la práctica, con sockets)
+<strong>Material de referencia:</strong> Tanenbaum cap. 7 (§7.4.3, «Resolución de nombres») · RFC 1034, RFC 1035, RFC 6891, RFC 7766, RFC 8020, RFC 8484, RFC 7858, RFC 9250, RFC 8767, RFC 9460, RFC 4033-4035, RFC 5155</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Explicar la diferencia entre una consulta <strong>iterativa</strong> y una <strong>recursiva</strong>, diciendo <strong>quién se hace cargo</strong> de seguir preguntando cuando el servidor consultado no tiene la respuesta.</li>
+<li>Describir el <strong>flujo real</strong> de una resolución, desde el <em>stub resolver</em> del sistema operativo hasta el servidor autoritativo, y decir <strong>qué parte es recursiva y qué parte es iterativa</strong>.</li>
+<li>Escribir los <strong>mensajes DNS literales</strong> de una resolución completa sin caché, y explicar <strong>qué contesta cada uno</strong> (incluida la diferencia entre una <em>referencia</em> y una <em>respuesta</em> final).</li>
+<li>Explicar por qué existe la <strong>caché</strong>, por qué el TTL es un <strong>compromiso</strong>, <strong>quién lo define</strong> y <strong>quién lo descuenta</strong>.</li>
+<li>Describir la <strong>caché negativa</strong>: qué es <code>NXDOMAIN</code>, qué es <code>SOA.MINIMUM</code>, por qué hay que cachear los errores y qué dice <code>RFC 8020</code>.</li>
+<li>Resolver completo el <strong>Examen 2010-07 Pregunta 3</strong> (8 puntos) con su solución oficial a la vista.</li>
+<li>Resolver completo el <strong>Examen 2010-12 Pregunta 1</strong> (8 puntos), los dos apartados, con su solución oficial a la vista.</li>
+<li>Explicar qué cambió con <strong>DoH</strong>, <strong>DoT</strong>, <strong>DoQ</strong>, <strong>DNSSEC</strong> y <strong>SVCB/HTTPS</strong>, y por qué el punto 2 de arriba <strong>no se enseña</strong> en 2026.</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2010-12 P1</code> (8 puntos — ★ el TTL del RR y los pasos de una consulta tipo A), <code>2010-07 P3</code> (8 puntos — ★ la resolución iterativa completa sin caché), <code>2010-02 P1b</code> (8 puntos — iterativa vs. recursiva), <code>2007-07 P4</code> (8 puntos — función del DNS y protocolo involucrado).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 Los dos algoritmos, definidos sin ambigüedad</h2>
+<p>El DNS tiene <strong>dos</strong> algoritmos de consulta, y la diferencia entre ellos se reduce a
+<strong>una sola pregunta</strong>: cuando el servidor al que consulté <strong>no tiene</strong> la respuesta,
+<strong>¿quién sigue preguntando?</strong></p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────── ITERATIVA ────────────────────────┐
+   │                                                           │
+   │   YO  ──"¿sabés dónde está la Farmacia?"──▶  VECINO       │
+   │   YO  ◀──"NO SÉ. Preguntale a la Farmacia de ──  VECINO   │
+   │          Pellegrini 1230"                                 │
+   │   YO  ──"¿sabés...?"──────────────────────▶  FARMACIA     │
+   │   YO  ◀──"sí, es acá"─────────────────────  FARMACIA     │
+   │                                                           │
+   │   YO HICE 2 viajes. El vecino no se movió.               │
+   └───────────────────────────────────────────────────────────┘
+
+   ┌──────────────────────── RECURSIVA ───────────────────────┐
+   │                                                           │
+   │   YO  ──"¿sabés dónde está la Farmacia?"──▶  VECINO       │
+   │                             VECINO ──"¿sabés...?"──▶   │
+   │                                               FARMACIA   │
+   │                                               FARMACIA ◀─│
+   │                             VECINO ◀──"sí, es acá"──     │
+   │   YO  ◀──"es acá"──────────  VECINO                      │
+   │                                                           │
+   │   YO HICE 1 viaje. El vecino hizo 3.                     │
+   └───────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Iterativa</strong></th>
+<th><strong>Recursiva</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>El que no sabe</strong></td>
+<td>devuelve una <strong>referencia</strong> («andá a preguntarle a este») y <strong>no hace nada más</strong></td>
+<td><strong>pregunta él</strong> al nivel inferior, y así hasta obtener la respuesta final</td>
+</tr>
+<tr>
+<td><strong>Quién sigue preguntando</strong></td>
+<td><strong>el que preguntó</strong> (el cliente)</td>
+<td><strong>el que recibió la pregunta</strong> (el servidor)</td>
+</tr>
+<tr>
+<td><strong>Qué vuelve</strong></td>
+<td>o una respuesta, o una referencia</td>
+<td><strong>siempre</strong> una respuesta final (o un error terminal)</td>
+</tr>
+<tr>
+<td><strong>Cuántos viajes ve el cliente</strong></td>
+<td><strong>muchos</strong>: uno por nivel</td>
+<td><strong>uno</strong>: pide y recibe la respuesta</td>
+</tr>
+<tr>
+<td><strong>Quién la usa</strong></td>
+<td>el <strong>resolver recursivo</strong>, contra los autoritativos</td>
+<td>el <strong>host</strong> (su <em>stub resolver</em>), contra el resolver local</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Y el último punto es el que decide todo lo demás:</strong> si <strong>cada host</strong> de Internet
+tuviera que hacer los cuatro viajes él mismo, el root server tendría que atender
+miles de millones de consultas por segundo y todos los hosts estarían haciendo el
+mismo trabajo redundante. La <strong>consulta recursiva</strong> le delega ese trabajo a <strong>un
+solo servidor</strong>, que además es el único que puede <strong>cachear</strong> el resultado y
+devolverlo al siguiente cliente sin volver a bajar por la jerarquía.</p>
+<blockquote>
+<p><strong>La frase que hay que saber decir de memoria:</strong>
+<strong>la iterativa existe para que un solo servidor recursivo haga el trabajo pesado y
+cachee todo; la recursiva existe para que el cliente no tenga que hacerlo.</strong></p>
+</blockquote>
+<h3>Cómo se ve en el cable: los flags <code>RD</code> y <code>RA</code></h3>
+<p>No hay que saberlo de memoria para el examen, pero <strong>te da la certeza absoluta</strong>
+de qué algoritmo se está usando:</p>
+<div class="codehilite"><pre><span></span><code>   0                   1                   2                   3
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |            ID (16 bits)                                       |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |QR|   Opcode   |AA|TC|RD|RA|  Z  |AD|CD|     RCODE           |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |           QDCOUNT = número de preguntas                       |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |           ANCOUNT = número de respuestas                      |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |           NSCOUNT = número de registros de autoridad          |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+  |           ARCOUNT = número de registros adicionales           |
+  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</code></pre></div>
+
+<ul>
+<li><strong><code>RD</code></strong> (<em>Recursion Desired</em>, «quiero recursión»): lo pone <strong>el que pregunta</strong>.
+  <code>RD = 1</code> significa «si no sabés, averiguatelo vos por mí».</li>
+<li><strong><code>RA</code></strong> (<em>Recursion Available</em>, «recursión disponible»): lo pone <strong>el que
+  responde</strong>, y dice si <strong>ese servidor</strong> está dispuesto a hacer de recursivo. Un
+  <strong>root server tiene <code>RA = 0</code> siempre</strong>: los root no hacen de recursivos, jamás.</li>
+<li><strong><code>AA</code></strong> (<em>Authoritative Answer</em>): lo pone el que responde y dice «esta es la
+  respuesta final, la tengo yo». <strong>Un root o un TLD contestan con <code>AA = 0</code></strong>,
+  porque lo que están dando es una <em>referencia</em>, no una respuesta.</li>
+<li><strong><code>TC</code></strong> (<em>Truncated</em>): la respuesta no entró y hay que repetir por TCP.</li>
+<li><strong><code>RCODE</code></strong>: <code>0</code> NOERROR, <code>1</code> FORMERR, <code>2</code> SERVFAIL, <code>3</code> <strong>NXDOMAIN</strong>,
+  <code>4</code> NOTIMP, <code>5</code> REFUSED.</li>
+</ul>
+<p>Los dos valores que aparecen en los exchanges de esta clase:</p>
+<div class="codehilite"><pre><span></span><code>   Consulta del cliente:   QR=0  RD=1  →  flags = 0x0100   (1000 0000 0000 0000)
+   Respuesta de un root:   QR=1  RD=1  RA=0  →  flags = 0x8180   (REFERENCIA, no respuesta)
+   Respuesta del autorit.: QR=1  AA=1  RD=1  RA=0  →  flags = 0x8580   (RESPUESTA FINAL)
+   Respuesta del recursivo:QR=1  RD=1  RA=1  →  flags = 0x8180   (le devuelve el final al PC)
+</code></pre></div>
+
+<h2>1.2 El flujo real: quién le pregunta a quién</h2>
+<p>Este es <strong>el</strong> diagrama de la unidad, y es la respuesta completa a <code>2010-02 P1b</code> y a
+<code>2010-07 P3</code>:</p>
+<div class="codehilite"><pre><span></span><code>   ╔══════════════════════════════════════════════════════════════════════╗
+   ║  HOST (PC)          RESOLVER RECURSIVO      ROOT      .uy     AUTORIT.║
+   ║   stub resolver      (el del ISP)        (a.root)  (nic.uy)  fing.edu ║
+   ╚══════════════════════════════════════════════════════════════════════╝
+
+     │                     │                     │          │          │
+     │  1. RECURSIVA      │                     │          │          │
+     │  "¿IP de           │                     │          │          │
+     │  www.fing.edu.uy?" │                     │          │          │
+     ├────────────────────▶│                     │          │          │
+     │                     │                     │          │          │
+     │                     │  2. ITERATIVA       │          │          │
+     │                     │  "¿...?"            │          │          │
+     │                     ├────────────────────▶│          │          │
+     │                     │                     │          │          │
+     │                     │  3. REFERENCIA:      │          │          │
+     │                     │  "el TLD .uy está ───┼─────────▶│          │
+     │                     │   en X.Y.W.Z"        │          │          │
+     │                     │◀────────────────────┤          │          │
+     │                     │                     │          │          │
+     │                     │  4. ITERATIVA       │          │          │
+     │                     │  "¿...?"            │          │          │
+     │                     ├────────────────────┼─────────▶│          │
+     │                     │                     │          │          │
+     │                     │  5. REFERENCIA:      │          │          │
+     │                     │  "el autoritativo ───┼──────────┤          │
+     │                     │   está en A.B.C.D"  │          │          │
+     │                     │◀────────────────────┼──────────┤          │
+     │                     │                     │          │          │
+     │                     │  6. ITERATIVA       │          │          │
+     │                     │  "¿...?"            │          │          │
+     │                     ├────────────────────┼──────────┼─────────▶│
+     │                     │                     │          │          │
+     │                     │  7. RESPUESTA FINAL │          │          │
+     │                     │  "es 132.42.120.5"  │          │          │
+     │                     │◀────────────────────┼──────────┼──────────┤
+     │                     │                     │          │          │
+     │  8. RESPUESTA      │                     │          │          │
+     │  "es 132.42.120.5"  │                     │          │          │
+     │◀────────────────────┤                     │          │          │
+     │                     │                     │          │          │
+     │  9. CACHEAR         │                     │          │          │
+     │  (el RR A y las dos referencias, cada uno con SU TTL)
+</code></pre></div>
+
+<p><strong>Lo que hay que leer en este diagrama:</strong></p>
+<ol>
+<li><strong>El mensaje 1 es RECURSIVO.</strong> El <em>stub resolver</em> del sistema operativo le dice
+   al resolver del ISP «resolveste esto por mí y traeme la respuesta final».</li>
+<li><strong>Los mensajes 2 a 7 son ITERATIVOS.</strong> El resolver recursivo es el que pregunta,
+   y el que va bajando por la jerarquía es <strong>él</strong>, no su cliente.</li>
+<li><strong>Los mensajes 3 y 5 NO son respuestas</strong>: son <strong>referencias</strong> (<em>referrals</em>).
+   Vienen con <code>ANCOUNT = 0</code> y el dato en la sección <strong>Authority</strong> + <strong>Additional</strong>.</li>
+<li><strong>Solo el mensaje 7 es una respuesta final</strong>, y es el único con <code>AA = 1</code>.</li>
+<li><strong>El mensaje 8 no es un viaje nuevo</strong>: es la vuelta del mensaje 1.</li>
+</ol>
+<blockquote>
+<p>⚠️ <strong>Esto no cambió desde 1987.</strong> Ni la cadena de actores, ni los dos algoritmos,
+ni los puertos. Un parcial de FING de 2011 y uno de 2026 tienen <strong>el mismo
+desenho de arriba</strong>. Lo único que cambió es <strong>quién ve el primer mensaje</strong> (§1.7).</p>
+</blockquote>
+<h2>1.3 Los mensajes literales</h2>
+<p>Un mensaje DNS tiene <strong>12 bytes de cabecera</strong> y <strong>cuatro secciones</strong>. Todo lo que
+falta son <strong>copias literales</strong> de <code>dig</code>, que es como lo vas a ver en Wireshark.</p>
+<h3>La cabecera, byte a byte</h3>
+<div class="codehilite"><pre><span></span><code>   ID = 0x3F2A        (lo elige el cliente; sirve para emparejar respuesta)
+   flags = 0x0100     (QR=0 consulta, RD=1 quiero recursión, RCODE=0)
+   QDCOUNT = 1        (una pregunta)
+   ANCOUNT = 0        (cero respuestas  ← OJO: todavía no hay respuesta)
+   NSCOUNT = 0        (cero registros de autoridad)
+   ARCOUNT = 0        (cero registros adicionales)
+</code></pre></div>
+
+<h3>Mensaje 1 — el PC pregunta a su resolver local (petición)</h3>
+<div class="codehilite"><pre><span></span><code>;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 0x3F2A
+;; flags: rd; QUERY: 1, ANSWER: 0, AUTHORITY: 0, ADDITIONAL: 0
+
+;; QUESTION SECTION:
+;www.fing.edu.uy.               IN      A
+
+;; MSG SIZE  rcvd: 0
+</code></pre></div>
+
+<p><strong>Traducción campo por campo:</strong> <code>;; flags: rd</code> es el <code>RD = 1</code>. <code>QUESTION</code> es el
+<code>QDCOUNT</code>. Las tres secciones en cero son <code>ANCOUNT</code>, <code>NSCOUNT</code> y <code>ARCOUNT</code>.
+<strong><code>rd</code></strong> significa que el PC <strong>quiere</strong> recursión; que el servidor la conceda o no se
+ve en el <code>ra</code> de la respuesta.</p>
+<h3>Mensaje 3 — el root contesta: <strong>una referencia, no una respuesta</strong></h3>
+<div class="codehilite"><pre><span></span><code>;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 0x3F2B
+;; flags: qr; QUERY: 1, ANSWER: 0, AUTHORITY: 1, ADDITIONAL: 1
+
+;; QUESTION SECTION:
+;www.fing.edu.uy.               IN      A
+
+;; AUTHORITY SECTION:
+uy.             172800  IN  NS   a.nic.uy.
+uy.             172800  IN  NS   b.nic.uy.
+
+;; ADDITIONAL SECTION:
+a.nic.uy.       172800  IN  A    200.40.4.1
+b.nic.uy.       172800  IN  A    200.40.4.2
+
+;; MSG SIZE  rcvd: 132
+</code></pre></div>
+
+<p><strong>Leé esto con cuidado, porque es el 80 % del examen de <code>2010-07 P3</code>:</strong></p>
+<div class="codehilite"><pre><span></span><code>   ANSWER: 0   ←  NO HAY RESPUESTA.  El root NO sabe la IP de www.fing.edu.uy
+                 y NUNCA la va a saber: no es su trabajo.
+
+   AUTHORITY: 1  +  ADDITIONAL: 1   ←  Esto es una DELEGACIÓN:
+                 "el que sabe es a.nic.uy, y además, porque te va a servir,
+                  te paso su dirección: 200.40.4.1"
+
+   El flag `aa` NO aparece  →  AA = 0. Si fuera AA=1 el root estaría afirmandose
+                              autoritativo sobre fing.edu.uy, lo cual es mentira.
+</code></pre></div>
+
+<p>Y el <code>ADDITIONAL SECTION</code> es exactamente el <strong>glue record</strong> de la Clase 10: el
+<code>.uy</code> no tiene por qué saber la IP de <code>a.nic.uy</code> (el nombre), pero <strong>sí</strong> tiene el
+<code>A</code> del servidor de nombres <strong>por el que le delegó</strong> <code>fing.edu.uy</code>, así que lo
+paga en el mismo mensaje y nos ahorra un viaje.</p>
+<h3>Mensaje 5 — el TLD <code>.uy</code> contesta: <strong>otra referencia</strong></h3>
+<div class="codehilite"><pre><span></span><code>;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 0x3F2C
+;; flags: qr; QUERY: 1, ANSWER: 0, AUTHORITY: 1, ADDITIONAL: 1
+
+;; QUESTION SECTION:
+;www.fing.edu.uy.               IN      A
+
+;; AUTHORITY SECTION:
+fing.edu.uy.     172800  IN  NS   ns1.fing.edu.uy.
+fing.edu.uy.     172800  IN  NS   ns2.fing.edu.uy.
+
+;; ADDITIONAL SECTION:
+ns1.fing.edu.uy. 172800  IN  A    132.42.60.1
+ns2.fing.edu.uy. 172800  IN  A    132.42.60.2
+
+;; MSG SIZE  rcvd: 140
+</code></pre></div>
+
+<p><strong>Exactamente la misma forma que la del root</strong>, con <code>ANCOUNT = 0</code> otra vez. El <code>.uy</code>
+tampoco conoce los dominios: lo que tiene es el <strong><code>NS</code> de <code>fing.edu.uy</code></strong>.</p>
+<h3>Mensaje 7 — el autoritativo contesta: <strong>la respuesta final</strong></h3>
+<div class="codehilite"><pre><span></span><code>;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 0x3F2D
+;; flags: qr aa; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0
+
+;; QUESTION SECTION:
+;www.fing.edu.uy.               IN      A
+
+;; ANSWER SECTION:
+www.fing.edu.uy.   3600  IN  A   132.42.120.5
+
+;; MSG SIZE  rcvd: 56
+</code></pre></div>
+
+<p><strong><code>flags: qr aa</code>:</strong> acá sí aparece el <code>aa</code> (<em>Authoritative Answer</em>). <strong>Es la primera
+y única respuesta de la cadena</strong> que tiene contenido. Y mirá el TTL: <code>3600</code>.</p>
+<h3>Mensaje 8 — el resolver recursivo le contesta al PC</h3>
+<div class="codehilite"><pre><span></span><code>;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 0x3F2A
+;; flags: qr rd ra; QUERY: 1, ANSWER: 1, AUTHORITY: 0, ADDITIONAL: 0
+
+;; QUESTION SECTION:
+;www.fing.edu.uy.               IN      A
+
+;; ANSWER SECTION:
+www.fing.edu.uy.   3600  IN  A   132.42.120.5
+
+;; MSG SIZE  rcvd: 56
+</code></pre></div>
+
+<p><strong><code>flags: qr rd ra</code>:</strong> el <code>ra</code> (<em>Recursion Available</em>) confirma que el servidor
+<strong>aceptó</strong> hacer de recursivo. El <code>id</code> es <strong>el mismo del mensaje 1</strong> (<code>0x3F2A</code>):
+así el PC sabe que esta respuesta es la suya.</p>
+<h3>Resumen de los ocho mensajes</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>De</th>
+<th>A</th>
+<th>Tipo</th>
+<th><code>ANCOUNT</code></th>
+<th><code>AA</code></th>
+<th>Qué transporta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>PC (stub)</td>
+<td>resolver local</td>
+<td><strong>recursiva</strong></td>
+<td>0</td>
+<td>—</td>
+<td>la pregunta</td>
+</tr>
+<tr>
+<td>2</td>
+<td>resolver local</td>
+<td>root</td>
+<td>iterativa</td>
+<td>0</td>
+<td>—</td>
+<td>la pregunta</td>
+</tr>
+<tr>
+<td>3</td>
+<td>root</td>
+<td>resolver local</td>
+<td><strong>referencia</strong></td>
+<td><strong>0</strong></td>
+<td>0</td>
+<td><code>NS</code> de <code>.uy</code> + glue</td>
+</tr>
+<tr>
+<td>4</td>
+<td>resolver local</td>
+<td><code>.uy</code></td>
+<td>iterativa</td>
+<td>0</td>
+<td>—</td>
+<td>la pregunta</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>.uy</code></td>
+<td>resolver local</td>
+<td><strong>referencia</strong></td>
+<td><strong>0</strong></td>
+<td>0</td>
+<td><code>NS</code> de <code>fing.edu.uy</code> + glue</td>
+</tr>
+<tr>
+<td>6</td>
+<td>resolver local</td>
+<td><code>ns1.fing.edu.uy</code></td>
+<td>iterativa</td>
+<td>0</td>
+<td>—</td>
+<td>la pregunta</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>ns1.fing.edu.uy</code></td>
+<td>resolver local</td>
+<td><strong>respuesta</strong></td>
+<td><strong>1</strong></td>
+<td><strong>1</strong></td>
+<td>el <code>A</code> con TTL 3600</td>
+</tr>
+<tr>
+<td>8</td>
+<td>resolver local</td>
+<td>PC</td>
+<td>respuesta</td>
+<td><strong>1</strong></td>
+<td>0</td>
+<td>el mismo <code>A</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Cuatro ida y vuelta = 4 RTT.</strong> Uno solo trae la respuesta.</p>
+<h2>1.4 La caché, y por qué el TTL es un compromiso</h2>
+<h3>Por qué existe la caché</h3>
+<p>Sin caché, cada visita a una página generaría <strong>2 a 6 consultas DNS</strong>. Con
+<code>www.fing.edu.uy</code> como ejemplo, esto multiplicaría la carga sobre los 13 root
+exactamente como §1.1 explicó que <strong>no puede ser</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   SIN CACHÉ:                          CON CACHÉ:
+   ──────────                          ─────────
+   1000 usuarios / segundo             1000 usuarios / segundo
+
+   U1 → root ─▶ .uy ─▶ auth            U1 → root ─▶ .uy ─▶ auth   ← 1 vez
+   U2 → root ─▶ .uy ─▶ auth            U2 ────────┐
+   U3 → root ─▶ .uy ─▶ auth            U3 ────────┤ CACHE HIT
+   ...                                  ...        │ 0 viajes
+   U1000 → root ─▶ .uy ─▶ auth          U1000 ─────┘
+   ─────────────────────────            ─────────────────────────
+   1000 × 3 = 3000 consultas/s         3 consultas/s
+</code></pre></div>
+
+<h3>El compromiso del TTL</h3>
+<p>El TTL es un número que <strong>elige el dueño del nombre</strong>, y es exactamente eso: un
+compromiso entre <strong>dos intereses opuestos</strong> que <strong>nadie</strong> puede satisfacer a la vez.</p>
+<div class="codehilite"><pre><span></span><code>                    TTL CORTO                    TTL LARGO
+                    ─────────                    ─────────
+   Ventaja para     los cambios se               el servidor recibe
+   la RESPUESTA      propagan rápido             pocas consultas
+        │                                      │
+        └───────────────┬──────────────────────┘
+                        │
+                        ▼
+              El dueño del nombre elige su propio
+              compromiso, y lo declara en el 4.º campo del RR.
+              Los que sufrem las consecuencias son los resolvers.
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Valor del TTL</th>
+<th>Para qué se usa en la práctica</th>
+<th>Ejemplo real</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>30 s a 5 min</strong></td>
+<td>contenido que cambia seguido: resultados de una búsqueda, el stock de una tienda, el resultado de una votación</td>
+<td>un contador de visitas, un destino que cambia cada semana</td>
+</tr>
+<tr>
+<td><strong>300 s a 1 h</strong></td>
+<td>contenido dinámico pero no frenético: portadas de noticias</td>
+<td>la home de un diario</td>
+</tr>
+<tr>
+<td><strong>3600 s a 86400 s</strong></td>
+<td>contenido estable: HTML, CSS, JS, imágenes</td>
+<td>los assets de una aplicación</td>
+</tr>
+<tr>
+<td><strong>172800 s (2 días)</strong></td>
+<td><strong>los <code>NS</code> de una delegación</strong>, por defecto</td>
+<td><code>fing.edu.uy. IN NS ns1.fing.edu.uy.</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ <strong>El detalle fino que se pregunta:</strong> el TTL de un registro <code>A</code> y el TTL del
+<code>NS</code> que delegó esa zona son <strong>independientes</strong>. El <code>NS</code> suele tener un TTL
+enorme (días) porque cambiar el servidor de nombres es raro; el <code>A</code> suele tener
+uno corto porque cambiar la IP de un servidor web es común. <strong>Y el que va a
+doler es el <code>NS</code></strong>: si cambiás de servidor de nombres y no esperás a que venza
+su TTL, durante las horas siguientes una parte de Internet <strong>sigue falando con el
+servidor viejo</strong>. Es el mismo mecanismo del glue desactualizado que vimos en la
+Clase 10.</p>
+</blockquote>
+<h3>Los dos tiempos distintos que hay que separar: <code>max-age</code> y <code>TTL</code></h3>
+<p>Esto confunde todo el tiempo y es pregunta clásica:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><code>max-age</code> de HTTP</th>
+<th><code>TTL</code> de DNS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Dónde vive</strong></td>
+<td>cabecera <code>Cache-Control</code> de una respuesta HTTP</td>
+<td>4.º campo de un Resource Record</td>
+</tr>
+<tr>
+<td><strong>Lo define</strong></td>
+<td>el <strong>servidor web</strong></td>
+<td>el <strong>servidor autoritativo</strong> de la zona</td>
+</tr>
+<tr>
+<td><strong>Unidades</strong></td>
+<td>segundos</td>
+<td><strong>segundos</strong> (siempre, en todas las versiones)</td>
+</tr>
+<tr>
+<td><strong>Medido desde</strong></td>
+<td>la <code>Date</code> de la respuesta</td>
+<td>el momento en que <strong>el resolver guardó</strong> el registro</td>
+</tr>
+<tr>
+<td><strong>Quién lo descuenta</strong></td>
+<td>el que guarda (navegador o proxy)</td>
+<td><strong>el que guarda</strong>, o sea el resolver recursivo</td>
+</tr>
+</tbody>
+</table>
+<p>La analogía que lo aclara: el <code>TTL</code> es como el <strong>vence</strong> de un producto en la
+alacena, y el <code>max-age</code> es el <strong>vence</strong> escrito por el cocinero en el plato. Los
+dos cuentan el mismo reloj, pero <strong>el que lo pone es otro</strong>, y por eso pueden no
+coincidir.</p>
+<h3>El reloj, con las cuentas a la vista</h3>
+<div class="codehilite"><pre><span></span><code>   El autoritativo responde:            www.fing.edu.uy.  3600  IN  A  132.42.120.5
+                                                        ▲
+                                                        │  4 bytes = 3600 segundos
+                                                        │  = 1 hora, menos 2400 s que ya
+                                                        │    pasaron en la red (los TTL
+                                                        │    arrancan a contar en la
+                                                        │    respuesta, no en el origen)
+
+   t = 0 s        el resolver recibe y GUARDA:  TTL restante = 3600
+   t = 1200 s     alguien pregunta de nuevo:
+                  frescura restante = 3600 − 1200 = 2400 s   →  HIT, 0 bytes, 0 viajes
+   t = 3600 s     vence.  Freno, la entrada queda "stale" (vieja pero presente).
+   t = 3601 s     alguien pregunta:  fresco? NO  →  hay que REVALIDAR
+   t = 3650 s     llega la respuesta:  "sí, es 132.42.120.5, TTL 3600"
+                  → se RENUEVA: ahora vence en 3600 + 3650 = 7250 s
+
+   El campo `Age` que devuelve un proxy es justamente esto:
+   frescura restante = TTL del origen − Age
+   freshness_remaining = max-age − Age
+</code></pre></div>
+
+<p><strong>El TTL es un contador decreciente en el resolver, no un reloj absoluto.</strong> Es la
+frase que hay que decir si te preguntan «¿a qué refiere el valor del TTL?».</p>
+<h2>1.5 El caché negativo: <code>NXDOMAIN</code> y <code>SOA.MINIMUM</code></h2>
+<h3>El problema</h3>
+<p>Un cliente escribe mal una URL: <code>www.fing.edu.uy/articulso/2026</code>. El navegador
+pregunta por el host, que <strong>sí existe</strong>, así que ese caso no es problema. El
+problema real es cuando el <strong>nombre entero no existe</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   ;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NXDOMAIN, id: 0x51C7
+   ;; flags: qr aa rd; QUERY: 1, ANSWER: 0, AUTHORITY: 1, ADDITIONAL: 0
+
+   ;; QUESTION SECTION:
+   ;noexiste.fing.edu.uy.            IN      A
+
+   ;; AUTHORITY SECTION:
+   fing.edu.uy.  3600  IN  SOA  ns1.fing.edu.uy. admin.fing.edu.uy. (
+                                2026100601 ; serial
+                                7200       ; refresh
+                                3600       ; retry
+                                1209600    ; expire
+                                3600 )     ; minimum   ◀── el que importa acá
+   ;; MSG SIZE  rcvd: 121
+</code></pre></div>
+
+<p><strong><code>NXDOMAIN</code> = el nombre no existe, no el tipo.</strong> Si el nombre existiera pero no
+tuviera un <code>A</code>, la respuesta sería <code>NOERROR</code> con <code>ANCOUNT = 0</code> (se llama <strong>NODATA</strong>).
+La diferencia importa:</p>
+<div class="codehilite"><pre><span></span><code>   www.fing.edu.uy.        A      → NOERROR, 1 respuesta      ✅
+   www.fing.edu.uy.        MX     → NOERROR, 0 respuestas     ⚠️ NODATA: existe, pero no es MX
+   noexiste.fing.edu.uy.   A      → NXDOMAIN, 0 respuestas    ❌ no existe el nombre
+</code></pre></div>
+
+<h3><code>SOA.MINIMUM</code>: el TTL del error</h3>
+<p>El campo <code>minimum</code> del <code>SOA</code> (el séptimo y último número) es <strong>el TTL por defecto de
+las respuestas negativas</strong>. Cuando un autoritativo responde <code>NXDOMAIN</code> sin poner un
+<code>SOA</code>, el resolver usa ese <code>minimum</code>. En la zona de ejemplo es <code>3600</code>.</p>
+<div class="codehilite"><pre><span></span><code>   El SOA también se cachea, y con SU propio TTL (el de la fila del SOA,
+   que acá es 3600). El `minimum` es el TTL por defecto del NXDOMAIN cuando
+   el autoritativo no manda un SOA explícito.
+
+   Ojo con la diferencia: el `minimum` NO es «duración del error»: es un
+   valor por defecto para cuando no hay otro disponible. El TTL que manda
+   es el del SOA que venga en la respuesta.
+</code></pre></div>
+
+<h3>Por qué hay que cachear los errores</h3>
+<p>Contra lo que parece intuitivo, <strong>cachear un <code>NXDOMAIN</code> es una protección</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   SIN CACHÉ NEGATIVA:
+     1000 consultas por segundo de "www.escrito-mal.typo.uy"
+       × 3 viajes (root → .uy → fing.edu.uy) = 3000 paquetes/s
+       contra los servidores autoritativos, en perpetuo.
+     Eso es un ataque de denegación de servicio MUY barato para el atacante:
+     un solo PC genera 3000 paquetes/s contra una zona ajena.
+
+   CON CACHÉ NEGATIVA:
+     el primer NXDOMAIN se cachea 3600 s.
+     Los 999 siguientes se responden de la caché:
+       0 viajes, 0 bytes, 0 carga para el autoritativo.
+     El ataque se vuelve inofensivo.
+</code></pre></div>
+
+<p>Y hay un beneficio adicional: <strong>el <code>NXDOMAIN</code> nunca debería convertirse en <code>A</code> por
+error tipográfico</strong>, así que cachear el error durante un rato <strong>filtra tráfico
+basura</strong> de forma involuntaryaria.</p>
+<h3><code>RFC 8020</code> (2018): NXDOMAIN es un error, no un nombre</h3>
+<p>⚠️ Acá está la norma que <strong>corrige</strong> un malentendido muy extendido:</p>
+<div class="codehilite"><pre><span></span><code>   Lo que la RFC PROHÍBE:
+   ─────────────────────────
+   Que un resolver trate un NXDOMAIN como si fuera un nombre VÁLIDO
+   y lo use para «inventar» respuestas para nombres parecidos.
+
+   El caso concreto (domain shadowing):
+   ───────────────────────────────────────────
+   Se consulta:      victima.example.com     →  NXDOMAIN
+   Se cachea:        (victima.example.com → NO EXISTE)
+
+   Si un atacante logra que en example.com quede un comodín (*.example.com)
+   o si más tarde el dominio aparece, un resolver mal implementado puede
+   seguir sirviendo el NXDOMAIN cacheado y «tapar» un nombre que SÍ existe.
+   Eso es DOMAIN SHADOWING: un nombre legítimo, sombreado por su ausencia.
+
+   Lo que la RFC RECOMIENDA:
+   ───────────────────────────
+   1. Cachear el NXDOMAIN (sí, se cachea: protege contra el ataque de
+      arriba).
+   2. Guardar la ENTRADA NEGATIVA CON LA CLAVE DEL NOMBRE EXACTO.
+      Un NXDOMAIN de victima.example.com NO habilita a responder
+      NXDOMAIN de otra.example.com: cada nombre negativo tiene su
+      propia entrada y su propio timer.
+   3. Tratarlo como «este nombre no existe en este momento», no como
+      «este nombre no existe para siempre».
+</code></pre></div>
+
+<p><strong>La contradicción aparente que hay que saber explicar:</strong> cachear <strong>sí</strong>, no
+contaminar <strong>no</strong>. Se cachea <strong>por nombre exacto</strong> y con su propio timer, de modo
+que el error no se derrame sobre los nombres hermanos.</p>
+<h2>1.6 ⚠️ Actualización a 2026 — lo que cambió y lo que no</h2>
+<p><strong>Sigue igual — de memoria, sin dudar:</strong></p>
+<ul>
+<li><strong>Jerarquía y delegación</strong>: root → TLD → autoritativo, con <code>NS</code> y <em>glue records</em>.</li>
+<li><strong>Iterativa vs. recursiva</strong>: el <em>stub resolver</em> pregunta <strong>recursivamente</strong> al
+  resolver local; el resolver local pregunta <strong>iterativamente</strong> a root, TLD y
+  autoritativo. <strong>No cambió desde 1987.</strong></li>
+<li><strong>Estructura del mensaje</strong>: ID, <em>flags</em> (<code>QR</code>, <code>Opcode</code>, <code>AA</code>, <code>TC</code>, <code>RD</code>, <code>RA</code>,
+  <code>RCODE</code>), <code>QDCOUNT</code>/<code>ANCOUNT</code>/<code>NSCOUNT</code>/<code>ARCOUNT</code>, y las cuatro secciones.</li>
+<li><strong><code>RCODE</code></strong>: NOERROR, FORMERR, SERVFAIL, <strong>NXDOMAIN</strong>, NOTIMP, REFUSED.</li>
+<li><strong>Tipos de registro</strong>: <code>A</code>, <code>AAAA</code>, <code>NS</code>, <code>CNAME</code>, <code>MX</code>, <code>SOA</code> (con sus cinco
+  números), <code>PTR</code>, <code>TXT</code>, <code>SRV</code>, <code>CAA</code>.</li>
+<li><strong><code>TTL</code> y caché.</strong> El TTL sigue siendo el cuarto campo, en segundos, definido por
+  el autoritativo y descontado por quien cachea.</li>
+<li><strong>Puertos</strong>: <strong>53 UDP y 53 TCP</strong>, y <strong>853</strong> (DoT, <code>domain-s</code>).</li>
+<li><strong>Round-robin</strong> por varios registros <code>A</code>. Chrome y Safari lo aleatorizan por
+  privacidad, y por eso las respuestas no siempre vienen en el mismo orden.</li>
+</ul>
+<p><strong>Cambió — y acá hay que ser preciso:</strong></p>
+<h3>(a) DoH (<code>RFC 8484</code>, 2018): el cambio mayor</h3>
+<p><strong>DNS over HTTPS</strong> es DNS <strong>encapsulado dentro del protocolo HTTP</strong>, sobre TLS, en el puerto <strong>443</strong>.
+El efecto es brutal y hay que saber expresarlo bien:</p>
+<div class="codehilite"><pre><span></span><code>   2011: el navegador le pregunta al DNS que le dio el SO / el router.
+         El ISP VE cada nombre que visitás.
+                  │
+                  ▼
+   ┌───────────┐      ┌──────────┐        ┌──────────────────┐
+   │ NAVEGADOR │ UDP53│   ISP    │  UDP53 │  ns1.fing.edu.uy │
+   └─────┬─────┘─────▶│ 53       │───────▶│  .uy / root /... │
+         │◀────────────└──────────┘◀───────└──────────────────┘
+         │      el ISP registra: "el usuario 203.0.113.7 pidió
+         │      mail.google.com a las 14:22:31"
+
+   2026 (con DoH):
+   ┌───────────┐   HTTPS/443   ┌─────────────────────────────┐
+   │ NAVEGADOR │──────────────▶│  RESOLVER DoH (Cloudflare,  │
+   └─────┬─────┘◀──────────────┤  Quad9, o el del navegador) │
+         │   TLS              └──────────────┬──────────────┘
+         │      el ISP NO VE NADA:            │
+         │      solo ve tráfico cifrado        ▼
+         │      a la IP del resolver     ┌──────────────┐
+         │                              │  la jerarquía│
+         │                              │  de DNS      │
+         │                              └──────────────┘
+</code></pre></div>
+
+<blockquote>
+<p>⚠️ <strong>La conclusión que hay que escribir en el examen:</strong>
+<strong>con DoH, el DNS del navegador ya no lo ve tu ISP.</strong> Pasa de estar en
+<strong>UDP 53 plano</strong> —donde todo el camino puede ver y alterar la pregunta— a estar
+<strong>dentro de un HTTPS</strong>, que es lo mismo que cualquier visita a una web. Y un
+HTTPS es <strong>la una cosa que el ISP no puede leer sin romper el TLS</strong>.</p>
+</blockquote>
+<p><strong>Lo que DoH cambia de verdad, en tres puntos:</strong></p>
+<ol>
+<li><strong>Confidencialidad</strong>: el ISP no ve qué nombres se consultan (sí ve a qué IPs se
+   conectan, salvo con ECH; eso es otra historia).</li>
+<li><strong>Integridad</strong>: nadie en el camino puede más inyectar una respuesta falsa
+   (<code>DNS poisoning</code> o <em>pharming</em>).</li>
+<li><strong>El salto a la red sigue siendo UDP 53</strong>: DoH solo cifra el <strong>tramo navegador →
+   resolver</strong>. Las consultas del resolver a root, TLD y autoritativo <strong>siguen en
+   DNS plano</strong> salvo que ese resolver también hable DoT o DoQ.</li>
+</ol>
+<h3>(b) Chrome NO cambia tu resolver: el matiz que hay que saber</h3>
+<p>Esto se dice mal en todos lados y es un error de examen fácil de cometer:</p>
+<div class="codehilite"><pre><span></span><code>   LO QUE SE DICE (FALSO):
+   "Chrome usa DNS de Google por defecto"
+
+   LO QUE PASA (VERDAD):
+   ┌────────────────────────────────────────────────────────────────┐
+   │ Chrome 83 (mayo-2020) NO cambia tu resolver.                  │
+   │ Intenta "subir" a DoH TU resolver actual, y lo hace SOLO si    │
+   │ ese resolver está en su LISTA DE PROVEEDORES CONOCIDOS.       │
+   │ Si no está en la lista → DNS plano, como siempre.              │
+   │ Si el usuario o el administrador lo configuran a mano →        │
+   │   puede apuntar a donde quiera.                                │
+   └────────────────────────────────────────────────────────────────┘
+   Chrome 87 (nov-2020) es el que trae HTTP/3 por defecto; no lo confundas
+   con el rollout de DoH.
+</code></pre></div>
+
+<blockquote>
+<p>⚠️ <strong>Si te preguntan «¿el navegador usa el DNS de Google?», la respuesta es
+«no: Chrome intenta cifrar la consulta con el resolver que ya tenías, y solo si
+ese resolver está en su lista de proveedores conocidos; si no, sigue en DNS
+plano».</strong></p>
+</blockquote>
+<h3>(c) DoT (<code>RFC 7858</code>, 2016) y DoQ (<code>RFC 9250</code>, 2022)</h3>
+<ul>
+<li><strong>DoT</strong> (<em>DNS over TLS</em>): DNS cifrado sobre TLS, en el <strong>puerto 853</strong>, con nombre
+  fijo (<code>domain-s</code>). Es lo que usan los <strong>resolvers</strong> (no el navegador) y lo que
+  configurás a mano en un servidor.</li>
+<li><strong>DoQ</strong> (<em>DNS over QUIC</em>): DNS cifrado sobre <strong>QUIC</strong>, en el <strong>puerto 853</strong>,
+  usando el <strong><code>Connection ID</code></strong> y los streams independientes de QUIC. <strong>DoQ elimina
+  el <em>head-of-line blocking</em> de TCP</strong>: si un paquete de una consulta se pierde, no
+  frena a las demás consultas que van en la misma conexión.</li>
+</ul>
+<div class="codehilite"><pre><span></span><code>   DoT  = DNS dentro de TLS dentro de TCP       (ordenado, un stream)
+   DoQ  = DNS dentro de QUIC                   (multiplexado, N streams)
+   DoH  = DNS dentro de HTTP/2 o HTTP/3        (multiplexado, N streams)
+   ───────────────────────────────────────────────────────────────
+   Los tres cifran. Solo DoQ y DoH se benefician de la multiplexación.
+</code></pre></div>
+
+<h3>(d) DNSSEC: estandarizado en 2005, despliegue bajo en 2026</h3>
+<p>La cadena de confianza de DNSSEC está <strong>operativa</strong>: <code>RFC 4033-4035</code> (2005) y
+<code>RFC 5155</code> (raíz firmada, 2010). Los números de despliegue son los que hay que
+saber:</p>
+<table>
+<thead>
+<tr>
+<th>Métrica</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>gTLD firmados</strong></td>
+<td><strong>~99,6 %</strong></td>
+</tr>
+<tr>
+<td><strong>Dominios (2LD) con <code>DS</code></strong></td>
+<td><strong>~5-7 %</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ <strong>La lección, literal:</strong> DNSSEC es el ejemplo perfecto de <strong>«estandarizado en
+2005 y con despliegue bajo casi veinte años después»</strong>. El eslabón fuerte
+(TLD) está casi completo; el eslabón débil (el dominio concreto) casi no lo
+tomó. Por eso en 2026 <strong>no se enseña que «el DNS es seguro»</strong>, sino que <strong>tiene
+una capa de autenticidad opcional, bien diseñada y masivamente subutilizada</strong>.
+Compará con HTTPS: mismo problema, misma forma, mismos veinte años.</p>
+</blockquote>
+<p><code>RFC 8080</code> agrega EdDSA (Ed25519) como algoritmo de firma y <code>RFC 8901</code> permite
+<strong>firmantes múltiples</strong> (<em>multi-signer</em>), que es lo que permite una migración de
+algoritmo sin cortar el servicio.</p>
+<h3>(e) <code>RFC 8767</code> (2020): servir caché vencida (<em>stale</em>)</h3>
+<p><strong>Qué cambió en la semántica de caché.</strong> Antes, un registro vencido <strong>se botaba</strong>.
+<strong>descartado</strong>. Con <code>RFC 8767</code>, si el servidor autoritativo <strong>no responde</strong>, el
+resolver puede <strong>servir la copia vieja</strong>, marcándola como <em>stale</em>.</p>
+<div class="codehilite"><pre><span></span><code>   ANTES:  TTL vencido + autoritativo caído  →  SERVFAIL, el usuario ve un error.
+   AHORA:  TTL vencido + autoritativo caído  →  se sirve la copia vieja con un
+                                                  aviso de que está vencida.
+
+   ¿POR QUÉ? Porque es resiliencia frente a DDoS: si alguien tumba un
+   autoritativo, los resolvers con stale siguen sirviendo en vez de caer
+   todos juntos. Es un compromiso explícito entre «frescura» y «disponibilidad».
+</code></pre></div>
+
+<p>El riesgo es evidente y hay que decirlo: <strong>el contenido puede estar viejo</strong>. Es un
+cambio de diseño real en el modelo de caché, no un detalle.</p>
+<h3>(f) <code>SVCB</code> / <code>HTTPS</code> (<code>RFC 9460</code>, 2023): el DNS transporta política de transporte</h3>
+<p>Un registro <code>HTTPS</code> (que es un <code>SVCB</code> en modo 1) dice <strong>qué versiones de HTTP
+soporta el servidor, en qué IP está, con qué prioridad</strong> — todo <strong>antes</strong> de abrir
+ningún socket:</p>
+<div class="codehilite"><pre><span></span><code>   ;; QUESTION SECTION:
+   ;www.fing.edu.uy.               HTTPS
+
+   ;; ANSWER SECTION:
+   www.fing.edu.uy.   300  IN  HTTPS 1 . alpn="h3,h2" ipv4hint=132.42.120.5 port=443
+</code></pre></div>
+
+<p><strong>Por qué importa:</strong> es lo que permite <strong>descubrir HTTP/3 antes de conectar</strong>, sin
+necesidad de haber hecho antes un viaje por HTTP/1.1 para enterarte por <code>Alt-Svc</code>
+(Clase 9). Es <strong>el mismo cambio conceptual que <code>CAA</code></strong>: el DNS dejó de ser solo un
+directorio de direcciones y pasó a <strong>transportar política</strong> sobre el dominio.
+<code>RFC 9462</code> (DDR) permite descubrir resolvers en <code>_dns.resolver.arpa</code> sin configurar
+nada.</p>
+<h3>(g) EDNS(0) (<code>RFC 6891</code>) y conexiones persistentes (<code>RFC 7766</code>)</h3>
+<ul>
+<li><strong><code>RFC 6891</code></strong> (2013, <em>Internet Standard</em>): agrega el pseudo-registro <code>OPT</code>. Sin
+  él, el máximo sigue siendo <strong>512 bytes</strong> y las respuestas grandes se cortan con
+  <code>TC = 1</code>. Con él, el cliente anuncia <code>udp: 4096</code> y se evita el corte.</li>
+<li><strong><code>RFC 7766</code></strong> (2016): los resolvers <strong>deben mantener las conexiones TCP abiertas
+  y reutilizarlas</strong>; tienen prohibido cerrar la conexión por transacción. Si no, cada
+  consulta por TCP pagaría un handshake.</li>
+</ul>
+<blockquote>
+<p><strong>Consecuencia para el examen:</strong> si te preguntan <em>«¿qué cambió en el DNS?»</em>, la
+respuesta es: <strong>nada de la arquitectura</strong>. Ni la jerarquía, ni la delegación, ni
+el <code>RR</code> de cinco campos, ni los dos algoritmos cambiaron desde 1987. Lo que se
+<strong>agregó</strong> es cifrado (DoH/DoT/DoQ), autenticidad (DNSSEC, subdesplegada),
+extensiones (EDNS(0)), semántica de caché resiliente (<code>RFC 8767</code>) y política de
+transporte (<code>SVCB</code>/<code>HTTPS</code>).</p>
+</blockquote>
+<h2>1.7 El transporte: UDP, TCP y por qué DoH le ganó a DoT</h2>
+<p>El DNS normal viaja sobre <strong>UDP 53</strong>, y eso no es un capricho: una consulta es un
+datagrama chico (menos de 100 bytes) que se manda una sola vez, sin garantía de
+llegada, y <strong>el reintento lo hace el resolver</strong> si no recibe nada.</p>
+<table>
+<thead>
+<tr>
+<th>Situación</th>
+<th>Transporte</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Consulta normal</td>
+<td><strong>UDP 53</strong></td>
+</tr>
+<tr>
+<td>La respuesta no entra (banderita <code>TC = 1</code>)</td>
+<td>se repite por <strong>TCP 53</strong></td>
+</tr>
+<tr>
+<td><strong>Transferencia de zona</strong> (<code>AXFR</code>, <code>IXFR</code>)</td>
+<td><strong>TCP 53</strong>, siempre</td>
+</tr>
+<tr>
+<td><strong>DoT</strong></td>
+<td><strong>TCP 853</strong></td>
+</tr>
+<tr>
+<td><strong>DoQ</strong></td>
+<td><strong>UDP 853</strong></td>
+</tr>
+<tr>
+<td><strong>DoH</strong></td>
+<td><strong>TCP o UDP 443</strong> (el mismo 443 de la Web)</td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code>   El 443 compartido es la razón por la que DoH le ganó a DoT:
+
+   DoT necesita el puerto 853 abierto. En muchas redes corporativas,
+  UROs empresas y universidades el 853 está BLOQUEADO, y el resolver
+   del ISP a veces ni lo habla.
+
+   DoH usa el 443, que es EL puerto de la Web: si podés abrir una
+   página, podés resolver un nombre. Por eso DoH es el que se desplegó
+   en el navegador, y DoT se quedó en el mundo de los resolvers.
+</code></pre></div>
+
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — La cadena completa con caché en el TLD</h2>
+<p><strong>Enunciado.</strong> Un PC en Montevideo resuelve <code>www.fing.edu.uy</code>. El resolver recursivo
+tiene <strong>el <code>NS</code> de <code>fing.edu.uy</code> cacheado</strong> (con su <em>glue</em>), pero <strong>no</strong> tiene el
+registro <code>A</code>. RTT entre el PC y el resolver: <strong>2 ms</strong>; entre el resolver y el root:
+<strong>40 ms</strong>; entre el resolver y el <code>.uy</code>: <strong>25 ms</strong>; entre el resolver y el
+autoritativo: <strong>15 ms</strong>. Todos los mensajes viajan por UDP, así que cada consulta
+cuesta <strong>un RTT</strong> y nada más.</p>
+<p><strong>a) ¿Cuántos mensajes y cuántos RTT?</strong></p>
+<div class="codehilite"><pre><span></span><code>   El resolver tiene el NS de fing.edu.uy cacheado → SE SALTA el root y el .uy.
+   O sea que el mensaje 2 (al root) y el 5 (al .uy) NO existen.
+
+   ┌──────┬──────────────────────┬───────────┬────────┬─────────────────────────┐
+   │  #   │ De                   │ A         │ RTT    │ Tipo                    │
+   ├──────┼──────────────────────┼───────────┼────────┼─────────────────────────┤
+   │  1   │ PC (stub)            │ resolver  │  2 ms  │ RECURSIVA (pregunta)    │
+   │  2   │ resolver             │ ns1.fing  │ 15 ms  │ ITERATIVA (pregunta)    │
+   │  3   │ ns1.fing.edu.uy      │ resolver  │ ↑ el mismo RTT           │
+   │  4   │ resolver             │ PC        │ ↑ el mismo RTT           │
+   └──────┴──────────────────────┴───────────┴────────┴─────────────────────────┘
+
+   TOTAL: 4 mensajes, 2 RTT
+
+   Cálculo:
+   RTT_total = RTT(PC ↔ resolver) + RTT(resolver ↔ autoritativo)
+             = 2 ms + 15 ms
+             = 17 ms
+</code></pre></div>
+
+<p><strong>Comparación con el caso sin caché</strong> (los 4 viajes del §1.3):</p>
+<div class="codehilite"><pre><span></span><code>   SIN NINGUNA CACHÉ:                 CON CACHÉ DEL NS EN EL TLD:
+   ────────────────────              ────────────────────────────
+   8 mensajes, 4 RTT                 4 mensajes, 2 RTT
+
+   2 + 40 + 25 + 15 = 82 ms          2 + 15 = 17 ms
+
+   Ahorro: 65 ms (79 %)              ┌────────────────────────────────┐
+                                     │ La caché no guarda la RESPUESTA,│
+                                     │ guarda la DELEGACIÓN. Y la      │
+                                     │ delegación es el 90 % del trabajo.│
+                                     └────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>b) ¿Cuántos RTT si además el <code>A</code> estuviera cacheado?</strong></p>
+<div class="codehilite"><pre><span></span><code>   Si el registro A está en caché y NO venció:
+     el resolver responde al PC sin salir a la red externa.
+
+     ┌────┬───────────┬─────────┬────────┬──────────────────────────┐
+     │ 1  │ PC        │ resolver│ 2 ms   │ RECURSIVA                │
+     │ 2  │ resolver  │ PC      │ ↑      │ respuesta desde la caché │
+     └────┴───────────┴─────────┴────────┴──────────────────────────┘
+     TOTAL: 2 mensajes, 1 RTT = 2 ms
+
+   Si el registro A está en caché pero VENCIÓ (hay que revalidar):
+     el resolver tiene que ir al autoritativo de nuevo.
+     RTT_total = 2 ms (PC) + 15 ms (autoritativo) = 17 ms
+</code></pre></div>
+
+<p><strong>c) ¿Y si el PC tiene el nombre en su propia caché local?</strong></p>
+<div class="codehilite"><pre><span></span><code>   Windows, macOS y Linux mantienen una caché de nombres en el cliente
+   (y el navegador tiene la suya). Si el nombre está fresco ahí:
+
+     RTT = 0.  Ni siquiera sale un paquete a la red.
+
+   Esto es lo que hace que «abrir la misma pestaña dos veces» sea instantáneo.
+</code></pre></div>
+
+<p><strong>d) La tabla que resume los cuatro escenarios:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Qué tiene cacheado el resolver</th>
+<th>Mensajes</th>
+<th>RTT</th>
+<th>Tiempo (con los RTT del enunciado)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Nada</strong> (ni el <code>NS</code> ni el <code>A</code>)</td>
+<td>8</td>
+<td>4</td>
+<td>2+40+25+15 = <strong>82 ms</strong></td>
+</tr>
+<tr>
+<td><strong>El <code>NS</code> de <code>fing.edu.uy</code></strong> (caso del enunciado)</td>
+<td>4</td>
+<td>2</td>
+<td>2+15 = <strong>17 ms</strong></td>
+</tr>
+<tr>
+<td><strong>El <code>A</code>, vencido</strong></td>
+<td>4</td>
+<td>2</td>
+<td>2+15 = <strong>17 ms</strong></td>
+</tr>
+<tr>
+<td><strong>El <code>A</code>, fresco</strong></td>
+<td>2</td>
+<td>1</td>
+<td><strong>2 ms</strong></td>
+</tr>
+<tr>
+<td><strong>El <code>A</code>, fresco en la caché del PC</strong></td>
+<td>0</td>
+<td>0</td>
+<td><strong>0 ms</strong></td>
+</tr>
+</tbody>
+</table>
+<p><em>Interpretación:</em> <strong>la caché ataca el tiempo, no los bytes.</strong> Notá que en el
+primer caso y en el segundo se transfieren <strong>los mismos 56 bytes</strong> de respuesta
+final; lo que cambia es cuántos viajes hay que hacer para CONSEGUIRLOS.</p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Contar 8 RTT en vez de 4.</strong> Los 8 mensajes son 4 parejas ida y vuelta. Cada
+  mensaje suelto no es un RTT.</li>
+<li><strong>Contar el mensaje 8 como un viaje nuevo.</strong> El mensaje 8 es la vuelta del 1.</li>
+<li><strong>Creer que el TTL del <code>NS</code> y el del <code>A</code> son el mismo número.</strong> Son campos
+  distintos, y el <code>NS</code> suele tener un TTL mucho más grande.</li>
+<li><strong>Olvidar que la caché del TLD se guarda con su propio TTL</strong> (típicamente
+  172800 s = 2 días), así que no sirve para el caso «lo acabo de cambiar».</li>
+</ul>
+<h2>2.2 Ejercicio 2 — ¿Cuánto dura una entrada de caché? Con las cuentas</h2>
+<p><strong>Enunciado.</strong> El autoritativo de <code>fing.edu.uy</code> responde:</p>
+<div class="codehilite"><pre><span></span><code>   www.fing.edu.uy.   3600  IN  A   132.42.120.5
+   fing.edu.uy.     172800  IN  NS  ns1.fing.edu.uy.
+</code></pre></div>
+
+<p>El resolver guarda la respuesta <strong>a las 10:00:00</strong>. Hacele estas preguntas:
+<strong>(a)</strong> ¿cuánto tiempo se puede usar sin revalidar? <strong>(b)</strong> ¿qué pasa exactamente a
+las 11:00:00? <strong>(c)</strong> ¿hasta cuándo vive la entrada del <code>NS</code>? <strong>(d)</strong> ¿cuántos
+viajes ahorra la caché en las <strong>primeras 24 horas</strong> si se pide el nombre <strong>cada 10
+segundos</strong>?</p>
+<p><strong>a) ¿Cuánto se puede usar sin revalidar?</strong></p>
+<div class="codehilite"><pre><span></span><code>   TTL = 3600 segundos = 1 hora.
+
+   Frescura restante = 3600 - 0 = 3600 s a las 10:00:00.
+
+   t = 10:00:00 ────────────────────────────── t = 11:00:00
+       se guarda                                vence
+       (3600 s de frescura)                     (0 s de frescura)
+</code></pre></div>
+
+<p><em>b) Interpretación:</em> entre las 10:00 y las 11:00, <strong>cualquier</strong> consulta se
+responde de la caché: <strong>0 mensajes, 0 bytes, 0 RTT</strong>.</p>
+<p><strong>b) ¿Qué pasa exactamente a las 11:00:00?</strong></p>
+<div class="codehilite"><pre><span></span><code>   Las 11:00:00 es el instante límite. La respuesta es:
+
+   ┌──────────────────────────────────────────────────────────────┐
+   │ • La entrada NO se borra. Pasa de "fresca" a "VENCIDA"       │
+   │   (en inglés, stale: vieja pero presente).                   │
+   │                                                             │
+   │ • La SIGUIENTE consulta ya NO es un acierto de caché:       │
+   │   el resolver tiene que revalidar.                          │
+   │                                                             │
+   │ • Si el servidor contesta, el resolver reemplaza la entrada:│
+   │     - si dice "no cambió" (el RR es el mismo, byte a byte),  │
+   │       RENUEVA 3600 s más.                                   │
+   │     - si dice "cambió", reemplaza el contenido y el TTL.    │
+   │                                                             │
+   │ • Si el servidor NO contesta, hay dos salidas:               │
+   │     - servir la copia vieja (lo que autoriza RFC 8767)       │
+   │     - o devolver SERVFAIL (el comportamiento clásico)         │
+   │                                                              │
+   │ • Recién AHORA, si pasó lo mismo (vencimiento + revalidación  │
+   │   + no contestó), la entrada se elimina de verdad.            │
+   └──────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>El error conceptual número uno: decir que «a los 3600 segundos se borra del caché».</strong>
+<strong>No: a los 3600 segundos deja de ser <em>fresco</em>.</strong> Borrarse es otra etapa, y la
+distinción importa justamente porque <code>RFC 8767</code> permite usar esa copia vieja.</p>
+<p><strong>c) ¿Hasta cuándo vive la entrada del <code>NS</code>?</strong></p>
+<div class="codehilite"><pre><span></span><code>   TTL del NS = 172800 s = 48 horas = 2 días.
+
+   Se guardó a las 10:00:00 del lunes.
+   Vence:      10:00:00 del MIÉRCOLES.
+
+   t = lun 10:00 ───────────────────────────────────▶ mié 10:00
+                     172800 s = 48 h = 2 días
+</code></pre></div>
+
+<p><em>Interpretación:</em> el <code>NS</code> vive <strong>48 veces más</strong> que el <code>A</code>. Es correcto, porque
+cambiar el <strong>servidor de nombres</strong> es rarísimo y cambiar la <strong>IP de un servidor web</strong>
+es de todos los días. Y por eso, si vos cambiás de servidor de nombres, <strong>tenés que
+esperar dos días</strong> (o bajar el TTL del <code>NS</code> con antelación) antes de tocar el glue
+que ya está en la zona del TLD.</p>
+<p><strong>d) ¿Cuántos viajes ahorra la caché en 24 horas, si me piden el nombre cada 10 s?</strong></p>
+<div class="codehilite"><pre><span></span><code>   Consultas en 24 horas:
+   N = 86 400 s / 10 s = 8 640 consultas
+
+   Sin caché:
+     8 640 × 4 RTT = 34 560 viajes  (y 8 640 × 8 = 69 120 mensajes)
+
+   Con caché (TTL 3600 s = 1 hora):
+     revalidaciones = 24 h / 1 h = 24
+     aciertos de caché = 8 640 − 24 = 8 616
+
+     Viajes = 24 revalidaciones × 4 RTT = 96 RTT
+              + 0 RTT de las 8 616 consultas acertadas
+              = 96 viajes
+
+   AHORRO:
+     viajes:     34 560 − 96 = 34 464 viajes  →  99,72 % menos
+     mensajes:   69 120 − 192 = 68 928        →  99,72 % menos
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Consultas</th>
+<th>RTT totales</th>
+<th>Mensajes</th>
+<th>Carga en el autoritativo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Sin caché</strong></td>
+<td>8 640</td>
+<td>34 560</td>
+<td>69 120</td>
+<td>8 640 consultas</td>
+</tr>
+<tr>
+<td><strong>Con caché TTL=3600</strong></td>
+<td>8 640</td>
+<td><strong>96</strong></td>
+<td>192</td>
+<td><strong>24</strong> consultas</td>
+</tr>
+<tr>
+<td><strong>Ahorro</strong></td>
+<td>—</td>
+<td><strong>99,72 %</strong></td>
+<td><strong>99,72 %</strong></td>
+<td><strong>99,72 %</strong></td>
+</tr>
+</tbody>
+</table>
+<p><em>Interpretación:</em> <strong>por eso el DNS sobrevive.</strong> Si cada cliente de Internet
+repitiera los cuatro viajes, los 13 root servers no darían abasto. El TTL es
+literalmente lo que hace posible la escala del sistema. <strong>Y el precio es la
+propagación lenta</strong>: un cambio tarda hasta un TTL en ser visto por todo el mundo.</p>
+<blockquote>
+<p><strong>La frase del examen:</strong> <em>el TTL es un compromiso entre la corrección de los
+cambios y la carga de la red; lo elige el servidor autoritativo, lo descuenta
+quien cachea, y por eso es siempre un compromiso, nunca una solución.</em></p>
+</blockquote>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Decir que el TTL se descuenta en el autoritativo.</strong> No: el autoritativo solo
+  lo <strong>pone</strong>. Quien lo descuenta es el <strong>resolver que lo guardó</strong>.</li>
+<li><strong>Confundir «vence» con «se borra».</strong> Vencer es dejar de ser fresco; borrar es el
+  paso siguiente, y a veces no ocurre.</li>
+<li><strong>Contar el TTL en minutos.</strong> Siempre son <strong>segundos</strong>.</li>
+<li><strong>Asumir que el TTL del <code>NS</code> es el del <code>A</code>.</strong> No tienen por qué ser iguales, y
+  casi nunca lo son.</li>
+</ul>
+<h2>2.3 Ejercicio 3 — Por qué <code>NXDOMAIN</code> se cachea, y qué dice <code>RFC 8020</code></h2>
+<p><strong>Enunciado.</strong> Un atacante con un solo portátil quiere tumbar el servidor de nombres
+de <code>fing.edu.uy</code>. Su script hace 5 000 consultas por segundo de nombres inexistentes
+en esa zona, por ejemplo <code>a1.fing.edu.uy</code>, <code>a2.fing.edu.uy</code>, …, con <code>TTL</code> de
+caché negativa de <code>SOA.MINIMUM = 3600</code>. <strong>a)</strong> ¿Con caché negativa, funciona el
+ataque? <strong>b)</strong> ¿Y si los resolvers de los usuarios <strong>no</strong> cachean los negativos?
+<strong>c)</strong> ¿Qué dice <code>RFC 8020</code> y por qué «cachear sí, contaminar no» no es contradictorio?</p>
+<p><strong>a) Con caché negativa, ¿funciona?</strong></p>
+<div class="codehilite"><pre><span></span><code>   Nombres atacados:  a1.fing.edu.uy, a2.fing.edu.uy, a3...  (5000 distintos/s)
+
+   Sin caché negativa:
+     5000 consultas/s × 3 viajes (root → .uy → fing.edu.uy)
+     = 15 000 paquetes/s contra los servidores de nombres de fing.edu.uy
+    Estimado: 15 000 × ~500 bytes = 7,5 MB/s sostenidos.
+     Con un solo portátil eso es nada. Y es 5000 consultas/s de CPU
+     de resolución de zona.
+
+   CON caché negativa (SOA.MINIMUM = 3600):
+     Cada nombre DISTINTO genera un NXDOMAIN y se cachea 1 hora.
+     Los 5 000 nombres/s siguen generando entradas nuevas... pero:
+
+     ⚠️ OJO: si el atacante usa 5 000 nombres DISTINTOS por segundo,
+        la caché negativa los guarda a todos, y la tabla crece sin
+        control. La caché negativa protege del ATAQUE DE REPETIR EL
+        MISMO NOMBRE, no del ataque de inundar la tabla con nombres
+        siempre nuevos.
+
+   El ataque que la caché negativa SÍ detiene:
+     5000 consultas/s del MISMO nombre (por ejemplo "noexiste")
+       → 1 NXDOMAIN, cacheado 3600 s
+       → las 4999 restantes se responden de la caché: 0 viajes.
+     ATAQUE NEUTRALIZADO al 99,98 %.
+</code></pre></div>
+
+<p><em>Interpretación:</em> la caché negativa es una protección real <strong>contra la
+repetición</strong>, y por eso <code>RFC 8020</code> la recomienda explícitamente. Lo que <strong>no</strong>
+hace es defenderse de un atacante que genera nombres aleatorios: para eso hacen
+falta los límites de tasa (<em>rate limiting</em>) del lado del atacante (o sea, de tu
+servidor de nombres).</p>
+<p><strong>b) ¿Y si los resolvers no cachean los negativos?</strong></p>
+<div class="codehilite"><pre><span></span><code>   El estado se vuelve una máquina de estados:
+
+   t=0     atacante empieza        ┌──────────────┐
+   ...     5000 consultas/s        │  RESOLVER     │  ← 15 000 paquetes/s salen
+   t=60s   el autoritativo         │  (el del ISP) │     hacia la zona de la
+          empieza a caer:         │              │     víctima
+          CPU al 100 %            └──────┬───────┘
+                 │                        │
+                 │    "gRPC: overload"    │
+                 ▼                        ▼
+          la resolución de               LA VÍCTIMA
+          fing.edu.uy SE CAE              SE CAE
+                 │
+                 ▼
+          Y AHORA: los usuarios LEGÍTIMOS
+          no pueden resolver NADA de
+          fing.edu.uy  ←  esto es DoS real
+
+   Con caché negativa: los usuarios legítimos siguen resolviendo
+   desde la caché durante 1 hora. EL DOMINIO NO SE CAE.
+</code></pre></div>
+
+<p><em>Interpretación:</em> <strong>la caché negativa es lo que separa un ataque de una denegación
+de servicio real.</strong> Con ella, el atacante gasta recursos del atacante; sin ella, gasta
+recursos de la víctima.</p>
+<p><strong>c) ¿Qué dice <code>RFC 8020</code> y por qué «cachear sí, contaminar no» no es contradictorio?</strong></p>
+<div class="codehilite"><pre><span></span><code>   RFC 8020 — Negative DNS Responses and DNS Cache Pollution (2018)
+
+   QUÉ PIDE:
+   ─────────
+   1. Cachear la respuesta negativa.  ✔ (protege contra la repetición)
+   2. Tratarla como un ERROR con nombre, NO como un nombre válido.
+   3. Guardar la entrada bajo la CLAVE DEL NOMBRE EXACTO que falló.
+
+   QUÉ PROHÍBE (el *domain shadowing*):
+   ─────────────────────────────────────
+   Que el NXDOMAIN de un nombre se derrame sobre otros nombres.
+
+   victima.example.com  →  NXDOMAIN  →  se guarda SÓLO para ese nombre
+   otra.example.com    →  ?         →  NO puede responder desde ese NXDOMAIN:
+                                        tiene que consultarlo por separado
+
+   Y por qué esto importa en la práctica: si el NXDOMAIN se guardara
+   «en general» para el dominio, bastaría con que un nombre fallara una
+   vez para que TODOS los nombres del dominio quedaran «sombreados»
+   (shadowed), incluidos los que existen. Eso sería un DoS perfecto y
+   silencioso, hecho con cero paquetes.
+</code></pre></div>
+
+<p><strong>La paradoja y su resolución:</strong></p>
+<div class="codehilite"><pre><span></span><code>   ┌────────────────┐         ┌──────────────────┐
+   │  NO cachear    │         │  Cachear         │
+   │  el NXDOMAIN   │         │  el NXDOMAIN     │
+   ├────────────────┤         ├──────────────────┤
+   │ el atacante    │         │ el atacante       │
+   │ gana: 15 000   │         │ pierde: 1 sola   │
+   │ paquetes/s     │         │ consulta + 3600 s │
+   │ contra la      │         │ de protección     │
+   │ víctima        │         │                   │
+   └────────────────┘         └──────────────────┘
+             │                            │
+             └────────────┬───────────────┘
+                          ▼
+        La respuesta NO es «no cachear», es:
+        «cachear, pero con la LLAVE del nombre exacto,
+         y sin dejar que el error se propague a los hermanos».
+
+        CACHEAR  = SÍ     (por nombre exacto)
+        CONTAMINAR = NUNCA (de un nombre a otro)
+</code></pre></div>
+
+<p><em>Interpretación física:</em> la caché negativa es una <strong>bomba de tiempo con reloj
+propio</strong>: dura lo que diga el TTL del <code>SOA</code> (o el <code>minimum</code>), y después el nombre
+vuelve a ser consultable. Cachear de más es lo peligroso (permanece el error
+cuando el nombre ya existe: <em>domain shadowing</em>); cachear de menos es lo inútil
+(el atacante gana).</p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Decir que el <code>minimum</code> del <code>SOA</code> es «cuánto dura el NXDOMAIN» sin matizar.</strong> El
+  <code>minimum</code> es el <strong>valor por defecto</strong> para el TTL del negativo; si el
+  autoritativo manda un <code>SOA</code> con otro TTL, <strong>manda ese</strong>.</li>
+<li><strong>Confundir <code>NXDOMAIN</code> con «el tipo no existe».</strong> <code>NXDOMAIN</code> = <strong>el nombre</strong> no
+  existe. Si el nombre existe pero no tiene ese tipo, es <code>NOERROR</code> con
+  <code>ANCOUNT = 0</code> (NODATA).</li>
+<li><strong>Pensar que la caché negativa protege contra un atacante con nombres
+  aleatorios.</strong> No: protege contra la repetición. Contra la inundación de la tabla
+  hace falta <em>rate limiting</em>.</li>
+</ul>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2010-07, Pregunta 3 (8 puntos) — resolución iterativa sin caché</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc1007</code> / <code>sirc1007</code> — 27 de julio de 2010.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1007.pdf</p>
+</blockquote>
+<h3>Enunciado (texto literal del examen)</h3>
+<blockquote>
+<p><strong>Pregunta 3 (8 puntos)</strong></p>
+<p><strong>a)</strong> Represente en un diagrama todos los pasos involucrados en la resolución de
+nombres iterativa donde el equipo necesito.laip.com.uy consulta a su servidor DNS
+local (dns.laip.com.uy) por la dirección IP asociada a www.fakaofo.tk. Suponga que
+no se dispone de ninguna información de caché en ningún servidor.</p>
+<p><strong>b)</strong> Indique en el diagrama de la parte a) cuál es el servidor del TLD tk y cuál
+el autoritativo de fakaofo.tk.</p>
+</blockquote>
+<h3>Solución oficial (del PDF, textual)</h3>
+<blockquote>
+<table>
+<thead>
+<tr>
+<th>Paso</th>
+<th>A</th>
+<th>Información</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>necesito.laip.com.uy</td>
+<td>dns.laip.com.uy</td>
+</tr>
+<tr>
+<td>2</td>
+<td>dns.laip.com.uy</td>
+<td>"algún root server"</td>
+</tr>
+<tr>
+<td>3</td>
+<td>"algún root server" (el que recibió la consulta del paso 2)</td>
+<td>dns.laip.com.uy</td>
+</tr>
+<tr>
+<td>4</td>
+<td>dns.laip.com.uy</td>
+<td>X.Y.W.Z</td>
+</tr>
+<tr>
+<td>5</td>
+<td>X.Y.W.Z</td>
+<td>dns.laip.com.uy</td>
+</tr>
+<tr>
+<td>6</td>
+<td>dns.laip.com.uy</td>
+<td>A.B.C.D</td>
+</tr>
+<tr>
+<td>7</td>
+<td>A.B.C.D</td>
+<td>dns.laip.com.uy</td>
+</tr>
+<tr>
+<td>8</td>
+<td>dns.laip.com.uy</td>
+<td>necesito.laip.com.uy</td>
+</tr>
+</tbody>
+</table>
+<p>El diagrama debe ser muy similar al que figura en la diapo 9 de la clase 7 de
+capa de Aplicación.
+X.Y.W.Z, A.B.C.D y E.F.G.H son meramente ilustrativos, pero sí deben ser
+distintos.</p>
+</blockquote>
+<h3>a) Resolución — el diagrama completo</h3>
+<p>Acá está el diagrama pedido, con los cuatro actores y los ocho mensajes. Los
+nombres son los del examen:</p>
+<div class="codehilite"><pre><span></span><code>                     necesito.laip.com.uy      (el PC, con su stub resolver)
+                              │
+   Paso 1 ─── RECURSIVA ──────┤ "¿IP de www.fakaofo.tk?"
+                              ▼
+                     dns.laip.com.uy           (servidor de nombres LOCAL,
+                              │                 el único que RECURSIVA)
+   Paso 2 ─── ITERATIVA ──────┤ "¿IP de www.fakaofo.tk?"
+                              ▼
+                     "algún root server"       (a.root-servers.net … m. …)
+                              │
+   Paso 3 ─── REFERENCIA ──────┘ "No sé. El TLD de .tk está en X.Y.W.Z."
+                              ▼
+                     dns.laip.com.uy
+   Paso 4 ─── ITERATIVA ──────┤ "¿IP de www.fakaofo.tk?"
+                              ▼
+                     X.Y.W.Z                    (servidor del TLD .tk)
+                              │
+   Paso 5 ─── REFERENCIA ──────┘ "No sé. El autoritativo de fakaofo.tk
+                              │   está en A.B.C.D."
+                              ▼
+                     dns.laip.com.uy
+   Paso 6 ─── ITERATIVA ──────┤ "¿IP de www.fakaofo.tk?"
+                              ▼
+                     A.B.C.D                    (servidor AUTORITATIVO
+                              │                  de fakaofo.tk)
+   Paso 7 ─── RESPUESTA ──────┘ "Es E.F.G.H."
+                              ▼
+                     dns.laip.com.uy           (cachea la respuesta)
+   Paso 8 ─── RESPUESTA ──────┤ "Es E.F.G.H."
+                              ▼
+                     necesito.laip.com.uy      (recibe la respuesta final)
+</code></pre></div>
+
+<p><strong>Análisis de la solución oficial, punto por punto. Esto es lo que hay que
+aprender de ella:</strong></p>
+<p><strong>✅ Lo que está bien:</strong></p>
+<ol>
+<li><strong>Los ocho mensajes están completos.</strong> No falta ninguno: ni el 2 (al root), ni
+   el 4 (al TLD), ni el 6 (al autoritativo), ni el 8 (la vuelta al PC). Es la
+   estructura completa de §1.3, y coincide con la que da la cátedra.</li>
+<li><strong>Los pasos 3 y 5 están bien escritos como <em>referencias</em>, no como respuestas.</strong>
+   La oficial dice «Consultar a TLD de tk», «Consultar a dns.fakaofo.tk», que es
+   exactamente la definición de iterativa. Si en alguno de esos dos pasos hubiera
+   puesto «la IP es …», la solución estaría mal.</li>
+<li><strong>X.Y.W.Z, A.B.C.D y E.F.G.H son distintos</strong>, como pide el enunciado: eso
+   garantiza que cada paso es una consulta a <strong>otra</strong> máquina y no un invento.</li>
+<li><strong>El paso 8 existe</strong>, o sea que la respuesta final vuelve al PC. Muchos alumnos
+   lo olvidan y se quedan en 7 pasos.</li>
+</ol>
+<p><strong>⚠️ Lo que la oficial NO dice y hay que agregar para los 8 puntos:</strong></p>
+<ol>
+<li><strong>No dice qué tipo de consulta es cada paso.</strong> La oficial llama «Query» a los
+   pasos 1, 2, 4 y 6 y «Response» a los 3, 5, 7 y 8. Eso alcanza, pero <strong>suma</strong>
+   distinguir que los <strong>pasos 3 y 5 son respuestas con <code>ANCOUNT = 0</code></strong>, es decir
+   <em>referencias</em>, y que <strong>solo el 7 tiene <code>ANCOUNT = 1</code> y <code>AA = 1</code></strong>.</li>
+<li><strong>No dice qué algoritmo es cada paso.</strong> El enunciado dice «resolución iterativa»
+   y la oficial lo resuelve como iterativo en los pasos 2 a 7. Pero el <strong>paso 1 es
+   recursivo</strong> en la realidad, y decir eso <strong>suma puntos</strong> (ver la nota de abajo).</li>
+<li><strong>No dice qué se cachea.</strong> El enunciado dice «sin caché en ningún servidor», así
+   que la oficial tiene razón en no tocarlo, pero <strong>alumnos que mencionen qué se
+   cachearía después</strong> demuestran que entendieron.</li>
+</ol>
+<blockquote>
+<p><strong>Nota explícita contra la oficial — y es la más importante de esta clase:</strong>
+el enunciado dice «<strong>resolución de nombres iterativa</strong>» y describe que
+<code>necesito.laip.com.uy</code> <strong>consulta a su servidor DNS local</strong>. En el modelo real,
+<strong>esa primera consulta es recursiva</strong>: el <em>stub resolver</em> del SO le pide al
+<code>dns.laip.com.uy</code> «resolveste esto por mí y traeme la respuesta final», y el
+flag <code>RD = 1</code> de la petición lo dice. Lo <strong>iterativo</strong> son los <strong>cuatro pasos
+que van del servidor local hacia afuera</strong> (2 a 7). Mi lectura: la oficial usa
+«iterativa» como abreviatura de «la que hace el servidor local», que es el
+nombre que se le da en la clase, y <strong>no lo dice</strong>. Si en un examen te piden el
+diagrama, <strong>hacé los ocho pasos</strong> (que es lo que se corrige) y <strong>agregá la
+distinción de una línea</strong>: «el paso 1 es recursivo y los 2 a 7 son iterativos».
+Eso no te resta nada y puede sumarte.</p>
+</blockquote>
+<h3>b) ¿Cuál es el TLD de <code>tk</code> y cuál el autoritativo de <code>fakaofo.tk</code>?</h3>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────────────────────────────────────────────┐
+   │                                                                  │
+   │   Servidor del TLD  .tk            →  X.Y.W.Z   (paso 3 a 5)  │
+   │                                                                  │
+   │   Servidor AUTORITATIVO            →  A.B.C.D   (paso 6 a 7)  │
+   │      de fakaofo.tk                                              │
+   │                                                                  │
+   │   Servidor de nombres LOCAL         →  dns.laip.com.uy          │
+   │      (recursivo, NO autoritativo)       (pasos 1-8, el que     │
+   │                                           consulta y cachea)    │
+   │                                                                  │
+   │   Root server                        →  el que recibió el      │
+   │                                          paso 2 (no se sabe     │
+   │                                          cuál: hay 13)          │
+   │                                                                  │
+   │   La RESPUESTA FINAL (E.F.G.H)        →  la dirección IP de          │
+   │                                          www.fakaofo.tk          │
+   └──────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><em>(solución propia: el PDF publica la tabla del apartado a) y remite a la diapo 9 de
+la clase 7 para el dibujo, pero no redacta la respuesta de b).)</em></p>
+<p><strong>El matiz que hay que agregar y es lo que suma puntos:</strong> <code>dns.laip.com.uy</code> <strong>no es
+el autoritativo de nada</strong>. Aunque sea el servidor de nombres de <code>laip.com.uy</code> (y
+puede serlo), frente a este problema está actuando como <strong>resolver recursivo</strong>: es
+un <strong>cliente</strong> de la jerarquía, no un <strong>dueño</strong> de datos. Su papel en el diagrama
+es el de un intermediario que consulta y cachea.</p>
+<p><strong>Respuesta redactada, lista para copiar en el examen:</strong></p>
+<blockquote>
+<p><strong>a)</strong> Con el equipo <code>necesito.laip.com.uy</code> y su servidor de nombres local
+<code>dns.laip.com.uy</code>, sin caché en ningún servidor, la resolución de
+<code>www.fakaofo.tk</code> son <strong>ocho mensajes</strong>:</p>
+<ol>
+<li><code>necesito.laip.com.uy</code> → <code>dns.laip.com.uy</code>: consulta por la IP de
+   <code>www.fakaofo.tk</code>.</li>
+<li><code>dns.laip.com.uy</code> → un <strong>root server</strong>: la misma consulta.</li>
+<li>El root <strong>no conoce</strong> <code>www.fakaofo.tk</code>; responde con una <strong>referencia</strong>: el
+   servidor del TLD <code>.tk</code> está en <code>X.Y.W.Z</code>.</li>
+<li><code>dns.laip.com.uy</code> → <code>X.Y.W.Z</code> (TLD de <code>.tk</code>): la misma consulta.</li>
+<li>El TLD tampoco conoce el dominio; responde con una <strong>referencia</strong>: el
+   servidor autoritativo de <code>fakaofo.tk</code> es <code>dns.fakaofo.tk</code>, en <code>A.B.C.D</code>.</li>
+<li><code>dns.laip.com.uy</code> → <code>A.B.C.D</code> (autoritativo): la misma consulta.</li>
+<li>El autoritativo <strong>sí</strong> conoce el mapeo y responde: <code>www.fakaofo.tk</code> es
+   <code>E.F.G.H</code>.</li>
+<li><code>dns.laip.com.uy</code> → <code>necesito.laip.com.uy</code>: devuelve <code>E.F.G.H</code>.</li>
+</ol>
+<p>Son <strong>cuatro ida y vuelta = 4 RTT</strong>: PC↔resolver (pasos 1 y 8),
+resolver↔root (2 y 3), resolver↔TLD (4 y 5) y resolver↔autoritativo (6 y 7).
+Los pasos 3 y 5 son <strong>referencias</strong>, no respuestas: llegan con <code>ANCOUNT = 0</code> y el
+dato en las secciones <em>Authority</em> y <em>Additional</em> (los <code>NS</code> y sus <em>glue records</em>).
+Solo el paso 7 es una respuesta final, y es la única con el flag <code>AA = 1</code>.</p>
+<p><strong>b)</strong> El servidor del TLD <code>.tk</code> es <strong><code>X.Y.W.Z</code></strong> y el servidor autoritativo de
+<code>fakaofo.tk</code> es <strong><code>A.B.C.D</code></strong>. El <code>dns.laip.com.uy</code> es el servidor de nombres
+<strong>local (recursivo)</strong>: no es autoritativo de <code>fakaofo.tk</code> ni de ningún otro
+nombre ajeno; en este problema actúa como un cliente más de la jerarquía, que
+consulta y cachea.</p>
+</blockquote>
+<h2>3.2 ⭐ Examen 2010-12, Pregunta 1 (8 puntos) — el TTL y los pasos de una consulta tipo A</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc1012</code> / <code>sirc1012</code> — 17 de diciembre de 2010.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1012.pdf
+<strong>Este es el otro problema central de la unidad.</strong></p>
+</blockquote>
+<h3>Enunciado (texto literal del examen)</h3>
+<blockquote>
+<p><strong>Pregunta 1 (8 puntos)</strong></p>
+<p>El DNS es una base de datos distribuida y jerárquica, compuesta por varios tipos de
+servidores.</p>
+<p><strong>a)</strong> Cuando un servidor de nombres aprende un mapeo, lo cachea. ¿Cuál es el campo
+del registro de recurso (RR) que decide si se puede cachear o no? ¿Cuál es el
+servidor que define ese tiempo? ¿El valor que toma ese campo, a qué refiere y en
+que unidades está expresado?</p>
+<p><strong>b)</strong> Suponga que desde un PC de una empresa, se hace una consulta tipo A al
+servidor de nombres local por el nombre pruebaexmen.edu, ¿cuales son los pasos
+siguientes que debe realizar el servidor antes de dar la respuesta al usuario?</p>
+</blockquote>
+<h3>Solución oficial (del PDF, textual)</h3>
+<blockquote>
+<p><strong>a)</strong> El campo es el TTL, que refiere al tiempo restante por el cual ese RR es
+válido y por lo tanto se puede mantener en caché. El TTL está definido por el
+servidor autoritativo de ese RR, y es la cantidad de segundos para los que ese
+registro es válido. El servidor que lo mantiene en cache, deberá ir decrementando
+ese valor, hasta que cuando llega a cero, deja de ser válido y se quita del caché.</p>
+<p><strong>b)</strong>
+PC =&gt; Consulta SERVIDOR LOCAL por TIPO A, nombre pruebaexmen.edu
+SERVIDOR LOCAL =&gt; Consulta ROOT SERVER (no lo tiene en caché) por el servidor TLD del .edu
+ROOT SERVER responde con la IP del servidor TLD del edu
+SERVIDOR LOCAL =&gt; Consulta TLD del .edu por el RR tipo A, nombre pruebaexamen.edu
+Servidor TDL responde con la dirección IP del nombre pruebaexamen.edu al SERVIDOR LOCAL
+SERVIDOR LOCAL cachea la respuesta y responde al PC con la dirección IP del nombre pruebaexamen.edu</p>
+</blockquote>
+<h3>a) El TTL — resolución</h3>
+<p><strong>La respuesta oficial es corta y precisa. Lo que hay que hacer es <em>desarmarla</em>.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Pregunta</th>
+<th>Respuesta oficial</th>
+<th>Dónde está en el RR</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>¿Qué campo decide si se puede cachear?</strong></td>
+<td>el <strong>TTL</strong> (<em>time to live</em>, tiempo de vida)</td>
+<td>el <strong>cuarto</strong> de los cinco campos</td>
+</tr>
+<tr>
+<td><strong>¿Qué servidor define ese tiempo?</strong></td>
+<td>el <strong>servidor autoritativo</strong> de ese RR</td>
+<td>quien escribe la zona</td>
+</tr>
+<tr>
+<td><strong>¿A qué refiere su valor?</strong></td>
+<td>al <strong>tiempo restante</strong> por el cual ese RR <strong>es válido</strong> y puede estar en caché</td>
+<td>contador decreciente</td>
+</tr>
+<tr>
+<td><strong>¿En qué unidades?</strong></td>
+<td><strong>segundos</strong>, siempre</td>
+<td>4 bytes</td>
+</tr>
+</tbody>
+</table>
+<p><strong>La estructura del RR, con el TTL marcado:</strong></p>
+<div class="codehilite"><pre><span></span><code>   nombre              clase   tipo    TTL      datos
+   fing.edu.uy.        IN      A       3600     132.42.120.5
+   ────────────       ─────   ────    ────     ──────────
+   nombre             2 bytes  2 bytes 4 bytes  variable
+                               1       2
+                                    ↑
+                         EL TTL: 4 bytes, en SEGUNDOS
+</code></pre></div>
+
+<p><strong>El razonamiento detrás de cada respuesta, que es lo que hay que saber explicar:</strong></p>
+<ol>
+<li><strong>¿Por qué el TTL y no otro campo?</strong> Porque los otros cuatro <strong>no dependen del
+   tiempo</strong>: el nombre es el nombre, la clase es <code>IN</code>, el tipo es <code>A</code> y los datos
+   son la IP. <strong>Solo el TTL es una declaración sobre cuánto tiempo vale lo que
+   dice el registro.</strong> Y por eso es el único que puede «envejecer»: al pasar el
+   tiempo, el contenido sigue siendo cierto como hecho histórico, pero deja de ser
+   <em>garantizado</em> por el origen.</li>
+<li><strong>¿Por qué el autoritativo y no otro?</strong> Porque <strong>el TTL es una declaración de
+   política del dueño del dato</strong>, no una decisión técnica de quien lo transporta.
+   Solo el que administra la zona sabe <strong>con qué frecuencia cambia</strong> su contenido.
+   Si lo definiera el resolver, cada resolver tendría su propia cuenta y el
+   sistema se desincronizaría.</li>
+<li><strong>¿Por qué «tiempo restante» y no «fecha de vencimiento»?</strong> Porque el TTL es un
+   <strong>contador</strong>, no una fecha. No hay reloj en el protocolo: no se manda «vence el
+   12/10 a las 15:00», se manda «3600 segundos». Cada quien que lo guarda lo cuenta
+   <strong>hacia abajo</strong> desde el momento en que lo recibió. Es lo que permite que dos
+   resolvers en distintos puntos del mundo coincidan sin sincronizar relojes.</li>
+<li><strong>¿Por qué segundos?</strong> Porque es la <strong>única unidad que se Define en el formato
+   del mensaje</strong>: el campo ocupa 4 bytes y se interpreta como un entero sin signo
+   de 32 bits. Cualquier otra unidad requeriría un campo de unidades, que no
+   existe.</li>
+</ol>
+<p><strong>Respuesta redactada, lista para copiar en el examen:</strong></p>
+<blockquote>
+<p><strong>a)</strong> El campo es el <strong>TTL</strong> (<em>time to live</em>), que es el <strong>cuarto campo</strong> del
+registro de recurso y ocupa <strong>4 bytes</strong>.</p>
+<p><strong>Quién lo define:</strong> el <strong>servidor autoritativo</strong> de esa zona, porque es el
+dueño del dato y es el único que sabe con qué frecuencia cambia. El TTL es una
+<strong>declaración de política</strong> del dueño del nombre.</p>
+<p><strong>A qué refiere:</strong> al <strong>tiempo restante</strong> durante el cual ese registro es
+<strong>válido</strong> y, por lo tanto, puede mantenerse en la caché. No es una fecha
+absoluta sino un <strong>contador decreciente</strong>: el resolver que lo guarda lo va
+descontando desde el momento en que lo recibió, y cuando llega a cero el
+registro deja de ser fresco y obliga a revalidar.</p>
+<p><strong>Unidades:</strong> <strong>segundos</strong>, siempre, sin excepción. El valor es un entero sin
+signo de 32 bits, así que el máximo es 4 294 967 295 segundos (unos 136 años).</p>
+<p><strong>Ejemplo:</strong> <code>www.fing.edu.uy. 3600 IN A 132.42.120.5</code> significa «este registro
+es válido durante 3600 segundos (1 hora) a partir de ahora». Guardado a las
+10:00:00, queda fresco hasta las 11:00:00; a las 11:00:01 hay que revalidar.</p>
+<p><strong>Nota contra la oficial:</strong> la oficial es <strong>correcta y completa</strong> para el
+apartado a). Lo único que le agregaría es (i) que el TTL es el <strong>cuarto</strong> campo
+de los <strong>cinco</strong>, y que mide <strong>4 bytes</strong>, porque el enunciado habla de «el campo
+del RR» y conviene situarlo; y (ii) el <strong>máximo representable</strong>, que es un dato
+que a veces se pregunta y sale del formato del mensaje.</p>
+</blockquote>
+<h3>b) Los pasos de una consulta tipo A — resolución</h3>
+<p><strong>Acá hay que tener cuidado, porque la solución oficial tiene un error
+conceptual.</strong> Primero la resolución completa y después el análisis.</p>
+<p><strong>El nombre del problema:</strong> <code>pruebaexamen.edu</code>. Descomponemos:</p>
+<div class="codehilite"><pre><span></span><code>   pruebaexamen.edu.
+   ────────────── ───
+   2º nivel (2LD)   │ TLD  (.edu es un gTLD "genérico",
+   = "pruebaexamen"  │  no es el ccTLD de un país)
+                     ▼
+   raíz  →  .edu  →  pruebaexamen.edu  →  (el nombre buscado)
+</code></pre></div>
+
+<p><strong>El recorrido completo, con los mismos ocho mensajes que en <code>2010-07 P3</code>:</strong></p>
+<div class="codehilite"><pre><span></span><code>   ┌──────┬───────────────────┬────────────────┬─────────────────────────────┐
+   │  #   │ De                │ A              │ Qué pasa                    │
+   ├──────┼───────────────────┼────────────────┼─────────────────────────────┤
+   │  1   │ PC (stub)         │ servidor local │ RECURSIVA: "¿IP de         │
+   │      │                   │ (el de la      │  pruebaexamen.edu?"        │
+   │      │                   │  empresa)      │  RD=1                       │
+   │  2   │ servidor local    │ root server    │ ITERATIVA: "¿IP de         │
+   │      │                   │                │  pruebaexamen.edu?"        │
+   │  3   │ root server       │ servidor local │ REFERENCIA: "el TLD .edu    │
+   │      │                   │                │  está en &lt;IP del .edu&gt;"    │
+   │  4   │ servidor local    │ TLD .edu       │ ITERATIVA: la pregunta     │
+   │  5   │ TLD .edu          │ servidor local │ REFERENCIA: "el autoritativo│
+   │      │                   │                │  es ns1.pruebaexamen.edu,  │
+   │      │                   │                │  en &lt;IP del autoritativo&gt;" │
+   │  6   │ servidor local    │ autoritativo   │ ITERATIVA: la pregunta     │
+   │  7   │ autoritativo      │ servidor local │ RESPUESTA: "es &lt;IP&gt;"       │
+   │  8   │ servidor local    │ PC             │ RESPUESTA: "es &lt;IP&gt;"       │
+   └──────┴───────────────────┴────────────────┴─────────────────────────────┘
+
+   RTT: 2 (PC↔local) + 1 (local↔root) + 1 (local↔.edu) + 1 (local↔aut.) = 4 RTT
+   → 8 mensajes.
+</code></pre></div>
+
+<p><strong>El paso 9, que el enunciado pide explícitamente y que es el que da el punto:</strong></p>
+<div class="codehilite"><pre><span></span><code>   9. El servidor local ARMA LA RESPUESTA y se la entrega al PC.
+
+      ⚠️ Y ACA ESTÁ EL ERROR DE LA OFICIAL: el texto dice
+         "Servidor TDL responde con la dirección IP del nombre
+          pruebaexamen.edu al SERVIDOR LOCAL".
+
+         El TLD .edu NO PUEDE responder con la dirección IP. No la tiene.
+         El TLD .edu lo único que tiene de pruebaexamen.edu es el REGISTRO
+         NS que dice quién lo autoriza. Si el TLD devolviera la IP, el
+         sistema entero colapsaría en el TLD y no habría DNS distribuido.
+
+         El TLD responde con una REFERENCIA (ANCOUNT=0), y la respuesta
+         final la da el AUTORITATIVO en el paso 7.
+</code></pre></div>
+
+<p><strong>Lo que hace el servidor local antes de responder (los 3_CACHEAR):</strong></p>
+<div class="codehilite"><pre><span></span><code>   1. Cachea el REGISTRO A que vino del autoritativo,
+      con el TTL que trae (que es el que definió el autoritativo).
+
+   2. Cachea la REFERENCIA del TLD .edu: el NS de pruebaexamen.edu
+      y su glue (IP de ns1.pruebaexamen.edu), con el TTL que trae
+      el TLD (típicamente 172800 s = 2 días).
+
+      └── esto es lo que hace que la SEGUNDA resolución del mismo
+          nombre tarde solo 2 RTT y no 4.
+
+   3. Cachea la REFERENCIA del root: el NS de .edu y su glue, con
+      su TTL. Esta se cachea mucho menos porque el root tiene muchísimos
+      TLD y la rotación es alta.
+
+   y recién después le responde al PC.
+</code></pre></div>
+
+<p><strong>Respuesta redactada, lista para copiar en el examen:</strong></p>
+<blockquote>
+<p><strong>b)</strong> Desde el PC de la empresa se hace una consulta <strong>tipo A</strong> al servidor de
+nombres local por <code>pruebaexamen.edu</code>. El nombre se resuelve <strong>de derecha a
+izquierda</strong>, y son estos los pasos:</p>
+<ol>
+<li>El PC envía la consulta al <strong>servidor de nombres local</strong> de la empresa
+   («¿qué dirección IPv4 corresponde a <code>pruebaexamen.edu</code>?»). Es una consulta
+   <strong>recursiva</strong>: el stub resolver del sistema operativo le pide al servidor local
+   que resuelva por él.</li>
+<li>El servidor local, <strong>sin tener el dato en caché</strong>, hace una consulta
+   <strong>iterativa</strong> a un <strong>root server</strong> por el mismo nombre.</li>
+<li>El root server <strong>no conoce</strong> <code>pruebaexamen.edu</code>: no conoce ningún dominio, solo
+   los TLD. Responde con una <strong>referencia</strong>: el servidor del TLD <code>.edu</code> está en
+   determinada dirección IP.</li>
+<li>El servidor local consulta <strong>iterativamente</strong> al <strong>servidor del TLD <code>.edu</code></strong>.</li>
+<li>El TLD <code>.edu</code> <strong>tampoco conoce</strong> el dominio. Responde con una <strong>referencia</strong>:
+   el servidor <strong>autoritativo</strong> de <code>pruebaexamen.edu</code> es <code>ns1.pruebaexamen.edu</code>,
+   cuya dirección IP viene en la sección <em>Additional</em> (el <em>glue record</em>).</li>
+<li>El servidor local consulta <strong>iterativamente</strong> al <strong>servidor autoritativo</strong> de
+   <code>pruebaexamen.edu</code>.</li>
+<li>El autoritativo <strong>sí</strong> conoce el mapeo y responde con el <strong>registro A</strong> de
+   <code>pruebaexamen.edu</code>, con su <strong>TTL</strong>.</li>
+<li>El servidor local <strong>cachea</strong> la respuesta (el <code>A</code> con su TTL, y las
+   referencias del TLD y del root con los suyos) y <strong>le responde al PC</strong> con la
+   dirección IP.</li>
+</ol>
+<p>Son <strong>ocho mensajes</strong> y <strong>cuatro RTT</strong>. Los pasos 3 y 5 son <strong>referencias</strong>, no
+respuestas (llegan con <code>ANCOUNT = 0</code>); la <strong>única respuesta final</strong> es la del
+paso 7, que es la única con el flag <code>AA = 1</code>.</p>
+<p><strong>Nota explícita contra la oficial — y es una diferencia real:</strong>
+La solución oficial describe <strong>cinco pasos</strong> y en el paso 5 dice que <em>«Servidor
+TDL responde con la dirección IP del nombre pruebaexamen.edu al SERVIDOR
+LOCAL»</em>. <strong>Mi lectura es que ahí hay un error conceptual:</strong> el servidor del TLD
+<strong>no puede</strong> responder con la dirección IP, porque <strong>no la tiene y no puede
+tenerla</strong> — si la tuviera, no habría DNS distribuido, todo el mundo dependería
+de los TLD y el sistema no escalaría. Lo que el TLD devuelve es el <strong>registro
+<code>NS</code></strong> que lo delega, es decir, <strong>quién es el autoritativo</strong> (más su <em>glue</em>), y
+<strong>a partir de ahí hay un paso más</strong>: la consulta al servidor autoritativo, que
+es el único que devuelve el registro <code>A</code>. Por eso la cadena completa son <strong>ocho
+mensajes (cuatro RTT)</strong> y no cinco: es exactamente la misma cadena del
+<code>2010-07 P3</code>. Si el enunciado acepta cinco pasos porque es lo que se da en la
+clase, <strong>reproduce la tabla oficial</strong> y <strong>agregá una línea con el paso que falta</strong>:
+eso no te resta nada y muestra que entendiste la jerarquía.</p>
+</blockquote>
+<h3>3.2.1 Los otros tres puntos de la misma pregunta de 2010-12 (por completitud)</h3>
+<p>La Pregunta 1 del examen de diciembre de 2010 vale 8 puntos y la cátedra la suele
+usar <strong>entera</strong> como pregunta de concepto. Los otros tres son de otros temas, pero
+conviene tenerlos frescos porque se repreguntan:</p>
+<table>
+<thead>
+<tr>
+<th>Apartado</th>
+<th>En una línea</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>P2a.1</strong> ¿Cómo deriva un segmento UDP a su proceso?</td>
+<td>por el <strong>puerto destino</strong></td>
+</tr>
+<tr>
+<td><strong>P2a.2</strong> ¿Cómo sabe el proceso a dónde mandar la respuesta?</td>
+<td>por <strong>IP origen + puerto origen</strong></td>
+</tr>
+<tr>
+<td><strong>P2a.3</strong> ¿Qué identifica un socket UDP en la red?</td>
+<td><strong>IP del host + número de puerto</strong> (la «2-tupla», simplificación clásica)</td>
+</tr>
+<tr>
+<td><strong>P2b</strong> ¿Y un socket TCP?</td>
+<td>la <strong>4-tupla</strong>: IP origen, puerto origen, IP destino, puerto destino</td>
+</tr>
+</tbody>
+</table>
+<p><em>(Se desarrolla entero en la Clase 16, «UDP: multiplexación».)</em></p>
+<h2>3.3 Examen 2007-07, Pregunta 4 (8 puntos) — función del DNS y protocolo involucrado</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0707</code> / <code>sirc0707</code> — julio de 2007.</p>
+<p><strong>Enunciado:</strong> Describa la función del sistema de nombres de dominio y qué protocolo
+se utiliza para la resolución de nombres.</p>
+</blockquote>
+<p><strong>Resolución (síntesis de §1.1, §1.2 y §1.7 de esta clase y de la Clase 10).</strong></p>
+<p><strong>a) La función:</strong> el DNS es un <strong>espacio de nombres jerárquico</strong> y una <strong>base de
+datos distribuida</strong> que traduce <strong>nombres de host a direcciones IP</strong> y viceversa
+(<code>PTR</code>). Es <strong>jerárquico</strong> (raíz → TLD → autoritativo, resuelto de derecha a
+izquierda) y <strong>distribuido</strong> (cada servidor solo conoce los datos de su zona y delega
+el resto), lo que le da escala, tolerancia a fallas y mantenimiento distribuido de la
+autoridad.</p>
+<p><strong>b) El protocolo:</strong> un protocolo de <strong>capa de aplicación</strong> que viaja sobre <strong>UDP
+puerto 53</strong> en el caso normal, y sobre <strong>TCP puerto 53</strong> cuando la respuesta no cabe
+en un datagrama (banderita <code>TC</code>) o cuando se pide una <strong>transferencia de zona</strong>
+(<code>AXFR</code>/<code>IXFR</code>). El mensaje tiene <strong>12 bytes de cabecera</strong> (ID, <em>flags</em>, y los
+contadores <code>QDCOUNT</code>/<code>ANCOUNT</code>/<code>NSCOUNT</code>/<code>ARCOUNT</code>) más cuatro secciones:
+<strong>Question</strong>, <strong>Answer</strong>, <strong>Authority</strong> y <strong>Additional</strong>.</p>
+<p><strong>Lo que hay que agregar y suma puntos:</strong> el protocolo usa <strong>consultas iterativas y
+recursivas</strong>, y el flujo real es que el <strong>stub resolver del host hace una consulta
+recursiva al resolver local</strong>, y el resolver local hace <strong>consultas iterativas</strong> al
+root, al TLD y al autoritativo. <strong>Y con DNSSEC (<code>RFC 4033-4035</code>, 2005) el mismo
+protocolo transporta además firmas digitales</strong>, aunque el despliegue de esa capa es
+parcial: hoy están firmados ~99,6 % de los gTLD pero solo ~5-7 % de los dominios.</p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen</h2>
+<ol>
+<li><strong>Iterativa</strong>: el que no sabe devuelve una <strong>referencia</strong> («preguntale a este») y
+   no hace nada más; <strong>quien sigue preguntando es el cliente</strong>. <strong>Recursiva</strong>: el
+   que no sabe <strong>pregunta él</strong> al nivel inferior; <strong>quien sigue preguntando es el
+   servidor</strong>.</li>
+<li><strong>El flujo real</strong>: el <em>stub resolver</em> del SO → <strong>recursiva</strong> → resolver local;
+   el resolver local → <strong>iterativas</strong> → root → TLD → autoritativo. <strong>No cambió desde
+   1987.</strong></li>
+<li><strong>Son 8 mensajes y 4 RTT</strong> sin caché. Los mensajes 3 y 5 son <strong>referencias</strong>
+   (<code>ANCOUNT = 0</code>, dato en <em>Authority</em> + <em>Additional</em> con los <em>glue</em>); solo el 7 es
+   respuesta final (<code>AA = 1</code>).</li>
+<li><strong>La caché existe</strong> porque sin ella cada visita a una página generaría 2 a 6
+   consultas, y los 13 root no darían abasto. <strong>Ahorra viajes, no bytes.</strong></li>
+<li><strong>El TTL es el 4.º campo del RR, de 4 bytes, en segundos.</strong> Lo define el
+   <strong>servidor autoritativo</strong>; lo <strong>descuenta</strong> el resolver que lo cacheó, y cuando
+   llega a cero la entrada deja de ser fresca y hay que <strong>revalidar</strong>.</li>
+<li><strong>El TTL es un compromiso</strong>: corto → los cambios se propagan rápido pero el
+   origen recibe muchas consultas; largo → el origen recibe pocas consultas, pero
+   los cambios tardan
+   hasta un TTL en propagarse.</li>
+<li><strong>La caché negativa</strong> cachea el <code>NXDOMAIN</code> con el TTL del <code>SOA</code> (o el
+   <code>SOA.MINIMUM</code>), y eso <strong>protege</strong> contra ataques de denegación por repetición.
+   <code>RFC 8020</code> dice: cachear <strong>sí</strong>, pero <strong>bajo la clave del nombre exacto</strong>, sin
+   contaminar (<em>domain shadowing</em>).</li>
+<li><strong>⚠️ Actualización a 2026:</strong> <strong>DoH (<code>RFC 8484</code>)</strong> ya es el cambio mayor —el DNS
+   del navegador <strong>ya no lo ve tu ISP</strong>—; <strong>Chrome no cambia tu resolver</strong>, intenta
+   «subir» el que ya tenías a DoH si está en su lista de proveedores conocidos, con
+   <em>fallback</em> a DNS plano. <strong>DoT (<code>RFC 7858</code>, 853)</strong> y <strong>DoQ (<code>RFC 9250</code>)</strong> van por
+   UDP/TCP 853. <strong><code>RFC 8767</code></strong> permite servir caché vencida. <strong><code>SVCB</code>/<code>HTTPS</code>
+   (<code>RFC 9460</code>)</strong> hace que el DNS transporte política de transporte. <strong>DNSSEC</strong>
+   (<code>RFC 4033-4035</code>): ~99,6 % de los gTLD firmados, solo <strong>~5-7 %</strong> de los dominios:
+   <strong>estandarizado en 2005, despliegue bajo veinte años después.</strong></li>
+<li><strong>Puerto 53 UDP y TCP</strong>, y <strong>853</strong> para DoT. DoH usa el <strong>443</strong>, que es
+   justamente por lo que se desplegó más: si podés abrir una web, podés resolver un
+   nombre.</li>
+<li><strong>Si te preguntan «qué cambió en el DNS»</strong>, la respuesta es <strong>nada de la
+    arquitectura</strong>. Lo que se agregó son cifrado, autenticidad parcial, extensiones,
+    una semántica de caché resiliente y política de transporte.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> ¿Cuál es la diferencia entre una consulta iterativa y una recursiva? En una
+línea cada una.</p>
+<details><summary>Respuesta</summary>
+
+Se distinguen por **quién se hace cargo de seguir consultando** cuando el servidor
+consultado **no** conoce la respuesta.
+
+- **Iterativa:** el servidor devuelve una **referencia** («ese nombre está delegado
+  a este otro servidor, andá a preguntarle») y el **cliente** sigue bajando por la
+  jerarquía hasta llegar a uno que sí tenga la respuesta.
+- **Recursiva:** el servidor **pregunta él** al nivel inferior y así sucesivamente,
+  y cuando obtiene la respuesta final **vuelve hacia atrás por la recursión** a
+  devolverle el resultado a quien le consultó. El cliente hizo **un solo viaje**.
+
+</details>
+
+<p><strong>2.</strong> En el flujo real, ¿qué consulta es recursiva y cuáles son iterativas?</p>
+<details><summary>Respuesta</summary>
+
+La **primera**, la del *stub resolver* del sistema operativo al resolver local
+(el del ISP), es **recursiva**: el PC pide «resolveste esto por mí y traeme la
+respuesta final», y lo marca con el flag `RD = 1`.
+
+Las **cuatro** que van del resolver local hacia afuera —al root, al TLD y al
+autoritativo— son **iterativas**: es el resolver local el que va bajando por la
+jerarquía, y cada servidor que no sabe le devuelve una referencia. **Esto no cambió
+desde 1987.**
+
+</details>
+
+<p><strong>3.</strong> ¿Cuántos mensajes y cuántos RTT tiene una resolución sin caché? ¿Cuáles de
+esos mensajes son respuestas y cuáles son referencias?</p>
+<details><summary>Respuesta</summary>
+
+**8 mensajes y 4 RTT**: PC↔resolver (mensajes 1 y 8), resolver↔root (2 y 3),
+resolver↔TLD (4 y 5) y resolver↔autoritativo (6 y 7).
+
+Los mensajes **3 y 5 son referencias**, no respuestas: llegan con **`ANCOUNT = 0`** y
+el flag `AA = 0`, y el dato va en las secciones **Authority** (los `NS`) y
+**Additional** (los *glue records*). El mensaje **8** es la vuelta del 1, no un viaje
+nuevo. **Solo el mensaje 7 es una respuesta final**, y es el único con `AA = 1`.
+
+</details>
+
+<p><strong>4.</strong> ¿Cuál es el campo del RR que decide si se puede cachear? ¿Quién lo define?
+¿Qué unidades tiene?</p>
+<details><summary>Respuesta</summary>
+
+El **`TTL`** (*time to live*), el **cuarto** de los cinco campos del Resource Record,
+que ocupa **4 bytes**.
+
+- **Quién lo define:** el **servidor autoritativo** de esa zona, porque es el dueño
+  del dato y el único que sabe con qué frecuencia cambia.
+- **A qué refiere:** al **tiempo restante** durante el cual el registro es válido y
+  puede estar en caché. Es un **contador decreciente**, no una fecha: quien lo
+  guarda lo descuenta desde el momento en que lo recibió.
+- **Unidades:** **segundos**, siempre. Es un entero sin signo de 32 bits, así que el
+  máximo es 4 294 967 295 segundos.
+
+</details>
+
+<p><strong>5.</strong> ¿Qué es la caché negativa y por qué es una <strong>protección</strong> y no un problema?</p>
+<details><summary>Respuesta</summary>
+
+Es guardar que **un nombre no existe** (`NXDOMAIN`), durante el TTL del `SOA` de la
+zona (o el `SOA.MINIMUM` si no viene otro).
+
+Es una **protección** porque sin ella, un atacante que consulte 5 000 veces por
+segundo un nombre inexistente genera 15 000 paquetes por segundo contra los servidores
+de nombres de la víctima, desde un solo portátil. Con caché negativa, el primer
+`NXDOMAIN` se cachea una hora y las 4 999 consultas siguientes se responden de la
+caché: **0 viajes**. Es lo que separa un ataque barato de una denegación de servicio
+real.
+
+⚠️ `RFC 8020` (2018) aclara que cachear **sí**, pero la entrada negativa debe
+guardarse **bajo la clave del nombre exacto**, sin «derramarse» sobre los nombres
+hermanos: eso es el ***domain shadowing***.
+
+</details>
+
+<p><strong>6.</strong> ¿Qué es DoH y por qué «Chrome usa el DNS de Google por defecto» es falso?</p>
+<details><summary>Respuesta</summary>
+
+**DoH** (`RFC 8484`, 2018) es DNS **dentro de HTTPS**, en el **puerto 443**: la
+consulta viaja cifrada, así que **el ISP ya no ve qué nombres pedís** y nadie en el
+camino puede inyectar respuestas falsas.
+
+«Chrome usa el DNS de Google por defecto» es **falso**: desde Chrome 83 (mayo-2020),
+Chrome **no cambia tu resolver**. Intenta «subir» **el resolver que ya tenías** a su
+versión DoH, y **solo lo hace si ese resolver está en su lista de proveedores
+conocidos**; si no está, sigue en DNS plano. Si el usuario lo configura a mano, ahí sí
+puede apuntar donde quiera.
+
+</details>
+
+<p><strong>7.</strong> El TTL es 3600 y el registro se guardó a las 10:00:00. ¿Cuándo deja de ser
+fresco? ¿Y cuándo se borra de la caché?</p>
+<details><summary>Respuesta</summary>
+
+A las **11:00:00** deja de ser **fresco**: pasa a *stale*, es decir, vieja pero
+presente. La **siguiente** consulta tiene que **revalidar** contra el origen.
+
+**No se borra en ese instante.** Se borra después, si ocurre la secuencia completa:
+vencimiento + revalidación + que el autoritativo no conteste. Si el origen contesta,
+la entrada se **renueva** con el TTL nuevo.
+
+Esa distinción importa porque `RFC 8767` (2020) autoriza precisamente a **servir
+esa copia vencida** cuando el autoritativo no responde, por resiliencia frente a
+DDoS. Decir «a los 3600 segundos se borra del caché» es **conceptualmente
+incorrecto**.
+
+</details>
+
+<p><strong>8.</strong> Un PC resuelve <code>www.fing.edu.uy</code>: 2 ms hasta su resolver, 40 ms al root, 25 ms
+al TLD y 15 ms al autoritativo. ¿Cuánto tarda (a) sin ninguna caché, (b) con el <code>NS</code>
+de <code>fing.edu.uy</code> cacheado, (c) con el <code>A</code> cacheado y fresco?</p>
+<details><summary>Respuesta</summary>
+
+- **(a) Sin caché:** 4 RTT = `2 + 40 + 25 + 15` = **82 ms**, 8 mensajes.
+- **(b) Con el `NS` cacheado** (se saltea root y TLD): 2 RTT = `2 + 15` = **17 ms**,
+  4 mensajes.
+- **(c) Con el `A` cacheado y fresco:** 1 RTT = `2` = **2 ms**, 2 mensajes. Y si
+  el nombre está fresco en la caché local del PC, **0 ms**: ni sale un paquete.
+
+La caché **ahorra viajes, no bytes**: en (a) y en (b) se transfieren los mismos 56
+bytes de respuesta final; lo que cambia es cuántos viajes hacen falta para
+conseguirlos.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>eirc1007</code> / <code>sirc1007</code></strong> — Pregunta 3 (8 pts): ★ resolución iterativa completa de <code>www.fakaofo.tk</code> sin caché, y qué servidor es el TLD y cuál el autoritativo</li>
+<li><strong>Examen <code>eirc1012</code> / <code>sirc1012</code></strong> — Pregunta 1 (8 pts): ★ (a) el TTL del RR, quién lo define, a qué refiere y unidades; (b) los pasos de una consulta tipo A a <code>pruebaexamen.edu</code></li>
+<li><strong>Examen <code>eirc1002</code> / <code>sirc1002</code></strong> — Pregunta 1b (8 pts): iterativas vs. recursivas</li>
+<li><strong>Examen <code>eirc0707</code> / <code>sirc0707</code></strong> — Pregunta 4 (8 pts): función del DNS y protocolo involucrado</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 7 §7.4 («El sistema de nombres de dominio»), §7.4.2 (espacio de nombres jerárquico) y §7.4.3 (resolución de nombres)</li>
+<li><strong>RFC 1034</strong> — <em>Domain Names: Concepts and Facilities</em> (1987): el diseño completo, que <strong>no cambió</strong> · <strong>RFC 1035</strong> — <em>Implementation and Specification</em> (1987): el formato del mensaje y de los RR</li>
+<li><strong>RFC 8484</strong> — DNS over HTTPS, DoH (2018) · <strong>RFC 7858</strong> — DNS over TLS, DoT (2016, puerto 853) · <strong>RFC 9250</strong> — DNS over QUIC, DoQ (2022, sin <em>head-of-line blocking</em>)</li>
+<li><strong>RFC 8020</strong> — <em>Negative DNS Responses and DNS Cache Pollution</em> (2018): <code>NXDOMAIN</code> se cachea, pero por nombre exacto</li>
+<li><strong>RFC 8767</strong> — servir caché vencida cuando el autoritativo no responde (2020)</li>
+<li><strong>RFC 6891</strong> — EDNS(0) (2013, <em>Internet Standard</em>): el pseudo-registro <code>OPT</code> · <strong>RFC 7766</strong> — conexiones TCP de DNS persistentes y reutilizables (2016)</li>
+<li><strong>RFC 9460</strong> — SVCB/HTTPS (2023): el DNS transporta política de transporte y descubre HTTP/3 antes de conectar · <strong>RFC 9462</strong> — DDR, descubrir resolvers en <code>_dns.resolver.arpa</code></li>
+<li><strong>RFC 4033-4035</strong> — DNSSEC (2005) · <strong>RFC 5155</strong> — raíz firmada (2010) · <strong>RFC 8080</strong> — EdDSA · <strong>RFC 8901</strong> — firmantes múltiples</li>
+<li><strong>IANA Service Name and Transport Protocol Port Number Registry</strong> — 53/udp, 53/tcp, 853/tcp (DoT)</li>
+<li><strong>Clase anterior:</strong> 10 — DNS: la base de datos distribuida</li>
+<li><strong>Clase siguiente:</strong> 12 — El resolver DNS en la práctica, con sockets</li>
+</ul></body></html>

@@ -1,0 +1,1934 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 9 — HTTP a fondo: mensajes, cookies, caché y versiones</h1>
+<p><strong>Bloque:</strong> B (Aplicación) · <strong>Semana:</strong> 3 · <strong>Duración estimada:</strong> 110 min
+<strong>Correlativa:</strong> Clase 8 (modelo cliente/servidor y HTTP/1.1) · <strong>Sigue con:</strong> Clase 10 (DNS: la base de datos distribuida)
+<strong>Material de referencia:</strong> Tanenbaum cap. 7 (§7.3) · RFC 9110, RFC 9112, RFC 9113, RFC 9114, RFC 6265, RFC 7541, RFC 9204, RFC 9218, RFC 7838, RFC 9000</p>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 720 400" style="max-width:720px"><rect width="720" height="400" fill="#ffffff"/><text x="360.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Del clic a la primera respuesta</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><rect x="40" y="56" width="110" height="42" rx="5" fill="#2e7d4f" stroke="#2e7d4f" stroke-width="1.2"/><text x="95.0" y="81.55" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#ffffff">DNS</text><rect x="166" y="56" width="330" height="42" rx="4" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="331.0" y="80.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">resolver www.ejemplo.com -&gt; 93.184.216.34</text><rect x="512" y="56" width="110" height="42" rx="4" fill="#fff" stroke="#2e7d4f" stroke-width="1.2"/><text x="567.0" y="80.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#2e7d4f">1 RTT</text><rect x="40" y="112" width="110" height="42" rx="5" fill="#14507a" stroke="#14507a" stroke-width="1.2"/><text x="95.0" y="137.55" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#ffffff">TCP</text><rect x="166" y="112" width="330" height="42" rx="4" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="331.0" y="136.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">handshake de 3 vias contra el puerto 80</text><rect x="512" y="112" width="110" height="42" rx="4" fill="#fff" stroke="#14507a" stroke-width="1.2"/><text x="567.0" y="136.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#14507a">1 RTT</text><rect x="40" y="168" width="110" height="42" rx="5" fill="#c8621a" stroke="#c8621a" stroke-width="1.2"/><text x="95.0" y="193.55" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#ffffff">TLS</text><rect x="166" y="168" width="330" height="42" rx="4" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="331.0" y="192.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">handshake, certificado, claves de sesion</text><rect x="512" y="168" width="110" height="42" rx="4" fill="#fff" stroke="#c8621a" stroke-width="1.2"/><text x="567.0" y="192.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#c8621a">2 RTT</text><rect x="40" y="224" width="110" height="42" rx="5" fill="#b3261e" stroke="#b3261e" stroke-width="1.2"/><text x="95.0" y="249.55" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#ffffff">HTTP</text><rect x="166" y="224" width="330" height="42" rx="4" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="331.0" y="248.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">GET /index.html  -&gt;  200 OK</text><rect x="512" y="224" width="110" height="42" rx="4" fill="#fff" stroke="#b3261e" stroke-width="1.2"/><text x="567.0" y="248.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#b3261e">1 RTT</text><rect x="40" y="280" width="110" height="42" rx="5" fill="#eef2f5" stroke="#666" stroke-width="1.2"/><text x="95.0" y="305.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#666">luego</text><rect x="166" y="280" width="456" height="42" rx="4" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="394.0" y="304.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">una conexion TCP por objeto en HTTP/1.1, o multiplexada en h2/h3</text><rect x="40" y="342" width="582" height="44" rx="5" fill="#e9f4ed" stroke="#2e7d4f" stroke-width="1.2"/><text x="331.0" y="368.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#1a1a1a">En total: ~5 RTT antes de recibir el primer byte de la pagina.</text><text x="40" y="408" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">Por eso importan la cache, las cookies de sesion y la conexion persistente:</text><text x="40" y="426" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">cada RTT ahorrado se siente en el tiempo de carga.</text></svg></p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Enumerar los <strong>métodos</strong> de HTTP y explicar qué significa que uno sea <strong>seguro</strong> o <strong>idempotente</strong>, y por qué esa distinción decide si un cliente puede reintentar solo.</li>
+<li>Escribir de memoria un <strong>intercambio HTTP/1.1 completo</strong> de validación condicional que termina en <strong>304</strong>, con <code>ETag</code>, <code>If-None-Match</code> y todas las cabeceras necesarias.</li>
+<li>Explicar qué hace <strong>cada</strong> cabecera de la lista que hay que saber, sin consultarla.</li>
+<li>Diferenciar <strong><code>no-store</code></strong>, <strong><code>no-cache</code></strong>, <strong><code>max-age</code></strong>, <strong><code>private</code></strong> y <strong><code>public</code></strong>, y explicar qué pasa exactamente con <code>max-age=0</code> cuando hay un <code>ETag</code> presente.</li>
+<li>Distinguir un <strong>proxy</strong>, un <strong>gateway</strong> y un <strong>CDN</strong>, y explicar por qué un CDN mejora la latencia con el concepto de <strong>distancia al usuario</strong>.</li>
+<li>Explicar qué <strong>agrega HTTPS</strong>, y por qué eso no es lo mismo que cambiar de versión de HTTP.</li>
+<li>Comparar <strong>HTTP/1.1, HTTP/2 y HTTP/3</strong> diciendo qué problema exacto resuelve cada una, qué parte del <em>head-of-line blocking</em> queda y qué parte desaparece, con las cifras reales.</li>
+<li>Enumerar <strong>qué sigue igual</strong> en las tres versiones, porque es lo que el examen da por sabido.</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2010-07 P1</code> (8 puntos — la carga de una página, repreguntado acá con el ángulo de versiones), <code>2009-07 Problema 2</code> (30 puntos — el cliente anti-spam que habla HTTP), y todo lo que la cátedra pregunta sobre «qué versión de HTTP es la actual».</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 Los métodos, uno por uno</h2>
+<p>Un método HTTP no es un verbo decorativo: <strong>es una declaración de intención sobre el recurso</strong>. El servidor la usa para decidir si puede cachear, si tiene que autenticar y qué hacer con el cuerpo.</p>
+<table>
+<thead>
+<tr>
+<th>Método</th>
+<th>Qué hace</th>
+<th>Cuerpo</th>
+<th>Típica</th>
+<th>Notas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>GET</strong></td>
+<td><strong>Obtiene</strong> un recurso</td>
+<td>prohibido (se tolera)</td>
+<td><code>200</code></td>
+<td>Seguro e idempotente. El único cacheable por definición.</td>
+</tr>
+<tr>
+<td><strong>HEAD</strong></td>
+<td>Igual que GET <strong>sin cuerpo</strong></td>
+<td>no</td>
+<td><code>200</code> sin cuerpo</td>
+<td>Seguro e idempotente. Permite conocer el <code>Content-Length</code> sin bajarlo.</td>
+</tr>
+<tr>
+<td><strong>POST</strong></td>
+<td><strong>Crea</strong> o dispara una acción</td>
+<td><strong>obligatorio</strong></td>
+<td><code>201</code> o <code>200</code></td>
+<td><strong>Ni seguro ni idempotente.</strong> El único donde el cuerpo define la operación.</td>
+</tr>
+<tr>
+<td><strong>PUT</strong></td>
+<td><strong>Reemplaza</strong> el recurso</td>
+<td>obligatorio</td>
+<td><code>200</code>/<code>204</code>/<code>201</code></td>
+<td>Idempotente, <strong>no seguro</strong>. La URL identifica, el cuerpo define.</td>
+</tr>
+<tr>
+<td><strong>DELETE</strong></td>
+<td><strong>Borra</strong> el recurso</td>
+<td>opcional</td>
+<td><code>204</code></td>
+<td>Idempotente, no seguro. Borrar dos veces es lo mismo que borrar una.</td>
+</tr>
+<tr>
+<td><strong>OPTIONS</strong></td>
+<td>Pregunta <strong>qué admite</strong></td>
+<td>no</td>
+<td><code>200</code> + <code>Allow:</code></td>
+<td>Seguro e idempotente. Descubre capacidades (CORS).</td>
+</tr>
+<tr>
+<td><strong>TRACE</strong></td>
+<td>Devuelve el mensaje <strong>tal como llegó</strong></td>
+<td>no</td>
+<td><code>200</code> con el eco</td>
+<td>Seguro e idempotente. Diagnóstico de proxies. Casi nadie lo implementa.</td>
+</tr>
+<tr>
+<td><strong>CONNECT</strong></td>
+<td>Abre un <strong>túnel TCP</strong></td>
+<td>no</td>
+<td><code>200</code></td>
+<td>Seguro e idempotente. Base de los proxies y de HTTPS.</td>
+</tr>
+<tr>
+<td><strong>PATCH</strong></td>
+<td><strong>Modificación parcial</strong></td>
+<td>obligatorio</td>
+<td><code>200</code>/<code>204</code>/<code>202</code></td>
+<td>Ni seguro ni idempotente. <strong>No existía en HTTP/1.0</strong>.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Tres detalles de memoria:</strong></p>
+<ol>
+<li><strong><code>GET</code> con cuerpo.</strong> La especificación permite que el servidor lo rechace (<code>400</code> o <code>413</code>) y muchos lo hacen. La razón histórica: los caches y proxies de la época solo cacheaban peticiones <strong>sin</strong> cuerpo, porque sin cuerpo la identidad de la petición se reduce a <code>(método, URL)</code>. Con cuerpo, dos peticiones idénticas pueden tener semántica distinta.</li>
+<li><strong><code>PUT</code> reemplaza, <code>POST</code> crea.</strong> En <code>PUT</code> la URL <strong>ya identifica</strong> el recurso y el cuerpo dice qué tiene que contener. En <code>POST</code> la URL identifica <strong>una colección</strong> y el servidor <strong>decide</strong> la URL del recurso nuevo: por eso devuelve <code>201 Created</code> con <code>Location</code>.</li>
+<li><strong><code>CONNECT</code> no es una petición HTTP normal.</strong> Su respuesta es una conexión TCP <strong>cruda</strong> que queda abierta: lo que venga después no es HTTP (típicamente un <code>ClientHello</code> de TLS).</li>
+</ol>
+<h2>1.2 Seguros e idempotentes: por qué la distinción importa</h2>
+<table>
+<thead>
+<tr>
+<th>Propiedad</th>
+<th>Definición</th>
+<th>Métodos que la tienen</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Seguro</strong> (<em>safe</em>)</td>
+<td><strong>No modifica el estado del servidor.</strong></td>
+<td><code>GET</code>, <code>HEAD</code>, <code>OPTIONS</code>, <code>TRACE</code>, <code>CONNECT</code></td>
+</tr>
+<tr>
+<td><strong>Idempotente</strong></td>
+<td>Repetir la misma petición <em>n</em> veces produce <strong>el mismo efecto</strong> que repetirla una. No significa la misma respuesta byte a byte: significa el <strong>mismo efecto sobre el estado</strong>.</td>
+<td><code>GET</code>, <code>HEAD</code>, <code>PUT</code>, <code>DELETE</code>, <code>OPTIONS</code>, <code>TRACE</code>, <code>CONNECT</code></td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code>              seguro                no seguro
+          ┌───────────────┬──────────────────────┐
+idempot.  │ GET HEAD      │ PUT DELETE           │   OPTIONS TRACE CONNECT
+          ├───────────────┼──────────────────────┤
+no idem.  │ (vacío)       │ POST      PATCH      │
+          └───────────────┴──────────────────────┘
+</code></pre></div>
+
+<p><strong>El problema que resuelve</strong> es el <strong>reintento por timeout</strong>. TCP garantiza la entrega, pero HTTP no sabe si la <strong>respuesta</strong> llegó, y hay caminos en los que tampoco puede saber si la <strong>petición</strong> fue procesada:</p>
+<div class="codehilite"><pre><span></span><code>   Cliente                                        Servidor
+      │──── POST /pagar (id=8842) ────────────────▶│
+      │                                              │  lo procesa: cobra
+      │           ✗ la respuesta se pierde ✗         │  ✓ el cobro ocurrió
+      │      ¿puede reintentar? NO: cobra dos veces  │
+</code></pre></div>
+
+<p>La regla de los clientes HTTP reales: si el método es <strong>idempotente</strong>, se puede reintentar automáticamente; si es <strong><code>POST</code></strong>, no se reintenta solo: o se le pregunta al usuario, o se manda una <strong>idempotency key</strong> que el servidor usa para deduplicar.</p>
+<p><strong>El razonamiento para el examen:</strong> las dos propiedades son del <strong>efecto</strong>, no de la intención. <code>DELETE</code> <strong>no es seguro</strong> (borra algo) pero <strong>sí es idempotente</strong> (borrar un recurso ya borrado no cambia nada más). <code>POST</code> es las dos cosas negativas <strong>a la vez</strong>, y por eso es el único con cuerpo obligatorio.</p>
+<p><strong>Matiz que suma puntos:</strong> un <code>GET</code> <strong>sí</strong> puede modificar el servidor (contador de visitas, <em>log</em>, token rotado). Los métodos seguros <strong>deben</strong> ser de solo lectura, pero el resumen de uso puede registrar. Lo que la propiedad garantiza es que <strong>no es la intención del protocolo</strong> cambiar el recurso.</p>
+<h2>1.3 POST vs. GET: dónde van los datos</h2>
+<div class="codehilite"><pre><span></span><code>   GET /buscar?q=gorila&amp;lang=es HTTP/1.1          ◀── los datos van EN LA URL
+   Host: www.fing.edu.uy
+
+   POST /buscar HTTP/1.1                          ◀── los datos van EN EL CUERPO
+   Host: www.fing.edu.uy
+   Content-Type: application/x-www-form-urlencoded
+   Content-Length: 21
+
+   q=gorila&amp;lang=es
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th></th>
+<th><code>GET</code></th>
+<th><code>POST</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Dónde van los datos</strong></td>
+<td>en la <strong>URL</strong>, tras el <code>?</code>, separados por <code>&amp;</code></td>
+<td>en el <strong>cuerpo</strong>, tras la línea en blanco</td>
+</tr>
+<tr>
+<td><strong>Qué los delimita</strong></td>
+<td>el <code>?</code>, el <code>&amp;</code> y el <code>=</code></td>
+<td>el <code>Content-Type</code> (cómo se codifican) y el <code>Content-Length</code></td>
+</tr>
+<tr>
+<td><strong>Tamaño</strong></td>
+<td>el de la URL: ~2000 a 8000 caracteres</td>
+<td>el del cuerpo; el límite lo pone <code>413 Payload Too Large</code></td>
+</tr>
+<tr>
+<td><strong>Visibilidad</strong></td>
+<td>queda en el historial, en los logs del servidor, en el <code>Referer</code></td>
+<td><strong>no</strong> aparece en la URL ni en el historial</td>
+</tr>
+<tr>
+<td><strong>Cacheable</strong></td>
+<td><strong>sí</strong>, por definición</td>
+<td><strong>no</strong>, salvo <code>Cache-Control</code> explícito</td>
+</tr>
+<tr>
+<td><strong>Idempotente</strong></td>
+<td>sí</td>
+<td><strong>no</strong></td>
+</tr>
+<tr>
+<td><strong>Se repite con un link</strong></td>
+<td>sí</td>
+<td>no: un formulario <code>POST</code> no se reenvía al pulsar «atrás»</td>
+</tr>
+</tbody>
+</table>
+<p><strong>El argumento de seguridad:</strong> mandar una contraseña en la URL es un error grave, porque queda escrita en el <strong>historial del navegador</strong>, en los <strong>logs de acceso</strong> del servidor, en el <code>Referer</code> que se le manda a los terceros y en todos los <strong>proxies</strong> del camino. Todo eso en texto plano en disco. Por eso los formularios de login usan <code>POST</code>.</p>
+<p><strong>La razón técnica:</strong> la URL es la <strong>identidad</strong> del recurso en HTTP. <code>GET /articulos/2026/10</code> y <code>GET /articulos/2026/11</code> son dos recursos distintos y por eso dos entradas distintas de la caché. El <code>POST</code> no identifica un recurso: <strong>invoca un proceso</strong>. Esa es la razón de fondo de que no sea ni seguro ni idempotente.</p>
+<h2>1.4 Las cabeceras que hay que saber</h2>
+<p>Cabeceras de la <strong>petición</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Cabecera</th>
+<th>Qué hace</th>
+<th>Ejemplo</th>
+<th>Por qué importa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Host</code></td>
+<td><strong>Obligatoria en HTTP/1.1.</strong> Dice a qué servidor del destino se pide.</td>
+<td><code>Host: www.fing.edu.uy</code></td>
+<td>Hace posible el <em>virtual hosting</em>: un solo <code>132.42.120.5</code> aloja <code>fing.edu.uy</code>, <code>ing.edu.uy</code> y <code>redescomp.uy</code>. <strong>Es la razón de que HTTP/1.1 no pueda esconderse detrás de un NAT.</strong></td>
+</tr>
+<tr>
+<td><code>User-Agent</code></td>
+<td>Identifica el cliente.</td>
+<td><code>Mozilla/5.0 (X11; Linux x86_64)</code></td>
+<td>Muchos servidores devuelven contenido distinto según esto, y los bots se identifican y se los bloquea.</td>
+</tr>
+<tr>
+<td><code>Accept</code></td>
+<td>Qué <strong>tipos de contenido</strong> acepta.</td>
+<td><code>Accept: text/html,application/xhtml+xml</code></td>
+<td>Permite la <strong>negociación de contenido</strong>.</td>
+</tr>
+<tr>
+<td><code>Accept-Encoding</code></td>
+<td>Qué <strong>compresiones</strong> acepta.</td>
+<td><code>Accept-Encoding: gzip, deflate, br</code></td>
+<td>Si acepta, el servidor responde <code>Content-Encoding: gzip</code>.</td>
+</tr>
+<tr>
+<td><code>Accept-Language</code></td>
+<td>Qué <strong>idiomas</strong> prefiere.</td>
+<td><code>Accept-Language: es-UY,es;q=0.9</code></td>
+<td>El servidor devuelve la versión en español.</td>
+</tr>
+<tr>
+<td><code>Cookie</code></td>
+<td>Devuelve las cookies del cliente.</td>
+<td><code>Cookie: sesion=abc123</code></td>
+<td>El estado viaja <strong>de vuelta</strong>.</td>
+</tr>
+<tr>
+<td><code>Authorization</code></td>
+<td>Credenciales.</td>
+<td><code>Authorization: Bearer eyJhbGci...</code></td>
+<td><strong>Nunca en texto plano sobre HTTP.</strong></td>
+</tr>
+<tr>
+<td><code>Connection</code></td>
+<td>Control de la persistencia.</td>
+<td><code>Connection: close</code></td>
+<td>En HTTP/1.1 el default es persistente; el <code>close</code> es la excepción.</td>
+</tr>
+<tr>
+<td><code>If-None-Match</code></td>
+<td>Condición: «solo si el <code>ETag</code> cambió».</td>
+<td><code>If-None-Match: "3f2a1c8"</code></td>
+<td>Es lo que dispara el <strong>304</strong>.</td>
+</tr>
+<tr>
+<td><code>If-Modified-Since</code></td>
+<td>Condición por <strong>fecha</strong>.</td>
+<td><code>If-Modified-Since: Mon, 05 Oct 2026 09:14:07 GMT</code></td>
+<td>Alternativa más gruesa al <code>ETag</code>.</td>
+</tr>
+<tr>
+<td><code>If-Range</code></td>
+<td>«Si no cambió, haceme un <code>Range</code>».</td>
+<td><code>If-Range: "3f2a1c8"</code></td>
+<td>Permite <strong>reanudar</strong> una descarga sin corromper el archivo.</td>
+</tr>
+<tr>
+<td><code>Range</code></td>
+<td>Pide <strong>un fragmento</strong>.</td>
+<td><code>Range: bytes=2048-4095</code></td>
+<td>Base del video streaming y de las descargas reanudables.</td>
+</tr>
+<tr>
+<td><code>Origin</code></td>
+<td>De dónde viene la petición <em>cross-origin</em>.</td>
+<td><code>Origin: https://otro.edu.uy</code></td>
+<td>Con <code>Access-Control-Allow-Origin</code> implementa CORS.</td>
+</tr>
+</tbody>
+</table>
+<p>Cabeceras de la <strong>respuesta</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Cabecera</th>
+<th>Qué hace</th>
+<th>Ejemplo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Date</code></td>
+<td>Fecha y hora del servidor, <strong>RFC 1123</strong>, siempre en <strong>GMT/UTC</strong>.</td>
+<td><code>Date: Tue, 06 Oct 2026 14:22:31 GMT</code></td>
+</tr>
+<tr>
+<td><code>Server</code></td>
+<td>Qué software atiende.</td>
+<td><code>Server: Apache/2.4.62 (Ubuntu)</code> — información de ataque gratuita.</td>
+</tr>
+<tr>
+<td><code>Content-Type</code></td>
+<td><strong>Qué es</strong> el cuerpo.</td>
+<td><code>text/html; charset=utf-8</code>, <code>image/png</code></td>
+</tr>
+<tr>
+<td><code>Content-Length</code></td>
+<td><strong>Cuántos bytes</strong> tiene el cuerpo.</td>
+<td><code>Content-Length: 4096</code> — permite saber dónde termina la respuesta sin cerrar.</td>
+</tr>
+<tr>
+<td><code>Content-Encoding</code></td>
+<td>Qué compresión se aplicó.</td>
+<td><code>Content-Encoding: gzip</code></td>
+</tr>
+<tr>
+<td><code>Transfer-Encoding</code></td>
+<td>Cómo se codifica <strong>la transferencia</strong>.</td>
+<td><code>Transfer-Encoding: chunked</code> — ver abajo.</td>
+</tr>
+<tr>
+<td><code>Location</code></td>
+<td>Dónde está o quedó el recurso.</td>
+<td><code>Location: /articulos/2026/10/creado</code> — obligatorio en un <code>201</code>.</td>
+</tr>
+<tr>
+<td><code>Allow</code></td>
+<td>Métodos y opciones admitidos.</td>
+<td><code>Allow: GET, HEAD, POST, OPTIONS</code></td>
+</tr>
+<tr>
+<td><code>ETag</code></td>
+<td><strong>Etiqueta de versión</strong> del recurso.</td>
+<td><code>ETag: "3f2a1c8-9b41-6512d3f0"</code></td>
+</tr>
+<tr>
+<td><code>Last-Modified</code></td>
+<td>Última modificación.</td>
+<td><code>Last-Modified: Mon, 05 Oct 2026 09:14:07 GMT</code></td>
+</tr>
+<tr>
+<td><code>Cache-Control</code></td>
+<td><strong>Instrucciones de caché</strong>.</td>
+<td><code>Cache-Control: max-age=600, private</code></td>
+</tr>
+<tr>
+<td><code>Expires</code></td>
+<td>Fecha de vencimiento (mecanismo viejo).</td>
+<td><code>Expires: Tue, 06 Oct 2026 14:32:31 GMT</code> — hoy se prefiere <code>Cache-Control</code>.</td>
+</tr>
+<tr>
+<td><code>Vary</code></td>
+<td><strong>De qué depende</strong> la variación de la respuesta.</td>
+<td><code>Vary: Accept-Encoding</code></td>
+</tr>
+<tr>
+<td><code>Age</code></td>
+<td>Cuántos segundos lleva en la <strong>caché de un intermediario</strong>.</td>
+<td><code>Age: 124</code></td>
+</tr>
+<tr>
+<td><code>Set-Cookie</code></td>
+<td>El servidor <strong>crea</strong> una cookie.</td>
+<td><code>Set-Cookie: sesion=abc123; Path=/; HttpOnly; Secure</code></td>
+</tr>
+<tr>
+<td><code>WWW-Authenticate</code></td>
+<td>Qué esquema usar tras un <code>401</code>.</td>
+<td><code>WWW-Authenticate: Bearer realm="fing"</code></td>
+</tr>
+<tr>
+<td><code>Access-Control-Allow-Origin</code></td>
+<td>A quién se le permite leer la respuesta.</td>
+<td><code>Access-Control-Allow-Origin: https://fing.edu.uy</code></td>
+</tr>
+</tbody>
+</table>
+<h3><code>Transfer-Encoding: chunked</code></h3>
+<p>Si el servidor <strong>no sabe de antemano</strong> el tamaño del cuerpo (porque lo genera en streaming), no puede mandar <code>Content-Length</code>. La salida es mandar el cuerpo <strong>fragmentado</strong>:</p>
+<div class="codehilite"><pre><span></span><code>HTTP/1.1 200 OK
+Content-Type: text/plain
+Transfer-Encoding: chunked
+
+1a
+Hola Mun
+14
+do: soy un cuerpo
+0
+</code></pre></div>
+
+<p>Cada fragmento es <code>&lt;tamaño en hexadecimal&gt;&lt;CRLF&gt;</code>, <code>&lt;datos&gt;&lt;CRLF&gt;</code>. El <code>0</code> en hexadecimal es el <strong>fin</strong>. <strong>Regla dura:</strong> si mandás <code>Transfer-Encoding</code>, <strong>no podés</strong> mandar <code>Content-Length</code> al mismo tiempo, porque son dos formas distintas de decir dónde termina el cuerpo y el cliente no sabe cuál obedecer.</p>
+<h2>1.5 La caché HTTP</h2>
+<p>La caché existe porque <strong>cargar una página es, mayoritariamente, esperar</strong>. Ataca las dos fuentes de espera: <strong>evita el viaje de ida y vuelta</strong> cuando hay un <em>hit</em> fresco, y <strong>si tiene que ir al servidor, lo hace con una validación condicional</strong> (un <code>304</code> pesa 180 bytes en vez de 4 MB).</p>
+<div class="codehilite"><pre><span></span><code>   Cliente                 Caché del navegador              Servidor
+      │                          │                            │
+      │ GET /a.js                │                            │
+      │─────────────────────────▶│                            │
+      │                          │ ¿lo tengo y está fresco?   │
+      │◀───── 200 (copia local) ─│  HIT: ni siquiera sale    │
+      │                          │                            │
+      │   ... con max-age=600 venció, hay que revalidar ...   │
+      │                          │                            │
+      │ GET /a.js                │                            │
+      │─────────────────────────▶│                            │
+      │                          │ GET /a.js                  │
+      │                          │ If-None-Match: "3f2a1c8"  │
+      │                          │───────────────────────────▶│
+      │                          │◀────── 304 Not Modified ──│
+      │◀───── 304 (uso la copia)─│  VALIDACIÓN: el viaje sí,   │
+      │                          │  pero sin cuerpo           │
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Directiva</th>
+<th>Significado exacto</th>
+<th>Consecuencia práctica</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>no-store</code></strong></td>
+<td><strong>No lo guardes en ninguna caché</strong>: ni memoria, ni disco, ni intermediario.</td>
+<td>Es lo que se pone en un banco. <strong>Es la única que garantiza confidencialidad del dato en reposo.</strong></td>
+</tr>
+<tr>
+<td><strong><code>no-cache</code></strong></td>
+<td><strong>Guárdalo, pero no lo sirvas sin revalidarlo.</strong></td>
+<td>Contradicción aparente e intencional: se cachea para no perder la copia, pero nunca se usa sin preguntar.</td>
+</tr>
+<tr>
+<td><strong><code>max-age=N</code></strong></td>
+<td>Fresco durante <strong>N segundos</strong>.</td>
+<td>El TTL explícito de HTTP; desplaza al <code>Expires</code>.</td>
+</tr>
+<tr>
+<td><strong><code>s-maxage=N</code></strong></td>
+<td>Igual, pero <strong>solo para cachés compartidas</strong> (proxies, CDN).</td>
+<td>Permite que un proxy tenga una ventana distinta de la del navegador.</td>
+</tr>
+<tr>
+<td><strong><code>private</code></strong></td>
+<td><strong>Solo</strong> la caché del navegador puede guardar esto; los proxies compartidos <strong>no</strong>.</td>
+<td>Obligatorio en toda respuesta con datos de usuario: si no, un proxy corporativo podría servirle el correo de otro usuario.</td>
+</tr>
+<tr>
+<td><strong><code>public</code></strong></td>
+<td>Se puede guardar en cachés <strong>compartidas</strong>.</td>
+<td>Para contenido igual para todos, con caching agresivo.</td>
+</tr>
+<tr>
+<td><strong><code>no-transform</code></strong></td>
+<td>Ningún proxy puede cambiar el cuerpo (ni comprimirlo).</td>
+<td>Para contenido ya comprimido o firmado.</td>
+</tr>
+<tr>
+<td><strong><code>must-revalidate</code></strong></td>
+<td>Vencido, <strong>no</strong> se puede servir ni del <em>stale</em>.</td>
+<td>Se combina con <code>proxy-revalidate</code>.</td>
+</tr>
+<tr>
+<td><strong><code>stale-while-revalidate=N</code></strong></td>
+<td>Si está vencido, <strong>servilo igual</strong> y revalidá en segundo plano.</td>
+<td>Reduce la latencia percibida en sitios con mucho tráfico.</td>
+</tr>
+<tr>
+<td><strong><code>stale-if-error=N</code></strong></td>
+<td>Si el origen falla, serví el viejo hasta <code>N</code> segundos.</td>
+<td>Resiliencia.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>El contraste que hay que entender:</strong></p>
+<div class="codehilite"><pre><span></span><code>   no-store    → "no lo guardes"           (ni memoria ni disco)
+   no-cache    → "guardalo, pero revalidá" (memoria sí, disco sí)
+   max-age=0   → "fresco por 0 segundos"   ≡ revalidar SIEMPRE
+</code></pre></div>
+
+<p><code>no-cache</code> y <code>max-age=0</code> terminan <strong>haciendo lo mismo</strong> en cuanto al uso, pero se diferencian en la <strong>retención</strong>: con <code>no-cache</code> el recurso queda y sirve si el servidor se cae; con <code>max-age=0</code> también queda, pero está vencido desde el minuto uno.</p>
+<p><strong><code>Vary</code> y <code>Age</code>, los dos que casi nadie se acuerda.</strong> <code>Vary</code> <strong>no dice cuánto tiempo vale</strong>: dice <strong>bajo qué claves</strong> la respuesta es distinta.</p>
+<div class="codehilite"><pre><span></span><code>   HTTP/1.1 200 OK
+   Content-Type: text/html; charset=utf-8
+   Content-Encoding: gzip
+   Vary: Accept-Encoding
+   Cache-Control: max-age=600
+
+   ┌───────────────────────────────────────────────────────────┐
+   │  LA CACHÉ GUARDA DOS ENTRADAS:                            │
+   │    ( /index.html , Accept-Encoding: gzip ) → 200, 4096 B  │
+   │    ( /index.html , Accept-Encoding: br )   → 200, 3802 B  │
+   └───────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p>Sin <code>Vary</code>, la caché guarda <strong>una sola</strong> entrada y le devuelve al cliente que no
+soporta gzip <strong>el cuerpo comprimido</strong>: la página no abre. Es un bug real.</p>
+<p><code>Age</code> completa el modelo: cuando una respuesta pasa por un proxy, el proxy <strong>resta
+el tiempo que estuvo cacheada</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   frescura restante = max-age − Age
+
+   Servidor manda:                   Cache-Control: max-age=600
+   El proxy lo tuvo 250 s y reenvía:  Age: 250
+   → al cliente final le quedan 600 − 250 = 350 s de frescura
+</code></pre></div>
+
+<h2>1.6 <code>ETag</code> + <code>Last-Modified</code>: la validación condicional</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><code>Last-Modified</code></th>
+<th><code>ETag</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Es</strong></td>
+<td>una <strong>fecha</strong></td>
+<td>una <strong>cadena opaca</strong> que el servidor inventa</td>
+</tr>
+<tr>
+<td><strong>Precisión</strong></td>
+<td><strong>1 segundo</strong></td>
+<td>la que el servidor quiera</td>
+</tr>
+<tr>
+<td><strong>Problema</strong></td>
+<td>dos versiones en el mismo segundo son <strong>indistinguibles</strong></td>
+<td>ninguno: es opaco y único por diseño</td>
+</tr>
+<tr>
+<td><strong>Ejemplo</strong></td>
+<td><code>Mon, 05 Oct 2026 09:14:07 GMT</code></td>
+<td><code>"3f2a1c8-9b41-6512d3f0"</code></td>
+</tr>
+<tr>
+<td><strong>Variante débil</strong></td>
+<td>—</td>
+<td><code>W/"3f2a1c8"</code>: «no cambió semánticamente, aunque los bytes sí»</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Las dos</strong> parejas que existen y hay que nombrar: <code>ETag</code>/<code>If-None-Match</code> y <code>Last-Modified</code>/<code>If-Modified-Since</code>. Si hay ambos validadores, <strong>el <code>ETag</code> manda</strong>.</p>
+<h3>El intercambio completo, mensaje por mensaje</h3>
+<p><strong>Situación.</strong> El 6 de octubre a las 14:22:31 el cliente pide <code>/notas.pdf</code> y no tiene nada en caché. Una hora después vuelve a pedirlo.</p>
+<p><strong>Mensaje 1 — petición inicial:</strong></p>
+<div class="codehilite"><pre><span></span><code>GET /notas.pdf HTTP/1.1
+Host: www.fing.edu.uy
+User-Agent: Mozilla/5.0 (X11; Linux x86_64)
+Accept: application/pdf
+Accept-Encoding: gzip, deflate
+Connection: keep-alive
+</code></pre></div>
+
+<p><strong>Mensaje 2 — respuesta completa:</strong></p>
+<div class="codehilite"><pre><span></span><code>HTTP/1.1 200 OK
+Date: Tue, 06 Oct 2026 14:22:31 GMT
+Server: Apache/2.4.62 (Ubuntu)
+Last-Modified: Mon, 05 Oct 2026 09:14:07 GMT
+ETag: "3f2a1c8-9b41-6512d3f0"
+Cache-Control: max-age=3600
+Content-Type: application/pdf
+Content-Length: 1048576
+Accept-Ranges: bytes
+Connection: keep-alive
+
+%PDF-1.7
+... 1.048.576 bytes en total ...
+%%EOF
+</code></pre></div>
+
+<p><em>El cliente guarda el cuerpo, el <code>ETag</code>, el <code>Last-Modified</code> y el <code>Cache-Control</code>, y anota la </em><em>hora de entrada</em><em>: 14:22:31.</em></p>
+<p><strong>Una hora después (15:22:31) el <code>max-age=3600</code> venció</strong>, así que hay que revalidar.</p>
+<p><strong>Mensaje 3 — petición condicional:</strong></p>
+<div class="codehilite"><pre><span></span><code>GET /notas.pdf HTTP/1.1
+Host: www.fing.edu.uy
+User-Agent: Mozilla/5.0 (X11; Linux x86_64)
+Accept: application/pdf
+If-None-Match: "3f2a1c8-9b41-6512d3f0"
+If-Modified-Since: Mon, 05 Oct 2026 09:14:07 GMT
+Connection: keep-alive
+</code></pre></div>
+
+<p><em><code>If-None-Match</code> dice: «si el recurso tiene esta etiqueta, no me lo mandes entero, decime solamente si sigue siendo la misma». <code>If-Modified-Since</code> es la misma pregunta por fecha. Si el cliente mandó ambos, el servidor </em><em>usa el <code>If-None-Match</code></em><em>, porque distingue dos versiones del mismo segundo.</em></p>
+<p><strong>Mensaje 4 — el recurso no cambió: respuesta 304:</strong></p>
+<div class="codehilite"><pre><span></span><code>HTTP/1.1 304 Not Modified
+Date: Tue, 06 Oct 2026 15:22:32 GMT
+ETag: "3f2a1c8-9b41-6512d3f0"
+Cache-Control: max-age=3600
+</code></pre></div>
+
+<p><strong>Fijate qué NO está:</strong> no hay cuerpo (cero bytes de PDF), no hay <code>Content-Length</code> (no hay nada que medir), no hay <code>Content-Type</code> (no hay nada que tipar), no hay <code>Server</code>.</p>
+<p><strong>Y qué SÍ está:</strong> el <code>ETag</code>, porque el <code>304</code> <strong>renueva la frescura</strong>: el reloj de la caché vuelve a cero y ahora vence a las 16:22:32, no a las 15:22:32. Esa es una de las sutilezas que más se pregunta.</p>
+<p><strong>Y si el archivo hubiera cambiado</strong>, el mismo mensaje 3 devolvería un <code>200</code> <strong>completo</strong>, con <code>Content-Length</code> y <code>ETag</code> distintos.</p>
+<h3>El cálculo del ahorro</h3>
+<div class="codehilite"><pre><span></span><code>   Con 200 (re-descarga completa):
+     cabeceras ≈       250 B
+     cuerpo    = 1048576 B
+     ──────────────────────────
+     total     = 1048826 B
+
+   Con 304 (validación):
+     cabeceras ≈       180 B
+     cuerpo    =         0 B
+     ──────────────────────────
+     total     =      180 B
+
+   Ahorro = 1048826 − 180 = 1048646 B
+   Porcentaje = 1048646 / 1048826 ≈ 99,98 %
+</code></pre></div>
+
+<p><strong>Interpretación física:</strong> el <code>304</code> no es una optimización de bytes, es un <strong>cambio de orden de magnitud</strong>. Y la letra chica: <strong>igual se pagó el RTT de ida y vuelta</strong>. El <code>304</code> ahorra <em>ancho de banda</em>, no <em>tiempo de espera</em>. Para matar el tiempo de espera están HTTP/2, HTTP/3 y el CDN.</p>
+<h2>1.7 Proxies, gateways y CDNs</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Proxy</strong> (<em>forward proxy</em>)</th>
+<th><strong>Gateway</strong></th>
+<th><strong>CDN</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Qué es</strong></td>
+<td>un intermediario que actúa <strong>en nombre de</strong> un cliente</td>
+<td>un intermediario que <strong>traduce entre protocolos</strong></td>
+<td>una red de servidores que <strong>guardan copia del contenido</strong></td>
+</tr>
+<tr>
+<td><strong>Ejemplo</strong></td>
+<td>el proxy del laboratorio o de la facultad</td>
+<td>un servidor de correo que traduce SMTP a POP3</td>
+<td>Cloudflare, Akamai, Fastly</td>
+</tr>
+<tr>
+<td><strong>¿Cambia el protocolo?</strong></td>
+<td>no</td>
+<td><strong>sí</strong></td>
+<td>no</td>
+</tr>
+<tr>
+<td><strong>¿Guarda contenido?</strong></td>
+<td>a veces</td>
+<td>no</td>
+<td><strong>sí, siempre</strong></td>
+</tr>
+<tr>
+<td><strong>Para qué sirve</strong></td>
+<td>filtrar, auditar, autenticar, compartir una salida</td>
+<td>traducir</td>
+<td><strong>latencia y descarga del origen</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Ojo con «gateway» en HTTP.</strong> En la práctica el término se usa como «puerta de entrada»: un <code>502 Bad Gateway</code> casi nunca es «el servidor traductor falló», es <strong>«el proxy inverso no pudo hablar con el backend»</strong>. <code>504 Gateway Timeout</code> es «el proxy esperó demasiado al backend».</p>
+</blockquote>
+<h3>Por qué un CDN mejora la latencia: la distancia al usuario</h3>
+<p>La Clase 8 mostró que <strong>más del 80 % del tiempo de carga de una página es espera</strong>.
+Toda esa espera es tiempo de ida y vuelta:</p>
+<div class="codehilite"><pre><span></span><code>   t_espera ≈ (número de viajes) × RTT
+   y el RTT es proporcional a la distancia física y a los saltos
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Cliente</th>
+<th>Servidor en Virginia</th>
+<th>Servidor en Montevideo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Montevideo</td>
+<td><strong>120 ms</strong></td>
+<td><strong>3 ms</strong> (diferencia de 40×)</td>
+</tr>
+<tr>
+<td>Madrid</td>
+<td>95 ms</td>
+<td>160 ms</td>
+</tr>
+<tr>
+<td>Buenos Aires</td>
+<td>130 ms</td>
+<td>175 ms</td>
+</tr>
+</tbody>
+</table>
+<p>Un <strong>CDN</strong> copia el contenido a un nodo <strong>cerca</strong> de cada usuario y responde desde ahí:</p>
+<div class="codehilite"><pre><span></span><code>   SIN CDN                         CON CDN
+   ──────                         ──────
+  Cliente Montevideo              Cliente Montevideo
+       │                                │
+       │         ┌────────────┐         │    ┌──────────┐
+       ├────────▶│  Virginia  │ 120 ms  ├───▶│ Montevideo│ 3 ms
+       │         └────────────┘         │    └──────────┘
+       │        (cruzar el Atlántico)   │     (nodo del CDN)
+       ▼                                ▼
+  120 ms de espera               3 ms de espera
+
+  Todos van al MISMO origen       cada usuario va al nodo MÁS CERCANO
+  (con 50 millones de usuarios)   (con miles de nodos)
+</code></pre></div>
+
+<p><strong>El argumento en una frase, que es lo que hay que escribir:</strong> un CDN mejora la latencia <strong>reduciendo la distancia al usuario</strong>, y como el tiempo de carga de una página es esencialmente <code>número de viajes × RTT</code>, bajar el RTT de 120 ms a 3 ms hace cargar la página <strong>antes</strong>, sin tocar un byte de contenido.</p>
+<p>El segundo beneficio es la <strong>descarga del origen</strong>: si el 95 % de los pedidos lo sirve el nodo del CDN, el origen ve el 5 % y sobrevive. Por eso un CDN es también un <strong>escudo contra DDoS</strong>.</p>
+<p><strong>CDN y caché, la diferencia:</strong> la caché HTTP guarda respuestas en un punto <strong>individual</strong> (el navegador, un proxy). El CDN es un <strong>sistema distribuido</strong> de cachés coordinados entre sí: cuando un nodo recibe un pedido de algo que no tiene, <strong>se lo pide a un par</strong>, lo guarda y lo sirve. Eso se llama <em>fill on miss</em>, y explica por qué un CDN es barato: no duplica todo el mundo, solo lo que se pide.</p>
+<h2>1.8 HTTPS: qué agrega (y qué no es)</h2>
+<p><strong>HTTPS es HTTP transportado por TLS.</strong> No cambia <strong>una línea</strong> de la semántica de HTTP: los mismos métodos, los mismos códigos, las mismas cabeceras. Lo que cambia es el <strong>transporte</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   ┌─────────────────────────────────────────────────┐
+   │  HTTP:  el semántico.  QUÉ querés.              │
+   ├─────────────────────────────────────────────────┤
+   │  TLS:   confidencialidad, integridad y          │
+   │         autenticidad del servidor.  CÓMO viajás.│
+   ├─────────────────────────────────────────────────┤
+   │  TCP:   la fiabilidad.  que llegue y en orden.  │
+   └─────────────────────────────────────────────────┘
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Propiedad</th>
+<th>Qué aporta</th>
+<th>Sin HTTPS</th>
+<th>Con HTTPS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Confidencialidad</strong></td>
+<td>nadie en el camino ve el contenido</td>
+<td>texto plano en cada router, ISP y proxy</td>
+<td><strong>cifrado</strong> de extremo a extremo</td>
+</tr>
+<tr>
+<td><strong>Integridad</strong></td>
+<td>nadie puede alterar el mensaje en vuelo</td>
+<td>un intermediario puede cambiar el saldo de tu cuenta en el HTML</td>
+<td><strong>AEAD</strong>: alterar algo rompe el descifrado</td>
+</tr>
+<tr>
+<td><strong>Autenticación del servidor</strong></td>
+<td>sabés con quién estás hablando</td>
+<td><strong>cero</strong>: cualquiera que responda el puerto 80 es «el sitio»</td>
+<td><strong>certificado X.509</strong> contra una cadena de confianza</td>
+</tr>
+<tr>
+<td><strong>Identificación del cliente</strong></td>
+<td>opcional</td>
+<td>imposible</td>
+<td>opcional: <strong>mTLS</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>HTTPS no es una versión de HTTP.</strong> <code>HTTPS/3</code> no es «HTTP/3 con candado»: es <strong>HTTP/3 sobre QUIC sobre TLS 1.3</strong>, todo integrado. Y <strong>no protege al servidor de origen</strong> de un <code>502</code>, ni evita un <em>clickjacking</em>, ni oculta qué sitio visitaste (para eso está el DNS cifrado, Clase 11).</p>
+<blockquote>
+<p><strong>⚠️ Adelantado:</strong> TLS entero — cadena X.509, handshake, la separación del <em>cipher suite</em> en tres, el <code>0-RTT</code> y sus riesgos de <em>replay</em> — se ve <strong>entero en la Clase 47</strong>. Acá solo hace falta la capa y la frase «<strong>HTTP aporta semántica, TLS aporta seguridad</strong>».</p>
+</blockquote>
+<h2>1.9 De HTTP/1.1 a HTTP/2 y HTTP/3</h2>
+<h3>Los tres problemas estructurales de HTTP/1.1</h3>
+<div class="codehilite"><pre><span></span><code>   ════ (a) HOL blocking A NIVEL DE CONEXIÓN ════
+
+   conexión 1:  GET ───▶ 200 ───▶ GET ───▶ 200 ───▶ ...
+   conexión 2:  GET ───▶ 200 ───▶ GET ───▶ 200 ───▶ ...
+   conexión 3:  GET ── ✗ SE PIERDE ────────────────▶ 404, muy tarde
+
+   En HTTP/1.1 los objetos van en conexiones distintas, pero cada conexión
+   TCP es ORDENADA: el hueco de la conexión 3 la frena a ella entera.
+   ESTO ES HEAD-OF-LINE BLOCKING.
+
+
+   ════ (b) HOL blocking ENTRE STREAMS ════
+
+   HTTP/2  ┬─ stream 1 ───── ✗ SE PIERDE ─────────▶ 404
+           ├─ stream 2 ── 200 ──▶
+           ├─ stream 3 ─── 200 ─▶
+
+   Multiplexamos: la pérdida frena SOLO al stream 1.
+   ...pero DENTRO de cada stream sigue habiendo bloqueo, porque la conexión
+   TCP de abajo sigue siendo ordenada.
+
+
+   ════ (c) El costo de las CABECERAS ════
+
+   Un navegador manda unas 10 cabeceras por GET y el servidor unas 8.
+   En HTTP/1.1 viajan en texto plano, sin comprimir, en CADA petición.
+   HTTP/1.1 no tiene compresión de cabeceras. HTTP/2 y HTTP/3 sí.
+</code></pre></div>
+
+<h3>HTTP/2 (<code>RFC 9113</code>, 2022)</h3>
+<p>La idea central: <strong>una sola conexión TCP, muchos streams independientes</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   ════════════════════ HTTP/1.1 ════════════════════
+
+   conexión TCP 1:  GET ▶ 200 ▶ GET ▶ 200 ▶ ...
+   conexión TCP 2:  GET ▶ 200 ▶ GET ▶ 200 ▶ ...
+   conexión TCP 3:  GET ▶ 200 ▶
+   conexión TCP 4:  GET ▶ 200 ▶
+   conexión TCP 5:  GET ▶ 200 ▶ GET ▶ 200 ▶ ...
+
+   5 conexiones, y en cada una los pedidos van UNO POR UNO.
+
+
+   ════════════════════ HTTP/2 ════════════════════
+
+   conexión TCP 1 (¡UNA SOLA!):
+   ┌────┬────┬────┬────┬────┬────┬────┬────┐
+   │ s1 │ s2 │ s3 │ s4 │ s5 │ s6 │ s7 │ s8 │  ← 8 streams simultáneos
+   └──┬─┴────┴────┴─┬──┴────┴────┴────┴────┘
+      │             │
+      ▼             ▼
+   [se pierde]   sigue fluyendo normal
+   frena s1      s2..s8 no se enteran
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th></th>
+<th>HTTP/1.1</th>
+<th>HTTP/2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Streams por conexión</td>
+<td><strong>1</strong> (los demás esperan)</td>
+<td><strong>muchos</strong>, simultáneos</td>
+</tr>
+<tr>
+<td><strong>HOL blocking a nivel de conexión</strong></td>
+<td><strong>sí</strong></td>
+<td><strong>eliminado</strong></td>
+</tr>
+<tr>
+<td><strong>HOL blocking entre streams</strong></td>
+<td>no aplica</td>
+<td><strong>sigue existiendo</strong>: la pérdida de un stream frena a ese stream</td>
+</tr>
+<tr>
+<td><strong>Compresión de cabeceras</strong></td>
+<td>no</td>
+<td><strong>HPACK</strong> (<code>RFC 7541</code>, vigente)</td>
+</tr>
+<tr>
+<td>Cabeceras en mayúsculas y repetidas</td>
+<td>sí</td>
+<td>se normalizan a <strong>minúsculas</strong> y se indexan con HPACK</td>
+</tr>
+<tr>
+<td>Orden de los bytes</td>
+<td>obligatorio</td>
+<td>el <strong>stream ID</strong> identifica el flujo; los frames se entrelazan</td>
+</tr>
+<tr>
+<td>Servidor que manda primero</td>
+<td>no</td>
+<td><strong>sí</strong>, con <code>PUSH_PROMISE</code></td>
+</tr>
+<tr>
+<td><strong>Prioridad</strong></td>
+<td>cabecera <code>Priority:</code></td>
+<td>la de <code>RFC 7540</code> <strong>quedó deprecada</strong> (§5.3 de la 9113); la reemplaza <strong><code>RFC 9218</code></strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>El detalle que suma puntos.</strong> <code>RFC 7540</code> (HTTP/2, 2015) especificaba un esquema de prioridad con <em>weight</em> y dependencia entre streams. Al reescribir HTTP/2 en <code>RFC 9113</code>, ese esquema <strong>se deprecó</strong>: la razón es que <strong>en la práctica casi nadie lo usaba</strong> y las implementaciones divergían. El frame <code>PRIORITY</code> sobrevive solo por compatibilidad. Lo que lo reemplaza es <strong><code>RFC 9218</code> — <em>Extensible Prioritization Scheme</em> (EPS)</strong>, que separa la <strong>importancia semántica</strong> del stream (<code>urgency</code>) de la <strong>dependencia</strong> entre unos y otros, con sintaxis textual en vez de números de peso opacos. Lección de protocolo: <strong>especificar una característica de prioridad, descubrir que nadie la implementa y deprecarla, es un resultado normal.</strong></p>
+<h3>HTTP/3 (<code>RFC 9114</code>) sobre QUIC (<code>RFC 9000</code>)</h3>
+<p>HTTP/3 <strong>no es «HTTP/2 sobre UDP»</strong>. Reemplaza <strong>la conexión TCP completa</strong> por <strong>QUIC</strong>, un transporte nuevo con su propia recuperación de pérdida, su propio control de congestión y su propio PLPMTUD.</p>
+<div class="codehilite"><pre><span></span><code>   ════════════════════ HTTP/3 ════════════════════
+
+   QUIC (UDP)  ┌─────────────────────────────────────┐
+               │ streams independientes, con          │
+               │ recuperación de pérdida POR STREAM   │
+               ├─────────────────────────────────────┤
+               │ TLS 1.3 va DENTRO, en frames CRYPTO  │
+               ├─────────────────────────────────────┤
+               │ UDP                                  │
+               └─────────────────────────────────────┘
+
+   NO hay handshake de 3 vías.
+   NO hay conexión TCP.
+   NO hay retransmisión "de la conexión": cada stream se recupera solo.
+   NO hay identidad por IP: el Connection ID permite cambiar de IP y de
+   puerto sin cortar la sesión (esto arregla el NAT rebinding).
+</code></pre></div>
+
+<p><strong>QPACK</strong> (<code>RFC 9204</code>) es la compresión de cabeceras de HTTP/3. La diferencia con HPACK es conceptual:</p>
+<div class="codehilite"><pre><span></span><code>   HPACK   (HTTP/2): el índice se mantiene al ORDENAR las cabeceras.
+                     Es SECUENCIAL: para descomprimir el frame N necesito
+                     haber descomprimido el N-1.
+
+   QPACK   (HTTP/3): los índices se resuelven en CUALQUIER orden.
+
+   ¿Por qué? Porque en HTTP/3 los frames viajan en streams DISTINTOS, que
+   llegan al receptor en orden arbitrario. Si la compresión fuera
+   secuencial, la multiplexación sería imposible.
+</code></pre></div>
+
+<p><strong>Cómo se negocia HTTP/3: <code>Alt-Svc</code>, NO <code>Upgrade</code>.</strong> Esta es la corrección conceptual más importante frente a 2012:</p>
+<div class="codehilite"><pre><span></span><code>   ═══ El mecanismo viejo, HTTP/1.1 (el que NO se usa) ═══
+
+   Cliente                          Servidor
+      │  GET / HTTP/1.1                │
+      │──────────────────────────────▶│
+      │◀─── 200, con: Upgrade: h3      │   ← un proxy que no entienda
+      │      Connection: upgrade       │     esto rompe la conexión
+      │      HTTP2-Settings: ...       │
+      │──── GET / HTTP/2.0 ──────────▶│   ← solo si el cliente PUEDE
+
+
+   ═══ El mecanismo REAL: Alt-Svc (RFC 7838) ═══
+
+   Cliente                          Servidor
+      │  GET / HTTP/1.1                │
+      │──────────────────────────────▶│
+      │◀─── 200, con:                 │
+      │      Alt-Svc: h3=":443"        │   ← una CABECERA NORMAL: un
+      │────────────────────────────────│     proxy que no la entienda
+      │  (el navegador la guarda)      │     la ignora y sigue todo en
+      │                                 │     HTTP/1.1. NO ROMPE NADA.
+      │  ... en la próxima conexión    │
+      │  a ese host, prueba QUIC al   │
+      │  443: ──── UDP 443 ──────────▶ │
+      │  ◀─── SI, funciona ────        │   (si falla → vuelve a TCP)
+</code></pre></div>
+
+<p><strong>La diferencia clave:</strong> <code>Upgrade</code> es un <strong>cambio de protocolo dentro de la conexión
+actual</strong>, frágil frente a los intermediarios. <code>Alt-Svc</code> es <strong>anunciar una
+alternativa para la próxima conexión</strong>, en una cabecera común que se puede
+ignorar. El navegador lo guarda y lo prueba después: <strong>cero riesgo, adopción
+gradual.</strong></p>
+<p>Para descubrir HTTP/3 <strong>antes</strong> de conectar, sin haber ido una vez por HTTP/1.1,
+están los registros DNS <strong><code>SVCB</code> / <code>HTTPS</code> (<code>RFC 9460</code>, 2023)</strong>: el DNS ahora
+transporta <strong>política de transporte</strong> (qué versiones de HTTP soporta, qué IP de
+<em>hint</em>, qué prioridad), no solo direcciones. Es el mismo cambio conceptual que
+<code>CAA</code>. Lo desarrollamos en la Clase 11.</p>
+<h3>⚠️ Actualización a 2026</h3>
+<p><strong>Sigue igual — de memoria, sin dudar:</strong>
+- Modelo <strong>petición/respuesta</strong>, protocolo <strong>sin estado</strong>.
+- Los <strong>métodos</strong>: GET, HEAD, POST, PUT, DELETE, OPTIONS, TRACE, CONNECT (+ PATCH).
+  GET/HEAD/OPTIONS/TRACE <strong>seguros</strong>; GET/HEAD <strong>idempotentes</strong>.
+- Las <strong>5 clases</strong> de códigos (1xx a 5xx) y los del día a día: 200, 201, 204, 206,
+  301, 302, 304, 307, 308, 400, 401, 403, 404, 405, 408, 429, 500, 502, 503, 504.
+- <strong><code>Host</code> obligatoria</strong> en HTTP/1.1, y <strong>persistente por defecto</strong>.
+- <strong><code>Range</code></strong> requests y <strong><code>304 Not Modified</code></strong>.
+- <strong>HTTP/1.1 sigue siendo totalmente válido y necesario</strong>: no es «el protocolo
+  viejo», es el <em>fallback</em> de todo.</p>
+<p><strong>Cambió — y esto es lo que hay que corregir si citás apuntes de 2011:</strong>
+- El curso de 2012 enseñaba <strong><code>RFC 2616</code> (1999)</strong>. La especificación vigente es de
+  <strong>2022</strong>: <strong><code>RFC 9110</code></strong> (semántica, <em>Internet Standard</em>) + <strong><code>RFC 9112</code></strong> (sintaxis
+  de HTTP/1.1).
+- <strong><code>RFC 7540</code></strong> (HTTP/2, 2015) está <strong>OBSOLETA</strong>: la reemplazó <strong><code>RFC 9113</code></strong>.
+- <strong>HTTP/3 (<code>RFC 9114</code>)</strong> va sobre <strong>QUIC (<code>RFC 9000</code>)</strong>, que <strong>reemplaza a TCP por
+  completo</strong>: no hay handshake de 3 vías, no hay conexión TCP, no hay retransmisión
+  de conexión. La pérdida se resuelve <strong>por stream</strong>. QPACK es <code>RFC 9204</code>; QUIC v2
+  es <code>RFC 9369</code>.
+- La <strong>negociación</strong> es por <strong><code>Alt-Svc</code> (<code>RFC 7838</code>, 2016)</strong>, no con <code>Upgrade</code>.
+- <code>HPACK</code> es <code>RFC 7541</code> y <strong>sigue vigente</strong>; <code>QPACK</code> es <code>RFC 9204</code> y es
+  <strong>independiente del orden</strong>, a diferencia de HPACK.</p>
+<p><strong>Las cifras reales — y acá está el punto pedagógico del tema:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Versión</th>
+<th>Cuota (Cloudflare Radar, <em>Year in Review 2025</em>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>HTTP/2</strong></td>
+<td><strong>50 %</strong></td>
+</tr>
+<tr>
+<td><strong>HTTP/1.x</strong></td>
+<td><strong>29 %</strong></td>
+</tr>
+<tr>
+<td><strong>HTTP/3</strong></td>
+<td><strong>21 %</strong></td>
+</tr>
+</tbody>
+</table>
+<p>W3Techs (oct-2026) da ~<strong>40,8 % de los sitios</strong> con soporte de HTTP/3. Navegadores con HTTP/3 por defecto: Chrome/Edge <strong>87</strong> (nov-2020), Firefox <strong>88</strong> (abr-2021), Safari <strong>16</strong> (2020).</p>
+<blockquote>
+<p>⚠️ <strong>Trampa metodológica:</strong> si filtrás bots de los datos de Radar, HTTP/3
+aparece cerca de <strong>30 %</strong>, porque los bots hablan HTTP/1.x casi siempre.
+<strong>Siempre declará si incluís bots</strong> si citás una cifra.</p>
+</blockquote>
+<p><strong>Por qué HTTP/3 no se adueñó de la web.</strong> Es la pregunta conceptual que vale más
+que las cifras:</p>
+<ol>
+<li><strong>El cambio es gradual y la Web es heterogénea.</strong> HTTP/3 necesita cliente <strong>y</strong>
+   servidor; actualizar el cliente requiere que el usuario cambie de navegador.</li>
+<li><strong>Casi todo el tráfico sigue necesitando TCP.</strong> DNS clásico, SSH, servidores de
+   correo, juegos sin migrar. QUIC no reemplaza a TCP: <strong>convive</strong> con él.</li>
+<li><strong>Los <em>middleboxes</em> son el cuello de botella real.</strong> Cualquier firewall,
+   balanceador o IDS que no entienda QUIC o que filtre UDP/443 <strong>rompe</strong> HTTP/3.
+   Son 25 años de equipos instalados que nadie va a actualizar: HTTP/3 se despliega
+   a la velocidad a la que se reemplazan firewalls.</li>
+<li><strong>El costo de adopción de HTTP/2 fue bajo.</strong> Solo cambiaba la capa de aplicación
+   sobre un TCP ya desplegado: bastaba actualizar el servidor web, que es un acto
+   administrativo, no un acto de usuario.</li>
+</ol>
+<p><strong>Consecuencia para el examen:</strong> si te preguntan «¿cuál es la versión actual de
+HTTP?», la respuesta completa es <strong>«HTTP/2 es la más usada (50 %); HTTP/3 va en
+crecimiento (21 %) y no se adueñó de la web, porque el cambio es gradual y casi
+todo el tráfico sigue necesitando TCP; HTTP/1.1 sigue vivo y es el baseline de
+comparación»</strong>. Si solo decís «HTTP/3», perdés puntos.</p>
+<h2>1.10 La tabla que hay que saber de memoria</h2>
+<div class="codehilite"><pre><span></span><code>   ╔══════════════════════════════════════════════════════════════════╗
+   ║              QUÉ SIGUE IGUAL EN HTTP/1.1, /2 Y /3               ║
+   ╠══════════════════════════════════════════════════════════════════╣
+   ║ 1. Petición / respuesta. Siempre.                               ║
+   ║ 2. Sin estado: el servidor no recuerda peticiones anteriores.    ║
+   ║ 3. Los métodos: GET HEAD POST PUT DELETE OPTIONS TRACE CONNECT. ║
+   ║ 4. Las clases de estado 1xx 2xx 3xx 4xx 5xx.                     ║
+   ║ 5. Host obligatoria (en HTTP/2 y HTTP/3 viaja en la              ║
+   ║    pseudo-cabecera :authority).                                  ║
+   ║ 6. Persistente por defecto: una conexión, varios recursos.      ║
+   ║ 7. 304 Not Modified y los Range requests.                       ║
+   ║ 8. HTTPS = HTTP sobre TLS. TLS sigue siendo TLS.                ║
+   ╚══════════════════════════════════════════════════════════════════╝
+</code></pre></div>
+
+<p><strong>El punto 5 merece aclaración.</strong> En HTTP/2 y HTTP/3 <strong>no hay cabeceras de texto</strong>:
+los campos viajan en <strong>HPACK</strong> / <strong>QPACK</strong> y se llaman <strong><em>pseudo-cabeceras</em></strong>.
+<code>:authority</code> reemplaza a <code>Host</code>, <code>:method</code> al método, <code>:path</code> a la URL, <code>:scheme</code> a
+<code>http</code>/<code>https</code>. Todo lo demás (<code>Content-Type</code>, <code>Cookie</code>, <code>ETag</code>, <code>Cache-Control</code>)
+sigue igual, solo que <strong>en minúsculas y comprimido</strong>. Si un examen pide «escribí un
+mensaje HTTP/2», lo que se espera es la lista de pseudo-cabeceras, no un
+<code>GET /... HTTP/1.1</code> con cabeceras de texto.</p>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — Intercambio completo con validación condicional hasta el 304</h2>
+<p><strong>Enunciado.</strong> Un cliente pide <code>https://www.fing.edu.uy/notas/2026.pdf</code>. El
+servidor responde con <code>ETag</code>, <code>Last-Modified</code> y <code>Cache-Control: max-age=1800</code>.
+Pasados 45 minutos vuelve a pedirlo; el servidor no contesta. Una hora después
+vuelve a pedirlo y el archivo cambió.</p>
+<p><strong>Datos.</strong> El recurso pesa <strong>200 000 bytes</strong>. Las cabeceras de respuesta ocupan unos
+<strong>300 bytes</strong>. El RTT cliente-servidor es de <strong>80 ms</strong>.</p>
+<p><strong>Resolución paso a paso.</strong></p>
+<p><em>Paso 1 — Primer pedido: no hay nada en caché.</em></p>
+<div class="codehilite"><pre><span></span><code>GET /notas/2026.pdf HTTP/1.1
+Host: www.fing.edu.uy
+User-Agent: Mozilla/5.0 (X11; Linux x86_64)
+Accept: application/pdf
+Accept-Encoding: gzip, deflate
+Accept-Language: es-UY,es;q=0.9
+Connection: keep-alive
+</code></pre></div>
+
+<p><em>Interpretación:</em> <code>GET</code> <strong>sin cuerpo</strong> y <strong>sin cabeceras condicionales</strong>: el
+cliente no tiene nada que ofrecer, así que la petición es completa.</p>
+<p><em>Paso 2 — Respuesta del servidor: <code>200</code> con validadores.</em></p>
+<div class="codehilite"><pre><span></span><code>HTTP/1.1 200 OK
+Date: Tue, 06 Oct 2026 09:00:00 GMT
+Server: nginx/1.26.1
+Last-Modified: Mon, 05 Oct 2026 09:14:07 GMT
+ETag: "5d9b21-30d40-6518a1f0"
+Cache-Control: max-age=1800
+Accept-Ranges: bytes
+Content-Type: application/pdf
+Content-Length: 200000
+Connection: keep-alive
+
+%PDF-1.7 ... 200.000 bytes ... %%EOF
+</code></pre></div>
+
+<p><em>Interpretación:</em> el cliente guarda <strong>cuatro</strong> cosas: el cuerpo, el <code>ETag</code>, el
+<code>Last-Modified</code> y el <code>Cache-Control</code>. Anota la <strong>hora de entrada</strong>: 09:00:00.</p>
+<p><em>Paso 3 — ¿Cuándo vence?</em></p>
+<div class="codehilite"><pre><span></span><code>   Vencimiento = hora de entrada + max-age
+               = 09:00:00 + 1800 s = 09:00:00 + 30 min = 09:30:00
+</code></pre></div>
+
+<p><em>Interpretación:</em> entre las 09:00 y las 09:30 el recurso es <strong>fresco</strong> y el cliente
+<strong>no vuelve a preguntar</strong>: cero bytes, cero RTT.</p>
+<p><em>Paso 4 — Segundo pedido (09:45): el <code>max-age</code> venció, hay que revalidar.</em> El
+mensaje es <strong>idéntico al del paso 1</strong> más las dos cabeceras condicionales:</p>
+<div class="codehilite"><pre><span></span><code>If-None-Match: "5d9b21-30d40-6518a1f0"
+If-Modified-Since: Mon, 05 Oct 2026 09:14:07 GMT
+</code></pre></div>
+
+<p><em>Interpretación:</em> <code>If-None-Match</code> es la <strong>pregunta condicional</strong>: «si el recurso
+tiene esta etiqueta, no me lo mandes entero». <code>If-Modified-Since</code> es la misma
+pregunta por fecha. Si el cliente mandó ambos, el servidor <strong>usa el
+<code>If-None-Match</code></strong>, porque el <code>ETag</code> distingue dos versiones del mismo segundo.</p>
+<p><em>Paso 5 — El servidor </em><em>no contesta</em><em>.</em></p>
+<p><em>Interpretación física:</em> el cliente no puede saber si el recurso cambió. El
+<code>max-age</code> venció, así que su copia técnicamente no es válida. Los navegadores
+reales aplican el <strong>heuristic de frescura</strong>: sin directivas explícitas se usa el
+10 % de la edad del recurso. Acá hay <code>max-age</code>, así que lo correcto es servir la
+copia local <strong>marcándola como posiblemente vieja</strong>, que es lo que hace
+<code>stale-while-revalidate</code>.</p>
+<p><em>Paso 6 — Tercer pedido (10:00): ahora sí, y el archivo cambió.</em> La respuesta es
+un <code>200</code> completo <strong>idéntico al del paso 2</strong> salvo tres campos: <code>Last-Modified</code>
+pasa a <code>Tue, 06 Oct 2026 09:50:11 GMT</code>, el <code>ETag</code> pasa a <code>"5d9b21-31234-6518a9c8"</code>
+y <code>Content-Length</code> pasa a <code>201344</code>.</p>
+<p><em>Interpretación:</em> como el <code>ETag</code> del servidor <strong>no coincide</strong> con el
+<code>If-None-Match</code>, la condición <strong>se ignora</strong> y se manda el <code>200</code> completo. El
+cliente <strong>reemplaza</strong> su copia: nuevo cuerpo, nuevo <code>ETag</code>, nueva fecha.</p>
+<table>
+<thead>
+<tr>
+<th>Pedido</th>
+<th>Hora</th>
+<th>Condición</th>
+<th>Respuesta</th>
+<th>Bytes de cuerpo</th>
+<th>Total</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>09:00</td>
+<td>ninguna</td>
+<td><code>200</code></td>
+<td><strong>200 000</strong></td>
+<td>80 ms</td>
+</tr>
+<tr>
+<td>2</td>
+<td>09:45</td>
+<td><code>If-None-Match</code></td>
+<td><em>sin respuesta</em></td>
+<td>0</td>
+<td>80 ms</td>
+</tr>
+<tr>
+<td>3</td>
+<td>10:00</td>
+<td><code>If-None-Match</code></td>
+<td><code>200</code> (cambió)</td>
+<td><strong>201 344</strong></td>
+<td>80 ms</td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code>   Datos transferidos:
+     pedido 1:  200 000 + 300 ≈ 200 300 B
+     pedido 2:        0 + 180 ≈     180 B
+     pedido 3:  201 344 + 300 ≈ 201 644 B
+     ────────────────────────────────────
+     Total:                             402 124 B
+
+   RTT totales: 3 × 80 ms = 240 ms
+</code></pre></div>
+
+<p><em>Interpretación:</em> el segundo pedido bajó <strong>0 bytes de contenido</strong> en 180 bytes de
+cabeceras: <strong>99,91 % de ahorro en una petición</strong>. Por eso la caché no es una
+optimización menor, es la diferencia entre 200 KB y 180 B por revalidación.</p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Olvidar la línea en blanco final</strong> del mensaje de petición: sin ella el
+  servidor no sabe dónde terminan las cabeceras.</li>
+<li><strong>Poner <code>Content-Length</code> en un <code>304</code>:</strong> un <code>304</code> no lleva cuerpo, y por lo tanto
+  no lleva <code>Content-Length</code>.</li>
+<li><strong>Confundir «el <code>ETag</code> no coincide» con «me manda un 404»:</strong> si no coincide, la
+  condición <strong>se ignora</strong> y se manda un <code>200</code> completo.</li>
+<li><strong>Creer que el <code>304</code> renueva el TTL del origen:</strong> renueva la <strong>frescura en la
+  caché del cliente</strong>, que vuelve a contar <code>max-age</code> desde cero.</li>
+</ul>
+<h2>2.2 Ejercicio 2 — ¿Qué hace exactamente <code>Cache-Control: max-age=0</code> con un ETag presente?</h2>
+<p><strong>Enunciado.</strong> Un servidor responde:</p>
+<div class="codehilite"><pre><span></span><code>HTTP/1.1 200 OK
+Date: Tue, 06 Oct 2026 09:00:00 GMT
+ETag: "5d9b21-30d40-6518a1f0"
+Last-Modified: Mon, 05 Oct 2026 09:14:07 GMT
+Cache-Control: max-age=0
+
+&lt;contenido&gt;
+</code></pre></div>
+
+<p>¿Qué puede y qué no puede hacer el cliente con esto?</p>
+<p><em>Paso 1 — Leer el <code>max-age=0</code>.</em> La frescura es de <strong>cero segundos</strong>, o sea <strong>nunca
+es fresco</strong>: cada vez que el cliente quiera usarlo tiene que revalidar. Pero
+<code>max-age=0</code> <strong>no dice «no lo guardes»</strong> (eso sería <code>no-store</code>) ni «no lo devuelvas
+sin revalidar» (eso sería <code>no-cache</code>).</p>
+<p><em>Paso 2 — Lo que SÍ puede hacer el cliente.</em></p>
+<div class="codehilite"><pre><span></span><code>   ✅ GUARDAR el recurso en su caché.
+   ✅ Usarlo si el servidor NO responde (fallback, offline).
+   ✅ Aceptar el 304 cuando el servidor confirma que no cambió.
+</code></pre></div>
+
+<p><em>Paso 3 — Lo que NO puede hacer.</em></p>
+<div class="codehilite"><pre><span></span><code>   ❌ Servirlo de la caché sin preguntarle al servidor.
+   ❌ Asumir que sigue válido porque acaba de bajarlo.
+   ❌ Cachearlo «para siempre» si el servidor nunca más responde.
+</code></pre></div>
+
+<p><em>Paso 4 — Y acá está el detalle fino: qué cambia cuando hay <code>ETag</code>.</em></p>
+<div class="codehilite"><pre><span></span><code>   SIN ETag y con max-age=0:
+     el cliente no puede distinguir "cambió" de "sigue igual"
+     → tiene que re-descargarlo ENTERO cada vez.     (200 000 B por uso)
+
+   CON ETag y con max-age=0:
+     el cliente manda If-None-Match: "5d9b21-30d40-6518a1f0"
+     el servidor compara con su ETag actual:
+       → si coincide:  304, 0 B de cuerpo
+       → si no:        200 completo, 200 000 B
+
+   El 304 ocurre, pero NO HAY AHORRO DE RTT: el viaje se sigue entero.
+   Lo que se ahorra son BYTES.
+</code></pre></div>
+
+<p><em>Paso 5 — La cuenta, con números.</em></p>
+<div class="codehilite"><pre><span></span><code>   Recurso de 200 000 B. 5 usos en 1 hora.
+
+   Con max-age=3600 (1 hora de frescura):
+     uso 1:  200 000 B (descarga)
+     uso 2:      0 B (fresco, ni pregunta)
+     uso 3:      0 B (fresco, ni pregunta)
+     uso 4:      0 B (fresco, ni pregunta)
+     uso 5:      0 B (fresco, ni pregunta)
+     ────────────────────────────
+     Total: 200 000 B        RTT: 1
+
+   Con max-age=0 + ETag:
+     uso 1:  200 000 B (descarga)
+     uso 2:      0 B (304, un RTT)
+     uso 3:      0 B (304, un RTT)
+     uso 4:      0 B (304, un RTT)
+     uso 5:      0 B (304, un RTT)
+     ────────────────────────────
+     Total: 200 000 B        RTT: 5
+</code></pre></div>
+
+<p><em>Interpretación física, y es la frase del examen:</em> <strong><code>max-age=0</code> convierte cada uso
+en una revalidación, pero gracias al <code>ETag</code> cada revalidación cuesta 0 bytes de
+contenido.</strong> Los bytes totales son los mismos; lo que cambia son los <strong>viajes</strong>: de
+1 RTT a 5 RTT. Con un RTT de 200 ms son 800 ms de espera extra.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><code>max-age=0</code> + ETag</th>
+<th><code>no-cache</code> + ETag</th>
+<th><code>no-store</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>¿Se guarda en caché?</td>
+<td>sí</td>
+<td>sí</td>
+<td><strong>no</strong></td>
+</tr>
+<tr>
+<td>¿Hay que revalidar siempre?</td>
+<td>sí (0 s de frescura)</td>
+<td><strong>sí, explícitamente</strong></td>
+<td>no aplica</td>
+</tr>
+<tr>
+<td>¿Sirve si el servidor cae?</td>
+<td>sí</td>
+<td>sí</td>
+<td><strong>no</strong></td>
+</tr>
+<tr>
+<td>Diferencia</td>
+<td>implícito, por aritmética</td>
+<td>explícito, por declaración</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Respuesta final:</strong> <code>max-age=0</code> marca el recurso como <strong>vencido de entrada</strong> pero
+<strong>conservable</strong>: el cliente lo guarda (para poder trabajar sin conexión) y en cada
+uso revalida contra el servidor. Con <code>ETag</code>, esa revalidación es barata en <strong>bytes</strong>
+(un <code>304</code> de 180 bytes) pero <strong>no</strong> economiza el <strong>viaje</strong>. Si lo que se quiere es
+no revalidar nunca, la directiva correcta es <code>no-store</code>.</p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Decir que <code>max-age=0</code> equivale a <code>no-cache</code>.</strong> En cuanto al comportamiento de
+  uso sí, pero <code>no-cache</code> <strong>declara</strong> la intención y <code>max-age=0</code> la <strong>logra por
+  aritmética</strong>.</li>
+<li><strong>Decir que <code>max-age=0</code> es «no cachear».</strong> Falso: <strong>sí</strong> se cachea; lo que no
+  existe es la <em>frescura</em>.</li>
+<li><strong>Olvidar el efecto de <code>Age</code>.</strong> Si un intermediario sirve con <code>Age: 30</code> y
+  <code>max-age=0</code>, la frescura es <code>0 − 30 = −30</code>: <strong>vencida</strong>, hay que revalidar igual.</li>
+</ul>
+<h2>2.3 Ejercicio 3 — ¿Qué gana y qué pierde HTTP/3 frente a HTTP/1.1?</h2>
+<p><strong>Enunciado.</strong> Compará HTTP/3 y HTTP/1.1 en cuatro dimensiones: latencia de
+conexión, comportamiento ante pérdida, aislamiento del tráfico y coste operacional.</p>
+<p><em>Paso 1 — Latencia de conexión, con la cuenta a la vista.</em></p>
+<div class="codehilite"><pre><span></span><code>   HTTP/1.1 sobre TCP + TLS:
+     TCP     SYN ───▶ ◀─── SYN+ACK  ACK ───▶        1 RTT
+     TLS 1.3 ClientHello ─▶ ◀─── ServerHello         1 RTT
+     ─────────────────────────────────────────────────
+     Total hasta el primer byte de aplicación:          2 RTT
+
+   HTTP/3 sobre QUIC (que ya incluye TLS 1.3):
+     QUIC    Initial + Handshake combinado               1 RTT
+     ─────────────────────────────────────────────────
+     Total hasta el primer byte de aplicación:          1 RTT
+</code></pre></div>
+
+<p><em>Interpretación:</em> se ahorra <strong>un RTT entero</strong> por conexión nueva. Y como HTTP/3
+multiplexa, <strong>no abre una conexión por objeto</strong>: abre una y la reutiliza.</p>
+<p><em>Paso 2 — Pérdida de paquetes.</em></p>
+<div class="codehilite"><pre><span></span><code>   HTTP/1.1:  una conexión = un flujo ordenado.
+              si se pierde el segmento 5, el receptor NO puede entregar
+              el 6 ni el 7 hasta que llegue el 5 y se retransmite
+              (1 RTO con fast retransmit, un RTO entero con timeout).
+
+   HTTP/3:    muchos streams independientes, CADA UNO con su numeración
+              y su recuperación. Si se pierde el stream 5, el 6 se
+              entrega igual. Se reintenta SOLO el 5.
+</code></pre></div>
+
+<p><em>Interpretación física:</em> es la diferencia entre <strong>«toda la página quedó congelada
+1,5 segundos porque se perdió un byte de una imagen»</strong> y <strong>«esa imagen tarda un
+poco más; el texto ya se ve»</strong>. El congelamiento total de la página es el síntoma
+clásico del <em>head-of-line blocking</em> de HTTP/1.1.</p>
+<p><em>Paso 3 — Aislamiento del tráfico, el punto donde HTTP/2 queda a medias.</em></p>
+<div class="codehilite"><pre><span></span><code>   HTTP/2:  multiplexa sobre UNA conexión TCP. Cada stream se numera,
+            pero TCP es ORDENADO: se pierde un segmento → se frena LA
+            CONEXIÓN ENTERA, aunque solo le afecte a un stream.
+
+            ╔═══════════════════════════════════════════════════╗
+            ║ HTTP/2 elimina el HOL blocking A NIVEL DE         ║
+            ║ CONEXIÓN, pero NO ENTRE STREAMS.                  ║
+            ╚═══════════════════════════════════════════════════╝
+
+   HTTP/3:  cada stream tiene su numeración y su recuperación: la
+            pérdida de uno no frena a los otros.
+
+            ╔═══════════════════════════════════════════════════╗
+            ║ HTTP/3 elimina el HOL blocking ENTRE STREAMS      ║
+            ║ porque ya no hay conexión TCP debajo.             ║
+            ╚═══════════════════════════════════════════════════╝
+</code></pre></div>
+
+<p><em>Paso 4 — Qué gana y qué pierde HTTP/3.</em></p>
+<table>
+<thead>
+<tr>
+<th>Gana</th>
+<th>Por qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1 RTT en vez de 2</strong> para conectar</td>
+<td>el handshake QUIC incluye el de TLS</td>
+</tr>
+<tr>
+<td><strong>Sin <em>head-of-line blocking</em> entre streams</strong></td>
+<td>recuperación por stream, no por conexión</td>
+</tr>
+<tr>
+<td><strong>Migración de conexión</strong></td>
+<td>el <code>Connection ID</code> sobrevive al cambio de IP y de puerto, lo que arregla el <em>NAT rebinding</em> que rompe a TCP</td>
+</tr>
+<tr>
+<td><strong>PLPMTUD integrado</strong></td>
+<td>mide el camino con su propio tráfico, sin depender de que ICMP no esté filtrado</td>
+</tr>
+<tr>
+<td><strong>QPACK sin orden</strong></td>
+<td>permite comprimir cabeceras en paralelo, coherente con la multiplexación</td>
+</tr>
+<tr>
+<td><strong>0-RTT con reanudación</strong></td>
+<td>con tokens anti-replay</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Pierde</th>
+<th>Por qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CPU por paquete</strong></td>
+<td>cada stream va cifrado con AEAD; el <em>throughput</em> en máquinas pequeñas baja</td>
+</tr>
+<tr>
+<td><strong>UDP a veces está bloqueado</strong></td>
+<td>redes corporativas y operadores filtran UDP/443 o no pasan QUIC</td>
+</tr>
+<tr>
+<td><strong>Los <em>middleboxes</em> son el cuello de botella</strong></td>
+<td>cualquier firewall o IDS que no entienda QUIC <strong>rompe</strong> la conexión</td>
+</tr>
+<tr>
+<td><strong>Observabilidad peor</strong></td>
+<td>sniffear HTTP/3 exige las claves del endpoint</td>
+</tr>
+<tr>
+<td><strong>Menos despliegue</strong></td>
+<td>21 % del tráfico de Radar, 40,8 % de los sitios</td>
+</tr>
+</tbody>
+</table>
+<p><em>Paso 5 — El veredicto, que es la frase del examen.</em></p>
+<blockquote>
+<p><strong>HTTP/3 gana en latencia de conexión, en aislamiento de la pérdida y en
+movilidad; pierde en costo de CPU, en compatibilidad con los equipos que filtran
+UDP y en despliegue.</strong> La razón por la que no se adueñó de la Web no es técnica
+—es mejor en casi todo— sino <strong>política de despliegue</strong>: el cambio es gradual,
+requiere actualizar clientes y servidores, y se choca con 25 años de
+<em>middleboxes</em> instalados que nadie va a cambiar. <strong>HTTP/2 ganó más rápido porque
+solo cambiaba la capa de aplicación sobre un TCP que ya estaba desplegado.</strong></p>
+</blockquote>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Decir «HTTP/3 es HTTP/2 sobre UDP».</strong> <strong>Falso</strong>, y es el error conceptual más
+  caro. HTTP/3 reemplaza TCP <strong>por completo</strong>.</li>
+<li><strong>Decir que HTTP/2 elimina el HOL blocking sin matizar.</strong> Solo a nivel de
+  conexión; entre streams sigue existiendo.</li>
+<li><strong>Confundir <code>Upgrade</code> con <code>Alt-Svc</code>.</strong></li>
+<li><strong>Decir «HTTP/3 es la versión actual y la más usada».</strong> La más usada es HTTP/2.</li>
+</ul>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2010-07, Pregunta 1 (8 puntos) — página HTML con diez imágenes</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc1007</code> / <code>sirc1007</code> — 27 de julio de 2010.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1007.pdf
+<strong>Nota:</strong> la resolución completa con la cuenta de RTT ya está en la <strong>Clase 8
+§3.1</strong>. Acá se reproduce desde el ángulo de las <strong>versiones</strong>, que es lo que esta
+clase agrega.</p>
+</blockquote>
+<h3>Enunciado (texto literal del examen)</h3>
+<blockquote>
+<p><strong>Pregunta 1 (8 puntos)</strong></p>
+<p>Suponga que un usuario intenta cargar en su browser una página HTML. Esta página
+contiene texto y diez imágenes.</p>
+<p><strong>a)</strong> Describa la secuencia de pasos que ocurren a nivel de capa de aplicación en
+el cliente y el servidor a los efectos de desplegar la página completa, suponiendo
+que se utiliza HTTP no persistente.</p>
+<p><strong>b)</strong> ¿Cuál es la diferencia con HTTP persistente? ¿Mejora la performance?
+Discuta.</p>
+</blockquote>
+<h3>Solución oficial (del PDF, textual)</h3>
+<blockquote>
+<p>a)</p>
+<table>
+<thead>
+<tr>
+<th>Paso</th>
+<th>Responsable</th>
+<th>Acción</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Cliente</td>
+<td>Establece la conexión con el servidor</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Cliente</td>
+<td>Envía Request pidiendo la página</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Servidor</td>
+<td>Envía Response con el contenido de la página</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Servidor</td>
+<td>Cierra la conexión</td>
+</tr>
+<tr>
+<td>5*</td>
+<td>Cliente</td>
+<td>Establece la conexión con el servidor</td>
+</tr>
+<tr>
+<td>6*</td>
+<td>Cliente</td>
+<td>Envía Request pidiendo la la imagen 1</td>
+</tr>
+<tr>
+<td>7*</td>
+<td>Servidor</td>
+<td>Envía Response con el contenido de la imagen 1</td>
+</tr>
+<tr>
+<td>8*</td>
+<td>Servidor</td>
+<td>Cierra la conexión</td>
+</tr>
+</tbody>
+</table>
+<p>* Se repiten los pasos 5 al 8 para cada una de las imágenes.</p>
+<p>b) En el caso de HTTP persistente, se establece la conexión una sola vez, se obtiene
+el contenido de la página, y a través de la misma conexión se piden todas las
+imágenes.</p>
+<p>El uso de HTTP persistente puede resultar más performante en los casos en que se
+utilice una sola conexión por vez (por ejemplo si el servidor nos limita por IP),
+ya que no existe el overhead de crear nuevas conexiones para cada imagen.</p>
+<p>Si el navegador abre conexiones en paralelo para obtener varias imágenes a la vez,
+probablemente termine de obtener todos los datos más rápidamente, aprovechando mejor
+el ancho de banda.</p>
+</blockquote>
+<h3>a) y b) — Resolución</h3>
+<p>La tabla oficial es correcta y es la respuesta del apartado a). Lo que hay que
+agregar son las <strong>capas que la oficial abstrae</strong>: el paso 1 vale <strong>1 RTT de TCP</strong> (2
+con HTTPS), el paso 4 es un <code>FIN</code> que no cuesta RTT pero deja un <code>TIME-WAIT</code> de 2×MSL
+en el cliente, y el paso 3 debería llevar <code>Cache-Control</code> + <code>ETag</code> + <code>Last-Modified</code>,
+que es lo que hace que la <strong>segunda</strong> carga de la misma página sea un <code>304</code> en lugar
+de 11 descargas.</p>
+<p><strong>Respuesta redactada, lista para copiar en el examen:</strong></p>
+<blockquote>
+<p><strong>a)</strong> En HTTP <strong>no persistente</strong>, por cada objeto (el HTML y cada una de las 10
+imágenes) el cliente ejecuta <strong>cuatro pasos</strong>: (1) establece una conexión TCP con el
+servidor, (2) envía un request pidiendo el objeto, (3) el servidor envía un
+response con el contenido del objeto, (4) el servidor cierra la conexión. El
+primer objeto es la página HTML; al recibirla y parsearla, el cliente descubre las
+10 imágenes referenciadas y repite los pasos 1–4 <strong>una vez por cada imagen</strong>. En
+total son <strong>11 objetos × 4 pasos = 44 pasos</strong>, con <strong>11 conexiones TCP distintas</strong> y
+<strong>22 RTT</strong> (2 RTT por objeto: 1 de handshake TCP + 1 de request/response). Si el
+sitio usa HTTPS, a cada uno de esos RTT se le suma 1 RTT de TLS: <strong>33 RTT</strong>.</p>
+<p><strong>b)</strong> En HTTP <strong>persistente</strong> se establece <strong>una sola</strong> conexión TCP y por ella se
+piden los 11 objetos uno tras otro: <strong>1 RTT</strong> de handshake + <strong>11 RTT</strong> de
+request/response = <strong>12 RTT</strong>, contra los 22 del no persistente. La mejora es real
+cuando el navegador trabaja <strong>secuencialmente</strong>, porque se eliminan los
+<code>N − 1 = 10</code> handshakes. <strong>Pero no siempre mejora:</strong> si el navegador abre
+conexiones <strong>en paralelo</strong> (que es lo que hacen los reales) y los objetos vienen de
+<strong>varios servidores</strong>, los handshakes pasan todos al mismo tiempo: el no persistente
+baja a <strong>4 RTT</strong> y el persistente queda en <strong>4 RTT</strong>, o sea, la ventaja
+<strong>desaparece</strong>.</p>
+</blockquote>
+<p><strong>Lo que esta clase 9 agrega: la misma pregunta, versión por versión.</strong></p>
+<div class="codehilite"><pre><span></span><code>   ═══ El mismo caso, en HTTP/2 ═══
+   1 conexión TCP (11 streams simultáneos)        1 RTT
+   GET HTML + 10 GETs en paralelo                 1 RTT
+   ───────────────────────────────────────────────────
+   Total:                                           2 RTT
+   Contra los 22 RTT del no persistente y los 12 del persistente.
+   La pérdida de un stream frena SOLO a ese stream.
+
+   ═══ El mismo caso, en HTTP/3 ═══
+   1 conexión QUIC (con TLS integrado)            1 RTT
+   GET HTML + 10 GETs en paralelo                 1 RTT
+   ───────────────────────────────────────────────────
+   Total:                                           2 RTT
+   Pero el handshake es 1 RTT en vez de 2 (TCP + TLS), y la pérdida de un
+   stream no frena a los otros: en HTTP/1.1 una sola pérdida de paquete en
+   una imagen congelaba la página entera durante 1 RTO.
+
+   ═══ Y con HTTPS, que es el caso real ═══
+   HTTP/1.1 no persistente + HTTPS:  11 × (1 TCP + 1 TLS + 1 HTTP) = 33 RTT
+   HTTP/1.1 persistente  + HTTPS:     1 + 1 + 11                     = 13 RTT
+   HTTP/2              + TLS:         1 + 1                          =  2 RTT
+   HTTP/3              + QUIC:        1                              =  1 RTT
+</code></pre></div>
+
+<p><em>Interpretación:</em> el objetivo de HTTP/2 y HTTP/3 <strong>es exactamente este problema de
+examen</strong>. Los dos nacen para matar el número de viajes que el enunciado cuenta, y la
+lección es que <strong>el problema no se resolvió cambiando la forma de pedir</strong>: se resolvió
+cambiando la forma de <strong>transportar</strong> varias peticiones a la vez.</p>
+<blockquote>
+<p><strong>Nota contra la oficial:</strong> la oficial dice «puede resultar más performante», que
+es la respuesta honesta y matizada, y agrega el mejor argumento del apartado b):
+<strong>«si el servidor nos limita por IP»</strong>, o sea que el navegador no puede paralelizar
+porque el servidor impone un límite por IP. Yo repito ese argumento y agrego las
+tres precisiones que la oficial omite: el costo en RTT del paso 1, el <code>TIME-WAIT</code>
+del paso 4 y el <code>ETag</code>/<code>Cache-Control</code> del paso 3.</p>
+</blockquote>
+<hr />
+<h2>3.2 Examen 2009-07, Problema 2 — HTTP como protocolo de consulta</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0907</code> / <code>sirc0907</code> — 29 de julio de 2009, Problema 2,
+apartado b).
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0907.pdf
+<strong>Nota:</strong> la resolución completa del problema está en la <strong>Clase 8 §3.2</strong>. Acá se
+desarrolla el ángulo de <strong>cómo se escribe un mensaje HTTP/1.1 válido</strong>.</p>
+</blockquote>
+<h3>Enunciado (apartado b)</h3>
+<blockquote>
+<p>Implementar <code>bool isSpam(string ipAddress, string subject)</code> que devuelve <code>true</code>
+si <strong>naivespamming</strong> considera que el correo es spam.</p>
+</blockquote>
+<h3>Solución oficial (del PDF)</h3>
+<div class="codehilite"><pre><span></span><code>    Socket s = new Socket("www.naivespamming.org", 80);
+    if (!s.connect()) return false;
+    s.out.write(
+      "GET isspam.cgi?sender=" + ipAddress +
+      "&amp;subject=" + queryStringStuff(subject) + " HTTP/1.1\r\n\r\n");
+    string response = s.in.readLine();
+    s.close();
+    string[] result = response.split();
+    return result[1] == "200";
+</code></pre></div>
+
+<h3>Lo que hay que corregir, mensaje HTTP adentro</h3>
+<p>El mensaje que la oficial escribe <strong>no es un mensaje HTTP/1.1 válido</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   ❌ Lo que escribe la oficial            ✅ Lo que debería escribir
+   ────────────────────────────            ─────────────────────────────
+   GET isspam.cgi?... HTTP/1.1            GET /isspam.cgi?... HTTP/1.1
+   \r\n\r\n                                Host: www.naivespamming.org
+                                          User-Agent: FING-SpamFilter/1.0
+                                          Accept: text/plain
+                                          Connection: close
+                                          \r\n\r\n
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Defecto</th>
+<th>Por qué importa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>Host</code> ausente</strong></td>
+<td>Es <strong>obligatoria</strong> en HTTP/1.1. Sin ella, un servidor con <em>virtual hosting</em> no sabe a qué sitio le estás pidiendo, y muchos responden <code>400</code> o sirven el sitio por defecto.</td>
+</tr>
+<tr>
+<td><strong>Path relativo</strong> (<code>isspam.cgi</code>)</td>
+<td>El <code>request-target</code> de HTTP/1.1 tiene que ser un <strong>absolute path</strong> que empiece por <code>/</code>.</td>
+</tr>
+<tr>
+<td><strong><code>\r\n\r\n</code> sí está bien</strong></td>
+<td>Ese es el <code>CRLF</code> final que cierra las cabeceras. Es lo único que la oficial acertó.</td>
+</tr>
+<tr>
+<td><strong>Sin <code>Accept</code></strong></td>
+<td>El servidor no sabe qué formato querés y puede devolver HTML en vez de texto.</td>
+</tr>
+<tr>
+<td><strong>Sin <code>Connection: close</code></strong></td>
+<td>Como no pidió <code>Content-Length</code> ni pidió cierre, el cliente queda esperando bytes que no llegan.</td>
+</tr>
+</tbody>
+</table>
+<h3>GET contra POST: la discusión que el enunciado no pide pero suma</h3>
+<p>La oficial usa <code>GET</code>. ¿Corresponde? Buscar en una base de datos es una <strong>lectura</strong>
+(<code>GET</code> está bien); registrar que un remitente hizo spam es una <strong>escritura</strong>
+(<code>POST</code>). El enunciado dice «considera que el correo es spam», o sea que es una
+consulta, así que <code>GET</code> es defendible. <strong>PERO</strong> el parámetro <code>subject</code> puede llevar
+información sensible: mandarlo en la URL lo deja en el historial del navegador, en
+los logs del servidor y en los proxies. Con <code>POST</code> iría en el cuerpo.</p>
+<div class="codehilite"><pre><span></span><code>   ═══ Con GET ═══
+   GET /isspam.cgi?sender=203.0.113.7&amp;subject=Venta%20de%20autos HTTP/1.1
+   Host: www.naivespamming.org
+   User-Agent: FING-SpamFilter/1.0
+   Accept: text/plain
+   Connection: close
+
+   ═══ Con POST ═══
+   POST /isspam.cgi HTTP/1.1
+   Host: www.naivespamming.org
+   User-Agent: FING-SpamFilter/1.0
+   Content-Type: application/x-www-form-urlencoded
+   Content-Length: 46
+   Accept: text/plain
+   Connection: close
+
+   sender=203.0.113.7&amp;subject=Venta%20de%20autos
+</code></pre></div>
+
+<p><strong>Y el parseo</strong>, que la oficial hace mal: <code>response.split()</code> toma el primer espacio
+y asume que <code>result[1]</code> es el código, lo que se rompe con una redirección. Lo
+robusto es <strong>parsear la primera línea</strong> (<code>HTTP/&lt;ver&gt; &lt;código&gt; &lt;frase&gt;</code>), seguir la
+redirección si la hay, y recién ahí interpretar el <code>2xx</code> o el <code>4xx</code>.</p>
+<h3>La corrección semántica del <code>return</code></h3>
+<p>El enunciado dice que <strong>404 = es spam</strong> y <strong>200 = es legítimo</strong>. La oficial
+devuelve <code>true</code> con el <code>200</code>: eso <strong>invierte la semántica</strong> y marca como spam un
+correo que el servidor dijo que es limpio.</p>
+<div class="codehilite"><pre><span></span><code>   código == 200  →  es legítimo  →  return false
+   código == 404  →  es spam      →  return true
+   otro / error   →  no se sabe   →  return false   (fail-open)
+</code></pre></div>
+
+<blockquote>
+<p><strong>Nota explícita:</strong> la solución oficial contradice al enunciado. En un examen,
+<strong>respetá el enunciado</strong> y <strong>señalá la contradicción por escrito</strong>. Eso suma
+puntos: demuestra que leíste los dos documentos.</p>
+</blockquote>
+<p><strong>Lo que este problema aporta a la clase:</strong> un <code>4xx</code> no es un error técnico, es
+<strong>información de negocio</strong> para la aplicación que consume HTTP. <strong>HTTP no solo
+transporta contenido: transporta semántica.</strong></p>
+<h2>3.3 Examen 2008-12, Pregunta 4 (7 puntos) — el mismo patrón de diseño</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0812</code> / <code>sirc0812</code> — 20 de diciembre de 2008.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0812.pdf</p>
+</blockquote>
+<p>Este problema se resuelve <strong>entero en la Clase 13</strong>, junto con el correo. Acá lo
+dejo anotado porque es el <strong>mismo patrón de diseño</strong> que usa
+<code>Transfer-Encoding: chunked</code>, y entenderlo dos veces lo hace familia:</p>
+<div class="codehilite"><pre><span></span><code>   POP3:   el fin de mensaje es  CRLF . CRLF
+           si un punto aparece al principio de una línea del mensaje, se
+           DUPLICA. Al recibir, se quita el punto extra.
+
+   HTTP:   el fin de un fragmento chunked es  0&lt;CRLF&gt;
+           si un dato empieza con "0" seguido de "&lt;CRLF&gt;", hay que
+           escaparlo, porque si no el cliente lo toma como fin de cuerpo.
+</code></pre></div>
+
+<p><strong>La idea común, que es la que hay que saber decir:</strong> cuando <strong>el delimitador vive dentro del mismo canal que los datos</strong> (no hay longitud explícita), hace falta <strong>escapar</strong> el delimitador en el emisor y <strong>desescapar</strong> en el receptor. Es el mismo problema que el <strong>byte stuffing</strong> del PPP (<code>2003-03 P3</code>) y el <strong>bit stuffing</strong> de Ethernet. <strong>Tres protocolos, tres objetos de relleno distintos: el punto en POP3 y SMTP, el byte de escape en PPP, el bit en Ethernet.</strong> La razón es siempre la misma: <strong>ninguno de esos caracteres puede aparecer legítimamente donde se lo proscribe.</strong></p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen en 10 líneas</h2>
+<ol>
+<li>Un <strong>método</strong> declara la intención. <strong>Seguro</strong> = no cambia el estado,
+   <strong>idempotente</strong> = repetirlo <em>n</em> veces es lo mismo que una. La distinción
+   decide si el cliente puede <strong>reintentar solo</strong>.</li>
+<li><code>GET</code>/<code>HEAD</code>/<code>OPTIONS</code>/<code>TRACE</code> son seguros; <code>GET</code>/<code>HEAD</code>/<code>PUT</code>/<code>DELETE</code> son
+   idempotentes; <strong><code>POST</code> no es ninguna de las dos</strong>.</li>
+<li>En <code>GET</code> los datos van <strong>en la URL</strong> (por eso quedan en el historial y los
+   logs); en <code>POST</code> van <strong>en el cuerpo</strong> (por eso no).</li>
+<li><code>Host</code> es <strong>obligatoria</strong> en HTTP/1.1 y es lo que hace posible el <em>virtual
+   hosting</em> y, por lo tanto, lo que impide esconder HTTP detrás de un NAT.</li>
+<li><code>Cache-Control</code>: <code>no-store</code> (no guardar), <code>no-cache</code> (guardar pero revalidar),
+   <code>max-age=N</code> (fresco N segundos), <code>private</code>/<code>public</code> (quién puede cachear), y
+   <code>Vary</code> (de qué depende la variación).</li>
+<li>La validación condicional es <code>ETag</code> + <code>If-None-Match</code> (o <code>Last-Modified</code> +
+   <code>If-Modified-Since</code>); si coincide, el servidor responde <strong><code>304</code> sin cuerpo y
+   sin <code>Content-Length</code></strong> y <strong>renueva la frescura</strong> de la caché del cliente.</li>
+<li><strong>Proxy</strong> reenvía, <strong>gateway</strong> traduce protocolos, <strong>CDN</strong> copia el contenido
+   cerca del usuario: el CDN mejora la latencia <strong>reduciendo la distancia al
+   usuario</strong>, y como la carga de una página es <code>viajes × RTT</code>, eso la acelera.</li>
+<li><strong>HTTP/2</strong> (<code>RFC 9113</code>) multiplexa streams sobre <strong>una conexión TCP</strong> y
+   elimina el HOL blocking <strong>de conexión</strong> (no entre streams); <strong>HTTP/3</strong>
+   (<code>RFC 9114</code> sobre <strong>QUIC</strong>, <code>RFC 9000</code>) <strong>reemplaza TCP por completo</strong> y
+   elimina el HOL blocking <strong>entre streams</strong>. Se negocia con <strong><code>Alt-Svc</code></strong>, no
+   con <code>Upgrade</code>.</li>
+<li>Las cifras reales: <strong>HTTP/2 50 %, HTTP/1.x 29 %, HTTP/3 21 %</strong> (Cloudflare
+   Radar 2025). <strong>HTTP/3 no se adueñó de la web</strong>, y la razón es de despliegue,
+   no técnica.</li>
+<li>Lo que <strong>no cambia nunca</strong>: petición/respuesta, sin estado, los métodos, las
+    clases 1xx–5xx, <code>Host</code> obligatoria (que pasa a <code>:authority</code> en HTTP/2 y 3),
+    persistente por defecto, <code>304</code> y <code>Range</code>.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> Un cliente hace <code>POST /pagar</code> y no recibe respuesta. ¿Puede reintentar
+automáticamente? ¿Por qué sí o por qué no?</p>
+<details><summary>Respuesta</summary>
+
+**No.** `POST` es el único método común que **no es ni seguro ni idempotente**: si el servidor procesó el cobro y lo que se perdió fue la respuesta, un reintento automático **cobra dos veces**. La propiedad que lo salva es la **idempotencia**: si el método fuera idempotente, reintentarlo *n* veces tendría el mismo efecto que una. Por eso los clientes reales, ante un `POST` ambiguo, preguntan al usuario o mandan una **idempotency key** para deduplicar.
+
+</details>
+
+<p><strong>2.</strong> ¿Qué diferencia hay entre <code>Cache-Control: no-cache</code>, <code>max-age=0</code> y
+<code>no-store</code>?</p>
+<details><summary>Respuesta</summary>
+
+- **`no-cache`**: el recurso **se guarda**, pero **nunca se sirve sin revalidarlo**. Declaración explícita de intención.
+- **`max-age=0`**: el recurso **se guarda**, pero su frescura es de **cero segundos**. Logra lo mismo que `no-cache` **por aritmética**, no por declaración.
+- **`no-store`**: el recurso **no se guarda en ninguna caché**. Es la única que garantiza que el dato no queda en reposo.
+
+Los dos primeros sirven para **revalidar barato**: con un `ETag`, la revalidación cuesta 180 bytes (un `304`) en lugar de 200 000. `no-store` es para datos que no deben quedar en disco.
+
+</details>
+
+<p><strong>3.</strong> Escribí la respuesta a una petición que llega con <code>If-None-Match:
+"5d9b21-30d40-6518a1f0"</code> y el servidor tiene ese mismo <code>ETag</code>. ¿Qué cabeceras
+<strong>no</strong> puede llevar?</p>
+<details><summary>Respuesta</summary>
+
+La respuesta es un **`304 Not Modified`**:
+
+
+<div class="codehilite"><pre><span></span><code>HTTP/1.1 304 Not Modified
+Date: Tue, 06 Oct 2026 15:22:32 GMT
+ETag: "5d9b21-30d40-6518a1f0"
+Cache-Control: max-age=3600
+</code></pre></div>
+
+
+
+**No puede llevar `Content-Length`** (no hay nada que medir), **ni el cuerpo**, **ni `Content-Type`**, ni `Server`. Lo que **sí** debe llevar es el `ETag`, porque el `304` **renueva la frescura**: el reloj vuelve a cero y ahora vence 3600 s a partir de este mensaje, no del anterior.
+
+</details>
+
+<p><strong>4.</strong> Un <code>GET</code> con <code>Cache-Control: max-age=0</code> y un <code>ETag</code> presente. ¿Cuánto se
+ahorra en cada revalidación y cuánto <strong>no</strong> se ahorra?</p>
+<details><summary>Respuesta</summary>
+
+**Se ahorran los bytes del cuerpo**: de 200 000 bytes a unos 180 bytes de cabeceras, o sea **99,91 %**.
+
+**No se ahorra el viaje**: sigue yendo un RTT de ida y vuelta al servidor en **cada** uso. `max-age=0` mata la frescura, no el RTT. Con `max-age=3600` serían 1 RTT y 200 000 bytes; con `max-age=0` son 5 RTT y los mismos 200 000 bytes del primero, más 4 de 180.
+
+</details>
+
+<p><strong>5.</strong> ¿Por qué un CDN mejora la latencia? Explicá sin usar la palabra «caché».</p>
+<details><summary>Respuesta</summary>
+
+Porque **reduce la distancia física entre el cliente y el servidor que le responde**, y el RTT es proporcional a esa distancia más los saltos. El tiempo de carga de una página es esencialmente `número de viajes × RTT`: un cliente en Montevideo que espera 120 ms a un servidor en Virginia y 3 ms a un nodo del CDN en Montevideo recibe el mismo contenido **40 veces más rápido**, sin cambiar un byte. El segundo beneficio es la **descarga del origen**: si el 95 % de los pedidos lo responde el nodo del CDN, el origen sobrevive a un pico o a un ataque.
+
+</details>
+
+<p><strong>6.</strong> ¿Qué gana y qué pierde HTTP/3 frente a HTTP/1.1? Nombrá al menos dos de
+cada.</p>
+<details><summary>Respuesta</summary>
+
+**Gana:** **latencia** (1 RTT en vez de 2, porque el handshake QUIC incluye el de TLS 1.3), **sin head-of-line blocking entre streams** (la recuperación es por stream y no por conexión) y **migración de conexión** (el `Connection ID` sobrevive al cambio de IP y de puerto, lo que arregla el *NAT rebinding* que rompe a TCP).
+
+**Pierde:** **CPU por paquete** (todo va cifrado con AEAD, incluso lo que no necesita confidencialidad), **compatibilidad** (cualquier *middlebox* que no entienda QUIC o que filtre UDP/443 rompe la conexión) y **despliegue** (21 % del tráfico, contra 50 % de HTTP/2).
+
+</details>
+
+<p><strong>7.</strong> ¿HTTP/2 elimina el head-of-line blocking? La respuesta precisa, porque
+«sí» y «no» están las dos.</p>
+<details><summary>Respuesta</summary>
+
+Depende de **a qué nivel** se pregunte.
+
+- **A nivel de conexión: SÍ.** En HTTP/1.1 cada objeto va en su propia conexión TCP; si un paquete se pierde, se frena esa conexión entera. HTTP/2 pone todos los streams en **una sola** conexión, así que el número de conexiones, y por lo tanto el de puntos donde una pérdida puede frenar al tráfico que te importa, baja de 5 a 1.
+- **Entre streams: NO.** Cada stream se numera, pero **TCP es un flujo ordenado**: si se pierde el segmento del stream 5, el receptor no puede entregar el 6 ni el 7 **de ningún stream**, porque la conexión los tiene en orden.
+- **HTTP/3: SÍ en los dos niveles**, porque ya no hay conexión TCP debajo: QUIC numera y recupera **por stream**, así que el stream 5 se pierde y el 6 se entrega igual.
+
+</details>
+
+<p><strong>8.</strong> ¿Por qué HTTP/3 no se adueñó de la web si es técnicamente mejor? ¿Es un
+problema técnico?</p>
+<details><summary>Respuesta</summary>
+
+**No es un problema técnico: es un problema de despliegue.** HTTP/3 gana en latencia, en aislamiento de pérdida y en movilidad. Lo que lo frena es que (1) el cambio es gradual y la Web es heterogénea: HTTP/2 solo cambiaba la capa de aplicación sobre un TCP ya desplegado, HTTP/3 cambia el transporte y necesita cliente **y** servidor; (2) casi todo el tráfico sigue necesitando TCP, porque QUIC no lo reemplaza: convive con él; (3) los *middleboxes* son el cuello de botella: cualquier firewall que no entienda QUIC rompe HTTP/3, y se despliega a la velocidad a la que se reemplazan firewalls; y (4) HTTP/2 ya había capturado la mitad del tráfico.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>eirc1007</code> / <code>sirc1007</code></strong> — Pregunta 1 (8 pts): página HTML con texto y 10 imágenes, HTTP no persistente vs. persistente</li>
+<li><strong>Examen <code>eirc0907</code> / <code>sirc0907</code></strong> — Problema 2, apartado b): <code>isSpam()</code> sobre HTTP, construcción del mensaje y parseo del código</li>
+<li><strong>Examen <code>eirc0812</code> / <code>sirc0812</code></strong> — Pregunta 4 (7 pts): el <code>CRLF.CRLF</code> de POP3 (desarrollada en la Clase 13)</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 7 §7.3 («El protocolo de la Web: HTTP»), §7.3.5 (caché) y §7.3.6 (CDN, <em>content delivery networks</em>)</li>
+<li><strong>RFC 9110</strong> — HTTP Semantics (2022, <em>Internet Standard</em>; sustituye a RFC 2616) · <strong>RFC 9112</strong> — HTTP/1.1 (2022, sintaxis)</li>
+<li><strong>RFC 9113</strong> — HTTP/2 (2022; obsoleta RFC 7540) · <strong>RFC 9114</strong> — HTTP/3 (2022)</li>
+<li><strong>RFC 7541</strong> — HPACK, compresión de cabeceras de HTTP/2 (vigente) · <strong>RFC 9204</strong> — QPACK, compresión de HTTP/3 (independiente del orden)</li>
+<li><strong>RFC 9218</strong> — <em>Extensible Prioritization Scheme</em> (EPS): reemplaza la prioridad deprecada de RFC 7540</li>
+<li><strong>RFC 9000</strong> / <strong>9001</strong> / <strong>9002</strong> — QUIC: transporte, TLS sobre QUIC, recuperación y control de congestión (mayo-2021) · <strong>RFC 9369</strong> — QUIC v2</li>
+<li><strong>RFC 7838</strong> — <em>Alternative Services</em> (<code>Alt-Svc</code>): cómo se anuncia HTTP/3 (2016)</li>
+<li><strong>RFC 6265</strong> — HTTP State Management Mechanism (cookies) · <strong>RFC 9460</strong> — SVCB/HTTPS: política de transporte en el DNS</li>
+<li><strong>Cloudflare Radar</strong>, <em>Year in Review 2025</em> — HTTP/2 50 %, HTTP/1.x 29 %, HTTP/3 21 % · <strong>W3Techs</strong> (oct-2026) — ~40,8 % de los sitios con HTTP/3</li>
+<li><strong>Clase siguiente:</strong> 10 — DNS: la base de datos distribuida</li>
+</ul></body></html>

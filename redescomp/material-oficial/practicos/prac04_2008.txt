@@ -1,0 +1,8 @@
+Práctico 4 - Problemas del capítulo 4 del libro
+
+Básicos
+3 5 10 11 14 21 22 26 29 31
+Recomendados
+1 6 7 13 15 18 19 24 27 30
+Complementarios
+2 4 8 9 12 16 17 20 23 25 28

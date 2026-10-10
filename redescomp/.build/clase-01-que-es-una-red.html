@@ -1,0 +1,1907 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 1 — ¿Qué es una red de computadores?</h1>
+<p><strong>Bloque:</strong> A (Fundamentos) · <strong>Semana:</strong> 1 · <strong>Duración estimada:</strong> 110 min
+<strong>Correlativa:</strong> — (primera clase del curso) · <strong>Sigue con:</strong> Clase 2 (los modelos de capas: OSI y TCP/IP)
+<strong>Material de referencia:</strong> Tanenbaum cap. 1 (pág. ~1 a ~35 del PDF de tu carpeta) · RFC 1122, RFC 8200, RFC 9293, RFC 8200</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li><strong>Definir</strong> qué es una red de computadores y explicar las tres razones por las que existen (comunicar, compartir recursos, economía de escala), calculando el costo por usuario.</li>
+<li><strong>Clasificar</strong> una red como PAN, LAN, MAN o WAN, y explicar por qué la clasificación <strong>moderna ya no se basa en el alcance geográfico</strong> sino en la latencia y en la propiedad.</li>
+<li><strong>Dibujar</strong> las cinco topologías clásicas (bus, estrella, anillo, malla, árbol, híbrida) y decir qué se usa hoy y por qué.</li>
+<li><strong>Asociar</strong> cada dispositivo (host, NIC, hub, switch, router, punto de acceso, módem, firewall, servidor) con <strong>la capa que implementa</strong>, que es la pregunta que más se hace de esta clase.</li>
+<li><strong>Distinguir</strong> sin dudar las seis magnitudes: ancho de banda, velocidad de propagación, latencia, retardo total, throughput y jitter, con sus unidades y de qué dependen.</li>
+<li><strong>Explicar por qué la velocidad de propagación no cambia con el medio de enlace ni con el ancho de banda</strong>, que es el error conceptual más caro del curso.</li>
+<li><strong>Separar</strong> "Internet" de "Web", y ubicar los cuatro hitos que dan contexto al temario.</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> — (clase de soporte). Adelanta la <strong>Pregunta 1a del Examen <code>2009-12</code></strong>, que se resuelve completo en la Clase 5.</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 Qué es una red y por qué existen</h2>
+<h3>La definición</h3>
+<p>Tanenbaum define una red de computadores así:</p>
+<blockquote>
+<p>Un sistema de computadores <strong>interconectados</strong> por una serie de enlaces o nodos, con el fin de <strong>compartir recursos</strong> e <strong>intercambiar información</strong>.</p>
+</blockquote>
+<p>Las tres palabras de esa definición que importan son <em>interconectados</em>, <em>compartir</em> e <em>intercambiar</em>, y las tres se pueden develops por separado:</p>
+<ul>
+<li><strong>Interconectados</strong>: no alcanza con que dos máquinas estén cerca. Tiene que haber un <strong>medio</strong> (cobre, fibra, aire) y un <strong>dispositivo</strong> que los una (una NIC, un switch). Un montón de equipos sueltos en una habitación no son una red: son un montón de equipos sueltos.</li>
+<li><strong>Compartir recursos</strong>: una impresora, un disco de 4 TB, una conexión a Internet. El recurso es <strong>físico y único</strong>, y muchos lo usan.</li>
+<li><strong>Intercambiar información</strong>: no solo datos de la aplicación; también información de control (quién tiene la dirección de quién, qué rutas existen, cómo se negocia un enlace).</li>
+</ul>
+<div class="codehilite"><pre><span></span><code>                     ┌──────────────────────┐
+                     │   Recurso compartido │
+                     │  (disco / impresora /  │
+                     │   salida a Internet)  │
+                     └──────────┬───────────┘
+                                │
+              ┌─────────────────┼─────────────────┐
+              │                 │                 │
+        ┌─────┴─────┐     ┌─────┴─────┐     ┌─────┴─────┐
+        │   H1      │     │   H2      │     │   H3      │
+        │ 203.0.113 │     │ 203.0.113 │     │ 203.0.113 │
+        │    .11    │     │    .12    │     │    .13    │
+        └───────────┘     └───────────┘     └───────────┘
+              \                 |                 /
+               \________________|________________/
+                        red conmutada, 1 Gbps
+</code></pre></div>
+
+<h3>Las tres razones, en serio</h3>
+<p><strong>Razón 1 — Comunicarse.</strong> La razón original. La red existe porque dos personas que están a 400 km de distancia necesitanomiplir el mismo documento, negociar, o curbajo. Antes de la red eso significaba carta (días), teléfono (no escribís), o ir (horas).</p>
+<p><strong>Razón 2 — Compartir recursos Caro.</strong> Un servidor de archivos de 200 TB cuesta lo mismo para 5 usuarios que para 500. Lo que cuesta es el <strong>software</strong> y el <strong>almacenamiento</strong>, no el número de personas que lo leen. Una impresora láser de color cuesta 600 dólares y no tiene sentido tener una en cada escritorio: una sola, en red, y que todos la usen.</p>
+<p><strong>Razón 3 — Economía de escala.</strong> Esta es la que casi no se explica y es la que justifica todo. Definamos:</p>
+<div class="codehilite"><pre><span></span><code> C_red = costo de poner la red (cableado, switches, NICs, configuración)
+ n     = cantidad de usuarios conectados
+ C_term = costo del terminal por usuario (la PC, que de todas formas
+          ibas a tener)
+</code></pre></div>
+
+<p>El costo total es <code>C_total(n) = C_red + n · C_term</code>. El <strong>costo por usuario</strong> es:</p>
+<div class="codehilite"><pre><span></span><code> C_usuario(n) = C_red / n  +  C_term
+                └────┬────┘    └───┬──┘
+              se reparte entre   no depende
+                todos los n        de n
+</code></pre></div>
+
+<p>El primer término <strong>decrece</strong> con <code>n</code>; el segundo es constante. Por lo tanto el costo total por usuario <strong>baja al aumentar <code>n</code></strong> y tiene un piso en <code>C_term</code>.</p>
+<div class="codehilite"><pre><span></span><code>  costo por usuario
+       ▲
+       │
+   C_term ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─  ← piso: la PC del usuario
+       │                              ___________
+       │                        _____/
+       │                  _____/
+       │            _____/        C_red/n  (hiperbola)
+       │      _____/
+       │  ___/
+       │_/
+       └──────────────────────────────────────────────► n
+         1     5     20    100    1000   10000
+</code></pre></div>
+
+<p><em>Por qué esto importa en redes:</em> es la razón por la que <strong>comprar una red grande es más barato por usuario que una red chica</strong>, y la razón por la que las ISP te cobran <strong>por ancho de banda y no por usuario</strong>: cuanto más clientes, más usuarios detrás de la misma capacidad, más rentable el enlace.</p>
+<hr />
+<h2>1.2 Clasificación por alcance: PAN, LAN, MAN, WAN</h2>
+<p>El clasificación clásico, el de cualquier libro de texto de los 90, ordena las redes por <strong>distancia geográfica</strong>. Funcionaba, y todavía se usa como primera aproximación. Pero, como vamos a ver en §1.3, <strong>ya no alcanza</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Tipo</th>
+<th>Significado</th>
+<th>Alcance típico</th>
+<th>Velocidad</th>
+<th>Propiedad</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>PAN</strong></td>
+<td><em>Personal Area Network</em> — Red de área personal</td>
+<td>~<strong>10 m</strong> (Bluetooth), 1 m (cable)</td>
+<td>1 a 3 Mbps (Bluetooth)</td>
+<td><strong>Privada</strong>, siempre de una sola persona</td>
+</tr>
+<tr>
+<td><strong>LAN</strong></td>
+<td><em>Local Area Network</em> — Red de área local</td>
+<td><strong>Hasta ~1 km</strong> (un edificio, un piso, un campus)</td>
+<td><strong>1 Gbps a 100 Gbps</strong> hoy; conmutada</td>
+<td><strong>Privada</strong>, de una organización</td>
+</tr>
+<tr>
+<td><strong>MAN</strong></td>
+<td><em>Metropolitan Area Network</em> — Red de área metropolitana</td>
+<td><strong>Una ciudad</strong> (~10 a 50 km)</td>
+<td>1 a 10 Gbps (fibra pública)</td>
+<td><strong>Pública</strong> o departmental (un operador de ciudad)</td>
+</tr>
+<tr>
+<td><strong>WAN</strong></td>
+<td><em>Wide Area Network</em> — Red de área amplia</td>
+<td><strong>Países, continentes, el planeta</strong></td>
+<td>1 Gbps en el backbone, pero <strong>decenas de ms de latencia</strong></td>
+<td><strong>Mixta</strong>: los backbone son de operadores, el último tramo es de cada uno</td>
+</tr>
+</tbody>
+</table>
+<h3>PAN — lo que tenés en el bolsillo</h3>
+<div class="codehilite"><pre><span></span><code>     [ Auriculares ]
+           |  Bluetooth / 802.15.1
+     [   Celular   ] ~~~~~~~~~ 2,4 GHz ~~~~~~ [ Auriculares ]
+           |  (alcance nominal ~10 m, clase 2)
+     [  Notebook  ]
+</code></pre></div>
+
+<ul>
+<li><strong>Bluetooth (IEEE 802.15.1)</strong>: clase 2 = ~<strong>10 m</strong>, ~1 Mbps (BR) a 3 Mbps (EDR); con <strong>Bluetooth Low Energy</strong> las tasas caen a kilobits para los sensores.</li>
+<li><strong>NFC</strong>: 4 cm. No es una red en el sentido clásico: es un enlace de un solo sentido de contacto.</li>
+<li><strong>IEEE 802.15.4 / Zigbee</strong>: ~10 a 100 m, ~250 kbps, pensado para redes de <strong>muchos</strong> nodos de bajo consumo (medidores, domótica).</li>
+</ul>
+<h3>LAN — la red conmutada del edificio o del campus</h3>
+<div class="codehilite"><pre><span></span><code>      ┌──────────── LAN 192.168.1.0/24 ────────────┐
+      │                                            │
+   ┌──┴──┐  ┌──┴──┐  ┌──┴──┐  ┌──┴──┐  ┌──┴──┐    │
+   │ H1  │  │ H2  │  │ H3  │  │ H4  │  │ srv │───►│
+   └──┬──┘  └──┬──┘  └──┬──┘  └──┬──┘  └──┬──┘    │
+      └───────┴────┬────┴───────┴────────┘        │
+                   │                                │
+             ┌─────┴──────┐                        │
+             │  SWITCH   │  1/10/25/40/100 Gbps   │
+             └─────┬──────┘                        │
+                   │ 1/10/25/40/100 Gbps          │
+             ┌─────┴──────┐                        │
+             │  R1 (router) ──► otra LAN / Internet│
+             └────────────┘                        │
+      └────────────────────────────────────────────┘
+</code></pre></div>
+
+<p>Lo que define una LAN moderna no es solo la distancia: es que es <strong>conmutada</strong>, con lo que desaparece el <strong>dominio de colisión</strong> (cada host tiene el medio para él) y cada puerto es un dominio de colisión y de broadcast separados.</p>
+<h3>MAN — la ciudad</h3>
+<p>El ejemplo canónico fue el <strong>anillo metropolitano de FDDI</strong> (1980s-90s, token ring de fibra a 100 Mbps) y hoy son redes metropolitanas de fibra pública y, en parte, wireless de banda ancha (WiMAX, 5G fixed). La MAN se distingue de la LAN en que <strong>el equipo y la propiedad ya no son los tuyos</strong>: el operador de la ciudad te alquila un puerto.</p>
+<h3>WAN — la red del planeta</h3>
+<p>Internet <strong>es</strong> el ejemplo canónico de WAN. Lo que lo delata, y lo vamos a ver con números en §1.6, es la <strong>latencia</strong>: un RTT típico en Internet está entre 20 ms (dentro del mismo datacenter o la misma ciudad) y 200 ms (entre continentes). Eso es de 3 a 4 órdenes de magnitud por encima de una LAN, y es exactamente la razón por la que los protocolos de Internet están diseñados como están (retransmisiones, control de congestión, ventanas grandes).</p>
+<hr />
+<h2>1.3 La frontera que ya no es el alcance: latencia y propiedad</h2>
+<p>Este es el matiz importante, y el que hace que la clasificación clásica quede corta. La definición de LAN/WAN "por distancia" falla con dos contraejemplos que existen <strong>hoy</strong>:</p>
+<p><strong>Contraejemplo 1 — un enlace por satélite es "LAN" en distancia y "WAN" en todo lo demás.</strong> Un satélite geoestacionario está a 36.000 km de altura. Un enlace de 5 metros entre dos racks está a 5 metros. Sin embargo:</p>
+<div class="codehilite"><pre><span></span><code>  Medida                          Enlace de 5 m     Satélite geoestacionario
+  ─────────────────────────────────────────────────────────────────────────────
+  Distancia del extremo           2,5 m             36 000 km
+  Velocidad de propagación        ~2·10⁸ m/s        ~3·10⁸ m/s (espacio)
+  Retardo de propagación (d/s)   12,5 ns           ~250 ms  ⇦ ida
+  RTT mínimo                      ~25 µs            ~500 ms
+  Latencia comparada              1×                20 000×
+</code></pre></div>
+
+<p><strong>500 ms de RTT es la latencia de una WAN.</strong> Y el teléfono tiene 100 ms de latencia humana y se percibe instantáneo. Con 500 ms de ida y vuelta, una conversación por voz es <strong>imposible</strong> sin que se note el retraso. El satélite deellite es el ejemplo perfecto de por qué la latencia es el criterio, no la distancia.</p>
+<p><strong>Contraejemplo 2 — una WAN dentro de una ciudad.</strong> Los operadores montaron <em>dark fiber</em> (fibra oscura: la fibra tendida, sin luz, alquilada) entre locales de una misma ciudad, o incluso entre dos puntos de la misma ciudad, y con eso una latencia de <strong>menos de 1 ms</strong> a 10 o 40 Gbps. Eso es, con todas las letras, <strong>una WAN con mejor desempeño que cualquier LAN de 2005</strong>. La distancia es de 5 km y el desempeño es de LAN.</p>
+<p><strong>Contraejemplo 3 — un PAN lento.</strong> Bluetooth tiene ~10 m pero las WAN de fibra de larga distancia tienen una latencia de 2 ms. Alguien con un auricular Bluetooth en la oreja tiene más latencia que alguien con un enlace metro de 10 Gbps.</p>
+<h3>El criterio correcto</h3>
+<div class="codehilite"><pre><span></span><code>  ┌────────────────────────────┐         ┌────────────────────────────┐
+  │   ¿La red es de la que    │         │   ¿La red es de la que    │
+  │   soy dueño oArrendé?     │         │   hay UNdueño?            │
+  └─────────────┬──────────────┘         └─────────────┬──────────────┘
+                │                                       │
+          NO ───┴───► WAN / MAN / infraestructura      SÍ ──┴──► LAN o PAN
+        (o servicio de un tercero)              (la red es tuya)
+</code></pre></div>
+
+<p>El criterio que <strong>sí</strong> funciona en 2026 es doble:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>latencia</strong></th>
+<th><strong>propiedad</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LAN típica</td>
+<td><strong>&lt; 1 ms</strong> (0,1 a 1 ms)</td>
+<td>tuya (una organización)</td>
+</tr>
+<tr>
+<td>MAN típica</td>
+<td><strong>1 a 5 ms</strong></td>
+<td>del operador municipal o del campus</td>
+</tr>
+<tr>
+<td>WAN típica</td>
+<td><strong>5 a 250+ ms</strong></td>
+<td>de uno o varios operadores</td>
+</tr>
+<tr>
+<td>PAN</td>
+<td><strong>&lt; 10 ms</strong> (casi 0)</td>
+<td>tuya, de una persona</td>
+</tr>
+</tbody>
+</table>
+<p>Y la definición operativa que conviene usar: <strong>una LAN es una red que no atraviesa un router que no es tuyo.</strong> Si para ir de A a B pasás por un router de un operador, es una WAN para vos, por corta que sea la distancia.</p>
+<hr />
+<h2>1.4 Topologías</h2>
+<p>Topología = <strong>la forma física del cableado</strong>. Se estudia porque cada forma tiene un punto único de falla, una costo de cableado y una complejidad de administración diferente.</p>
+<h3>(a) Bus — un solo medio compartido</h3>
+<div class="codehilite"><pre><span></span><code>   [H1]──┐
+   [H2]──┤
+   [H3]──┴═══[backbone compartido]═══[H4]──┬───►al backbone
+   [H5]──┤                              [H6]──┤
+   [H7]──┘                              [H8]──┘
+        │
+   ┌────┴─────────────────────────────┐
+   │  toda la red ve el mismo medio;  │
+   │  una terminadora (terminator)     │
+   │  poner la señal (resistencia 50Ω) │
+   │  al final de cada extremo del bus  │
+   └────────────────────────────────────┘
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Ventajas</th>
+<th>Desventajas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Cabledado mínimo</strong>: un solo cable recorre toda la red</td>
+<td><strong>Un solo punto de falla</strong>: si se corta el backbone, se cae <strong>toda</strong> la red</td>
+</tr>
+<tr>
+<td>Barato</td>
+<td><strong>Dominio de colisión único</strong>: todo el tráfico se ve; el rendimiento cae con <code>n</code></td>
+</tr>
+<tr>
+<td>Fácil de extender</td>
+<td>Colisiones, lo que obliga a CSMA/CD (ver Clase 41)</td>
+</tr>
+<tr>
+<td></td>
+<td>Difícil de diagnosticar</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Dónde se usa hoy:</strong> en las <strong>redes Wi-Fi</strong>: la topología lógica de un punto de acceso es un bus. Todos los clientes comparten el mismo medio y compiten por él.</p>
+<h3>(b) Estrella — todo al centro</h3>
+<div class="codehilite"><pre><span></span><code>                  ┌──────────┐
+                  │  SWITCH  │  (o hub, en el pasado)
+                  └────┬─┬───┘
+       ┌───────┬───────┼───────┬───────┐
+       │       │       │       │       │
+     ┌─┴─┐   ┌─┴─┐   ┌─┴─┐   ┌─┴─┐   ┌─┴─┐
+     │H1 │   │H2 │   │H3 │   │H4 │   │H5 │
+     └───┘   └───┘   └───┘   └───┘   └───┘
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Ventajas</th>
+<th>Desventajas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Fallo aislado</strong>: si se cae una rama, se cae un host, no la red</td>
+<td><strong>El switch es el punto único de falla</strong> (se mitiga con <em>stacking</em> o enlaces redundantes)</td>
+</tr>
+<tr>
+<td><strong>Un dominio de colisión por puerto</strong>: rendimiento no cae con <code>n</code></td>
+<td><strong>Cableado</strong>: un cable por host hasta el centro</td>
+</tr>
+<tr>
+<td>Agregar un host es trivial: un cable a un puerto libre</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Fácil de diagnosticar</strong>: el puerto caído dice qué host es</td>
+<td></td>
+</tr>
+<tr>
+<td>Fácil de segmentar en VLAN</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Dónde se usa hoy:</strong> <strong>toda</strong> LAN conmutada, todo <em>datacenter</em>, todoARM conmutado. Es la topología dominante sin discusión.</p>
+<h3>(c) Anillo — un lazo</h3>
+<div class="codehilite"><pre><span></span><code>              ┌────[R1]────┐
+             /             \
+        [R5]                [R2]
+         │                   │
+        [R6]                [R3]
+             \             /
+              └───[R4]─────┘
+        (el paquete recorre el anillo en un sentido)
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Ventajas</th>
+<th>Desventajas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Retardo predecible</strong>: número fijo de saltos, sin colisiones</td>
+<td><strong>Un punto único de falla</strong>: se corta el anillo, se cae la red</td>
+</tr>
+<tr>
+<td>Funciona bien con tráfico uniforme y alta carga</td>
+<td><strong>Complejidad</strong>: hay que negociar quién transmite (token)</td>
+</tr>
+<tr>
+<td>No hay colisiones: el acceso está arbitrationado</td>
+<td>Añadir un nodo es más difícil que en estrella</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Dónde se usa hoy:</strong> el anillo clásico como topología física <strong>murió</strong>. Sobrevive en dos formas:</p>
+<ul>
+<li><strong>Metro ring / SONET / SDH</strong>: los operadores montan anillos de fibra para protegerse: si se corta un tramo, el anillo se "cierra" por el otro lado en milisegundos. Eso es protección, no eficiencia.</li>
+<li><strong>Token Ring (802.5)</strong> y <strong>FDDI</strong>: desaparecieron por completo. Se estudian en las clases 40 y 41 como ejemplo histórico del acceso al medio.</li>
+</ul>
+<h3>(d) Malla — todos con todos</h3>
+<div class="codehilite"><pre><span></span><code>        [R1]────────[R2]
+         │ ╲       ╱ │
+         │  ╲     ╱  │
+         │   ╲   ╱   │
+         │    ╲ ╱    │
+         │     ╳     │
+        [R4]────────[R3]
+      (malla completa: 6 enlaces, 3 nodos, cada par unido)
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Ventajas</th>
+<th>Desventajas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Tolerancia a fallos total</strong>: si cae un enlace, hay camino alternativo</td>
+<td><strong>Costo</strong>: en una malla completa de <code>n</code> nodos hay <code>n(n-1)/2</code> enlaces</td>
+</tr>
+<tr>
+<td><strong>Retardo mínimo</strong>: siempre hay un camino corto</td>
+<td>Complejidad de administración: <code>n²</code> vecinos que conocer</td>
+</tr>
+<tr>
+<td>Se puede repartir la carga</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Dónde se usa hoy:</strong></p>
+<ul>
+<li><strong>Malla completa</strong> solo con <code>n</code> muy chico (2 o 3 nodos): por ejemplo el triángulo de <strong>3 routers de borde de datacenter</strong>, o el router de borde, el de spine y el de borde del otro lado.</li>
+<li><strong>Malla parcial</strong> en el backbone de los operadores: cada router conecta a <strong>varios</strong> proveedores, no a uno. Es la base de la <strong>política de BGP</strong> (un AS con 3 o 4 eBGP en lugar de uno).</li>
+</ul>
+<h3>(e) Árbol — jerarquía</h3>
+<div class="codehilite"><pre><span></span><code>                    ┌────────────┐
+                    │   RAÍZ     │  router de borde / core
+                    └─────┬──────┘
+              ┌───────────┴───────────┐
+          ┌───┴───┐               ┌───┴───┐
+          │  SW1  │               │  SW2  │   switch de distribución
+          └───┬───┘               └───┬───┘
+       ┌──────┴──────┐          ┌──────┴──────┐
+     ┌─┴─┐        ┌─┴─┐      ┌─┴─┐        ┌─┴─┐
+     │SA1│        │SA2│      │SB1│        │SB2│   switch de acceso
+     └───┘        └───┘      └───┘        └───┘
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Ventajas</th>
+<th>Desventajas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Escalable</strong>: agregás una hoja y no tocás el centro</td>
+<td>El backbone es <strong>punto único de falla</strong></td>
+</tr>
+<tr>
+<td>Jerarquía natural =Coara de administración</td>
+<td>RAID: un router de backbone lento es un cuello de botella para todo</td>
+</tr>
+<tr>
+<td>Fácil de segmentar por departamento o por piso</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Dónde se usa hoy:</strong> <strong>todo</strong> el <em>datacenter</em> y toda la red campus de una universidad grande. Es la estructura de 3 niveles (<em>access → aggregation → core</em>) estándar.</p>
+<h3>(f) Híbrida — lo que realmente se instala</h3>
+<div class="codehilite"><pre><span></span><code>     ┌── backbone: MALLA entre routers ──┐
+     │                                   │
+  ┌──┴──────┐                       ┌────┴───┐
+  │ R1      │═════ MALL A ═══════════│ R2     │
+  │ (mesh)  │                       │ (mesh)  │
+  └──┬──────┘                       └────┬───┘
+     │ ESTRELLA (piso 1)                │ ESTRELLA (piso 2)
+  ┌──┴──┬──┬──┐                    ┌──┴──┬──┬──┐
+  │PC  │PC │PC │                    │PC  │PC │PC │
+  └───┘ └──┘ └──┘                    └───┘ └──┘ └──┘
+     ANILLO de fibra del operador (protección)
+</code></pre></div>
+
+<p><strong>La topología híbrida es la respuesta a todos los defectos de las otras cinco:</strong></p>
+<ul>
+<li>La <strong>malla</strong> da redundancia donde la redundancia importa (el backbone): el costo se paga en pocos enlaces.</li>
+<li>La <strong>estrella</strong> da rendimiento y facilidad de diagnóstico donde hay muchos usuarios (el acceso).</li>
+<li>El <strong>anillo</strong> da protección donde el medio es caro y no lo controlás (la fibra del operador).</li>
+</ul>
+<p><strong>Para el examen:</strong> si te preguntan "¿qué topología usa Internet?", la respuesta correcta es <strong>una malla parcial de routers, con los enlaces de los operadores aggregating en puntos de intercambio (IXP)</strong>, y <strong>estrella hacia abajo</strong> en cada red de acceso.</p>
+<hr />
+<h2>1.5 Los dispositivos y —esto es lo que más se pregunta— qué capa implementa cada uno</h2>
+<p>El error clásico es decir "el switch es de capa 3" o "el router hace cosas de capa 2". La tabla que hay que tener en la cabeza es esta:</p>
+<table>
+<thead>
+<tr>
+<th>Dispositivo</th>
+<th>Función</th>
+<th><strong>Capa OSI</strong></th>
+<th><strong>Capa TCP/IP</strong></th>
+<th>Sabe de IP</th>
+<th>Sabe de puertos TCP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Repetidor</strong> (<em>repeater</em>)</td>
+<td>Regenera la señal eléctrica</td>
+<td><strong>1</strong> Física</td>
+<td>Acceso a red</td>
+<td>no</td>
+<td>no</td>
+</tr>
+<tr>
+<td><strong>Hub</strong></td>
+<td>Conmutador eléctrico de capa 1: repite a todos los puertos</td>
+<td><strong>1</strong> Física</td>
+<td>Acceso a red</td>
+<td>no</td>
+<td>no</td>
+</tr>
+<tr>
+<td><strong>Módem / DTU</strong></td>
+<td>Modula una señal digital sobre el medio analógico</td>
+<td><strong>1</strong> Física</td>
+<td>Acceso a red</td>
+<td>no</td>
+<td>no</td>
+</tr>
+<tr>
+<td><strong>NIC</strong> (<em>network interface card</em>)</td>
+<td>Transmite y recibe tramas en un medio</td>
+<td><strong>1 y 2</strong> (Física + Enlace)</td>
+<td>Acceso a red</td>
+<td>no</td>
+<td>no</td>
+</tr>
+<tr>
+<td><strong>Punto de acceso</strong> (AP, Wi-Fi)</td>
+<td>Traduce entre medio inalámbrico y Ethernet; hace association, autenticación, cifrado (WPA3)</td>
+<td><strong>2</strong> (Enlace) — y a veces 3 para translated LAN</td>
+<td>Acceso a red / red</td>
+<td>a veces</td>
+<td>no</td>
+</tr>
+<tr>
+<td><strong>Switch</strong> / <em>bridge</em></td>
+<td>Reenvía tramas por la <strong>tabla MAC</strong>; aprende direcciones; dominio de colisión por puerto</td>
+<td><strong>2</strong> Enlace de datos</td>
+<td>Acceso a red</td>
+<td><strong>no</strong></td>
+<td>no</td>
+</tr>
+<tr>
+<td><strong>Router</strong> / <em>gateway</em> de red</td>
+<td>Reenvía paquetes por la <strong>tabla de reenvío IP</strong> (longest prefix match)</td>
+<td><strong>3</strong> Red</td>
+<td>Internet</td>
+<td><strong>sí</strong></td>
+<td>no</td>
+</tr>
+<tr>
+<td><strong>Firewall</strong></td>
+<td>Filtra por IP, por puerto, y (si es <em>stateful</em>) por conexión</td>
+<td><strong>3 y 4</strong> (Red y Transporte)</td>
+<td>Internet / Transporte</td>
+<td>sí</td>
+<td><strong>sí</strong></td>
+</tr>
+<tr>
+<td><strong>Servidor / host</strong></td>
+<td>Corre las aplicaciones y las implementa</td>
+<td><strong>todas</strong> (1 a 7)</td>
+<td>todas</td>
+<td>sí</td>
+<td>sí</td>
+</tr>
+</tbody>
+</table>
+<h3>Las tres filas que más se confunden</h3>
+<p><strong>El switch NO sabe de IP.</strong> Un switch de capa 2 mira el <strong>MAC destino</strong> de la trama, busca en su tabla de reenvío y copia la trama al puerto correspondiente. No le importa si el paquete IP que va adentro dice <code>8.8.8.8</code> o <code>203.0.113.9</code>. Por eso un switch <strong>no</strong> reemplaza a un router: si le pedís que te lleve a otra red, no puede, porque no sabe qué redes existen. Esa es la Pregunta 2 del Examen 2009-02, y la resolvo en la Clase 3.</p>
+<p><strong>El router NO sabe de puertos.</strong> Un router Cisco de los de antes miraba el campo <em>protocolo</em> de la cabecera IP (TCP=6, UDP=17, ICMP=1) para decidir si podía hacer <em>NAT</em> o <em>policing</em>. Pero no miraba el puerto TCP. Esa es la razón técnica de por qué la NAT rompe el aislamiento de capas (Clase 31), y la Pregunta 4 del Examen 2011-02 la developa.</p>
+<p><strong>El hub es de capa 1, no de capa 2.</strong> Parece un switch ("tiene puertos"), pero no aprende direcciones y no decide: copia la señal a <strong>todos</strong> los puertos. Por eso todos los hosts comparten un único dominio de colisión. Esa distinción es la Pregunta 3 del Examen 2010-12 (Clase 42).</p>
+<hr />
+<h2>1.6 Los parámetros de una red — la parte más importante de esta clase</h2>
+<p>Acá está el contenido que más se confunde en el examen y que hay que tener <strong>absolutamente claro</strong>. Son seis magnitudes, y <strong>casi todas se miden en unidades distintas</strong>.</p>
+<h3>La tabla madre</h3>
+<div class="codehilite"><pre><span></span><code>  ╔════════════════════╦══════════════════╦═══════════╦══════════════════════════╗
+  ║ Magnitud           ║ Símbolo           ║ Unidad    ║ Qué es                    ║
+  ╠════════════════════╬══════════════════╬═══════════╬══════════════════════════╣
+  ║ Ancho de banda     ║ B, R (bandwidth)  ║ bps       ║ CAPACIDAD del enlace       ║
+  ║ Vel. de propagac.  ║ s                 ║ m/s       ║ RAPIDEZ de la SEÑAL        ║
+  ║ Latencia           ║                   ║ ms        ║ tiempo de un viaje        ║
+  ║ Retardo total      ║ d_end2end         ║ ms        ║ 4 componentes sumados     ║
+  ║ Throughput         ║                   ║ bps       ║ bits REALES por segundo   ║
+  ║ Jitter             ║ Δl               ║ ms        ║ VARIACIÓN de la latencia  ║
+  ╚════════════════════╩══════════════════╩═══════════╩══════════════════════════╝
+</code></pre></div>
+
+<h3>1.6.1 Ancho de banda (<em>bandwidth</em>)</h3>
+<p>Es la <strong>capacidad máxima</strong> del enlace, en <strong>bits por segundo</strong> (bps). Define cuánto se puede mandar <strong>como máximo</strong>, no cuánto se manda.</p>
+<ul>
+<li>Es una propiedad del <strong>equipo y del medio</strong>: del transceptor, del puerto, de la modulación.</li>
+<li><strong>Cambia</strong> con la tecnología: Ethernet pasó de 10 Mbps a 100 Mbps a 1 Gbps a 10 Gbps a 25/40/50/100 Gbps a 400/800 Gbps. Un enlace de 1 Gbps <strong>no puede</strong> mandar 2 Gbps, por más que el cable sea mejor.</li>
+<li>Lo ves en el rótulo de la interfaz: <code>1000BASE-T</code>, <code>10GBASE-SR4</code>, <code>100GE</code>.</li>
+<li>También se usa el mismo término en dos sentidos distintos: "<strong>ancho de banda</strong>" (bps) y "<strong>ancho de banda</strong>" (Hz). <strong>Esto es una fuente perenne de confusiones.</strong> En el contexto de Nyquist y Shannon (Clase 7) el ancho de banda está en <strong>hercios</strong>, no en bits por segundo.</li>
+</ul>
+<h3>1.6.2 Velocidad de propagación (<em>propagation speed</em>)</h3>
+<p>Es la <strong>rapidez con la que viaja la señal por el medio</strong>, en <strong>metros por segundo</strong>. Los valores que hay que tener:</p>
+<div class="codehilite"><pre><span></span><code>  Medio                       Velocidad de propagación
+  ───────────────────────────────────────────────────────────────
+  Vacío (espacio libre)        c  = 3·10⁸ m/s   (exacta, es la constante de la luz)
+  Aire                         ~ 2,998 · 10⁸ m/s  (un 0,07 % menos que el vacío)
+  Cobre (UTP/STP, coax)        ~ 2·10⁸ m/s     (un 33 % menos)
+  Fibra óptica (silicio)       ~ 2·10⁸ m/s     (un 33 % menos)
+  ───────────────────────────────────────────────────────────────
+  Conductor eléctrico típico    ~0,6 a 0,7 · c
+</code></pre></div>
+
+<blockquote>
+<p>⚠️ <strong>Ojo con un detalle que aparece en la solución oficial del Examen <code>2009-12</code>:</strong> ahí dice <em>"s ~ 2×10⁸ m/s </em><em>en cobre</em><em>"</em>. Es correcto <strong>para el cobre</strong>. Si algún apunte dice "2×10⁸ en el vacío", es un error: en el vacío la luz va a 3×10⁸ m/s. El número que se usa en los problemas de examen es <strong>2×10⁸ m/s para cobre y fibra</strong>, y <strong>3×10⁸</strong> si el problema habla de un enlace por satélite o por el espacio.</p>
+</blockquote>
+<p><strong>Lo que la velocidad de propagación NO es:</strong> una capacidad. <strong>No tiene nada que ver con la velocidad a la que se mandan los datos.</strong></p>
+<h3>La tabla que responde la Pregunta 1a del Examen 2009-12</h3>
+<p>Esta tabla es la respuesta literal a <em>"Señale las diferencias entre el ancho de banda y la velocidad de propagación en el medio"</em>. Memoriala como está:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Ancho de banda</strong></th>
+<th><strong>Velocidad de propagación</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Símbolo</strong></td>
+<td><code>B</code> o <code>R</code></td>
+<td><code>s</code></td>
+</tr>
+<tr>
+<td><strong>Unidad</strong></td>
+<td><strong>bps</strong> (bits por segundo)</td>
+<td><strong>m/s</strong> (metros por segundo)</td>
+</tr>
+<tr>
+<td><strong>Qué mide</strong></td>
+<td><strong>Cuántos bits</strong> entran por segundo</td>
+<td><strong>A qué velocidad viaja la señal</strong></td>
+</tr>
+<tr>
+<td><strong>De qué depende</strong></td>
+<td>Del <strong>equipo</strong>: transceptor, puerto, modulación</td>
+<td>Del <strong>medio físico</strong>: la física de la propagación</td>
+</tr>
+<tr>
+<td><strong>Cambia al cambiar el medio</strong></td>
+<td><strong>Depende</strong>: 10BASE-T vs 1000BASE-T vs fibra</td>
+<td><strong>No</strong>: es ~2×10⁸ m/s tanto en cobre como en fibra</td>
+</tr>
+<tr>
+<td><strong>Cambia con la distancia</strong></td>
+<td><strong>No</strong></td>
+<td><strong>No</strong> (la distancia va en el numerador de <code>d/s</code>, no en <code>s</code>)</td>
+</tr>
+<tr>
+<td><strong>Tiene unidad de longitud</strong></td>
+<td>No</td>
+<td><strong>Sí</strong></td>
+</tr>
+<tr>
+<td><strong>Relación con el retardo</strong></td>
+<td>Entra en <code>d_transmisión = L / B</code></td>
+<td>Entra en <code>d_propagación = d / s</code></td>
+</tr>
+<tr>
+<td><strong>Ejemplo</strong></td>
+<td>"La línea tiene 1 Mbps"</td>
+<td>"En ese cable la señal va a 2·10⁸ m/s"</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Una frase que resume la diferencia y que podés usar en el examen:</strong></p>
+<blockquote>
+<p>El <strong>ancho de banda</strong> es una propiedad del <strong>enlace</strong> (cuánta información cabría por segundo, y depende del equipo); la <strong>velocidad de propagación</strong> es una propiedad del <strong>medio</strong> (a qué velocidad física viaja la señal, y depende de la física del medio). <strong>Son ejes perpendiculares</strong>: podés tener un enlace de 100 Mbps por cobre (BW alto, <code>s</code> de cobre) o de 100 Mbps por fibra (mismo BW, mismo <code>s</code> porque la fibra también da ~2×10⁸ m/s).</p>
+</blockquote>
+<h3>1.6.3 Latencia</h3>
+<p>Es el <strong>tiempo que tarda un paquete en ir de A a B</strong>, medido en milisegundos. Es unTIEMPO, no una tasa. Y depende de:</p>
+<ul>
+<li>la distancia,</li>
+<li>el número de saltos (routers) y su velocidad de procesamiento,</li>
+<li>la congestión de la red (cuánto esperó en las colas),</li>
+<li>los enlaces que usa.</li>
+</ul>
+<p><strong>Latencia de ida y vuelta (<code>RTT</code>, <em>Round Trip Time</em>):</strong> el tiempo que tarda un paquete en ir y volver. Es <strong>el doble de la latencia mínima</strong>, y se mide con <code>ping</code>:</p>
+<div class="codehilite"><pre><span></span><code>  Host A                                              Host B
+    │                                                     │
+    │────────── Echo request (TTL=64) ────────────────────▶│   ida:  40 ms
+    │                                                     │
+    │◀───────── Echo reply ────────────────────────────────│   vuelta: 45 ms
+    │                                                     │
+    RTT medido por ping = 40 + 45 = 85 ms
+</code></pre></div>
+
+<p><strong>Latencia no es RTT.</strong> Si la latencia de ida es 40 ms, la latencia es 40 ms y el RTT es 80 ms (más el procesamiento). Es el error que aparece en el Ejercicio 2.4.</p>
+<h3>1.6.4 Retardo total (<em>end-to-end delay</em>)</h3>
+<p>Es la <strong>suma de cuatro componentes</strong> que vas a estudiar en detalle en la Clase 5:</p>
+<div class="codehilite"><pre><span></span><code>  d_end2end = d_proc + d_cola + d_transmisión + d_propagación
+               \___/     \___/     \__________/     \___________/
+              varío      variable   L / R              d / s
+              según      según       (NO depende        (NO depende
+              el nodo    la cola     del medio)          del paquete)
+</code></pre></div>
+
+<p>Solo lo dejo enunciado acá; toda la aritmética va en las Clases 5 y 6.</p>
+<h3>1.6.5 Throughput (rendimiento)</h3>
+<p>Es la <strong>cantidad real de bits por segundo que pasan</strong>, medido durante un intervalo. Siempre cumple:</p>
+<div class="codehilite"><pre><span></span><code>  throughput  ≤  ancho de banda
+</code></pre></div>
+
+<p>Y es estrictamente menor por cuatro razones:</p>
+<div class="codehilite"><pre><span></span><code>  throughput = ancho de banda × eficiencia
+
+  eficiencia = (bytes de datos útiles) / (bytes totales en el medio)
+             = 1 − overhead_de_cabeceras − retrASMisiones − colisiones
+</code></pre></div>
+
+<p><strong>Ejemplo con la aritmética:</strong></p>
+<div class="codehilite"><pre><span></span><code>  Enlace de 1 Gbps = 1 000 000 000 bps
+  Overhead de cabeceras (Ethernet 18 + IP 20 + TCP 20 = 58 bytes por cada
+  paquete de 1500 bytes de datos) + Retransmisiones (0,5 %) + Colisiones (0)
+
+  eficiencia = (1500 − 58) / 1500 = 1442/1500 = 0,9613
+  0,9613 × 1 000 000 000 = 961 000 000 bps
+
+  → El throughput máximo de una conexión TCP sobre 1 GbE es
+    ~961 Mbps, NO 1000 Mbps.
+</code></pre></div>
+
+<h3>1.6.6 Jitter</h3>
+<p>Es la <strong>variación de la latencia entre paquetes del mismo flujo</strong>. Se calcula como la desviación (o la diferencia entre máximo y mínimo) de los retardos de paquetes que deberían haber llegado todos juntos.</p>
+<div class="codehilite"><pre><span></span><code>  Tres paquetes del mismo flujo, enviados con 20 ms de separación:
+
+  Paquete 1: 80 ms
+  Paquete 2: 95 ms
+  Paquete 3: 110 ms
+
+  jitter = 110 − 80 = 30 ms
+</code></pre></div>
+
+<p><strong>Por qué importa</strong> (Clase 44 lo desarrolla): en voz y video, <strong>no importa</strong> el retardo absoluto (100 ms de latencia en una voz se notices en el tono, pero no lo rompe); lo que rompe es que <strong>lleguen en ráfagas</strong>. Un códec de audio reproduce cada 20 ms: si el paquete 1 tarda 80 ms y el 2 tarda 110, el buffer se drains dos muestras de golpe. Eso se oye como un <strong>clique</strong>. Por eso RTP lleva <strong>número de secuencia y timestamp</strong>: para detectar, ordenar y rellenar.</p>
+<hr />
+<h2>1.7 Historia mínima: cuatro hitos, y la confusión más común del curso</h2>
+<h3>Los cuatro hitos</h3>
+<div class="codehilite"><pre><span></span><code>  Año  Evento
+  ─────────────────────────────────────────────────────────────────────
+  1969 ARPANET: se conecta el primer enlace entre el UCLA (IMP #1) y el
+       SRI (IMP #2). Cuatro nodos en 1971. Cuatro IMP, 50 kbps,
+       conmutación de paquetes desde el día uno (Packet Switching was
+       the original design, not an afterthought).
+  1983 1 de enero: ARPANET adopta TCP/IP como único protocolo.
+       "Flags Day": los hosts que seguían con NCP se apagan.
+       → TCP/IP no es "el protocolo que se eligió después": es el
+       que quedó, y la razón fue la interoperabilidad.
+  1991 Tim Berners-Lee publica el primer sitio Web (info.cern.ch) en
+       agosto de 1991. La Web es una APLICACIÓN de Internet.
+  1996 Se abren los primeros ISPs comerciales. Internet pasa de
+       proyecto de investigación a servicio.
+  ─────────────────────────────────────────────────────────────────────
+  2007 El iPhone. El teléfono pasa de ser un cliente de Internet a ser
+       el mayor generador de tráfico. La latencia y el consumo de
+       batería se vuelven métricas de primera clase.
+</code></pre></div>
+
+<h3>Internet NO es la Web — el error conceptual más común</h3>
+<p>Esta confusión se paga en los exámenes, y es una de las cosas más básicas que hay que tener claras:</p>
+<div class="codehilite"><pre><span></span><code>  ┌─────────────────────────────────────────────────────────────────┐
+  │                                                                 │
+  │   INTERNET = la RED. La infraestructura.                       │
+  │              Un conjunto de redes interconectadas.              │
+  │              Protocols: IP, TCP, UDP, ICMP, BGP, ...            │
+  │              Identifica COMPUTADORES por dirección IP.          │
+  │                                                                 │
+  │   LA WEB = una APLICACIÓN que corre sobre Internet.             │
+  │            Protocols: HTTP, HTML, URL, cookies.                 │
+  │            Identifica DOCUMENTOS por URL.                       │
+  │                                                                 │
+  │   Analogía: Internet es elCorreo. La Web es una carta.          │
+  │   El correo también transporta telegramas, llamadas, paquetes    │
+  │   y fotos: esas son otras aplicaciones, no "el correo".         │
+  │                                                                 │
+  └─────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Prueba de que son cosas distintas:</strong> la Web habla <strong>HTTP sobre TCP sobre IP</strong>. Si mañana nadie usa HTTP, la Web muere y <strong>Internet sigue funcionando</strong>: el correo (SMTP), el DNS, el VoIP (RTP), la mensajería, los juegos, SSH, todo sigue andando. <strong>Internet sin Web es una red perfectamente válida.</strong> Al revés no: <strong>Web sin Internet es imposible</strong>, porque la Web está definida encima de IP.</p>
+<p><strong>Lo que cambió:</strong> HTTP/3 (RFC 9114, 2022) ya no corre sobre TCP sino sobre <strong>QUIC sobre UDP</strong>, pero sigue corriendo sobre <strong>IP</strong>. La separación sigue exacta: <strong>Internet es la red, la Web es una aplicación</strong>.</p>
+<hr />
+<h3>⚠️ Actualización a 2026</h3>
+<p><strong>Sigue igual — de memoria, sin dudar:</strong>
+- Los cuatro hitos (1969, 1983, 1991, 1996) y el hecho de que <strong>Internet ≠ Web</strong>.
+- Los cuatro componentes del retardo y sus fórmulas (<code>L/R</code> y <code>d/s</code>).
+- La diferencia entre ancho de banda (bps) y velocidad de propagación (m/s).
+- Los valores de <code>s</code>: ~2×10⁸ m/s en cobre y fibra, ~3×10⁸ en vacío/espacio.
+- El criterio de clasificación PAN/LAN/MAN/WAN por alcance, como <strong>primera aproximación</strong>.</p>
+<p><strong>Cambió o se modificó:</strong></p>
+<ul>
+<li><strong>IPv6 dejó de ser "el futuro".</strong> El <strong>28 de marzo de 2026</strong> el acceso a Google por IPv6 <strong>superó el 50 % por primera vez (50,10 %)</strong>. APNIC midió ~42-43 % (cobertura de capacidad) y Cloudflare ~40 % (tráfico por bytes). Es desigual: Francia ~73 %, India ~72 %, Arabia Saudita ~65 %; Italia ~17 %, España ~10 %, Egipto ~4 %; China &lt;5 %.
+  <strong>⇒ Dato para el aula:</strong> en 2012 el curso decía "IPv6 llega en 10 años". La respuesta correcta en 2026 es "ya pasó la mitad en los usuarios de Google, pero es desigual, China sigue en &lt;5 %, y la cifra depende de <strong>qué</strong> midas".</li>
+<li><strong>El agotamiento de IPv4 es un hecho consumado.</strong> RIPE NCC hizo su <strong>última asignación /22 el 25-nov-2019</strong>. APNIC se agotó en abr-2011, ARIN en sept-2015, LACNIC en 2020, AfriNIC en abr-2017. Hoy el default de la capa 3 de acceso es el <strong>CGNAT (<em>Carrier-Grade NAT</em>)</strong>, que es una WAN con muchísimos clientes detrás de pocas IP públicas.</li>
+<li><strong>La capacidad de los enlaces de acceso se multiplicó.</strong> Un portátil de 2026 se conecta a 1 Gbps por cable y a Wi-Fi 7 (IEEE 802.11be, aprobado en sept-2024, publicado como <strong>802.11be-2024</strong> el 22-jul-2025) con <strong>320 MHz de canal y 4096-QAM</strong> en la banda de 6 GHz. En los backbone de los operadores se ven <strong>100, 400 y 800 Gbps</strong>, y <strong>el 10GbE+ es full-duplex obligatorio</strong> (decisión de IEEE 802.3, no una RFC).</li>
+<li><strong>La clasificación "LAN/WAN" se usa menos y la de latencia más.</strong> Los <em>datacenters</em> de hoy son "LAN" de 400 Gbps a 200 µs; las redes de acceso 5G tienen 10 ms de latencia y 1 Gbps, que es un perfil "WAN"; el satélite sigue en ~500 ms de RTT.</li>
+</ul>
+<blockquote>
+<p><strong>Consecuencia para el examen:</strong> si te preguntan por la clasificación o por los parámetros, <strong>respondé con los conceptos</strong>, no con los números de capacidad. Los números de bps envejecen mal; los conceptos ("el ancho de banda es del equipo, la velocidad de propagación es del medio") no.</p>
+</blockquote>
+<hr />
+<hr />
+<h1>PARTE 1 bis — LOS DIAGRAMAS DE RED: qué son, qué información llevan y cómo se hacen</h1>
+<blockquote>
+<p><strong>Por qué esta sección va en la Clase 1 y no al final.</strong> Un diagrama de red es
+<strong>el lenguaje escrito de la materia</strong>: en un examen te pueden pedir <em>"dibuje la
+topología y complete la tabla de ruteo"</em>, y en la vida profesional es el
+documento con el que un administrador se comunica con el resto del equipo, con
+el proveedor, y con el cliente. Si no sabés <strong>qué información va</strong> en un
+diagrama, no sabés ni leer el de otro ni escribir el tuyo.</p>
+</blockquote>
+<h2>1.8 El problema: un diagrama de red no es un dibujito</h2>
+<p>La pregunta que siempre llega es <em>"¿qué pongo en el diagrama?"</em>. La respuesta
+corta es: <strong>depende del tipo de diagrama</strong>. Y hay un segundo problema, más sutil
+y que en tu imagen quedó escrito con todas las letras: <strong>"VALIDACIÓN PENDIENTE"</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   Lo que pasa en la práctica
+
+   1. Alguien diseña la red y dibuja el diagrama IDEAL.
+   2. Se instala.
+   3. La realidad se desalinea: una VLAN se agranda, un firewall cambia
+      una regla, un balanceador saca un servidor de la rotación,
+      un puerto pasa a "depreciado" y nadie actualiza el dibujo.
+   4. El diagrama queda MENTIROSO.
+   5. Un incidente a las 3 de la mañana se investiga contra un dibujo
+      que dice cosas que ya no son ciertas.
+</code></pre></div>
+
+<blockquote>
+<p><strong>El principio que hay que llevarse:</strong> <em>un diagrama sin fecha, sin fuente y sin
+estado de verificación es una copia, no un documento.</em> Por eso la información
+de <strong>estado</strong> (§1.8.2) es tan importante como la de <strong>topología</strong> (§1.8.1): no
+alcanza con dibujar <em>qué hay</em>, hay que dibujar <em>qué está pasando con eso</em>.</p>
+</blockquote>
+<h2>1.9 Qué información lleva un diagrama de red</h2>
+<p>La respuesta que se da en cualquier curso de gestión, y la que hay que saber
+escribir, es una lista de <strong>ocho bloques de información</strong>. Vamos uno por uno.</p>
+<h3>Bloque 1 — Identidad del elemento</h3>
+<div class="codehilite"><pre><span></span><code>   Para CADA activo del diagrama:
+
+   · Nombre formally legible.  NO "el switch de la 3".
+                           SÍ  "sw-acceso-p3-01"
+   · Marca y modelo.           Cisco C9300-48P
+   · Rol o función.            "Distribución — VLANs de usuarios y servidores"
+   · Ubicación física.         Rack B4, U24, patch panel PP-A-12
+   · ID de inventario / tag.   "ASSET-2019-0442"  ← el que usás para
+                                relacionarlo con el inventario, con el
+                                sistema de tickets y con el activo en el CMDB
+   · Responsable.              "NOC-FING / persona a cargo"
+</code></pre></div>
+
+<blockquote>
+<p><strong>Por qué el "nombre formal" importa tanto:</strong> es lo que te permite <strong>buscar</strong> el
+equipo en el sistema de inventario, en el CMDB, en el portal de backups y en los
+tickets. Un diagrama con nombres informales es un diagrama <strong>inutilizable</strong> a la
+hora de un incidente, que es la única hora en la que lo vas a necesitar.</p>
+</blockquote>
+<h3>Bloque 2 — L3: direcciones IP, máscara/CIDR y gateway</h3>
+<p>Este es el bloque <strong>más frecuentemente incompleto</strong> en diagramas caseros, y el que
+más se pide en los ejercicios de examen:</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────┬─────────────────┬──────────────┬────────────────┐
+   │  Elemento    │  Dirección IP   │ Máscara/CIDR │  Gateway       │
+   ├──────────────┼─────────────────┼──────────────┼────────────────┤
+   │ sw-acceso-   │ 192.168.10.1    │ /24          │ — (es switch)  │
+   │  p3-01 (SVI) │                 │ 255.255.255.0│                │
+   ├──────────────┼─────────────────┼──────────────┼────────────────┤
+   │ srv-dns-01   │ 192.168.10.53   │ /24          │ 192.168.10.1   │
+   ├──────────────┼─────────────────┼──────────────┼────────────────┤
+   │ rtr-borde-01 │ 192.168.10.254  │ /24          │ — (es router)  │
+   │              │ 200.1.1.1       │ /30          │ —              │
+   │              │ (doble pila)    │              │                │
+   └──────────────┴─────────────────┴──────────────┴────────────────┘
+
+   ★ En un router van TODAS sus interfaces, con su CIDR.
+   ★ En un host va su IP + su gateway por defecto.
+   ★ En un switch L3 va la SVI (la IP de la VLAN), no la de las tramas.
+</code></pre></div>
+
+<p><strong>Lo que hay que saber sobre el CIDR en un diagrama:</strong></p>
+<ul>
+<li>Escribí <strong>las dos formas</strong>: <code>/24</code> <strong>y</strong> <code>255.255.255.0</code>. La comunidad técnica
+  usa el prefijo; los sistemas de gestión y algunos firewalls lo piden en notación de puntos.</li>
+<li>En un router, el <code>/30</code> entre dos routers indica <strong>2 direcciones útiles</strong>
+  (<code>200.1.1.0/30</code> → <code>.1</code> y <code>.2</code> útiles, <code>.0</code> red y <code>.3</code> broadcast).</li>
+<li><strong>Las VLAN se numeran y se nombran.</strong> En un diagrama: <code>VLAN 10 = USUARIOS</code>
+  (nombre formal), no "la de los usuarios".</li>
+</ul>
+<p><strong>Y el dato que casi nadie pone y que es el más útil de todos: el rango de DHCP
+de cada VLAN.</strong> Es lo que te dice qué IPs se van a|Asignar y cuáles quedan
+reservadas para servidores, y es lo primero que se agota.</p>
+<div class="codehilite"><pre><span></span><code>   VLAN 10 USUARIOS    192.168.10.0/24
+        gateway .1
+        DHCP:  .100 – .240        ← 141 direcciones
+        fijas:  .2 – .50  (servidores e impresoras)
+        libre:  .51 – .99  y  .241 – .254
+</code></pre></div>
+
+<h3>Bloque 3 — L2: VLAN, spanned ports, trunk y agregación</h3>
+<div class="codehilite"><pre><span></span><code>   VLAN 10 USUARIOS     ── puertos de acceso 1-24
+   VLAN 20 SERVIDORES   ── puertos de acceso 25-40
+   VLAN 30 VOZ          ── puertos de acceso 41-48, PoE
+   VLAN 99 GESTIÓN      ── puerto 48 (management), OLTROs
+   ──────────────────────────────────────────────
+   Trunk (802.1Q):      uplink al switch de distribución
+                        etiqueta 10,20,30,99
+   ──────────────────────────────────────────────
+   EtherChannel/LAG:    port-channel 1  (uplinks 49-50)
+   spanning-tree:       cuál puerto es raíz (root port)
+                        cuáles sonAlternate (bloqueados)
+</code></pre></div>
+
+<p><strong>Y el dato que hace útil un diagrama de switches: qué puertos están bloqueados
+por STP.</strong> Es la causa número uno de "la red anda lenta en ese sector". Un
+diagrama de STP vale oro.</p>
+<h3>Bloque 4 — Reglas de firewall</h3>
+<p>Acá es donde los diagramas se vuelven verdaderamente útiles, y donde la mayoría
+de los equipos <strong>no documenta</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────────────────────────────────────────┐
+   │  POLÍTICA DE FILTRADO — fw-borde-01                          │
+   │  (ordenada: la primera que matchea, gana)                     │
+   ├────┬────────┬──────────┬──────────┬──────────┬──────────────┤
+   │  # │ Origen │ Destino  │ Puerto   │ Acción   │ Estado       │
+   ├────┼────────┼──────────┼──────────┼──────────┼──────────────┤
+   │ 10 │ 10.0/8 │ any      │ —        │ ACCEPT   │ activa       │
+   │ 20 │ 192.168.10.0/24 │ 10.0.0.0/8 │ 443/TCP │ ACCEPT │ activa │
+   │ 30 │ 192.168.10.0/24 │ any      │ 53/UDP   │ ACCEPT       │
+   │ 40 │ any    │ 192.168.10.0/24 │ 445/TCP │ DROP │ activa   │
+   │ 50 │ any    │ any      │ any      │ DROP     │ activa       │
+   └────┴────────┴──────────┴──────────┴──────────┴──────────────┘
+
+   ★ El "estado" de cada regla importa: hay reglas HABILITADAS que están
+     ahí solo como respaldo y nunca se probaron.
+</code></pre></div>
+
+<p><strong>Los tres datos que hay que poner sí o sí:</strong></p>
+<ol>
+<li><strong>El puerto/protocolo exacto</strong> (443/TCP, 53/UDP), no "el puerto de DNS".</li>
+<li><strong>El estado</strong> (activa / deshabilitada / en testing).</li>
+<li><strong>La fecha de la última revisión.</strong> Una regla de 2014 que nadie miró es un
+   problema de seguridad esperando.</li>
+</ol>
+<h3>Bloque 5 — NAT, VIP y balanceadores</h3>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────────────────────────────────────────┐
+   │  TRADUCCIONES                                                │
+   ├────────────────────┬──────────────┬──────────────────────────┤
+   │ VIP / IP pública   │ Puerto       │ Destino (pool)           │
+   ├────────────────────┼──────────────┼──────────────────────────┤
+   │ 200.1.1.10         │ 443/TCP      │ srv-web-01:443  (50%)     │
+   │ (NAT 1:1)          │              │ srv-web-02:443  (50%)     │
+   │                    │              │ peso: round-robin        │
+   ├────────────────────┼──────────────┼──────────────────────────┤
+   │ 200.1.1.20         │ 80/TCP       │ srv-web-01:80            │
+   │ (DNAT estático)    │              │                          │
+   ├────────────────────┼──────────────┼──────────────────────────┤
+   │ 200.1.1.0/24       │ (todo)       │ SNAT → 192.168.10.1      │
+   │ (pool NAT salida)  │              │ (todos los que salen)    │
+   └────────────────────┴──────────────┴──────────────────────────┘
+
+   ★ Un "servicio publicado en Internet" SIEMPRE tiene una VIP (o una IP
+     pública) y un puerto. Sin eso, no hay entrada.
+   ★ El balanceo puede ser: round-robin, least-connections, IP hash o
+     Weighted. Anotá cuál.
+</code></pre></div>
+
+<p><strong>Y los dos casos que se confunden:</strong></p>
+<ul>
+<li><strong>NAT de salida</strong> (SNAT / masquerade): cambia la IP de <strong>salida</strong> de toda la red
+  privada. <strong>No cambia los puertos</strong>.</li>
+<li><strong>NAT de entrada</strong> (DNAT / port forwarding / VIP): cambia el <strong>destino</strong> de una
+  conexión que entra. <strong>SÍ cambia los puertos</strong> si es port forwarding.</li>
+</ul>
+<p>Escribilo explícitamente en el diagrama, porque son dos cosas distintas que los
+diagramas mezclan todo el tiempo.</p>
+<h3>Bloque 6 — Puertos y protocolos de los servicios</h3>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────┬──────────────┬───────────────────┬─────────┐
+   │ Servicio          │ Protocolo    │ Puerto(s)         │ Expuesto│
+   ├──────────────────┼──────────────┼───────────────────┼─────────┤
+   │ SSH               │ TCP          │ 22                │ sí      │
+   │ HTTPS (web)      │ TCP          │ 443               │ sí      │
+   │ DNS interno      │ UDP+TCP      │ 53                │ no*     │
+   │ MySQL             │ TCP          │ 3306              │ no      │
+   │ SMTP salida      │ TCP          │ 25  (587)         │ sí      │
+   │ IMAP              │ TCP          │ 143 (993 TLS)     │ no      │
+   │ SNMP             │ UDP          │ 161 (traps: 162)  │ no      │
+   │ NTP               │ UDP          │ 123               │ sí      │
+   └──────────────────┴──────────────┴───────────────────┴─────────┘
+     * "no" = sólo dentro de la red; pero si el DNS es público, va en 53.
+</code></pre></div>
+
+<p><strong>El dato clave: la columna "expuesto".</strong> Un servicio que escucha en <code>0.0.0.0</code> y
+es alcanzable desde Internet es un <strong>servicio público</strong>, y eso tiene que estar
+escrito, porque es una decisión de seguridad tomada por omisión.</p>
+<h3>Bloque 7 — Estado operativo real (el "VALIDACIÓN PENDIENTE")</h3>
+<p>Este es el bloque que casi nunca está, y es el que hace que un diagrama sea
+<strong>útil</strong> en vez de decorativo. Para cada activo:</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────┬───────────┬───────────┬──────────┬───────────────┐
+   │ Activo       │ Estado     │ Verificado│ Última   │ Observación   │
+   │              │ (diseño)   │ (realidad)│ cambio   │               │
+   ├──────────────┼───────────┼───────────┼──────────┼───────────────┤
+   │ sw-acceso-p3 │ activo     │ ✓ ok      │ 2026-05  │ —             │
+   │ srv-web-01   │ activo     │ ⚠ validar │ 2026-09  │ carga alta,   │
+   │              │            │           │          │ ver balanceo  │
+   │ srv-dns-02  │ backup     │ ✗ CAÍDO   │ 2026-11  │ migrar        │
+   │ fw-int-01   │ ??         │ ??         │ desconocido│ reemplazar  │
+   │             │            │            │           │ en 2027       │
+   │ srv-file-01 │ deprecado  │ ✓ ok      │ 2024-03  │ migrar a      │
+   │              │            │           │          │ srv-file-02   │
+   └──────────────┴───────────┴───────────┴──────────┴───────────────┘
+
+   ESTADOS que hay que saber usar:
+     activo       en producción, verificado
+     en testing   se está probando, no es para producción
+     deprecado    sigue andando pero se va a jubilar
+     retirado     dado de baja (no debería estar en el diagrama)
+     backup       en espera, no acepta tráfico
+     PENDIENTE    ★ lo que dice tu imagen: definido, no comprobado
+     DESCONOCIDO  nadie sabe
+</code></pre></div>
+
+<blockquote>
+<p><strong>El "VALIDACIÓN PENDIENTE" de tu imagen no es una falta del diagrama: es
+información del diagrama.</strong> Es la forma más honesta de dibujar "esto está
+<strong>diseñado</strong> pero <strong>no comprobado</strong>". Un diagrama que no tiene esa categoría
+obliga a elegir entre mentir (ponerlo todo como "activo") o no documentar
+(dejarlo afuera). <strong>Un buen diagrama tiene la categoría, y la usa.</strong></p>
+</blockquote>
+<p><strong>Y la diferencia entre estado <em>de diseño</em> y estado <em>verificado</em> es la clave:</strong></p>
+<ul>
+<li><strong>Diseño</strong> = lo que dice el documento de arquitectura.</li>
+<li><strong>Verificado</strong> = lo que alguien <strong>comprobó mirando el equipo</strong>.</li>
+</ul>
+<p>Un diagrama solo con diseño <strong>es un plan, no una descripción de la red</strong>.</p>
+<h3>Bloque 8 — Metadatos del propio diagrama</h3>
+<p>El bloque que casi nadie pone y que hace que el diagrama sea mantenible:</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────────────────────────────────────────┐
+   │  Documento: DIAGRAMA-RED-FING-v3                            │
+   │  Fecha de creación:      2026-03-12                          │
+   │  Fecha de última revisión: 2026-09-28   ← SIEMPRE              │
+   │  Autor:                  Red 2 (red2@fing.edu.uy)            │
+   │  Ámbito:                 Edificio A, niveles 1 a 3           │
+   │  FUENTE DE VERDAD:       NetBox + Ansible + exporter SNMP   │
+   │  Próxima revisión:       2026-12-15                          │
+   │  Clasificación:          USO INTERNO                         │
+   └──────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<blockquote>
+<p><strong>La "fuente de verdad" es el dato más importante.</strong> Si el diagrama dice que se
+generó automáticamente desde <strong>NetBox</strong> o desde la <strong>configuración con
+Ansible</strong>, entonces hay una chance real de que esté <strong>al día</strong>. Si fue hecho a
+mano en un día, hay que asumir que está <strong>desactualizado</strong>. Eso cambia cómo lo
+usás en un incidente.</p>
+</blockquote>
+<h2>1.10 Los tipos de diagrama de red</h2>
+<p>Ahora sí: <strong>qué tipos hay</strong>. Y la respuesta corta es que <strong>no hay un tipo, hay
+varios</strong>, y cada uno responde una pregunta distinta. Un diagrama que intenta
+responder todas a la vez es ilegible.</p>
+<h3>(a) Topología física (<em>physical topology</em>)</h3>
+<p><strong>Pregunta que responde:</strong> ¿cómo están conectados <strong>físicamente</strong> los equipos?</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────────────────────────────────────────┐
+   │                                                              │
+   │      sw-acc-01 ── sw-acc-02                                  │
+   │           │            │                                     │
+   │      sw-acc-03 ── sw-acc-04                                 │
+   │           │                                                 │
+   │        sw-dis-01  ──► sw-nucleo-01                          │
+   │                                                              │
+   │   Nodos = equipos. Aristas = cables / enlaces.                │
+   │   NO se muestran IPs. NO se muestran VLANs.                  │
+   │                                                              │
+   └──────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Para qué:</strong> documentar <strong>cómo pasar un cable</strong>, redundancy física, dónde están
+las <strong><em>conexiones</em> de uplink</strong>, plan de crecimiento de puertos.</p>
+<p><strong>Herramientas:</strong> Visio, draw.io, Lucidchart, y.io (topología automática desde
+SNMP/CDP/LLDP).</p>
+<h3>(b) Topología lógica (<em>logical topology</em>)</h3>
+<p><strong>Pregunta que responde:</strong> ¿cómo <strong>circula</strong> el tráfico según el <strong>enrutamiento</strong>?</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────────────────────────────────────────┐
+   │                                                              │
+   │        VLAN 10 ─────┐                                        │
+   │                      ▼                                       │
+   │                  sw-dis-01 ──── rtr-borde-01 ──► INTERNET   │
+   │                      ▲                                       │
+   │        VLAN 20 ─────┘                                        │
+   │                                                              │
+   │   Nodos = segmentos lógicos (subredes/VLANs).                │
+   │   Aristas = rutas.                                           │
+   │                                                              │
+   └──────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Para qué:</strong> entender <strong>por dónde va</strong> un paquete, calcular <strong>tiempos de
+transito</strong>, ver el impacto de un cambio de ruteo.</p>
+<blockquote>
+<p><strong>Físico vs. lógico, el ejemplo que lo aclara:</strong> en un edificio con 6 switches
+en cascada (6 saltos), la topología <strong>física</strong> dice "6 saltos"; la <strong>lógica</strong>
+dice "1 salto". Un conmutado es <strong>1 solo dominio de colisión</strong> y <strong>ningún
+salto</strong> para efectos de latencia, aunque haya 6 equipos en el medio. <strong>Y eso es
+exactamente lo que se pregunta en los problemas de retardo de examen.</strong></p>
+</blockquote>
+<h3>(c) Diagrama de VLAN y spanning tree</h3>
+<p><strong>Pregunta que responde:</strong> ¿qué VLAN hay, qué puertos son de acceso y cuáles son
+trunk, y qué hace el STP?</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────────────────────────────────────────┐
+   │  VLAN 10 USUARIOS      VLAN 20 SERVIDORES                   │
+   │  ┌───┐  ┌───┐          ┌───┐  ┌───┐                         │
+   │  │p1 │  │p2 │          │p3 │  │p4 │                         │
+   │  └─┬─┘  └─┬─┘          └─┬─┘  └─┬─┘                         │
+   │    └──────┴────────────────┴──────┘                          │
+   │           │ trunk 802.1Q (10,20) │                           │
+   │           ▼                                                    │
+   │      sw-dis-01 (root bridge del dominio)                     │
+   │           │                                                    │
+   │           ▼                                                    │
+   │      sw-nucleo-01                                             │
+   │                                                              │
+   │   Rutas STP:                                                 │
+   │     p1 → sw-dis-01 : FWD (designated)                        │
+   │     p2 → sw-dis-01 : FWD (designated)                        │
+   │     p4 → sw-dis-01 : BLK  ← alternate, se queda en espera   │
+   └──────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Para qué:</strong> el diagrama <strong>por excelencia del que se queja el usuario final</strong>:
+"en este piso la red anda lenta". La respuesta casi siempre es un <strong>puerto
+bloqueado por STP</strong> que obliga al tráfico a hacer un rodeo.</p>
+<h3>(d) Diagrama de firewall / NAT / seguridad</h3>
+<p><strong>Pregunta que responde:</strong> ¿qué pasa con un paquete que entra o sale?</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────────────────────────────────────────┐
+   │                                                              │
+   │  INTERNET                                                     │
+   │     │                                                        │
+   │     │ 200.1.1.10:443                                          │
+   │     ▼                                                        │
+   │  ┌──────────┐   regla 20    ┌──────────┐                    │
+   │  │ fw-borde │───────────────►│ srv-web  │                    │
+   │  │  (NAT +  │   (DNAT + LB)  │  01 y 02 │                    │
+   │  │  filtrado│◄───────────────│          │                    │
+   │  └────┬─────┘   regla 10    └──────────┘                    │
+   │       │                                                        │
+   │  ┌────▼─────┐   regla 30   ┌──────────┐                    │
+   │  │ rtr-borde│───────────────► srv-dns  │                    │
+   │  │ (enrut.) │   SNAT salida └──────────┘                    │
+   │  └──────────┘                                                │
+   └──────────────────────────────────────────────────────────────┘
+
+   ★ Cada flecha = una regla, con su número.
+   ★ El firewall va PRIMERO (la 20 va sobre la 10).
+   ★ El router solo enruta: no filtra.
+</code></pre></div>
+
+<p><strong>Para qué:</strong> auditar seguridad, entender por qué algo <strong>no</strong> se conecta,
+depurar un problema de acceso.</p>
+<h3>(e) Diagrama de flujo (<em>packet flow / traffic path</em>)</h3>
+<p><strong>Pregunta que responde:</strong> ¿<strong>por dónde pasa</strong> este paquete específico?</p>
+<div class="codehilite"><pre><span></span><code>   srv-web-01 ──(a)──► sw-acc-01 ──(b)──► rtr-borde-01
+        │                                          │
+        │                                    (c) NAT: 192.168.10.11
+        │                                          │  → 200.1.1.2:3306
+        │                                          ▼
+        │                                    fw-borde-01
+        │                                          │
+        │                                    (d) filtra puerto 3306
+        │                                          │  → DROP
+        │                                          ▼
+        │                                    ✗ NO LLEGA
+   ─────────────────────────────────────────────────────────
+   (a) L2: src MAC srv-web-01 → dst MAC rtr-borde-01 (trunk)
+   (b) L2: src MAC srv-web-01 → dst MAC rtr-borde-01
+   (c) SNAT: cambia IP origen y quizá puerto origen
+   (d) no hay regla que permita 3306/TCP hacia la LAN → DROP
+</code></pre></div>
+
+<p><strong>Para qué:</strong> es <strong>el diagrama de depuración</strong>. Cuando algo no funciona, se
+recorre el camino salto a salto: ¿el switch reenvió? ¿el NAT se aplicó? ¿el
+firewall dejó pasar? <strong>Cada flecha tiene un punto de falla posible.</strong></p>
+<h3>(f) Diagrama de secuencia (<em>sequence diagram</em>)</h3>
+<p><strong>Pregunta que responde:</strong> ¿<strong>qué mensajes</strong> se exchanging y <strong>en qué orden</strong>?</p>
+<div class="codehilite"><pre><span></span><code>   Cliente            Servidor DNS         Root         TLD        Autorit.
+     │                    │                  │            │            │
+     │─ CONSULTA (A) ────▶│                  │            │            │
+     │                    │─ iterativa ─────▶│            │            │
+     │                    │◀── "ve a .uy" ───│            │            │
+     │                    │─ iterativa ────────────────────▶│            │
+     │                    │◀── "ve a ns.x" ─────────────────│            │
+     │                    │─ iterativa ────────────────────────────────▶│
+     │                    │◀── 1.2.3.4, TTL 3600 ─────────────────────│
+     │◀── RESPUESTA ──────│                  │            │            │
+     │   (cachea 3600s)   │                  │            │            │
+</code></pre></div>
+
+<p><strong>Para qué:</strong> es el diagrama de <strong>TCP</strong>, <strong>TLS</strong>, <strong>DHCP</strong>, <strong>ARP</strong>, <strong>OSPF</strong>. Y es
+el que vas a tener que <strong>dibujar de memoria</strong> en el examen: el three-way
+handshake, el DORA, el hello+hello+req+ack de OSPF.</p>
+<h3>(g) Diagrama de rack / <em>wiring diagram</em></h3>
+<p><strong>Pregunta que responde:</strong> ¿qué cable va de dónde a dónde, <strong>físicamente</strong>?</p>
+<div class="codehilite"><pre><span></span><code>   ┌───────────────────────── RACK A ─────────────────────────┐
+   │ U48 ┤ ══════════ ═                                       │
+   │ U47 ┤ ══════════ ═  ← cables al patch panel PP-A         │
+   │ U46 ┤ ══════════ ═                                       │
+   │  ...                                                        │
+   │ U26 ┤ ══════════ ═                                       │
+   │ U25 ┤ ┌──────────────┐                                   │
+   │ U24 ┤ │ sw-dis-01    │  ← el switch                      │
+   │ U23 ┤ └──────────────┘                                   │
+   │  ...                                                        │
+   │ U03 ┤ ┌──────────────┐                                   │
+   │ U02 ┤ │ srv-dns-01   │  ← el servidor                    │
+   │ U01 ┤ └──────────────┘                                   │
+   └──────────────────────────────────────────────────────────┘
+
+   Cable run sheet:
+     A:U47.1 → PP-A:P12  → sw-dis-01 Gi0/24
+     A:U46.1 → PP-A:P13  → sw-dis-01 Gi0/25
+</code></pre></div>
+
+<p><strong>Para qué:</strong> es el diagrama del <strong>técnico de campo</strong>. No se entiende, no se
+discute: se <strong>usa</strong>. Y es el único diagrama que se verifica <strong>con las manos</strong>.</p>
+<h3>(h) Diagrama de direccionamiento / addressing</h3>
+<p><strong>Pregunta que responde:</strong> ¿cómo está repartido el espacio de direcciones?</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────────────────────────────────────────┐
+   │  RFC 1918 — espacio privado                                 │
+   │                                                              │
+   │  10.0.0.0/8          →  10.1.0.0/16    (FING, sede A)      │
+   │  10.0.0.0     [       10.2.0.0/16    (FING, sede B)      │
+   │                   [   10.3.0.0/16    (laboratorios)      │
+   │                                                              │
+   │  172.16.0.0/12       →  172.16.1.0/24  (acceso)          │
+   │  172.16.0.0      [      172.16.2.0/24  (gestión)          │
+   │                   [   172.16.3.0/24  (servidores)        │
+   │                                                              │
+   │  192.168.0.0/16      →  192.168.1.0/24 (red local, casa)  │
+   │  192.168.0.0    [   192.168.0.0/28  (NAT LAN)            │
+   │                                                              │
+   │  PÚBLICO             →  200.1.1.0/24  (rutable, contratado)│
+   └──────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Para qué:</strong> es <strong>el diagrama de subnetting</strong>. Acá van los <code>/n</code>, los gateways,
+los rangos de DHCP y las reservas. Y es <strong>literalmente el ejercicio de examen</strong>
+del bloque D, dibujado.</p>
+<h2>1.11 Los seis pasos para hacer un diagrama de verdad</h2>
+<p>Esto es el método, y es lo que hay que hacer cuando te pidan "hacé un diagrama
+de esta red":</p>
+<div class="codehilite"><pre><span></span><code>   1. RECOLECTAR    Inventario, contrato con el proveedor, configs,
+                    salida de "show inventory", nmap.
+
+   2. CLASIFICAR    ¿Qué pregunta responde este diagrama? Elegí UN tipo
+                    (§1.10). Si es un entregable, probablemente hace falta
+                    un (a) físico + un (d) de seguridad.
+
+   3. ESQUEMATIZAR  Dibujá los BLOQUES (redes, zonas), no los equipos.
+                    Un rectángulo por red, con su CIDR adentro.
+                    Después poné los equipos adentro de su bloque.
+
+   4. CONECTAR      Una flecha = un enlace. Etiquetá cada flecha con:
+                    · tipo de medio (cobre/fibra)
+                    · ancho de banda (100M / 1G / 10G)
+                    · VLAN / trunk
+                    · longitud estimada
+
+   5. ANOTAR        Aplicá los ocho bloques de §1.9. En este orden:
+                    identidad → L3 → L2 → firewall → NAT → puertos →
+                    ESTADO → metadatos.
+
+   6. VERIFICAR     ★ El paso que nadie hace. Andá al equipo y comprobá.
+                    Lo que no pudiste verificar va marcado
+                    "VALIDACIÓN PENDIENTE".
+                    Poné la fecha de la verificación.
+</code></pre></div>
+
+<blockquote>
+<p><strong>El paso 6 es el que convierte un dibujito en un documento.</strong> Es exactamente
+lo que tu imagen estaba marcando: lo que no está verificado, <strong>tiene que estar
+marcado</strong>. Un diagrama sin fecha de verificación y sin marca de "pendiente" es
+un diagrama que <strong>miente con la mejor intención</strong>.</p>
+</blockquote>
+<h2>1.12 La checklist: ¿mi diagrama está listo?</h2>
+<p>Usá esto antes de dar por terminado cualquier diagrama:</p>
+<div class="codehilite"><pre><span></span><code>   IDENTIDAD
+   [ ] ¿Cada equipo tiene nombre formal, modelo, ubicación y responsable?
+   [ ] ¿Cada equipo tiene un ID de inventario?
+
+   L3
+   [ ] ¿Cada host tiene IP, máscara/CIDR y gateway?
+   [ ] ¿Cada router tiene TODAS sus interfaces con su CIDR?
+   [ ] ¿Las dos notaciones de máscara (/24 y 255.255.255.0)?
+   [ ] ¿Los rangos de DHCP y las IPs fijas de cada VLAN?
+
+   L2
+   [ ] ¿Las VLAN numeradas Y nombradas?
+   [ ] ¿Qué puertos son de acceso y cuáles trunk, con qué etiquetas?
+   [ ] ¿Qué hace el spanning tree (raíz, puertos bloqueados)?
+
+   SEGURIDAD
+   [ ] ¿Las reglas de firewall, con su número y su estado?
+   [ ] ¿Los puertos exactos y protocolos de cada servicio?
+   [ ] ¿Qué servicios están expuestos a Internet?
+
+   NAT
+   [ ] ¿Las VIPs públicas y a qué pool apuntan?
+   [ ] ¿El método de balanceo?
+   [ ] ¿El NAT de salida (SNAT) y el de entrada (DNAT), por separado?
+
+   ESTADO  ← el bloque que casi todos olvidan
+   [ ] ¿El estado real de cada activo (activo / deprecado / caído / pendiente)?
+   [ ] ¿Qué está VERIFICADO y qué no?
+   [ ] ¿Los unknowns están marcados como desconocidos?
+
+   METADATOS
+   [ ] ¿Fecha de última revisión?
+   [ ] ¿Autor y fuente de verdad?
+   [ ] ¿Próxima revisión agendada?
+</code></pre></div>
+
+<h2>1.13 ⚠️ Actualización a 2026</h2>
+<p><strong>Sigue igual — de memoria:</strong>
+- La necesidad de <strong>documentar en un diagrama</strong> es la misma de siempre.
+- Los <strong>cuatro bloques</strong> básicos: L3, L2, seguridad y estado.
+- La diferencia entre <strong>topología física</strong> y <strong>lógica</strong>, y por qué en un
+  conmutado 6 equipos físicos son 1 salto lógico.
+- La importance de la <strong>dirección IP, la máscara y el gateway</strong> en cada nodo.</p>
+<p><strong>Cambió:</strong></p>
+<ul>
+<li><strong>El diagrama se genera solo.</strong> Con fuentes como <strong>NetBox</strong>, <strong>phpIPAM</strong>,
+  <strong>AWX/Ansible</strong> (que lee la configuración real de los routers) y <strong>Ansible
+  Network</strong>, hoy se puede <strong>exportar el diagrama directamente del equipo que
+  tiene la verdad</strong>. Eso resuelve de raíz el problema de "el diagrama está viejo".</li>
+<li><strong>Los diagramas de servicios en la nube (SaaS, balanceo, CDN)</strong> ya no son "la red": son <strong>flujos entre servicios</strong>, y hay que documentarlos igual.
+  red": son <strong>flujos entre servicios</strong>, y hay que documentarlos igual.</li>
+<li><strong>La verificación es automatizable.</strong> Con la observación como código
+  (infraestructura como código, pipelines de CI), un diagrama "VALIDACIÓN
+  PENDIENTE" puede <strong>dejarse de marcar</strong> porque la verificación es <strong>un test que
+  corre siempre</strong>.</li>
+<li><strong>El bloqueo de STP sigue siendo la causa número uno</strong> de las quejas de
+  rendimiento en los edificios: sigue valiendo la pena un diagrama de STP.</li>
+</ul>
+<blockquote>
+<p><strong>Para el examen:</strong> el examen <strong>no pide hacer un diagrama profesional de
+producción</strong>, pide <strong>un diagrama de topología con las direcciones, que permita
+resolver tablas de ruteo o de ARP</strong>. Eso es un tipo (a) más un (h). Pero saber
+qué información va es lo que te permite <strong>leer</strong> cualquier topología que te
+den.</p>
+</blockquote>
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — Los seis parámetros en un caso concreto</h2>
+<p><strong>Enunciado.</strong> Ana está en Montevideo y hace una videollamada con Ana (sic, con Bea, que está en Frankfurt). La conexión va por fibra, pasa por 11 routers, y el informe de la conexión dice:</p>
+<div class="codehilite"><pre><span></span><code>  Ancho de banda del enlace de la casa:  300 Mbps
+  Distancia total del camino (ida):      11 400 km
+  Velocidad de propagación en la fibra:  2·10⁸ m/s
+  Tamaño medio de un paquete de video:   1 200 bytes
+  Retardo medido por ping (RTT):         142 ms
+  Retardo medido para el paquete 1:      71 ms
+  Retardo medido para el paquete 2:      78 ms
+  Retardo medido para el paquete 3:      102 ms
+  Pérdidas observadas:                    0,4 %
+  Velocidad sostenida de la descarga:    271 Mbps
+</code></pre></div>
+
+<p><strong>Se pide:</strong> identificar cada magnitud, decir en qué unidad está, y explicar las dos diferencias que más se confunden.</p>
+<p><strong>Resolución paso a paso.</strong></p>
+<p><strong>Paso 1 — ¿Cuál es el ancho de banda?</strong></p>
+<div class="codehilite"><pre><span></span><code>  "Ancho de banda del enlace de la casa: 300 Mbps"
+  → 300 · 10⁶ bits por segundo
+  → Es la CAPACIDAD MÁXIMA. Está en bps. Es una propiedad del equipo
+    (el ONT y el medio).
+</code></pre></div>
+
+<p><strong>Paso 2 — ¿Cuál es la velocidad de propagación?</strong></p>
+<div class="codehilite"><pre><span></span><code>  "Velocidad de propagación en la fibra: 2·10⁸ m/s"
+  → Está en m/s. Es la rapidez de la SEÑAL.
+  → Es una propiedad de la FIBRA (del medio), no del equipo.
+  → Por eso el informe no la reporta en bps: no es una capacidad.
+</code></pre></div>
+
+<p><strong>Paso 3 — ¿Cuál es la latencia y cuál es el RTT?</strong></p>
+<div class="codehilite"><pre><span></span><code>  "Retardo medido por ping (RTT): 142 ms"
+  → 142 ms es el Round Trip Time: ida + vuelta.
+
+  "Retardo medido para el paquete 1: 71 ms"
+  → 71 ms es la LATENCIA (tiempo de un viaje, de ida).
+
+  Chequeo de coherencia:  71 ms × 2 = 142 ms  ✓
+  → El RTT es exactamente el doble. Éste es el control que tenés
+    que hacer SIEMPRE que te den latencia y RTT juntos.
+</code></pre></div>
+
+<p><strong>Paso 4 — ¿Cuál es el throughput?</strong></p>
+<div class="codehilite"><pre><span></span><code>  "Velocidad sostenida de la descarga: 271 Mbps"
+
+  271 Mbps  &lt;  300 Mbps  ✓ (el throughput nunca supera el BW)
+
+  eficiencia = 271/300 = 0,9033  →  90,3 %
+  La diferencia (9,7 %) se va en:
+    - cabeceras: 58 bytes de overhead por cada 1200 de datos
+      1200 + 58 = 1258 bytes en el medio
+      eficiencia de payload = 1200/1258 = 0,9539
+    - pérdidas y retransmisiones: 0,4 % (cada pérdida por TCP obliga
+      a retransmitir un segmento entero, y el TCP pierde también la
+      ventana durante el RTO)
+    - colisiones y, si lo modelás, slots ocupados
+</code></pre></div>
+
+<p><strong>Paso 5 — ¿Cuál es el jitter?</strong></p>
+<div class="codehilite"><pre><span></span><code>  Retardos de tres paquetes del MISMO flujo:
+    paquete 1:  71 ms
+    paquete 2:  78 ms
+    paquete 3: 102 ms
+
+  jitter (medición pico a pico) = 102 − 71 = 31 ms
+</code></pre></div>
+
+<p><strong>Interpretación y por qué importa.</strong> El paquete 3 tardó 31 ms más que el paquete 1. Eso no es un problema de ancho de banda: la señal viaja a la misma velocidad. Es un problema de <strong>cola</strong>: somewhere en el camino, 31 ms de espera. En una videollamada de voz, eso produce un desfasaje entre el audio y el video: el labio se ve antes de que se oiga la palabra.</p>
+<p><strong>Paso 6 — La tabla resumen del ejercicio.</strong></p>
+<div class="codehilite"><pre><span></span><code>  ┌──────────────────────┬────────────────────────┬──────────┐
+  │ Magnitud             │ Valor del enunciado    │ Unidad   │
+  ├──────────────────────┼────────────────────────┼──────────┤
+  │ Ancho de banda       │ 300 Mbps               │ bps      │
+  │ Vel. de propagación  │ 2·10⁸                  │ m/s      │
+  │ Latencia             │ 71 ms                  │ ms       │
+  │ RTT                  │ 142 ms (= 2×71)        │ ms       │
+  │ Retardo total        │ 71 ms (el mismo packet)│ ms       │
+  │ Throughput           │ 271 Mbps               │ bps      │
+  │ Jitter               │ 31 ms                  │ ms       │
+  └──────────────────────┴────────────────────────┴──────────┘
+</code></pre></div>
+
+<h3>⚠️ Errores típicos de este ejercicio</h3>
+<ul>
+<li><strong>Confundir latencia con RTT.</strong> La latencia es un viaje; el RTT son dos. Si el ping dice 142, la latencia es ~71 (asumiendo camino simétrico).</li>
+<li><strong>Meter la velocidad de propagación en bps.</strong> Si aparece "2×10⁸ Mbps" es un error de unidades: 2×10⁸ es <strong>m/s</strong>.</li>
+<li><strong>Decir que el throughput "es 300 Mbps".</strong> No: el throughput es lo que <strong>seNwgets</strong>; el BW es lo que <strong>se puede</strong>.</li>
+<li><strong>Usar <code>d/s</code> con la distancia de ida para el RTT.</strong> <code>d/s</code> te da la latencia; para el RTT, <code>2d/s</code>.</li>
+</ul>
+<hr />
+<h2>2.2 Ejercicio 2 — Velocidad de propagación en cobre vs. fibra</h2>
+<p><strong>Datos.</strong> Un enlace de 800 km une dos edificios de una misma ciudad. Hay dos opciones:</p>
+<ul>
+<li><strong>Opción A</strong>: un haz de <strong>cobre</strong> (UTP Cat 6A).</li>
+<li><strong>Opción B</strong>: una <strong>fibra óptica monomodo</strong>.</li>
+</ul>
+<p>La velocidad de propagación medida por el instalador es:</p>
+<div class="codehilite"><pre><span></span><code>  Cobre (Cat 6A): s = 2,0 · 10⁸ m/s
+  Fibra monomodo:  s = 2,04 · 10⁸ m/s
+</code></pre></div>
+
+<p><strong>a) ¿Cuál es el retardo de propagación de la señal en cada caso?</strong>
+<strong>b) ¿Cuánto tarda un paquete de 5 000 bits en cruzar el enlace, con store-and-forward en un switch de 10 Gbps en cada extremo?</strong>
+<strong>c) ¿Conviene pagar la fibra?</strong></p>
+<p><strong>Resolución.</strong></p>
+<p><strong>a) Retardo de propagación.</strong></p>
+<div class="codehilite"><pre><span></span><code>  d = 800 km = 800 000 m
+
+  Opción A (cobre):
+    d_prop = d / s = 800 000 m / (2,0 · 10⁸ m/s)
+           = 4,0 · 10⁻³ s
+           = 0,004 s
+           = 4,0 ms
+
+  Opción B (fibra):
+    d_prop = d / s = 800 000 m / (2,04 · 10⁸ m/s)
+           = 3,9216 · 10⁻³ s
+           = 0,0039216 s
+           = 3,92 ms
+</code></pre></div>
+
+<p><strong>b) Retardo total, con store-and-forward.</strong></p>
+<p>El paquete de 5 000 bits <strong>entra</strong> por un puerto de 10 Gbps del switch de la izquierda y tiene que <strong>entrar entero</strong> antes de que ese switch pueda empezar a mandarlo por el puerto de salida (store-and-forward).</p>
+<div class="codehilite"><pre><span></span><code>  L = 5 000 bits
+  R = 10 Gbps = 10 · 10⁹ bits/s
+
+  d_transmisión = L / R = 5 000 / (10 · 10⁹) = 5 · 10⁻⁷ s = 0,0005 ms
+  d_proc (switch de 10 Gbps con HER stacking) ≈ 0 (despreciable)
+
+  Opción A (cobre):
+    d_total = d_proc + d_transmisión + d_cola + d_prop
+            = 0 + 0,0005 ms + 0 (sin cola) + 4,0 ms
+            = 4,0005 ms
+
+  Opción B (fibra):
+    d_total = 0 + 0,0005 ms + 0 + 3,92 ms
+            = 3,9205 ms
+</code></pre></div>
+
+<p><strong>c) ¿Conviene pagar la fibra?</strong></p>
+<p>La diferencia es de 0,08 ms <strong>en un viaje</strong>. Con las dos manos atrás y atrás: 0,16 ms de RTT.</p>
+<div class="codehilite"><pre><span></span><code>  Diferencia por viaje: 4,0 − 3,92 = 0,08 ms
+  Diferencia en RTT:    2 × 0,08  = 0,16 ms
+</code></pre></div>
+
+<p><strong>Respuesta: para latencia, no. La diferencia es despreciable.</strong> La fibra no compra latencia en este caso, y eso es una sorpresa muy frecuente: se supone que "la fibra es más rápida", pero <strong>propagar la señal es un fenómeno físico, y la luz no va más rápido en fibra que en cobre</strong>. Va a 2/3 de la velocidad de la luz en el vacío en los dos casos.</p>
+<p><strong>Pero la fibra sí compra otra cosa</strong>, y esta es la respuesta completa:</p>
+<div class="codehilite"><pre><span></span><code>  ┌────────────────────────┬──────────────┬──────────────┐
+  │                        │ COBRE        │ FIBRA        │
+  ├────────────────────────┼──────────────┼──────────────┤
+  │ Velocidad de prop.     │ 2,00·10⁸     │ 2,04·10⁸     │  ← casi igual
+  │ Retardo de prop. (800km)│ 4,00 ms      │ 3,92 ms      │  ← casi igual
+  │ Ancho de banda posible │ 10 Gbps      │ 100+ Gbps    │  ← AQUÍ está la diferencia
+  │ Alcance sin repetidor  │ ~100 m       │ ~80 km       │  ← y acá
+  │ Inmune a EMI           │ no           │ sí           │  │
+  │ Peso por metro         │ ~0,05 kg/m   │ ~0,02 kg/m   │  │
+  │ Costo del transceiver  │ ~40 USD      │ ~80-400 USD  │  │
+  └────────────────────────┴──────────────┴──────────────┘
+</code></pre></div>
+
+<p><strong>La moraleja:</strong> la fibra se paga por <strong>ancho de banda</strong>, por <strong>alcance sin electrónica</strong>, y por <strong>inmunidad al ruido electromagnético</strong> — <strong>no por latencia</strong>.</p>
+<blockquote>
+<p>⚠️ <strong>Precisión sobre "más rápido":</strong> en los formatos eléctricos de Ethernet (10BASE-T, 100BASE-TX) hay un <strong>retardo de codificación de línea</strong> que la fibra no tiene (MLT-3, 4B/5B y <em>scrambler</em> contra NRZI de la fibra). Pero ese retardo es de <strong>nanosegundos a unas decenas de nanosegundos</strong>, no de milisegundos. Para 800 km, es ruido estadístico frente a los 4 ms de propagación.</p>
+</blockquote>
+<hr />
+<h2>2.3 Ejercicio 3 — Por qué la velocidad de propagación NO depende del ancho de banda</h2>
+<p><strong>Enunciado.</strong> Dos proveedores ofrecen enlaces para el mismo trayecto de 50 km:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Proveedor A</th>
+<th>Proveedor B</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ancho de banda</td>
+<td>100 Mbps</td>
+<td>1 Gbps</td>
+</tr>
+<tr>
+<td><strong>Velocidad de propagación medida</strong></td>
+<td><strong>2,0 · 10⁸ m/s</strong></td>
+<td><strong>2,0 · 10⁸ m/s</strong></td>
+</tr>
+<tr>
+<td>Latencia medida (ping, 1x)</td>
+<td>5,0 ms</td>
+<td>5,0 ms</td>
+</tr>
+</tbody>
+</table>
+<p>Un alumno le pregunta al proveedor: "¿el enlace más rápido no debería llegar antes?". <strong>Justificá por qué la respuesta del proveedor es la correcta, y qué pasa con el RTT y con el throughput.</strong></p>
+<p><strong>Resolución paso a paso.</strong></p>
+<p><strong>Paso 1 — Qué determina <code>s</code>.</strong></p>
+<p>La velocidad de propagación la determina la <strong>velocidad de la perturbación electromagnética en el medio</strong>, que es una propiedad de la <strong>electricidad y la óptica del material</strong>:</p>
+<div class="codehilite"><pre><span></span><code>  ──────────────────────────────────────────────────────────────────
+  VACÍO / AIRE    el campo E y el campo B se propagan juntos, a c
+                  = 3·10⁸ m/s. No hay medio que "frenar" nada.
+  ──────────────────────────────────────────────────────────────────
+  COBRE           los electrones libres arrastran a los ligados
+                  al mover el campo E. Resultado neto: ~0,6 a 0,7 c
+  ──────────────────────────────────────────────────────────────────
+  FIBRA (Si)      la luz refracta con índice n ≈ 1,48. v = c/n.
+                  3·10⁸ / 1,48 = 2,03·10⁸ m/s
+  ──────────────────────────────────────────────────────────────────
+  ```
+
+**En los tres casos, `s` depende de una constante del material y de nada más.**
+
+**Paso 2 — Qué determina `R` (ancho de banda).**
+
+`R` lo determina **cuántos bits se pueden codificar por unidad de tiempo sobre esa señal**:
+</code></pre></div>
+
+<p>10 Mbps   = 1 símbolo cada 100 ns   (o 2 símbolos cada 200 ns con 2 niveles)
+  1 Gbps    = 1 símbolo cada 1 ns</p>
+<div class="codehilite"><pre><span></span><code>Y **el reloj del transceptor es una consecuencia de la electrónica del circuito**, no de la física del medio. El medio dice "la perturbación viaja a 2×10⁸ m/s"; el circuito dice "y yo puedo modular 10⁹ cambios por segundo sobre esa perturbación".
+
+**Paso 3 — La analogía del caño.**
+</code></pre></div>
+
+<p>┌──────────┐                                            ┌──────────┐
+   │  Grifo   │ ═══════════════════════════════════════════ │ Depósito │
+   │ 1 CLIQUE │        ← 50 km de caño de 20 mm            │          │
+   └──────────┘                                            └──────────┘
+     (mucha presión)          (el medio)              (mucho caudal)</p>
+<p>▸ Abrir la llave más rápido (más caudal, más ancho de banda) NO
+    hace que el agua llegue antes por el caño. El tiempo de viaje lo
+    fija la longitud del caño y la velocidad del fluido.</p>
+<p>▸ El caudal sí cambia CUÁNTA agua llega por segundo.</p>
+<div class="codehilite"><pre><span></span><code>**Paso 4 — Qué pasa entonces con los números.**
+</code></pre></div>
+
+<p>Distancia = 50 km = 50 000 m
+  s        = 2,0 · 10⁸ m/s</p>
+<p>d_prop = 50 000 / (2·10⁸) = 2,5 · 10⁻⁴ s = 0,25 ms  ← IGUAL en A y en B</p>
+<p>───────────────────────────────────────────────────────────────
+                        R      d_trans (L=1500B)   throughput máx.
+  Proveedor A        100 Mbps  120 µs            ≈  96 Mbps
+  Proveedor B         1 Gbps    12 µs            ≈ 961 Mbps
+  ───────────────────────────────────────────────────────────────
+  d_prop                    0,25 ms          0,25 ms   ← IGUAL
+  ───────────────────────────────────────────────────────────────</p>
+<div class="codehilite"><pre><span></span><code>
+</code></pre></div>
+
+<p>Con 11 routers en el camino y d_proc despreciable:</p>
+<p>RTT (sin cola) = 2 · (11 · 0,25 ms) = 2 · 2,75 ms = 5,5 ms
+  → IGUAL para A y para B.</p>
+<div class="codehilite"><pre><span></span><code>**Interpretación — y esta es la frase para el examen:**
+
+&gt; **El ancho de banda dice cuántos datos entran por segundo; la velocidad de propagación dice a qué velocidad viaja la información.** Un enlace de 1 Gbps **no es "50 veces más rápido"**: es 50 veces más **ancho**. Un paquete **individual** tarda **exactamente lo mismo** en los dos casos, porque su **retardo de transmisión** sí es 10 veces menor (12 µs contra 120 µs), pero ese componente es **diminuto comparado con la propagación** (0,25 ms). Lo que el ancho de banda cambia de verdad es el **throughput**: cuántos bytes por segundo lográs mover **por unidad de tiempo**, no cuánto tardás en llegar.
+
+**Paso 5 — El corolario que aparece en los exámenes: el BDP.**
+
+Como el RTT **no depende** del ancho de banda, y el ancho de banda **sí** determina cuántos datos podés mandar por unidad de tiempo, el número de bytes que están "en vuelo" en un momento dado es:
+</code></pre></div>
+
+<p>BDP (bandwidth-delay product) = R · RTT</p>
+<p>Proveedor A:  100 · 10⁶ bps × 5,5 · 10⁻³ s = 550 000 bits = 68,75 kB
+  Proveedor B:   1 · 10⁹ bps × 5,5 · 10⁻³ s = 5 500 000 bits = 687,5 kB</p>
+<div class="codehilite"><pre><span></span><code>**Derivación paso a paso para A:**
+</code></pre></div>
+
+<p>R   = 100 · 10⁶ bits/s
+  RTT = 5,5 · 10⁻³ s</p>
+<p>BDP = 100 · 10⁶ bits/s × 5,5 · 10⁻³ s
+      = 100 · 5,5 · 10⁶ ⁻³ bits
+      = 550 · 10³ bits
+      = 550 000 bits
+      = 550 000 / 8 bytes
+      = 68 750 bytes
+      ≈ 68,75 kB</p>
+<div class="codehilite"><pre><span></span><code>**Interpretación del BDP.** En el proveedor B, para llenar el tubo de punta a punta tenés que tener **687,5 kB en vuelo**. Si tu ventana de TCP es de 128 kB (el `rwnd` típico por defecto hace años), **nunca llenás el enlace**: mandás 128 kB, esperás el ACK, y la tubería queda medio vacía. **Por eso un enlace rápido con RTT largo necesita una ventana grande**: es el motivo por el que `Window Scale` (RFC 7323) existe, y por el que las conexiones de larga distancia tienen throughput limitado por la ventana y no por el ancho de banda. Se desarrolla entero en las Clases 5 y 6.
+
+---
+
+# PARTE 3 — PROBLEMAS DE EXAMEN DE FING
+
+## 3.1 Mapa de los problemas de examen del Bloque A
+
+Antes de resolver nada, el mapa. Esto es lo que vas a encontrar en los exámenes del bloque:
+
+| Examen | Pregunta | Tema | Dónde se resuelve |
+|---|---|---|---|
+| `2006-12` | P1 (5 pts) | Modelo OSI y las hipótesis de las 7 capas | **Clase 2** |
+| `2007-03` | P1 (5 pts) | El modelo TCP/IP | **Clase 2** |
+| `2009-02` | P2 (10 pts) | Forwarding vs. routing; flooding en broadcast | **Clase 3** |
+| `2009-02` | P3 (5 pts) | FDMA y TDMA | **Clase 7** |
+| `2009-02` | P4 (9 pts) | Datagramas vs. circuitos virtuales | **Clase 4** |
+| `2009-03` | P5 (6 pts) | Full duplex vs. half duplex | **Clase 7** |
+| `2006-08` | P1 (5 pts) | Resultados de Nyquist y Shannon con hipótesis | **Clase 7** |
+| `2007-07` | P1 (10 pts) | Capacidad máxima sobre línea telefónica (Shannon) | **Clase 7** |
+| `2007-12` | P3 (10 pts) | Conmutación de circuitos, paquetes y mensajes | **Clase 4** |
+| `2009-12` | P1 (10 pts) | Componentes del retardo; BW vs. `s`; congestión | **Clase 5** (adelanto acá) |
+| `2011-03` | P2 (6 pts) | Congestión, pérdidas y retardo | **Clase 5** |
+| `2011-03` | P5 (10 pts) | Retardo end-to-end, 3 enlaces y 2 conmutadores | **Clase 6** |
+
+**Nota sobre los puntajes:** el enunciado de `2006-12 P1` y de `2007-03 P1` dice **5 puntos** cada una en el PDF oficial (no 10). Lo verifiqué en `sirc0612.txt` y en `sirc0703.txt`. Tomá esos números como referencia.
+
+## 3.2 ⭐ Adelanto: la Pregunta 1a del Examen 2009-12 (resuelta aquí, se repite en la Clase 5)
+
+&gt; **Fuente:** Examen `sirc0912` — 18 de diciembre de 2009, Pregunta 1 (10 puntos), apartado a).
+&gt; **Link:** https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0912.pdf
+
+### Enunciado (texto del examen)
+
+&gt; Identifique los componentes del retardo en las redes de paquetes, y señale cuáles son los más significativos. En particular:
+&gt; **a)** Señale las diferencias entre el ancho de banda y la velocidad de propagación en el medio.
+&gt; **b)** ¿En qué componente del retardo influye la congestión?
+
+### Solución oficial (apartado a)
+
+&gt; a) B es la capacidad de los puertos del dispositivo (switch o router), por ejemplo Ethernet, STM-1, mientras que s es una característica del medio, por ejemplo s ~ 2×10⁸ m/seg en cobre.
+
+### Análisis de la solución oficial
+
+La respuesta oficial es **correcta y corta**, y contiene exactamente las dos ideas que hay que decir:
+
+1. **`B` es la capacidad de los puertos del dispositivo** (switch o router), es decir, del **equipo**.
+2. **`s` es una característica del medio**, por ejemplo `s ≈ 2×10⁸ m/s` en cobre.
+
+**Lo que le falta y hay que agregar para el punto completo** (no restan si no lo decís, pero el profesor espera que completes):
+
+- **Las unidades**: `B` en **bps**, `s` en **m/s**. Es la diferencia formal y la que hace que no sean la misma magnitud.
+- **Que son ejes perpendiculares**: podés tener el mismo `s` con distinto `B` (cobre a 100 Mbps y a 10 Gbps) y distinto `s` con el mismo `B`.
+- **Que `s` NO cambia con el medio de enlace en el sentido de "más rápido"**: tanto cobre como fibra dan ~2×10⁸ m/s. Lo que cambia con el medio es la **capacidad** y el **alcance**.
+- **La consecuencia**: `d_transmisión = L/R` (no depende del medio) vs. `d_propagación = d/s` (no depende del paquete).
+
+&gt; ⚠️ **Detalle sobre la solución oficial:** dice `s ~ 2×10⁸ m/s` **en cobre**, que es correcto. Si lo generalizás a "en el medio" sin aclarar, cuidado: en el vacío y en el espacio es 3×10⁸ m/s, y en el aire es 2,998×10⁸. Para problemas de examen de fibra y cobre, usá **2×10⁸**; para un enlace por satélite, **3×10⁸**.
+
+### Mi respuesta completa para 10 puntos (o los 4 del apartado a)
+</code></pre></div>
+
+<p>ANCHO DE BANDA (B o R)
+    - unidad: bits por segundo (bps)
+    - qué es: la CAPACIDAD MÁXIMA de transferir datos por el enlace
+    - de qué depende: del EQUIPO (puerto, transceiver, modulación).
+      Ethernet de 1 Gbps, STM-1 de 2,048 Mbps, 100 GbE.
+    - no depende de: la longitud del enlace, del medio físico.
+    - aparece en:  d_transmisión = L / R</p>
+<p>VELOCIDAD DE PROPAGACIÓN (s)
+    - unidad: metros por segundo (m/s)
+    - qué es: a qué velocidad física viaja la SEÑAL por el medio
+    - de qué depende: del MEDIO FÍSICO (la física del material).
+      Cobre ~2·10⁸ m/s, fibra ~2·10⁸ m/s, vacío 3·10⁸ m/s.
+    - no depende de: la longitud del enlace, del equipo, del
+      ancho de banda.
+    - aparece en:  d_propagación = d / s</p>
+<p>CONCLUSIÓN
+  Son magnitudes DISTINTAS, de UNIDADES DISTINTAS y que dependen de
+  COSAS DISTINTAS: una del equipo y una del medio. El ancho de banda
+  NO es "la velocidad a la que viaja la información": es la cantidad
+  de información por segundo. La velocidad de propagación es la
+  rapidez del mezzo físico. Un enlace de 1 Gbps por cobre y otro de
+  1 Gbps por fibra tienen el MISMO ancho de banda y la MISMA
+  velocidad de propagación, pero eso NO SIGNIFICA que se comporten
+  igual: difieren en atenuación, en alcance sin repetidores y en
+  inmunidad al ruido electromagnético.</p>
+<div class="codehilite"><pre><span></span><code>### Apartado b) — adelanto (se resuelve entero en la Clase 5)
+
+&gt; **Solución oficial:** *"El retardo de encolamiento depende del nivel de congestión del router."*
+
+Interpretado: la congestión **no** actúa sobre el retardo de transmisión ni sobre el de propagación (esos dependen de `L`, `R`, `d` y `s`, que no cambian con la carga). Actúa sobre el **retardo de encolamiento**, porque es el único componente que depende de **cuánta gente está delante tuyo en la cola**. Y si la cola se llena, aparecen **pérdidas**.
+
+**La cadena completa, que es lo que pide el apartado:**
+</code></pre></div>
+
+<p>Más tráfico offered → colas más largas → retardo de encolamiento ↑ → retardo total ↑
+                                                          │
+                                                          └─→ si la cola se llena:
+                                                              PERDIDAS</p>
+<div class="codehilite"><pre><span></span><code>---
+
+# PARTE 4 — CIERRE
+
+## 📌 Resumen en 10 líneas
+
+1. **Red** = computadores interconectados por un medio, para compartir recursos e intercambiar información. Tres motivos: comunicar, compartir lo caro, y **economía de escala** (`C_red/n` decrece con `n`).
+2. **PAN / LAN / MAN / WAN** por alcance: ~10 m, ~1 km, una ciudad, el planeta. **En 2026 el criterio útil es latencia + propiedad**: una red es LAN si no pasa por un router que no es tuyo.
+3. **Latencia es el criterio moderno**: 500 ms de RTT de un satélite a 36.000 km es "WAN" aunque la distancia sea la de un edificio; una fibra de operador dentro de una ciudad da 0,5 ms a 100 km, que es mejor que cualquier LAN de 2005.
+4. **Topologías**: bus (cable mínimo, un punto de falla), estrella (falla aislada, un dominio de colisión por puerto), anillo (retardo predecible, un punto de falla), malla (redundancia, `n(n-1)/2` enlaces), árbol (jerarquía), **híbrida (lo que se instala: malla arriba, estrella abajo, anillo para protección)**.
+5. **Cada dispositivo, su capa**: hub/repetidor/módem = **1**; NIC = **1 y 2**; switch/AP = **2**; router = **3**; firewall stateful = **3 y 4**; servidor = todas.
+6. **Ancho de banda** (`B`, **bps**) = capacidad del **equipo**, aparece en `L/B`.
+7. **Velocidad de propagación** (`s`, **m/s**) = rapidez de la señal en el **medio**, aparece en `d/s`. **Cobre ≈ fibra ≈ 2·10⁸ m/s; vacío ≈ 3·10⁸ m/s.**
+8. **Latencia** = un viaje; **RTT = dos viajes** (≈ `2d/s` sin colas). **Throughput** = lo real, siempre `&lt; ancho de banda`, por cabeceras, retransmisiones y colisiones. **Jitter** = la variación entre paquetes del mismo flujo.
+9. **`BDP = R · RTT`** = los bits que caben en el enlace durante un RTT = los que tenés que tener "en vuelo". Enlace rápido + RTT largo ⇒ **ventana grande obligatoria** o el ancho de banda no se aprovecha.
+10. **Internet ≠ Web**: Internet es la red (IP, TCP, BGP); la Web es una aplicación (HTTP, HTML, URL). **Internet sin Web funciona; Web sin Internet no.**
+
+## ✅ Autoevaluación
+
+Respondé sin mirar. Las respuestas están en `&lt;details&gt;`.
+
+**1.** Una red de 800 km a 1 Gbps y otra de 800 km a 10 Mbps. ¿Cuál tarda más en llegar un paquete de 1500 bytes?
+
+&lt;details&gt;&lt;summary&gt;Respuesta&lt;/summary&gt;
+
+**Ninguna de las dos, si la fibra es la misma.** El retardo de propagación es `d/s` y no depende de `R`.
+</code></pre></div>
+
+<p>d = 800 000 m, s = 2,0 · 10⁸ m/s
+  d_prop = 800 000 / 2,0·10⁸ = 4,0 ms   (igual en las dos redes)</p>
+<div class="codehilite"><pre><span></span><code>Lo único que cambia es el retardo de transmisión, que es diminuto al lado de la propagación:
+</code></pre></div>
+
+<p>A 10 Mbps: d_trans = 12 000 bits / 10 · 10⁶ = 1 200 µs = 1,2 ms
+  A  1 Gbps: d_trans = 12 000 bits / 10 · 10⁹ =    12 µs = 0,012 ms</p>
+<p>Total a 10 Mbps: 1,2 + 4,0  = 5,2 ms
+  Total a  1 Gbps: 0,012 + 4,0 = 4,012 ms</p>
+<div class="codehilite"><pre><span></span><code>O sea: **el enlace de 10 Mbps tarda 1,19 ms más**, y ese 1,19 ms es 100 % transmisión, 0 % propagación. Lo que cambia de verdad es el throughput, no la latencia.
+
+&lt;/details&gt;
+
+**2.** En una red con 500 Mbps de ancho de banda y un throughput medido de 380 Mbps, ¿cuál es el más alto, el ancho de banda o la velocidad de propagación? ¿Se puede responder la segunda sin más datos?
+
+&lt;details&gt;&lt;summary&gt;Respuesta&lt;/summary&gt;
+
+El ancho de banda es 500 Mbps. Es el número que tenemos, y es una **capacidad**.
+
+La **velocidad de propagación no se puede calcular** con esos datos: es una propiedad del medio y hace falta saber cuál es. Si el medio es cobre o fibra, es ~2·10⁸ m/s; si es un enlace por satélite, ~3·10⁸ m/s.
+
+**No son comparables**, justamente por eso: uno está en bps y el otro en m/s. La pregunta "cuál es más alto" no tiene sentido entre ellos. Lo que sí tiene sentido es la pregunta del Examen 2009-12: **¿de qué depende cada uno?** — `B` del equipo, `s` del medio.
+
+Y la eficiencia: `380/500 = 76 %`. Los 24 % que faltan son cabeceras, retransmisiones por pérdidas, y slots perdidos por colisiones.
+
+&lt;/details&gt;
+
+**3.** ¿Por qué un auricular Bluetooth es un PAN y un enlace de fibra entre dos edificios a 4 km es una WAN?
+
+&lt;details&gt;&lt;summary&gt;Respuesta&lt;/summary&gt;
+
+Por la **propiedad** y, en parte, por la latencia.
+
+- El auricular es **tuyo**, de una sola persona, con latencia sub-milisegundo. Tenés el medio y el equipo: es un PAN.
+- El enlace de fibra de 4 km **no es tuyo**: es de un operador. Para vos es infraestructura de terceros, como el backbone de Internet. Y si es fibra oscura conmutada de un operador, la latencia puede ser de 0,3 a 2 ms, que es "de WAN" para vos por propiedad aunque el número sea de LAN.
+
+El alcance (10 m contra 4 km) coincide con la clasificación clásica, pero **lo que define la frontera es que uno es tuyo y el otro no**.
+
+&lt;/details&gt;
+
+**4.** Un switch tiene 8 puertos y un hub tiene 8. ¿Cuántos dominios de colisión hay en cada caso?
+
+&lt;details&gt;&lt;summary&gt;Respuesta&lt;/summary&gt;
+
+- **Switch: 8 dominios de colisión y 1 dominio de broadcast.** Cada puerto es un dominio de colisión separado: solo hay una estación en cada segmento, así que **nunca hay colisión** (y por eso no hace falta CSMA/CD por encima de 1 Gbps).
+- **Hub: 1 dominio de colisión y 1 dominio de broadcast.** El hub es un repetidor multi-puerto: repite la señal eléctrica a los 8 puertos. Las tres tramas que se mandan al mismo tiempo **colisionan**, y todas las estaciones los ven.
+
+El hub es de **capa 1** por eso: no aprende direcciones, no decide a qué puerto va la trama, solo amplifica. El switch es de **capa 2** porque mantiene una tabla de MACs y decide.
+
+&lt;/details&gt;
+
+**5.** Explicá con tus palabras por qué el ancho de banda y la velocidad de propagación son perpendiculares.
+
+&lt;details&gt;&lt;summary&gt;Respuesta&lt;/summary&gt;
+
+Porque uno describe **cuánto por segundo** y el otro **a qué velocidad**, y dependen de objetos distintos:
+
+- El **ancho de banda** depende del **equipo**: de la electrónica del transceptor, del reloj, de la modulación. Podés subirlo de 100 Mbps a 10 Gbps **sin tocar el cable**.
+- La **velocidad de propagación** depende del **medio**: de la física del material. Podés cambiar de cobre a fibra y sube de 2,00 a 2,04·10⁸ m/s: **un 2 %**, mientras que el ancho de banda habría que multiplicarlo por 1000.
+
+La analogía: el ancho de banda es el **caudal** de un caño (litros por segundo) y `s` es la **velocidad del agua dentro** del caño. Abrir la válvula más rápido aumenta el caudal y no cambia la velocidad con que el agua recorre el caño. Por eso un paquete **individual** tarda lo mismo en los dos casos.
+
+&lt;/details&gt;
+
+**6.** Una aplicación de video tiene un throughput de 8 Mbps en un enlace de 20 Mbps. ¿Cuánto del ancho de banda se está desaprovechando y a qué lo atribuís?
+
+&lt;details&gt;&lt;summary&gt;Respuesta&lt;/summary&gt;
+</code></pre></div>
+
+<p>desaprovechado = 20 − 8 = 12 Mbps
+  eficiencia = 8/20 = 40 %
+```</p>
+<p><strong>Ese 60 % no es "ancho de banda desperdiciado"</strong>: es la <strong>sobrecarga del enlace</strong>, que es lo que permite que la latencia sea baja. Si la aplicación usara el 100 %, la cola del búfer del router sería infinita y el retardo se dispararía. El 60 % de holgura es <strong>la inversión en latencia</strong>.</p>
+<p>Las causas del 40 % sin ser simplemente "no aprovechar el 100 %":
+- el video tiene <strong>tasa variable</strong> (VBR): entre fotogramas clave transmite mucho, entre ellos poco;
+- los <strong>ACK</strong> de TCP van en sentido contrario y también ocupan el enlace (aunque en general el upload es menor);
+- las <strong>cabeceras</strong> de cada paquete;
+- si hay otros usuarios en el mismo enlace, compiten.</p>
+</details>
+<p><strong>7.</strong> ¿Qué es el jitter de un enlace de 20 Mbps? ¿Puede ser 20 Mbps?</p>
+<details><summary>Respuesta</summary>
+
+No, **nunca**, y el error está en las unidades.
+
+El **jitter** es una medida de **variación temporal**, así que su unidad es de **tiempo**: milisegundos, microsegundos. Un jitter de 20 Mbps es dimensionalmente imposible.
+
+Lo que sí puede ser 20 es el ancho de banda del enlace (bps) o la **variación del throughput** en el tiempo (por ejemplo, que la velocidad baje de 20 a 8 Mbps), pero eso ya no se llama jitter: se llama **variación de ancho de banda** o **fairness**, y se mide mal en redes de acceso.
+
+Si el enunciado de un examen te da "jitter" con unidades de bits por segundo, es un error tipográfico del enunciado o estás confundiendo throughput con jitter.
+
+</details>
+
+<p><strong>8.</strong> Dime dos razones por las que la clasificación LAN/MAN/WAN <strong>ya no</strong> se puede hacer solo por la distancia.</p>
+<details><summary>Respuesta</summary>
+
+**Razón 1 — La latencia no sigue a la distancia.** Un satélite geoestacionario está a 36.000 km y a 800 km un cable de cobre tiene **mayor** latencia que un enlace de fibra de 4 km. Y al revés: dos racks a 5 metros pueden estar unidos por un enlace de 400 Gbps a 50 µs, mientras que una conexión celular a 200 metros tiene 40 ms de latencia. **La distancia no predice la latencia**; el número de saltos intermedios y la tecnología del enlace sí.
+
+**Razón 2 — La frontera es de propiedad, no de geografía.** Un *dark fiber* de operador dentro de una ciudad es una WAN con mejor desempeño que cualquier LAN. Y un PAN (Bluetooth, 10 m) tiene peor latencia que algunas WAN de fibra. Lo que define la frontera es **si el enlace es tuyo o de un tercero**, y eso es una decisión administrativa, no física.
+
+Por eso la clasificación que se usa en la práctica es por **latencia observada** (< 1 ms = LAN, 1-5 ms = MAN, > 5 ms = WAN) y por **propiedad**.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<p><strong>Exámenes</strong>
+- Examen <code>sirc0612</code> (26-dic-2006) — P1 (5 pts): modelo OSI y las hipótesis de las 7 capas → <strong>Clase 2</strong>
+- Examen <code>sirc0703</code> (26-feb-2007) — P1 (5 pts): el modelo TCP/IP → <strong>Clase 2</strong>
+- Examen <code>sirc0902</code> (2-feb-2009) — P2 (10 pts): forwarding vs. routing y flooding → <strong>Clase 3</strong>
+- Examen <code>sirc0912</code> (18-dic-2009) — P1 (10 pts): componentes del retardo, <code>B</code> vs. <code>s</code>, congestión → <strong>Clase 5</strong>
+- Examen <code>sirc1103</code> (21-feb-2011) — P2 (6 pts): congestión, pérdidas y retardo → <strong>Clase 5</strong>
+- Examen <code>sirc1103</code> — P5 (10 pts): retardo end-to-end con 3 enlaces y 2 conmutadores → <strong>Clase 6</strong></p>
+<p><strong>Bibliografía</strong>
+- Tanenbaum &amp; Wetherall, <em>Redes de computadoras</em>, 5ª ed., <strong>cap. 1</strong> "¿Qué es una red?" (pág. ~1 a ~35 del PDF de tu carpeta) — es la fuente de la definición y de los parámetros
+- Tanenbaum &amp; Wetherall, <strong>cap. 2</strong> "La capa física" (pág. ~36 a ~75) — medios y moduladores, que se usan en la Clase 7
+- Kurose &amp; Ross, <em>Computer Networking: A Top-Down Approach</em> — los capítulos 1 y 2 tienen la misma distinción <code>bandwidth</code> vs. <code>propagation speed</code> y el <code>bandwidth-delay product</code></p>
+<p><strong>RFCs</strong>
+- <code>RFC 1122</code> — <em>Requirements for Internet Hosts: Communication Layers</em> (1989): define las capas de la pila TCP/IP <strong>con enlace separado</strong> (5 capas)
+- <code>RFC 8200</code> — <em>Internet Protocol, Version 6 (IPv6) Specification</em> (2017, <em>Internet Standard</em>; obsoleta RFC 2460)
+- <code>RFC 9293</code> — <em>Transmission Control Protocol</em> (2022, <em>Internet Standard</em>; consolida RFC 793)
+- <code>RFC 7323</code> — <em>TCP Extensions for High Performance</em> (2014): <em>Window Scale</em> y <em>Timestamps</em>, que son lo que hace posible un BDP grande
+- <code>RFC 9000</code> — <em>QUIC: A UDP-Based Multiplexed and Secure Transport</em> (2021): el ejemplo moderno de que una capa de transporte <strong>no</strong> tiene que ser TCP</p>
+<p><strong>Clase siguiente:</strong> 2 — Los modelos de capas: OSI y TCP/IP</p></body></html>

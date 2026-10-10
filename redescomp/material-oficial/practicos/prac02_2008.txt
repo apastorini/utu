@@ -1,0 +1,5 @@
+Práctico 2 - Problemas del capítulo 2 del libro
+
+Básicos: 1, 4, 6, 11, 15, 16, 19
+Recomendados: 3, 8, 9, 14, 17, 18
+Complementarios: 2, 5, 7, 10, 12, 13

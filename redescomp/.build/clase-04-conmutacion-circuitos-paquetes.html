@@ -1,0 +1,1799 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 4 — Conmutación: circuitos, paquetes y mensajes</h1>
+<p><strong>Bloque:</strong> A (Fundamentos) · <strong>Semana:</strong> 2 · <strong>Duración estimada:</strong> 110 min
+<strong>Correlativa:</strong> Clase 3 (encapsulación y comparación OSI ↔ TCP/IP) · <strong>Sigue con:</strong> Clase 5 (el retardo en las redes de paquetes)
+<strong>Material de referencia:</strong> Tanenbaum cap. 1 §1.3 (pág. ~10 a ~20 del PDF de tu carpeta) · RFC 9293, RFC 2737, RFC 3209, RFC 3031</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li><strong>Distinguir</strong> las tres técnicas de conmutación por un único criterio: <strong>cuándo se toma la decisión</strong> (al establecer la comunicación, o por cada unidad de datos).</li>
+<li><strong>Dibujar</strong> el establecimiento de un circuito virtual en la red telefónica y explicar qué recursos quedan reservados.</li>
+<li><strong>Explicar</strong> el store-and-forward y <strong>por qué un router no puede reenviar bit a bit sin un buffer infinito</strong>.</li>
+<li><strong>Calcular</strong> el retardo de un mensaje de 10 000 bits dividido en 4 paquetes de 2 500 bits que atraviesa 3 enlaces, con la aritmética a la vista, y <strong>compararlo</strong> con el mensaje entero y con el circuito virtual.</li>
+<li><strong>Construir</strong> la tabla comparativa de las tres técnicas con: conexión, tamaño de la unidad, reserva de recursos, retardo, posibilidad de reenrutar, orden de llegada y error típico.</li>
+<li><strong>Explicar por qué los paquetes de tamaño variable no se usan</strong>: <em>unfairness</em> y retardo extremo.</li>
+<li><strong>Resolver enteros</strong> el Examen <code>2007-12 P3</code> (10 pts) y el Examen <code>2009-02 P4</code> (9 pts).</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2007-12 P3</code> (10 pts — las tres técnicas con análisis comparativo), <code>2009-02 P4</code> (9 pts — datagramas vs. circuitos virtuales), <code>2011-03 P5</code> (10 pts — retardo con store-and-forward), <code>2009-07 P2</code> (10 pts — distancia entre hops como métrica).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 El criterio que las distingue a todas</h2>
+<p>Hay tres técnicas de conmutación. Se distinguen por <strong>una sola pregunta</strong>:</p>
+<div class="codehilite"><pre><span></span><code>  ┌───────────────────────────────────────────────────────────────────┐
+  │  ¿LA DECISIÓN DE ENCAMINAR SE TOMA ANTES DE EMPEZAR A MANDAR     │
+  │  DATOS, O SE TOMA PARA CADA UNIDAD DE DATOS?                     │
+  │                                                                   │
+  │  ANTES  ──▶  conmutación por CIRCUITOS   (y circuitos virtuales) │
+  │  CADA UNO ─▶  conmutación por PAQUETES    (datagramas)             │
+  │  CADA UNO ─▶  conmutación por MENSAJES    (el antecesor)           │
+  └───────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Todo lo demás se deriva de esa respuesta:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Pregunta</th>
+<th>Circuitos</th>
+<th>Paquetes</th>
+<th>Mensajes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>¿Cuándo se decide?</td>
+<td><strong>Antes</strong>, una vez</td>
+<td>Por cada paquete</td>
+<td>Por cada mensaje</td>
+</tr>
+<tr>
+<td>¿Hay conexión?</td>
+<td><strong>Sí</strong></td>
+<td>No (datagramas)</td>
+<td>No</td>
+</tr>
+<tr>
+<td>¿Se reservan recursos?</td>
+<td><strong>Sí</strong></td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>¿El retardo es?</td>
+<td><strong>Constante</strong></td>
+<td>Variable</td>
+<td>Variable y grande</td>
+</tr>
+<tr>
+<td>¿El camino es el mismo para todos los paquetes?</td>
+<td><strong>Sí</strong></td>
+<td>Puede cambiar</td>
+<td>Puede cambiar</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Y una observación de fondo que vale para las tres:</strong> las tres son <strong>estrategias para compartir un medio de transmisión</strong> entre varias comunicaciones. La diferencia no es técnica de hardware: es <strong>cuándo se decide el reparto del medio</strong>.</p>
+<div class="codehilite"><pre><span></span><code>  MEDIO COMPARTIDO:  ═══════════════════════════════════════
+  La pregunta es: ¿cómo le doy el medio a cada uno?
+
+  CIRCUITOS:  "A vos te tocan estos 64 kbps, para siempre.
+               Los demás no te los tocan."        → reparto FIJO, static
+  PAQUETES:   "El que tenga algo para mandar manda,
+               y si el medio está libre lo usa."    → reparto DINÁMICO
+  MENSAJES:   "Solo cuando tengo el mensaje entero
+               lo transmito entero."                → reparto DINÁMICO,
+                                                      pero con bloqueos largos
+</code></pre></div>
+
+<hr />
+<h2>1.2 Conmutación por circuitos (<em>circuit switching</em>)</h2>
+<h3>Cómo funciona</h3>
+<p>Se <strong>establece un circuito</strong> antes de poder mandar datos, y ese circuito <strong>reserva recursos</strong> en cada nodo intermedio.</p>
+<div class="codehilite"><pre><span></span><code>  Paso 1 — ESTABLECIMIENTO del circuito (señalización, OUT-OF-BAND)
+
+  H1        N1        N2        N3        N4        H2
+  │                    ╔══════════════════════════╗
+  │  solicitud ──────▶║  circuito virtual R1..R3 ║
+  │  (ocupar un       ║  RESERVADO, no transmite  ║
+  │   camino)         ╚══════════════════════════╝
+  │  ◀─────────────── confirmaciones, hop a hop
+  │
+  │   Ahora existe un camino FIJO: H1 → N1 → N2 → N3 → N4 → H2
+  │   y en cada nodo del camino hay un ANCHO DE BANDA RESERVADO
+
+
+  Paso 2 — TRANSFERENCIA de datos
+
+  H1        N1        N2        N3        N4        H2
+  │────────▶│────────▶│────────▶│────────▶│────────▶│
+  │  datos  │  datos  │  datos  │  datos  │  datos  │
+  │  ═══════│═════════│═════════│═════════│═════════│  ← siempre
+  │         │         │         │         │         │     el mismo
+  │         │         │         │         │         │     camino
+
+  En cada nodo, la tasa del circuito es FIJA y el retardo es el mismo
+  para todos los bloques: NO HAY COLA.
+
+
+  Paso 3 — LIBERACIÓN
+
+  H1        N1        N2        N3        N4        H2
+  │  liberar ─────────────────────────────────────────▶
+  │  ◀───────────────────────────────────────── confirmación
+  │   Los recursos reservados vuelven al pool común.
+</code></pre></div>
+
+<h3>El ejemplo canónico: la red telefónica</h3>
+<p>La red telefónica clásica (POTS, <em>Plain Old Telephone Service</em>) es la implementación más limpia de conmutación por circuitos, y <strong>todavía lo es</strong>:</p>
+<div class="codehilite"><pre><span></span><code>  ┌──────┐      ┌──────┐      ┌──────┐      ┌──────┐
+  │      │      │      │      │      │      │      │
+  │  A   ├──────┤ N1   ├──────┤ N2   ├──────┤ N3   ├───┐
+  │      │      │      │      │      │      │      │   │   ┌──────┐
+  └──────┘      └──────┘      └──────┘      └──────┘   └───┤  B   │
+                                                            └──────┘
+
+  A llama a B. La señalización engancha un circuito de 4 kHz en
+  CADA enlace del camino. Los 4 nodats intermedios reservan su
+  ancho de banda para ese circuito. Si un nodo del camino se rompe,
+  la llamada SE CAE. No hay ruta alternativa: el circuito es un
+  camino físico (o lógico) fijo.
+</code></pre></div>
+
+<p><strong>Por qué la red telefónica es de circuitos y no de paquetes:</strong></p>
+<ul>
+<li><strong>La voz necesita retardo constante.</strong> Si un paquete de voz llegara en 20 ms y el siguiente en 200 ms, la conversación sería ininteligible. Un circuito reservado garantiza <strong>retardo constante</strong>, que es lo que hace posible el servicios Telefónico clásico.</li>
+<li><strong>La voz necesita un ancho de banda constante.</strong> Un circuito de 64 kbps reservados da exactamente 64 kbps siempre. Con paquetes, la voz compite con todo lo demás.</li>
+<li><strong>La relación de precios es fija.</strong> La voz se cobraba por minuto, y el circuito reservado es lo que hace que el minuto sea medible.</li>
+</ul>
+<p><strong>Y las consecuencias negativas</strong>, que son las que hacen que Internet no use circuitos:</p>
+<ul>
+<li><strong>El retardo de establecer el circuito.</strong> Establecerlo lleva de 100 a 500 ms (o hasta 2 s con señalización SS7 y la búsqueda de ruta). Si vas a transferir 300 bytes, no vale la pena.</li>
+<li><strong>Si se cae un nodo, se rompe todo.</strong> No hay ruta alternativa.</li>
+<li><strong>Los recursos quedan ociosos.</strong> Si hablás 10 minutos con pausas de un minuto entre frases, el circuito reservado está pagado pero sin usar.</li>
+<li><strong>No escala.</strong> El número de circuitos simultáneos entre dos nodos es <strong>finito</strong> y hay que dimensionarlo por anticipado.</li>
+</ul>
+<h3>Circuitos virtuales: la versión "de paquetes" de los circuitos</h3>
+<p><strong>Circuito virtual</strong> (<em>virtual circuit</em>, VC) es el híbrido: <strong>se establece un camino lógico antes de mandar los datos</strong>, pero <strong>no se reservan recursos físicos</strong>. Cada paquete lleva una <strong>etiqueta</strong> que identifica el camino, y los routers reenvían <strong>según la etiqueta</strong>, sin consultar la IP de destino.</p>
+<div class="codehilite"><pre><span></span><code>  ┌───────────── datagramas (conmutación por paquetes) ──────────────┐
+  │                                                                  │
+  │   Cada paquete lleva su IP DESTINO completa y el router decide  │
+  │   por dónde va.                                                  │
+  │                                                                  │
+  │   ┌───────────────┐   ┌────────────┐   ┌─────────────┐          │
+  │   │ R1  "8.8.8.8  │──▶│ R2         │──▶│ R3          │          │
+  │   │  va por eth1" │   │  "¿qué?    │   │             │          │
+  │   │               │   │  ¿por qué  │   │             │          │
+  │   │               │   │  eth0 o    │   │             │          │
+  │   │               │   │  eth1?"    │   │             │          │
+  │   └───────────────┘   └────────────┘   └─────────────┘          │
+  │        búsqueda en        búsqueda         búsqueda             │
+  │        la tabla           en la tabla      en la tabla           │
+  └──────────────────────────────────────────────────────────────────┘
+
+  ┌───────────── circuito virtual ───────────────────────────────────┐
+  │                                                                  │
+  │   Todos los paquetes llevan la MISMA etiqueta de camino.          │
+  │   El router NO busca: mira la etiqueta y reenvía.                │
+  │                                                                  │
+  │   ┌───────────────┐   ┌────────────┐   ┌─────────────┐          │
+  │   │ R1  "etiqueta  │──▶│ R2 "etiqueta│──▶│ R3 "etiqueta│          │
+  │   │  7 → eth1"    │   │  7 → eth0" │   │  7 → H2"    │          │
+  │   │  sin buscar   │   │  sin buscar│   │  sin buscar │          │
+  │   └───────────────┘   └────────────┘   └─────────────┘          │
+  │        tabla de VCs:       tabla de VCs:   tabla de VCs:        │
+  │        7 → eth1            7 → eth0         7 → H2              │
+  └──────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Diferencias clave respecto del circuito clásico:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Circuito (físico)</th>
+<th>Circuito virtual</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Se reserva ancho de banda</strong></td>
+<td><strong>Sí</strong>, en cada nodo</td>
+<td><strong>No</strong> (salvo QoS)</td>
+</tr>
+<tr>
+<td><strong>El retardo</strong></td>
+<td><strong>Constante</strong></td>
+<td><strong>Variable</strong>: depende de la cola</td>
+</tr>
+<tr>
+<td><strong>Si se cae un nodo</strong></td>
+<td>Se rompe todo</td>
+<td>Se rompe el circuito: hay que <strong>reestablecer</strong></td>
+</tr>
+<tr>
+<td><strong>El router busca por</strong></td>
+<td>El cable físico (no busca)</td>
+<td><strong>La etiqueta</strong> (busca, pero en tabla chica)</td>
+</tr>
+<tr>
+<td><strong>Coste de establecer</strong></td>
+<td>Alto (se ocupa el medio)</td>
+<td><strong>Bajo</strong> (solo un mensaje de señalización)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Dónde vive el circuito virtual hoy:</strong> <strong>Frame Relay</strong>, <strong>ATM</strong>, y sobre todo <strong>MPLS</strong>. En MPLS, el "circuito virtual" es el <strong>LSP</strong> (<em>Label Switched Path</em>): un túnel unidireccional que se identifica por una <strong>etiqueta</strong> de 20 bits apilable. El router MPLS <strong>no consulta la IP de destino</strong>: consulta la etiqueta, que es una entrada en un array. Eso es <strong>más rápido</strong> y es la razón por la que MPLS se usa en el backbone de los operadores: la decisión es un índice, no un longest prefix match. (Clase 45 lo desarrolla entero.)</p>
+<p><strong>Y el dato de 2026:</strong> el plano de control de MPLS <strong>se está moviendo a Segment Routing</strong> (<code>RFC 8402</code>, <code>RFC 8660</code>, y <strong><code>RFC 8986</code> SRv6</strong>), que <strong>elimina el MPLS del plano de datos en el caso de SRv6</strong>: las etiquetas se codifican en la cabecera IPv6 (el <em>Segment Routing Header</em>). El circuito virtual sigue existiendo conceptualmente, pero la implementación es otra.</p>
+<hr />
+<h2>1.3 Conmutación por mensajes (<em>message switching</em>)</h2>
+<h3>Cómo funciona</h3>
+<p>Cada <strong>mensaje completo</strong> (tamaño arbitrario) es reenviado de nodo en nodo. El nodo <strong>lo recibe entero</strong>, <strong>lo guarda en un buffer</strong>, y <strong>espera a poder transmitirlo completo</strong> por el siguiente enlace. Es <strong>store-and-forward sin fragmentar</strong>.</p>
+<div class="codehilite"><pre><span></span><code>  Un mensaje de 8000 bits, 4 nodos intermedios, enlaces de 1000 bit/s:
+
+  H1 ─── N1 ─── N2 ─── N3 ─── H2
+
+  t=0        t=8      t=16     t=24     t=32     t=40   (segundos)
+
+  │─8000b──▶│         │         │         │         │
+  │         │─8000b──▶│         │         │         │
+  │         │         │─8000b──▶│         │         │
+  │         │         │         │─8000b──▶│         │
+  │         │         │         │         │─8000b──▶│
+  │         │         │         │         │         │
+
+  Cada salto tarda 8000/1000 = 8 segundos.
+  El mensaje entero tarda 4 × 8 = 32 segundos en salir del último nodo,
+  y 40 segundos en llegar a H2.
+
+  ⚠️ El RETARDO ES ENORME. Y es el mismo para el mensaje entero
+    que para cualquier otro: no hay pipeline.
+</code></pre></div>
+
+<h3>El store-and-forward y por qué el router tiene que esperar el paquete entero</h3>
+<p>Este es el <strong>argumento central</strong> de la clase, y conecta directo con la Clase 5. Hay que entenderlo bien.</p>
+<p><strong>El store-and-forward es un compromiso entre memoria y velocidad.</strong> La razón por la que un router <strong>no</strong> puede reenviar bit a bit (o byte a byte) es esta:</p>
+<div class="codehilite"><pre><span></span><code>  Si el router reenvía bit a bit (cut-through), el PROBLEMA es este:
+
+  H1 (100 Mbps) ══▶ N1 ══▶ N2 ══▶ N3 (1 Mbps)
+
+  Bit a bit, N1 empieza a mandar hacia N2 CADA VEZ QUE LLEGA UN BIT de H1.
+
+  Como H1 manda a 100 Mbps y N1-&gt;N2 transmite a 10 Mbps, por cada bit
+  que N1 transmite tiene que GUARDAR 10 bits que le llegan.
+
+  En 1 segundo:
+     entran 100 000 000 bits
+     salen    10 000 000 bits
+     se guardan 90 000 000 bits = 11,25 MB
+
+  ⚠️ Para no perder NADA, N1 necesitaría un buffer INFINITO.
+
+  ┌───────────────────────────────────────────────────────────┐
+  │  Si el buffer es FINITO (y lo es), el exceso se DESCARTA.  │
+  │  Y un paquete descartado es un paquete perdido para       │
+  │  siempre, porque IP no recupera de pérdidas.              │
+  │                                                           │
+  │  ⇒ CON ELTA DEGRADADO, EL CORTAFALLOS ES PEOR.           │
+  └───────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>La solución que eligió Internet: store-and-forward con tamaño de paquete acotado.</strong> El trade-off completo:</p>
+<div class="codehilite"><pre><span></span><code>  Store-and-forward con paquetes de tamaño FIJO (L):
+
+  ┌────────────────────────────────────────────────────────────────┐
+  │  El tamaño del buffer es finito y el tamaño del paquete        │
+  │  está DISEÑADO para que quepan muchos paquetes completos.      │
+  │                                                                │
+  │  Si el paquete mide L bytes, un buffer de B bytes              │
+  │  almacena ⌊B / L⌋ paquetes completos.                           │
+  │                                                                │
+  │  Con L ACOTADO:                                                │
+  │     · el buffer se llena y se descartan paquetes completos     │
+  │       (no bites sueltos) → se pierde UNO, no la mitad de uno   │
+  │     · la unidad deLoss es predecible                          │
+  │     · el router puede reordenar y descartar                  │
+  │                                                                │
+  │  El tamaño MÁXIMO del paquete es una decisión de diseño       │
+  │  que hace que todo esto funcione: MTU = 1500 en Ethernet.      │
+  └────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>El argumento completo, paso a paso:</strong></p>
+<ol>
+<li>Un router tiene <strong>buffers finitos</strong>. (Los routers reales tienen entre 4 MB y 512 MB, según la clase.)</li>
+<li>El medio tiene <strong>velocidades distintas</strong> entre entrada y salida.</li>
+<li>Si reenvía <strong>bit a bit</strong>, el buffer crece sin límite → o hace falta memoria infinita, o se descarta y se pierde información.</li>
+<li>Si reenvía <strong>por paquetes completos</strong>, el buffer necesario es <code>⌊B/L⌋ · L</code> bytes, que es <strong>acotado y conocido</strong>.</li>
+<li>Cuando el buffer se llena, se <strong>descarta un paquete entero</strong>. La unidad de pérdida es <strong>un paquete, no un bloque de bytes</strong>.</li>
+<li>Eso <strong>no elimina</strong> la pérdida, pero la hace <strong>predecible</strong> y permite que las capas superiores la manejen (TCP la recupera; UDP no).</li>
+<li><strong>Conclusión: el tamaño máximo del paquete es el precio de la conmutación por paquetes.</strong> Y ese precio se paga en el MTU.</li>
+</ol>
+<h3>La lista de.waiters: el problema de la conmutación por mensajes</h3>
+<p>El problema más grave de la conmutación por mensajes no es el retardo: es el <strong>bloqueo de cabeza</strong> (<em>head-of-line blocking</em>) y la <strong>injusticia</strong>.</p>
+<div class="codehilite"><pre><span></span><code>  N1 tiene UN solo enlace de salida (hacia N2), de 1000 bit/s.
+  En el buffer hay:
+
+     [  mensaje A: 8000 bits  ]  ← llegó primero, se transmite entero
+     [  mensaje B: 20 bits    ]  ← llegó después, NO PUEDE salir
+     [  mensaje C: 5000 bits  ]  ← llegó después, NO PUEDE salir
+
+  N1 transmite A completo. Durante 8 segundos, B y C esperan.
+  Después transmite C completo. B espera 5 segundos más.
+  B llevaba 13 segundos de espera por un mensaje de 20 bits.
+
+  ⚠️ INJUSTICIA: un mensaje pequeñoDelayed por un mensaje grande
+     que estaba delante. En un sistema de tiempo real, B es
+     inservible.
+</code></pre></div>
+
+<p><strong>Por qué no se usa la conmutación por mensajes hoy:</strong></p>
+<ul>
+<li><strong>Retardo enorme y no predecible.</strong> El retardo depende del tamaño de la cola, que depende de los demás. No podés dar una garantía.</li>
+<li><strong>Bloqueo de cabeza.</strong> Un mensaje grande retrasa a todos los que están detrás.</li>
+<li><strong>Requiere buffers enormes.</strong> Para no perder un mensaje de 1 MB hay que tener 1 MB de buffer, y <strong>los routers tienen MB, no GB</strong>. El MTU de un mensaje tendría que ser enorme.</li>
+<li><strong>El análisis de la Pregunta 5 del Examen 2009-07</strong> (10 pts) muestra por qué esto es un problema de enrutamiento, no solo de conmutación.</li>
+</ul>
+<p><strong>Pero tampoco es inútil como idea:</strong> es exactamente lo que hacen los <strong>store-and-forward de la capa de aplicación</strong> y los <strong>enrutadores de mensajeros</strong>:</p>
+<ul>
+<li><strong>Un <em>mail relay</em></strong> (MTA) que recibe un email completo y lo reenvía después.</li>
+<li><strong>Un router de BGP que recibe un UPDATE completo</strong> y lo procesa.</li>
+<li><strong>Un forwarder de logging</strong> que recibe un evento completo.</li>
+<li><strong>La conmutación de mensajes en el contexto de las "SAN"</strong> (<em>Storage Area Networks</em>) y los sistemas de archivos distribuidos.</li>
+</ul>
+<p><strong>Conclusión histórica:</strong> la conmutación por mensajes <strong>es la generalización de las otras dos</strong>. Si el mensaje es del tamaño de un circuito y hay uno reservado, es conmutación de circuitos. Si el mensaje se divide en paquetes acotados, es conmutación por paquetes. <strong>La conmutación por mensajes es el caso sin acotar</strong>, y por eso es la peor de las tres.</p>
+<hr />
+<h2>1.4 Conmutación por paquetes (<em>packet switching</em>)</h2>
+<h3>La idea</h3>
+<p>Los mensajes se <strong>dividen en paquetes de tamaño fijo o acotado</strong>, y cada paquete se reenvía <strong>de forma independiente</strong> con store-and-forward.</p>
+<div class="codehilite"><pre><span></span><code>  MENSAJE CONMUTACIÓN POR PAQUETES
+
+  ┌──────────────────────────┬──────────────┬──────────────┬─────────┐
+  │                          │              │              │         │
+  │  Paquete 1: 2500 bits    │  Paquete 2   │  Paquete 3   │  P 4    │
+  └──────────────────────────┴──────────────┴──────────────┴─────────┘
+  ◄──────────────── 10 000 bits del mensaje original ───────────────►
+
+  Ahora los paquetes se reenvían por separado, y el pipeline funciona:
+
+  tiempo →  0    2    4    6    8    10   12   14   16   18   20
+           │    │    │    │    │    │    │    │    │    │    │
+  H1        │P1  │P2  │P3  │P4  │
+  N1        │    │P1  │P2  │P3  │P4
+  N2        │    │    │P1  │P2  │P3  │P4
+  N3        │    │    │    │P1  │P2  │P3  │P4
+  H2        │    │    │    │    │    │P1  │P2  │P3  │P4
+
+  ⚠️ PIPELINE: mientras P2 entra en N1, P1 ya está saliendo de N1.
+     El último paquete sale 2 segundos después del primero, no 8.
+</code></pre></div>
+
+<h3>El ejemplo numérico completo</h3>
+<p><strong>Datos:</strong> mensaje de <strong>10 000 bits</strong>, dividido en <strong>4 paquetes de 2 500 bits</strong>. <strong>Tres enlaces</strong> de <strong>1 000 bit/s</strong> cada uno, unidos por <strong>dos conmutadores</strong> (N1 y N2). <code>d_proc</code> despreciable, sin cola.</p>
+<div class="codehilite"><pre><span></span><code>   H1 ═══════ N1 ═══════ N2 ═══════ H2
+    e1       e2       e3
+   1000     1000     1000  bit/s
+</code></pre></div>
+
+<p><strong>Paso 1 — Retardo de transmisión de un paquete en cada enlace.</strong></p>
+<div class="codehilite"><pre><span></span><code>  d_trans = L / R = 2500 bits / 1000 bit/s = 2,5 segundos
+</code></pre></div>
+
+<p><strong>Paso 2 — El comportamiento de cada conmutador (store-and-forward de paquetes).</strong></p>
+<p>En cada nodo, <strong>recibo un paquete entero antes de poder empezar a transmitir el siguiente</strong>. Eso significa que el nodo está ocupado <code>2,5 s</code> con cada paquete:</p>
+<div class="codehilite"><pre><span></span><code>  e1 (H1→N1):  transmite P1 de 0 a 2,5 ; P2 de 2,5 a 5,0 ; P3 de 5,0 a 7,5 ; P4 de 7,5 a 10,0
+  e2 (N1→N2):  transmite P1 de 2,5 a 5,0 ; P2 de 5,0 a 7,5 ; P3 de 7,5 a 10,0 ; P4 de 10,0 a 12,5
+  e3 (N2→H2):  transmite P1 de 5,0 a 7,5 ; P2 de 7,5 a 10,0 ; P3 de 10,0 a 12,5 ; P4 de 12,5 a 15,0
+</code></pre></div>
+
+<p><strong>Paso 3 — El retardo de cada paquete, extremo a extremo.</strong></p>
+<p>Cada paquete atraviesa 3 enlaces y pasa por 2 conmutadores (cada uno con <code>d_proc</code>):</p>
+<div class="codehilite"><pre><span></span><code>  d(P) = d_proc(N1) + L/R(e1) + L/R(e2) + d_proc(N2) + L/R(e3) + Σd_prop
+       =      0     +   2,5   +   2,5   +     0      +   2,5   +   Σd_prop
+       =       7,5 s  +  Σ d_prop
+</code></pre></div>
+
+<p>Con <code>d_prop = 0</code> (enlaces de distancia despreciable):</p>
+<div class="codehilite"><pre><span></span><code>  d(P1) = 7,5 s      llega a H2 en t = 7,5 s
+  d(P2) = 7,5 s      llega a H2 en t = 10,0 s
+  d(P3) = 7,5 s      llega a H2 en t = 12,5 s
+  d(P4) = 7,5 s      llega a H2 en t = 15,0 s
+</code></pre></div>
+
+<p><strong>Paso 4 — El retardo del mensaje COMPLETO</strong> (lo que le importa al usuario que espera el archivo).</p>
+<p>El mensaje está completo cuando llega <strong>el último</strong> paquete:</p>
+<div class="codehilite"><pre><span></span><code>  d(mensaje) = 15,0 segundos
+</code></pre></div>
+
+<p><strong>Paso 5 — La comparación con las otras dos técnicas.</strong></p>
+<p>Si en lugar de 4 paquetes de 2500 bits:</p>
+<div class="codehilite"><pre><span></span><code>  ┌─────────────────────────────────────────────────────────────────────┐
+  │  TÉCNICA              │  ¿Cuándo está listo el último byte?         │
+  ├─────────────────────────────────────────────────────────────────────┤
+  │  MENSAJES             │                                             │
+  │  (1 mensaje de 10000) │  4 saltos × (10000/1000) = 4 × 10 = 40 s   │
+  │                      │                                             │
+  │  PAQUETES             │                                             │
+  │  (4 paquetes de 2500) │  último paquete entra en e3 en t=12,5      │
+  │                      │  y tarda 2500/1000 = 2,5 s más             │
+  │                      │  → 15,0 s                                  │
+  │                      │                                             │
+  │  CIRCUITO             │                                             │
+  │  (reservado 1000b/s) │  10000/1000 = 10 s, SIN STORE-AND-FORWARD   │
+  │                      │  (el circuito nunca tiene el enlace libre)  │
+  ├─────────────────────────────────────────────────────────────────────┤
+  │  Ganador              │  CIRCUITO (10 s), pero necesita 3 s de    │
+  │                      │  establecimiento → 13 s en el mejor caso     │
+  └─────────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>El análisis completo, con las cuatro cifras a la vista:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Técnica</th>
+<th>Establecimiento</th>
+<th>Retardo del último byte</th>
+<th><strong>Total</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Mensajes</strong></td>
+<td>0</td>
+<td>4 × 10 = <strong>40 s</strong></td>
+<td><strong>40 s</strong></td>
+</tr>
+<tr>
+<td><strong>Paquetes</strong></td>
+<td>0</td>
+<td>12,5 + 2,5 = <strong>15 s</strong></td>
+<td><strong>15 s</strong></td>
+</tr>
+<tr>
+<td><strong>Circuito</strong></td>
+<td>3 s</td>
+<td>10 000/1000 = <strong>10 s</strong></td>
+<td><strong>13 s</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Interpretación — y acá está el resultado clave:</strong></p>
+<ul>
+<li><strong>Paquetes (15 s) vs. mensajes (40 s): los paquetes son 2,67 veces más rápidos.</strong> La razón: el <strong>pipeline</strong>. Con un solo mensaje, cada nodo espera a recibirlo entero (10 s) antes de empezar a mandar; con paquetes, cada nodo espera solo 2,5 s y después puede seguir trabajando.</li>
+<li><strong>Circuito (13 s) es el más rápido</strong>, pero con una condición: <strong>el circuito tiene que existir de antemano</strong>. Si se establece ahora, son 13 s. Y <strong>solo gana si el mensaje es grande</strong>: si es de 2000 bits, el circuito tarda 3 s de establecimiento + 2 s de datos = 5 s, y los paquetes 1 + 2 × 2 = ... calculemos: 1 paquete de 2000 bits, <code>d = 3 × (2000/1000) = 6 s</code> → <strong>6 s, más rápido que el circuito</strong>.</li>
+<li><strong>El punto clave: el circuito gana para mensajes GRANDES y el paquete para mensajes CHICOS.</strong> Y para tráfico intermitente, el circuito es <strong>desastroso</strong>: si A y B se turnan para hablar 1 segundo cada uno, el circuito está reservado el 100 % del tiempo para una conversación que usa el 100 % del tiempo.</li>
+</ul>
+<h3>La fórmula general del retardo con paquetes</h3>
+<p>Esto es lo que se pide en la <strong>Pregunta 5 del Examen 2011-03</strong> (10 puntos), y lo resuelvo entero en la Clase 6:</p>
+<div class="codehilite"><pre><span></span><code>  Con N paquetes de tamaño L en una línea de n enlaces, todos de
+  velocidad R, con store-and-forward y sin cola ni propagación:
+
+  · El primer paquete tarda:      n · (L/R)     [n saltos de store-and-forward]
+  · Cada paquete siguiente tarda: (L/R)         [solo el último enlace]
+  · El último de los N paquetes tarda:
+        n·(L/R) + (N−1)·(L/R) = (N + n − 1) · L/R
+</code></pre></div>
+
+<p><strong>La interpretación del resultado <code>(N + n − 1)·L/R</code>:</strong></p>
+<div class="codehilite"><pre><span></span><code>  N  = cantidad de paquetes   (el trabajo)
+  n  = cantidad de enlaces    (el pipeline)
+
+  N · L/R   = el trabajo puro: es IGUAL en todas las técnicas
+  (n−1)·L/R = el costo del pipeline: el primer paquete tiene que
+              recorrer los n enlaces uno por uno; cada uno después
+              sólo tiene que recorrer el último.
+
+  →Mientras más paquetes (N grande), más se amortiza el pipeline
+    (n−1)·L/R y más se parece al tiempo del circuito.
+  → Mientras más enlaces (n grande), más caro es el pipeline.
+</code></pre></div>
+
+<p><strong>El límite importante:</strong></p>
+<div class="codehilite"><pre><span></span><code>  N → ∞   (paquetes infinitamente chicos)
+  d → n · L/R = 10000/1000 = 10 s   ← el tiempo del circuito
+
+  ⚠️ PERO: si los paquetes son demasiado chicos, el overhead los
+    ahoga. Con 20 B de cabecera por paquete, un mensaje de 10 000
+    bits con paquetes de 100 bits tiene 100 paquetes y 2000 bytes
+    de overhead: el 17 % del tráfico es cabecera.
+</code></pre></div>
+
+<hr />
+<h2>1.5 El router: 3 entradas, 2 salidas, buffers llenándose</h2>
+<p>El diagrama que explica por qué existe el retardo de cola, y por qué es el <strong>único componente variable</strong> del retardo.</p>
+<div class="codehilite"><pre><span></span><code>                              ┌─────────────────────┐
+                        ┌────▶│  SALIDA 1 (eth0)    │
+                        │     │  1 Gbps             │
+                        │     └─────────────────────┘
+  ┌───────────┐         │     ┌─────────────────────┐
+  │ ENTRADA 1 │─────────┼────▶│  SALIDA 2 (eth1)    │
+  │ eth2      │         │     │  100 Mbps            │
+  │ 10 Gbps   │         │     └─────────────────────┘
+  └───────────┘         │
+  ┌───────────┐         │     ┌─────────────────────┐
+  │ ENTRADA 2 │─────────┴────▶│  COLA DEL PUERTO     │
+  │ eth3      │               │  DE SALIDA           │
+  │ 1 Gbps    │               │                     │
+  └───────────┘               │  [P1][P2][P3][P4]...│
+                              │      ↑              │
+                              │   BUFFER FINITO      │
+                              └─────────────────────┘
+
+
+  ⚠️ eth2 entra a 10 Gbps, pero sale por eth0 (1 Gbps) o
+     eth1 (100 Mbps). El 90 % o el 99 % del tráfico que entra
+     por eth2 NO SE PUEDE TRANSMITIR en ese instante.
+
+  El buffer de la cola de salida de eth1 (100 Mbps) SE LLENA.
+  Los paquetes que no entran se DESCARTAN.
+</code></pre></div>
+
+<p><strong>La aritmética del desbordamiento, que es donde nace la pérdida:</strong></p>
+<div class="codehilite"><pre><span></span><code>  Supongamos:
+     eth2 envía 10 Gbps de paquetes de 1500 bytes
+     eth1 puede sacar 100 Mbps
+
+  En 1 segundo:
+     llegan    10 000 000 000 bits / 1500 bits = 6 666 667 paquetes
+     salen        100 000 000 bits / 1500 bits =     66 667 paquetes
+
+     ⚠️ Se acumulan 6 666 667 − 66 667 = 6 600 000 paquetes por segundo
+        = 6 600 000 × 1500 bytes = 9 900 000 000 bytes = 9,9 GB por
+        SEGUNDO en la cola.
+
+  Un buffer de 4 MB se llena en:
+     4 000 000 bytes / 9 900 000 000 bytes/s = 0,0004 s
+
+  ⇒ Con 4 MB de buffer, en 400 MICROSEGUNDOS se empieza a perder.
+</code></pre></div>
+
+<p><strong>Eso significa tres cosas, y las tres son importantes:</strong></p>
+<ol>
+<li><strong>La pérdida es inevitable</strong> si la tasa de llegada supera la de salida. No es un defecto del router: es aritmética.</li>
+<li><strong>El retardo de cola se dispara</strong>: un paquete que llega "encima" de la cola espera <strong>millones de paquetes × su propio tiempo de transmisión</strong>.</li>
+<li><strong>El tamaño del buffer NO protege</strong>: agrandarlo 100 veces retrasa la muerte 100 veces, no la evita. Y <strong>agrandar el buffer aumenta el retardo</strong> de los paquetes que sí pasan (bufferbloat, Clase 21).</li>
+</ol>
+<p><strong>Y este es el error típico del ejercicio 2.1:</strong> dibujar "un router con 3 paquetes en el buffer y todo bien". Lo correcto es:</p>
+<div class="codehilite"><pre><span></span><code>  El retardo de cola de un paquete que llega en la posición k de la cola:
+
+      d_cola = k · L / R_salida
+
+  Con 6 600 000 paquetes de cola:
+      d_cola = 6 600 000 × 1500 bits / 100 000 000 bit/s
+             = 6 600 000 × 15 µs
+             = 99 segundos   ⚠️ ¡El paquete tarda más de un minuto
+                              en salir!
+
+  Con un buffer de 4 MB (2666 paquetes de 1500 B):
+      capacidad del buffer = 4 194 304 / 1500 = 2796 paquetes
+      d_cola máximo = 2796 × 1500 / 100 000 000 = 41,9 ms
+      lo que NO entre → se descarta
+</code></pre></div>
+
+<p><strong>El dato estructural que hay que recordar:</strong> el buffer es <strong>una cola de espera</strong>, y como toda cola, tiene un límite. Los routers reales no pueden tener buffers del tamaño del tráfico que deben absorber: si el tráfico es de 100 Gbps y el buffer es de 100 GB, no lo construís. <strong>El buffer siempre es más chico que la carga de la ráfaga.</strong> Por eso la pérdida es parte del diseño normal de Internet, y no una excepción.</p>
+<hr />
+<h2>1.6 La tabla comparativa de las tres técnicas</h2>
+<p>Esta tabla es <strong>la respuesta al Examen 2007-12 P3</strong> y hay que memorizarla completa.</p>
+<table>
+<thead>
+<tr>
+<th>Característica</th>
+<th><strong>Conmutación por circuitos</strong></th>
+<th><strong>Conmutación por paquetes</strong></th>
+<th><strong>Conmutación por mensajes</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>¿Hay conexión?</strong></td>
+<td><strong>Sí</strong>, se establece un circuito</td>
+<td><strong>No</strong> (datagramas) / <strong>sí</strong> (circuito virtual)</td>
+<td>No</td>
+</tr>
+<tr>
+<td><strong>Cuándo se decide el camino</strong></td>
+<td><strong>Antes</strong>, al establecer</td>
+<td><strong>Por cada paquete</strong></td>
+<td>Por cada mensaje</td>
+</tr>
+<tr>
+<td><strong>Unidad de datos</strong></td>
+<td><strong>Flujo continuo</strong> (bytes)</td>
+<td><strong>Paquete</strong> de tamaño fijo o acotado</td>
+<td><strong>Mensaje</strong> completo, tamaño arbitrario</td>
+</tr>
+<tr>
+<td><strong>Tamaño típico</strong></td>
+<td>El que se reserve (64 kbps telefónicos)</td>
+<td><strong>1500 bytes</strong> (MTU de Ethernet)</td>
+<td><strong>Ilimitado</strong> (MB)</td>
+</tr>
+<tr>
+<td><strong>¿Se reservan recursos?</strong></td>
+<td><strong>Sí</strong>, ancho de banda en cada nodo</td>
+<td><strong>No</strong> (mejor esfuerzo)</td>
+<td>No</td>
+</tr>
+<tr>
+<td><strong>Retardo</strong></td>
+<td><strong>Constante</strong>, sin cola</td>
+<td><strong>Variable</strong>, depende de la cola</td>
+<td><strong>Variable y grande</strong></td>
+</tr>
+<tr>
+<td><strong>¿Se puede reenrutar?</strong></td>
+<td><strong>No</strong>: si cae un nodo, se rompe</td>
+<td><strong>Sí</strong>: cada paquete puede ir por donde sea</td>
+<td>Sí</td>
+</tr>
+<tr>
+<td><strong>Orden de llegada</strong></td>
+<td><strong>Siempre en orden</strong> (mismo camino)</td>
+<td><strong>Puede llegar desordenado</strong> (caminos distintos)</td>
+<td>Puede llegar desordenado</td>
+</tr>
+<tr>
+<td><strong>Retardo de establecer</strong></td>
+<td><strong>Alto</strong> (100 ms a 2 s)</td>
+<td><strong>Cero</strong></td>
+<td>Cero</td>
+</tr>
+<tr>
+<td><strong>Uso del medio</strong></td>
+<td><strong>Ineficiente</strong> si hay pausas (se paga y no se usa)</td>
+<td><strong>Eficiente</strong>: multiplexado estadístico</td>
+<td>Eficiente en teoría, malo en la práctica</td>
+</tr>
+<tr>
+<td><strong>Bloqueo de cabeza</strong></td>
+<td>No</td>
+<td><strong>Sí</strong> si un paquete grande retrasa a los chicos</td>
+<td><strong>Muy sí</strong>: un mensaje enorme retrasa todo</td>
+</tr>
+<tr>
+<td><strong>Tamanjos de buffer</strong></td>
+<td>No necesita (recursos reservados)</td>
+<td><strong>Necesita</strong>: <code>⌊B/L⌋ · L</code></td>
+<td><strong>Necesita B ≥ tamaño del mensaje mayor</strong></td>
+</tr>
+<tr>
+<td><strong>Error típico</strong></td>
+<td>"Reservar recursos es eficiente"</td>
+<td>"El retardo es constante"</td>
+<td>"Es lo mismo que paquetes pero más grande"</td>
+</tr>
+<tr>
+<td><strong>Dónde se usa</strong></td>
+<td>Red telefónica clásica; <strong>MPLS</strong> (LSP)</td>
+<td><strong>Internet</strong>. Frame Relay, ATM</td>
+<td><strong>Prácticamente nada</strong> como tal</td>
+</tr>
+</tbody>
+</table>
+<h3>La frase resumen de cada una</h3>
+<ul>
+<li><strong>Circuitos:</strong> <em>"decidí una vez y pagás por el canal aunque no lo uses"</em>.</li>
+<li><strong>Paquetes:</strong> <em>"no decido nada por adelantado, mando lo que puedo y me arreglo"</em>.</li>
+<li><strong>Mensajes:</strong> <em>"espero a tenerlo todo entero antes de mandar nada"</em>.</li>
+</ul>
+<h3>Por qué Internet usa paquetes</h3>
+<p>Cuatro razones, y cada una es un <strong>compromiso que rechaza</strong> una ventaja de los circuitos:</p>
+<ol>
+<li>
+<p><strong>No hay que establecer nada.</strong> El retardo de establecimiento de un circuito (100 ms a 2 s) es inaceptable para una petición web. Con paquetes, la primera petición sale inmediatamente.</p>
+</li>
+<li>
+<p><strong>No se reserva capacidad ociosa.</strong> El tráfico de Internet es en ráfagas. Reservar 1 Gbps para una conexión que transmite 100 kbps el 10 % del tiempo es tirar dinero. Los paquetes <strong>multiplexan estadísticamente</strong>: los picos de unos llenan los valles de otros.</p>
+</li>
+<li>
+<p><strong>Se puede reenrutar.</strong> Si cae un router, el siguiente paquete puede ir por otro camino. Un circuito no puede: se rompe. Esta es la diferencia entre <strong>IP</strong> (best effort, sin conexión) y un protocolo orientado a conexión como ATM.</p>
+</li>
+<li>
+<p><strong>Es stateless en el núcleo.</strong> Un router de Internet <strong>no guarda información de las conexiones</strong>: solo mira la IP destino y reenvía. Puede atender millones de flujos simultáneos con una memoria modesta. Es la razón por la que <strong>IntServ (RFC 2211) no escaló</strong> y DiffServ ganó (Clase 45): mantener estado por flujo en cada router es insostenible.</p>
+</li>
+</ol>
+<p><strong>El precio que se paga por elegir paquetes:</strong></p>
+<div class="codehilite"><pre><span></span><code>  ┌─────────────────────────────────────────────────────────────────┐
+  │ 1. Retardo variable e impredecible.  Para una llamada de voz   │
+  │    150 ms es inaceptable; para una descarga de archivo da igual.│
+  │ 2. Pérdidas.  Si se pierde un paquete, se retransmite entero,    │
+  │    y se duplicó el retardo.                                    │
+  │ 3. Desorden.  Paquetes por caminos distintos llegan desordenados.│
+  │ 4. Holgura obligatoria (headroom).  Hay que dejar el medio      │
+  │    sobrecargado para poder absorber ráfagas.                    │
+  │    Y sobrecargar significa aumentar el retardo.                │
+  │    Ese es el dilema del "90 % de utilización es óptimo".        │
+  └─────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<h3>⚠️ Actualización a 2026</h3>
+<p><strong>Sigue igual — de memoria, sin dudar:</strong>
+- <strong>Las tres técnicas y el criterio de decisión</strong> (antes / por cada unidad de datos).
+- <strong>Que Internet usa conmutación por paquetes</strong> y que es <em>best effort</em>.
+- <strong>El store-and-forward</strong> y la razón de que el router espere el paquete entero (buffers finitos).
+- <strong>Que el tamaño máximo del paquete (MTU) es el precio del store-and-forward</strong>.
+- <strong>La fórmula <code>(N + n − 1)·L/R</code></strong> para el retardo del último paquete.
+- <strong>Que MPLS implementa circuitos virtuales (LSP) en el plano de datos.</strong></p>
+<p><strong>Cambió o se modificado:</strong></p>
+<ul>
+<li><strong>El "servicio de circuitos" de la red telephone clásica ya no existe como tal.</strong> La PSTN se cerró en la mayoría de los países y la voz.mouse migró a <strong>VoIP sobre IP</strong>, que es conmutación de paquetes con <strong>un circuito virtual lógico arriba</strong>: los operadores de VoIP <strong>reservan recursos con SIP/IMS</strong> para dar QoS a la voz, que es exactamente "conmutación por circuitos dentro de una red de paquetes". ⇒ <strong>La frontera del Bloque A se corrió: la voz ya no es el ejemplo de circuitos.</strong></li>
+<li><strong>El circuito virtual sigue, pero cambió de implementación.</strong> <strong>MPLS</strong> sigue desplegándose masivamente en los carriers (<code>RFC 3031</code> arquitectura, <code>RFC 3032</code> pila de etiquetas, <code>RFC 4364</code> MPLS VPN). Pero el <strong>plano de control se está moviendo a Segment Routing</strong>: <code>RFC 8402</code> (arquitectura), <code>RFC 8660</code> (SR-MPLS), <strong><code>RFC 8986</code> (SRv6)</strong>. En <strong>SRv6 el MPLS desaparece del plano de datos</strong>: los segmentos se codifican en un <em>Segment Routing Header</em> de IPv6.</li>
+<li><strong>En el datacenter, MPLS fue reemplazado por EVPN-VXLAN.</strong> <code>RFC 7432</code> (EVPN) + <code>RFC 7348</code> (VXLAN, que encapsula sobre <strong>UDP/4789</strong>). Es el estándar de overlay de datacenter, no el MPLS de los operadores. Y VXLAN <strong>sí es un circuito virtual</strong>, pero de capa 2, no de capa 3.</li>
+<li><strong>La conmutación por "mensajes" tiene un caso de uso nuevo: los servicios de <em>store-and-forward</em> de capa de aplicación.</strong> Webhooks, colas de mensajes (SQS, Kafka, RabbitMQ), y los <strong>MTA de correo</strong> siguen siendo exactamente conmutación por mensajes: reciben el mensaje completo, lo bufferizan, y lo reenvían cuando pueden.</li>
+<li><strong>El control de congestión terminó de asumir que la red es de paquetes.</strong> <strong>CUBIC (<code>RFC 9438</code>, 2023, <em>Standards Track</em>)</strong> es el default global; en 2012 se enseñaba Reno con "quizá CUBIC". Y <strong>BBR nunca fue RFC</strong>: es <code>draft-ietf-ccwg-bbr</code>, <em>Experimental</em>, y especifica <strong>BBRv3</strong>.</li>
+<li><strong>La multicast IP es conmutación por paquetes con State.</strong> IP multicast (<code>RFC 1112</code> y siguientes) mantiene <strong>estado por grupo</strong> en los routers que están en el camino, lo cual es un punto medio entre datagramas y circuitos virtuales: la decisión se toma una vez al unirse al grupo, pero <strong>no se reserva ancho de banda</strong>.</li>
+</ul>
+<blockquote>
+<p><strong>Consecuencia para el examen:</strong> el <strong>esquema conceptual de las tres técnicas</strong> es de 1981 (Tanenbaum lo teach desde el capítulo 1) y <strong>no cambió</strong>. Lo que cambió es <strong>quién lo usa</strong>: la voz dejó de ser el ejemplo de circuitos, y los circuitos virtuales pasaron de MPLS a SRv6 a VXLAN. Si te preguntan <em>"¿qué se usa hoy?"</em>, respondé con el esquema y después una línea de actualización.</p>
+</blockquote>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — Los buffers de un router con tres paquetes de llegada simultánea</h2>
+<p><strong>Enunciado.</strong> Un router tiene <strong>3 interfaces de entrada</strong> y <strong>2 de salida</strong>:</p>
+<ul>
+<li>eth2 (entrada): 10 Gbps, por donde entra una ráfaga de <strong>3 paquetes de 1500 bytes</strong> en el mismo instante.</li>
+<li>eth3 (entrada): 1 Gbps, sin tráfico.</li>
+<li>eth0 (salida): 1 Gbps, buffer de <strong>100 000 bytes</strong>.</li>
+<li>eth1 (salida): 100 Mbps, buffer de <strong>20 000 bytes</strong>.</li>
+</ul>
+<p>Los tres paquetes están dirigidos a destinos que salen por <strong>eth1</strong>.</p>
+<p><strong>a)</strong> ¿Cuántos paquetes entran en el buffer de eth1? ¿Cuántos se descartan?
+<strong>b)</strong> ¿Cuál es el retardo de cola del primer paquete y del último que entra?
+<strong>c)</strong> ¿Qué pasa si en lugar de 3 paquetes de 1500 bytes entran 3 paquetes de 40 bytes?</p>
+<p><strong>Resolución.</strong></p>
+<p><strong>Paso 1 — La tasa de llegada y la de salida.</strong></p>
+<div class="codehilite"><pre><span></span><code>  eth1 transmite a 100 Mbps.
+  Llegan 3 paquetes de 1500 bytes = 4500 bytes = 36 000 bits.
+
+  Tiempo que tardan los 3 en entrar:
+      36 000 bits / 10 000 000 000 bit/s = 0,0000036 s = 3,6 µs
+
+  Tiempo que tarda eth1 en sacar los 3:
+      36 000 bits / 100 000 000 bit/s = 0,00036 s = 360 µs
+</code></pre></div>
+
+<p><strong>Interpretación:</strong> los 3 paquetes entraron en 3,6 µs y eth1 necesita 360 µs para sacarlos. <strong>El buffer tiene que absorber la diferencia.</strong></p>
+<p><strong>Paso 2 — La capacidad del buffer.</strong></p>
+<div class="codehilite"><pre><span></span><code>  Buffer de eth1 = 20 000 bytes
+  Tamaño de un paquete = 1500 bytes
+  Capacidad = ⌊20 000 / 1 500⌋ = ⌊13,33⌋ = 13 paquetes
+
+  ⚠️ OJO: se guardan 13 paquetes COMPLETOS = 13 × 1500 = 19 500 bytes.
+     Los 500 bytes restantes no se usan, porque un paquete
+     a medias no sirve: o entra entero o se descarta.
+     ESTA es la consecuencia dePacketizing: el buffer se usa
+     de a paquetes completos.
+</code></pre></div>
+
+<p><strong>Paso 3 — Respuesta a a).</strong></p>
+<div class="codehilite"><pre><span></span><code>  Llegan 3 paquetes. El buffer tiene capacidad para 13.
+  Los 3 caben.
+
+  DESCARTADOS = 0
+  EN COLA     = 3   (los 3 esperan turno)
+</code></pre></div>
+
+<p><strong>Paso 4 — Respuesta a b): el retardo de cola de cada uno.</strong></p>
+<p>El retardo de cola del paquete que está en la posición <code>k</code> es el tiempo que tardan los <code>k−1</code> paquetes que tiene adelante en salir por el enlace de salida:</p>
+<div class="codehilite"><pre><span></span><code>  d_cola(P1) = 0 × (L/R) = 0                    ← es el primero, sale ya
+  d_cola(P2) = 1 × (1500/100 Mbps) = 15 µs
+  d_cola(P3) = 2 × (1500/100 Mbps) = 30 µs
+
+  (L/R = 1500 bits / 100 000 000 bit/s = 15 µs por paquete)
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>  ┌───────────────────────────────────────────────────────────────────┐
+  │ Enlace eth1 (100 Mbps), un paquete cada 15 µs:                    │
+  │                                                                   │
+  │ 0 µs ──────── 15 µs ──────── 30 µs ──────── 45 µs ──────── 60 µs │
+  │   │             │             │             │             │     │
+  │   ▼             ▼             ▼             ▼             ▼     │
+  │ [P1 sale]   [P2 sale]   [P3 sale]   [buffer vacío]             │
+  │                                                                   │
+  │  ↑P1         ↑P2         ↑P3                                        │
+  │  d_cola=0    d_cola=15µs d_cola=30µs                              │
+  └───────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Paso 5 — Respuesta a c): paquetes de 40 bytes.</strong></p>
+<div class="codehilite"><pre><span></span><code>  Buffer = 20 000 bytes, paquete = 40 bytes
+  Capacidad = ⌊20 000 / 40⌋ = 500 paquetes
+
+  Llegan 3. Caben todos. DESCARTADOS = 0.
+
+  d_cola(P2) = 1 × (40 bytes × 8 / 100 000 000)
+             = 1 × 320 / 100 000 000
+             = 3,2 µs
+
+  d_cola(P3) = 2 × 3,2 µs = 6,4 µs
+
+  Comparación:
+     con 1500 B: d_cola(P3) = 30 µs
+     con   40 B: d_cola(P3) =  6,4 µs      → 4,7 veces MENOS
+</code></pre></div>
+
+<p><strong>Interpretación del apartado c):</strong> con paquetes chicos, <strong>el mismo volumen de tráfico se almacena y se sirve con menos retardo de cola</strong>, porque la granularidad de la cola es fina. Pero el costo es <strong>overhead</strong>: 58 bytes de cabecera por cada 40 bytes de datos = más del 100 % de overhead. Es el mismo compromiso de siempre: <strong>granularidad contra eficiencia</strong>, y es exactamente el análisis de la Pregunta 1b del Examen 2007-12 sobre asignación de recursos.</p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Contar bytes en vez de paquetes en el buffer.</strong> Con 20 000 bytes de buffer entran 13 paquetes de 1500 B, no 13,33. Un paquete a medias no sirve.</li>
+<li><strong>Calcular <code>d_cola</code> como el tiempo total de la cola</strong> y no el tiempo de los paquetes que tiene <strong>delante</strong>. El primer paquete de una cola vacía tiene <code>d_cola = 0</code>.</li>
+<li><strong>Olvidar que el retardo de cola se suma al de transmisión.</strong> El paquete no "sale" en el instante <code>k·L/R</code>: empieza a salir después de esperar, y tarda <code>L/R</code> más en salir.</li>
+<li><strong>Confundir el buffer de eth1 con el de eth0.</strong> El eth2 a 10 Gbps drena por eth1 (100 Mbps), así que <strong>eth1 es el cuello de botella</strong> y es donde hay cola. eth0 no tiene tráfico.</li>
+</ul>
+<h2>2.2 Ejercicio 2 — Utilización de un circuito frente a paquetes con tráfico en ráfagas</h2>
+<p><strong>Enunciado.</strong> Dos aplicaciones comparten un enlace de <strong>1 Mbps</strong>:</p>
+<ul>
+<li><strong>Aplicación A</strong>: tráfico en <strong>ráfagas</strong>: transmite 40 kbit durante 100 ms, y después <strong>90 000 ms</strong> (90 segundos) en silencio.</li>
+<li><strong>Aplicación B</strong>: transmite de forma <strong>continua</strong> los 1 024 kbit que le quedan.</li>
+<li>El problema dura <strong>15 minutos</strong> = <strong>900 segundos</strong>.</li>
+</ul>
+<p><strong>a)</strong> ¿Cuánto dato transmite A en los 15 minutos? ¿Y B?
+<strong>b)</strong> ¿Cuál es la utilización media del enlace si A va por un <strong>circuito reservado</strong> de 1 Mbps? ¿Y si van por <strong>paquetes</strong>?</p>
+<p><strong>Resolución.</strong></p>
+<p><strong>a) El volumen de datos de cada una.</strong></p>
+<div class="codehilite"><pre><span></span><code>  A: 15 ráfagas (una cada 60 segundos en 900 s)
+     15 × 40 kbit = 600 kbit
+
+  B: 900 s × 1024 kbit/s = 921 600 kbit
+</code></pre></div>
+
+<p><strong>b) Con circuito reservado.</strong></p>
+<div class="codehilite"><pre><span></span><code>  ┌────────────────────────────────────────────────────────────────────┐
+  │ CIRCUITO: A recibe 1000 kbit/s reservados para 900 s             │
+  │                                                                    │
+  │ Datos entregados por el circuito de A: 1000 × 900 = 900 000 kbit  │
+  │ Datos REALES que A tenía:                        600 kbit          │
+  │                                                                    │
+  │ ⚠️ SE PIERDEN (o se ocupan sin usar) 899 400 kbit = 99,93 %      │
+  │                                                                    │
+  │ Link utilization por circuito = 900 000 / (1000 × 900) = 100 %    │
+  │ A (utilización efectiva de A) =   600 / 900 000 = 0,067 %  │
+  └────────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>  ┌────────────────────────────────────────────────────────────────────┐
+  │ PAQUETES: A usa el enlace solo en sus ráfagas                      │
+  │                                                                    │
+  │ A transmite 600 kbit en 15 × 100 ms = 1,5 s de uso real           │
+  │ B transmite 921 600 kbit en 900 s                                  │
+  │                                                                    │
+  │ Link utilization = (600 + 921 600) / (1000 × 900)                 │
+  │                 = 922 200 / 900 000 = 102,5 %   ⚠️ ¡NO LLEGA!     │
+  └────────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Aquí hay que hacer el ajuste honesto.</strong> Si los datos que B quiere mandar son 921 600 kbit en 900 s, el enlace de 1 Mbps no alcanza. La solución es que <strong>el enlace real sea de 1,024 Mbps</strong> o que B sea más lento. Supongamos que el enlace es de 1 024 kbps y que el reparto es proporcional:</p>
+<div class="codehilite"><pre><span></span><code>  ANÁLISIS CORRECTO con enlace de 1024 kbps y reparto por paquetes
+
+  Total deseado en 900 s:
+     A:       600 kbit
+     B:   921 600 kbit
+     ───────────────
+     total:  922 200 kbit
+
+  Capacidad del enlace en 900 s:
+     1024 kbit/s × 900 s = 921 600 kbit
+
+  ⚠️ El total pedido (922 200) EXCEDE la capacidad (921 600) en
+     600 kbit, que es exactamente lo que A pide.
+     ⇒ El enlace está saturado el 100 % del tiempo.
+
+  Con PAQUETES, el reparto es el que resulte de la competencia:
+     cada uno manda lo que puede, y en los valles de uno
+     aprovecha el otro.
+
+  Link utilization = 100 % en ambos casos (el enlace está lleno).
+
+  LA DIFERENCIA ESTÁ EN QUÉ SE PIERDE:
+
+  ┌────────────────────────────────────────────────────────────────────┐
+  │ CON CIRCUITO                                                      │
+  │   1000 kbit/s reservados para A                                   │
+  │   A los usa: 0,6 s de 900 s (0,067 %)                            │
+  │   Lo que sobra: 999,4 s × 1000 kbit/s = 899 400 kbit DESPERDICIA │
+  │   → Para que B reciba su 921 600 kbit habría que agrandar el      │
+  │     enlace a 1024 + 1000 = 2024 kbps                             │
+  │                                                                    │
+  │ CON PAQUETES                                                       │
+  │   Ningún ancho de banda reservado                                 │
+  │   En los 1,5 s de ráfagas de A, el enlace va al 100 %             │
+  │   En los 898,5 s restantes, el enlace lo usa B                    │
+  │   → Con 1024 kbps alcanza, sin gastar nada                        │
+  └────────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>El resultado final, que es el que hay que decir:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Circuito reservado</th>
+<th>Paquetes (mejor esfuerzo)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Capacidad necesaria</td>
+<td><strong>2 024 kbps</strong></td>
+<td><strong>1 024 kbps</strong></td>
+</tr>
+<tr>
+<td>Desperdicio</td>
+<td><strong>899 400 kbit</strong> (99,93 % del circuito)</td>
+<td><strong>0</strong></td>
+</tr>
+<tr>
+<td>Retardo de A durante su ráfaga</td>
+<td><strong>Constante y bajo</strong> (tiene el enlace)</td>
+<td><strong>Competitivo</strong> (puede esperar)</td>
+</tr>
+<tr>
+<td>Retardo de B</td>
+<td><strong>Competitivo</strong> (A no le ocupa el ancho, pero sí ocupa el nodo)</td>
+<td><strong>Competitivo</strong></td>
+</tr>
+<tr>
+<td>Retardo de A en su silencio</td>
+<td>N/A</td>
+<td>N/A</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Interpretación — y esto es lo que hace que Internet use paquetes:</strong></p>
+<ul>
+<li><strong>El circuito da calidad</strong> (A siempre tiene lo suyo) <strong>pero se paga caro</strong>: hace falta el doble de capacidad para el mismo servicio, y el 99,9 % de esa capacidad se paga sin usar.</li>
+<li><strong>Los paquetes dan eficiencia</strong> (el mismo enlace sirve para las dos aplicaciones al 100 %) <strong>pero no dan calidad</strong>: A compite con B cuando dispara su ráfaga.</li>
+<li><strong>El compromiso real</strong> es que el enlace tiene que estar <strong>sobrecargado a propósito</strong>: hay que dimensionarlo para el 100 % del tráfico, lo cual significa <strong>más retardo en la cola</strong>. Por eso la utilización de un enlace debe ser ~90 % y no 100 %, aunque eso signifique capacidad ociosa.</li>
+</ul>
+<h2>2.3 Ejercicio 3 — ¿Por qué los paquetes de tamaño variable no se usan?</h2>
+<p><strong>Enunciado.</strong> Se propone una variante de la conmutación por paquetes donde <strong>cada paquete puede tener un tamaño cualquiera, entre 1 byte y 1500 bytes</strong>, decided por la aplicación. <strong>Justificá por qué esa variante es mala</strong>, con argumentos concretos.</p>
+<p><strong>Resolución — los dos argumentos que hay que dar.</strong></p>
+<p><strong>Argumento 1 — Injusticia (<em>unfairness</em>) y retardo extremo.</strong></p>
+<div class="codehilite"><pre><span></span><code>  Enlace de 100 Mbps. Llegan paquetes de tamaño variable.
+
+  Llega un paquete de 1500 bytes primero. Tarda:
+      1500/100 Mbps = 15 µs en ser transmitido
+
+  Justo después llegan 10 paquetes de 100 bytes. El primero tiene que
+  esperar los 15 µs del grande; el segundo, 30 µs; el último, 150 µs.
+
+  ┌────────────────────────────────────────────────────────────────┐
+  │ t (µs)   0      15      30      45      60  ...  150         │
+  │          │       │       │       │       │       │            │
+  │ enlace   [  1500 B  ][100][100][100][100][100]...            │
+  │                                                                │
+  │ RTT del paquete grande (en el sentido de la cola): 15 µs        │
+  │ RTT del último paquete chico:               150 µs             │
+  │                                                                │
+  │ ⚠️ 10 veces peor. Y el tamaño del paquete grande es un factor   │
+  │    que el operador NO controla: lo elige la aplicación.         │
+  └────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Consecuencias:</strong></p>
+<ul>
+<li><strong>El retardo de un paquete depende del comportamiento de otros</strong>, no del suyo. Un paquete de 100 bytes puede tener un retardo 1000 veces mayor que otro de 100 bytes si justo delante hay uno de 1500 bytes.</li>
+<li><strong>No hay garantía de retardo.</strong> Y en un sistema en tiempo real, <strong>no tener garantía es lo mismo que no servir</strong>.</li>
+<li><strong>El culpable no es la red</strong>: es la aplicación que mandó el paquete grande. La red solo obedece. Pero la red es la que carga con la culpa.</li>
+</ul>
+<p><strong>Argumento 2 — El buffer tiene que ser adaptativo, y eso rompe el store-and-forward acotado.</strong></p>
+<div class="codehilite"><pre><span></span><code>  Con paquetes de tamaño FIJO L, el router puede saber EXACTAMENTE
+  cuántos packets caben:
+
+      capacidad = ⌊B / L⌋     (determinista, conocido, acotado)
+
+  Con paquetes de tamaño VARIABLE (1 a 1500 bytes), el router no
+  puede saberlo:
+
+      Un paquete de 1500 bytes ocupa 1500.
+      Un paquete de 1 byte ocupa 1.
+      La MISMA cola de B = 20 000 bytes contiene:
+          13 paquetes de 1500 bytes       →  13 paquetes
+       o 20 000 paquetes de 1 byte       →  20 000 paquetes
+
+      ⚠️ El retardo de cola varía en un factor de 1 500 según
+         qué paquetes hay en la cola. Y el router no puede predecirlo.
+</code></pre></div>
+
+<p><strong>Los argumentos secundarios:</strong></p>
+<ol start="3">
+<li><strong>Overhead ilegible.</strong> No podés calcular la eficiencia sin saber el tamaño. Con <code>L</code> variable, la eficiencia <code>L/(L+58)</code> <strong>varía por paquete</strong>, y el promedio depende de la distribución de tamaños, que depende de las aplicaciones.</li>
+<li><strong>Predicción imposible para el sistema de transporte.</strong> Un AQM (<em>Active Queue Management</em>) como <strong>CoDel</strong> mide cuánto lleva en la cola un paquete. Con tamaños variables, la medida es injusta.</li>
+<li><strong>Multiplexación y prioridad.</strong> Para priorizar por flujo (DSCP en la cabecera IP), el router debería tratar igual un paquete de 1 byte que uno de 1500 bytes <strong>en bytes</strong>, no en cantidad. Con tamaño variable hay que definir la unidad de medida, y cualquier elección genera repartos injustos.</li>
+</ol>
+<p><strong>Conclusión para el examen:</strong></p>
+<div class="codehilite"><pre><span></span><code>  El tamaño FIJO del paquete no es un detalle de implementación:
+  es lo que hace POSIBLES tres cosas:
+    1. el store-and-forward con buffer FINITO y conocido
+    2. una GARANTÍA (o al menos un cálculo) del retardo de cola
+    3. la EQUIDAD entre paquetes
+  Por eso el MTU existe, y por eso existe el MSS.
+</code></pre></div>
+
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2007-12, Pregunta 3 (10 puntos) — las tres técnicas con análisis comparativo</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0712</code> / <code>sirc0712</code> — 27 de diciembre de 2007, Pregunta 3 (10 puntos).
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0712.pdf</p>
+</blockquote>
+<h3>Enunciado (texto del examen)</h3>
+<blockquote>
+<p>Explique en que consiste la conmutación de circuitos, conmutación de paquetes y conmutación de mensajes. Realice un análisis comparativo.</p>
+</blockquote>
+<h3>Sobre la solución oficial</h3>
+<blockquote>
+<p>⚠️ <strong>La solución oficial de esta pregunta NO está publicada.</strong> En <code>sirc0712.txt</code> el enunciado de la Pregunta 3 aparece (líneas 29-31) y después el documento pasa directamente a "Problemas Prácticos" y a la solución del Problema 1. <strong>No hay respuesta de la cátedra para esta pregunta.</strong> Todo lo que sigue es una <strong>solución propia</strong>, desarrollada con el esquema de Tanenbaum y con la aritmética del §1.4. Lo marco como tal.</p>
+</blockquote>
+<h3>Resolución <em>(solución propia, para 10 puntos)</em></h3>
+<p><strong>a) Conmutación de circuitos.</strong></p>
+<div class="codehilite"><pre><span></span><code>  Se ESTABLECE un circuito entre los dos extremos antes de
+  transferir datos, y en cada nodo del camino se RESERVAN recursos
+  (un ancho de banda fijo, normalmente un *time slot*).
+
+  La fase de establecimiento ocurre FUERA DE BANDA: hay un canal de
+  control separado que lleva las señales de ocupado/libre. Es un
+  diálogo entre los nodos que reservan y liberan.
+
+  Una vez establecido:
+     · los datos viajan SIEMPRE por el mismo camino
+     · el retardo es CONSTANTE (no hay cola, porque el ancho de
+       banda está reservado)
+     · si un nodo del camino falla, se rompe la comunicación: no hay
+       ruta alternativa
+     · los recursos quedan ociosos durante las pausas del tráfico,
+       y se pagan igual
+
+  Ejemplo canónico: la red telefónica clásica. Llamar establish un
+  camino de 64 kbps reservado a través de todos los nodos
+  intermedios.
+</code></pre></div>
+
+<p><strong>b) Conmutación de paquetes.</strong></p>
+<div class="codehilite"><pre><span></span><code>  El mensaje se DIVIDE en paquetes de tamaño FIJO o acotado. Cada
+  paquete se reenvía de manera INDEPENDIENTE, con store-and-forward,
+  y la decisión de por dónde va se toma PARA CADA PAQUETE, mirando la
+  dirección de destino.
+
+  Consecuencias:
+     · NO hay establecimiento: el primer paquete sale ya
+     · NO se reserva ancho de banda: es "mejor esfuerzo" (best effort)
+     · el retardo es VARIABLE, y depende de la cola de cada router
+     · dos paquetes del mismo mensaje pueden ir por caminos distintos
+       → pueden llegar desordenados o perderse
+     · los routers son STATELESS: no guardan información del flujo
+
+  Es lo que usa Internet.
+</code></pre></div>
+
+<p><strong>c) Conmutación por mensajes.</strong></p>
+<div class="codehilite"><pre><span></span><code>  El mensaje COMPLETO, de tamaño arbitrario y potencialmente enorme,
+  se reenvía de nodo en nodo. Cada nodo lo recibe ENTERO, lo guarda
+  en un buffer, y ESPERA a poder transmitirlo completo.
+
+  Es store-and-forward SIN FRAGMENTAR, sin cota superior de tamaño.
+
+  Consecuencias:
+     · NO hay establecimiento
+     · el retardo es muy grande: el mensaje entero tiene que
+       atravesar cada enlace antes de que el siguiente nodo pueda
+       empezar a transmitir
+     · BLOQUEO DE CABEZA: un mensaje grande bloquea a todos los
+       pequeños que están detrás en el buffer
+     · el buffer tiene que poder contener el mensaje más grande
+       que se pueda recibir, lo que es inviable en un router
+
+  Es el antecesor histórico de la conmutación por paquetes: si se
+  acota el tamaño del mensaje, se convierte en conmutación por
+  paquetes.
+</code></pre></div>
+
+<p><strong>d) El análisis comparativo.</strong> La tabla del §1.6 completa, reproducida:</p>
+<table>
+<thead>
+<tr>
+<th>Característica</th>
+<th>Circuitos</th>
+<th>Paquetes</th>
+<th>Mensajes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>¿Hay conexión?</td>
+<td>Sí, se establece</td>
+<td>No (datagramas)</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Unidad de datos</td>
+<td>Flujo continuo</td>
+<td>Paquete de tamaño acotado</td>
+<td>Mensaje completo</td>
+</tr>
+<tr>
+<td>¿Se reservan recursos?</td>
+<td><strong>Sí</strong></td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td>Retardo</td>
+<td><strong>Constante</strong></td>
+<td>Variable</td>
+<td>Variable y muy grande</td>
+</tr>
+<tr>
+<td>¿Puede cambiar el camino?</td>
+<td>No</td>
+<td>Sí, por paquete</td>
+<td>Sí, por mensaje</td>
+</tr>
+<tr>
+<td>¿Llegan en orden?</td>
+<td>Siempre</td>
+<td>Puede que no</td>
+<td>Puede que no</td>
+</tr>
+<tr>
+<td>Establecimiento</td>
+<td>100 ms a 2 s</td>
+<td>Ninguno</td>
+<td>Ninguno</td>
+</tr>
+<tr>
+<td>Tamaño del buffer</td>
+<td>No hace falta</td>
+<td>Acotado y conocido</td>
+<td>Debe ser enorme</td>
+</tr>
+<tr>
+<td>¿Escala?</td>
+<td>No</td>
+<td><strong>Sí</strong></td>
+<td>No</td>
+</tr>
+<tr>
+<td>Uso real</td>
+<td>Teléfono, MPLS (LSP)</td>
+<td><strong>Internet</strong></td>
+<td>Prácticamente ninguno</td>
+</tr>
+</tbody>
+</table>
+<p><strong>La conclusión del análisis comparativo, que es lo que la pregunta pide cerrar:</strong></p>
+<div class="codehilite"><pre><span></span><code>  Las tres sirven para COMPARTIR un medio. Lo que cambia es
+  QUÉ se comparte:
+
+  · Circuitos:  el ANCHO DE BANDA.   Reparto fijo y estático.
+  · Paquetes:   el TIEMPO.           Reparto dinámico por oportunidad.
+  · Mensajes:   el TIEMPO, a bloque. Reparto dinámico pero bloqueado.
+
+  El circuito da CALIDAD a costa de EFICIENCIA.
+  Los paquetes dan EFICIENCIA a costa de CALIDAD.
+  Los mensajes no dan ninguna de las dos.
+
+  La red eligió paquetes porque Internet tiene una mezcla de tráfico
+  (ráfagas de archivos, ráfagas de voz, video constante) donde la
+  eficiencia importa más que la calidad, y porque la calidad se
+  puede COMPRAR después en un DiffServ (Clase 45), mientras que la
+  eficiencia no se puede comprar.
+</code></pre></div>
+
+<h2>3.2 ⭐ Examen 2009-02, Pregunta 4 (9 puntos) — datagramas vs. circuitos virtuales</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc0902</code> — 2 de febrero de 2009, Pregunta 4 (9 puntos).
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0902.pdf</p>
+</blockquote>
+<h3>Enunciado (texto del examen)</h3>
+<blockquote>
+<p><strong>a)</strong> Describa la conmutación de paquetes basada en:
+<strong>i.</strong> Datagramas
+<strong>ii.</strong> Circuitos virtuales.</p>
+<p><strong>b)</strong> Explique ventajas y desventajas de cada opción desde el punto de vista de la <strong>asignación de recursos en la red</strong>.</p>
+</blockquote>
+<h3>Solución oficial</h3>
+<blockquote>
+<p><strong>c) Describa la conmutación de paquetes basada en:</strong>
+<strong>i.</strong> Datagramas
+<strong>ii.</strong> Circuitos virtuales.
+<em>(Sin desarrollo: el PDF deja el apartado en blanco.)</em></p>
+<p><strong>d) Explique ventajas y desventajas de cada opción desde el punto de vista de la asignación de recursos en la red.</strong></p>
+<p>Básicamente las redes de datagramas son "de mejor esfuerzo", es decir que consumen los recursos disponibles, y en caso de congestión degradan el servicio por igual a todos los usuarios; aprovechan bien el multiplexado estadístico del tráfico en la red. Las redes de VC ofrecen garantía de QoS basadas en la reserva de recursos, y por lo tanto protegen a los usuarios de las situaciones de congestión, a costo de disponer de más recursos o rechazar conexiones (control de admisión).</p>
+<p>⚠️ <strong>Dos errores de la solución oficial que hay que notar:</strong> (a) los apartados de la solución están rotulados <strong>c)</strong> y <strong>d)</strong> cuando el enunciado dice <strong>a)</strong> y <strong>b)</strong>: es un error de maquetación de la cátedra. (b) El apartado <strong>a)</strong> —la descripción de las dos técnicas— <strong>quedó sin desarrollar</strong>. Lo desarrollo abajo.</p>
+</blockquote>
+<h3>Análisis de la solución oficial</h3>
+<p><strong>Lo que está muy bien:</strong></p>
+<ol>
+<li>
+<p><strong>El resumen del apartado b) es una de las mejores frases de todo el material oficial</strong>: <em>"aprovechan bien el multiplexado estadístico del tráfico en la red"</em>. Es exactamente el argumento de por qué Internet es de datagramas, en una frase.</p>
+</li>
+<li>
+<p><strong>Nombra los dos costos de los circuitos virtuales</strong>: o <strong>disponés de más recursos</strong>, o <strong>rechazás conexiones</strong>. El segundo es el <strong>control de admisión</strong> (<em>admission control</em>), que es el término técnico correcto y que casi ningún alumno conoce. Lo nombró.</p>
+</li>
+<li>
+<p><strong>Distingue degradación uniforme vs. garantía</strong>: en datagramas, la congestión "degrada el servicio por igual a todos los usuarios"; en VC, "protege a los usuarios de las situaciones de congestión". Esa es la diferencia observable.</p>
+</li>
+</ol>
+<p><strong>Lo que falta:</strong></p>
+<ol>
+<li><strong>El apartado a) entero.</strong> Ni datagramas ni circuitos virtuales están descritos. Hay que hacerlo.</li>
+<li><strong>No dice qué hace el router en cada caso.</strong> En datagramas, el router busca por la IP destino; en VC, por la etiqueta. Esa es la diferencia mecánica.</li>
+<li><strong>No menciona el estado.</strong> Un router de datagramas es <strong>stateless</strong>; uno de VC mantiene una <strong>tabla de VC</strong> (estado). Ese estado es lo que permite la QoS y lo que hace que no escale.</li>
+<li><strong>No menciona la etiqueta.</strong> El VC se identifica por una etiqueta en la cabecera, no por la IP de destino.</li>
+</ol>
+<h3>Parte a) — las dos técnicas <em>(desarrollo propio, la oficial lo dejó vacío)</em></h3>
+<p><strong>i. Datagramas</strong></p>
+<div class="codehilite"><pre><span></span><code>  Cada paquete es INDEPENDIENTE y lleva la DIRECCIÓN DE DESTINO
+  COMPLETA (la IP) en su cabecera. No hay conexión, no hay estado, no
+  hay negociación previa.
+
+  ┌───────────────────────────────────────────────────────────────┐
+  │  Paquete 1:  destino = 203.0.113.9, TTL = 64                   │
+  │  Paquete 2:  destino = 203.0.113.9, TTL = 63                   │
+  │  Paquete 3:  destino = 203.0.113.9, TTL = 64                   │
+  │                    ↑ 3 paquetes, 3 cabeceras completas         │
+  └───────────────────────────────────────────────────────────────┘
+
+  El ROUTER hace, por cada paquete:
+     1. lee la IP destino
+     2. longest prefix match en su tabla de reenvío
+     3. reenvía por la interfaz que le corresponde
+
+  · No guarda NADA entre paquetes. Es STATELESS.
+  · Dos paquetes con el mismo destino pueden tomar caminos distintos.
+  · Si cambia la topología, el siguiente paquete va por el camino nuevo.
+  · Los paquetes pueden perderse, duplicarse o llegar desordenados.
+  · ES EL MODELO DE INTERNET (IP, RFC 791; y RFC 8200 para IPv6).
+</code></pre></div>
+
+<p><strong>ii. Circuitos virtuales</strong></p>
+<div class="codehilite"><pre><span></span><code>  Se ESTABLECE un camino virtual entre los extremos antes de mandar
+  datos. Cada paquete lleva una ETIQUETA que identifica el camino, y
+  los routers reenvían MIRANDO LA ETIQUETA, sin consultar la IP de
+  destino.
+
+  ┌───────────────────────────────────────────────────────────────┐
+  │  Paquete 1:  etiqueta = 7, VC = (H1 → H2)                     │
+  │  Paquete 2:  etiqueta = 7, VC = (H1 → H2)                     │
+  │  Paquete 3:  etiqueta = 7, VC = (H1 → H2)                     │
+  │                    ↑ 3 paquetes, la MISMA etiqueta            │
+  └───────────────────────────────────────────────────────────────┘
+
+  El ROUTER hace:
+     1. lee la ETIQUETA de la cabecera MPLS
+     2. busca en su TABLA DE VCS (que es un array, no un longest
+        prefix match)
+     3. cambia la etiqueta por la de salida y reenvía
+
+  · El router mantiene ESTADO: la tabla de VCs y los contadores.
+  · Todos los paquetes del mismo VC van por el MISMO camino.
+  · El orden de llegada se preserva (mismo camino, mismo buffer).
+  · Los VC se pueden AGRUPAR en un mismo enlace físico.
+  · Implementaciones: ATM (AAL5), Frame Relay, MPLS (etiqueta de
+    20 bits, LSP unidireccional), y VXLAN en el datacenter.
+</code></pre></div>
+
+<p><strong>La comparación mecánica, que es la que faltaba:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Datagramas</strong></th>
+<th><strong>Circuitos virtuales</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Qué mira el router</strong></td>
+<td>La <strong>IP destino</strong></td>
+<td>La <strong>etiqueta</strong> de VC</td>
+</tr>
+<tr>
+<td><strong>Cómo busca</strong></td>
+<td><strong>Longest prefix match</strong> en la tabla de ruteo</td>
+<td><strong>Índice directo</strong> en una tabla de VCs</td>
+</tr>
+<tr>
+<td><strong>Coste de la decisión</strong></td>
+<td>Acceso a una TCAM (lento)</td>
+<td>Un índice (rápido)</td>
+</tr>
+<tr>
+<td><strong>Estado en el router</strong></td>
+<td><strong>Ninguno</strong></td>
+<td><strong>Por VC</strong>: contadores, cola, QoS</td>
+</tr>
+<tr>
+<td><strong>Camino por paquete</strong></td>
+<td>Puede cambiar</td>
+<td><strong>Fijo</strong></td>
+</tr>
+<tr>
+<td><strong>Sobrevive a un cambio de topología</strong></td>
+<td><strong>Sí</strong>: el siguiente paquete va por donde sea</td>
+<td><strong>No</strong>: hay que <strong>reestablecer</strong> el VC</td>
+</tr>
+<tr>
+<td><strong>Cuentas</strong></td>
+<td>Sobrecarga de la cabecera IP</td>
+<td>Sobrecarga de la etiqueta MPLS (4 bytes)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>La observación clave sobre la velocidad:</strong> el VC es <strong>más rápido de conmutar</strong> porque la decisión es un índice en un array, no una búsqueda de prefijo. <strong>Ese es el motivo técnico de MPLS</strong>: en un backbone a 100 Gbps, la diferencia entre un índice y una TCAM es la diferencia entre 40 ns y 3000 ns por paquete. Pero ese ganho viene <strong>precisamente del estado</strong>, y el estado es lo que hace que no escale.</p>
+<h3>Parte b) — ventajas y desventajas desde la asignación de recursos <em>(desarrollo de la solución oficial)</em></h3>
+<p><strong>La oficial en dos frases.</strong> La desarrollo con los dos casos y las dos preguntas que hay que responder.</p>
+<p><strong>Datagramas — desde el punto de vista de la asignación de recursos:</strong></p>
+<div class="codehilite"><pre><span></span><code>  ASIGNACIÓN DE RECURSOS: NINGUNA, IMPLÍCITA, POR OPORTUNIDAD.
+
+  · Es "mejor esfuerzo" (best effort): cada paquete usa los recursos
+    que encuentra libres en ese instante, sin preguntar y sin
+    reservar.
+  · MULTIPLEXADO ESTADÍSTICO: los picos de un flujo llenan los
+    valles de otro. Es la razón por la que un único enlace de
+    100 Mbps sirve para 1000 usuarios que cada uno usan 200 kbps el
+    10 % del tiempo.
+
+    límite  ──────────────────────────────────────────────►
+    1000 flujos × 200 kbps × 10 % = 200 kbps de MEDIA
+    enlace de 100 Mbps = 100 000 kbps
+    factor de multiplexado = 100 000 / 200 = 500×
+
+  · En caso de congestión, TODOS los usuarios se ven afectados
+    IGUALMENTE. No hay manera de proteger a nadie.
+
+  VENTAJAS
+     · Eficiencia máximo del enlace
+     · No necesita estado en los routers → escala a millones de flujos
+     · Sobrevive a los cambios de topología
+     · No hay establecimiento ni control de admisión
+
+  DESVENTAJAS
+     · Sin garantía de retardo ni de ancho de banda
+     · La congestión degrada a todos por igual
+     · Para dar QoS hay que marcar los paquetes (DiffServ) y eso
+       obliga a tener ESTADO por clase, que es menos que por flujo
+       pero más que cero
+</code></pre></div>
+
+<p><strong>Circuitos virtuales — desde el punto de vista de la asignación de recursos:</strong></p>
+<div class="codehilite"><pre><span></span><code>  ASIGNACIÓN DE RECURSOS: EXPLÍCITA, POR RESERVA, CON CONTROL
+  DE ADMISIÓN.
+
+  · Al establecer el VC se RESERVAN recursos en cada salto:
+    ancho de banda y/o buffer.
+  · CONTROL DE ADMISIÓN (*admission control*): si no hay recursos
+    suficientes, NO SE ACEPTA el VC. Se rechaza la conexión. Esto es
+    fundamental: es lo que hace que las garantías sean reales.
+
+    enlaces disponibles: 3 × 64 kbps
+    VC pedido 1:  64 kbps  → ok, quedan 2 × 64
+    VC pedido 2:  64 kbps  → ok, quedan 1 × 64
+    VC pedido 3:  64 kbps  → ok, quedan 0
+    VC pedido 4:  64 kbps  → RECHAZADO (control de admisión)
+
+  · AISLAMIENTO: la congestión de un VC no afecta a los demás, porque
+    los recursos están reservados y separados.
+
+  VENTAJAS
+     · GARANTÍA de retardo y de ancho de banda
+     · AISLAMIENTO entre flujos: uno no puede arruinar al otro
+     · Preserva el ORDEN (mismo camino)
+     · El flujo es predecible: no hay picos de retardo
+
+  DESVENTAJAS
+     · COSTE: hay que tener más recursos disponibles de los que se
+       usan, o aceptar conexiones rechazadas
+     · ESTADO por VC en cada router: no escala a millones de flujos
+       (es el motivo por el que IntServ, RFC 2211, no se despliega)
+     · Si cae un nodo, se rompe el VC y hay que reestablecerlo
+     · La reserva ociosa: se paga y no se usa
+</code></pre></div>
+
+<p><strong>La frase de síntesis, que es la conclusión de la pregunta:</strong></p>
+<div class="codehilite"><pre><span></span><code>  ┌────────────────────────────────────────────────────────────────┐
+  │  Datagramas: asignación IMPLÍCITA, por oportunidad.             │
+  │  → Eficiencia máxima, cero garantías, cero estado.              │
+  │                                                                │
+  │  Circuitos virtuales: asignación EXPLÍCITA, por reserva.       │
+  │  → Garantías reales, pero con coste en recursos y en estado.   │
+  │                                                                │
+  │  Y la clave histórica: IntServ (reserva por flujo) NO escaló.   │
+  │  DiffServ (marcar por clase, sin reserva) escaló. Porque en      │
+  │  Internet la cantidad de flujos es tan grande que el estado     │
+  │  por flujo es insostenible, mientras que el estado por clase     │
+  │  (un número pequeño de colas) es viable.                        │
+  └────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<h2>3.3 Referencia — Examen 2009-07 P2 (10 puntos), sobre el mismo terreno</h2>
+<blockquote>
+<p><strong>Enunciado:</strong> <em>"Un problema de enrutamiento donde la métrica es la distancia en número de saltos (hops): ¿es la mejor métrica posible? Justifique."</em></p>
+</blockquote>
+<p><strong>Por qué lo pongo acá, aunque sea de otra clase:</strong> el enunciado es sobre enrutamiento (Clase 33), pero <strong>el fondo es la conmutación</strong>. La respuesta oficial dice, textual:</p>
+<blockquote>
+<p><em>"Si se busca una utilización eficiente de los recursos y/o satisfacer requerimientos de calidad de servicio, la métrica de hops puede ser inconveniente, ya que señalará como 'mejor' el camino más corto, que no necesariamente será el que tenga mejores atributos de calidad (retardo extremo a extremo, pérdidas, throughput) y/o menos congestión."</em></p>
+</blockquote>
+<p><strong>La conexión con esta clase:</strong> el <strong>número de hops es la métrica que corresponde a los circuitos virtuales</strong>, porque mide el camino fijo, no la calidad. En <strong>datagramas</strong> uno podría medir la calidad real (retardo, ancho de banda) y elegir por eso; en <strong>circuito virtual</strong> el camino ya está fijado y solo queda medirlo para calcular el retardo. Y la objeción de la oficial es que <strong>el camino más corto en hops no es el más corto en retardo</strong>: 3 saltos por un enlace satelital de 600 ms son peores que 8 saltos por fibra de 2 ms cada uno.</p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen</h2>
+<ol>
+<li><strong>El criterio único</strong> que distingue a las tres: <strong>¿cuándo se decide el camino</strong> (antes / por cada unidad de datos).</li>
+<li><strong>Circuitos</strong>: se establece un camino y <strong>se reservan recursos</strong>. Retardo <strong>constante</strong>, orden garantizado, si cae un nodo <strong>se rompe</strong>, y <strong>los recursos ociosos se pagan</strong>. La red telefónica clásica es el ejemplo.</li>
+<li><strong>Mensajes</strong>: el mensaje <strong>completo</strong> se reenvía entero, con store-and-forward. Retardo enorme, <strong>bloqueo de cabeza</strong>, buffers que tienen que ser enormes. Es el <strong>antecedor</strong> de los paquetes.</li>
+<li><strong>Paquetes</strong>: el mensaje se <strong>divide en paquetes acotados</strong> y cada uno se reenvía por separado. <strong>Es lo que usa Internet.</strong> Compromiso entre mensajes y circuitos: <strong>mensaje de tamaño de mensaje pero store-and-forward de paquete pequeño</strong>.</li>
+<li><strong>Store-and-forward</strong> es obligatorio porque el router tiene <strong>buffers finitos</strong> y los enlaces de entrada y salida tienen <strong>velocidades distintas</strong>. Si reenvía bit a bit, necesita memoria infinita.</li>
+<li><strong>El pipeline</strong> es lo que gana los paquetes: con <code>N</code> paquetes y <code>n</code> enlaces, el último tarda <code>(N + n − 1)·L/R</code>. Los mensajes tardan <code>N·n·L/R</code>; el circuito, <code>N·L/R</code> pero con <code>100 ms a 2 s</code> de establecimiento.</li>
+<li><strong>El router con buffers llenándose</strong>: el retardo de cola del paquete en posición <code>k</code> es <code>k·L/R</code>, y si el buffer se llena <strong>se descarta</strong> (pérdida). El buffer es una cola, y toda cola tiene un límite.</li>
+<li><strong>Comparación clave</strong>: circuitos = calidad a costa de eficiencia; paquetes = eficiencia a costa de calidad; mensajes = ni una ni otra.</li>
+<li><strong>Datagramas vs. circuitos virtuales</strong>: el router mira <strong>la IP destino</strong> (longest prefix match, stateless) o <strong>la etiqueta</strong> (índice, stateful). El VC es <strong>más rápido</strong> pero <strong>no escala</strong> por el estado.</li>
+<li><strong>Por qué Internet usa paquetes</strong>: sin establecimiento, sin reserva ociosa, se puede reenrutar, y el núcleo es <strong>stateless</strong>. <strong>IntServ no escaló</strong>; DiffServ ganó.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p><strong>1.</strong> ¿Por qué un router no puede reenviar los datos bit a bit, como el <em>cut-through forwarding</em> de los switches rápidos?</p>
+<details><summary>Respuesta</summary>
+
+Porque **el buffer del router es finito** y las velocidades de entrada y salida **no son iguales**.
+
+
+<div class="codehilite"><pre><span></span><code>  Entrada a 10 Gbps, salida a 100 Mbps.
+  Por cada bit que sale, hay que guardar 100 bits.
+  En 1 segundo: entran 10⁹ bits, salen 10⁷ bits, se guardan 10⁹ bits = 125 MB.
+</code></pre></div>
+
+
+
+Para no perder nada, el router necesitaría un buffer **infinito**. Como no existe:
+
+- con **store-and-forward** (paquete completo), el buffer necesario es `⌊B/L⌋·L`, que es **acotado y conocido**, y cuando se llena se descarta **un paquete entero**;
+- con **cut-through**, el buffer se llena de bits sueltos y se descarta **un bloque arbitrario de bytes**, que es peor: el receptor nunca tendrá una trama válida.
+
+Por eso el switch usa *cut-through* solo para **reducir el retardo de un paquete que ya está en tránsito** (con poca diferencia de tasa), y no para casos de alta asimetría. Y por eso el problema 2011-03 P5b tiene una respuesta tan limpia: los conmutadores "no aportan retardo" **porque el enunciado supone que reenvían bit a bit**, lo cual solo tiene sentido si la diferencia entre enlaces es pequeña.
+
+</details>
+
+<p><strong>2.</strong> Un mensaje de 30 000 bits va por 3 enlaces de 2000 bit/s. ¿Cuánto tarda con conmutación de mensajes, con paquetes de 5000 bits, y con circuito?</p>
+<details><summary>Respuesta</summary>
+
+
+<div class="codehilite"><pre><span></span><code>  L = 30 000 bits,  n = 3 enlaces,  R = 2000 bit/s
+
+  ─────────────────────────────────────────────────────────────────
+  CONMUTACIÓN POR MENSAJES
+  d_trans por enlace = 30 000/2000 = 15 s
+  El mensaje tiene que recorrer los 3 enlaces COMPLETO:
+  d = 3 × 15 = 45 s
+
+  ─────────────────────────────────────────────────────────────────
+  CONMUTACIÓN POR PAQUETES (paquetes de 5000 bits)
+  N = 30 000/5000 = 6 paquetes
+  d_trans por paquete por enlace = 5000/2000 = 2,5 s
+
+  fórmula (N + n − 1)·L/R = (6 + 3 − 1) × 2,5 = 8 × 2,5 = 20 s
+
+  Verificación con el timeline:
+     el primer paquete sale de H2 en 3 × 2,5 = 7,5 s
+     y después salen uno cada 2,5 s:
+       P1: 7,5 · P2: 10,0 · P3: 12,5 · P4: 15,0 · P5: 17,5 · P6: 20,0 s
+  ⇒ el último llega a los 20 s.  ✓
+
+  ─────────────────────────────────────────────────────────────────
+  CIRCUITO VIRTUAL
+  datos: 30 000/2000 = 15 s, SIN store-and-forward (el medio está
+          reservado y dedicado)
+  + establecimiento: 0,3 s (señalización)
+  d = 0,3 + 15 = 15,3 s
+  ─────────────────────────────────────────────────────────────────
+</code></pre></div>
+
+
+
+**Conclusión:**
+
+| Técnica | Tiempo | Ganador |
+|---|---|---|
+| Mensajes | **45 s** | peor |
+| Paquetes | **20 s** | intermedio |
+| Circuito | **15,3 s** | mejor |
+
+El circuito gana porque no paga store-and-forward. Los paquetes ganan sobre los mensajes por el **pipeline** (`20 s` contra `45 s`, casi 2,25 veces mejor).
+
+</details>
+
+<p><strong>3.</strong> ¿Qué es "multiplexado estadístico" y por qué es la ventaja de los datagramas?</p>
+<details><summary>Respuesta</summary>
+
+Es **compartir un enlace entre muchos flujos sin reservar nada**, aprovechando que **los flujos no son continuos**.
+
+
+<div class="codehilite"><pre><span></span><code>  1 enlace de 100 Mbps = 100 000 kbps
+  1000 flujos, cada uno con una tasa media de 200 kbps
+  (porque cada uno transmite el 10 % del tiempo a 2 Mbps)
+
+  tasa total = 1000 × 200 = 200 000 kbps
+
+  ⚠️ 200 000 &gt; 100 000: NO ALCANZA si todos picosen a la vez.
+     PERO los picos NO son simultáneos (por eso se llama
+     ESTADÍSTICO: usa la estadística del tráfico).
+
+  Con la ley de los grandes números: con 1000 flujos independientes,
+  la suma de sus tasas está muy concentrada alrededor de la media.
+  El máximo de la suma es ~1,5 veces la media, no 1000 veces.
+
+  tasa máxima realista ≈ 1,5 × 200 000 = 300 000 kbps
+  → sigue sin alcanzar. Con 1000 flujos, dimensionar para el
+    máximo théorique (2000 Mbps cada uno) es absurdo.
+
+  factor de multiplexado = 100 000 / 200 000 × 1000 = 500 flujos
+</code></pre></div>
+
+
+
+**La respuesta oficial del Examen 2009-02 lo dice perfecto**: *"aprovechan bien el multiplexado estadístico del tráfico en la red"*.
+
+**La clave del argumento**: con circuitos, para garantizar 2 Mbps a cada uno de los 1000 flujos **harían falta 2 000 Mbps**. Con datagramas y dimensionando el enlace a, digamos, 400 Mbps, **los 1000 flujos obtienen su tasa media con jitter** y **nadie se queda sin servicio**.
+
+El precio es la **impredecibilidad**: cada flujo tiene jitter, y en el peor caso alguien va lento.
+
+</details>
+
+<p><strong>4.</strong> ¿Por qué un circuito virtual es más rápido de conmutar que un datagrama, si los circuits virtuales requieren más estado?</p>
+<details><summary>Respuesta</summary>
+
+Porque la **decisión es un índice en lugar de una búsqueda**.
+
+
+<div class="codehilite"><pre><span></span><code>  DATAGRAMA:
+    el router tiene que responder "¿qué prefijo de mi tabla es el
+    más largo que coincide con 203.0.113.9?"
+    → longest prefix match en una TCAM
+    → 40 a 3000 ns según el tamaño de la tabla
+
+  CIRCUITO VIRTUAL:
+    el router lee la etiqueta (20 bits en MPLS) y hace:
+        tabla_vc[etiqueta] → {puerto_salida, etiqueta_salida}
+    → un acceso directo a un array
+    → ~40 ns siempre, sin importar cuántas entradas haya
+</code></pre></div>
+
+
+
+**Ese es el motivo técnico de MPLS**: en un backbone a 100 Gbps, con paquetes de 64 bytes, el router tiene que tomar **1,56 · 10⁹ decisiones por segundo**. Si cada una cuesta 3000 ns, se usan 4,7 cores solo en deciding, y no queda CPU para nada más. Con índices, se usan 0,06 cores.
+
+**Y el precio:** el estado. Un router MPLS guarda una entrada por VC **en cada salto**. Con 100 000 VCs, son 100 000 entradas × 24 bytes = 2,4 MB de memoria, que está bien. El problema es la **escala**: si tenés 10 millones de flujos simultáneos (que es lo que tiene un punto de tránsito grande), el estado es insostenible. **Ese es exactamente el motivo por el que MPLS se usa en el backbone (donde hay pocos VCs agregados) y no en el acceso (donde hay muchos usuarios).**
+
+</details>
+
+<p><strong>5.</strong> Explique por qué el tamaño del buffer de un router no protege contra la pérdida.</p>
+<details><summary>Respuesta</summary>
+
+Porque **el buffer es más chico que la ráfaga que tiene que absorber**, siempre.
+
+
+<div class="codehilite"><pre><span></span><code>  eth2 entra a 10 Gbps, eth1 sale a 100 Mbps.
+  Tasa de acumulación: 9,9 GB por segundo (9,9 · 10⁹ bytes/s).
+
+  Un buffer de 4 MB:  4 · 10⁶ / 9,9 · 10⁹ = 0,0004 s  → 400 µs
+  Un buffer de 400 MB: 0,04 s                         → 40 ms
+  Un buffer de 40 GB: 4 s                             → 4 s
+</code></pre></div>
+
+
+
+Para **no** perder con una ráfaga de 1 segundo habría que tener ~10 GB de buffer **por puerto de salida**. Un router de 100 Gbps con 48 puertos necesitaría 480 GB. No existe.
+
+**Y agrandar el buffer empeora otra cosa:**
+
+
+<div class="codehilite"><pre><span></span><code>  Con buffer pequeño: pérdida alta, retardo bajo (bufferbloat no)
+  Con buffer grande:  pérdida baja, retardo ALTO (bufferbloat sí)
+
+  ⚠️ El objetivo NO es "no perder". El objetivo es "que el
+     promedio de retardo sea aceptable". Por eso existen los
+     AQMs (CoDel, FQ-CoDel, PIE), que descartan ANTES de llenarse
+     el buffer, para que el retardo no se dispare.
+</code></pre></div>
+
+
+
+**La respuesta completa:** el buffer **no protege**, solo **retrasa**. Y el retardo que impone es laLd peers que pagamos: por eso un enlace al 90 % de utilización tiene mucho menos retardo que uno al 99 %, aunque el 99 % "agote más la capacidad".
+
+</details>
+
+<p><strong>6.</strong> ¿Qué es control de admisión y por qué es indispensable en los circuitos virtuales?</p>
+<details><summary>Respuesta</summary>
+
+**Control de admisión** (*admission control*): la decisión de **aceptar o rechazar** una petición de conexión según si hay recursos suficientes.
+
+
+<div class="codehilite"><pre><span></span><code>  3 enlaces de 64 kbps disponibles:
+     VC 1: 64 kbps → ACEPTADO    (quedan 128 kbps)
+     VC 2: 64 kbps → ACEPTADO    (quedan 64 kbps)
+     VC 3: 64 kbps → ACEPTADO    (quedan 0)
+     VC 4: 64 kbps → RECHAZADO   (no hay)
+</code></pre></div>
+
+
+
+**Por qué es indispensable:** porque **una garantía que no se puede cumplir no es una garantía**. Si el router aceptara el VC 4 sin tener ancho de banda, el VC 1 (ya establecido) **no recibiría sus 64 kbps garantizados**. O sea: **el control de admisión es lo que hace verdadera la QoS de los que ya están conectados.**
+
+**El compromiso del control de admisión:**
+
+
+<div class="codehilite"><pre><span></span><code>  ⚠️ Un switch de Frame Relay clásico NO tenía control de admisión:
+    iba aceptando VCs hasta que se quedaban sin ancho de banda
+     (177 VCs en un enlace de 4 Mbps). Cuando se agotaban, los VCs
+     viejos seguían apareciendo "establecidos" pero con 0 throughput.
+     Esa era la "república de bananas" de Frame Relay.
+
+     ATM, en cambio, SÍ tenía control de admisión y mantenía la QoS.
+     Por eso ATM diede la QoS garantizada y Frame Relay no.
+</code></pre></div>
+
+
+
+**En Internet hoy:** el control de admisión por flujo es inviable (millones de flujos). Lo que se hace es **DiffServ**: no se rechaza a nadie, pero las clases de baja prioridad se descartan primero cuando hay congestión. Es **degradación** en vez de **rechazo**, y por eso DiffServ escaló y IntServ no.
+
+</details>
+
+<p><strong>7.</strong> Un mensaje de 8000 bits se divide en paquetes de 1000 bits y atraviesa 5 enlaces de 500 bit/s. ¿Cuánto tarda el último paquete?</p>
+<details><summary>Respuesta</summary>
+
+
+<div class="codehilite"><pre><span></span><code>  L = 1000 bits por paquete
+  N = 8000/1000 = 8 paquetes
+  n = 5 enlaces
+  R = 500 bit/s
+
+  d_trans por paquete por enlace = 1000/500 = 2 s
+
+  fórmula: (N + n − 1) · L/R = (8 + 5 − 1) × 2 = 12 × 2 = 24 s
+</code></pre></div>
+
+
+
+**Verificación con el timeline**, enlace por enlace (cada enlace transmite un paquete cada 2 s):
+
+
+<div class="codehilite"><pre><span></span><code>  e1 (H1→N1):  P1 sale a los  2 s, P2 a los 4, ..., P8 a los 16 s
+  e2 (N1→N2):  P1 sale a los  4 s, ..., P8 a los 18 s
+  e3:               P8 a los 20 s
+  e4:               P8 a los 22 s
+  e5 (N4→H2):      P8 a los 24 s   ✓
+</code></pre></div>
+
+
+
+**Comparación con las otras técnicas**, que es lo que hace útil el ejercicio:
+
+
+<div class="codehilite"><pre><span></span><code>  MENSAJES   : 5 enlaces × (8000/500) = 5 × 16 = 80 s
+  PAQUETES   : 24 s
+  CIRCUITO   : 16 s + 0,3 s de establecimiento = 16,3 s
+</code></pre></div>
+
+
+
+**Observación importante:** los paquetes tardan **24 s**, pero el mensaje tardaría **80 s**. La mejora es de **3,33 veces**, y viene del pipeline. Y nótese que **más paquetes (N grande) mejora el resultado**: si en lugar de 8 paquetes fueran 800 de 10 bits, el resultado sería `(800 + 4)·0,02 = 16,08 s`, que se acerca al del circuito. El límite es el overhead.
+
+</details>
+
+<p><strong>8.</strong> ¿Por qué la conmutación por mensajes "no se usa"? Y sin embargo existen los <em>mail relay</em>.</p>
+<details><summary>Respuesta</summary>
+
+**El problema de la conmutación por mensajes como técnica de red** es triple:
+
+1. **Retardo desproporcionado**: sin cota de tamaño, el mensaje tiene que atravesar cada enlace **completo** antes de que el siguiente nodo pueda empezar. Con `N` mensajes de `L` bits y `n` enlaces: `N·n·L/R`, sin pipeline.
+2. **Bloqueo de cabeza**: un mensaje de 10 MB bloquea la cola entera durante `10·10⁶/R` segundos. Los mensajes chicos detrás son irrecuperables (pasado cierto retardo, un mensaje atrasado ya no sirve).
+3. **Buffer insuficiente**: para no perder un mensaje de tamaño arbitrario, hace falta un buffer de tamaño arbitrario. Un router real tiene MB, no GB.
+
+**Pero la técnica no "desapareció": se mudó de capa.** Un *mail relay* (MTA) es literalmente un conmutador por mensajes:
+
+- recibe el mensaje **completo** (con adjuntos de 20 MB),
+- lo **bufferiza** en disco (que es su "buffer"),
+- espera a poder entregarlo (su "enlace de salida"),
+- **no fragmenta** y **no reordena**.
+
+Lo mismo pasa con las colas de mensajes (Kafka, RabbitMQ, SQS), los *webhooks*, y los *forwarders* de logs.
+
+**La lección:** la técnica no era mala en sí; era mala **implementada en la capa 2/3 de una red con buffers de MB**. Aplicada a la capa de aplicación, con almacenamiento en disco y timescales de segundos en vez de microsegundos, funciona perfectamente.
+
+**La diferencia clave con los paquetes**: un *mail relay* **no** divide un mensaje de 20 MB en trozos de 1500 bytes; lo manda entero. Por eso un adjunto de 20 MB puede tardar 20 minutos en salir, y nadie se queja, porque **el usuario está esperando el archivo entero de todas formas**.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<p><strong>Exámenes</strong>
+- Examen <code>sirc0712</code> (27-dic-2007) — P3 (10 pts): las tres técnicas con análisis comparativo — <strong>la cátedra NO publicó la solución oficial</strong> · P2 (10 pts): leaky bucket y token bucket
+- Examen <code>sirc0902</code> (2-feb-2009) — P4 (9 pts): datagramas vs. circuitos virtuales, y la asignación de recursos · Problema 1 (30 pts): análisis de enlaces paralelos en link-state
+- Examen <code>sirc1103</code> (21-feb-2011) — P5 (10 pts): retardo con store-and-forward y con reenvío bit a bit → <strong>Clase 6</strong>
+- Examen <code>sirc0907</code> (2-jul-2009) — P2 (10 pts): distancia en hops como métrica, ¿es la mejor?
+- Examen <code>sirc0608</code> (5-ago-2006) — P3 (10 pts): distance-vector, ventajas y desventajas · Problema 1b: Dijkstra oscilando entre enlaces paralelos</p>
+<p><strong>Bibliografía</strong>
+- Tanenbaum &amp; Wetherall, <em>Redes de computadoras</em>, 5ª ed., <strong>cap. 1 §1.3</strong> "La red de conmutación de paquetes" (pág. ~10 a ~20): las tres técnicas con el diagrama de los 4 nodos
+- Tanenbaum &amp; Wetherall, <strong>cap. 1 §1.2</strong> "Tipos de red" — la clasificación PAN/LAN/WAN
+- Tanenbaum &amp; Wetherall, <strong>cap. 1 §1.6</strong> — el modelo TCP/IP y por qué Internet usa datagramas
+- Kurose &amp; Ross, <em>Computer Networking</em>, cap. 1 §1.4 "What's Inside a Router" — <strong>store-and-forward</strong> con los números y el caso del "4 enlaces a 10 Mbps y uno a 11 Mbps"
+- Kurose &amp; Ross, cap. 1 §1.2 "The Network Edge" — conmutación de circuitos frente a conmutación de paquetes, con los números de los <em>timeslots</em></p>
+<p><strong>RFCs</strong>
+- <code>RFC 791</code> — <em>Internet Protocol</em> (1981): el modelo de datagramas, sin conexión y sin estado
+- <code>RFC 8200</code> — <em>Internet Protocol, Version 6</em> (2017, <em>Internet Standard</em>): el mismo modelo de datagramas, 37 años después
+- <code>RFC 2737</code> — <em>Guidelines for Management of IP-Based Intranets</em> (1999): las restricciones de <em>ingress filtering</em> que acotan el reenvío y el flooding
+- <code>RFC 3031</code> — <em>Multiprotocol Label Switching Architecture</em> (2001): el circuito virtual moderno (<code>RFC 3032</code> pila de etiquetas, <code>RFC 4364</code> MPLS VPN)
+- <code>RFC 8402</code> — <em>Segment Routing Architecture</em> (2018), <code>RFC 8660</code> (SR-MPLS), <strong><code>RFC 8986</code> (SRv6, 2022)</strong>: el sucesor que codifica el circuito virtual en la cabecera IPv6
+- <code>RFC 7348</code> — <em>VXLAN</em> (2014): el circuito virtual <strong>de capa 2</strong> que reemplazó a MPLS en el datacenter, encapsulado sobre UDP/4789
+- <code>RFC 2211</code> — <em>Integrated Services</em> (1997): el modelo de reserva por flujo que <strong>no escaló</strong> · <code>RFC 2474</code>/<code>RFC 2475</code> (DiffServ): el modelo por clases que <strong>sí escaló</strong>
+- <code>RFC 9438</code> — <em>CUBIC</em> (2023, <em>Standards Track</em>): el control de congestión por AIMD que asume conmutación de paquetes</p>
+<p><strong>Clase siguiente:</strong> 5 — El retardo en las redes de paquetes</p></body></html>

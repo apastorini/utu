@@ -1,0 +1,55 @@
+===== [pag 1] =====
+Introducción a las Redes de Computadoras. Mar '2001. Pag 1 de 2.
+Examen de Introducción a las Redes de Computadoras
+(ref: eirc0103.doc)
+30 de marzo de 2001
+Problema 1.
+Se quieren transmitir paquetes por un canal bidireccional cuya probabilidad de error en
+un bit es p. Los paquetes contienen 400 bits de datos, más 8 bits de control (disponibles
+para utilizar en el problema), más redundancia.
+Se pide:
+a) Compare la conveniencia de utilizar los métodos de PARIDAD y de HAMMING de
+acuerdo al valor de p.
+b) Considere un proceso A enviando paquetes a un proceso B.
+Describa un mecanismo que permita cambiar el método de transmisión de acuerdo a
+los errores que detecte el proceso B. Implemente los procesos A y B
+Asuma que no se pierden paquetes. No se consideran los errores que los métodos no
+detectan.
+Problema 2.
+Se consideran usuarios que disponen de conexiones discadas a Internet, siéndoles
+asignada una dirección IP (generalmente diferente) cada vez que se conectan.
+Se desea crear un mecanismo que permita que un usuario establezca una conexión TCP
+con otro, en el caso que éste se encuentre conectado.
+A esos efectos se dispone de un servidor y de un programa que ejecuta en cada uno de
+los equipos de los usuarios. Dicho programa notifica al servidor cada conexión,
+informando la identificación de usuario y la dirección IP utilizada. El programa también
+notifica la desconexión en caso de ser ello posible. El servidor además chequea cada 5
+minutos que el usuario aún se encuentre conectado a través de UDP.
+Cuando un usuario se desea conectar con otro envía una interrogación al servidor
+mediante UDP, y contesta si está conectado con la IP asignada al usuario, entonces se
+conecta directamente con él.
+Se asume que un usuario nunca se encuentra conectado a través de más de una dirección
+IP.
+
+===== [pag 2] =====
+Introducción a las Redes de Computadoras. Mar '2001. Pag 2 de 2.
+Se pide especificar en un lenguaje de alto nivel los procesos:
+• El programa cliente (de un usuario), que informa las conexiones y desconexiones al
+servidor.
+• El programa cliente que averigua si un usuario esta conectado, y devuelve su IP.
+• El programa que ejecuta en el servidor y atiende a ambos programas del cliente.
+Problema 3.
+Sea una LAN ethernet, interconectada mediante bridges con enlaces punto a punto entre
+ellos, con la siguiente arquitectura mostrada en el siguiente esquema donde los equipos
+A, B, C, D son bridges:
+Suponga que cada bridge trabaja con la siguiente política, para cada frame que recibe
+(por enlace punto a punto o de la LAN), lo envía por los restantes puertos.
+a) La existencia de loops en la arquitectura de la LAN, ¿Qué problemas ocasiona para
+en el envío de frames?.
+Suponiendo la existencia del siguiente comando en los bridges:
+disable_cnx_ptoapto(bridge), que deshabilita (en el bridge donde se ejecuta), el
+envío de frames hacia el bridge pasado por parámetro por el enlace punto a punto.
+b) Presente un diagrama que resuelva el problema especificado en la parte (a), para la
+arquitectura de la figura. Indique que comandos debe ejecutar en cada bridge.
+c) Dado un diagrama genérico, que característica debe poseer para ser solución al
+problema planteado. Justifique.

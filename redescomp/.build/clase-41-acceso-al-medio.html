@@ -1,0 +1,1825 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 41 — Acceso al medio: ALOHA, CSMA/CD y CSMA/CA</h1>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 780 360" style="max-width:780px"><rect width="780" height="360" fill="#ffffff"/><text x="390.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">CSMA/CD: colision y backoff exponencial</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><text x="70" y="40" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#666">tiempo -&gt;</text><rect x="68" y="54" width="84" height="30" rx="5" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="110.0" y="73.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#1a1a1a">A</text><line x1="110" y1="84" x2="110" y2="272" stroke="#7aa7c4" stroke-width="1.3" stroke-dasharray="4 3"/><rect x="288" y="54" width="84" height="30" rx="5" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="330.0" y="73.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#1a1a1a">B</text><line x1="330" y1="84" x2="330" y2="272" stroke="#7aa7c4" stroke-width="1.3" stroke-dasharray="4 3"/><rect x="110" y="112" width="230" height="26" rx="4" fill="#eaf2f7" stroke="#14507a" stroke-width="1.2"/><text x="225.0" y="128.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">trama de A</text><rect x="150" y="146" width="90" height="26" rx="4" fill="#f7d9c8" stroke="#c8621a" stroke-width="1.2"/><text x="195.0" y="162.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">trama de B</text><text x="110" y="106" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">A empieza primero (sensing OK)</text><line x1="240" y1="92" x2="240" y2="186" stroke="#b3261e" stroke-width="2" stroke-dasharray="4 3"/><text x="247" y="186" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#b3261e">COLISIÓN</text><rect x="110" y="200" width="300" height="26" rx="4" fill="#fbe0e0" stroke="#b3261e" stroke-width="1.2"/><text x="260.0" y="216.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">jamming  ·  ambos se detienen</text><text x="110" y="196" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">se emite la secuencia de jammed (32/64 bits)</text><rect x="110" y="250" width="80" height="26" rx="4" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="150.0" y="266.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">r en [0,1]</text><text x="150.0" y="244" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">intento 1</text><rect x="270" y="250" width="130" height="26" rx="4" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="335.0" y="266.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">r en [0,3]</text><text x="335.0" y="244" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">intento 2</text><rect x="480" y="250" width="250" height="26" rx="4" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="605.0" y="266.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">r en [0,7]</text><text x="605.0" y="244" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">intento 3</text><line x1="270" y1="250" x2="195" y2="250" stroke="#2e7d4f" stroke-width="1.8" marker-end="url(#po)"/><text x="70" y="292" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#14507a">backoff exponencial:  r en [0, 2^k - 1],  k = numero de intento</text><text x="70" y="310" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#2e7d4f">el menor r gana y transmite; si vuelve a chocar, dobla el rango.</text></svg></p>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 760 380" style="max-width:760px"><rect width="760" height="380" fill="#ffffff"/><text x="380.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Rendimiento de ALOHA y Slotted-ALOHA</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><rect x="84" y="70" width="600" height="230" fill="#fcfdfe" stroke="#b8cfdb"/><line x1="84" y1="212.60000000000002" x2="684" y2="212.60000000000002" stroke="#eef2f4"/><text x="76" y="216.60000000000002" text-anchor="end" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">0,2</text><line x1="84" y1="125.20000000000002" x2="684" y2="125.20000000000002" stroke="#eef2f4"/><text x="76" y="129.20000000000002" text-anchor="end" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">0,4</text><line x1="84" y1="37.80000000000001" x2="684" y2="37.80000000000001" stroke="#eef2f4"/><text x="76" y="41.80000000000001" text-anchor="end" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">0,6</text><line x1="84" y1="300" x2="684" y2="300" stroke="#666" stroke-width="1.5"/><line x1="84" y1="300" x2="84" y2="70" stroke="#666" stroke-width="1.5"/><text x="76" y="304" text-anchor="end" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">0</text><text x="84" y="318" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">0</text><text x="234.0" y="318" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">0,25</text><text x="384.0" y="318" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">0,50</text><text x="534.0" y="318" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">0,75</text><text x="684" y="318" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">1,0</text><text x="384.0" y="342" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#0b3d5c">carga G (intentos por ranura)</text><text x="36" y="177.0" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#0b3d5c">rendimiento</text><text x="36" y="193.0" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">S</text><polyline points="84.0,300.0 88.07142857142857,297.0746151358153 92.14285714285714,294.2280971961742 96.21428571428571,291.4588515212091 100.28571428571428,288.76531211187836 104.35714285714286,286.14594114704005 108.42857142857143,283.59922850833794 112.5,281.1236913127757 116.57142857142857,278.7178734528592 120.64285714285714,276.38034514418786 124.71428571428571,274.1097024803769 128.78571428571428,271.9045669951963 132.85714285714286,269.7635852318118 136.92857142857144,267.6854283190162 141.0,265.66879155434134 145.07142857142856,263.7123939939419 149.14285714285714,261.81497804914363 153.21428571428572,259.97530908955207 157.28571428571428,258.19217505261724 161.35714285714283,256.46438605955234 165.42857142857142,254.79077403750725 169.5,253.17019234789626 173.57142857142856,251.60151542078438 177.64285714285714,250.08363839523534 181.71428571428572,248.6154767655276 185.78571428571428,247.195966033145 189.85714285714286,245.82406136445138 193.92857142857142,244.49873725395832 198.0,243.2189871930981 202.07142857142856,241.98382334441425 206.14285714285714,240.79227622108408 210.21428571428572,239.64339437168837 214.28571428571428,238.5362440701452 218.35714285714286,237.46990901072581 222.42857142857142,236.44349000807227 226.5,235.4561047021367 230.57142857142856,234.50688726796471 234.64285714285714,233.59498813024538 238.7142857142857,232.71957368255283 242.78571428571428,231.8798260112038 246.85714285714283,231.07494262365844 250.92857142857142,230.30413618139207 254.99999999999997,229.56663423716617 259.07142857142856,228.86167897662904 263.1428571428571,228.18852696417719 267.2142857142857,227.54644889300857 271.2857142857143,226.93472933930275 275.35714285714283,226.35266652045993 279.42857142857144,225.79957205733572 283.5,225.27477074040712 287.57142857142856,224.7776002998071 291.6428571428571,224.30741117916597 295.7142857142857,223.86356631319876 299.7857142857142,223.4454409089784 303.85714285714283,223.05242223083644 307.92857142857144,222.6839093888322 312.0,222.33931313073447 316.07142857142856,222.01805563745842 320.1428571428571,221.719570321903 324.2142857142857,221.44330163113403 328.2857142857143,221.1887048518597 332.3571428571429,220.955245919145 336.42857142857144,220.74240122831384 340.49999999999994,220.54965744998725 344.57142857142856,220.3765113482074 348.6428571428571,220.22246960159774 352.7142857142857,220.08704862751068 356.7857142857143,219.96977440911473 360.85714285714283,219.87018232537338 364.92857142857144,219.78781698386996 369.0,219.72223205643192 373.0714285714286,219.67299011750973 377.1428571428571,219.63966248526617 381.2142857142857,219.62182906533195 385.2857142857143,219.61907819718502 389.35714285714283,219.63100650311077 393.4285714285714,219.65721873970207 397.5,219.69732765185756 401.57142857142856,219.75095382923791 405.6428571428571,219.81772556514096 409.71428571428567,219.8972787177554 413.78571428571433,219.98925657375577 417.85714285714283,220.09330971420002 421.9285714285714,220.20909588269268 425.99999999999994,220.33627985577687 430.07142857142856,220.47453331551907 434.14285714285717,220.623534724251 438.21428571428567,220.7829692014334 442.2857142857143,220.9525284026081 446.35714285714283,221.13191040040314 450.42857142857144,221.32081956755883 454.50000000000006,221.51896646194118 458.57142857142856,221.7260677135103 462.6428571428571,221.9418459132129 466.71428571428567,222.16602950376597 470.78571428571433,222.39835267230256 474.85714285714283,222.63855524484805 478.9285714285714,222.88638258259743 482.99999999999994,223.14158547996465 487.0714285714286,223.40392006437452 491.14285714285717,223.67314769776885 495.21428571428567,223.94903487979911 499.2857142857142,224.23135315267774 503.35714285714283,224.51987900766107 507.42857142857144,224.81439379313724 511.5,225.11468362429258 515.5714285714284,225.42053929433098 519.6428571428571,225.73175618722055 523.7142857142857,226.04813419194252 527.7857142857142,226.3694776182178 531.8571428571429,226.69559511368698 535.9285714285713,227.02629958251973 540.0,227.36140810543043 544.0714285714286,227.7007418610766 548.1428571428571,228.04412604881736 552.2142857142858,228.39138981281 556.2857142857142,228.74236616742195 560.3571428571428,229.0968919239371 564.4285714285714,229.45480761853463 568.5,229.81595744151969 572.5714285714286,230.1801891677852 576.6428571428571,230.5473540884843 580.7142857142858,230.9173069438936 584.7857142857142,231.2899058574475 588.8571428571429,231.66501227092402 592.9285714285714,232.04249088076367 596.9999999999999,232.4222095755016 601.0714285714286,232.8040393742957 605.1428571428571,233.18785436653167 609.2142857142857,233.57353165248733 613.2857142857142,233.9609512850392 617.3571428571429,234.3499962123928 621.4285714285714,234.74055222182142 625.5,235.13250788439444 629.5714285714286,235.52575450068085 633.6428571428571,235.92018604741014 637.7142857142857,236.3156991250755 641.7857142857143,236.71219290646326 645.8571428571429,237.10956908609325 649.9285714285713,237.5077318305547 654.0,237.90658772972307" fill="none" stroke="#b3261e" stroke-width="2.6"/><polyline points="84.0,300.0 88.07142857142857,297.0546968063345 92.14285714285714,294.1492302716306 96.21428571428571,291.2831962882397 100.28571428571428,288.4561943923484 104.35714285714286,285.6678277331753 108.42857142857143,282.9177030424182 112.5,280.20543060394954 116.57142857142857,277.5306242237567 120.64285714285714,274.89290120012816 124.71428571428571,272.29188229408015 128.78571428571428,269.7271917000248 132.85714285714286,267.19845701667595 136.92857142857144,264.7053092181916 141.0,262.2473826255514 145.07142857142856,259.824314878166 149.14285714285714,257.4357469057184 153.21428571428572,255.08132290023354 157.28571428571428,252.76069028837566 161.35714285714283,250.4734997039709 165.42857142857142,248.2194049607538 169.5,245.99806302533557 173.57142857142856,243.8091339903927 177.64285714285714,241.65228104807383 181.71428571428572,239.5271704636236 185.78571428571428,237.43347154922117 189.85714285714286,235.3708566380323 193.92857142857142,233.33900105847295 198.0,231.33758310868262 202.07142857142856,229.36628403120653 206.14285714285714,227.4247879878837 210.21428571428572,225.51278203494044 214.28571428571428,223.6299560982872 218.35714285714286,221.77600294901703 222.42857142857142,219.9506181791042 226.5,218.1535001773015 230.57142857142856,216.3843501052345 234.64285714285714,214.64287187369098 238.7142857142857,212.92877211910474 242.78571428571428,211.24176018023127 246.85714285714283,209.5815480750145 250.92857142857142,207.94785047764276 254.99999999999997,206.3403846957925 259.07142857142856,204.75887064805852 263.1428571428571,203.20303084156873 267.2142857142857,201.67259034978247 271.2857142857143,200.16727679047068 275.35714285714283,198.68682030387657 279.42857142857144,197.23095353105518 283.5,195.79941159239075 287.57142857142856,194.39193206629 291.6428571428571,193.00825496805066 295.7142857142857,191.6481227289028 299.7857142857142,190.31128017522255 303.85714285714283,188.99747450791668 307.92857142857144,187.70645528197576 312.0,186.43797438619617 316.07142857142856,185.191786023068 320.1428571428571,183.96764668882852 324.2142857142857,182.76531515367967 328.2857142857143,181.5845524421682 332.3571428571429,180.425121813727 336.42857142857144,179.28678874337675 340.49999999999994,178.16932090258626 344.57142857142856,177.07248814029035 348.6428571428571,175.99606246406398 352.7142857142857,174.9398180214516 356.7857142857143,173.90353108145013 360.85714285714283,172.88698001614455 364.92857142857144,171.88994528249495 369.0,170.91220940427345 373.0714285714286,169.9535569541507 377.1428571428571,169.01377453592943 381.2142857142857,168.09265076692483 385.2857142857143,167.1899762604908 389.35714285714283,166.30554360868967 393.4285714285714,165.4391473651057 397.5,164.59058402780022 401.57142857142856,163.75965202240758 405.6428571428571,162.94615168537104 409.71428571428567,162.14988524731686 413.78571428571433,161.37065681656642 417.85714285714283,160.60827236278413 421.9285714285714,159.862539700761 425.99999999999994,159.1332684743323 430.07142857142856,158.42027014042856 434.14285714285717,157.7233579532581 438.21428571428567,157.04234694862134 442.2857142857143,156.37705392835434 446.35714285714283,155.72729744490164 450.42857142857144,155.09289778601715 454.50000000000006,154.47367695959147 458.57142857142856,153.86945867860553 462.6428571428571,153.2800683462084 466.71428571428567,152.70533304091987 470.78571428571433,152.14508150195508 474.85714285714283,151.59914411467145 478.9285714285714,151.0673528961362 482.99999999999994,150.54954148081424 487.0714285714286,150.04554510637433 491.14285714285717,149.55520059961418 495.21428571428567,149.07834636250143 499.2857142857142,148.61482235833196 503.35714285714283,148.16447009800237 507.42857142857144,147.72713262639752 511.5,147.30265450889067 515.5714285714284,146.89088181795685 519.6428571428571,146.49166211989686 523.7142857142857,146.10484446167285 527.7857142857142,145.73027935785282 531.8571428571429,145.3678187776644 535.9285714285713,145.01731613215674 540.0,144.67862626146896 544.0714285714286,144.3516054222056 548.1428571428571,144.03611127491686 552.2142857142858,143.73200287168356 556.2857142857142,143.43914064380598 560.3571428571428,143.15738638959553 564.4285714285714,142.8866032622681 568.5,142.6266557579393 572.5714285714286,142.37740970371942 576.6428571428571,142.1387322459085 580.7142857142858,141.91049183828997 584.7857142857142,141.69255823052225 588.8571428571429,141.48480245662765 592.9285714285714,141.28709682357783 596.9999999999999,141.09931489997453 601.0714285714286,140.9213315048256 605.1428571428571,140.7530226964148 609.2142857142857,140.59426576126532 613.2857142857142,140.44493920319547 617.3571428571429,140.30492273246645 621.4285714285714,140.1740972550214 625.5,140.05234486181436 629.5714285714286,139.93954881822944 633.6428571428571,139.8355935535884 637.7142857142857,139.74036465074676 641.7857142857143,139.6537488357772 645.8571428571429,139.57563396773992 649.9285714285713,139.50590902853895 654.0,139.44446411286384" fill="none" stroke="#14507a" stroke-width="2.6"/><circle cx="384.0" cy="219.59199999999998" r="4.5" fill="#b3261e"/><text x="372.0" y="210.59199999999998" text-anchor="end" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#b3261e">max = 1/(2e) = 0,184</text><circle cx="304.79999999999995" cy="139.184" r="4.5" fill="#14507a"/><text x="314.79999999999995" y="130.184" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#14507a">max = 1/e = 0,368</text><text x="94" y="90" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#b3261e">ALOHA puro      S = G · e^(-2G)</text><text x="94" y="110" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#14507a">Slotted ALOHA   S = G · e^(-G)</text><text x="84" y="368" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">Slotted dobla el maximo porque la ventana vulnerable pasa de 2T a T.</text><text x="84" y="386" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">Aunque ninguno supera el 37 %, es el techo teorico: por eso Ethernet conmutada no usa ALOHA.</text></svg></p>
+<p><strong>Bloque:</strong> E (Capa de Enlace) · <strong>Semana:</strong> 14 · <strong>Duración estimada:</strong> 120 min
+<strong>Correlativa:</strong> Clase 40 (corrección de errores y ARQ) · <strong>Sigue con:</strong> Clase 42 (switch, hub, VLAN y STP)
+<strong>Material de referencia:</strong> Tanenbaum cap. 3 y 4 · Kurose §5.3 y §5.1.3 · Práctico 5 de 2008 (ejercicios 5, 6 y 8) · IEEE 802.3 · IEEE 802.11</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Explicar por qué un medio compartido necesita un protocolo de acceso al medio, y qué ocurre cuando dos estaciones transmiten a la vez.</li>
+<li><strong>Derivar a mano</strong> la eficiencia máxima del ALOHA puro (<code>1/(2e)</code>) y la del Slotted-ALOHA (<code>1/e</code>), y explicar por qué la segunda es <em>exactamente</em> el doble.</li>
+<li>Derivar la eficiencia del ALOHA con franjas, <code>N·p·(1−p)^(N−1)</code>, y encontrar el <code>p</code> que la maximiza.</li>
+<li>Distinguir <strong>CSMA persistente de no persistente</strong> y <strong>con detección de colisión de sin detección</strong>, y decir por qué Ethernet usa una combinación y WiFi la complementaria.</li>
+<li>Escribir el algoritmo completo de <strong>CSMA/CD</strong>: persistencia 1, detección, jamming, backoff exponencial y la tabla de ventanas.</li>
+<li><strong>Derivar los 64 bytes</strong> de trama mínima a partir del slot time de 512 bits y del tiempo de ida y vuelta de la señal.</li>
+<li>Diferenciar <strong>dominio de colisión</strong> y <strong>dominio de broadcast</strong>, y decir qué cambia al reemplazar un hub por un switch.</li>
+<li>Resolver completo el <strong>Examen 2007-07 P3</strong> (10 pts) y el <strong>Examen 2010-07 P2</strong> (8 pts).</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2007-07 P3</code> (10 pts — diferencia de rendimiento entre ALOHA y Slotted-ALOHA, y tipos de CSMA) · <code>2010-07 P2</code> (8 pts — ¿CSMA/CD en una red wireless? ¿y en una Ethernet completamente switcheada?) · <code>2010-12 P3</code> (8 pts — dominios de colisión y de broadcast) · <code>2007-03 P5</code> (5 pts — CSMA/CA) · <code>2007-02 P1</code> (5 pts — diferencias entre Pure ALOHA, Slotted ALOHA y CSMA/CD).</p>
+</blockquote>
+<p>El tema aparece en <strong>9 de los 50 exámenes oficiales</strong> del banco. Es el único del bloque E donde te piden <strong>derivar una fórmula</strong> en vez de solamente describirla.</p>
+<blockquote>
+<p>⚠️ Esta clase <strong>no repite nada</strong> de la 38 (framing) ni de la 39 (paridad, checksum y CRC). El contenido de la trama ya está dado; lo que se decide acá es <strong>quién tiene derecho a ponerla en el medio</strong>. Y como la teoría y la práctica se pisan, la aritmética larga está <strong>solo en la Parte 2</strong>: acá va el mecanismo, allá van las cuentas.</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 El problema: un medio, muchas bocas</h2>
+<p>Un enlace entre dos puntos no da problemas. El problema aparece cuando el medio es <strong>compartido</strong>: un bus de coaxil, o —hoy, mucho más común— una banda de espectro radioeléctrico.</p>
+<div class="codehilite"><pre><span></span><code>   Topología de medio compartido (bus coaxil)
+
+   [H1]══╗
+   [H2]══╬════════╤═══════════════════════════
+   [H3]══╣ cable  ║   un solo medio físico
+   [H4]══╝        ║   una sola señal a la vez
+   [H5]═══════════╝
+
+
+   Topología compartida (radio: WiFi / celular)
+
+       ( H1 )   ( H2 )   ( H3 )   ( H4 )   ( H5 )
+          \       |       |       |       /
+           \      |       |       |      /
+            ╰─────┴───────┴───────┴─────╯
+                 la misma banda de frecuencia
+                 para todos, todo el tiempo
+</code></pre></div>
+
+<p>El medio tiene una propiedad física dura: <strong>solo admite una señal a la vez</strong>. Si H2 y H5 ponen bits al mismo tiempo, al receptor le llega la suma física de ambas: voltajes que se suman, bits que se destruyen. Eso es una <strong>colisión</strong> (<em>collision</em>), y el resultado es que nadie recibe nada útil.</p>
+<div class="codehilite"><pre><span></span><code>   H2 transmite:   1 0 1 1 0 0 1 0
+   H5 transmite:   0 1 1 0 1 1 0 0      (al mismo tiempo)
+   ─────────────────────────────────────
+   lo que llega:   1 1 0 1 1 1 1 0      &lt;- basura
+</code></pre></div>
+
+<p>Y hay un problema peor que la colisión: <strong>aunque nadie esté transmitiendo, dos estaciones pueden decidir transmitir en el mismo instante</strong>, porque ninguna se enteró de la decisión de la otra. No hay ningún cartel en el medio que diga "yo transmito ahora".</p>
+<p>Entonces la capa de enlace resuelve dos preguntas distintas, que no hay que confundir:</p>
+<table>
+<thead>
+<tr>
+<th>Pregunta</th>
+<th>Nombre</th>
+<th>Qué falla si no se resuelve</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>¿Quién tiene derecho a transmitir <strong>ahora</strong>?</td>
+<td><strong>control de acceso al medio</strong></td>
+<td>colisiones</td>
+</tr>
+<tr>
+<td>¿Quién soy, a quién le hablo y dónde termino?</td>
+<td><strong>direccionamiento de enlace</strong> (dirección MAC)</td>
+<td>nadie sabe a quién entregar la trama</td>
+</tr>
+</tbody>
+</table>
+<p>Esta clase es de la primera.</p>
+<h2>1.2 Las tres familias de protocolos de acceso</h2>
+<table>
+<thead>
+<tr>
+<th>Familia</th>
+<th>Idea</th>
+<th>Coste</th>
+<th>Ejemplos</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Partición de canal</strong> (<em>channel partitioning</em>)</td>
+<td>se divide el medio en canales y cada estación tiene el suyo para siempre</td>
+<td>se desperdicia capacidad si no todos usan a la vez</td>
+<td>FDMA, TDMA, <strong>CDMA</strong></td>
+</tr>
+<tr>
+<td><strong>Toma de turnos</strong> (<em>taking turns</em>)</td>
+<td>hay un turno explícito, como un testigo</td>
+<td>latencia, y hay que castigar a alguien si se cae</td>
+<td>token ring, token bus</td>
+</tr>
+<tr>
+<td><strong>Acceso aleatorio</strong> (<em>random access</em>)</td>
+<td>todos compiten a la vez y se resuelve con colisiones y reintentos</td>
+<td>colisiones</td>
+<td><strong>ALOHA, CSMA, CSMA/CD</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Lo que sigue es toda la tercera familia, más CDMA (que es de la primera y aparece en el Práctico 5).</p>
+<h2>1.3 ALOHA puro</h2>
+<p>Nació en 1970 en la Universidad de Hawái (Abramson), sobre una red de satélite. El <strong>algoritmo</strong> es ridículamente simple: si tenés una trama, <strong>la transmitís ahora</strong>, sin preguntar nada; esperás el ACK; si no llega, asumís que hubo colisión y reintentás <strong>al azar</strong>. Es decir: cero inteligencia.</p>
+<h3>El punto clave: la ventana de colisión</h3>
+<p>Tomemos una trama de duración <code>T</code> que una estación empieza a transmitir en <code>t = 0</code>:</p>
+<div class="codehilite"><pre><span></span><code>   tiempo ───────────────────────────────────────────────────────►
+
+   H2:  ████████████████
+       └─── T ───┘   transmite de t = 0 a t = T
+
+        ╔═══════════════════════════════════════════════╗
+        ║  VENTANA DE COLISIÓN:  de t = 0 a t = 2T      ║
+        ╚═══════════════════════════════════════════════╝
+
+   Una trama que llega a t = T − 0,001  --&gt; choca (se pisa por detrás)
+   Una trama que llega a t = T + 0,001  --&gt; choca (se pisa por delante)
+   Una trama que llega a t = 2T + 0,1   --&gt; NO choca (ya terminó)
+</code></pre></div>
+
+<p><strong>¿Por qué <code>2T</code> y no <code>T</code>?</strong> Porque hay dos formas de solaparse:</p>
+<ul>
+<li><strong>Antes:</strong> otra trama empieza en los últimos <code>T</code> segundos de la mía, y se pisa con mi parte final.</li>
+<li><strong>Después:</strong> otra trama empieza entre <code>T</code> y <code>2T</code>, y se pisa con <strong>lo que yo emití al comienzo, que todavía está viajando por el cable</strong>.</li>
+</ul>
+<p>Ese segundo caso es el que casi todos olvidan, y es la mitad de la eficiencia máxima.</p>
+<h2>1.4 Slotted-ALOHA: ponele un reloj a todos</h2>
+<p>Slotted-ALOHA (Dave Roberts, 1975) es <strong>el mismo protocolo con una sola modificación</strong>: el tiempo se divide en <strong>ranuras</strong> (<em>slots</em>) de tamaño exactamente <code>T</code>, y <strong>solo se puede empezar a transmitir en el instante cero de una ranura</strong>. Todas las estaciones comparten el reloj.</p>
+<div class="codehilite"><pre><span></span><code>   ALOHA PURO                             SLOTTED ALOHA
+   ───────────                             ──────────────
+
+   H2:  ████████████████                   H2:  ████████████████
+       |←────── 2T ────────→|                  |←──── T ────→|
+   ═════╪═══════════════════╪══════════    ═════╪═══════════════╪═════════
+       0                   T         2T        0      T         2T
+
+   se puede empezar en        se puede empezar SOLO en
+   cualquier momento          los bordes de ranura
+
+   ══════════════════════════════════════════════════════════
+   ALOHA puro:  ventana = 2T  ───────────────────►
+   Slotted:     ventana = T   ◄──── se reduce a la mitad
+   ══════════════════════════════════════════════════════════
+</code></pre></div>
+
+<p><strong>Y esa es toda la diferencia.</strong> Todo lo demás es idéntico. La consecuencia es aritmética: <strong>la ventana vulnerable se reduce de <code>2T</code> a <code>T</code>, la probabilidad de sobrevivir se multiplica por <code>e</code>, y la eficiencia máxima pasa de <code>1/(2e)</code> a <code>1/e</code>: exactamente el doble</strong> (la cuenta completa está en §2.2).</p>
+<h2>1.5 ALOHA con franjas: un término medio</h2>
+<p>Versión intermedia que aparece en el <strong>Práctico 5</strong>: cada estación transmite una trama larga que ocupa <strong><code>N</code> ranuras seguidas</strong>, y solo puede empezar en el instante cero de una ranura.</p>
+<div class="codehilite"><pre><span></span><code>   ═══════╤══════════════════════════════╤═══════════╤══════
+         │&lt;----------- T -------------&gt;│           │
+   ═══════╧══════════════════════════════╧═══════════╧══════
+      ranura 0     ranura 1    ...    ranura N-1   ranura N
+
+   Est. A, bloque que empieza en la ranura 0:
+      ████████████████████████████████████████   N ranuras
+
+   Est. B intenta empezar en la ranura k, con 0 &lt; k &lt; N:
+                ████████████                      colisión parcial
+</code></pre></div>
+
+<p>Si dos bloques se pisan <strong>en parte</strong> igual se arruinan, así que la eficiencia no mejora por eso. Lo que hace el esquema es <strong>reducir el riesgo</strong>: entre el inicio del bloque de A y el del de B pueden pasar <code>N</code> ranuras completas, y eso agranda la ventana de colisión desde <code>T</code> hasta <code>N·T</code>. El precio es que cada estación ocupa el medio <code>N</code> veces más tiempo.</p>
+<div class="codehilite"><pre><span></span><code>   eficiencia(N, p) = N · p · (1 − p)^(N−1)
+
+     ▲      ▲     ▲           ▲
+     │      │     │           └── los otros N−1 bloques no deben
+     │      │     │               empezar en las N−1 ranuras que
+     │      │     │               yo ocupo
+     │      │     └── probabilidad de que YO empiece (Poisson)
+     │      └──────── cada bloque ocupa N ranuras de las N disponibles
+     └─────────────── eficiencia: fracción del tiempo con al menos
+                      un bloque sobreviviente
+
+   máximo en   p = 1/N
+   valor       (1 − 1/N)^(N−1)
+   límite      N → infinito:   1/e  ≈ 0,368
+</code></pre></div>
+
+<p>Con <code>N</code> chico el máximo es <strong>mayor</strong> que <code>1/e</code> (<code>N = 2</code> da 0,5) y converge a <code>1/e</code> desde arriba. El costo real es que con <code>N = 2</code> ocupás el medio el doble de tiempo para la misma probabilidad: la eficiencia mide tramas por ranura, no bits por segundo. La deducción completa está en §2.3.</p>
+<h2>1.6 CSMA: escuchar antes de hablar</h2>
+<p>ALOHA tiene un desperdicio evidente: <strong>no escucha el medio para decidir</strong>. Eso es <strong>CSMA</strong>: <em>Carrier Sense Multiple Access</em>, acceso múltiple con sensesión de portadora.</p>
+<h3>1.6.1 El problema del epsilon</h3>
+<p>Dos estaciones A y B en un cable de 2.500 m, con <code>v = 2 × 10⁸ m/s</code>: la señal de A tarda <code>τ = 2500 / (2 × 10⁸) = 12,5 µs</code> en llegar a B.</p>
+<div class="codehilite"><pre><span></span><code>   t = 0,000 µs    A empieza. La señal sale de A.
+   t = 6,25 µs     La señal pasa por el punto medio del cable.
+   t = 12,5 µs     La señal LLEGA a B.
+
+   Si B está escuchando en t = 12,4 µs   -&gt;  oye a A  -&gt;  espera.   OK
+   Si B empieza a transmitir en t = 12,4 µs -&gt;  ¡colisión!
+                                             (todavía no oyó nada)
+
+   Ese medio microsegundo de margen es el epsilon.
+</code></pre></div>
+
+<p>En cable, <code>ε</code> puede ser arbitrariamente pequeño pero <strong>siempre positivo</strong>. O sea: <strong>el sentido de portadora elimina todas las colisiones salvo las que caen dentro de una ventana de anchura <code>ε</code></strong>. Como <code>ε</code> es infinitésimo frente a <code>T</code>, a baja carga la eficiencia de CSMA <strong>se acerca a 1</strong>: un salto de varios órdenes de magnitud respecto de ALOHA. Guardá ese <code>ε</code>, porque <strong>es exactamente lo que se rompe en wireless</strong>.</p>
+<h3>1.6.2 Persistente vs. no persistente</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>1-persistente</strong> (<em>1-persistent</em>)</th>
+<th><strong>No persistente</strong> (<em>non-persistent</em>)</th>
+<th><strong>p-persistente</strong> (ranurado)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Qué hace si el medio está ocupado</td>
+<td>espera <strong>mirando</strong></td>
+<td>espera un tiempo <strong>aleatorio</strong> y vuelve a escuchar</td>
+<td>transmite con prob. <code>p</code>, con <code>1−p</code> espera una ranura</td>
+</tr>
+<tr>
+<td>Ventaja</td>
+<td>no desperdicia medio libre</td>
+<td><strong>casi no hay colisiones</strong></td>
+<td>compromiso continuo</td>
+</tr>
+<tr>
+<td>Desventaja</td>
+<td>si varias esperaban, <strong>todas transmiten a la vez</strong>: colisión garantizada</td>
+<td><strong>regala ancho de banda</strong>: el medio puede quedar libre sin que nadie transmita; en carga alta sube la colisión</td>
+<td>parametrizable, en desuso</td>
+</tr>
+<tr>
+<td>Se usa en</td>
+<td><strong>Ethernet</strong></td>
+<td>redes satelitales</td>
+<td>casi nadie</td>
+</tr>
+</tbody>
+</table>
+<p><strong>El antídoto de la colisión masiva del 1-persistente es el backoff aleatorio</strong> (§1.7). Y el 1-persistente es el elegido en Ethernet porque el medio es rápido y no conviene regalarlo.</p>
+<h3>1.6.3 Con detección de colisión vs. sin detección</h3>
+<p>Acá está el corte que divide a Ethernet de WiFi, y es lo que te preguntan en <code>2007-07 P3b</code>.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Sin detección</strong> (<em>collision non-detection</em>)</th>
+<th><strong>Con detección</strong> (<em>collision detection</em>, <strong>CD</strong>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Qué hace</td>
+<td>asume que si hubo colisión el medio está ocupado: espera a que se libere y reintenta</td>
+<td><strong>escucha mientras transmite</strong> y compara lo que manda con lo que vuelve</td>
+</tr>
+<tr>
+<td>¿Cómo se entera?</td>
+<td>por la <strong>ausencia del ACK</strong> (detección indirecta)</td>
+<td>por la <strong>comparación de señales</strong> (detección directa)</td>
+</tr>
+<tr>
+<td>Coste de una colisión</td>
+<td>un <strong>ACK completo</strong>, o sea un RTT entero, del orden de milisegundos</td>
+<td><strong>microsegundos</strong>: aborta al instante</td>
+</tr>
+<tr>
+<td>Requisito de hardware</td>
+<td>ninguno</td>
+<td><strong>una tarjeta que escucha mientras transmite</strong></td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code>   Tarjeta de red en modo CD
+   ══════════════════════════════════════════════════
+
+              ┌─────────────┐
+  cable  ---&gt; │             ├──-&gt;  medio compartido ---+
+              │   summer    |                          |
+              │  (se suma)  | &lt;--- medio compartido ---+
+              └──────┬──────┘
+                     │
+                     v
+               ┌───────────┐
+               │COMPARADOR │ --&gt; ¿la suma es igual a lo que
+               └───────────┘     mando?  NO --&gt; hay colisión
+</code></pre></div>
+
+<p>En coaxil o en par trenzado balanceado esto es trivial: la tarjeta transmite por un par y escucha por el mismo par, y como la impedancia del medio es conocida puede distinguir "la señal que yo pongo" de "una señal que se le sumó". La frase para memorizar:</p>
+<blockquote>
+<p><strong>CSMA/CD funciona en cable porque la tarjeta puede escuchar el medio mientras transmite. En wireless no puede: la radio es half-duplex por naturaleza y su propia señal enmascara cualquier otra.</strong></p>
+</blockquote>
+<h3>1.6.4 La taxonomía completa</h3>
+<p>Las dos dimensiones son ortogonales, así que hay <strong>cuatro combinaciones</strong>:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Sin detección</strong></th>
+<th><strong>Con detección</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1-persistente</strong></td>
+<td>1-persistent CSMA</td>
+<td><strong>CSMA/CD</strong> — el de Ethernet por cable</td>
+</tr>
+<tr>
+<td><strong>No persistente</strong></td>
+<td>non-persistent CSMA</td>
+<td>CSMA/CD no persistente — no se usa en la práctica</td>
+</tr>
+</tbody>
+</table>
+<p>Y si en lugar de <strong>detectar</strong> la colisión el protocolo la <strong>evita</strong>, aparecen las variantes de <strong>evitación</strong> (<em>collision avoidance</em>, <strong>CA</strong>): CSMA/CA, que es el caso de 802.11.</p>
+<h3>1.6.5 CSMA/CA: por qué WiFi no puede usar CD</h3>
+<p>Respuesta corta: <strong>en radio no se puede detectar una colisión mientras se transmite</strong>. Cuatro argumentos:</p>
+<ol>
+<li><strong>Autoenmascaramiento físico.</strong> La propia transmisión es de unos 20 dBm (100 mW); la señal de una estación vecina que llega al receptor puede ser de −70 dBm. La diferencia es de <strong>90 dB</strong>, casi <strong>un millón de veces</strong> en potencia. No es un problema de algoritmo: es que la relación señal-ruido lo hace físicamente imposible. Peor: la radio tiene <strong>una sola cadena de recepción</strong> en la misma banda, así que <strong>no puede escuchar mientras transmite</strong>.</li>
+<li><strong>La cobertura no es simétrica: la estación oculta.</strong> Dos estaciones no tienen por qué alcanzarse igual. En el caso clásico, A y C <strong>sí llegan a B</strong> pero <strong>no se escuchan entre sí</strong>:</li>
+</ol>
+<div class="codehilite"><pre><span></span><code>                    B
+                   / \
+                  /   \        A &lt;-&gt; C : NO se escuchan
+                 /     \       A -&gt; B : si
+                A       C      C -&gt; B : si
+
+   Si A transmite, C no oye nada y cree que el canal está
+   libre, así que C transmite, y B recibe dos señales
+   superpuestas de las que ninguna le sirve.
+
+   En un cable esto es imposible: si la señal de A llega a B,
+   tiene que haber pasado por C. La geometría del cable
+   GARANTIZA la simetría. La geometría del radio no.
+</code></pre></div>
+
+<ol start="3">
+<li><strong>No existe un <code>T</code> mínimo acotado.</strong> La corrección de CSMA/CD depende de que la trama sea <strong>más larga que el tiempo de ida y vuelta del medio</strong> (§1.8). En radio hay movilidad, fading y estaciones ocultas: ese tiempo no tiene un límite razonable, la trama mínima tendría que ser gigantesca y el rendimiento se caería a cero. <strong>En cable ese límite existe porque topológicamente el cable tiene largo máximo.</strong></li>
+<li><strong>El modelo de costo está invertido.</strong> En wireless el único que puede juzgar la colisión es el receptor (por el CRC), así que <strong>el emisor tiene que transmitir la trama entera para enterarse</strong>. Si igual vas a transmitirla entera, conviene <strong>evitar</strong> la colisión en lugar de detectarla: esa es literalmente la diferencia entre CD y CA.</li>
+</ol>
+<p>Y qué hace CSMA/CA entonces:</p>
+<div class="codehilite"><pre><span></span><code>   802.11: la secuencia de un envio con RTS/CTS
+
+   Estacion A           Estacion B           otras estaciones
+       |                     |                       |
+       |--- RTS ------------&gt;|                       |  (oyen el RTS)
+       |                     |                       |  NAV = duracion
+       |&lt;-- CTS -------------|                       |  del RTS (virtual)
+       |                     |                       |
+       |----- datos --------&gt;|                       |
+       |&lt;---- ACK -----------|                       |
+</code></pre></div>
+
+<ul>
+<li><strong>RTS</strong> (<em>Request to Send</em>): A anuncia que va a mandar, y cuánto va a durar.</li>
+<li><strong>CTS</strong> (<em>Clear to Send</em>): B confirma, y también anuncia cuánto va a durar.</li>
+<li><strong>NAV</strong> (<em>Network Allocation Vector</em>): un "sentido de portadora virtual" que se guardan las estaciones que oyen el RTS pero no el CTS, para no transmitir durante la transferencia.</li>
+</ul>
+<p>Es <em>evitación</em> por negociación, no <em>detección</em> por medición. Y el detalle final: <strong>en 802.11 el ACK es obligatorio</strong>, porque la única forma segura de saber que la trama llegó bien es que el receptor lo diga.</p>
+<h2>1.7 CSMA/CD: el algoritmo completo</h2>
+<p>Este es el protocolo de Ethernet por cable. La máquina de estados completa:</p>
+<div class="codehilite"><pre><span></span><code>   ┌─────────────┐
+   │   INICIO    │
+   └──────┬──────┘
+          v
+   ┌──────────────────────────────┐
+   │ 1. ¿Medio ocupado?          │---- si --&gt; esperar y volver a 1
+   │    (carrier sense)          │
+   └──────┬──────────────────────┘
+          │ no
+          v
+   ┌──────────────────────────────┐
+   │ 2. TRANSMITIR la trama       |&lt;------------------+
+   │    escuchando a la vez       |                   |
+   └──────┬──────────────────────┘                   |
+          |                                           |
+     ┌────┴─────────────────────┐                    |
+     │ ¿se detecto colision?    |                    |
+     └────┬─────────────────────┘                    |
+    no   |        | si                               |
+         |        v                                  |
+         |  ┌─────────────────────────┐              |
+         |  │ 3a. DETENERSE           |              |
+         |  │ 3b. JAMMING: 32 bits   |              |
+         |  │ 3c. esperar IFS 96 bits |              |
+         |  │ 3d. r &lt;- rand(0..2^k-1)|              |
+         |  │     esperar r slots    |              |
+         |  │ 3e. k &lt;- k + 1         |--------------+
+         |  └─────────────────────────┘
+         v
+   ┌──────────────────────────────┐
+   │ 4. La trama llego completa   │
+   └──────────────────────────────┘
+</code></pre></div>
+
+<p><strong>(a) Persistencia 1.</strong> Si el medio está libre, transmite. La unidad de tiempo es el <strong>slot time</strong>.</p>
+<p><strong>(b) Detección de colisión.</strong> Compara la señal que manda (TX) con la que le vuelve del cable (RX). Si no coinciden, hay colisión.</p>
+<p><strong>(c) La secuencia de jamming.</strong> Al detectar la colisión la tarjeta <strong>no se calla</strong>: sigue mandando ruido deliberada durante un mínimo de <strong>32 bits</strong>. ¿Por qué? Porque la trama abortada tiene que ser suficientemente larga para que <strong>todas</strong> las demás estaciones del segmento la sientan como un evento de medio ocupado con trama inválida. Si simplemente cortara, las estaciones más lejos podrían no haberse enterado todavía y se meterían en el próximo slot. El jamming <strong>sella</strong> la colisión en el medio.</p>
+<div class="codehilite"><pre><span></span><code>   Los 32 bits de jamming:
+
+   trama abortada      JAMMING                (&gt;= 32 bits)
+   █████████████░░░░░░░░░░░░████████████████████████████
+                     └────┘
+            el receptor del otro lado ve una ráfaga de
+            ruido y descarta la trama por el CRC
+</code></pre></div>
+
+<p><strong>(d) El backoff exponencial.</strong> Después del jamming espera un <strong>IFS</strong> (<em>Inter Frame Space</em>, 96 bits a 10 Mb/s: el tiempo mínimo para que el medio se considere libre de nuevo) y después un número aleatorio de <strong>ranuras</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   r &lt;- rand( 0 , 2^k - 1 )     k = numero de intento (1 en el primero)
+
+   1er intento      -&gt; k=1  -&gt; r en [0, 1]     -&gt;  2 valores
+   2do intento      -&gt; k=2  -&gt; r en [0, 3]     -&gt;  4 valores
+   3er intento      -&gt; k=3  -&gt; r en [0, 7]     -&gt;  8 valores
+   10mo intento     -&gt; k=10 -&gt; r en [0, 1023]  -&gt;  1024 valores
+   11mo en adelante -&gt; k=10 (tope) -&gt; r en [0, 1023]
+
+   (la tabla completa, con los tiempos, está en §2.4)
+</code></pre></div>
+
+<p><strong>¿Por qué exponencial?</strong> Si dos estaciones colisionan, <strong>el azar las separa</strong>. Si las dos sortean <code>r = 0</code>, vuelven a chocar. El backoff exponencial hace que la probabilidad de que dos estaciones elijan el mismo valor <strong>caiga a cero geométricamente</strong> (<code>1/2^k</code> en el intento <code>k</code>) conforme se acumulan los intentos, y al mismo tiempo evita que una tercera quede esperando una ventana enorme.</p>
+<p><strong>(e) El tope de 16 intentos.</strong> Si después de <strong>16 intentos</strong> la trama sigue sin salir, se descarta y se reporta como <em>excessive collisions</em>. El objetivo es que <strong>un nodo muerto no bloquee el segmento entero</strong>: el corte es mejor que la parálisis.</p>
+<blockquote>
+<p><strong>La convención importa.</strong> IEEE 802.3 escribe <code>r ∈ [0, 2^k − 1]</code> <strong>con <code>k</code> empezando en 1 en el primer intento</strong>. Otros textos (y algunas soluciones de FING) cuentan <code>k = 0</code>, y entonces la primera ventana es <code>[0, 0]</code>, de una sola opción. <strong>Si el enunciado no aclara, escribí la convención que usás</strong>: eso ya suma puntos.</p>
+</blockquote>
+<p><strong>Y algo que casi nadie menciona:</strong> si la red está poco congestionada (menos de una colisión cada 1024 tramas), muchas tarjetas usan <strong>backoff no exponencial</strong>: eligen <code>r</code> en <code>[0, 2^k − 1]</code> con <code>k</code> fijo en <strong>10</strong>, siempre. Es una optimización de latencia que no cambia el algoritmo.</p>
+<h2>1.8 El slot time y los 64 bytes</h2>
+<p>Este es el corazón de por qué existe un tamaño mínimo de trama en Ethernet. La aritmética completa está en §2.5; acá va la lógica.</p>
+<p><strong>Paso 1 — La condición que hay que garantizar.</strong> Para que CSMA/CD funcione, la tarjeta tiene que poder <strong>darse cuenta de que hubo colisión mientras todavía está transmitiendo</strong>. Si la trama terminara antes de que volviera el indicio, el emisor creería que tuvo éxito.</p>
+<div class="codehilite"><pre><span></span><code>   tiempo de transmision de la trama  &gt;=  tiempo de ida y vuelta
+</code></pre></div>
+
+<p><strong>Paso 2 — Cuánto tarda la señal en ir y volver.</strong> El peor caso es transmitir hacia la estación <strong>más lejana del segmento</strong>, con el cable recorrido dos veces y las conversiones de los extremos. Si <code>τ</code> es el retardo de propagación de <strong>un sentido</strong>, entonces <code>t_ida_y_vuelta = 2 · τ</code>.</p>
+<p><strong>Paso 3 — El slot time.</strong> IEEE 802.3 lo fija en <strong>512 tiempos de bit</strong>, sea cual sea la velocidad: <code>51,2 µs</code> a 10 Mb/s, <code>5,12 µs</code> a 100 Mb/s, <code>0,512 µs</code> a 1 Gb/s.</p>
+<p><strong>Paso 4 — Traducir a bytes.</strong> <code>512 bits / 8 bits por byte = 64 bytes</code>.</p>
+<p><strong>Ahí está el 64.</strong> No es un número arbitrario ni una constante de interoperabilidad: <strong>es exactamente el tiempo de ida y vuelta de la señal en el peor caso, medido en bits.</strong></p>
+<h3>La misma cuenta en las otras velocidades</h3>
+<table>
+<thead>
+<tr>
+<th>Velocidad</th>
+<th>Slot time</th>
+<th><code>τ</code> máximo (un sentido)</th>
+<th>Distancia máxima teórica</th>
+<th>Distancia real con topología</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>10 Mb/s</td>
+<td>51,2 µs</td>
+<td>25,6 µs</td>
+<td><strong>5120 m</strong></td>
+<td>2500 m con 5 repetidores</td>
+</tr>
+<tr>
+<td>100 Mb/s</td>
+<td>5,12 µs</td>
+<td>2,56 µs</td>
+<td><strong>512 m</strong></td>
+<td>100 m por segmento con hub (100BASE-TX)</td>
+</tr>
+<tr>
+<td>1 Gb/s</td>
+<td>0,512 µs</td>
+<td>0,256 µs</td>
+<td><strong>51,2 m</strong></td>
+<td>100 m por segmento, con extensión de portadora</td>
+</tr>
+</tbody>
+</table>
+<p>Fijate la fila de 1 Gb/s: <strong>el presupuesto de tiempo se encogió 100 veces</strong> respecto de 10 Mb/s, pero el largo del cable es el mismo. Por eso IEEE 802.3 inventó la <strong>extensión de portadora</strong> (<em>carrier extension</em>): en half-duplex a 1 Gb/s la tarjeta mantiene el medio "ocupado" por al menos <strong>4096 tiempos de bit</strong> (4,096 µs), metiendo símbolos que no son datos. Es un parche que existe <strong>precisamente porque el 512 ya no alcanzaba</strong>.</p>
+<h3>Y el FCS también es mínimo</h3>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────┬────────────┬──────────┬──────────────┐
+   │ MAC destino  │ MAC origen │  Tipo    │    FCS       │
+   │    6 B       │    6 B     │   2 B    │    4 B       │  = 18 B
+   └──────────────┴────────────┴──────────┴──────────────┘
+   ┌────────────────────────────────────────────────────────┐
+   │              carga útil: 46 bytes mínimo               │
+   │  (si el paquete IP es más chico, se rellena con        │
+   │   "relleno" para llegar a 64 — de ahí el nombre        │
+   │   padding)                                             │
+   └────────────────────────────────────────────────────────┘
+
+   6 + 6 + 2 + 46 + 4 = 64 bytes = 512 bits   OK
+</code></pre></div>
+
+<p><strong>Detalle con VLAN:</strong> con etiqueta 802.1Q (4 bytes extra) la carga útil mínima baja a 42 bytes y la trama mínima <strong>con etiqueta</strong> es de 68 bytes. El mínimo absoluto sigue siendo 64 bytes <strong>sin</strong> etiqueta.</p>
+<h2>1.9 Dominios de colisión y de broadcast</h2>
+<p>Se confunden todo el tiempo y aparecen juntos en el examen <code>2010-12 P3</code>. Los definimos acá de forma breve; la Clase 42 los desarrolla a fondo con la tabla MAC y el <em>self-learning</em>.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Dominio de colisión</strong></th>
+<th><strong>Dominio de broadcast</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Qué es</strong></td>
+<td>las estaciones cuyas señales se superponen si transmiten a la vez</td>
+<td>las estaciones que reciben una trama de broadcast</td>
+</tr>
+<tr>
+<td><strong>Definido por</strong></td>
+<td>el medio físico compartido</td>
+<td>la capacidad de reenviar tramas por todos los puertos</td>
+</tr>
+<tr>
+<td><strong>Se rompe con</strong></td>
+<td>el switch (cada puerto es un dominio propio)</td>
+<td>la VLAN (o un router)</td>
+</tr>
+<tr>
+<td><strong>Máximo teórico</strong></td>
+<td>2 estaciones (full-duplex)</td>
+<td>toda la red local</td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code>   CON HUB -- todo es uno
+
+   [H1]──┐
+   [H2]──┼──&gt; HUB ═══ 1 dominio de colisión ═══ 1 dominio de broadcast
+   [H3]──┘         │                    │
+                (todo el tráfico     (todo el tráfico
+                 se ve en todas       se ve en todas
+                 las bocas)           las bocas)
+
+
+   CON SWITCH -- el de colisión se parte, el de broadcast no
+
+   [H1]──┐                   ┌──&gt; H1     dominio de colisión
+   [H2]──┼──&gt; SWITCH ═══┬═══ ┼──&gt; H2     (uno por puerto,
+   [H3]──┘              │     └──&gt; H3      o sea UNO POR CADA)
+   [H4]──────────────────┘     ╲   ╱
+                             ╲   ╱
+                      (las tramas de broadcast salen por TODOS
+                       los puertos del mismo dominio de broadcast:
+                       el switch no puede descartarlas porque no
+                       tiene a quién entregarlas)
+</code></pre></div>
+
+<p><strong>Con un hub:</strong> es de capa 1. Copia la señal a <strong>todos</strong> los puertos, sin mirar direcciones y sin decidir nada. Entonces: <strong>un solo dominio de colisión</strong> (comparte el mismo medio eléctrico) <strong>y un solo dominio de broadcast</strong>. Es la red del §1.1, con ALOHA encima.</p>
+<p><strong>Con un switch:</strong> aprende direcciones y decide a qué puerto va cada trama, y eso <strong>parte el medio en un dominio de colisión por puerto</strong>. Pero las tramas de broadcast no se pueden descartar —por definición todos tienen que oírla—, así que <strong>el dominio de broadcast sigue siendo toda la red</strong>. Salvo que existan VLANs.</p>
+<blockquote>
+<p><strong>La frase que hay que saber decir:</strong> el switch <strong>no evita colisiones</strong>. Lo que hace es <strong>eliminar el medio compartido</strong>, y por eso es que las colisiones dejan de ser posibles. Son dos afirmaciones muy distintas, y confundirlas es el error conceptual más común del tema.</p>
+</blockquote>
+<h3>⚠️ Actualización a 2026</h3>
+<p><strong>Sigue igual — de memoria, sin dudar:</strong>
+- <strong>CSMA/CD</strong>: <em>exponential backoff</em>, <strong>slot time = 512 bits</strong>, trama mínima <strong>64 B</strong>, trama máxima <strong>1518 B</strong>, jamming de 32 bits, tope de 16 intentos.
+- Formato de trama: preámbulo 7 + SFD 1, MAC destino 6 + MAC origen 6, tipo 2, carga útil, <strong>FCS 4</strong>. <strong>MTU 1500.</strong>
+- <strong>ARP (<code>RFC 826</code>)</strong>: request en broadcast, reply en unicast. El <em>gratuitous ARP</em> sigue usándose (anuncio, DHCP, failover de gateway, VRRP) y sigue siendo una fuente clásica de <em>ARP spoofing</em>.
+- <strong>MAC learning</strong>: el bridge aprende la MAC <strong>origen</strong> y asocia puerto; <strong>flooding</strong> si el destino es desconocido; <strong>unicast</strong> si se conoce.
+- <strong>Loops en capa 2 = broadcast storm</strong>: sigue siendo la razón de ser del STP.</p>
+<p><strong>Cambió o se modificó:</strong></p>
+<ul>
+<li><strong>El half-duplex Ethernet es historia por encima de 1 Gb/s.</strong> Es una decisión de <strong>IEEE 802.3</strong>, <strong>no una RFC de IETF</strong>. ⚠️ <strong>No existe ningún RFC que lo depreque</strong>: <code>RFC 8984</code> es <strong>JSCalendar</strong>, nada que ver con Ethernet. A 10GbE y por encima el full-duplex punto a punto es obligatorio, y el half-duplex directamente no existe en la especificación de esas velocidades.</li>
+<li><strong>Pero half-duplex no desapareció del todo.</strong> <strong>IEEE 802.3cg 10BASE-T1S</strong> (<em>single-pair Ethernet</em>, para redes PLC industriales sobre un solo par) es <strong>obligatoriamente half-duplex</strong>, con un protocolo de acceso propio, <strong>PLCA</strong>. Y en IETF, el módulo YANG <code>csma-cd</code> de <code>802.3cf</code> está marcado <code>status deprecated</code>. ⇒ <strong>Saber cuándo CSMA/CD sigue existiendo es parte del tema.</strong></li>
+<li><strong><code>RSTP</code> (<code>802.1w</code>) es el default real</strong>, no el STP clásico. <code>MSTP</code> (<code>802.1s</code>) para varias instancias de VLAN. Bridge ID con prioridad base <strong>32768</strong>.</li>
+<li>⚠️ <strong>El "aging de 300 s" de la tabla MAC es un default de FABRICANTE, no un valor mandated por IEEE.</strong> Enseñalá "típicamente 300 s en switches comerciales, configurable", <strong>nunca</strong> "el estándar IEEE dice 300 s".</li>
+<li><strong><code>802.1Q-2022</code></strong> es el estándar actual (precedido por <code>802.1Q-2018</code>): 2018 abrió el bloque de TSN (<code>802.1Qbv</code>, <code>802.1Qbu</code> con <code>802.3br</code>, <code>802.1Qci</code>) y 2022 agregó <code>802.1Qcc</code> y <code>802.1Qcr</code>. <strong>C-TAG (<code>0x8100</code>) vs. S-TAG (<code>0x88A8</code>)</strong>: doble etiquetado para <em>provider bridges</em>, hoy lo estándar en carrier Ethernet y EVPN-VXLAN. <strong>LAG</strong>: <code>802.3ad</code> (2000) pasó a <strong><code>802.1AX</code></strong>, revisión vigente <strong><code>802.1AX-2020</code></strong>.</li>
+</ul>
+<p><strong>Consecuencia para el examen:</strong> si preguntan "¿CSMA/CD es necesario hoy?", la respuesta es <strong>no, y ni siquiera existe por encima de 1 Gb/s</strong>. Si preguntan "¿es siempre necesario en Ethernet?", la respuesta es <strong>no: con full-duplex no hay colisión posible</strong> (§3.2). Y si preguntan por el aging, decí "típicamente 300 s, configurable, default del fabricante".</p>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<blockquote>
+<p>En toda esta parte <strong>se supone que las tramas llegan en un proceso de Poisson</strong> (arribos independientes con probabilidad constante por unidad de tiempo), que es el modelo estándar del libro. Es la única suposición fuerte, y hay que declararla, porque sin ella las cuentas no cierran.</p>
+</blockquote>
+<h2>2.1 Ejercicio 1 — Derivar la eficiencia del ALOHA puro (<code>1/(2e)</code>)</h2>
+<p><strong>Enunciado.</strong> Una red de ALOHA puro tiene tramas de duración <code>T</code> y las estaciones generan tramas según un proceso de Poisson de tasa <code>λ</code>. Calcular la eficiencia y su valor máximo.</p>
+<p><strong>Datos.</strong> <code>G = λ · T</code> es la <strong>carga ofrecida</strong> (<em>offered load</em>): el número de tramas que el sistema <strong>intenta</strong> poner en el medio durante el tiempo que tarda una trama en entrar.</p>
+<p><strong>Paso 1 — Probabilidad de colisión.</strong> Una trama que envío en <code>t = 0</code> tiene ventana de <code>2T</code> (§1.3). En esos <code>2T</code> segundos pueden llegar <code>λ · 2T = 2G</code> tramas ajenas. Para no chocar necesito <strong>cero</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   P(sin colisión) = P(0 arribos en 2T) = e^(−2G)
+</code></pre></div>
+
+<p><em>Interpretación:</em> es la probabilidad de <strong>supervivencia</strong> de una trama. Si <code>G = 0,5</code>, <code>e^(−1) = 0,368</code>.</p>
+<p><strong>Paso 2 — Eficiencia.</strong> De cada <code>G</code> tramas que el sistema intenta meter por unidad de tiempo de trama, sobrevive la fracción <code>e^(−2G)</code>:</p>
+<div class="codehilite"><pre><span></span><code>   S = G · e^(−2G)
+   ^   ^
+   |   └── fracción que sobrevive sin chocar
+   └────── tramas que se intentan meter por unidad de tiempo
+</code></pre></div>
+
+<p><strong>Paso 3 — Maximizar.</strong> El factor exponencial siempre es positivo, así que el máximo está donde se anula el factor lineal de la derivada:</p>
+<div class="codehilite"><pre><span></span><code>   S'(G) = e^(−2G) + G · (−2) · e^(−2G)
+         = e^(−2G) · (1 − 2G)
+
+   S'(G) = 0   --&gt;   1 − 2G = 0   --&gt;   G* = 1/2
+
+   S''(G) = e^(−2G) · (−2 − 2 + 4G)
+   En G = 1/2:   S'' = e^(−1) · (−2) &lt; 0   --&gt;  es MAXIMO
+</code></pre></div>
+
+<p><strong>Paso 4 — El valor.</strong></p>
+<div class="codehilite"><pre><span></span><code>   S_max = (1/2) · e^(−2 · (1/2)) = (1/2) · e^(−1) = 1/(2e)
+
+   1/(2e) = 1 / (2 · 2,71828) = 1 / 5,43656 = 0,18394  ≈  18,4 %
+</code></pre></div>
+
+<p><strong>Resultado: la eficiencia máxima del ALOHA puro es <code>1/(2e) ≈ 0,184</code>.</strong> O sea: <strong>de cada 5,44 tramas que el medio transporta, solo 1 es válida.</strong> Las otras 4,44 se pierden en colisiones. Ese es el precio de no mirar nunca el medio antes de hablar.</p>
+<p><strong>La misma cuenta sin derivadas</strong> (por si el corrector no admite cálculo):</p>
+<div class="codehilite"><pre><span></span><code>   S(1/2) = 0,5 · e^(−1)   = 0,5 · 0,36788 = 0,18394
+   S(0,4) = 0,4 · e^(−0,8) = 0,4 · 0,44933 = 0,17973   &lt;-- menor
+   S(0,6) = 0,6 · e^(−1,2) = 0,6 · 0,30119 = 0,18072   &lt;-- menor
+</code></pre></div>
+
+<p>El argumento sin cálculo: <code>S = G·e^(−2G)</code> es el producto de un factor que <strong>crece</strong> y otro que <strong>decrece exponencialmente</strong>, así que hay un único punto de equilibrio; y como <code>S</code> tiende a 0 cuando <code>G</code> tiende a infinito, ese punto es forzosamente un máximo.</p>
+<table>
+<thead>
+<tr>
+<th>Carga <code>G</code></th>
+<th>Slotted <code>G·e^(−G)</code></th>
+<th>Puro <code>G·e^(−2G)</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0,10</td>
+<td>0,0905</td>
+<td>0,0819</td>
+</tr>
+<tr>
+<td>0,25</td>
+<td>0,1947</td>
+<td>0,1516</td>
+</tr>
+<tr>
+<td><strong>0,50</strong></td>
+<td><strong>0,3033</strong></td>
+<td><strong>0,1839 (máximo)</strong></td>
+</tr>
+<tr>
+<td>0,75</td>
+<td>0,3543</td>
+<td>0,1673</td>
+</tr>
+<tr>
+<td><strong>1,00</strong></td>
+<td><strong>0,3679 (máximo)</strong></td>
+<td>0,1353</td>
+</tr>
+<tr>
+<td>1,50</td>
+<td>0,3347</td>
+<td>0,0747</td>
+</tr>
+<tr>
+<td>2,00</td>
+<td>0,2707</td>
+<td>0,0366</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Errores típicos:</strong> contar <code>T</code> en vez de <code>2T</code> (te da <code>1/e</code>, que es el número del Slotted); olvidar que hay que maximizar y no solo escribir la función; confundir <code>G</code> (un número de tramas por tiempo de trama) con una probabilidad.</p>
+</blockquote>
+<h2>2.2 Ejercicio 2 — Derivar la eficiencia del Slotted-ALOHA (<code>1/e</code>)</h2>
+<p><strong>Paso 1 — La ventana vulnerable.</strong> Si solo puedo empezar en los bordes de ranura, dos tramas que empiecen en ranuras distintas <strong>no pueden solaparse</strong>. El único caso de colisión es que <strong>empiecen en la misma ranura</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   ranura 0 │ ranura 1 │ ranura 2 │ ranura 3 │
+   ─────────┼──────────┼──────────┼──────────┤
+      ▓▓▓▓▓ │          │ ▓▓▓▓▓    │ ▓▓▓▓▓    │
+      A     │          │ B        │
+      (empieza en 0)     (empieza en 2)
+                  ↑
+      no hay solapamiento: la ventana de A terminó
+      justo cuando empieza B
+</code></pre></div>
+
+<p><strong>La ventana pasó de <code>2T</code> a <code>T</code>. Punto.</strong> Ese es el único cambio.</p>
+<p><strong>Paso 2 — Probabilidad de colisión.</strong></p>
+<div class="codehilite"><pre><span></span><code>   arribos en una ventana de T segundos:  λ · T = G
+   P(sin colisión) = P(0 arribos en T) = e^(−G)
+</code></pre></div>
+
+<p><strong>Paso 3 — Eficiencia y máximo.</strong></p>
+<div class="codehilite"><pre><span></span><code>   S = G · e^(−G)
+
+   S'(G) = e^(−G) − G · e^(−G) = e^(−G) · (1 − G)
+   S'(G) = 0   --&gt;   G* = 1
+
+   S_max = 1 · e^(−1) = 1/e = 0,36788  ≈  36,8 %
+</code></pre></div>
+
+<p><strong>Paso 4 — Por qué dobla EXACTAMENTE.</strong></p>
+<div class="codehilite"><pre><span></span><code>        S_slotted        G · e^(−G)          evaluado en G = 1
+   ───────────────  ────────────────  =  ─────────────────  =  e^(−1)
+        S_puro          G · e^(−2G)         evaluado en G = 1/2
+                                        (1/2)·e^(−1)
+
+   =  1 · e^(−1)  /  ( (1/2) · e^(−1) )
+   =  e^(−1) / ((1/2) e^(−1))
+   =  1 / (1/2)
+   =  2
+</code></pre></div>
+
+<p><strong>La explicación de fondo</strong> es de una frase: <strong>el riesgo se redujo a la mitad</strong>. Como la probabilidad de supervivencia es <code>e^(−ventana·λ)</code>, reducir la ventana a la mitad <strong>multiplica por <code>e</code> la probabilidad de sobrevivir</strong>; y como además la carga óptima se duplica (<code>G*</code> pasa de <code>1/2</code> a <code>1</code>), el resultado neto es un factor <strong>exactamente 2</strong>. No es aproximación: es <code>e</code> en el numerador contra un <code>1/2</code> en el denominador. Y un detalle elegante: el sistema ranurado puede (y debe) <strong>ofrecer el doble de carga</strong> para funcionar igual de bien, porque para la misma cantidad de tramas que mete gasta la mitad de tiempo expuesto.</p>
+<h2>2.3 Ejercicio 3 — Práctico 5, ejercicio 8: ALOHA con franjas</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Práctico 5 de 2008, ejercicio 8 (página 2), basado en la sección 5.3 del libro.</p>
+</blockquote>
+<p><strong>Enunciado (traducción).</strong> "En la Sección 5.3 se ha proporcionado un resumen de la deducción de la eficiencia de ALOHA con franjas. En este problema completaremos la deducción.
+<strong>a.</strong> Recordar que cuando hay <code>N</code> nodos activos, la eficiencia de ALOHA con franjas es <code>Np(1−p)^(N−1)</code>. Encontrar el valor de <code>p</code> que hace máxima esta expresión.
+<strong>b.</strong> Utilizando el valor de <code>p</code> encontrado en (a), encontrar la eficiencia de ALOHA con franjas suponiendo que <code>N</code> se aproxima a infinito. (Pista: <code>(1 − 1/N)^(N−1)</code> se aproxima a <code>1/e</code> cuando <code>N</code> se aproxima a infinito.)"</p>
+<p><strong>Dato.</strong> <code>p</code> = probabilidad de que un nodo <strong>empiece</strong> a transmitir en un instante dado.</p>
+<h3>Parte a) — el <code>p</code> que maximiza</h3>
+<div class="codehilite"><pre><span></span><code>   S(p) = N · p · (1 − p)^(N−1)
+
+   dS/dp = N · (1−p)^(N−1)  −  N·p·(N−1) · (1−p)^(N−2)
+
+   Factorizo N · (1−p)^(N−2):
+         = N · (1−p)^(N−2) · [ (1−p) − p(N−1) ]
+
+   Como N·(1−p)^(N−2) &gt; 0, igualo a cero el corchete:
+
+         (1−p) − p(N−1) = 0
+         1 − p − pN + p = 0
+         1 − pN = 0
+         p* = 1/N
+</code></pre></div>
+
+<p><strong>Respuesta a): <code>p = 1/N</code>.</strong> Cada estación empieza uno de cada <code>N</code> intentos: exactamente la carga que llena el medio sin pasarse. Es un <strong>máximo</strong> porque <code>S(0) = 0</code> y <code>S(1) = 0</code> (para <code>N &gt; 1</code>) y hay un único punto crítico.</p>
+<h3>Parte b) — el límite <code>N</code> hacia infinito</h3>
+<div class="codehilite"><pre><span></span><code>   S_max(N) = N · (1/N) · (1 − 1/N)^(N−1)
+            = 1 · (1 − 1/N)^(N−1)
+
+   ln [ (1 − 1/N)^(N−1) ] = (N−1) · ln(1 − 1/N)
+
+   Para N grande usamos   ln(1 − x) ≈ −x − x²/2 − x³/3   con x = 1/N
+
+       (N−1) · ln(1 − 1/N)
+         ≈ (N−1) · ( −1/N − 1/(2N²) − 1/(3N³) )
+         =  −(1 − 1/N)  −  (1/2)(1/N − 1/N²) − ...
+         --&gt;  −1 − 0 − 0  =  −1          cuando N --&gt; infinito
+
+   Entonces:    (1 − 1/N)^(N−1) --&gt; e^(−1) = 1/e
+
+   S_max(N --&gt; infinito) = 1/e = 0,367879  ≈  36,8 %
+</code></pre></div>
+
+<p><strong>Respuesta b): la eficiencia tiende a <code>1/e</code>, que es exactamente el valor del Slotted-ALOHA.</strong></p>
+<table>
+<thead>
+<tr>
+<th><code>N</code> (ranuras por bloque)</th>
+<th><code>p* = 1/N</code></th>
+<th><code>S_max = (1−1/N)^(N−1)</code></th>
+<th>contra <code>1/e</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2</td>
+<td>0,500</td>
+<td>0,5000</td>
+<td><strong>+35,9 %</strong></td>
+</tr>
+<tr>
+<td>4</td>
+<td>0,250</td>
+<td>0,4219</td>
+<td><strong>+14,7 %</strong></td>
+</tr>
+<tr>
+<td>8</td>
+<td>0,125</td>
+<td>0,3927</td>
+<td><strong>+6,7 %</strong></td>
+</tr>
+<tr>
+<td>100</td>
+<td>0,010</td>
+<td>0,3697</td>
+<td>+0,5 %</td>
+</tr>
+<tr>
+<td>infinito</td>
+<td>→ 0</td>
+<td>→ 0,3679 (= <code>1/e</code>)</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Cálculo numérico con <code>N = 100</code>:</strong></p>
+<div class="codehilite"><pre><span></span><code>   p  = 1/100 = 0,01
+   S  = 100 · 0,01 · (1 − 0,01)^(99) = 1 · (0,99)^99
+
+      ln(0,99) = −0,0100503
+      99 · (−0,0100503) = −0,99498
+      e^(−0,99498) = 0,36973
+
+   S = 0,3697   (contra 1/e = 0,3679: apenas 0,5 % por encima)
+</code></pre></div>
+
+<p><strong>Interpretación.</strong> Con pocas ranuras por bloque la eficiencia "por ranura" es mejor, pero <strong>cada estación ocupa el medio mucho más tiempo</strong>: con <code>N = 2</code> ocupás el medio el doble de tiempo para conseguir la misma probabilidad. La eficiencia mide tramas por ranura, no bits por segundo.</p>
+<blockquote>
+<p><strong>Errores típicos:</strong> poner <code>N(1−p)</code> en el exponente (el factor <code>N·p</code> cuenta cuántas <strong>empiezan</strong>, y el <code>(1−p)</code> cuenta cuántas <strong>no empiezan</strong>, <code>N−1</code> veces); creer que <code>p = 1/N</code> es <code>p = 1</code>; y <strong>citar el límite <code>1/e</code> sin derivarlo</strong>: en el examen, el paso del logaritmo vale la mitad del punto.</p>
+</blockquote>
+<h2>2.4 Ejercicio 4 — La tabla de backoff exponencial de CSMA/CD</h2>
+<p><strong>Enunciado (inventado).</strong> Una estación de Ethernet de 10 Mb/s tiene un choque. Calculá, para los primeros 8 intentos: el valor máximo de <code>r</code>, la cantidad de valores posibles de la ventana y el tiempo máximo que puede esperar.</p>
+<p><strong>Datos.</strong> <code>slot time = 512 bits = 512 / 10⁷ = 51,2 µs</code>.</p>
+<div class="codehilite"><pre><span></span><code>   r &lt;- rand( 0 , 2^k − 1 )      k = numero de intento, arrancando en k = 1
+
+   cantidad de valores posibles = (2^k − 1) − 0 + 1 = 2^k
+   tiempo maximo de espera = r_max · slot time = (2^k − 1) × 51,2 µs
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Intento <code>k</code></th>
+<th><code>2^k</code></th>
+<th><code>2^k − 1</code></th>
+<th>valores de <code>r</code></th>
+<th><code>r</code> en</th>
+<th>t_máx = <code>(2^k−1)</code> × 51,2 µs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>2</td>
+<td>1</td>
+<td><strong>2</strong></td>
+<td>0 … 1</td>
+<td><strong>51,2 µs</strong></td>
+</tr>
+<tr>
+<td>2</td>
+<td>4</td>
+<td>3</td>
+<td><strong>4</strong></td>
+<td>0 … 3</td>
+<td>153,6 µs</td>
+</tr>
+<tr>
+<td>3</td>
+<td>8</td>
+<td>7</td>
+<td><strong>8</strong></td>
+<td>0 … 7</td>
+<td>358,4 µs</td>
+</tr>
+<tr>
+<td>4</td>
+<td>16</td>
+<td>15</td>
+<td><strong>16</strong></td>
+<td>0 … 15</td>
+<td>768,0 µs</td>
+</tr>
+<tr>
+<td>5</td>
+<td>32</td>
+<td>31</td>
+<td><strong>32</strong></td>
+<td>0 … 31</td>
+<td>1,587 ms</td>
+</tr>
+<tr>
+<td>6</td>
+<td>64</td>
+<td>63</td>
+<td><strong>64</strong></td>
+<td>0 … 63</td>
+<td>3,226 ms</td>
+</tr>
+<tr>
+<td>7</td>
+<td>128</td>
+<td>127</td>
+<td><strong>128</strong></td>
+<td>0 … 127</td>
+<td>6,502 ms</td>
+</tr>
+<tr>
+<td>8</td>
+<td>256</td>
+<td>255</td>
+<td><strong>256</strong></td>
+<td>0 … 255</td>
+<td>13,06 ms</td>
+</tr>
+<tr>
+<td>10</td>
+<td>1024</td>
+<td>1023</td>
+<td><strong>1024</strong></td>
+<td>0 … 1023</td>
+<td>52,38 ms</td>
+</tr>
+<tr>
+<td>11 en adelante</td>
+<td>1024</td>
+<td>1023</td>
+<td><strong>1024</strong></td>
+<td>0 … 1023</td>
+<td>52,38 ms (tope)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Interpretación.</strong> El tiempo máximo <strong>crece por mitad en cada paso</strong> y a partir del intento 10 se congela en 52,4 ms, que es aproximadamente un tiempo de ida y vuelta típico de una red local. Es decir: el protocolo garantiza que ninguna estación espere más que lo que tardaría un paquete en dar una vuelta a la red. Si fuera más, el backoff empezaría a <strong>dominar</strong> el tiempo de respuesta y la red se sentiría lenta por el mecanismo que justamente debía mejorarla.</p>
+<div class="codehilite"><pre><span></span><code>   Si la red no está congestionada (menos de 1 colisión cada
+   1024 tramas), muchas tarjetas usan k FIJO = 10 desde el
+   primer intento:
+
+   Primer choque -&gt; r en [0, 1023] directamente.
+   Ventana 1024 veces mas grande -&gt; probabilidad de choque
+   con otra estacion del orden de 1/1024.
+</code></pre></div>
+
+<blockquote>
+<p><strong>Errores típicos:</strong> empezar <code>k</code> en 0 (muchos textos lo hacen, pero IEEE cuenta el primer intento como <code>k = 1</code>; <strong>escribí qué convención usás</strong>); calcular <code>t_máx</code> como <code>2^k × slot</code> en vez de <code>(2^k − 1) × slot</code>; y olvidar que el backoff arranca <strong>después</strong> del IFS de 96 bits (9,6 µs a 10 Mb/s).</p>
+</blockquote>
+<h2>2.5 Ejercicio 5 — El slot time y la trama mínima: derivar los 64 bytes</h2>
+<p><strong>Enunciado (inventado, y es el mejor ejercicio conceptual de la clase).</strong> Una red Ethernet de 10 Mb/s tiene un segmento de coaxil de 2.500 m, con velocidad de propagación <code>2 × 10⁸ m/s</code>. Cada estación tiene un retardo de transceiver de 0,1 µs en cada extremo.</p>
+<p><strong>a)</strong> Retardo de propagación de un sentido. <strong>b)</strong> Tiempo de ida y vuelta del extremo más lejano. <strong>c)</strong> ¿Qué condición debe cumplir la trama mínima? <strong>d)</strong> ¿Alcanzan 512 bits?</p>
+<div class="codehilite"><pre><span></span><code>   (a) Retardo de propagacion de un sentido
+
+   d = 2.500 m
+   v = 2 x 10^8 m/s
+
+   tau = d / v = 2500 / (2 x 10^8) = 12,5 x 10^-6 s = 12,5 µs
+
+   Sumando los dos transceivers (uno en cada extremo):
+   tau_total = 12,5 µs + 0,1 µs + 0,1 µs = 12,7 µs
+
+
+   (b) Ida y vuelta
+
+   t_ida_y_vuelta = 2 · tau_total = 2 · 12,7 µs = 25,4 µs
+   (Los dos transceivers ya están incluidos: van uno en cada
+    sentido del viaje.)
+
+
+   (c) La condición. Para detectar una colisión, el indicio tiene
+       que VOLVER antes de que la trama termine. Si la trama
+       terminara antes, la tarjeta creería que salió bien:
+
+           t_transmision  &gt;=  t_ida_y_vuelta
+
+
+   (d) Verificacion
+
+   slot time = 512 · T_bit = 512 / (10 x 10^6) = 51,2 µs
+
+   t_transmision (trama de 64 B) = 51,2 µs
+   t_ida_y_vuelta               = 25,4 µs
+   ─────────────────────────────────────────
+   51,2 µs  &gt;=  25,4 µs         OK, ALCANZA
+</code></pre></div>
+
+<h3>El paso inverso: de la condición al número de bytes</h3>
+<div class="codehilite"><pre><span></span><code>   1. La trama mínima debe durar &gt;= el tiempo de ida y vuelta.
+   2. IEEE fija el slot time (la unidad de tiempo del backoff,
+      igual al tiempo máximo de ida y vuelta) en 512 bits.
+   3. Por lo tanto la trama mínima es de 512 bits.
+   4. 512 bits / 8 bits por byte = 64 bytes.
+</code></pre></div>
+
+<p><strong>Y la comprobación con el diagrama de los 64 bytes:</strong></p>
+<div class="codehilite"><pre><span></span><code>   H1 (extremo izquierdo)                            H2 (extremo derecho)
+      |                                                       |
+ t=0  |██████  trama de 64 bytes, 512 bits                 |
+      |                                                       |
+      |&lt;--------------- 12,7 µs -------------&gt;|              |
+      |        (la señal viaja)                |              |
+      |                                                       |
+      |   H2 empieza a transmitir en t = 51,2 − 12,7 − ε     |
+      |                      = 38,5 µs − ε                    |
+      |                                                       |
+      |                                 ████  H2               |
+      |&lt;------ la onda de H2 vuelve ------------|             |
+51,2− |                                                       |
+  ε    |██████╳██████  &lt;-- acá se cruzan las dos señales      |
+      |      COLISION                                        |
+      |                                                       |
+      |   H1 detecta:  señal_tx distinta de señal_rx          |
+      |   -&gt; detiene la trama                                |
+      |   -&gt; transmite 32 bits de JAMMING                    |
+      |   -&gt; espera 96 bits de IFS                           |
+      |   -&gt; sortea r en [0, 2^1 − 1] = [0,1] slots          |
+      |   -&gt; reintenta                                       |
+</code></pre></div>
+
+<p><em>Interpretación:</em> <strong>todo el mecanismo cabe dentro de la trama mínima.</strong> La tarjeta no espera a que termine: aborta en unos 51 µs. Ese es el beneficio de CD frente a la detección indirecta por ACK, que costaría un RTT completo.</p>
+<div class="codehilite"><pre><span></span><code>   La generalización a otras velocidades:
+
+   A 100 Mb/s:   512 / (100 x 10^6) = 5,12 µs
+                 -&gt; la distancia máxima cae a
+                    (5,12/2) x 10^-6 x 2 x 10^8 = 512 m
+
+   A 1 Gb/s:     512 / (10^9) = 0,512 µs
+                 -&gt; la distancia máxima cae a 51,2 m
+                 -&gt; INSUFICIENTE para los 100 m del cable
+                    -&gt; de ahi la extensión de portadora
+                       de IEEE 802.3 (4096 tiempos de bit)
+</code></pre></div>
+
+<blockquote>
+<p><strong>Errores típicos:</strong> dividir solo por 2 sin justificar por qué (decí "la colisión tiene que aparecer en el receptor <strong>antes</strong> de que el emisor termine"); olvidar el tiempo de transmisión de la trama y comparar solo propagación contra 512 bits (la condición es <code>t_tx &gt;= 2·tau</code>); y confundir 512 <strong>bits</strong> con 512 <strong>bytes</strong>.</p>
+</blockquote>
+<h2>2.6 Ejercicio 6 — CDMA: los ejercicios 5 y 6 del Práctico 5</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Práctico 5 de 2008, ejercicios 5 y 6 (página 1).
+CDMA = <em>Code Division Multiple Access</em>, acceso múltiple por división de código. Es un protocolo de <strong>partición de canal</strong>: en vez de dividir el tiempo o la frecuencia, divide el <strong>espacio de códigos</strong>.</p>
+</blockquote>
+<p><strong>La regla de oro.</strong> Cada bit de dato <code>d_i</code> se codifica multiplicándolo, bit a bit, por un código de <code>M</code> chips del emisor:</p>
+<div class="codehilite"><pre><span></span><code>   Z_(i,m) = d_i · c_m          m = 1 ... M
+
+   c_m en {+1, −1}      &lt;- el codigo del emisor, M valores
+   d_i en {+1, −1}      &lt;- el bit de dato, representado con signo
+</code></pre></div>
+
+<p><strong>Convención del libro (importante):</strong> para hacer la aritmética, <strong>un bit de dato <code>0</code> se representa como <code>−1</code></strong>, no como <code>0</code>.</p>
+<h3>Ejercicio 5 — emisor único con código (1, −1, 1, −1, 1, −1)</h3>
+<p><strong>Enunciado (traducción).</strong> "Considérese el ejemplo de emisor único CDMA de la Figura 5.11. ¿Cuál sería la salida del emisor (para los dos bits de datos mostrados) si el código CDMA del emisor fuera (1, −1, 1, −1, 1, −1)?"</p>
+<p><strong>Datos.</strong> <code>M = 6</code> porque el código tiene 6 valores. Cada bit produce <strong>6 chips</strong>, y con 2 bits la salida tiene <strong>12 valores</strong>. La tabla completa, para los cuatro pares posibles (así leés el que muestre tu edición):</p>
+<table>
+<thead>
+<tr>
+<th>bits mostrados</th>
+<th><code>d_0</code></th>
+<th><code>d_1</code></th>
+<th>salida ranura 0 (6 chips)</th>
+<th>salida ranura 1 (6 chips)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1 1</strong></td>
+<td>+1</td>
+<td>+1</td>
+<td><code>1 −1 1 −1 1 −1</code></td>
+<td><code>1 −1 1 −1 1 −1</code></td>
+</tr>
+<tr>
+<td><strong>1 0</strong></td>
+<td>+1</td>
+<td>−1</td>
+<td><code>1 −1 1 −1 1 −1</code></td>
+<td><code>−1 1 −1 1 −1 1</code></td>
+</tr>
+<tr>
+<td><strong>0 1</strong></td>
+<td>−1</td>
+<td>+1</td>
+<td><code>−1 1 −1 1 −1 1</code></td>
+<td><code>1 −1 1 −1 1 −1</code></td>
+</tr>
+<tr>
+<td><strong>0 0</strong></td>
+<td>−1</td>
+<td>−1</td>
+<td><code>−1 1 −1 1 −1 1</code></td>
+<td><code>−1 1 −1 1 −1 1</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Ejemplo desarrollado, el caso "1 0":</strong></p>
+<div class="codehilite"><pre><span></span><code>   d_0 = 1   -&gt;  Z_0 = 1 · (1, −1, 1, −1, 1, −1) = ( 1, −1,  1, −1,  1, −1)
+   d_1 = −1  -&gt;  Z_1 = −1 · (1, −1, 1, −1, 1, −1) = (−1,  1, −1,  1, −1,  1)
+
+   Salida completa (12 chips):
+     ( 1, −1,  1, −1,  1, −1, |  −1,  1, −1,  1, −1,  1 )
+      └────── dato 1 ──────┘   └────── dato 0 ──────┘
+</code></pre></div>
+
+<p><strong>Interpretación — la idea que hay que escribir en el examen:</strong> el segundo bloque es <strong>exactamente el negativo</strong> del primero. Mandar un <code>0</code> es mandar <strong>el código dado vuelta</strong>, no "no mandar nada". Eso es lo que permite después <strong>separar</strong> a los emisores: el receptor multiplica por el mismo código y el <code>−1</code> le queda como signo.</p>
+<p><strong>La decodificación, para verificar que el sistema funciona:</strong></p>
+<div class="codehilite"><pre><span></span><code>   d_reconstruido = (1/M) · suma de  Z_(i,m) · c_m
+
+   Ranura 0 (d_0 = 1):
+     1/6 · (1·1 + (−1)(−1) + 1·1 + (−1)(−1) + 1·1 + (−1)(−1))
+   = 1/6 · (1 + 1 + 1 + 1 + 1 + 1) = 1/6 · 6 = 1     OK
+
+   Ranura 1 (d_1 = −1):
+     1/6 · ((−1)(1) + (1)(−1) + (−1)(1) + (1)(−1) + (−1)(1) + (1)(−1))
+   = 1/6 · (−6) = −1                                    OK
+</code></pre></div>
+
+<p><em>Interpretación:</em> <strong>la suma da <code>+M</code> o <code>−M</code></strong>, y al dividir por <code>M</code> sale <code>+1</code> o <code>−1</code>. El componente clave es que <strong>cada chip se multiplica por sí mismo</strong> (<code>c_m · c_m = c_m² = 1</code>), así que el código aporta siempre <code>+M</code> de energía útil.</p>
+<h3>Ejercicio 6 — el emisor 2</h3>
+<p><strong>Enunciado (traducción).</strong> "Considérese el emisor 2 de la Figura 5.12. ¿Cuál es la salida del emisor al canal (antes de que se añada a la señal del emisor 1) <code>Z_m</code>?"</p>
+<p><strong>Datos.</strong> El emisor 2 tiene los bits de datos <code>(−1, +1)</code> (es decir, "0 1") y su propio código, también de 6 chips. Tomemos <code>c₂ = (1, −1, −1, −1, −1, 1)</code>.</p>
+<div class="codehilite"><pre><span></span><code>   Datos:   d_0 = −1          d_1 = +1
+
+   Ranura 0:
+     Z_0 = (−1) · (1, −1, −1, −1, −1, 1) = (−1, +1, +1, +1, +1, −1)
+
+   Ranura 1:
+     Z_1 = (+1) · (1, −1, −1, −1, −1, 1) = ( 1, −1, −1, −1, −1,  1)
+
+   Salida Z_m:
+     (−1, +1, +1, +1, +1, −1, |  1, −1, −1, −1, −1,  1 )
+</code></pre></div>
+
+<h3>Continuación natural — el agregado y por qué CDMA funciona <em>(solución propia)</em></h3>
+<p>Esta parte no está en el enunciado del práctico, pero es <strong>la pregunta que de verdad importa</strong>: ¿cómo se separan las señales si van mezcladas por el mismo canal? <strong>El canal es aditivo</strong>: todas las señales se suman en el aire.</p>
+<div class="codehilite"><pre><span></span><code>   S_(i,m) = Z1_(i,m) + Z2_(i,m)
+
+   Ranura 0:  (−1, 1, 1, 1, 1, −1)  +  (0, 0, 0, 0, 0, 0)
+              emisor 1 (d=−1)           emisor 2 (d=−1)
+            = (−1, 1, 1, 1, 1, −1)
+
+   Ranura 1:  (0, 0, 0, 0, 0, 0)      +  (1, −1, −1, −1, −1, 1)
+              emisor 1 (d=−1)           emisor 2 (d=+1)
+            = ( 1, −1, −1, −1, −1,  1)
+</code></pre></div>
+
+<p><strong>Decodificar con el código del emisor 2 (ranura 1):</strong></p>
+<div class="codehilite"><pre><span></span><code>   S·c2 = 1·1 + (−1)(−1) + (−1)(−1) + (−1)(−1) + (−1)(−1) + 1·1
+        = 1 + 1 + 1 + 1 + 1 + 1 = 6
+
+   d2_reconstruido = 6/6 = 1     OK,  el emisor 2 mandaba un 1
+</code></pre></div>
+
+<p><strong>Decodificar con el código del emisor 1 (ranura 1):</strong></p>
+<div class="codehilite"><pre><span></span><code>   c1 = (1, 1, 1, −1, 1, −1),   S_(1,·) = (1, −1, −1, −1, −1, 1)
+
+   S·c1 = 1·1 + (−1)·1 + (−1)·1 + (−1)(−1) + (−1)·1 + 1·(−1)
+        = 1 − 1 − 1 + 1 − 1 − 1 = −2
+
+   d1_reconstruido = −2/6 = −1/3     NO es ni +1 ni −1
+</code></pre></div>
+
+<p><strong>Ese <code>−1/3</code> es la interferencia del otro emisor.</strong> Y acá está la lección, que vale más que el ejercicio:</p>
+<blockquote>
+<p><strong>CDMA solo funciona si los códigos de los emisores son ORTOGONALES</strong>, es decir, si su <strong>producto interno es cero</strong>: <code>⟨c₁, c₂⟩ = Σ c₁(m)·c₂(m) = 0</code>.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code>   ⟨c1, c2⟩ = (1)(1) + (1)(−1) + (1)(−1) + (−1)(−1) + (1)(−1) + (−1)(1)
+             =  1  −  1  −  1  +  1  −  1  −  1
+             =  −2        NO es cero.  NO ortogonales
+</code></pre></div>
+
+<p>Con un código del emisor 2 que <strong>sí</strong> sea ortogonal con <code>c₁ = (1, 1, 1, −1, 1, −1)</code>, por ejemplo <code>c₂' = (1, −1, 1, −1, −1, 1)</code>:</p>
+<div class="codehilite"><pre><span></span><code>   ⟨c1, c2'⟩ = (1)(1) + (1)(−1) + (1)(1) + (−1)(−1) + (1)(−1) + (−1)(1)
+              =  1  −  1  +  1  +  1  −  1  −  1
+              =  0          OK, ORTOGONALES
+
+   Ahora, decodificando con c2', la contribución del emisor 1
+   desaparece EXACTAMENTE y la del emisor 2 sigue dando +6:
+        d2_reconstruido = 6/6 = 1     OK
+</code></pre></div>
+
+<p><strong>El resumen, en tres frases para copiar en el examen:</strong>
+1. La salida de un emisor CDMA es el producto, chip a chip, del bit de dato por su código: <code>Z_(i,m) = d_i · c_m</code>.
+2. El canal es <strong>aditivo</strong>: todos los emisores se suman y el receptor ve una sola señal.
+3. Cada receptor recupera sus datos <strong>multiplicando por su propio código</strong>; para que la señal de los otros emisores desaparezca, los códigos deben ser <strong>ortogonales</strong>.</p>
+<blockquote>
+<p><strong>Errores típicos:</strong> usar <code>0</code> y <code>1</code> en vez de <code>+1</code> y <code>−1</code> (con <code>d = 0</code> la salida sería todo ceros y no distinguirías "mandó un 0" de "no mandó nada"); olvidar el factor <code>1/M</code> (sin normalizar obtenés <code>6</code> o <code>−6</code>, no <code>1</code> o <code>−1</code>); y confundir el código del emisor con la tasa de chips (el código tiene que ser <strong>ortogonal con todos los demás</strong> de la célula, y eso es lo que asigna la estación base).</p>
+</blockquote>
+<h2>2.7 Ejercicio 7 — ¿Por qué Ethernet conmutada no usa ALOHA?</h2>
+<p><strong>Enunciado (inventado).</strong> En un laboratorio hay un switch de 24 puertos 100BASE-TX y ocho PCs. (a) ¿Cuál es el ancho de banda agregado del que disponen las ocho máquinas? (b) ¿Y si las ocho se conectan a un hub de 8 puertos? (c) Explicá por qué CSMA/CD es imprescindible en (b) y no aporta nada en (a).</p>
+<p><strong>(a) Con switch.</strong> Cada puerto es un dominio de colisión <strong>separado</strong>, y en 100BASE-TX el modo por defecto es <strong>full-duplex</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   8 puertos x 100 Mb/s = 800 Mb/s de suma agregada en un sentido
+   (y otros 800 Mb/s en el sentido contrario: son enlaces
+    independientes, no un bus de 800).
+
+   Limite real: el uplink al resto de la red. Si es 1 GbE,
+   topa en 1000; si es 100BASE-TX, topa en 100.
+</code></pre></div>
+
+<p><strong>Respuesta: <code>8 × 100 = 800 Mb/s</code> agregados, o sea 100 Mb/s dedicados por máquina.</strong></p>
+<p><strong>(b) Con hub.</strong> El hub es de capa 1: repite la señal a <strong>todos</strong> los puertos. Las ocho máquinas comparten un único medio de 100 Mb/s. El reparto ideal (sin colisiones) sería <code>100 / 8 = 12,5 Mb/s</code> por máquina, pero eso es teórico. Hagamos una estimación con el <strong>mejor caso posible</strong>: un medio ranurado, que es el techo del carrier sense.</p>
+<div class="codehilite"><pre><span></span><code>   k = 8 estaciones, Slotted ALOHA (que es el techo):
+      p* = 1/(2k − 1) = 1/15 = 0,0667
+      S  = p · (1−p)^(2(k−1)) = 0,0667 · (0,9333)^14
+      (0,9333)^14 = e^(14 · ln 0,9333) = e^(14 · (−0,06899))
+                 = e^(−0,9659) = 0,3807
+      S  = 0,0667 · 0,3807 = 0,0254  -&gt;  2,54 %
+
+   100 Mb/s x 0,0254 = 2,54 Mb/s   &lt;- alcanzable en el mejor
+                                         caso teórico
+</code></pre></div>
+
+<p><strong>Respuesta: 100 Mb/s totales, y en la práctica bastante menos que los 12,5 Mb/s ideales por máquina.</strong></p>
+<p><strong>(c) Por qué CSMA/CD sí en (b) y no en (a).</strong> En (b) las ocho estaciones comparten un medio físico: dos pueden transmitir en el mismo instante y sus señales se suman en el cable. <strong>Sin el mecanismo de CD no hay forma de detectar el choque</strong>, y esperar un ACK es cien veces más lento. En (a) no hay nada que detectar, porque <strong>no existe medio compartido</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   Enlace H1 &lt;-&gt; switch, full-duplex:
+
+   H1 -----------&gt;  (una direccion)
+   H1 &lt;-----------  (la otra direccion)
+
+   H1 transmite: su señal va SOLO al switch.
+   El switch transmite al mismo tiempo: su señal va SOLO a H1.
+
+   Los dos flujos usan caminos FISICOS DISTINTOS y en
+   direcciones opuestas. No se superponen. No hay colisión.
+   CSMA/CD seria codigo muerto.
+</code></pre></div>
+
+<p><strong>Y por qué no es "el switch learning lo impide":</strong> el <em>self-learning</em> resuelve un problema <strong>distinto</strong>: decidir <strong>a qué puertos</strong> reenviar una trama.</p>
+<div class="codehilite"><pre><span></span><code>   Flooding  !=  colision
+
+   Flooding:   la MISMA trama sale por muchos puertos, UNA DESPUES
+               DE OTRA. En el medio hay una sola señal a la vez.
+               Nadie choca con nadie.
+
+   Colisión:   DOS tramas de fuentes distintas se superponen en
+               UN MISMO medio en el MISMO instante.
+</code></pre></div>
+
+<p>El switch learning no evita colisiones; <strong>el switch evita que exista un medio compartido</strong>. Son dos afirmaciones distintas y la segunda es la que hay que argumentar.</p>
+<p><strong>El contraejemplo, que es lo que hay que saber decir:</strong></p>
+<div class="codehilite"><pre><span></span><code>   Switch --- hub --- H1
+               |
+               +--- H2      &lt;- aca SI hay colision,
+               +--- H3          y SI hace falta CSMA/CD
+               +--- H4
+
+   El hub crea un dominio de colisión por debajo del switch.
+   CSMA/CD no desaparece: se traslada al segmento del hub.
+   Ese es el motivo por el que la solución del examen 2010-07
+   dice "si alguna computadora trabaja en modo half-duplex,
+   si, en esa conexión computadora-switch se utilizará
+   CSMA/CD".
+</code></pre></div>
+
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2007-07, Pregunta 3 (10 puntos) — el problema central de la clase</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc0707</code> / <code>eirc0707</code>, Pregunta 3, 31 de julio de 2007.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0707.pdf</p>
+</blockquote>
+<h3>Enunciado (texto literal del examen)</h3>
+<blockquote>
+<p><strong>Pregunta 3 (10 puntos)</strong></p>
+<p>a) Indique cual es la diferencia de performance entre ALOHA и Slotted-ALOHA en el caso de carga normal. Justifique.</p>
+<p>b) Que tipos de protocolos CSMA hay. Describa cual es la diferencia entre ellos.</p>
+<p>⚠️ <strong>Nota sobre la solución oficial:</strong> el PDF publicado de <code>sirc0707</code> <strong>no incluye solución para las preguntas teóricas</strong> (solo trae la de los Problemas 1 y 2). Las dos partes que siguen están desarrolladas por mí, a partir de la derivación de la Parte 2, y se marcan <strong>(solución propia)</strong>. Lo que se corrige es el razonamiento, no una fórmula oficial.</p>
+</blockquote>
+<h3>Parte a) — la diferencia de rendimiento</h3>
+<p><strong>Respuesta corta, la que hay que escribir primero:</strong></p>
+<blockquote>
+<p>Slotted-ALOHA tiene el <strong>doble de rendimiento</strong> que ALOHA puro: su eficiencia máxima es <code>1/e ≈ 36,8 %</code> contra <code>1/(2e) ≈ 18,4 %</code> de ALOHA puro.</p>
+</blockquote>
+<p><strong>Justificación completa.</strong> El razonamiento tiene tres pasos y conviene hacer los tres:</p>
+<p><strong>Paso 1 — Qué significa "carga normal".</strong> La red ofrece tramas a una <strong>tasa constante e independiente</strong> (proceso de Poisson), que es el supuesto estándar. Si la tasa es <code>λ</code> y la trama dura <code>T</code>, la carga ofrecida es <code>G = λ·T</code>.</p>
+<p><strong>Paso 2 — La ventana de colisión, que es donde está toda la diferencia.</strong></p>
+<div class="codehilite"><pre><span></span><code>   ALOHA PURO
+   ──────────
+   Yo transmito de t = 0 a t = T.
+
+   Cualquier trama que llegue a t entre 0 y 2T me destruye:
+     · de 0 a T    -&gt; se solapa por detrás
+     · de T a 2T   -&gt; se solapa por delante (mi frente todavía viaja)
+   ─────────────────────────────────────────────────────────────
+   VENTANA = 2T
+
+
+   SLOTTED-ALOHA
+   ─────────────
+   Solo puedo empezar en t = 0, T, 2T, ...
+
+   Dos tramas que empiecen en ranuras distintas NO pueden solaparse.
+   La única colisión posible es empezar en la MISMA ranura.
+   ─────────────────────────────────────────────────────────────
+   VENTANA = T
+</code></pre></div>
+
+<p><strong>Paso 3 — La cuenta.</strong></p>
+<div class="codehilite"><pre><span></span><code>   Probabilidad de que llegue una trama durante una ventana de W
+   segundos, siendo lambda la tasa de arribos:
+       numero medio de arribos = lambda · W
+       P(ninguno)              = e^(−lambda · W)
+
+   ALOHA puro   (W = 2T):
+       P(sobrevive) = e^(−lambda · 2T) = e^(−2G)
+       eficiencia  S = G · e^(−2G)
+       dS/dG = 0  --&gt;  G* = 1/2
+       S_max = (1/2)·e^(−1) = 1/(2e) = 0,184
+
+   Slotted      (W = T):
+       P(sobrevive) = e^(−lambda · T) = e^(−G)
+       eficiencia  S = G · e^(−G)
+       dS/dG = 0  --&gt;  G* = 1
+       S_max = 1 · e^(−1) = 1/e = 0,368
+</code></pre></div>
+
+<p><strong>La respuesta "por qué exactamente el doble", que es lo que el "Justifique" está pidiendo:</strong></p>
+<div class="codehilite"><pre><span></span><code>   La ventana se redujo a la mitad (de 2T a T), así que para la
+   misma carga G la probabilidad de sobrevivir pasó de e^(−2G)
+   a e^(−G): un factor e a favor. Pero además la carga que
+   maximiza el rendimiento se duplicó (G* pasó de 1/2 a 1),
+   y eso aporta otro factor 2:
+
+       S_slotted(1)  /  S_puro(1/2)  =  1·e^(−1)  /  (0,5·e^(−1))
+                                    =  2
+</code></pre></div>
+
+<p><strong>Consecuencia práctica:</strong> ALOHA puro <strong>nunca puede pasar del 18,4 % de la capacidad del medio</strong>, por más vacía que esté la red. Slotted-ALOHA llega al 36,8 %. Ninguno de los dos es aceptable en producción, y esa es exactamente la razón por la que Ethernet no usa ALOHA: usa <strong>carrier sense</strong>, que elimina casi todas las colisiones salvo las de duración <code>ε</code> (§1.6.1).</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>ALOHA puro</th>
+<th>Slotted-ALOHA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cuándo se puede transmitir</td>
+<td>en cualquier instante</td>
+<td><strong>solo al comienzo de una ranura</strong></td>
+</tr>
+<tr>
+<td>Sincronización</td>
+<td>ninguna</td>
+<td>reloj común o preámbulo</td>
+</tr>
+<tr>
+<td>Ventana vulnerable</td>
+<td><code>2T</code></td>
+<td><code>T</code></td>
+</tr>
+<tr>
+<td>Probabilidad de sobrevivencia</td>
+<td><code>e^(−2G)</code></td>
+<td><code>e^(−G)</code></td>
+</tr>
+<tr>
+<td>Carga óptima <code>G*</code></td>
+<td>0,5</td>
+<td>1</td>
+</tr>
+<tr>
+<td><strong>Eficiencia máxima</strong></td>
+<td><strong><code>1/(2e)</code> = 0,184</strong></td>
+<td><strong><code>1/e</code> = 0,368</strong></td>
+</tr>
+<tr>
+<td>Tramas por segundo a 10 Mb/s con 64 B</td>
+<td>14 680</td>
+<td>29 360</td>
+</tr>
+</tbody>
+</table>
+<h3>Parte b) — los tipos de CSMA y sus diferencias <em>(solución propia)</em></h3>
+<p><strong>Respuesta corta:</strong> hay dos ejes de clasificación, <strong>persistencia</strong> y <strong>detección de colisión</strong>, que dan <strong>cuatro combinaciones</strong>.</p>
+<p><strong>Eje 1 — ¿Qué hace la estación mientras encuentra el medio ocupado?</strong></p>
+<table>
+<thead>
+<tr>
+<th>Tipo</th>
+<th>Comportamiento</th>
+<th>Ventaja</th>
+<th>Desventaja</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1-persistente</strong></td>
+<td>espera mirando; transmite en cuanto el medio queda libre</td>
+<td>no desperdicia medio libre</td>
+<td>varias que esperaban transmiten a la vez, y hay colisión</td>
+</tr>
+<tr>
+<td><strong>No persistente</strong></td>
+<td>espera un tiempo <strong>aleatorio</strong> y vuelve a escuchar</td>
+<td>casi no hay colisiones</td>
+<td>regala ancho de banda: el medio puede quedar libre sin que nadie transmita</td>
+</tr>
+<tr>
+<td><strong>p-persistente</strong> (medios ranurados)</td>
+<td>transmite con prob. <code>p</code>, con prob. <code>1−p</code> espera una ranura</td>
+<td>compromiso continuo</td>
+<td>parametrizable pero en desuso</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Eje 2 — ¿Qué hace la estación cuando hay colisión?</strong></p>
+<table>
+<thead>
+<tr>
+<th>Tipo</th>
+<th>Comportamiento</th>
+<th>Consecuencia</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Sin detección</strong></td>
+<td>espera a que el medio se libere y reintenta</td>
+<td>cada colisión cuesta un <strong>ACK</strong> completo, o sea un RTT entero</td>
+</tr>
+<tr>
+<td><strong>Con detección</strong></td>
+<td>aborta la trama, emite <strong>jamming</strong> y hace <strong>backoff exponencial</strong></td>
+<td>la colisión se detecta en microsegundos y solo se pierde lo transmitido</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Sin detección</strong></th>
+<th><strong>Con detección</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1-persistente</strong></td>
+<td>1-persistent CSMA</td>
+<td><strong>CSMA/CD</strong> — Ethernet por cable</td>
+</tr>
+<tr>
+<td><strong>No persistente</strong></td>
+<td>non-persistent CSMA</td>
+<td>CSMA/CD no persistente — no se usa en la práctica</td>
+</tr>
+</tbody>
+</table>
+<p><strong>La diferencia de fondo entre "con detección" y "sin detección"</strong> (la frase que más puntos vale):</p>
+<blockquote>
+<p>En un medio <strong>cableado</strong>, la tarjeta puede <strong>escuchar mientras transmite</strong> y comparar lo que manda con lo que vuelve: si no coinciden, hubo colisión. Eso es <strong>detección directa</strong>, y cuesta microsegundos.</p>
+<p>En un medio donde <strong>no</strong> se puede escuchar mientras se transmite (radio), o donde <strong>las estaciones no se escuchan entre sí</strong> (estación oculta), no hay detección directa. La única forma de enterarse es <strong>no recibir el ACK</strong>: detección <strong>indirecta</strong>, por ausencia, que cuesta un RTT entero.</p>
+<p>Esa es la razón de que exista <strong>CSMA/CD</strong> para el cable y <strong>CSMA/CA</strong> para wireless: cuando no podés <strong>detectar</strong> la colisión, tenés que <strong>evitarla</strong>, y eso se hace haciendo que los demás se callen (RTS/CTS, NAV y ACK obligatorio en 802.11).</p>
+</blockquote>
+<p><strong>Para cerrar:</strong> en la práctica, la Ethernet conmutada full-duplex <strong>no usa ninguno de los dos</strong>, porque no hay colisión posible (§3.2). Y en los medios cableados compartidos la combinación que se usa es <strong>1-persistente con detección</strong>: persistencia 1 porque el medio es rápido y no conviene regalarlo, y detección porque el cable la permite.</p>
+<h2>3.2 ⭐ Examen 2010-07, Pregunta 2 (8 puntos) — CSMA/CD en wireless y en Ethernet conmutada</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc1007</code> / <code>eirc1007</code>, Pregunta 2, 27 de julio de 2010.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1007.pdf</p>
+</blockquote>
+<h3>Enunciado (texto literal del examen)</h3>
+<blockquote>
+<p><strong>Pregunta 2 (8 puntos)</strong></p>
+<p>a) ¿Es recomendable utilizar CSMA/CD en una red wireless 802.11? Justifique.</p>
+<p>b) En un medio Ethernet completamente switcheado, ¿es necesario utilizar CSMA/CD? Justifique su respuesta.</p>
+</blockquote>
+<h3>Parte a) — ¿CSMA/CD en una red wireless 802.11?</h3>
+<p><strong>Solución oficial (del PDF):</strong></p>
+<blockquote>
+<p>a) No, pues CSMA/CD está especificado tal que aun en el peor caso, o sea, una estación transmitiendo la trama más corta permitida y destinada a la estación más alejada "en el cable" y ésta comenzando a transmitir un tiempo epsilon arbitrariamente pequeño y positivo antes que llegue el primer bit de la trama, comience también a transmitir, todas las estaciones se enteran de la colisión. En el caso de redes wireless 802.11 existen varios casos, y no necesariamente "extremos" en los que no podemos asegurar que todas las estaciones se escuchen entre sí, detectando así las colisiones que pudiesen ocurrir al transmitir dos o más estaciones pertenecientes a la misma BSS con un solapamiento al menos parcial en el tiempo. Un ejemplo "clásico" es "el problema de la estación oculta".</p>
+</blockquote>
+<p><strong>Análisis de la solución oficial.</strong> El razonamiento es correcto y muy bien elegido por la cátedra: reconstruye el <strong>peor caso</strong> de CSMA/CD (la estación más lejana empezando un <code>ε</code> antes de que llegue el primer bit) y muestra que <strong>en un medio cableado ese peor caso está garantizado por la geometría</strong>, mientras que en 802.11 <strong>no existe tal extremo</strong>: hay pares de estaciones que no se escuchan entre sí.</p>
+<p><strong>Lo que yo le agrego</strong> (argumentos distintos y complementarios; sumarlos sube el puntaje):</p>
+<ol>
+<li><strong>Es físicamente imposible, no solo poco confiable.</strong> La solución oficial razona sobre la <strong>alcancibilidad</strong> de la señal. El argumento más fuerte es de otra naturaleza: <strong>una radio no puede recibir en la misma banda mientras transmite</strong>. Su propia señal llega al frente del receptor con unos 20 dBm (100 mW); una señal co-canal de una estación vecina llega típicamente con −70 dBm. La diferencia es de <strong>90 dB, es decir cerca de un millón de veces en potencia</strong>, y el receptor no tiene forma de separar lo que él mismo emite de lo que entra del canal. <strong>No es que el protocolo sea malo: es que la física lo impide.</strong></li>
+<li><strong>CSMA/CD necesita un tiempo de ida y vuelta acotado, y la radio no lo tiene.</strong> La corrección de CSMA/CD depende de que la trama mínima sea <strong>más larga que el tiempo de ida y vuelta del medio</strong> (§1.8). En un cable ese tiempo está fijado por el largo máximo del segmento: por eso el estándar puede declarar "la trama mínima son 512 bits". En radio hay movilidad, fading, estaciones ocultas, y el presupuesto de tiempo no tiene un mínimo razonable: <strong>la trama mínima tendría que ser gigantesca y el rendimiento se iría a cero</strong>. En resumen, <strong>la condición que hace funcionar a CSMA/CD no es verificable en radio</strong>.</li>
+<li><strong>El modelo de costo está invertido.</strong> En CSMA/CD el emisor aborta al detectar, así que la energía desperdiciada es <strong>una fracción de trama</strong>. En wireless el único que puede juzgar la integridad de la trama es <strong>el receptor</strong> (por el CRC), así que el emisor tiene que <strong>transmitir la trama entera</strong> para enterarse. Si vas a transmitir entera de todos modos, <strong>evitarla es infinitamente mejor que detectarla</strong>. De ahí el nombre: CSMA/<strong>CA</strong>.</li>
+<li><strong>El sentido de portadora sí funciona, la detección no.</strong> Matiz importante: en 802.11 una estación <strong>sí puede</strong> escuchar el medio antes de transmitir (carrier sense). Lo que no puede es <strong>detectar una colisión mientras transmite</strong>. Por eso 802.11 conserva el "CSMA" y cambia el "CD" por "CA": <strong>RTS/CTS y NAV</strong> para silenciar a las estaciones vecinas, <strong>backoff exponencial</strong> para las colisiones que igual ocurren, y <strong>ACK obligatorio</strong>.</li>
+</ol>
+<p><strong>Respuesta redactada para el examen:</strong></p>
+<blockquote>
+<p>No es recomendable, y en la práctica es imposible.</p>
+<p><strong>Primero</strong>, porque una radio es half-duplex por naturaleza: no puede recibir en la misma banda mientras transmite, y su propia señal (unos 20 dBm) enmascara por cerca de 90 dB cualquier transmisión ajena. La detección de colisión durante la transmisión es físicamente inviable.</p>
+<p><strong>Segundo</strong>, porque CSMA/CD garantiza la detección en el peor caso gracias a que en un medio cableado toda estación que recibe la señal de otra necesariamente está en el mismo medio, y a que el tiempo de ida y vuelta está acotado por el largo máximo del segmento (de ahí los 512 bits de trama mínima). En 802.11 ninguna de las dos condiciones se cumple: la estación oculta rompe la simetría de cobertura, y no hay cota de propagación utilizable.</p>
+<p><strong>Tercero</strong>, porque en radio el emisor no puede juzgar la colisión: solo el receptor puede, por CRC, con lo cual hay que enviar la trama entera para enterarse. Detectar sería tirar la trama a la basura después de gastarla.</p>
+<p><strong>Por eso 802.11 usa CSMA/CA</strong>: en lugar de detectar la colisión, la evita. Hace RTS/CTS para que las estaciones vecinas asignen un NAV y se callen, espera un backoff exponencial aleatorio, y exige un ACK del receptor. El sentido de portadora sí se conserva: lo que no se puede es la detección.</p>
+</blockquote>
+<h3>Parte b) — ¿CSMA/CD en una Ethernet completamente switcheada?</h3>
+<p><strong>Solución oficial (del PDF):</strong></p>
+<blockquote>
+<p>b) Si hablamos de un medio completamente switcheado (sin presencia de hubs) y por lo tanto una sola computadora por puerto de switch y si asumimos que todos los puertos de los switches así como las tarjetas de red de las computadoras conectadas a ellas están configuradas para trabajar en modo full-duplex, no es necesario utilizar CSMA/CD. Si alguna computadora trabaja en modo half-duplex, sí, en esa conexión "computadora-switch" se utilizará CSMA/CD.</p>
+</blockquote>
+<p><strong>Análisis de la solución oficial.</strong> Es correcta y además es cuidadosa: <strong>no dice "no es necesario", dice "no es necesario <em>si y solo si</em> se cumplen dos condiciones</strong> — (1) no hay hubs, una máquina por puerto; y (2) todo en full-duplex. Y cierra con el matiz que muchos alumnos se pierden: <strong>si una máquina queda en half-duplex, CSMA/CD vuelve</strong>. Esa última frase es la que hay que repetir.</p>
+<p><strong>Mi desarrollo — por qué no hay colisión, y por qué no es "porque el switch lo impide".</strong></p>
+<p>El error más común es decir <em>"el switch no deja que se colisionen"</em>. Eso mezcla dos mecanismos distintos. La respuesta correcta tiene cuatro pasos:</p>
+<p><strong>Paso 1 — Qué es una colisión.</strong> Dos señales que se superponen <strong>en el mismo medio físico en el mismo instante</strong>. La definición ya dice "mismo medio". Si no hay medio compartido, no hay definición aplicable.</p>
+<p><strong>Paso 2 — Qué hace el full-duplex.</strong> En un enlace punto a punto full-duplex, cada sentido es un camino físico independiente:</p>
+<div class="codehilite"><pre><span></span><code>   H1 ======&gt;  switch     (dirección A: de la estación al switch)
+   H1 &lt;=====  switch     (dirección B: del switch a la estación)
+
+   Son dos medios separados. H1 y H2 no comparten NADA:
+   H1 transmite hacia el switch por el par 1-2 del cable de H1,
+   H2 transmite hacia el switch por el par 1-2 del cable de H2.
+
+   Que las señales lleguen al switch al mismo instante NO es
+   una colisión: el switch tiene un puerto de entrada distinto
+   para cada una. Lo que hay es COLA, que es otro problema
+   (control de flujo, capa 2), y se resuelve con buffers.
+</code></pre></div>
+
+<p><strong>Paso 3 — Conclusión.</strong> En un enlace full-duplex punto a punto, cada estación tiene <strong>un dominio de colisión de tamaño 1</strong>: ella sola. La colisión <strong>no es improbable ni rara: es geométricamente imposible</strong>, porque requeriría que dos señales compartieran un medio, y no hay medio compartido. <strong>CSMA/CD sería código muerto</strong>: la máquina escucharía, compararía su señal con la que vuelve, concluiría eternamente que "todo bien", y esperaría una colisión que no puede ocurrir.</p>
+<p><strong>Paso 4 — qué papel juega el switch learning.</strong> El <em>self-learning</em> resuelve un problema <strong>distinto</strong>: <strong>decidir a qué puertos reenviar cada trama</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   Flooding (dominio de BROADCAST, no de colisión):
+   la MISMA trama sale por varios puertos, UNA DESPUES DE OTRA.
+   En cada instante hay una sola señal en el medio. Nadie choca.
+
+   Colisión (dominio de COLISIÓN):
+   DOS tramas de fuentes distintas, superpuestas en un medio
+   compartido, en el MISMO instante.
+
+   +-----------------------------------------------------+
+   | flooding  = desperdicio de tiempo                     |
+   | colisión  = simultaneidad en un medio compartido     |
+   | Son ejes distintos y NO se pueden confundir.          |
+   +-----------------------------------------------------+
+</code></pre></div>
+
+<p>El learning evita el flooding de unicast (que desperdicia ancho de banda), pero <strong>no tiene absolutamente nada que ver con las colisiones</strong>. Decir "el switch evita las colisiones" es correcto solo en el sentido indirecto de que <strong>elimina el medio compartido</strong>; dicho así, es impreciso y el corrector lo va a marcar.</p>
+<p><strong>Respuesta redactada para el examen:</strong></p>
+<blockquote>
+<p>No es necesario. <strong>Porque no hay colisión posible, y no porque el switch la impida.</strong> Una colisión exige que dos señales se superpongan en un mismo medio físico en el mismo instante. En una Ethernet conmutada full-duplex, cada enlace es punto a punto y cada sentido es un camino independiente, así que cada puerto es un dominio de colisión de tamaño 1 y la colisión es geométrically imposible.</p>
+<p><strong>El self-learning resuelve otro problema</strong>: decidir a qué puertos reenviar cada trama. Sin él, las tramas unicast de destino desconocido se inundarían por todos los puertos. Eso es <em>flooding</em>, la misma trama saliendo por varios puertos uno después de otro: un desperdicio de ancho de banda, <strong>no una colisión</strong>, que exige simultaneidad sobre un medio compartido. Confundir ambos conceptos es el error típico de esta pregunta.</p>
+<p><strong>Condiciones y contraejemplo:</strong> el resultado vale bajo las dos hipótesis de la solución oficial: una sola máquina por puerto (sin hubs) y todo en full-duplex. Si hay un hub debajo del switch, ese tramo vuelve a ser un único dominio de colisión compartido y el CSMA/CD regresa ahí. Y si una sola tarjeta queda en half-duplex, en ese enlace específico se usa CSMA/CD, con colisiones tardías (<em>late collisions</em>) que aparecen a los 512 tiempos de bit de la trama mínima.</p>
+</blockquote>
+<h2>3.3 Examen 2007-02, Pregunta 1 (5 puntos) — Pure ALOHA, Slotted ALOHA y CSMA/CD</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0702</code>, Pregunta 1, febrero de 2007.
+<strong>Enunciado:</strong> "Que diferencias tienen Pure ALOHA, Slotted ALOHA y CSMA/CD."</p>
+</blockquote>
+<p>Es la pregunta comparativa clásica y es casi un resumen de la clase:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Pure ALOHA</strong></th>
+<th><strong>Slotted ALOHA</strong></th>
+<th><strong>CSMA/CD</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Escucha el medio antes de transmitir</strong></td>
+<td>no</td>
+<td>no</td>
+<td><strong>sí</strong></td>
+</tr>
+<tr>
+<td><strong>Cuándo puede empezar</strong></td>
+<td>en cualquier instante</td>
+<td><strong>solo al inicio de una ranura</strong></td>
+<td>en cuanto el medio está libre</td>
+</tr>
+<tr>
+<td><strong>Sincronización</strong></td>
+<td>ninguna</td>
+<td>reloj común</td>
+<td>ninguna</td>
+</tr>
+<tr>
+<td><strong>Ventana de colisión</strong></td>
+<td><code>2T</code></td>
+<td><code>T</code></td>
+<td><code>ε</code> (prácticamente cero)</td>
+</tr>
+<tr>
+<td><strong>Detecta la colisión</strong></td>
+<td>no (por ausencia de ACK)</td>
+<td>no (por ausencia de ACK)</td>
+<td><strong>sí, durante la transmisión</strong></td>
+</tr>
+<tr>
+<td><strong>Reacción</strong></td>
+<td>retransmitir al azar tras esperar</td>
+<td>retransmitir al azar tras esperar</td>
+<td><strong>abortar, jamming y backoff exponencial</strong></td>
+</tr>
+<tr>
+<td><strong>Reintentos</strong></td>
+<td>al azar, sin cota</td>
+<td>al azar, sin cota</td>
+<td>exponencial, <strong>tope 16</strong></td>
+</tr>
+<tr>
+<td><strong>Hardware especial</strong></td>
+<td>ninguno</td>
+<td>reloj</td>
+<td><strong>tarjeta que escucha mientras transmite</strong></td>
+</tr>
+<tr>
+<td><strong>Eficiencia máxima</strong></td>
+<td><code>1/(2e)</code> = 18,4 %</td>
+<td><code>1/e</code> = 36,8 %</td>
+<td>cercana al 100 % a baja carga</td>
+</tr>
+<tr>
+<td><strong>Medio típico</strong></td>
+<td>satélite (ALOHAnet)</td>
+<td>sistemas ranurados</td>
+<td>coaxil y par trenzado de Ethernet</td>
+</tr>
+</tbody>
+</table>
+<p><strong>La frase de síntesis (2 puntos fáciles):</strong> la evolución de los tres es <strong>"cada uno le agrega una pieza al anterior"</strong>. A Slotted se le agrega un reloj, que reduce la ventana de <code>2T</code> a <code>T</code> y duplica el rendimiento. A CSMA/CD se le agrega el sentido de portadora, que elimina la ventana casi por completo (de <code>T</code> a <code>ε</code>), y la detección en línea, que hace que la colisión cueste microsegundos en vez de un RTT. <strong>CSMA/CD no es "otro ALOHA": es ALOHA con los sentidos y los oídos puestos.</strong></p>
+<h2>3.4 Examen 2010-12, Pregunta 3 a) y b) (8 puntos) — dominios de colisión y de broadcast</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc1012</code>, Pregunta 3, diciembre de 2010.
+<em>(El apartado c), el de self-learning, es de la Clase 42 y no se resuelve acá.)</em>
+<strong>Enunciado:</strong> "a) Considere una red de varios nodos interconectados por un hub, ¿cuál es el dominio de colisión y cuál es el de broadcast? Justifique. b) Si en la red anterior cambiamos el hub por un switch. ¿Se modifican los dominios de colisión y broadcast? ¿De qué manera?"</p>
+</blockquote>
+<p><strong>a) Con hub: los dos dominios son iguales y abarcan toda la red.</strong> El hub es un dispositivo de <strong>capa 1</strong>: no implementa ningún protocolo de acceso al medio, no aprende direcciones y no decide nada, se limita a repetir la señal eléctrica por todos los puertos. Como todos los puertos comparten el mismo medio físico, las señales de todas las estaciones se superponen (<strong>un único dominio de colisión</strong>); y como todo se reenvía por todos los puertos, toda trama de broadcast o de destino desconocido llega a todos (<strong>un único dominio de broadcast</strong>).</p>
+<p><strong>b) Con switch: el dominio de colisión se parte en uno por puerto; el de broadcast no cambia.</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Con hub</th>
+<th>Con switch</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Dominio de colisión</strong></td>
+<td>uno, con todos los nodos</td>
+<td><strong>uno por puerto</strong>; con full-duplex, de tamaño 1</td>
+</tr>
+<tr>
+<td><strong>Dominio de broadcast</strong></td>
+<td>uno, con todos los nodos</td>
+<td><strong>uno, igual</strong>: el switch reenvía las tramas de broadcast por todos los puertos</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Por qué se parte el de colisión.</strong> El switch es de <strong>capa 2</strong>: aprende direcciones MAC y decide a qué puerto reenviar cada trama. Al hacerlo, <strong>elimina el medio compartido</strong> y lo reemplaza por enlaces punto a punto independientes. Cada puerto es un medio físico propio, con sus dos emisores (la estación y la tarjeta del switch). Por lo tanto <strong>cada puerto es un dominio de colisión</strong>, y las colisiones solo pueden ocurrir entre la estación conectada a ese puerto y el switch.</p>
+<p><strong>Por qué el de broadcast NO cambia.</strong> Una trama de broadcast tiene destino <code>FF:FF:FF:FF:FF:FF</code>: <strong>por definición todos tienen que oírla</strong>. El switch no tiene información para descartarla, así que la reenvía por <strong>todos los puertos del mismo dominio de broadcast</strong>. Lo único que acota ese dominio son las <strong>VLAN</strong> (Clase 42): una etiqueta 802.1Q crea dominios de broadcast lógicos independientes dentro del mismo switch.</p>
+<div class="codehilite"><pre><span></span><code>   +------------------------------------------------------+
+   |  LA FRASE QUE HAY QUE DECIR                         |
+   |                                                      |
+   |  El switch parte el DOMINIO DE COLISION porque        |
+   |  elimina el medio compartido.                         |
+   |                                                      |
+   |  El switch NO parte el DOMINIO DE BROADCAST porque    |
+   |  no puede descartar una trama que es por definicion   |
+   |  para todos.                                          |
+   +------------------------------------------------------+
+</code></pre></div>
+
+<blockquote>
+<p><strong>Nota sobre la solución oficial de 2010-12:</strong> la cátedra escribe "el switch impediría que ocurran colisiones". Como discutimos en §3.2, esa redacción es <strong>imprecisa</strong>: el switch no <em>impide</em> colisiones, <strong>elimina la condición que las hace posibles</strong> (el medio compartido). En una red con hubs colgados del switch <strong>sí hay colisiones</strong>. La respuesta correcta es "un dominio de colisión por puerto", que es lo que dice también la solución oficial de <code>2010-07</code>.</p>
+</blockquote>
+<h2>3.5 Examen 2007-03, Pregunta 5 (5 puntos) — CSMA/CA</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc0703</code>, Pregunta 5, marzo de 2007.
+<strong>Enunciado:</strong> "Describa el mecanismo de acceso al medio CSMA/CA (Carrier Sense Multiple Access With Collission Avoidance)."</p>
+</blockquote>
+<p><strong>Solución oficial (del PDF), extractada:</strong></p>
+<blockquote>
+<p>Uno de los primeros protocolos diseñados para LAN inalámbricas fue CSMA/CA o MACA. La idea es que el emisor estimula al receptor enviando una trama corta, de forma que las estaciones cercanas puedan detectar la transmisión y evitar transmitir durante el envío de una trama de datos. [...] Considere que A quiere enviar una trama a B: comienza enviando una trama del tipo RTS a B, esta trama corta contiene el largo de la trama que sigue. Luego B responde con una trama CTS. [...] Cualquier estación escuchando un RTS está cercana a A y no debe enviar datos para que A reciba el CTS sin interferencia. Cualquier estación cercana a B no debe enviar datos para que A pueda realizar el envío de datos sin interferencia.</p>
+</blockquote>
+<p><strong>Análisis de la solución oficial.</strong> Está impecable y es exactamente lo que hay que saber:</p>
+<ol>
+<li><strong>RTS/CTS es el corazón</strong>: A avisa, B confirma, y ambos anuncian la <strong>duración</strong> de la transferencia siguiente.</li>
+<li><strong>La asimetría del aviso es la clave</strong>: el RTS lo oyen las estaciones <strong>cerca de A</strong>; el CTS lo oyen las estaciones <strong>cerca de B</strong>. Cada grupo silencia a su lado.</li>
+<li><strong>El NAV</strong>: una estación que escucha el RTS pero no el CTS <strong>igual deduce que hay un envío en curso</strong> y se calla el tiempo anunciado en el RTS. Ese temporizador virtual es el <strong>NAV</strong> (<em>Network Allocation Vector</em>), un "sentido de portadora virtual".</li>
+<li><strong>Los dos casos que la solución menciona y que valen puntos extra</strong>: (a) una estación C que escucha el RTS pero no el CTS y que gracias al NAV se calla; (b) <strong>dos estaciones que envían RTS al mismo tiempo al mismo receptor</strong>, colisión inevitable que se resuelve con el backoff aleatorio.</li>
+<li><strong>MACA y CSMA/CA no son lo mismo</strong>: MACA (1978) es el antepasado; 802.11 lo extendió con el ACK obligatorio y los espacios entre tramas.</li>
+</ol>
+<p><strong>Lo que le agrego</strong> (la Clase 43 lo desarrolla en detalle): los <strong>IFS</strong> (SIFS, DIFS, EIFS) que dan prioridad a las tramas de control sobre las de datos —con <code>SIFS = 10 µs</code> y <code>DIFS = SIFS + 2 × aSlotTime</code> en las PHY OFDM— y la <strong>ventana de backoff</strong> <code>CW</code> de 802.11, que va de <code>CWmin = 15</code> a <code>CWmax = 1023</code> en pasos <code>CW = 2^n − 1</code> con <code>n</code> de 4 a 10. O sea: <strong>la misma idea exponencial que en CSMA/CD</strong>, con el rango <code>[0, CW]</code> en vez de <code>[0, 2^k − 1]</code>.</p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen</h2>
+<ol>
+<li><strong>Medio compartido</strong> = un solo medio para varios. Si dos transmiten a la vez, las señales se <strong>superponen</strong> y nadie recibe nada: <strong>colisión</strong>.</li>
+<li><strong>ALOHA puro</strong>: transmite de inmediato. Ventana vulnerable de <strong><code>2T</code></strong>. Eficiencia <code>G·e^(−2G)</code>, máximo en <code>G = 1/2</code>, valor <strong><code>1/(2e) ≈ 18,4 %</code></strong>.</li>
+<li><strong>Slotted-ALOHA</strong>: solo al inicio de una ranura. La ventana cae a <strong><code>T</code></strong>, la supervivencia se multiplica por <code>e</code>, la carga óptima se duplica, y el resultado es <strong><code>1/e ≈ 36,8 %</code></strong>: <strong>exactamente el doble</strong>.</li>
+<li><strong>ALOHA con franjas</strong>: <code>S(N,p) = N·p·(1−p)^(N−1)</code>, máximo en <strong><code>p = 1/N</code></strong>, valor <code>(1−1/N)^(N−1)</code> que <strong>tiende a <code>1/e</code></strong> cuando <code>N</code> tiende a infinito.</li>
+<li><strong>CSMA = escuchar antes de hablar.</strong> Elimina todas las colisiones salvo las que caen dentro de una ventana <code>ε</code>, porque el sentido de portadora <strong>siempre</strong> tiene un retraso.</li>
+<li><strong>Persistencia:</strong> <strong>1-persistente</strong> no desperdicia medio libre (Ethernet); <strong>no persistente</strong> casi no colisiona pero regala ancho de banda; <strong>p-persistente</strong>, un compromiso, no se usa.</li>
+<li><strong>Detección:</strong> <strong>con detección</strong> (CSMA/CD) solo es posible en cable, porque la tarjeta escucha mientras transmite; <strong>sin detección</strong>, la colisión se detecta por la <strong>ausencia de ACK</strong> y cuesta un RTT entero.</li>
+<li><strong>CSMA/CD</strong>: 1-persistente, detección, <strong>jamming de 32 bits</strong>, <strong>backoff exponencial <code>r ∈ [0, 2^k − 1]</code></strong> y tope de <strong>16 intentos</strong>. En radio no se puede: de ahí <strong>CSMA/CA</strong> (RTS/CTS, NAV, ACK obligatorio).</li>
+<li><strong>Slot time = 512 bits</strong>, y la <strong>trama mínima = 64 bytes</strong> porque es exactamente el tiempo de ida y vuelta de la señal en el peor caso. A 10 Mb/s son 51,2 µs; a 1 Gb/s, 0,512 µs, insuficiente para 100 m: de ahí la extensión de portadora.</li>
+<li><strong>Con switch full-duplex no hay colisión</strong> porque <strong>no hay medio compartido</strong> (no porque el switch la "impida"), y el <strong>dominio de broadcast sigue siendo toda la red</strong> hasta que una VLAN lo parta.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p><strong>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</strong></p>
+<p><strong>1.</strong> ¿Por qué la ventana de colisión del ALOHA puro mide <code>2T</code> y no <code>T</code>? Dibujá el caso de una trama que empieza justo después de que terminó la tuya.</p>
+<details><summary>Respuesta</summary>
+
+Porque hay **dos** formas de solaparse. Si otra trama empieza **antes** de que termine la mía, se pisa con mi parte final. Si empieza **después**, se pisa con la parte inicial, porque **lo que yo emití al comienzo todavía está viajando por el cable**: en un cable la propagación no es instantánea, así que el principio de mi trama sigue en el medio durante `T` segundos más.
+
+</details>
+
+<p><strong>2.</strong> Slotted-ALOHA duplica exactamente el rendimiento de ALOHA puro. Demostralo con las fórmulas.</p>
+<details><summary>Respuesta</summary>
+
+ALOHA puro: `S = G·e^(−2G)`, máximo en `G = 1/2`, valor `(1/2)·e^(−1)`.
+Slotted: `S = G·e^(−G)`, máximo en `G = 1`, valor `1·e^(−1)`.
+
+La razón es `1·e^(−1) / ((1/2)·e^(−1)) = 2`. Cancelan las dos contribuciones: la reducción de la ventana de `2T` a `T` multiplica la supervivencia por `e`, y la duplicación de la carga óptima aporta el otro factor 2. Exactamente 2, sin aproximaciones.
+
+</details>
+
+<p><strong>3.</strong> ¿Qué valor de <code>p</code> maximiza <code>N·p·(1−p)^(N−1)</code>? Mostrá la derivación.</p>
+<details><summary>Respuesta</summary>
+
+`p = 1/N`. Se obtiene derivando y despejando:
+
+
+<div class="codehilite"><pre><span></span><code>   S' = N·(1−p)^(N−2)·[(1−p) − p(N−1)] = 0
+   (1−p) = p(N−1)   --&gt;   1 − p = pN − p   --&gt;   1 = pN   --&gt;   p = 1/N
+</code></pre></div>
+
+
+
+Y es un máximo porque `S(0) = 0` y `S(1) = 0` (para `N > 1`), de modo que el único punto crítico tiene que ser el máximo.
+
+</details>
+
+<p><strong>4.</strong> ¿Por qué el emisor tiene que seguir enviando bits después de detectar una colisión? ¿Qué son esos 32 bits?</p>
+<details><summary>Respuesta</summary>
+
+Porque tiene que **sellar** la colisión en el medio. Son los **32 bits de jamming**: una ráfaga de ruido deliberada. Si la tarjeta simplemente cortara la transmisión, las estaciones que están más lejos del cable podrían no haberse enterado todavía de que el medio estaba ocupado y podrían meterse en el slot siguiente. El jamming garantiza que todas las estaciones del segmento registren el evento como "medio ocupado con trama inválida", antes de que empiece el próximo slot time.
+
+</details>
+
+<p><strong>5.</strong> ¿De dónde sale el número 512 del slot time, y por qué el mismo número sirve a 10, 100 y 1000 Mb/s?</p>
+<details><summary>Respuesta</summary>
+
+De la condición de que la trama mínima debe durar al menos lo que tarda la señal en **ir y volver** del extremo más lejano del segmento, para que el indicio de colisión vuelva antes de que termine la trama. Como esa condición se expresa en **tiempos de bit** y no en segundos, el número es el mismo a todas las velocidades: **512 tiempos de bit**. Lo que cambia es el tiempo absoluto: 51,2 µs a 10 Mb/s, 5,12 µs a 100 Mb/s, 0,512 µs a 1 Gb/s. Y por eso a 1 Gb/s 512 bits ya no alcanzan para los 100 m del cable: de ahí la extensión de portadora a 4096 tiempos de bit.
+
+</details>
+
+<p><strong>6.</strong> En Ethernet conmutada full-duplex, ¿por qué no hay colisiones? ¿Tiene algo que ver con que el switch aprenda direcciones?</p>
+<details><summary>Respuesta</summary>
+
+No tiene colisiones porque **no hay medio compartido**: cada enlace es punto a punto y cada sentido es un camino físico independiente, así que cada puerto es un dominio de colisión de tamaño 1 y la colisión es geométricamente imposible.
+
+El self-learning **no tiene nada que ver**: resuelve el problema de **a qué puertos reenviar la trama**. Sin él, los unicast de destino desconocido se inundarían por todos los puertos. Eso es *flooding*, un desperdicio de ancho de banda, **no una colisión** (que exige simultaneidad sobre un medio compartido).
+
+</details>
+
+<p><strong>7.</strong> ¿Por qué no se puede usar CSMA/CD en 802.11? Dá <strong>dos</strong> razones que no sean la misma.</p>
+<details><summary>Respuesta</summary>
+
+(1) **Física**: una radio no puede recibir en la misma banda mientras transmite, y su propia señal (unos 20 dBm) supera en unos 90 dB a cualquier transmisión co-canal. La detección durante la transmisión es inviable, no difícil.
+
+(2) **Geometría y temporal**: CSMA/CD garantiza la detección en el peor caso porque en cable toda estación que recibe la señal de otra está en el mismo medio (se rompería con estación oculta) y porque el tiempo de ida y vuelta tiene cota (fijada por el largo máximo del segmento). En radio ninguna de las dos condiciones se cumple, así que **la condición que hace funcionar a CSMA/CD no es verificable**.
+
+Una tercera: en radio solo el receptor puede juzgar la colisión, por CRC, así que hay que mandar la trama entera para enterarse. Detectar sería tirarla después de gastarla; por eso conviene **evitar**.
+
+</details>
+
+<p><strong>8.</strong> Un switch tiene un hub conectado en uno de sus puertos, con tres PCs colgando. ¿Dónde hay colisión?</p>
+<details><summary>Respuesta</summary>
+
+Solo **debajo del hub**. El hub es de capa 1 y repite la señal a todos sus puertos, así que las tres PCs y el propio switch comparten **un** dominio de colisión. Ahí hace falta CSMA/CD (si el enlace es half-duplex) y ahí es donde aparecen las colisiones tardías.
+
+En el resto de la red, los puertos del switch son dominios de colisión independientes. Y el **dominio de broadcast sigue siendo todo el conjunto**, porque las tramas de broadcast salen por todos los puertos del switch.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>sirc0707</code> / <code>eirc0707</code></strong> — Pregunta 3 (10 pts): rendimiento ALOHA contra Slotted-ALOHA, y tipos de CSMA. <strong>Sin solución oficial publicada</strong> para las preguntas teóricas.</li>
+<li><strong>Examen <code>sirc1007</code> / <code>eirc1007</code></strong> — Pregunta 2 (8 pts): CSMA/CD en wireless y en Ethernet conmutada. Con solución oficial.</li>
+<li><strong>Examen <code>eirc0702</code></strong> — Pregunta 1 (5 pts): diferencias entre Pure ALOHA, Slotted ALOHA y CSMA/CD.</li>
+<li><strong>Examen <code>sirc1012</code></strong> — Pregunta 3 (8 pts): dominios de colisión y de broadcast con hub y switch (apartados a y b).</li>
+<li><strong>Examen <code>sirc0703</code></strong> — Pregunta 5 (5 pts): CSMA/CA y RTS/CTS. · <code>sirc0807</code> — Pregunta 3: CSMA/CA en modo infraestructura (Clase 43).</li>
+<li><strong>Práctico 5 de 2008</strong> — Ejercicios 5 y 6 (CDMA) y ejercicio 8 (eficiencia de ALOHA con franjas).</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 3 y cap. 4 (§4.1, subcapa MAC: ALOHA, Slotted ALOHA, CSMA, Ethernet); cap. 6 y 7 para la discusión de por qué el acceso aleatorio no funciona en radio.</li>
+<li><strong>Kurose &amp; Ross</strong>, <em>Computer Networking: A Top-Down Approach</em> — §5.3 (ALOHA, Slotted ALOHA, CSMA, CSMA/CD) y §5.1.3 (CDMA)</li>
+<li><strong>IEEE 802.3</strong> — Ethernet: slot time, trama mínima, jamming, backoff binario exponencial, extensión de portadora. <strong>No es una RFC de IETF</strong>: es un estándar del IEEE.</li>
+<li><strong>IEEE 802.11</strong> — CSMA/CA, DCF, IFS, NAV, RTS/CTS, EDCA.</li>
+<li><strong>IEEE 802.3cg</strong> — 10BASE-T1S, el único caso industrial donde el half-duplex sigue siendo obligatorio (con PLCA).</li>
+<li><strong>IEEE 802.1Q-2022</strong>, <strong>802.1w</strong> (RSTP) y <strong>802.1AX-2020</strong> — VLAN, spanning tree y agregación de enlaces (Clase 42).</li>
+<li><strong>RFC 826</strong> — ARP (request en broadcast, reply en unicast), que es quien sufre el dominio de broadcast.</li>
+<li><strong>Clase anterior:</strong> 40 — Corrección de errores y ARQ (Hamming, Go-Back-N, Selective Repeat)</li>
+<li><strong>Clase siguiente:</strong> 42 — Switch, hub, VLAN y STP: self-learning paso a paso, tabla MAC, ageing, STP/RSTP</li>
+</ul></body></html>

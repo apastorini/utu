@@ -1,0 +1,863 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 30 — Tablas de enrutamiento, next hop y ARP</h1>
+<p><strong>Bloque:</strong> D (Capa de Red) · <strong>Semana:</strong> 10 · <strong>Duración estimada:</strong> 110 min
+<strong>Correlativa:</strong> Clase 29 (taller de subnetting) · <strong>Sigue con:</strong> Clase 31 (NAT, PAT y sus hacks)
+<strong>Material de referencia:</strong> Tanenbaum cap. 5 · RFC 826 (ARP) · RFC 1027 (proxy ARP) · RFC 4443 (ICMPv6, NDP) · RFC 8200 (IPv6)</p>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 820 400" style="max-width:820px"><rect width="820" height="400" fill="#ffffff"/><text x="410.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Red privada con dos subredes detras de un NAT</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><rect x="30" y="150" width="300" height="180" rx="8" fill="#f5f9fc" stroke="#7aa7c4" stroke-width="1.5" stroke-dasharray="6 4"/><text x="42" y="172" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#14507a">LAN 1   192.168.1.0/24</text><rect x="490" y="150" width="300" height="180" rx="8" fill="#f5f9fc" stroke="#7aa7c4" stroke-width="1.5" stroke-dasharray="6 4"/><text x="502" y="172" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#14507a">LAN 2   192.168.2.0/24</text><rect x="60" y="194" width="120" height="42" rx="4" fill="#eaf2f7" stroke="#b8cfdb" stroke-width="1.2"/><text x="120.0" y="212.0" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">192.168.1.25</text><text x="120.0" y="225.0" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">MAC_H</text><rect x="60" y="258" width="120" height="42" rx="4" fill="#eaf2f7" stroke="#b8cfdb" stroke-width="1.2"/><text x="120.0" y="276.0" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">192.168.1.40</text><text x="120.0" y="289.0" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">servidor</text><rect x="580" y="194" width="120" height="42" rx="4" fill="#eaf2f7" stroke="#b8cfdb" stroke-width="1.2"/><text x="640.0" y="218.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">192.168.2.25</text><rect x="580" y="258" width="120" height="42" rx="4" fill="#eaf2f7" stroke="#b8cfdb" stroke-width="1.2"/><text x="640.0" y="282.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">192.168.2.40</text><rect x="375" y="212" width="76" height="60" rx="6" fill="#f7d9c8" stroke="#c8621a" stroke-width="1.2"/><text x="413.0" y="238.55" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#1a1a1a">R1</text><text x="413.0" y="254.55" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#1a1a1a">NAT</text><line x1="190" y1="242" x2="369" y2="228" stroke="#14507a" stroke-width="1.8" marker-end="url(#po)"/><line x1="457" y1="228" x2="570" y2="242" stroke="#14507a" stroke-width="1.8" marker-end="url(#po)"/><text x="413" y="206" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="700" fill="#c8621a">192.168.1.1</text><text x="413" y="288" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="700" fill="#c8621a">192.168.2.1</text><ellipse cx="415" cy="70" rx="190" ry="32" fill="#e9f4ed" stroke="#2e7d4f" stroke-width="1.6"/><text x="415" y="66" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="13" font-weight="700" fill="#2e7d4f">Internet</text><text x="415" y="86" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#2e7d4f">servidor web  219.41.31.21</text><line x1="415" y1="102" x2="415" y2="206" stroke="#2e7d4f" stroke-width="2.4"/><text x="425" y="194" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#2e7d4f">IP publica de R1:  220.10.10.30</text><text x="30" y="364" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#0b3d5c">Tabla NAT de R1:</text><text x="30" y="384" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">(192.168.1.25 : 51000)  -&gt;  (220.10.10.30 : 40001)</text><text x="30" y="402" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">(192.168.1.25 : 51002)  -&gt;  (220.10.10.30 : 40002)</text><text x="30" y="420" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">(192.168.1.40 : 33333)  -&gt;  (220.10.10.30 : 40003)</text><text x="30" y="448" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">Al salir R1 cambia la IP origen y el puerto origen.</text><text x="30" y="466" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">Al volver busca la entrada y cambia destino IP y puerto.</text></svg></p>
+<blockquote>
+<p>🔍 = RFC <strong>no verificado</strong> en <code>ACTUALIZACIONES.md</code>: no lo cites sin confirmarlo.</p>
+</blockquote>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Escribir la tabla de enrutamiento de un router y de un host en el <strong>formato de tres columnas de la cátedra</strong>, e interpretar cada columna.</li>
+<li>Distinguir los <strong>tres tipos de entradas</strong>: conectada, aprendida y ruta por defecto.</li>
+<li>Explicar el <strong><em>longest prefix match</em></strong> y por qué gana la <strong>más específica</strong>.</li>
+<li>Ejecutar el <strong>proceso de decisión completo</strong> de un host y de un router.</li>
+<li>Explicar por qué existe ARP y escribir el <strong>formato del paquete ARP</strong> campo por campo.</li>
+<li>Describir <strong>ARP Request (broadcast) → ARP Reply (unicast)</strong> con MACs e IPs, y resolverlo enterito para un examen.</li>
+<li>Describir la <strong>tabla ARP</strong> (aging, <em>gratuitous</em>, <em>spoofing</em>) y por qué <strong>RARP</strong> murió.</li>
+</ol>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 768 266" style="max-width:768px"><rect width="768" height="266" fill="#ffffff"/><text x="384.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Secuencia ARP completa (Examen 2011-03, apartado b.i)</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><rect x="34.0" y="38" width="200" height="36" rx="5" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="134.0" y="52.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">Host H</text><text x="134.0" y="66.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">(ARP vacia)</text><line x1="134.0" y1="74" x2="134.0" y2="250" stroke="#7aa7c4" stroke-width="1.2" stroke-dasharray="4 3"/><rect x="284.0" y="38" width="200" height="36" rx="5" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="384.0" y="59.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">Router R1</text><line x1="384.0" y1="74" x2="384.0" y2="250" stroke="#7aa7c4" stroke-width="1.2" stroke-dasharray="4 3"/><rect x="534.0" y="38" width="200" height="36" rx="5" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="634.0" y="59.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">Servidor Web</text><line x1="634.0" y1="74" x2="634.0" y2="250" stroke="#7aa7c4" stroke-width="1.2" stroke-dasharray="4 3"/><line x1="134.0" y1="100" x2="384.0" y2="100" stroke="#14507a" stroke-width="1.8" marker-end="url(#p)"/><text x="259.0" y="93" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#14507a">ARP Request -&gt; broadcast
+¿MAC de 192.168.1.1?</text><line x1="384.0" y1="140" x2="134.0" y2="140" stroke="#2e7d4f" stroke-width="1.8" marker-end="url(#po)"/><text x="259.0" y="133" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#2e7d4f">ARP Reply -&gt; unicast
+MAC1 = 192.168.1.1</text><line x1="134.0" y1="180" x2="384.0" y2="180" stroke="#14507a" stroke-width="1.8" marker-end="url(#p)"/><text x="259.0" y="173" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#14507a">Trama: MAC2 -&gt; MAC1
+IP 192.168.1.25 -&gt; 219.41.31.21</text><line x1="384.0" y1="220" x2="634.0" y2="220" stroke="#14507a" stroke-width="1.8" marker-end="url(#p)"/><text x="509.0" y="213" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#14507a">Sale a Internet: MAC destino = MAC del ISP</text></svg></p>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2011-03 Problema 2 a, b.i y b.ii</code> · <code>2010-03 Pregunta 1a</code> · <code>2010-03 Problema 1 a.i-ii</code> · <code>2009-12 Problema 1 a-i-iii</code> · <code>2006-08 Pregunta 2</code> · <code>2001-02 Problema 1</code>.</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 El formato de la tabla de enrutamiento</h2>
+<div class="codehilite"><pre><span></span><code>  ┌────────────────────────────┬──────────────────────────┬─────────────┐
+  │ Red destino / Máscara      │ Gateway (next hop)       │ Distancia   │
+  ├────────────────────────────┼──────────────────────────┼─────────────┤
+  │ 192.168.1.0/24             │ C – Directamente conectado│     1       │
+  │ 0.0.0.0/0                  │ 10.0.0.1                  │     3       │
+  └────────────────────────────┴──────────────────────────┴─────────────┘
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Columna</th>
+<th>Qué es</th>
+<th>Ojo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Red destino / Máscara</strong></td>
+<td>El prefijo que dice "todo lo que cae acá, va por acá". <strong>La máscara es parte de la clave</strong>: <code>192.168.1.0/24</code> y <code>192.168.1.0/25</code> son entradas <strong>distintas</strong>.</td>
+<td>Sin máscara no se puede hacer <em>longest prefix match</em></td>
+</tr>
+<tr>
+<td><strong>Gateway (next hop)</strong></td>
+<td>La IP del <strong>router vecino</strong> por el que se sale, o <strong>C</strong> (<em>connected</em>) si el destino es una red <strong>directamente conectada</strong>.</td>
+<td>Es un <strong>vecino</strong>, no el destino final: el paquete va al <code>10.0.0.1</code> y ese router decide después</td>
+</tr>
+<tr>
+<td><strong>Distancia</strong> (o <strong>adquisición</strong>)</td>
+<td>Cuántos saltos cuesta, o de dónde salió la ruta.</td>
+<td>Una red conectada tiene distancia <strong>1</strong>, no 0: el "0 saltos" sos vos</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Sobre el <code>C</code>.</strong> <em>"El prefijo de la columna 1 es una de mis redes de interfaz, no
+hace falta ningún router para llegar"</em>. No la aprendió nadie: la puse yo, y es la
+<strong>única entrada que nunca se borra</strong> mientras la interfaz esté arriba. La notación
+equivalente del <code>2008-07 P1b</code> es una columna <strong>Adquisición</strong> con <code>C</code> (conectada),
+<code>R</code> (por RIP) y <code>O</code> (<em>other</em>, la que anuncia el ISP).</p>
+<p>⚠️ <code>C</code> <strong>también</strong> puede llevar gateway: es el caso de un router con <strong>dos
+interfaces en la misma red</strong>, o de una <strong>red de tránsito</strong>. <code>10.0.3.0/24 → C →
+10.0.3.1</code> quiere decir: <em>"esa red es mía, la tengo en <code>eth0</code>, y mi dirección therein
+es 10.0.3.1"</em>.</p>
+<h2>1.2 Los tres tipos de entradas</h2>
+<div class="codehilite"><pre><span></span><code>  ① CONECTADA                     ② APRENDIDA                    ③ POR DEFECTO
+  ──────────────                  ──────────────                 ──────────────
+  Red de una de mis interfaces.   Red que NO es mía.             Red destino = 0.0.0.0/0
+  Gateway = C.                    Gateway = la IP de un          ("cualquiera").
+  Distancia = 1.                  vecino.                        Gateway = el router
+  Nunca se borra.                  Distancia = nº de saltos.      de salida.
+  La pongo YO.                    La aprendo de otro router.     La más cara que conozco.
+
+  192.168.1.0/24 → C  (1)        192.168.0.0/24 → 10.0.0.2 (2)  0.0.0.0/0 → 10.0.0.1 (3)
+</code></pre></div>
+
+<p><strong>Por qué la ruta por defecto tiene distancia propia.</strong> Es una ruta más: si hay un
+camino específico, gana (§1.3); si no, usás el default. Y si <strong>tampoco</strong> hay
+default, el router <strong>descarta el paquete y manda un ICMP tipo 3 código 0</strong> (<em>net
+unreachable</em>). <strong>La tabla de un host</strong> es la versión mínima: una red local (<code>C</code>) +
+la default; con <strong>dos</strong> interfaces, dos redes locales + una default (Ejercicio 2.1).</p>
+<h2>1.3 <em>Longest prefix match</em></h2>
+<p>El router no elige "la ruta que más se parece", sino <strong>la de prefijo más largo</strong>
+que todavía coincida con el destino.</p>
+<div class="codehilite"><pre><span></span><code>  Tabla de un router
+    192.168.1.0/24      →  eth0          (conectada,           distancia 1)
+    192.168.1.128/25    →  10.0.0.2      (aprendida de vecino, distancia 2)
+    0.0.0.0/0           →  10.0.0.1      (por defecto,         distancia 3)
+
+  Llega un paquete con IP destino 192.168.1.200
+
+    ¿192.168.1.0/24  coincide?   192.168.1.200 &amp; 255.255.255.0   = 192.168.1.0    SÍ
+    ¿192.168.1.128/25 coincide?  192.168.1.200 &amp; 255.255.255.128 = 192.168.1.128 SÍ
+    ¿0.0.0.0/0        coincide?   siempre SÍ
+
+    El prefijo MÁS LARGO que coincide es /25  (25 &gt; 24 &gt; 0)  ⇒  sale por 10.0.0.2
+    Y la entrada /24 NO sobra: sirve para 192.168.1.1 … .127, que no caen en el /25.
+</code></pre></div>
+
+<p><strong>El test de coincidencia, el mismo del subnetting:</strong> <code>D AND máscara == red</code>.</p>
+<p><strong>Por qué el más específico y no el de menor distancia.</strong> La <code>/25</code> es más cara (2
+saltos) pero trata un <strong>subconjunto</strong> de la <code>/24</code>, así que <strong>debe</strong> ganar. Si
+ganara la de menor distancia, la <code>/24</code> no se podría usar nunca y las subredes
+sumarizadas no existirían.</p>
+<p>⚠️ <code>192.168.1.0/25</code> y <code>192.168.1.128/25</code> <strong>no</strong> "se parten": para el router son
+dos redes, y cada host tiene una tabla distinta.</p>
+<h2>1.4 El proceso de decisión completo</h2>
+<p><strong>En un host</strong> (el 90 % de los casos que se preguntan):</p>
+<div class="codehilite"><pre><span></span><code>  H llega un paquete con IP destino D
+            │
+            ▼
+  ┌─────────────────────────────────────────────┐
+  │ ¿D está en la tabla con más prefijo que     │  NO ──► usar la entrada 0.0.0.0/0
+  │ coincida?  (longest prefix match sobre     │          → el default gateway
+  │ TODA la tabla, no solo la primera)          │          SIN default: se descarta
+  └──────────────┬──────────────────────────────┘
+                 │ SÍ
+                 ▼
+  ┌─────────────────────────────────────────────┐
+  │ ¿La entrada dice "C" (conectada)?           │  NO ──► el paquete va al router vecino
+  └──────────────┬──────────────────────────────┘          (se resuelve el MAC con ARP)
+                 │ SÍ
+                 ▼
+  Entregar el paquete a la capa 4 sin tocar nada más.
+</code></pre></div>
+
+<p><strong>En un router</strong> son los mismos dos pasos, más un caso propio: si el destino es una
+dirección de <strong>broadcast o multicast de una de sus propias subredes</strong>, tiene que
+generar el paquete él mismo (es el paso 3 del <code>traceroute</code> de la <code>2006-08 P1</code>).</p>
+<p><strong>Lo que NO hace el router</strong>, y es el error conceptual más común: <strong>no</strong> mira la IP
+de origen para decidir, y <strong>no</strong> reescribe las IP al reenviar — solo cambia las
+tramas de capa 2 <strong>de su enlace de salida</strong>. Por eso la IP <strong>no cambia de salto</strong>
+(salvo NAT, Clase 31) y la <strong>MAC cambia en cada uno</strong>.</p>
+<h2>1.5 ARP: por qué existe</h2>
+<p><strong>El problema, en una frase.</strong> En IPv4 la dirección es <strong>jerárquica y lógica</strong>:
+<code>192.168.1.25</code> dice "esta IP está en la red 192.168.1.0/24" y nada del hardware. En
+Ethernet la dirección es <strong>plana y física</strong>: una MAC de 48 bits que <strong>no codifica
+nada</strong> sobre en qué red estás. <strong>Son dos espacios de nombres distintos para
+identificar lo mismo.</strong></p>
+<p><strong>Por qué no alcanza con la IP.</strong> La trama de Ethernet tiene un campo obligatorio de
+<strong>MAC destino</strong>. El host no puede poner ahí una IP, ni inventar una MAC: tiene que
+<strong>preguntar</strong> <em>"¿qué MAC tiene la IP 10.0.0.1?"</em>. Y hay que preguntárselo a alguien,
+porque <strong>la MAC solo tiene sentido local</strong> dentro de un enlace: por eso <strong>ARP nunca
+cruza un router</strong> — cada router responde solo por sus propias interfaces.</p>
+<div class="codehilite"><pre><span></span><code>  ┌─ Red A (192.168.1.0/24) ────┐        ┌─ Red del ISP ──────────────────┐
+  │  H .25 (MAC2)  ──  R1 .1      │        │   R1 .30 (MAC1) ── 219.41.31.21 │
+  │         (MAC1)                │        │        (MAC de la WAN)          │
+  └───────────────────────────────┘        └─────────────────────────────────┘
+     ARP: 192.168.1.25 → MAC1  ✔  tiene sentido
+     ARP: 219.41.31.21 → ??      ✘  es de otra red: R1 tiene que resolver la
+          MAC de su WAN, no la de la LAN.
+</code></pre></div>
+
+<blockquote>
+<p><strong>ARP = Address Resolution Protocol</strong>, protocolo auxiliar de la suite TCP/IP que
+resuelve la correspondencia IP ↔ MAC <strong>en un mismo enlace</strong>. Definido en la
+<strong><code>RFC 826</code></strong>.</p>
+</blockquote>
+<h2>1.6 El formato del paquete ARP</h2>
+<p>Un paquete ARP viaja <strong>dentro</strong> de una trama Ethernet, con <code>Ethertype = 0x0806</code>
+(que es lo que le dice al receptor "esto no es IP, es ARP").</p>
+<div class="codehilite"><pre><span></span><code>  TRAMA ETHERNET (14 bytes)
+  ┌────────────┬────────────┬────────────┬──────────────────────────────┐
+  │ MAC dest 6 │ MAC orig 6│ Tipo  2    │  payload ARP (28 bytes)       │
+  │            │            │  0x0806    │                              │
+  └────────────┴────────────┴────────────┴──────────────────────────────┘
+
+  PAYLOAD ARP (28 bytes)
+  ┌───────────┬───────────┬───────┬───────┬────────┬─────────────┬───────────┐
+  │ HW type 2 │ Proto t.2 │ HWl 1 │ Prol 1│Opcode 2│ Sender HW  6 │ Sender IP4│
+  │  =1 Ether │ =0x0800   │  = 6  │  = 4  │1=req   │ = MAC orig  │ = IP orig │
+  │           │ (IPv4)    │       │       │2=reply │             │           │
+  ├───────────┼───────────┼───────┴───────┼────────┼─────────────┼───────────┤
+  │ Target IP4│ Target HW6│  Total: 14 + 28 = 42 bytes                   │
+  │= IP que   │=00:00:00:00:00:00   en el REQUEST: se desconoce         │
+  │  se busca │  (se desconoce)   en el REPLY: la MAC de quien preguntó  │
+  └───────────┴───────────┴────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Los dos campos que hacen toda la magia:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>En un <strong>Request</strong></th>
+<th>En un <strong>Reply</strong></th>
+<th>Por qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Target IP address</strong></td>
+<td>La IP <strong>buscada</strong></td>
+<td>La IP <strong>del que preguntó</strong></td>
+<td>El request necesita saber a quién preguntar; el reply, a quién contestar</td>
+</tr>
+<tr>
+<td><strong>Target HW address</strong></td>
+<td><code>00:00:00:00:00:00</code></td>
+<td>La MAC <strong>del que preguntó</strong></td>
+<td>El request todavía no la sabe</td>
+</tr>
+</tbody>
+</table>
+<p>Esa simetría (el request pregunta con <code>Target IP</code>, el reply responde con
+<code>Sender IP</code>) es lo que hace que todo funcione sin una segunda ronda de pregunta.</p>
+<h2>1.7 La secuencia ARP completa</h2>
+<div class="codehilite"><pre><span></span><code>   H  (192.168.1.25, MAC 2)                 R1 (192.168.1.1 / 220.10.10.30, MAC 1)
+   │                                                        │
+   │ 1. ARP REQUEST                          EtherType 0x0806│
+   │    MAC destino : FF:FF:FF:FF:FF:FF  (broadcast)         │
+   │    MAC origen  : MAC 2                                  │
+   │    Opcode 1 · Sender MAC MAC2 · Sender IP 192.168.1.25 │
+   │    Target HW 00:00:00:00:00:00 · Target IP 192.168.1.1│
+   ├───────────────────────────────────────────────────────►│
+   │                                                        │
+   │ 2. ARP REPLY                            EtherType 0x0806│
+   │    MAC destino : MAC 2   ← unicast a quien preguntó    │
+   │    MAC origen  : MAC 1                                  │
+   │    Opcode 2 · Sender MAC MAC1 · Sender IP 192.168.1.1 │
+   │    Target HW MAC2         · Target IP 192.168.1.25     │
+   │◀───────────────────────────────────────────────────────┤
+   │                                                        │
+   │ 3. H guarda  192.168.1.1 → MAC 1  en su TABLA ARP      │
+   │ 4. H arma la trama: MAC destino MAC1 · MAC origen MAC2 │
+   │    y dentro, el paquete IP  192.168.1.25 → 219.41.31.21 │
+   ├───────────────────────────────────────────────────────►│
+</code></pre></div>
+
+<p>⚠️ <strong>Request broadcast, reply unicast.</strong> Es lo que dicen la <code>RFC 826</code> y las
+soluciones oficiales del <code>2010-03 P1a</code> y del <code>2006-08 P2</code>.</p>
+<p>⚠️ <strong>Las dos MAC del mismo sentido.</strong> En el reply, <strong>MAC origen</strong> = la de quien
+responde (MAC 1, la de R1) y <strong>MAC destino</strong> = la de quien preguntó (MAC 2).
+Confundirlas es el error más común del apartado.</p>
+<p>⚠️ <strong>La tabla ARP se llena con lo que dice el campo <em>Sender</em>, no con lo que se
+preguntó.</strong> H preguntó por <code>192.168.1.1</code> y guarda <code>192.168.1.1 → MAC 1</code>, que es
+justo el <code>Sender IP</code> del reply.</p>
+<h2>1.8 La tabla ARP: <em>aging</em>, <em>gratuitous</em> y <em>spoofing</em></h2>
+<div class="codehilite"><pre><span></span><code>  ┌───────────────────┬──────────────────┬──────────────┬──────────────┐
+  │ IP                │ MAC              │ Interfaz     │ Antigüedad   │
+  ├───────────────────┼──────────────────┼──────────────┼──────────────┤
+  │ 192.168.1.1      │ MAC 1            │ eth0         │  0:00:12     │
+  │ 192.168.1.77     │ MAC 5            │ eth0         │  1:42:03     │
+  │ 220.10.10.29     │ MAC WAN          │ eth1         │  3:07:55     │
+  └───────────────────┴──────────────────┴──────────────┴──────────────┘
+</code></pre></div>
+
+<ul>
+<li><strong>Qué guarda:</strong> la correspondencia <strong>IP → MAC</strong>, más la <strong>interfaz</strong> por la que se
+  alcanzó (necesaria en routers multihoming) y un <strong>temporizador de antigüedad</strong>.</li>
+<li><strong>¿Por qué una tabla?</strong> Por <strong>retardo</strong> (un ARP son 2 tramas y 1 RTT) y por
+  <strong>carga</strong> (un broadcast por paquete satura la LAN). Es un caché, no corrección.</li>
+<li><strong>Aging:</strong> cada entrada tiene un temporizador que <strong>se renueva</strong> al usarse y
+  <strong>expira</strong> si no se usa. Los valores son <strong>de implementación</strong>, no los manda IEEE:
+  del orden de <strong>30 s a 5 minutos</strong> en Windows y Linux. Expirar es <strong>necesario</strong>,
+  porque un host puede cambiar de MAC y la entrada vieja lo mandaría al lugar
+  equivocado.</li>
+<li><strong>ARP <em>gratuitous</em>:</strong> un Request donde <strong>Sender IP = Target IP</strong>, o sea <em>"yo soy
+  el dueño de esta IP"</em>, a broadcast y <strong>sin respuesta</strong>. Sirve para <strong>anunciar</strong>
+  una dirección nueva al arrancar, <strong>detectar duplicados</strong>, <strong>actualizar las
+  cachés</strong> tras un <em>failover</em> de gateway, y como <strong>anuncio de VRRP</strong>.</li>
+<li><strong>⚠️ Y es la fuente clásica de <em>ARP spoofing<em>:</em><em> si un atacante manda un
+  </em>gratuitous<em> diciendo </em>"192.168.1.1 es MI MAC"<em>, todos los hosts de la LAN </em><em>le
+  creen</em>* y le mandan su tráfico. Eso es </em></strong>cache poisoning<strong><em>, la base de casi
+  todos los ataques </em>man-in-the-middle* de LAN. Las defensas: </strong>ARP inspection<strong>
+  en los switches y </strong>fijar la MAC del gateway** en cada host.</li>
+</ul>
+<h3>⚠️ Actualización a 2026</h3>
+<p><strong>Sigue igual — de memoria, sin dudar:</strong>
+- <code>RFC 826</code>: request en <strong>broadcast</strong>, reply en <strong>unicast</strong>, opcodes 1 y 2; los
+  14 bytes de Ethernet + 28 de payload, con los cuatro campos de direcciones.
+- La tabla ARP es un <strong>caché con expiración</strong>.
+- El <em>gratuitous</em> se sigue usando (arranque, DHCP, failover, VRRP) y <strong>sigue siendo
+  una fuente clásica de <em>ARP spoofing</em></strong>.
+- La convención "C" y el formato de tres columnas.</p>
+<p><strong>Cambió o hay que reencuadrar:</strong>
+- <strong>En IPv6 no hay ARP: hay Neighbor Discovery</strong> (<code>RFC 4443</code>), que hace lo mismo con
+  mensajes <strong>NS/NA de ICMPv6</strong> sobre <strong>multicast</strong>, y además agrega
+  <strong>autoconfiguración</strong> y <strong>DAD</strong>. No hay <em>proxy ARP</em> en IPv6. Es el contraste que
+  pide el <code>2010-12 P5</code>.
+- <strong><code>Proxy ARP</code> (<code>RFC 1027</code>) sigue existiendo</strong> en VPNs sitio a sitio, pero es cada
+  vez más un <strong>anti-patrón</strong> de la era IPv4-NAT.
+- <strong>El <em>aging</em> es de implementación</strong>: nunca lo presentes como "el estándar dice X".</p>
+<blockquote>
+<p><strong>Consecuencia para el examen:</strong> <strong>nada cambia</strong> en el formato ni en la
+aritmética. Lo único a añadir, si te piden actualizar, es el NDP como
+equivalente en IPv6.</p>
+</blockquote>
+<h2>1.9 RARP: el problema inverso, y por qué murió</h2>
+<div class="codehilite"><pre><span></span><code>  ARP   "¿qué MAC tiene la IP 192.168.1.25?"     →  respuesta:  la MAC
+  RARP  "¿qué IP y qué MAC tiene esta tarjeta?"  →  respuesta:  la IP + la MAC
+</code></pre></div>
+
+<p><strong>El problema que resuelví.</strong> Un host recién arrancado, con la tarjeta Ethernet en
+la LAN pero <strong>sin dirección IP</strong>, no puede usar DHCP: no tiene con quién hablar.
+La pregunta de RARP es esa: <em>"sos una interfaz con esta MAC; decime qué IP me
+corresponde"</em>. El servidor RARP tiene una tabla <strong>MAC → IP</strong> y contesta. Se define
+en la <strong><code>RFC 903</code></strong>, y sus opcodes (3 y 4) viven en el formato de la <code>RFC 826</code>.</p>
+<p><strong>Por qué quedó obsoleto:</strong>
+1. <strong>Solo devolvía la IP.</strong> No entregaba <strong>máscara</strong>, ni <strong>gateway por defecto</strong>, ni
+   <strong>DNS</strong>. Con una IP suelta no se puede enrutar nada: el host no sabe si el
+   destino es local o remoto.
+2. <strong>El servidor necesitaba una entrada por host</strong>, escrita a mano: agregar un host
+   implicaba editar la tabla del servidor.
+3. <strong>BOOTP</strong> lo reemplazó (🔍 <code>RFC 951</code>): pasó a entregar IP, máscara, gateway y
+   archivo de arranque, todo en un mensaje, y de forma automática desde un <em>pool</em>.
+4. <strong>Después llegó DHCP</strong> (🔍 <code>RFC 2131</code>/<code>2132</code>), que es BOOTP renovado con
+   <em>leases</em> (alquilaciones con vencimiento), lo que resolvió el problema de la
+   dirección fija atada al hardware.</p>
+<blockquote>
+<p>⚠️ <strong>tema en desuso.</strong> Si un examen te pregunta RARP, la respuesta es "se usaba
+en los 80, quedó obsoleto con BOOTP y DHCP". Si aparece como <strong>pregunta teórica</strong>,
+es porque quieren ver si entendés el salto de "dirección fija" a "dirección
+alquilada con vencimiento".</p>
+</blockquote>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — La tabla de un host con <strong>dos</strong> interfaces</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen de marzo de 2001, <code>sirc0102</code>, Problema 1 (30 pts).
+<em>Enunciado:</em> <em>"Se dispone de un computador que se comunica con otros mediante
+TCP/IP. Para hacerlo posee dos tarjetas ethernet que están conectadas a
+diferentes LAN's. El sistema conoce: 1) la dirección IP, la máscara de subred y
+la dirección IP del gateway por defecto (si ha sido especificado) para cada una
+de las dos tarjetas. 2) La tabla de ruteo estática, con entradas del tipo
+<code>&lt;dirección de red de destino, máscara de subred, gateway a utilizar&gt;</code>. Se pide:
+escribir el proceso que determina por cuál o cuáles tarjetas se debe enviar un
+paquete IP dada la dirección IP destino."</em></p>
+</blockquote>
+<p><strong>La lógica, en cuatro pasos, en este orden exacto:</strong></p>
+<div class="codehilite"><pre><span></span><code>  Paso 1 — ¿el destino es LOCAL de alguna de las dos LAN?
+      for i en {1,2}:   si  D &amp; mascara[i] == ip[i] &amp; mascara[i]  ⇒  tarjeta i
+
+  Paso 2 — ¿hay entrada en la tabla estática que coincida?
+      for ℓ:              si  D &amp; mascara[ℓ] == red[ℓ] &amp; mascara[ℓ]  ⇒  manda ℓ
+      (si hay varias, gana la de prefijo MÁS LARGO)
+
+  Paso 3 — ¿por dónde sale el gateway de esa línea?
+      si  gw[ℓ] &amp; mascara[1] == ip[1] &amp; mascara[1]  ⇒  tarjeta 1
+      si  gw[ℓ] &amp; mascara[2] == ip[2] &amp; mascara[2]  ⇒  tarjeta 2
+
+  Paso 4 — si no hubo coincidencia, los gateways por defecto:
+      ¿existen los DOS?  ⇒  se manda por AMBAS tarjetas        (devuelve 3)
+      ¿existe uno solo?  ⇒  por esa                            (1 o 2)
+      ¿ninguno?           ⇒  se descarta                       (0)
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="c1">// Tarjeta_red[i] = { dir_IP, Sn_mask, Def_gw }   i en 1..2</span>
+<span class="c1">// Tabla_ruteo[l] = { dir_IP, Sn_mask, Def_gw }</span>
+<span class="c1">// Devuelve: 0 ninguna · 1 tarjeta 1 · 2 tarjeta 2 · 3 AMBAS</span>
+
+<span class="n">function</span><span class="w"> </span><span class="n">selec_tarjeta</span><span class="w"> </span><span class="p">(</span><span class="n">dirIP</span><span class="o">:</span><span class="w"> </span><span class="n">IP_addr</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="kt">int</span>
+<span class="n">begin</span>
+<span class="w">  </span><span class="c1">// Paso 1: ¿es una de mis LANs?   (AND bit a bit)</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">dirIP</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">Tarjeta_red</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="n">Sn_mask</span><span class="w"> </span><span class="o">=</span>
+<span class="w">      </span><span class="n">Tarjeta_red</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="n">dir_IP</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">Tarjeta_red</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="n">Sn_mask</span><span class="p">)</span><span class="w"> </span><span class="n">then</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">dirIP</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">Tarjeta_red</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="n">Sn_mask</span><span class="w"> </span><span class="o">=</span>
+<span class="w">      </span><span class="n">Tarjeta_red</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="n">dir_IP</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">Tarjeta_red</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="n">Sn_mask</span><span class="p">)</span><span class="w"> </span><span class="n">then</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+
+<span class="w">  </span><span class="c1">// Paso 2: tabla de ruteo estática</span>
+<span class="w">  </span><span class="nl">res</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="n">lin</span><span class="w"> </span><span class="o">:=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">MAX_ROUTE</span><span class="w"> </span><span class="k">do</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">dirIP</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">Tabla_ruteo</span><span class="p">[</span><span class="n">lin</span><span class="p">].</span><span class="n">Sn_mask</span><span class="w"> </span><span class="o">=</span>
+<span class="w">        </span><span class="n">Tabla_ruteo</span><span class="p">[</span><span class="n">lin</span><span class="p">].</span><span class="n">dir_IP</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">Tabla_ruteo</span><span class="p">[</span><span class="n">lin</span><span class="p">].</span><span class="n">Sn_mask</span><span class="p">)</span><span class="w"> </span><span class="n">then</span>
+<span class="w">      </span><span class="nl">res</span><span class="w"> </span><span class="p">:</span><span class="o">=</span><span class="w"> </span><span class="n">lin</span><span class="p">;</span><span class="w">            </span><span class="c1">// ⚠ la oficial se queda con la ÚLTIMA, no con</span>
+<span class="w">                             </span><span class="c1">//   la más específica (ver análisis)</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">res</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="n">then</span><span class="w"> </span><span class="n">begin</span>
+<span class="w">    </span><span class="c1">// Paso 3: ¿el gateway está en la LAN de la tarjeta 1 o de la 2?</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Tabla_ruteo</span><span class="p">[</span><span class="n">res</span><span class="p">].</span><span class="n">Def_gw</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">Tarjeta_red</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="n">Sn_mask</span><span class="w"> </span><span class="o">=</span>
+<span class="w">        </span><span class="n">Tarjeta_red</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="n">dir_IP</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">Tarjeta_red</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="n">Sn_mask</span><span class="p">)</span><span class="w"> </span><span class="n">then</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">Tabla_ruteo</span><span class="p">[</span><span class="n">res</span><span class="p">].</span><span class="n">Def_gw</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">Tarjeta_red</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="n">Sn_mask</span><span class="w"> </span><span class="o">=</span>
+<span class="w">        </span><span class="n">Tarjeta_red</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="n">dir_IP</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">Tarjeta_red</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="n">Sn_mask</span><span class="p">)</span><span class="w"> </span><span class="n">then</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+<span class="w">  </span><span class="n">end</span><span class="p">;</span>
+
+<span class="w">  </span><span class="c1">// Paso 4: gateways por defecto</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">existe</span><span class="w"> </span><span class="n">Tarjeta_red</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="n">Def_gw</span><span class="p">)</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="p">(</span><span class="n">existe</span><span class="w"> </span><span class="n">Tarjeta_red</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="n">Def_gw</span><span class="p">)</span><span class="w"> </span><span class="n">then</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span><span class="w">                             </span><span class="c1">// por AMBAS</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">existe</span><span class="w"> </span><span class="n">Tarjeta_red</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="n">Def_gw</span><span class="p">)</span><span class="w"> </span><span class="n">then</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">existe</span><span class="w"> </span><span class="n">Tarjeta_red</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="n">Def_gw</span><span class="p">)</span><span class="w"> </span><span class="n">then</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w">                               </span><span class="c1">// no hay por dónde salir</span>
+<span class="n">end</span><span class="p">;</span>
+</code></pre></div>
+
+<p><strong>Después del <code>selec_tarjeta</code>, dos cosas más</strong> (acá está el punto de unión con
+esta clase):
+1. <strong>La IP de origen es la de la tarjeta por la que se sale</strong>: <code>tabla_ruteo[n].dirIP</code>.
+2. <strong>El ARP es del destino final, no del destino del paquete</strong>: si el destino es
+   <strong>local</strong> → ARP de <code>dirIP</code>; si salís por la tabla o por un default → <strong>ARP del
+   gateway</strong>. Es el criterio de §1.4: primero se decide la <strong>interfaz de salida</strong>,
+   y solo después se resuelve la MAC de <strong>a quién</strong> se entrega la trama.</p>
+<blockquote>
+<p><strong>Análisis de la solución oficial:</strong> la lógica y el orden son correctos (LAN →
+tabla estática → default). Dos cosas a corregir: (a) el <code>res := lin</code> dentro del
+<code>for</code> se queda con la <strong>última</strong> coincidencia, no con la de <strong>prefijo más largo</strong>;
+con dos entradas que coinciden devuelve la que vino último, que puede no ser la
+más específica. Hay que comparar las máscaras y quedarse con la <strong>más larga</strong>.
+(b) Conviene recordar que <strong>los dos AND tienen que hacerse bit a bit</strong>, no con
+comparación de strings.</p>
+</blockquote>
+<h2>2.2 Ejercicio 2 — ARP entre dos LANs, con un router en el medio</h2>
+<p><strong>Enunciado.</strong> H1 quiere alcanzar un servidor en Internet, a través de un router, y
+su tabla ARP está <strong>vacía</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   H1 (192.168.1.10, MAC1)     Router (LAN 192.168.1.1, MAC2 · WAN 203.0.113.5, MAC3)
+
+  1) H1 necesita la MAC de 192.168.1.1  (el destino NO es local: es remoto)
+     ── ARP REQUEST  MAC dest ff:ff:ff:ff:ff:ff · MAC orig MAC1 ──────────►
+        Sender IP 192.168.1.10 · Target IP 192.168.1.1
+     ◄── ARP REPLY    MAC dest MAC1 · MAC orig MAC2 ───────────────────────
+        Sender IP 192.168.1.1 · Target IP 192.168.1.10
+
+  2) H1 arma la trama de datos, SIN tocar el paquete IP:
+     MAC dest MAC2 · MAC orig MAC1 · Ethertype 0x0800
+     IP origen 192.168.1.10  →  IP destino (la del servidor, digamos 142.250.1.1)
+     ────────────────────────────────────────────────────────────────────►
+
+  3) El router tira la MAC2 y el Ethertype, lee la IP destino, ve que no es de
+     ninguna de sus redes, consulta SU tabla (0.0.0.0/0 → 203.0.113.1), hace ARP
+     por 203.0.113.1 en su WAN y reenvía con MAC destino = la del ISP.
+</code></pre></div>
+
+<p>⚠️ <strong>Lo que enseña, en tres líneas:</strong> la <strong>resolución de MAC es local a cada
+enlace</strong>; el <strong>paquete IP viaja intacto</strong> de extremo a extremo (aquí; NAT lo rompe,
+Clase 31); y el router decide la <strong>ruta</strong> con la IP destino y la <strong>trama</strong> con el
+siguiente salto.</p>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen <code>2011-03</code>, Problema 2 a, b.i y b.ii — tablas, ARP y MACs</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc1103</code> / <code>sirc1103</code>, 21 de febrero de 2011, Problema 2
+(30 puntos), apartados a, b.i y b.ii.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1103.pdf</p>
+</blockquote>
+<h3>Enunciado (literal)</h3>
+<blockquote>
+<p>Una empresa tiene una red A (LAN Ethernet con direccionamiento privado) con 15
+servidores y 70 puestos de trabajo, y se desea que puedan acceder a un servidor
+web en Internet con dirección IP <code>219.41.31.21</code>. Para ello el router R1 implementa
+NAT utilizando su dirección IP pública.
+<strong>a)</strong> Especifique la tabla de enrutamiento de R1 y del Host H.
+<strong>b)</strong> i. Suponiendo que la tabla ARP del Host H está vacía, indicar los mensajes
+ARP (MAC de origen, MAC de destino y descripción del contenido) intercambiados en
+la Red A cuando el Host H inicia su comunicación con Servidor Web (asuma que Host
+H conoce la dirección IP de Servidor Web).
+ii. Indique las direcciones MAC de las tramas y las direcciones IP de los paquetes
+correspondientes a un flujo de datos entre el Host H y el Servidor Web considerando
+ambos sentidos (considere únicamente la Red A).</p>
+</blockquote>
+<p><strong>Datos de la figura:</strong> H = <code>192.168.1.25</code>, <strong>MAC 2</strong>. R1 = <code>192.168.1.1</code>
+(<strong>MAC 1</strong>) en la LAN, y <code>220.10.10.30</code> en el enlace <code>220.10.10.28/30</code>.</p>
+<h3>a) Las dos tablas</h3>
+<div class="codehilite"><pre><span></span><code>  Tabla del host H                              Tabla de R1
+  Red destino / Máscara   Gateway            Red destino / Máscara    Gateway
+  ─────────────────────────────────────────   ───────────────────────────────────────
+  192.168.1.0/24          C                   192.168.1.0/24           C     (1)
+  0.0.0.0/0               192.168.1.1  (2)    220.10.10.28/30          C     (1)
+                                                0.0.0.0/0               220.10.10.29 (2)
+</code></pre></div>
+
+<p>⚠️ <strong>Las dos entradas <code>C</code> de R1, y por qué.</strong> R1 tiene <strong>dos</strong> interfaces: una en
+la red A y otra en el enlace WAN, y cada una genera su entrada conectada. Es el
+error más común poner una sola: si a R1 le llega un paquete para <code>220.10.10.29</code>
+(el router del ISP) y no tiene la entrada <code>/30</code>, lo tira por la interfaz
+equivocada o lo descarta.</p>
+<h3>b.i) Los dos mensajes ARP</h3>
+<div class="codehilite"><pre><span></span><code>  ┌─────────┬──────────┬────────────────────┬──────────────────────────────────────┐
+  │         │ MAC orig │ MAC destino        │ Tipo y contenido                     │
+  ├─────────┼──────────┼────────────────────┼──────────────────────────────────────┤
+  │ Request │  MAC 2   │ FF:FF:FF:FF:FF:FF  │ ARP Request preguntando por la MAC   │
+  │  (H)    │          │   (broadcast)      │ asociada a la IP 192.168.1.1         │
+  │         │          │                    │ Opcode 1 · Sender MAC MAC2 ·          │
+  │         │          │                    │ Sender IP 192.168.1.25 ·             │
+  │         │          │                    │ Target MAC 00:00:00:00:00:00 ·        │
+  │         │          │                    │ Target IP 192.168.1.1                │
+  ├─────────┼──────────┼────────────────────┼──────────────────────────────────────┤
+  │ Reply   │  MAC 1   │  MAC 2             │ ARP Reply respondiendo que la MAC    │
+  │  (R1)   │          │  (unicast al que   │ asociada a la IP 192.168.1.1 es MAC 1│
+  │         │          │   preguntó)        │ Opcode 2 · Sender MAC MAC1 ·          │
+  │         │          │                    │ Sender IP 192.168.1.1 ·              │
+  │         │          │                    │ Target MAC MAC2 ·                    │
+  │         │          │                    │ Target IP 192.168.1.25               │
+  └─────────┴──────────┴────────────────────┴──────────────────────────────────────┘
+</code></pre></div>
+
+<blockquote>
+<p><strong>Por qué un broadcast y no un unicast:</strong> H <strong>no sabe</strong> la MAC de <code>192.168.1.1</code>,
+así que no tiene a quién dirigir la pregunta. El reply sí puede ser unicast,
+porque <strong>ya conoce</strong> la MAC del que preguntó (la tiene en el <code>Sender MAC</code> del
+request que recibió).</p>
+</blockquote>
+<h3>b.ii) MACs e IPs de las tramas, en los dos sentidos</h3>
+<div class="codehilite"><pre><span></span><code>  Sentido H → Servidor Web                Sentido Servidor Web → H
+  MAC origen  : MAC 2                     MAC origen  : MAC 1
+  MAC destino : MAC 1                     MAC destino : MAC 2
+  IP  origen  : 192.168.1.25              IP  origen  : 219.41.31.21
+  IP  destino : 219.41.31.21              IP  destino : 192.168.1.25
+</code></pre></div>
+
+<blockquote>
+<p><strong>El análisis que hay que hacer en voz alta</strong> (es lo que suma puntos): <em>"mirá
+las cuatro IP: en los dos sentidos son </em><em>las mismas</em><em>. Lo único que cambia entre
+un paquete y su respuesta es el </em><em>orden</em><em>: se invierten origen y destino. Las MAC
+</em><em>también</em><em> se invierten, pero no porque el paquete 'vuelva': porque la respuesta
+se emite desde la interfaz de R1 hacia H, y esa trama tiene que llevar la MAC de
+H como destino. Las IP no se tocan porque </em><em>este es el tramo de la capa 3 dentro
+de la red A, antes de que R1 aplique el NAT</em><em> — que es exactamente lo que pide el
+apartado c."</em></p>
+</blockquote>
+<p>⚠️ <strong>El error clásico:</strong> poner <code>IP destino 220.10.10.30</code> en el sentido Web → H.
+<strong>No.</strong> <code>220.10.10.30</code> es la IP que R1 <em>muestra hacia afuera</em> (NAT), y por el punto
+de vista de H el destino sigue siendo él mismo. El NAT se explica entero en el
+apartado c, que es la Clase 31.</p>
+<h2>3.2 Examen <code>2010-03</code>, Pregunta 1 a — ARP entre dos hosts</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen 24 de febrero de 2010, <code>sirc1003</code>, Pregunta 1 (8 puntos), a.</p>
+</blockquote>
+<h3>Enunciado (literal)</h3>
+<blockquote>
+<p>Dados dos hosts A y B, con sus respectivas direcciones IP y MAC notadas como
+sigue: <code>IP_A</code>, <code>IP_B</code>, <code>MAC_A</code> y <code>MAC_B</code>. Describa los mensajes ARP intercambiados
+entre A y B que permiten a A determinar la dirección MAC de B. Deberá indicar al
+menos direcciones MAC e IP utilizadas en cada mensaje, tanto a nivel de los
+cabezales Ethernet y payload ARP.</p>
+</blockquote>
+<h3>Solución oficial (verbatim)</h3>
+<blockquote>
+<p><strong>A→B ARP Request con:</strong> <code>Src MAC: MAC_A</code> · <code>Dst MAC: ff:ff:ff:ff:ff:ff</code> ·
+Payload: <code>Sender MAC Addr MAC_A</code>, <code>Sender IP Addr IP_A</code>,
+<code>Target MAC Addr 00:00:00:00:00:00</code>, <code>Target IP Addr IP_B</code>
+<strong>B→A ARP Reply con:</strong> <code>Src MAC MAC_B</code> · <code>Dst MAC MAC_A</code> · Payload:
+<code>Sender MAC Addr MAC_B</code>, <code>Sender IP Addr IP_B</code>, <code>Target MAC Addr MAC_A</code>,
+<code>Target IP Addr IP_A</code></p>
+</blockquote>
+<h3>Mi resolución, con la tabla completa</h3>
+<div class="codehilite"><pre><span></span><code>  ┌────┬───────────┬───────────┬───────────────────┬───────────────┬───────────┐
+  │  # │ Sentido   │ MAC origen│ MAC destino       │ IP origen     │ IP destino │
+  ├────┼───────────┼───────────┼───────────────────┼───────────────┼───────────┤
+  │  1 │ A → todos │ MAC_A     │ ff:ff:ff:ff:ff:ff │ IP_A          │  IP_B     │
+  │    │ (request) │ (A la pone)│ (broadcast)       │ (la de A)     │ (la que   │
+  │    │           │           │                   │               │  busca)   │
+  │  2 │ B → A     │ MAC_B     │ MAC_A             │ IP_B          │  IP_A     │
+  │    │ (reply)   │ (B la pone)│ (unicast a A)     │ (la de B)     │ (la de A) │
+  └────┴───────────┴───────────┴───────────────────┴───────────────┴───────────┘
+
+  En el request, Target MAC = 00:00:00:00:00:00   ← porque A todavía no la sabe
+  En el reply,  Target MAC = MAC_A                ← porque A se la puso en el request
+</code></pre></div>
+
+<p><strong>El punto conceptual que la cátedra quiere</strong> (es la parte b del mismo ejercicio):
+<strong>ARP es "independiente" de IP</strong>, vive en el <code>Ethertype 0x0806</code> y no en el <code>0x0800</code>.
+Por eso IPv6 no lo usa y sí usa <strong>Neighbor Discovery</strong>, que está <strong>dentro</strong> de
+ICMPv6 sobre IPv6: <em>"IPv6 es una implementación más limpia que IPv4"</em>. El mismo
+punto se vuelve a preguntar en el <code>2010-12 P5</code>.</p>
+<h2>3.3 Examen <code>2010-03</code>, Problema 1 a — tablas de R1, R2 y los hosts</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen 24 de febrero de 2010, <code>sirc1003</code>, Problema 1 (30 pts), a.
+Topología: tres subredes /24 (<code>192.168.0.0/24</code>, <code>192.168.1.0/24</code>,
+<code>192.168.2.0/24</code>) con 100 hosts cada una, interconectadas por R1 y R2, enrutamiento
+estático.</p>
+</blockquote>
+<h3>Enunciado (literal)</h3>
+<blockquote>
+<p><strong>a) i.</strong> Indique las tablas de enrutamiento de los routers R1 y R2 de forma que
+permita conectividad extremo a extremo entre todos los equipos de la red.
+<strong>ii.</strong> Indique las tablas de enrutamiento para los hosts de cada subred.</p>
+</blockquote>
+<h3>Solución oficial (verbatim)</h3>
+<div class="codehilite"><pre><span></span><code>  Router R1                          Router R2
+  Network        Gateway  Interface  Network        Gateway   Interface
+  192.168.0.0/24      -    eth0      192.168.2.0/24      -    eth1
+  192.168.1.0/24      -    eth1      192.168.1.0/24      -    eth0
+  192.168.2.0/24  192.168.1.2  eth1   192.168.0.0/24  192.168.1.1  eth0
+
+  Hosts subred 1                      Hosts subred 2                Hosts subred 3
+  192.168.0.0/24      -    eth0      192.168.1.0/24      -   eth0  192.168.2.0/24   -  eth0
+  0.0.0.0/0     192.168.0.1 eth0     0.0.0.0/0     192.168.1.1 eth0 0.0.0.0/0  192.168.2.1 eth0
+</code></pre></div>
+
+<h3>Mi resolución: leer la tabla, que es lo que no es obvio</h3>
+<p>La tabla oficial parece rara ("¿R1 tiene conectada la subred 1 <strong>y</strong> usa
+<code>192.168.1.2</code> como gateway <strong>de la subred 1</strong>?"), pero es coherente: <strong>la subred
+<code>192.168.1.0/24</code> es la red de tránsito</strong> entre R1 y R2.</p>
+<div class="codehilite"><pre><span></span><code>        LAN subred 0                    LAN subred 1              LAN subred 2
+     192.168.0.0/24                  192.168.1.0/24            192.168.2.0/24
+     ┌───────────────┐    ┌──────────────────────────┐    ┌───────────────┐
+     │  hosts .1 ... │    │  R1 eth1 (.1) ─── R2 eth0│    │  hosts .1 ... │
+     │      R1 eth0  │    │       (RED DE TRÁNSITO) │    │      R2 eth1  │
+     └───────────────┘    └──────────────────────────┘    └───────────────┘
+                            gw de R1 hacia la subred 2 = 192.168.1.2
+                            gw de R2 hacia la subred 0 = 192.168.1.1
+</code></pre></div>
+
+<p>⚠️ <strong>El error típico con esta topología</strong> es poner <code>192.168.1.2</code> en la columna
+<strong>Interface</strong> en lugar de la de <strong>Gateway</strong>, o creer que por estar en la misma red
+el next hop no hace falta. <strong>El next hop siempre se pone</strong>, aunque sea local: sin
+esa columna, el router no sabe a qué MAC armar la trama de salida.</p>
+<p>⚠️ <strong>Y la última línea de R1:</strong> <code>192.168.2.0/24 → 192.168.1.2 → eth1</code>. Como el
+next hop <code>192.168.1.2</code> está en una red <strong>directamente conectada</strong> (eth1), la
+distancia es <strong>1</strong>, no 2: los saltos se cuentan desde <strong>este</strong> router.</p>
+<h2>3.4 Examen <code>2009-12</code>, Problema 1 a — tablas y la secuencia completa de tramas</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen 18 de diciembre de 2009, <code>sirc0912</code>, Problema 1 (30 pts), a.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0912.pdf</p>
+</blockquote>
+<p><strong>Topología.</strong> Tres subredes de clase C: <code>192.168.111.0/24</code> (LAN1, con R1 en
+<code>192.168.111.1</code>), <code>192.168.108.0/24</code> (LAN2, con R1 en <code>192.168.108.1</code> y R2 en
+<code>192.168.108.2</code>) y <code>192.168.109.0/24</code> (LAN3, con R2 en <code>192.168.109.1</code>).</p>
+<h3>a-i) y a-ii) Tablas de routers y de hosts</h3>
+<div class="codehilite"><pre><span></span><code>  Router R1                              Router R2
+  Network        Gateway  Interface       Network        Gateway   Interface
+  192.168.111.0/24    -    eth0           192.168.109.0/24    -    eth1
+  192.168.108.0/24    -    eth1           192.168.108.0/24    -    eth0
+  192.168.109.0/24  192.168.108.2  eth1    192.168.111.0/24  192.168.108.1  eth0
+
+  Hosts LAN1        Hosts LAN2           Hosts LAN3
+  111.0/24 → C      108.0/24 → C          109.0/24 → C
+  0.0.0.0/0 →       0.0.0.0/0 →          0.0.0.0/0 →
+      192.168.111.1     192.168.108.1          192.168.109.1
+</code></pre></div>
+
+<h3>a-iii) La secuencia completa para mandar un paquete de C a F</h3>
+<p>Paquete IP: <strong>origen <code>192.168.108.3</code></strong> (host C, en LAN2) → <strong>destino
+<code>192.168.109.3</code></strong> (host F, en LAN3). Tablas ARP <strong>vacías</strong>.</p>
+<p><strong>MACs de la figura:</strong> host C = <code>00-08-74-4C-7B-1C</code> · R1 eth1 =
+<code>00-00-0C-4C-7F-1B</code> · R2 eth0 = <code>00-00-0C-4C-8F-1A</code> · R2 eth1 =
+<code>00-00-0C-4C-8F-1B</code> · host F = <code>00-08-74-4C-7A-1D</code>.</p>
+<div class="codehilite"><pre><span></span><code>  ┌───┬────────────────────┬────────────────────┬───────────────┬───────────────┬───────┬────────────────────┐
+  │ # │ MAC origen         │ MAC destino        │ IP origen     │ IP destino    │Proto  │ Tipo de mensaje     │
+  ├───┼────────────────────┼────────────────────┼───────────────┼───────────────┼───────┼────────────────────┤
+  │ 1 │ 00-08-74-4C-7B-1C  │ FF-FF-FF-FF-FF-FF  │ 192.168.108.3 │       —       │ ARP   │ Consulta 192.168.108.1
+  │ 2 │ 00-00-0C-4C-7F-1B  │ 00-08-74-4C-7B-1C  │ 192.168.108.1 │ 192.168.108.3 │ ARP   │ Respuesta ARP
+  │ 3 │ 00-08-74-4C-7B-1C  │ 00-00-0C-4C-7F-1B  │ 192.168.108.3 │ 192.168.109.3 │ IP    │ Datagrama al default
+  │ 4 │ 00-00-0C-4C-7F-1B  │ FF-FF-FF-FF-FF-FF  │ 192.168.108.1 │       —       │ ARP   │ Consulta 192.168.108.2
+  │ 5 │ 00-00-0C-4C-8F-1A  │ 00-00-0C-4C-7F-1B  │ 192.168.108.2 │ 192.168.108.1 │ ARP   │ Respuesta ARP
+  │ 6 │ 00-00-0C-4C-7F-1B  │ 00-00-0C-4C-8F-1A  │ 192.168.108.3 │ 192.168.109.3 │ IP    │ Datagrama a R2 eth0
+  │ 7 │ 00-00-0C-4C-8F-1B  │ FF-FF-FF-FF-FF-FF  │ 192.168.109.1 │       —       │ ARP   │ Consulta 192.168.109.3
+  │ 8 │ 00-08-74-4C-7A-1D  │ 00-00-0C-4C-8F-1B  │ 192.168.109.3 │ 192.168.109.1 │ ARP   │ Respuesta ARP
+  │ 9 │ 00-00-0C-4C-8F-1B  │ 00-08-74-4C-7A-1D  │ 192.168.108.3 │ 192.168.109.3 │ IP    │ Datagrama al destino
+  └───┴────────────────────┴────────────────────┴───────────────┴───────────────┴───────┴────────────────────┘
+  Datagramas 1-2, 4-5 y 7-8 son ARP.  Los 3, 6 y 9 son el paquete IP, en tres
+  enlaces distintos.
+</code></pre></div>
+
+<p><strong>Las tres cosas que hay que decir después de la tabla</strong> (es lo que convierte la
+tabla en respuesta de 10 puntos):</p>
+<ol>
+<li><strong>Son 9 tramas porque hay 3 tránsitos y en cada uno hay que resolver una MAC
+   nueva.</strong> En cada salto cambian la MAC origen y la MAC destino; <strong>la IP origen y
+   la IP destino son siempre las mismas</strong> (extremo a extremo).</li>
+<li><strong>La primera trama va al gateway por defecto</strong>, porque <code>192.168.109.3</code> no es de
+   la subred de C (<code>108.0/24</code>). Es §1.4 aplicado al host.</li>
+<li><strong>Entre las tramas 3 y 6 solo cambia la capa 2:</strong> R1 tira el cabezal Ethernet y
+   el <code>Ethertype</code>, lee el IP destino, busca en su tabla (<code>192.168.109.0/24 →
+   192.168.108.2</code>) y por eso necesita la MAC de R2 (<strong>trama 4</strong>). Lo mismo entre 6 y 9.</li>
+</ol>
+<p>⚠️ <strong>Errores típicos:</strong> olvidar que <strong>cada</strong> router necesita su propio ARP (son 3
+requests, no 1); poner la IP del router de destino en lugar de la del host; y
+olvidar que en la trama de ARP la columna <strong>IP destino va vacía</strong> en el request,
+porque el paquete ARP todavía no tiene destino IP.</p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen</h2>
+<ol>
+<li>Formato de 3 columnas: <strong>Red destino/Máscara · Gateway (next hop) · Distancia</strong>.
+   <strong>"C" = conectada</strong>, distancia <strong>1</strong>, y nunca se borra.</li>
+<li>Tres tipos: <strong>conectada</strong> (la pongo yo), <strong>aprendida</strong> (de un vecino) y <strong>por
+   defecto</strong> (<code>0.0.0.0/0</code>). Sin default, el paquete se descarta con ICMP tipo 3.</li>
+<li><strong><code>D &amp; máscara == red</code></strong> es el test de coincidencia, y gana el <strong>prefijo más
+   largo</strong>, no el de menor distancia.</li>
+<li>Un router <strong>no</strong> reescribe las IP al reenviar: solo cambia las tramas de capa 2
+   de su enlace de salida.</li>
+<li>ARP existe porque <strong>IP es jerárquica y lógica, MAC es plana y física</strong>, y la
+   trama necesita obligatoriamente una MAC destino.</li>
+<li>14 bytes de Ethernet + 28 de payload. En el <strong>request</strong> el <code>Target MAC</code> es
+   <code>00:00:00:00:00:00</code>; en el <strong>reply</strong> es la MAC de quien preguntó.</li>
+<li><strong>Request broadcast, reply unicast</strong>: el que pregunta no sabe a quién preguntar;
+   el que responde sí sabe a quién contestar.</li>
+<li>La tabla ARP es un <strong>caché con aging</strong> (valores de implementación), el
+   <strong>gratuitous</strong> se sigue usando para anuncio, failover y VRRP — y sigue siendo la
+   fuente clásica del <strong><em>ARP spoofing</em></strong>.</li>
+<li><strong>RARP</strong> (<code>RFC 903</code>) murió: solo daba la IP, sin máscara ni gateway, y necesitaba
+   una entrada por host. Lo reemplazaron <strong>BOOTP</strong> y después <strong>DHCP</strong>.</li>
+<li>En IPv6, <strong>ARP es NDP</strong> (NS/NA sobre ICMPv6, en multicast) — por eso el
+    <code>2010-03 P1b</code> lo llama "más limpio".</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> Un router tiene <code>192.168.1.0/24 → C</code>, <code>192.168.1.128/25 → 10.0.0.2</code>,
+<code>0.0.0.0/0 → 10.0.0.1</code>. ¿Por dónde sale un paquete a <code>192.168.1.200</code>?</p>
+<details><summary>Respuesta</summary>
+
+Por el **/25**: `192.168.1.200 & 255.255.255.128 = 192.168.1.128` coincide, y
+`25 > 24 > 0`, así que el prefijo más largo gana. Sale por `10.0.0.2`, **aunque la
+distancia sea 2** y la `/24` sea 1. La `/24` no sobra: sirve para `.1`–`.127`.
+
+</details>
+
+<p><strong>2.</strong> ¿Por qué el ARP Request va en broadcast y el Reply en unicast?</p>
+<details><summary>Respuesta</summary>
+
+Porque el que pregunta **no conoce la MAC** de la IP que busca: un unicast no
+tendría a qué MAC dirigirlo. El que responde **sí** la conoce, porque la vio en el
+`Sender MAC` del request que recibió, así que puede contestarle directamente. Y
+simétricamente, el reply trae en `Target IP` la del emisor del request, que es lo
+que permite al que preguntó llenar su tabla.
+
+</details>
+
+<p><strong>3.</strong> Escribí los cuatro campos de direcciones de un ARP Request de H
+(<code>192.168.1.25</code>, MAC 2) que pregunta por <code>192.168.1.1</code>, y los del Reply de R1.</p>
+<details><summary>Respuesta</summary>
+
+Request (Opcode 1): `Sender MAC = MAC 2` · `Sender IP = 192.168.1.25` ·
+`Target MAC = 00:00:00:00:00:00` · `Target IP = 192.168.1.1`.
+Reply (Opcode 2): `Sender MAC = MAC 1` · `Sender IP = 192.168.1.1` ·
+`Target MAC = MAC 2` · `Target IP = 192.168.1.25`.
+
+</details>
+
+<p><strong>4.</strong> Un paquete va de H (<code>192.168.1.25</code>) a <code>219.41.31.21</code> a través de R1 y vuelve.
+¿Cuáles son las cuatro IP y las dos MAC en cada sentido?</p>
+<details><summary>Respuesta</summary>
+
+**H → Web:** MAC origen MAC 2, MAC destino MAC 1; IP origen `192.168.1.25`, IP
+destino `219.41.31.21`. **Web → H:** MAC origen MAC 1, MAC destino MAC 2; IP origen
+`219.41.31.21`, IP destino `192.168.1.25`. Las cuatro IP **no cambian**: solo se
+invierte el orden. El NAT (convertir el `192.168.1.25` en `220.10.10.30`) ocurre
+**después**, en R1, y es el apartado c del mismo examen.
+
+</details>
+
+<p><strong>5.</strong> ¿Por qué ARP no cruza un router?</p>
+<details><summary>Respuesta</summary>
+
+Porque la **MAC solo tiene sentido local a un enlace**: la MAC del router de la WAN
+no sirve para llegar a un host de la LAN de al lado, ni al revés. Cuando H quiere
+alcanzar una IP remota, no consulta la MAC de esa IP: consulta la de su **gateway
+por defecto**, que sí está en su mismo enlace. ARP, entonces, es siempre una
+pregunta **dentro** de un mismo dominio de broadcast.
+
+</details>
+
+<p><strong>6.</strong> Un host tiene dos interfaces. ¿Puede un paquete salir por las dos a la vez?</p>
+<details><summary>Respuesta</summary>
+
+Solo por el **default**, si existen ambos gateways por defecto: ahí el sistema
+devuelve el caso "3" (el "camino por AMBAS" del `sirc0102`). Para cualquier otro
+destino sale por **una sola**: la coincidencia se resuelve con la máscara (AND bit a
+bit) de la interfaz. El orden correcto es **LAN local → tabla estática → default**.
+
+</details>
+
+<p><strong>7.</strong> ¿Por qué RARP quedó obsoleto y qué lo reemplazó?</p>
+<details><summary>Respuesta</summary>
+
+Porque resolvía **solo la IP**: sin máscara, sin gateway y sin DNS, un host con una
+sola IP no puede enrutar nada. Y porque el servidor necesitaba una entrada **por
+host**, escrita a mano. Lo reemplazó **BOOTP** (IP + máscara + gateway + archivo
+de arranque, y automático desde un *pool*) y después **DHCP**, que además usa
+*leases* con vencimiento.
+
+</details>
+
+<p><strong>8.</strong> ¿Qué cambia de todo esto en IPv6?</p>
+<details><summary>Respuesta</summary>
+
+No hay ARP: hay **Neighbor Discovery** (`RFC 4443`), que hace lo mismo con mensajes
+**NS/NA de ICMPv6** sobre **multicast**, y además agrega **autoconfiguración
+(SLAAC)** y **DAD**. El *ARP gratuitous* se reemplaza por **NA unsolicited**, y no
+existe *proxy ARP*. Ese es el argumento del `2010-03 P1b` y del `2010-12 P5`: IPv6
+resuelve la resolución de vecinos **dentro** de la propia suite.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong><code>eirc1103</code> / <code>sirc1103</code></strong> (21-feb-2011) — Problema 2 a, b.i, b.ii: tablas de R1 y H, secuencia ARP, MACs en los dos sentidos (§3.1) · d: subredes (Clase 28)</li>
+<li><strong><code>sirc1003</code></strong> (24-feb-2010) — Pregunta 1 a: ARP entre A y B (§3.2) · Problema 1 a: tablas de R1, R2 y hosts (§3.3)</li>
+<li><strong><code>sirc0912</code></strong> (18-dic-2009) — Problema 1 a-i-iii: tablas y la secuencia de 9 tramas (§3.4) · b: qué pasa al cambiar R2 por un switch</li>
+<li><strong><code>sirc0608</code></strong> (5-ago-2006) — Pregunta 2: por qué ARP y cómo funciona (§1.5–1.7)</li>
+<li><strong><code>sirc0102</code></strong> (2-mar-2001) — Problema 1: <code>selec_tarjeta</code>, host con dos interfaces (§2.1)</li>
+<li><strong><code>sirc0712</code></strong> (1-dic-2007) — Problema 2: ARP con destino local vs. remoto; y dos hosts compartiendo una IP</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 5 "La capa de red"</li>
+<li><strong>RFC 826</strong> — ARP · <strong>RFC 903</strong> — RARP 🔍 · <strong>RFC 951</strong> — BOOTP 🔍 · <strong>RFC 2131/2132</strong> — DHCP 🔍</li>
+<li><strong>RFC 1027</strong> — Proxy ARP · <strong>RFC 4443</strong> — ICMPv6 (NDP) · <strong>RFC 8200</strong> — IPv6</li>
+<li><strong>Clase anterior:</strong> 29 — Taller de subnetting · <strong>Clase siguiente:</strong> 31 — NAT, PAT y sus hacks</li>
+</ul></body></html>

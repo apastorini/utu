@@ -1,0 +1,777 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 24 — La capa de red: forwarding y routing</h1>
+<p><strong>Bloque:</strong> D (Red) · <strong>Semana:</strong> 8 · <strong>Duración estimada:</strong> 100 min
+<strong>Correlativa:</strong> Clase 23 (repaso de transporte + Simulacro 3) · <strong>Sigue con:</strong> Clase 25 (conmutación en la red: datagramas y circuitos virtuales)
+<strong>Material de referencia:</strong> Tanenbaum cap. 5 · RFC 791, RFC 1812, RFC 2328, RFC 4271, RFC 4632, RFC 9234, RFC 8986</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li><strong>Explicar</strong> por qué el objetivo de la capa de red es la entrega <strong>de sistema final a sistema final</strong> y no de enlace a enlace, y por qué esa diferencia define el diseño de todo lo demás.</li>
+<li><strong>Distinguir</strong> las dos funciones clave —<strong>forwarding</strong> y <strong>routing</strong>— por ámbito, escala de tiempo, determinismo y lugar de implementación, y explicar <strong>cómo interactúan</strong> formando un circuito cerrado.</li>
+<li><strong>Calcular</strong> a qué puerto de salida sale un paquete aplicando <em>longest prefix match</em>, y explicar por qué la tabla de forwarding se indexa <strong>por prefijo</strong> y no por host.</li>
+<li><strong>Distinguir</strong> el plano de datos del plano de control y clasificar un diseño como <strong>en banda</strong> o <strong>fuera de banda</strong>, justificando qué pasa si falla el plano de datos.</li>
+<li><strong>Explicar</strong> qué es el <em>flooding</em>, cómo se controla (TTL, duplicados, <em>split horizon</em>, prune) y por qué <strong>en unicast no hay flooding</strong> pero en multicast sí.</li>
+<li><strong>Justificar</strong> por qué el router no implementa capas superiores y por qué el cortafuegos sí necesita mirar TCP y UDP.</li>
+<li><strong>Argumentar</strong> con números por qué "cantidad de hops" puede ser una mala métrica de enrutamiento.</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2011-03 P1</code> (8 pts), <code>2009-02 P2</code> (10 pts), <code>2010-02 P2</code> (8 pts), <code>2008-07 P4</code> (10 pts), <code>2009-12 P3</code> (8 pts).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 El objetivo: de sistema final a sistema final</h2>
+<p>La capa 3 tiene <strong>un solo cometido declarado</strong>: <strong>entregar cada paquete de un sistema final (host) emisor a un sistema final (host) receptor</strong>, a través de una malla de redes intermedias que no son todas iguales ni todas conocidas.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Capa 2 (enlace)</strong></th>
+<th><strong>Capa 3 (red)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Entrega</td>
+<td>nodo a nodo, en <strong>un</strong> enlace</td>
+<td>sistema final a sistema final, a través de <strong>muchos</strong></td>
+</tr>
+<tr>
+<td>Problema</td>
+<td>de alcance <strong>único</strong></td>
+<td>de alcance <strong>global</strong></td>
+</tr>
+<tr>
+<td>Pregunta que resuelve</td>
+<td>¿a qué <strong>MAC</strong> mando esto para que llegue al router vecino?</td>
+<td>¿por qué <strong>interfaz</strong> mando este paquete para que llegue a 8.8.8.8?</td>
+</tr>
+<tr>
+<td>Punto final de la entrega</td>
+<td>el router vecino</td>
+<td>el <strong>host</strong> destino</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Por qué esa diferencia define todo lo demás.</strong> (1) <strong>El router es un modo de transporte, no el fin de la comunicación</strong>: si la IP destino coincide con una de sus interfaces entrega localmente, si no, reenvía. (2) <strong>El router no necesita entender el contenido</strong>: sólo lee la dirección destino; si entendiera TCP tendría que demultiplexar por puertos y recalcular checksums, imposible a la velocidad del enlace. (3) <strong>Aparece el concepto de ruta</strong>: en capa 2 no hay rutas, hay "el vecino de al lado"; en capa 3 el camino tiene que <strong>descubrirse</strong> (routing) antes de poder <strong>recorrerse</strong> (forwarding). (4) <strong>El servicio es <em>best-effort</em></strong>: no garantiza entrega, ni orden, ni camino fijo por paquete, y esa falta de garantías es lo que permite que la red <strong>escale</strong>.</p>
+<h2>1.2 Las dos funciones clave</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Forwarding (reenvío)</strong> — plano de datos</th>
+<th><strong>Routing (enrutamiento)</strong> — plano de control</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Qué es</strong></td>
+<td>mover un paquete del <strong>puerto de entrada al de salida</strong></td>
+<td>determinar la <strong>ruta de origen a destino</strong> e instalarla en las tablas</td>
+</tr>
+<tr>
+<td><strong>Ámbito</strong></td>
+<td><strong>local</strong>: este router y este paquete</td>
+<td><strong>global</strong>: necesita información de los otros routers</td>
+</tr>
+<tr>
+<td><strong>Granularidad</strong></td>
+<td><strong>por paquete</strong></td>
+<td><strong>por prefijo</strong></td>
+</tr>
+<tr>
+<td><strong>Tiempo</strong></td>
+<td><strong>nanosegundos–microsegundos</strong></td>
+<td><strong>segundos</strong></td>
+</tr>
+<tr>
+<td><strong>Naturaleza</strong></td>
+<td><strong>determinista</strong>: misma entrada + mismo destino = misma salida</td>
+<td><strong>heurística</strong>: caminos subóptimos y posibles ciclos</td>
+</tr>
+<tr>
+<td><strong>Dónde corre</strong></td>
+<td><strong>hardware</strong>, en TCAM</td>
+<td><strong>software</strong>, en la CPU</td>
+</tr>
+<tr>
+<td><strong>¿Habla con pares?</strong></td>
+<td><strong>no</strong>: un router aislado reenvía igual</td>
+<td><strong>sí</strong>, con al menos un protocolo de enrutamiento</td>
+</tr>
+<tr>
+<td><strong>Produce</strong></td>
+<td>la <strong>FIB</strong> (<em>Forwarding Information Base</em>)</td>
+<td>la <strong>RIB</strong> (<em>Routing Information Base</em>), que se compila a la FIB</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Por qué el forwarding no puede ser heurístico:</strong> si fuera aproximado, dos paquetes del mismo flujo podrían tomar caminos distintos y el <strong>reordenamiento</strong> sería el estado normal; y tiene que ser reproducible en silicio a 100 Gbit/s, o sea un número finito de comparaciones por paquete. La heurística vive <strong>arriba</strong>, en un plano lento donde gastar CPU no es un drama.</p>
+<p><strong>Por qué TCAM y no RAM común:</strong> la pregunta "¿qué entradas matchean esta dirección?" no es una búsqueda por índice sino una <strong>comparación contra todas</strong> (millones, en un router de núcleo). La <strong>TCAM</strong> (<em>Ternary Content-Addressable Memory</em>) guarda datos <strong>y</strong> máscara por entrada y compara <strong>todas simultáneamente</strong>, entregando el resultado en un ciclo. Como es carísima ⇒ <strong>la FIB va en TCAM y la RIB (métricas, atributos, ECMP) en RAM.</strong></p>
+<h2>1.3 El circuito cerrado: protocolo → algoritmo → tabla de forwarding</h2>
+<p>Este es el esquema que pide el <code>2011-03 P1</code>:</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────┐      ┌──────────────────────────┐
+   │  PROTOCOLO DE            │      │  ALGORITMO DE            │
+   │  ENRUTAMIENTO            │      │  ENRUTAMIENTO            │
+   │  OSPF · IS-IS · RIP · BGP│      │  Dijkstra (link-state)   │
+   │  info a los VECINOS      │      │  Bellman-Ford (dist-vec) │
+   └───────────┬──────────────┘      └────────────┬─────────────┘
+               │ "las rutas que conozco"           │ "este es el camino"
+               ▼                                    ▼
+        ┌────────────────────────────────────────────────────┐
+        │  RIB: prefijo → next hop, interfaz, métrica, origen │
+        └──────────────────────┬─────────────────────────────┘
+                               │ compilación (ECMP, next MAC)
+                               ▼
+        ┌────────────────────────────────────────────────────┐
+        │  FIB (en TCAM): prefijo → ENLACE DE SALIDA         │
+        └──────────────────────┬─────────────────────────────┘
+                               │ decisión POR PAQUETE
+                               ▼
+        ┌────────────────────────────────────────────────────┐
+        │  puerto de salida → trama de capa 2 con la MAC del  │
+        │  próximo salto (ARP/ND)                              │
+        └────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Consecuencia práctica que se pregunta:</strong> si la FIB ya está poblada y el router se queda aislado del plano de control, <strong>sigue reenviando con la tabla vieja</strong>. Un router al que se le cae BGP <strong>se congela, no se apaga</strong>.</p>
+<h2>1.4 Longest prefix match: por qué la tabla es por prefijo</h2>
+<p><strong>¿Por qué no por host?</strong> Una tabla por host tendría <strong>2³² entradas</strong>. Además <strong>no haría falta</strong>: si te dicen "la red <code>192.168.1.0/24</code> está directamente conectada", <strong>una sola entrada</strong> cubre 254 direcciones. Eso es la <strong>agregación de prefijos</strong> (CIDR, <code>RFC 4632</code>), y es lo que hizo posible que Internet escalara.</p>
+<p><strong>Si DOS entradas matchean, gana la más específica</strong> (la que tiene más bits de prefijo): <em>longest prefix match</em>. <strong>¿Por qué la más específica y no la menos?</strong> Porque la tabla se puebla con <strong>excepciones</strong>: "mi LAN entera está acá" y además "dentro de mi LAN hay una subred que <strong>no</strong> es mía". Si ganara la menos específica, ese paquete iría a la LAN local, que lo descartaría por ser de otra subred. <strong>El longest match es lo que permite expresar excepciones.</strong></p>
+<div class="codehilite"><pre><span></span><code>   Tabla:  192.168.1.0/24 → eth2 (directa)
+           192.168.0.0/16 → eth1 (next hop R1)
+           0.0.0.0/0      → eth0 (next hop R2, default)
+
+   Busco 192.168.1.5:
+     /24 → AND 255.255.255.0 = 192.168.1.0  ✓ matchea
+     /16 → AND 255.255.0.0   = 192.168.0.0  ✓ matchea
+     /0  → AND 0.0.0.0       = 0.0.0.0      ✓ matchea SIEMPRE
+   → GANA /24 (24 &gt; 16 &gt; 0)  →  eth2.
+
+   Busco 192.168.77.9:  el /24 no matchea; matchean /16 y /0 → GANA /16 → eth1.
+   Busco 8.8.8.8:        sólo matchea /0 → eth0.
+</code></pre></div>
+
+<p>En TCAM <strong>todas</strong> las entradas matchean en paralelo y la más específica está marcada, por eso la tabla se ordena de <code>/0</code> a <code>/32</code> y la búsqueda es una <strong>comparación</strong>, no un algoritmo.</p>
+<h2>1.5 Plano de datos, plano de control: en banda y fuera de banda</h2>
+<p>El <strong>plano de datos</strong> mueve los paquetes según la tabla: por paquete, nanosegundos, determinista, en hardware. El <strong>plano de control</strong> calcula y distribuye qué tabla debe tener cada nodo: por prefijo, segundos, heurístico, en software. <strong>Relación:</strong> el control <strong>escribe</strong> la tabla que los datos <strong>leen</strong>; no se le consulta por paquete, sólo cuando la tabla cambia. Por eso el forwarding puede ser determinista y rapidísimo: <strong>todo el trabajo de pensar ya está hecho de antemano</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   EN BANDA (in-band)                  FUERA DE BANDA (out-of-band)
+   datos y control por el MISMO        datos por un camino, control
+   canal o camino                      por un canal DISTINTO
+
+   el control depende del dato:        el control tiene vida propia:
+   si se rompe el plano de datos,      si se rompe el plano de datos,
+   se rompe TAMBIÉN el control          el control sigue y puede
+   → no hay por dónde diagnosticar     repararlo
+</code></pre></div>
+
+<ul>
+<li><strong>En banda.</strong> El <strong>switch que aprende</strong>: no tiene protocolo de control, aprende la MAC origen de las tramas que él mismo reenvía, así que su único plano es el de datos. Y el <strong>enrutamiento en IP</strong>: los LSA de OSPF y los UPDATE de BGP <strong>son</strong> paquetes IP de la misma red que rutean ⇒ plano de control <strong>auto-referencial</strong>. Si el plano de datos se rompe, no llegan las actualizaciones y <strong>no hay forma de quejarse, porque el canal de queja es el que está roto</strong>.</li>
+<li><strong>Fuera de banda.</strong> El <strong>LSP de MPLS</strong>: LDP o RSVP-TE asignan una etiqueta a cada salto y los datos reenvían <strong>sólo por etiqueta</strong>; si LDP se cae, los paquetes con etiqueta siguen reenviéndose. La <strong>red telefónica</strong>: los circuitos de voz y la red de señalización son redes distintas, así que si cae la señalización no se puede establecer ninguna llamada <strong>aunque todos los circuitos estén libres</strong>. Un <strong>enlace dedicado</strong> o una <strong>PVC de Frame Relay</strong>: el circuito lo provisiona el operador y los datos no consultan nada durante toda su vida.</li>
+</ul>
+<p>El desarrollo completo de esta pregunta, con la estructura de cada caso y la lista de ejemplos, está en <strong>§3.3</strong> (Examen 2008-07 P4).</p>
+<h2>1.6 Flooding</h2>
+<p><strong>Flooding (inundación)</strong> es reenviar un paquete por <strong>todos los puertos</strong> (o todos menos el de entrada) en vez de consultar una tabla: no hay ACK, no hay estado, no hay tabla de "a quién le corresponde". <strong>El problema:</strong> en una red con ciclos —y toda red con caminos alternativos tiene— cada copia genera copias nuevas, así que sin control en <em>n</em> saltos circulan hasta <strong>2ⁿ</strong> copias, el enlace se satura y la red se traba. <strong>Por eso tiene que transformarse en controlado:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Control</th>
+<th>Cómo funciona</th>
+<th>Contra qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>TTL / Hop Limit</strong></td>
+<td>Cada reenvío decrementa el TTL; al llegar a 0 se descarta y se avisa con ICMP <em>Time Exceeded</em> (tipo 11).</td>
+<td>Acota el <strong>radio</strong> del flooding.</td>
+</tr>
+<tr>
+<td><strong>Detección de duplicados</strong></td>
+<td>Cada mensaje lleva un <strong>identificador único</strong> (origen + nº de secuencia); el nodo guarda los IDs vistos y <strong>descarta</strong> los repetidos.</td>
+<td>Corta la <strong>exponenciación</strong> con ciclos.</td>
+</tr>
+<tr>
+<td><strong>Split horizon</strong> (horizonte dividido)</td>
+<td>No le reenvíes a un vecino la ruta o el mensaje que <strong>aprendiste de ese vecino</strong>.</td>
+<td>Evita la <strong>realimentación</strong> entre vecinos (conteo a infinito).</td>
+</tr>
+<tr>
+<td><strong>Exclusión del puerto de entrada</strong></td>
+<td>Nunca reenvíes por el puerto por donde entró la trama.</td>
+<td>Evita devolver la trama al remitente.</td>
+</tr>
+<tr>
+<td><strong>Pruning</strong> (supresión)</td>
+<td>Cuando se detecta que <strong>no hay destinatarios</strong> detrás de un enlace, se deja de inundar por ahí y se anuncia.</td>
+<td>Deja de gastar ancho de banda en ramas muertas.</td>
+</tr>
+</tbody>
+</table>
+<p>La combinación clásica es <strong>flooding y prune en IP multicast</strong>: cada router inunda, observa los <strong>reportes IGMP</strong> de sus subredes y, cuando detecta que una rama no tiene miembros, deja de inundar por ahí y anuncia el prune. En un switch es el <strong>IGMP snooping</strong> del <code>2010-12 P3</code>. El diagrama del flooding está en §3.2.</p>
+<p><strong>¿Y en unicast?</strong> <strong>En unicast no hay flooding.</strong> El reenvío de un datagrama unicast se hace <strong>siempre por tabla</strong> (longest prefix match, un puerto). Si la IP destino no matchea ninguna entrada, el paquete <strong>se descarta</strong> y se devuelve un ICMP <em>Destination Unreachable</em>; no se inunda. El flooding aparece en <strong>link-state</strong> (difundir las LSAs es el mecanismo principal) y en <strong>multicast</strong>.</p>
+<h2>1.7 El router no implementa capas superiores (y el cortafuegos sí)</h2>
+<p><strong>Por qué el router se detiene en la capa 3.</strong> (1) <strong>Rendimiento</strong>: si entendiera TCP tendría que demultiplexar por el 5-tupla, mantener buffers por conexión y recalcular checksums, mientras que el reenvío de capa 3 es <strong>una comparación de un entero</strong> (a 100 Gbit/s entra un paquete cada 50 ns). (2) <strong>No tiene el concepto de "conexión"</strong>: TCP es extremo a extremo y un router intermedio es un tercero; guardar estado por flujo haría crecer su memoria con los flujos de toda Internet (es el error histórico de IntServ, Clase 25). (3) <strong>Desacoplar las capas es el objetivo</strong>: un router que no mira el contenido sirve para cualquier protocolo; si lo mirara dejaría de ser router y pasaría a ser cortafuegos. (4) <strong>Es diseño explícito</strong>: "el transporte es problema de los extremos".</p>
+<p><strong>Por qué el cortafuegos sí necesita TCP y UDP.</strong> Un cortafuegos <strong>con estado</strong> (<em>stateful</em>) mantiene una tabla de flujos con las columnas <code>{IP origen, puerto origen, IP destino, puerto destino, protocolo, estado}</code> — por ejemplo <code>10.0.0.5:51234 → 93.184.216:443 TCP ESTABLISHED</code> — y la regla es: si el paquete coincide con una entrada <strong>existente</strong> se permite (y la conexión "sale" sola); si no coincide, se consulta la ACL y sin permiso explícito se descarta. Esa entrada necesita IP de origen, IP de destino, <strong>puertos</strong> y <strong>protocolo</strong>: la IP es de capa 3, pero los puertos y el protocolo son de <strong>capa 4</strong>. Además tiene un <em>timeout</em> y distingue conexiones por los <strong>flags</strong>. Todo eso es información de TCP y UDP. Lo mismo pasa con el <strong>NAT/PAT</strong> (reescribe IP <strong>y puerto</strong>), con el <strong>ALG</strong> (para que FTP pasivo funcione tiene que leer la cabecera FTP que va <strong>dentro</strong> del payload TCP: es el <code>2007-12 Problema 1</code>) y con los IDS/IPS de capa 7.</p>
+<blockquote>
+<p><strong>La regla general:</strong> el router reenvía por dirección de capa 3; el cortafuegos decide por capa 3 <strong>más</strong> información de capas 4 y 7. Por eso un router no es un cortafuegos.</p>
+</blockquote>
+<h2>1.8 ⚠️ Actualización a 2026</h2>
+<p><strong>Sigue igual, de memoria:</strong> forwarding por prefijo, en hardware, por longest prefix match · routing = un protocolo + un algoritmo que pueblan la tabla · la distinción plano de datos / plano de control · en banda y fuera de banda · el flooding como mecanismo de link-state y de multicast · la FIB en TCAM.</p>
+<p><strong>Cambió:</strong></p>
+<ul>
+<li><strong>La seguridad del enrutamiento pasó de "confiar en el AS_PATH" a "validar el origen".</strong> <code>RFC 6810</code> (RTR) y <strong><code>RFC 6811</code></strong> (BGP Prefix Origin Validation): el router valida que un prefijo esté autorizado por el RIR antes de aceptarlo. Es el ancla de confianza del enrutamiento, paralelo exacto de DNSSEC para el DNS. Y <strong><code>RFC 9234</code></strong> (may-2022) reemplaza el MD5 de sesión por <strong>roles BGP</strong> (Provider / Customer / Peer / Lateral / Internal) declarados en OPEN y UPDATE, para prevenir y detectar <em>route leaks</em>; <code>RFC 4271</code> sigue siendo la especificación vigente de BGP-4.</li>
+<li><strong>La separación control/datos pasó a ser una arquitectura.</strong> SDN y <strong>OpenFlow</strong> (de la Open Networking Foundation, <strong>no</strong> del IETF: no tiene número de RFC) llevan el plano de control a un servidor que programa las FIBs ⇒ si te preguntan quién calcula la tabla y quién la aplica, la respuesta clásica (cada router calcula y aplica) tiene hoy alternativa: el cálculo puede estar centralizado.</li>
+<li><strong>Enrutamiento con estado sólo en el borde.</strong> <strong>Segment Routing</strong> (<code>RFC 8402</code>, 2018; <code>RFC 8986</code>, SRv6) codifica las instrucciones de camino en <strong>SID</strong> que el nodo no tiene que interpretar: la FIB es "de prefijo largo a prefijo largo", <strong>forwarding puro sin protocolo de control por salto</strong>. SRv6 mete los SID <strong>en la cabecera IPv6</strong> y <strong>elimina el MPLS por completo</strong>.</li>
+<li><strong>El routing de datacenter dejó de ser BGP con link-state:</strong> hoy es <strong>EVPN-VXLAN</strong> (<code>RFC 7432</code> + <code>RFC 7348</code>). <strong>MPLS en datacenter fue reemplazado</strong>; MPLS sigue <strong>masivamente en carriers</strong>. Y una FIB de núcleo tiene del orden de <strong>millones de prefijos IPv4</strong>: por eso la TCAM es cara, por eso existe la sumarización y por eso hay límites de tabla en BGP.</li>
+<li><strong>"Hops" dejó de ser la métrica por defecto en link-state.</strong> OSPF define el costo de interfaz de forma configurable, con un valor por defecto derivado del <strong>ancho de banda</strong> (<code>RFC 2328</code>): <code>costo = ancho de banda de referencia / ancho de banda de la interfaz</code>. <strong>Un enlace de 10 Gbps vale 1</strong> con la referencia por defecto; uno de 10 Mbps vale muchísimo más ⇒ la métrica por defecto de OSPF <strong>ya no cuenta hops, cuenta capacidad</strong>.</li>
+</ul>
+<p><strong>Consecuencia para el examen:</strong> si el enunciado dice "la métrica es la cantidad de hops", respondé eso y sumá una línea: <em>"hoy la métrica por defecto de OSPF es un costo derivado del ancho de banda, no los hops; y en BGP la comparación es por longitud de AS_PATH"</em>.</p>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — Longest prefix match con cinco entradas</h2>
+<p><strong>Datos.</strong> El router S tiene esta tabla de forwarding:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Prefijo</th>
+<th>Siguiente salto</th>
+<th>Interfaz</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>10.0.0.0/8</code></td>
+<td>directo</td>
+<td>eth0</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>172.16.0.0/12</code></td>
+<td>R2</td>
+<td>eth1</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>192.168.1.128/25</code></td>
+<td>R3</td>
+<td>eth2</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>192.168.1.0/24</code></td>
+<td>directo</td>
+<td>eth3</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>0.0.0.0/0</code></td>
+<td>R4</td>
+<td>eth4</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Se pide:</strong> a qué interfaz sale cada destino: <code>10.1.2.3</code>, <code>172.16.5.9</code>, <code>172.32.5.9</code>, <code>192.168.1.200</code>, <code>192.168.1.5</code>, <code>8.8.8.8</code>.</p>
+<p><strong>Resolución paso a paso.</strong></p>
+<p><em>Paso 1 — Las máscaras y la regla.</em></p>
+<div class="codehilite"><pre><span></span><code>   /8  → 11111111.00000000.00000000.00000000 = 255.0.0.0
+   /12 → 11111111.11110000.00000000.00000000 = 255.240.0.0
+   /25 → 11111111.11111111.11111111.10000000 = 255.255.255.128
+   /24 → 11111111.11111111.11111111.00000000 = 255.255.255.0
+   /0  → 00000000.00000000.00000000.00000000 = 0.0.0.0
+
+   Regla: AND bit a bit entre el destino y la máscara.
+   Si el resultado es IGUAL a los bits de red del prefijo → matchea.
+   De los que matchean, GANA el que tiene MÁS bits de prefijo.
+</code></pre></div>
+
+<p><em>Paso 2 — Los seis destinos. Cada celda es <code>destino AND máscara</code>; se marca si es igual a la red del prefijo.</em></p>
+<table>
+<thead>
+<tr>
+<th>Destino</th>
+<th>AND /8</th>
+<th>AND /12</th>
+<th>AND /25</th>
+<th>AND /24</th>
+<th>AND /0</th>
+<th><strong>Gana</strong></th>
+<th>Interfaz</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>10.1.2.3</code></td>
+<td><code>10.0.0.0</code> <strong>✓#1</strong></td>
+<td><code>10.0.0.0</code> ✗</td>
+<td><code>10.1.2.0</code> ✗</td>
+<td><code>10.1.2.0</code> ✗</td>
+<td><code>0.0.0.0</code> <strong>✓#5</strong></td>
+<td><strong><code>/8</code></strong></td>
+<td>eth0</td>
+</tr>
+<tr>
+<td><code>172.16.5.9</code></td>
+<td><code>172.0.0.0</code> ✗</td>
+<td><code>172.16.0.0</code> <strong>✓#2</strong></td>
+<td><code>172.16.5.0</code> ✗</td>
+<td><code>172.16.5.0</code> ✗</td>
+<td><code>0.0.0.0</code> <strong>✓#5</strong></td>
+<td><strong><code>/12</code></strong></td>
+<td>eth1</td>
+</tr>
+<tr>
+<td><code>172.32.5.9</code></td>
+<td><code>172.0.0.0</code> ✗</td>
+<td><code>172.32.0.0</code> ✗</td>
+<td><code>172.32.5.0</code> ✗</td>
+<td><code>172.32.5.9</code> ✗</td>
+<td><code>0.0.0.0</code> <strong>✓#5</strong></td>
+<td><strong><code>/0</code></strong></td>
+<td>eth4</td>
+</tr>
+<tr>
+<td><code>192.168.1.200</code></td>
+<td><code>192.0.0.0</code> ✗</td>
+<td><code>192.168.0.0</code> ✗</td>
+<td><code>192.168.1.128</code> <strong>✓#3</strong></td>
+<td><code>192.168.1.0</code> <strong>✓#4</strong></td>
+<td><code>0.0.0.0</code> <strong>✓#5</strong></td>
+<td><strong><code>/25</code></strong></td>
+<td>eth2</td>
+</tr>
+<tr>
+<td><code>192.168.1.5</code></td>
+<td><code>192.0.0.0</code> ✗</td>
+<td><code>192.168.0.0</code> ✗</td>
+<td><code>192.168.1.0</code> ✗</td>
+<td><code>192.168.1.0</code> <strong>✓#4</strong></td>
+<td><code>0.0.0.0</code> <strong>✓#5</strong></td>
+<td><strong><code>/24</code></strong></td>
+<td>eth3</td>
+</tr>
+<tr>
+<td><code>8.8.8.8</code></td>
+<td><code>8.0.0.0</code> ✗</td>
+<td><code>8.0.0.0</code> ✗</td>
+<td><code>8.8.8.0</code> ✗</td>
+<td><code>8.8.8.8</code> ✗</td>
+<td><code>0.0.0.0</code> <strong>✓#5</strong></td>
+<td><strong><code>/0</code></strong></td>
+<td>eth4</td>
+</tr>
+</tbody>
+</table>
+<p><em>Paso 3 — El caso que hay que saber hacer en binario.</em></p>
+<div class="codehilite"><pre><span></span><code>   172.32.5.9 = 10101100.00100000.00000101.00001001
+   /12         = 11111111.11110000.00000000.00000000
+             AND= 10101100.00100000.00000000.00000000 = 172.32.0.0
+   La red de 172.16.0.0/12 = 10101100.00010000.… = 172.16.0.0
+   ¿Coincide? NO → NO matchea.
+
+   192.168.1.200 AND 255.255.255.128 = 192.168.1.128 = red del /25  ✓ #3
+   192.168.1.200 AND 255.255.255.0   = 192.168.1.0   = red del /24  ✓ #4
+   GANA /25 (25 bits, el mayor número de bits) → eth2.
+</code></pre></div>
+
+<p><em>Interpretación del primer caso:</em> el <code>/12</code> no es "los 12 primeros bits y los demás libres", es <strong>doce 1s y veinte 0s, en orden</strong>. El rango del <code>/12</code> es <code>172.16.0.0</code> a <code>172.31.255.255</code>. <strong>Es el error de lectura de máscara más común del curso.</strong></p>
+<p><em>Interpretación del segundo caso:</em> <code>192.168.1.200</code> está en la red local de S (<code>192.168.1.0/24</code>), pero la tabla dice que <strong>la mitad superior de esa LAN no es de S</strong>: es una subred /25 que va para otro lado. Si S mandara el paquete a su LAN local, la máquina que lo recibiera lo descartaría por ser de otra subred. <strong>El longest match salva el caso.</strong></p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Contar "cuántas entradas matchean" en vez de "quién tiene más bits".</strong> En <code>10.1.2.3</code> ganó el /8 (8 &gt; 0), no el /0.</li>
+<li><strong>Confundir el prefijo con la red.</strong> <code>172.32.x.x</code> <strong>no</strong> está en <code>172.16.0.0/12</code>.</li>
+<li><strong>Olvidar que el default matchea siempre.</strong> Sin entrada que matchee, el paquete <strong>se descarta</strong> (con ICMP *Destination Unreachable`), no se reenvía "por donde sea".</li>
+<li><strong>Tratar el <code>/n</code> como decimal.</strong> <code>/25</code> son 25 unos en binario, no "el número 25".</li>
+</ul>
+<h2>2.2 Ejercicio 2 — ¿En banda o fuera de banda?</h2>
+<p><strong>Enunciado.</strong> Clasificá cada diseño y decí qué pasa si el plano de datos se rompe. <strong>(a)</strong> Switch de capa 2 que <strong>aprende la MAC origen</strong> de cada trama que reenvía, sin ningún otro protocolo. <strong>(b)</strong> Router que corre <strong>OSPF</strong>: los Hello y los LSA son datagramas IP que viajan por la misma red que OSPF rutea. <strong>(c)</strong> Router que aprende rutas por <strong>BGP</strong>, protocolo propio sobre <strong>TCP/179</strong>; sus mensajes siguen siendo paquetes IP de la red que BGP rutea. <strong>(d)</strong> Switch de datacenter con un <strong>puerto de gestión</strong> en una red de administración distinta de la de producción.</p>
+<p><strong>Resolución.</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Clasificación</th>
+<th>Por qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>(a)</strong></td>
+<td><strong>En banda</strong></td>
+<td>No hay plano de control: el único plano es el de datos y la "tabla" se construye <strong>mirando las tramas</strong>. Si el switch se apaga se pierde entera y hay que reconstruirla con el tráfico; mientras tanto se inunda a los destinos desconocidos.</td>
+</tr>
+<tr>
+<td><strong>(b)</strong></td>
+<td><strong>En banda, auto-referencial</strong></td>
+<td>Los LSA son paquetes IP que necesitan que las tablas <strong>ya estén funcionando</strong> para llegar a sus vecinos. Si el plano de datos se rompe no llegan, <strong>el grafo queda desactualizado</strong>, los Dijkstra dan caminos que no existen y <strong>no hay forma de quejarse porque el canal de queja es el que está roto</strong>.</td>
+</tr>
+<tr>
+<td><strong>(c)</strong></td>
+<td><strong>En banda en el medio, protocolo distinto en el plano lógico</strong></td>
+<td>No está fuera de banda: sus mensajes necesitan IP funcionando para viajar. Pero BGP <strong>es un protocolo de control distinto</strong> del que lleva los datos de los usuarios y, al correr sobre TCP, <strong>no depende de que IP sea fiable</strong>: TCP le da ACKs, reintentos y orden. Y como es <em>path-vector</em> <strong>no conoce la topología</strong>: si un enlace se rompe deja de anunciar por ahí, pero <strong>no calcula mal</strong>.</td>
+</tr>
+<tr>
+<td><strong>(d)</strong></td>
+<td><strong>Fuera de banda</strong></td>
+<td>La red de administración es un camino distinto con vida propia. Si se rompe todo el tráfico de producción seguís entrando por el puerto de gestión a mirar logs, recargar la configuración o sacar el equipo. Exactamente por eso los routers críticos tienen consola y gestión out-of-band.</td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code>   EN BANDA       → el control usa el camino del dato. Si el dato muere, el
+                    control muere con él. Ventaja: no hay que cablear nada
+                    extra. Desventaja: no podés diagnosticar lo que no tenés
+                    por dónde hablar.
+
+   FUERA DE BANDA → el control tiene camino propio: sobrevive al fallo del
+                    dato y puede repararlo. Ventaja: reparás. Desventaja: hay
+                    que construir y mantener el camino de control.
+</code></pre></div>
+
+<h2>2.3 Ejercicio 3 — ¿Por qué "hops" es una mala métrica?</h2>
+<p><strong>Enunciado.</strong> Dos caminos de A a Z: <strong>camino 1</strong> = 1 enlace directo de <strong>10 Mbit/s</strong> con 20 ms de propagación; <strong>camino 2</strong> = 5 enlaces de <strong>1 Gbit/s</strong> con 1 ms de propagación cada uno.</p>
+<p><strong>Resolución.</strong></p>
+<p><em>Paso 1 — La métrica por hops elige el camino 1</em> (1 &lt; 5).</p>
+<p><em>Paso 2 — Ancho de banda. El flujo va por el </em><em>cuello de botella</em><em>, o sea el enlace más estrecho de cada camino.</em></p>
+<div class="codehilite"><pre><span></span><code>   Camino 1: 10 Mbit/s
+   Camino 2: 1 Gbit/s = 1000 Mbit/s
+   →  1000 / 10 =  100 veces más ancho de banda en el camino de 5 hops.
+</code></pre></div>
+
+<p><em>Paso 3 — Retardo de transmisión de un paquete de 1500 bytes (trama Ethernet con carga IP máxima):</em></p>
+<div class="codehilite"><pre><span></span><code>   L = 1500 bytes × 8 bits/byte = 12 000 bits        d_trans = L / R
+
+   Camino 1: 12 000 / (10 × 10⁶) = 1,2 × 10⁻³ s = 1,2 ms   por enlace
+   Camino 2: 12 000 / (10 × 10⁹) = 12  × 10⁻⁶ s = 12 µs      por enlace
+   (1,2 ms = 1200 µs → el de 10 Mbit/s es 100× más lento)
+</code></pre></div>
+
+<p><em>Paso 4 — Propagación y retardo total de UN paquete, con <code>d_proc = 0</code> y sin cola:</em></p>
+<div class="codehilite"><pre><span></span><code>   Camino 1: 0 + 1,2 ms + 20 ms           = 21,2 ms
+   Camino 2: 0 + 5×0,012 ms + 5×1 ms     =  5,06 ms
+   → el camino de 5 hops es 21,2 / 5,06 = 4,2 VECES mejor.
+</code></pre></div>
+
+<p><em>Interpretación, y es la frase para el examen:</em> <strong>"Hops" mide la cantidad de saltos, no la calidad del camino.</strong> Un salto es un salto tanto si es de 10 Mbit/s como de 1 Gbit/s; la métrica <strong>ignora por completo</strong> las dos cosas que más afectan al usuario: el ancho de banda del cuello y el retardo acumulado. Y <strong>peor</strong>: como menos saltos suele significar menos procesamiento y menos encolado, la métrica por hops <strong>tiende a elegir el camino corto</strong>, que en la práctica es a menudo el de 10 Mbit/s y no el de 5 Gbit/s.</p>
+<p><em>El único argumento a favor, y hay que decirlo:</em> los hops <strong>sí</strong> correlacionan con el retardo de <strong>procesamiento</strong>, porque son nanosegundos (o microsegundos si el router está congestionado) por salto. Pero es de otro orden de magnitud que la diferencia de ancho de banda y que la de propagación: la balanza no está ni cerca.</p>
+<table>
+<thead>
+<tr>
+<th>Algoritmo</th>
+<th>Métrica real</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>OSPF / IS-IS</strong></td>
+<td><strong>Costo de interfaz</strong> configurable; por defecto derivado del <strong>ancho de banda</strong> (<code>RFC 2328</code>): <code>costo = ancho de banda de referencia / ancho de banda de la interfaz</code> (con referencia de 100 Gbit/s en equipos modernos, para que 1 Gbit/s no salga a costo 100).</td>
+</tr>
+<tr>
+<td><strong>RIP</strong></td>
+<td><strong>Cantidad de saltos</strong>, máximo 15: sí cuenta hops, y es de lo más criticado por eso.</td>
+</tr>
+<tr>
+<td><strong>EIGRP</strong></td>
+<td><strong>Ancho de banda + retardo</strong> (métrica compuesta).</td>
+</tr>
+<tr>
+<td><strong>BGP</strong></td>
+<td>Preferencia local → <strong>longitud del AS_PATH</strong> → origen → <strong>MED</strong>. No usa hops de router: los del interior del AS los aporta el IGP de abajo.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2011-03, Pregunta 1 (8 puntos) — las dos funciones clave y su interacción</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc1103</code> / <code>sirc1103</code> — 21 de febrero de 2011.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1103.pdf
+<strong>Texto del examen:</strong></p>
+<blockquote>
+<p>Describa claramente las dos funciones clave de la capa de red y explique cómo interactúan entre ellas.</p>
+</blockquote>
+</blockquote>
+<p><strong>Solución oficial (literal del PDF):</strong></p>
+<blockquote>
+<p><strong>Reenvío (forwarding):</strong> mover paquetes entre puertos de entrada y salida del router.
+<strong>Enrutamiento (routing):</strong> determinar la ruta de los paquetes desde origen a destino. Para ello existen los algoritmos de enrutamiento.
+<strong>Interacción:</strong> Cada router intercambia con sus pares, mediante al menos un protocolo de enrutamiento, información que se utiliza, en al menos un algoritmo de enrutamiento, para poblar sus tablas de forwarding. Dichas tablas, en su formato más básico, contiene, para un valor de dirección contenido en la cabecera de los paquetes que llegan al router, el enlace de salida. De esta forma, para cada paquete que arriba a un router por cualquiera de sus interfaces, el router examina la tabla de forwarding (en el caso de IP a partir de la dirección IP destino contenida en el encabezado IP) y a partir del "longest match" determina por qué interfaz debe ser enviado (además de determinar cuál es el "next hop", lo que determina en el caso más genérico, la dirección destino de capa de enlace que deberá contener la trama que lo lleve a su próximo salto).
+<strong>Referencia:</strong> <code>cap04_1_1xhoja_2009.pdf</code>, diapositivas 5 y 6.</p>
+</blockquote>
+<p><strong>Análisis de la solución oficial.</strong> Lo que está bien: la definición de forwarding es impecable y es exactamente el ámbito <strong>local</strong>; la interacción está en <strong>tres eslabones</strong> (<strong>protocolo → algoritmo → tabla de forwarding</strong>), con tres "al menos un" deliberados, porque son piezas <strong>distintas</strong> y puede haber varias de cada una; y menciona el <strong>longest match</strong> y el <em>next hop</em><em>, que es el detalle fino: la tabla dice a qué </em><em>interfaz</em><em> y a qué </em><em>dirección de router</em><em> mandar, y de ese next hop se resuelve la </em><em>MAC</em>* de la trama.</p>
+<p>Lo que <strong>falta</strong> y suma puntos: <strong>la escala de tiempo y el lugar de ejecución</strong> de cada una; <strong>la distinción RIB / FIB</strong>; <strong>qué pasa si el routing falla</strong> (si se cae el protocolo, <strong>la tabla no se borra</strong>: el router <strong>se congela</strong>); y que <strong>el forwarding es determinista y el routing heurístico</strong>, que es la razón de por qué la frontera entre los dos planos es hardware/SILICIO.</p>
+<p><strong>Mi respuesta completa, para tener a mano lo que me gustaría haber contestado:</strong></p>
+<blockquote>
+<p><strong>Forwarding</strong> es la función local que, para cada paquete que llega por una interfaz, lo mueve de la interfaz de entrada a la de salida. Es <strong>por paquete</strong>, en <strong>nanosegundos</strong>, y es <strong>determinista</strong>: dada una entrada de tabla y una dirección destino, la salida es siempre la misma. Se implementa en <strong>hardware</strong>, en una tabla por prefijo (la FIB) que se consulta con <strong>longest prefix match</strong>. Si la IP destino coincide con una interfaz propia, se entrega localmente en vez de reenviarse.</p>
+<p><strong>Routing</strong> es la función que determina el camino de origen a destino y decide qué información se instala en las tablas de forwarding. Es <strong>global</strong> (necesita información de los otros routers), <strong>por prefijo y no por paquete</strong>, corre en <strong>segundos</strong> y es <strong>heurística</strong>: puede elegir caminos subóptimos y está sujeta a ciclos de convergencia. Se implementa en <strong>software</strong>, en el plano de control.</p>
+<p><strong>Interacción:</strong> cada router intercambia con sus pares, mediante al menos un <strong>protocolo de enrutamiento</strong> (OSPF e IS-IS son link-state e inundan; RIP es distance-vector; BGP es path-vector entre sistemas automáticos), información sobre la red. Esa información la procesa al menos un <strong>algoritmo de enrutamiento</strong> (Dijkstra para link-state, Bellman-Ford para distance-vector, más políticas y atributos) y el resultado se vuelca en la <strong>tabla de enrutamiento (RIB)</strong> local. De la RIB se compila la <strong>tabla de forwarding (FIB)</strong>, que en su forma más básica contiene, para un prefijo, el <strong>enlace de salida</strong>. Después, para cada paquete que llega por cualquier interfaz, el router toma la <strong>dirección IP destino</strong> del encabezado, busca el <strong>longest match</strong> en la FIB y reenvía por esa interfaz; con el <strong>next hop</strong> que esa entrada le da, resuelve la dirección de capa 2 del próximo salto para armar la trama.</p>
+<p>Es un <strong>circuito cerrado</strong>: el plano de control alimenta al plano de datos, y por eso <strong>la FIB puede seguir funcionando aunque el plano de control se caiga</strong>: el router reenvía con la última tabla conocida hasta que una actualización nueva la reemplace.</p>
+<p><strong>Tope para 8 puntos:</strong> los dos axiomas (4) + el circuito cerrado con los tres eslabones y el longest match (4). Decir "el enrutamiento puebla las tablas de reenvío, que asocian destino con puerto de salida" ya te da la mitad. Sumar RIB/FIB y "el forwarding no se borra cuando cae el control" es lo que separa un 8 de un 6.</p>
+</blockquote>
+<h2>3.2 Examen 2009-02, Pregunta 2 (10 puntos) — forwarding, routing y flooding</h2>
+<blockquote>
+<p><strong>Fuente:</strong> <code>eirc0902</code> / <code>sirc0902</code> — 2 de febrero de 2009. <strong>Texto:</strong></p>
+<blockquote>
+<p>a) En un contexto unicast, describa los procesos de forwarding y enrutamiento, y explique como se relacionan.
+b) En un contexto broadcast, describa un proceso de flooding, y explique como se puede transformar en flooding controlado.</p>
+</blockquote>
+</blockquote>
+<p><strong>Solución oficial (parte a, literal):</strong> <em>"El proceso de enrutamiento permite determinar el camino entre nodos de la red, típicamente mediante intercambio de información de topología y ejecución de un algoritmo en cada nodo [...] El proceso de forwarding consiste en copiar cada paquete entrante a un nodo al puerto de salida adecuado para que siga su camino en la red (o entregarlo a un proceso local si el destinatario es el propio nodo). La tabla de forwarding, que asocia destinos con puertos (o interfaces) del nodo/router, se construye en base a la información de enrutamiento."</em> <strong>La parte b) no tiene solución publicada en el PDF: lo que sigue es solución propia.</strong></p>
+<p><strong>a)</strong> La solución oficial trae los tres puntos que hay que decir: el routing "mediante intercambio de información de topología y ejecución de un algoritmo <strong>en cada nodo</strong>" (el "en cada nodo" importa: la información es <strong>global</strong> pero el cálculo es <strong>local</strong>, no hay un centro); el forwarding "copiar cada paquete entrante al puerto de salida adecuado", más el paréntesis que vale puntos, <strong>"o entregarlo a un proceso local si el destinatario es el propio nodo"</strong>; y la relación, "la tabla de forwarding <strong>se construye en base a</strong> la información de enrutamiento". Sumá que en unicast el forwarding es <strong>siempre por tabla</strong> (nunca flooding), que un destino que no matchea ninguna entrada <strong>se descarta</strong>, y que el <strong>longest prefix match</strong> y el <strong>next hop</strong> son los dos pasos del desempate y del armado de la trama.</p>
+<p><strong>b)</strong> El emisor quiere que <strong>todos</strong> los demás nodos reciban su mensaje y <strong>no sabe en qué puertos</strong> están, así que no consulta ninguna tabla: <strong>replica el paquete por todos los puertos</strong> (o todos menos el de entrada), sin ACK, sin estado y sin tabla de "a quién le toca".</p>
+<div class="codehilite"><pre><span></span><code>   Nodo A quiere hacer broadcast a los 5 nodos del segmento:
+
+        p0        p1        p2        p3        p4
+         │         ▼         ▼         ▼         ▼
+     ┌───┴─────────┴─────────┴─────────┴─────────┴───┐
+     │  A     B        C        D        E        F │
+     └────────────────────────────────────────────────┘
+       A copia la trama por p0..p4. B, C, D, E y F la reciben.
+</code></pre></div>
+
+<p><strong>El problema, y por qué se transforma en controlado:</strong> en una red con ciclos cada copia genera copias nuevas, y sin control en <em>n</em> saltos circulan hasta <strong>2ⁿ</strong> copias: el enlace se satura y la red se traba. Los cinco controles están en la tabla de §1.6 (<strong>TTL/Hop Limit</strong>, <strong>detección de duplicados</strong>, <strong>split horizon</strong>, <strong>exclusión del puerto de entrada</strong> y <strong>pruning</strong>). El caso real es <strong>flooding y prune en IP multicast</strong>: cada router inunda, observa los <strong>reportes IGMP</strong>, y cuando detecta que una rama no tiene miembros deja de inundar por ahí y anuncia el prune.</p>
+<blockquote>
+<p><strong>Tope para 10 puntos</strong> (4 de a, 6 de b): en (a) los dos procesos, la construcción de la tabla y el "entregar a proceso local". En (b), <strong>describir</strong> el flooding sin ACK ni tabla, <strong>nombrar el problema</strong> y dar <strong>al menos dos controles justificados</strong>. Decir sólo "TTL" es un 6; dar el mecanismo + dos controles con su para qué es un 9-10.</p>
+</blockquote>
+<h2>3.3 Examen 2008-07, Pregunta 4 (10 puntos) — plano de datos vs. plano de control, en banda vs. fuera de banda</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0807</code> / <code>sirc0807</code> — 1 de agosto de 2008.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0807.pdf
+<strong>Texto del examen:</strong></p>
+<blockquote>
+<p>Explique la diferencia entre plano de datos (o forwarding) y plano de control. Mencione un ejemplo de protocolo de datos con control fuera de banda (con protocolo de control asociado) y otro con control dentro de banda (sin protocolo de control asociado).</p>
+</blockquote>
+</blockquote>
+<p><strong>Nota:</strong> el PDF de solución <strong>no incluye la parte teórica</strong>. Todo lo que sigue es <strong>solución propia</strong>, sobre el esquema de §1.5.</p>
+<h3>La diferencia entre los dos planos</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Plano de datos</strong></th>
+<th><strong>Plano de control</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Qué hace</td>
+<td>mueve los paquetes según la tabla</td>
+<td>calcula y distribuye qué tabla debe tener cada nodo</td>
+</tr>
+<tr>
+<td>Granularidad / tiempo</td>
+<td>por paquete / nanosegundos</td>
+<td>por prefijo / segundos</td>
+</tr>
+<tr>
+<td>Ámbito / naturaleza</td>
+<td>local / <strong>determinista</strong></td>
+<td>global / <strong>heurístico</strong></td>
+</tr>
+<tr>
+<td>Implementación</td>
+<td>hardware (TCAM)</td>
+<td>software (CPU)</td>
+</tr>
+<tr>
+<td>Si falla</td>
+<td>se corta el tráfico</td>
+<td><strong>se congela</strong>: la tabla vieja sigue sirviendo</td>
+</tr>
+<tr>
+<td>Salida</td>
+<td>FIB</td>
+<td>RIB → compila a FIB</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Relación:</strong> el plano de control <strong>escribe</strong> la tabla que el plano de datos <strong>lee</strong>; no se le consulta por paquete, sólo cuando cambia.</p>
+<h3>Control fuera de banda: estructura y ejemplos</h3>
+<div class="codehilite"><pre><span></span><code>   ┌──────────┐   protocolo de control   ┌──────────┐
+   │ CONTROL  │ ═══════════════════════▶ │ CONTROL  │
+   │  (A)     │ ◀═══════════════════════ │  (B)     │
+   └────┬─────┘    (canal de control)     └────┬─────┘
+        │  "establecé el circuito 47"         │
+        │  "el enlace 3 está caído"           │
+        │  "instalá la etiqueta 1024"         ▼
+   ┌─────────────────────────────────────────────────────┐
+   │  PLANO DE DATOS:  VC 47 → puerto 2                   │
+   │  los datos fluyen SIN preguntar nada                  │
+   └─────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p>Los tres rasgos: (1) <strong>existe un protocolo de control asociado</strong> con sus propios mensajes; (2) corre <strong>antes o al margen</strong> del flujo de datos; (3) los datos <strong>no llevan la dirección destino</strong>, llevan la <strong>etiqueta</strong> que el control les asignó.</p>
+<ul>
+<li><strong>Ejemplo A — MPLS y el LSP.</strong> LDP o RSVP-TE establecen el camino y <strong>asignan una etiqueta a cada salto</strong>; después el plano de datos reenvía <strong>sólo por etiqueta</strong>, con un longest match de 20 bits, sin mirar la IP destino ni consultar ningún protocolo. Si LDP se cae, <strong>los paquetes con etiqueta siguen reenviéndose</strong>. Es el ejemplo más limpio porque el desacople es explícito: etiqueta (control) vs. IP (datos).</li>
+<li><strong>Ejemplo B — la red telefónica con señalización de canal común.</strong> La voz viaja por circuitos dedicados conmutados; el control por una <strong>red de señalización separada</strong>. <strong>Si se cae la red de señalización, no se puede establecer ninguna llamada aunque todos los circuitos de voz estén libres.</strong></li>
+</ul>
+<h3>Control en banda: estructura y ejemplos</h3>
+<p>No hay protocolo de control: <strong>el plano de datos es el único plano</strong> y todo lo que sabe sale de mirar el tráfico. En unicast hay una tabla construida por aprendizaje; en broadcast, flooding puro.</p>
+<ul>
+<li><strong>Ejemplo A — el puente con <em>self-learning</em>.</strong> La tabla que dice qué MAC está en qué puerto se construye <strong>mirando las tramas de datos que el puente reenvía</strong> (lee la MAC origen y la asocia al puerto de entrada). Cuando un destino no está conocido, <strong>inunda</strong>; cuando una entrada envejece (típicamente 300 s en switches comerciales, valor <strong>de fabricante</strong>, no un estándar IEEE) la borra y vuelve a inundar hasta que alguien responda. Si el puente se apaga, se pierde todo y hay que reconstruirlo con el tráfico.</li>
+<li><strong>Ejemplo B — el reenvío unicast en IP.</strong> El router reenvía por tabla, pero la tabla se construyó con protocolos que <strong>viajan como paquetes IP por la misma red</strong>. El plano de control es <strong>auto-referencial</strong>: para actualizarse necesita que el plano de datos de los demás funcione. Si se rompe un enlace, los vecinos se enteran porque <strong>los mensajes dejan de llegar</strong>: el acoplamiento es total.</li>
+</ul>
+<h3>La frase para cerrar los 10 puntos</h3>
+<blockquote>
+<p><strong>En el plano de datos la decisión ya está tomada y es determinista; en el plano de control está por tomar y es heurística. "En banda" = el control viaja por el mismo canal que los datos, así que un fallo del dato se lleva el control y no hay forma de diagnosticar. "Fuera de banda" = el control tiene canal propio, así que sobrevive al fallo del dato y puede repararlo. Ejemplo en banda por excelencia: el puente que aprende de sus propias tramas. Ejemplo fuera de banda por excelencia: un LSP de MPLS, cuya etiqueta instala un protocolo de señalización antes de que circule ningún dato.</strong></p>
+</blockquote>
+<h2>3.4 Dos preguntas más que entran en esta clase</h2>
+<p>Son la misma materia con otro enunciado; las soluciones oficiales están en los PDF y son muy cortas, así que van resumidas. El desarrollo completo está en las clases correspondientes.</p>
+<ul>
+<li><strong><code>2010-02 P2</code> (8 pts).</strong> <em>"a) ¿Cuáles son las funciones clave de la Capa de Red? b) ¿Qué objetivo cumple cada una [...] y cómo interactúan? c) Describa brevemente las dos formas de prestar servicios de capa de red."</em> Oficial: <em>"Forwarding: mover paquetes entre puertos de entrada y salida del router. Enrutamiento: determinar la ruta de los paquetes desde origen a destino [...] El enrutamiento genera las tablas de forwarding locales."</em> <strong>a)</strong> forwarding y routing (§1.2). <strong>b)</strong> Oficial incompleto: falta el <strong>objetivo de cada una</strong> (forwarding resuelve <em>localmente y de inmediato</em> por qué interfaz sale cada paquete; routing determina <em>globalmente y con antelación</em> por dónde va el paquete e instala esa decisión en las tablas de los routers intermedios) y falta decir que <strong>el routing no existe sin el forwarding</strong>, porque el feedback de "esto no funciona" es lo que hace corregir a los algoritmos. <strong>c)</strong> Las dos formas de servicio de capa 3 son <strong>conmutación de datagramas</strong> (sin conexión, sin estado, decisión por paquete, caminos distintos por paquete, sin reserva) y <strong>conmutación de circuitos virtuales</strong> (con conexión, establecimiento previo, etiqueta en vez de dirección, estado en cada router, reserva posible) — es la Clase 25 entera.</li>
+<li><strong><code>2009-12 P3</code> (8 pts).</strong> <em>"a) ¿Cuál es el principal cometido de la capa de red? b) La longitud en 'hops' es la métrica utilizada habitualmente para definir el costo de un enlace. ¿Es la más conveniente?"</em> Oficial: <em>"Asegurar la entrega de información de extremo a extremo"</em> y <em>"la métrica de hops puede ser inconveniente, ya que señalará como 'mejor' el camino más corto, que no necesariamente será el que tenga mejores atributos de calidad (retardo extremo a extremo, pérdidas, throughput) y/o menos congestión"</em>. <strong>a)</strong> Correcta, con el matiz de que la capa de red hace <strong>encaminar</strong> <em>best-effort</em> y <strong>no garantiza nada</strong> (las garantías las da la capa de transporte). <strong>b)</strong> La oficial es buena; sumá que los hops <strong>sí</strong> correlacionan con el retardo de procesamiento (eso juega a favor de la métrica y hay que decirlo) pero es nanosegundos contra órdenes de magnitud en ancho de banda, y que hoy la métrica de link-state es un costo derivado del ancho de banda.</li>
+</ul>
+<h2>3.5 Nota de coordinación: Dijkstra es de la Clase 33</h2>
+<p>El <strong>Problema 2 del <code>sirc0902</code></strong> es un ejercicio de <strong>Dijkstra</strong> paso a paso desde el nodo <code>u</code>, más el <em>shortest-path tree</em>. <strong>No lo resolvemos acá</strong>: es el tema de la <strong>Clase 33 (enrutamiento link-state y OSPF)</strong>. Lo que sí corresponde a esta clase es el <strong>contenido</strong> del flooding que Dijkstra necesita: cada nodo conoce la topología completa porque <strong>se inundan las LSAs</strong> (§1.6), y por eso link-state no escala sin jerarquías de áreas. Si te lo piden, el esqueleto es: inicializar <code>D(u)=0</code> y <code>D(v)=∞</code>; en cada iteración elegir el nodo no confirmado con <code>D</code> mínimo, <strong>confirmarlo</strong> y <strong>relajar</strong> sus aristas salientes con <code>D(v) = min(D(v), D(u) + c(u,v))</code>; repetir <code>n−1</code> veces.</p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen</h2>
+<ol>
+<li>La capa de red entrega <strong>de sistema final a sistema final</strong>. El router es un modo de transporte, no el destinatario.</li>
+<li><strong>Forwarding</strong> = local, por paquete, nanosegundos, determinista, en hardware (TCAM). <strong>Routing</strong> = global, por prefijo, segundos, heurístico, en software.</li>
+<li>El <strong>circuito cerrado</strong>: protocolo de enrutamiento → algoritmo → RIB → FIB; la FIB se consulta <strong>por paquete</strong> con <strong>longest prefix match</strong>.</li>
+<li>La tabla es <strong>por prefijo</strong> porque hace falta para agregar, escalar y meter en TCAM. Si matchean varias entradas, <strong>gana la más específica</strong>.</li>
+<li><strong>En banda</strong>: el control usa el camino del dato, y un fallo del dato se lleva el control. <strong>Fuera de banda</strong>: el control tiene camino propio y puede reparar al dato.</li>
+<li><strong>Flooding</strong> = reenviar por todos los puertos; se controla con <strong>TTL</strong>, <strong>duplicados</strong>, <strong>split horizon</strong>, exclusión del puerto de entrada y <strong>pruning</strong>. En <strong>unicast no hay flooding</strong>; en multicast sí.</li>
+<li>El <strong>router no implementa capas superiores</strong>; el <strong>cortafuegos sí</strong> necesita puertos y flags porque decide por flujo.</li>
+<li><strong>"Hops" es mala métrica</strong>: un salto no pondera ancho de banda ni retardo, así que el camino de menos saltos puede ser el de 10 Mbit/s contra otro de 5 Gbit/s.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> ¿Por qué el objetivo de la capa de red es "de sistema final a sistema final" y no "de enlace a enlace"?</p>
+<details><summary>Respuesta</summary>
+
+Porque la capa de enlace resuelve un problema de alcance **único** (llevar un paquete al router vecino) y la de red, uno de alcance **global** (llevarlo a un host que puede estar al otro lado del planeta). Esa diferencia obliga a que exista el concepto de **ruta**: el paquete atraviesa nodos que no se ven entre sí y que usan tecnologías distintas, así que hay que **descubrir** por dónde va antes de poder **recorrerlo**.
+
+</details>
+
+<p><strong>2.</strong> En una red con <code>192.168.1.0/24 → eth2</code>, <code>192.168.0.0/16 → eth1</code> y <code>0.0.0.0/0 → eth0</code>, ¿por qué puerto sale <code>192.168.1.5</code>? ¿Y si se agrega <code>192.168.1.128/25 → eth3</code>?</p>
+<details><summary>Respuesta</summary>
+
+`192.168.1.5` matchea las tres (el `/0` matchea siempre) y gana la **más específica**: el `/24` (24 > 16 > 0) → **eth2**. Con el `/25` agregado, para `192.168.1.5` el `/25` **no** matchea (el AND con 255.255.255.128 da `192.168.1.0`, no `192.168.1.128`), así que **sigue ganando el /24**; pero para `192.168.1.200` el `/25` sí matchea y gana (25 > 24) → eth3. Ahí es donde el /25 expresa la excepción.
+
+</details>
+
+<p><strong>3.</strong> ¿Qué le pasa a un router al que se le cae el protocolo de enrutamiento? ¿Por qué sigue reenviando?</p>
+<details><summary>Respuesta</summary>
+
+**Se congela, no se apaga.** El protocolo y el algoritmo alimentan la **RIB**, que se compila en la **FIB**. La FIB **no se borra** cuando falla el control: sigue sirviendo la última versión conocida. Sólo cuando llega una actualización nueva (o un timeout que la elimina) cambia la tabla.
+
+</details>
+
+<p><strong>4.</strong> ¿"En banda" y "fuera de banda"? ¿Cuál permite reparar una red caída y por qué?</p>
+<details><summary>Respuesta</summary>
+
+**En banda**: el control viaja por **el mismo canal que los datos**, así que un fallo del dato se lleva el control y no tenés por dónde hablar. **Fuera de banda**: el control tiene **su propio canal**, sobrevive al fallo del dato y por eso puede repararlo (LSP de MPLS, señalización telefónica, enlace dedicado, puerto de gestión).
+
+</details>
+
+<p><strong>5.</strong> ¿En unicast hay flooding? ¿Y qué hace el router con un paquete unicast que no matchea ninguna entrada?</p>
+<details><summary>Respuesta</summary>
+
+En **unicast no hay flooding**: el reenvío es siempre por tabla, con longest prefix match. Si no matchea nada y no hay ruta por defecto, **descarta** el paquete y devuelve un **ICMP *Destination Unreachable***. El flooding aparece en **link-state** (para difundir las LSAs) y en **multicast**.
+
+</details>
+
+<p><strong>6.</strong> ¿Por qué el router no implementa las capas superiores y el cortafuegos sí?</p>
+<details><summary>Respuesta</summary>
+
+El router reenvía a 100 Gbit/s con **una comparación de un entero** contra una TCAM, y **no tiene el concepto de conexión** (TCP es extremo a extremo; el router es un tercero). El cortafuegos **sí** decide por flujo: su tabla tiene IP, **puertos** y protocolo (capa 4), flags y timeout; el NAT/PAT reescribe IP **y puerto**; el ALG lee cabeceras FTP dentro del payload TCP. Todo eso es información de capas 4 y 7.
+
+</details>
+
+<p><strong>7.</strong> ¿Por qué los protocolos de enrutamiento de IP son "en banda"?</p>
+<details><summary>Respuesta</summary>
+
+Porque **viajan como paquetes IP por la misma red que están ruteando**: si el plano de datos se rompe, los mensajes no llegan y **no hay forma de quejarse, porque el canal de queja es el mismo que está roto**. (BGP es el caso particular: protocolo distinto y sobre TCP, pero sus mensajes siguen siendo paquetes IP de la red que rutea.)
+
+</details>
+
+<p><strong>8.</strong> Dos caminos al mismo destino: uno de 2 saltos a 10 Mbit/s y otro de 4 saltos a 1 Gbit/s. ¿Cuál elige un algoritmo que cuenta hops? ¿Es el correcto?</p>
+<details><summary>Respuesta</summary>
+
+Elige el de **2 saltos**, y **no** es el correcto. Con 12 000 bits de paquete, `d_trans = L/R`: el de 10 Mbit/s da `1,2 ms` por salto × 2 = **2,4 ms**; el de 1 Gbit/s da `12 µs` × 4 = **48 µs**. **50 veces menos** retardo de transmisión, y el ancho de banda disponible (el `min()` de los enlaces del camino) es **100 veces mayor** en el de 4 saltos. La métrica pesa los caminos como 2 y 4 cuando uno tiene el doble de ancho de banda por salto: el caso extremo es que el camino "más corto" sea un ADSL y el "más largo" un backbone.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>eirc1103</code> / <code>sirc1103</code></strong> — P1 (8 pts): las dos funciones clave de la capa de red y su interacción. La pregunta más repetida del banco sobre este tema.</li>
+<li><strong>Examen <code>eirc0902</code> / <code>sirc0902</code></strong> — P2 (10 pts): forwarding vs. routing en unicast; flooding en broadcast y controlado. Su Problema 2 es de Dijkstra y va en la Clase 33.</li>
+<li><strong>Examen <code>eirc1002</code> / <code>sirc1002</code></strong> — P2 (8 pts): funciones clave, objetivos y las dos formas de servicio de capa 3. · <strong>Examen <code>eirc0912</code> / <code>sirc0912</code></strong> — P3 (8 pts): cometido de la capa de red; ¿es "hops" buena métrica?</li>
+<li><strong>Examen <code>eirc0807</code> / <code>sirc0807</code></strong> — P4 (10 pts): plano de datos vs. plano de control, en banda vs. fuera de banda. · <strong>Examen <code>sirc0712</code></strong> — Problema 1 (30 pts): leer los puertos TCP/UDP dentro del paquete IP; capa 7 en un dispositivo intermedio.</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 5 "La capa de red".</li>
+<li><strong>RFC 791</strong> — Internet Protocol (1981). · <strong>RFC 1812</strong> — Requirements for IP Version 4 Routers (1995). · <strong>RFC 4632</strong> — CIDR: An Address Assignment Plan for IPv4 (2006).</li>
+<li><strong>RFC 2328</strong> — OSPFv2 (1998): costo de interfaz por ancho de banda y flooding de LSAs.</li>
+<li><strong>RFC 4271</strong> — BGP-4 (2006). · <strong>RFC 9234</strong> — BGP Roles (2022). · <strong>RFC 6810 / RFC 6811</strong> — RPKI/ROA.</li>
+<li><strong>RFC 8402</strong> — Segment Routing Architecture (2018). · <strong>RFC 8986</strong> — SRv6 Network Programming (2022). · <strong>RFC 7432 / RFC 7348</strong> — EVPN / VXLAN.</li>
+<li><strong>Clase siguiente:</strong> 25 — Conmutación en la red: datagramas y circuitos virtuales</li>
+</ul></body></html>

@@ -1,0 +1,107 @@
+===== [pag 1] =====
+1/4
+Examen de Introducción a las Redes de Computadoras
+y Comunicación de Datos
+(ref: eirc0803.doc)
+25 de febrero de 2008
+
+Atención:
+•
+La duración del examen de 3 horas.
+•
+El examen debe realizarse sin material.
+•
+Se debe responder al menos el equivalente a 15 puntos en las preguntas teóricas.
+•
+El puntaje mínimo de aprobación es de 60 puntos.
+•
+para todos los ejercicios, suponga que dispone de los tipos de datos básicos (p.ej. lista, cola,
+archivo, string, etc.) y sus funciones asociadas (ej: tail(lista), crear(archivo), concatenar(string,
+string).
+Preguntas Teóricas
+Pregunta 1 (5 puntos)
+Por que se utiliza modulación en un modem y como es representada comúnmente dicha modulación.
+Pregunta 2 (10 puntos)
+Que son las clases de direcciones IP? Plantean algún problema en la actualidad, explíquelo? Presente 2
+soluciones al problema.
+Pregunta 3 (10 puntos)
+Explique en que escenarios es utilizado DHCP. Ventajas y desventajas frente a protocolos anteriores.
+Pregunta 4 (10 puntos)
+Porque es utilizado el control de congestión en TCP, explique el problema y mencione soluciones posibles.
+
+Pregunta 5 (5 puntos)
+Explique que son los algoritmos de encriptación de clave simétrica, porque se llaman así y cuales son las
+ventajas y desventajas de utilizarlos en protocolos de redes.
+
+===== [pag 2] =====
+2/4
+
+Problemas Prácticos
+Problema 1 (25 puntos)
+
+Sea un servicio en Internet, del tipo cliente/servidor, al que se puede accederse en diferentes servidores,
+ubicados en diferentes puntos de la red. Estos servidores ofrecen todos el mismo servicio.
+
+Un cliente puede conocer la IP de todos los servidores existentes en la red, a través de una consulta al
+DNS (Domain Name System), el que contestará las IP de ellos. Se provee una función con tal fin que
+realiza la consulta:
+ IP_list DNS_search(“domain_name”);
+Que dado un nombre de dominio, devuelve la lista de IP donde se encuentran los servidores.
+
+Dado que el servicio brindado, es muy exigente respecto al retardo en la respuesta de la red, se desea
+resolver, que dado la lista de servidores disponibles, el cliente seleccione para realizar la operación el
+mejor, considerando que el mejor es el que tiene menor retardo. Se sabe además que el intercambio entre
+cliente y servidor en la aplicación se realiza utilizando paquetes con una carga en cada paquete de 1000
+bytes.
+
+Se dispone del protocolo ICMP, el cual a través de los mensajes tipo echo request y echo reply, permite
+sondear un equipo en la red. El formato de los paquetes, que se encapsulan en datagramas IP es:
+
+Se pide:
+a) ¿Que es el comando PING, y que utilidad tiene?. Como se implementa el mismo.
+
+b) Especificar en un lenguaje de alto nivel, el procedimiento que debe ejecutarse en el cliente, para
+cumplir lo solicitado.
+
+===== [pag 3] =====
+3/4
+
+Nota:
+•
+Los servidores contestan el protocolo ICMP
+•
+En los equipos se cuenta con un reloj de mucha precisión.
+
+Problema 2 (35 puntos)
+
+Se cuenta con una red estilo MPLS, estructurada sobre ethernet, donde cada equipo para rutear se basa en
+un sistema de etiquetas que definen circuitos virtuales en la misma. El formato de los paquetes que se
+intercambian, es el siguiente:
+
+La implementación del ruteo se realiza en base a tablas que contienen etiquetas, para los circuitos virtuales
+definidos. A continuación se presenta un ejemplo, en el mismo se presentan dos caminos con origen R4 y
+destino A y otro con origen R4 y destino D.
+
+Se cuenta con una etiqueta especial ETIQUETA_CTL, la cual puede utilizarse para control de la red. La que
+puede utilizarse libremente.
+
+Se desea implementar un protocolo que permita establecer caminos virtuales en la red. El mismo debe ser
+distribuido en los routers de la misma, y recibe como entrada, el destino, y los routers intermedios por los
+que debe transitar.
+
+===== [pag 4] =====
+4/4
+Se cuentan con:
+•
+primitivas que permiten modificar las tablas de circuitos en cada router (cvTable_add, cvTable_del).
+•
+Cada router conoce por que interfaz se conecta al router siguiente en la lista, y se supone que la
+lista involucra únicamente router interconectados.
+•
+La solicitud del circuito se realiza en el primero de los routers intermedio. Por ejemplo marcado en
+el dibujo se realizó la siguiente solicitud en el router R4: CV(A:destino, (R4,R3,R1):routerList)
+
+Se pide:
+a) Especifique los paquetes requeridos con una propuesta de formato, para el protocolo solicitado.
+
+b) Especificar en un lenguaje de alto nivel, el protocolo pedido, que corre en los routers.

@@ -1,0 +1,113 @@
+===== [pag 1] =====
+
+Examen - 20 de diciembre de 2008 (ref: eirc0812.doc)
+Instrucciones
+•
+Indique su nombre completo y número de cédula en cada hoja.
+•
+Numere todas las hojas e indique la cantidad total de hojas que entrega en la primera.
+•
+Escriba las hojas de un solo lado.
+•
+Comience cada ejercicio en una hoja nueva.
+•
+Sólo se contestarán dudas de letra. No se aceptarán dudas de ningún tipo los últimos 30 minutos
+del examen.
+•
+El examen es individual y sin material.
+•
+Es obligatorio responder correctamente al menos 15 puntos en las preguntas teóricas.
+•
+El puntaje mínimo de aprobación es de 60 puntos.
+•
+Para todos los ejercicios, si es necesario, puede suponer que dispone de los tipos de datos
+básicos (p.ej. lista, cola, archivo, string, etc.) y sus funciones asociadas (ej: tail(lista),
+crear(archivo), concatenar(string, string).
+•
+Duración: 3 horas.
+Preguntas Teóricas
+Pregunta 1 (10 puntos)
+Los protocolos del nivel de Transporte brindan las comunicaciones lógicas requeridas por las aplicaciones
+de los usuarios, y por lo tanto son implementados en los end systems (sistemas finales). Discuta si es
+necesario implementarlos además en los dispositivos intermedios, como por ejemplo routers y/o switches.
+Justifique su respuesta.
+Pregunta 2 (5 puntos)
+Explique que posibles mejora introduce la sustitución de hubs por switches, en cuanto a performance y
+seguridad en las redes LAN.
+Pregunta 3 (10 puntos)
+Muestre e identifique en un diagrama topológico los componentes principales de la arquitectura IP Móvil,
+indicando el rol de cada uno de ellos.
+Pregunta 4 (7 puntos)
+El protocolo POP3 transmite información de control por el mismo canal de datos. ¿Qué mecanismo utiliza
+para evitar que la información de señalización se confunda con los cuerpos de los mensajes? Justifique su
+respuesta.
+Pregunta 5 (8 puntos)
+Se conocen diferentes protocolos (por ej. RTP) para el transporte de streaming multimedia. ¿Bajo que
+hipótesis sobre el comportamiento de la red es posible implantar servicios de telefonía IP basados en
+transporte TCP en lugar de los protocolos específicos de streaming? Justifique su respuesta analizando al
+menos la pérdida de datos, retransmisión y retardo.
+Problemas Prácticos
+Problema 1 (30 puntos)
+Se desea utilizar una variante del protocolo NAT para realizar balanceo de carga entre tres servidores
+instalados en una red privada. Los servidores tienen direcciones privadas IP_1, IP_ 2, IP _3, y publican un
+servicio en el puerto PORT. El servicio es conocido en Internet a través del sistema Acceso, router de la
+red privada, cuya dirección pública es IP_SERVICIO. Se utiliza el mismo puerto PORT para accederlo.
+
+===== [pag 2] =====
+
+Al llegar una solicitud de servicio a Acceso, se debe
+redireccionar la misma al servidor que se encuentre
+atendiendo menor número de requerimientos
+(balanceo de carga).
+Acceso debe modificar los paquetes IP que pasen a
+través de él, de forma que el tráfico de aplicación
+entre los clientes y servidores sea posible. Una vez
+establecida una correspondencia entre un cliente y
+un
+
+servidor,
+
+debe
+
+mantenerse
+
+dicha
+correspondencia mientras se mantenga el flujo de
+tráfico. Se considera que el flujo ha terminado
+cuando transcurrieron TIMEOUT segundos sin
+tráfico.
+Se pide:
+a)
+Indique qué campos deben modificarse en los
+paquetes que llegan a Acceso para lograr el
+redireccionamiento especificado. ¿Es necesario
+modificar los encabezados de capa 4 o
+solamente los de capa 3? Justifique su respuesta.
+b)
+En base a la respuesta anterior, especifique las estructuras que necesita almacenar Acceso para
+realizar la traducción de direcciones y el balanceo de carga.
+c)
+Especifique, en un lenguaje de alto nivel, el procedimiento que debe ejecutar Acceso cada vez que
+recibe un paquete, para cumplir la funcionalidad descrita.
+Problema 2 (30 puntos)
+Se considera una red de cuatro nodos A,B,C y D con la topología que se muestra en la figura; los enlaces
+tienen costo unitario.
+Esta red ejecuta un protocolo de enrutamiento genérico de la familia “vector-distancia” (distance-vector). Se
+pide:
+a)
+Suponiendo la topología de la red estable en el tiempo y que los nodos son todos encendidos
+simultáneamente (es decir, se inician todos en el mismo estado con sus tablas de distancias vacías),
+deduzca las sucesivas tablas de distancias de A, B, C y D hasta llegar al estado estable de la red.
+b)
+Escriba la tabla de forwarding de cada nodo en el formato Destino, Próximo Salto, Costo.
+
+A
+B
+C
+D
+
+===== [pag 3] =====
+
+c)
+Explique que sucede con las tablas de distancias si se apaga en nodo D. Justifique incluyendo algunas
+iteraciones de la tabla de distancias de A.

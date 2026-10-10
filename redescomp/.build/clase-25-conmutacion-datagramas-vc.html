@@ -1,0 +1,748 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 25 — Conmutación en la red: datagramas y circuitos virtuales</h1>
+<p><strong>Bloque:</strong> D (Red) · <strong>Semana:</strong> 9 · <strong>Duración estimada:</strong> 105 min
+<strong>Correlativa:</strong> Clase 24 (forwarding y routing) · <strong>Sigue con:</strong> Clase 26 (IPv4: el datagrama y las direcciones)
+<strong>Material de referencia:</strong> Tanenbaum cap. 5 (§5.1, "Las dos familias") · RFC 791, RFC 3031, RFC 3032, RFC 4364, RFC 2211, RFC 8200, RFC 8402, RFC 8986</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li><strong>Distinguir</strong> las dos familias de conmutación de paquetes y decir <strong>cuál de las dos usa Internet</strong> y por qué.</li>
+<li><strong>Describir</strong> la conmutación de <strong>datagramas</strong>: sin estado, decisión por paquete, caminos distintos para paquetes del mismo flujo, y sus ventajas y desventajas.</li>
+<li><strong>Describir</strong> los <strong>circuitos virtuales (VC)</strong>: qué es la etiqueta, por qué hace falta <strong>estado en cada router</strong> y por qué hace falta <strong>establecimiento previo</strong>.</li>
+<li><strong>Comparar</strong> la tabla de conmutación <strong>por VC</strong> contra la <strong>por prefijo</strong>: qué se guarda en cada caso, por qué el VC es mucho más rápido de buscar y por qué <strong>no escala</strong>.</li>
+<li><strong>Explicar</strong> el establecimiento <strong>en banda</strong> y <strong>fuera de banda</strong> de un circuito virtual, con el caso de la red telefónica clásica y el del enlace dedicado.</li>
+<li><strong>Comparar</strong> ventajas y desventajas de datagramas y VC <strong>desde el punto de vista de la asignación de recursos</strong> en la red, que es exactamente lo que pregunta el examen.</li>
+<li><strong>Calcular</strong> cuántas entradas de tabla necesita cada esquema para una red de <em>n</em> hosts, y explicar qué se rompe cuando un enlace de un VC se cae.</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2009-02 P4</code> (9 pts — datagramas vs. circuitos virtuales), <code>2007-12 P3</code> (10 pts — circuitos / paquetes / mensajes), <code>2010-02 P2c</code> (las dos formas de servicio de capa 3).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 Las dos familias</h2>
+<p>Cuando un nodo tiene que decidir <strong>por dónde sale un paquete</strong>, hay dos familias de diseño, y la diferencia es <strong>una sola pregunta</strong>: <em>¿la decisión depende del paquete, o depende de un camino previamente establecido?</em></p>
+<div class="codehilite"><pre><span></span><code>   MISMA TOPOLOGÍA, MISMO ORIGEN (H1) Y DESTINO (H4)
+
+   ┌─────┐   ┌─────┐   ┌─────┐   ┌─────┐   ┌─────┐
+   │ H1  │───│ R1  │───│ R2  │───│ R3  │───│ H4  │
+   └──┬──┘   └──┬──┘   └──┬──┘   └──┬──┘   └──┬──┘
+      │        │        │  ╲     │        │        │
+   Paquete 1  │        │   ╲    │        │        │
+      └───────►│        │    ╲   │        │        │
+               └──► R1→R2→R3→H4 (camino 1)
+                                 ╲
+   Paquete 2  │        │        ╲  │        │
+      └───────►│        │         ╲ │        │
+               └──► R1 → R3 → H4   (camino 2, ¡distinto!)
+
+   DATAGRAMAS: cada paquete mira su destino y decide. Los dos
+   paquetes TOMAN CAMINOS DIFERENTES si la tabla lo permite.
+   Los VC:  H1 tiene UN circuito virtual establecido hasta H4, y
+   los DOS paquetes van por el MISMO camino, identificados por la
+   etiqueta del VC, no por la dirección destino.
+</code></pre></div>
+
+<p>La tercera familia —<strong>conmutación de mensajes</strong>, donde el nodo reenvía la unidad completa con el nombre del destino final y el destino se reconstruye en el último salto— se estudia en la Clase 4. Lo que importa acá es que <strong>Internet es conmutación de datagramas</strong>, y todo lo que viene después (VC, MPLS, etiquetas) es un overlay que se apoya sobre ese datagrama.</p>
+<h2>1.2 Conmutación de datagramas</h2>
+<p><strong>Definición operativa:</strong> cada paquete se reenvía por decisión propia, mirando su <strong>dirección destino</strong> y consultando la tabla (en IP, <em>longest prefix match</em>). <strong>No hay conexión, no hay estado, no hay negociación previa.</strong></p>
+<div class="codehilite"><pre><span></span><code>   EMISOR                     RED                       RECEPTOR
+     │  ── p1 (dest = 4.4.4.4) ──▶   R1
+     │                             R1: longest match → R2
+     │  ◀── ack ──                    (no recuerda nada de p1)
+     │  ── p2 (dest = 4.4.4.4) ──▶   R1
+     │                             R1: longest match → R3
+     │                             R3: longest match → H4
+     │  ◀── ack ──
+     p1 y p2 fueron por caminos distintos. El router no "sabe"
+     que son el mismo flujo, y no necesita saberlo.
+</code></pre></div>
+
+<p><strong>Ventajas.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Ventaja</th>
+<th>Por qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>No hace falta estado</strong></td>
+<td>El router no memoriza nada entre paquetes. Un router que se reinicia no pierde información de la que dependan otros.</td>
+</tr>
+<tr>
+<td><strong>Tolera fallos</strong></td>
+<td>Si un enlace se cae, el siguiente paquete ya va por otro camino. La reconvergencia la maneja el plano de control, no el conmutador.</td>
+</tr>
+<tr>
+<td><strong>Caminos distintos por paquete</strong></td>
+<td>Se puede enrutar el tráfico según el estado real de la red, e incluso repartir un flujo entre enlaces (hoy es lo normal con ECMP).</td>
+</tr>
+<tr>
+<td><strong>Multiplexado estadístico</strong></td>
+<td>Los enlaces se comparten dinámicamente entre todos los flujos, y la capacidad se aprovecha mejor (§1.6 y §2.1).</td>
+</tr>
+<tr>
+<td><strong>Arranque instantáneo</strong></td>
+<td>El emisor manda el primer paquete sin handshake ni señalización. Es lo que permite que un host de la calle funcione.</td>
+</tr>
+<tr>
+<td><strong>Tabla chica</strong></td>
+<td>Una entrada por <strong>prefijo</strong>, y los prefijos se <strong>agregan</strong>: 1000 hosts en la misma /24 son <strong>una</strong> entrada.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Desventajas.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Desventaja</th>
+<th>Por qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Decisión por paquete = trabajo por paquete</strong></td>
+<td>Hay que leer la cabecera, hacer el <em>longest prefix match</em> y elegir interfaz <strong>para cada paquete</strong>. Con VC, la búsqueda es una etiqueta exacta y más rápida.</td>
+</tr>
+<tr>
+<td><strong>Reordenamiento</strong></td>
+<td>Si dos paquetes del mismo flujo toman caminos distintos, el segundo puede llegar antes que el primero. TCP lo reordena; una aplicación de audio, no.</td>
+</tr>
+<tr>
+<td><strong>Cabecera grande</strong></td>
+<td>Cada paquete lleva la <strong>dirección destino completa</strong> (y en general también la de origen). Con VC sólo necesita la <strong>etiqueta</strong>, que es un número corto.</td>
+</tr>
+<tr>
+<td><strong>Sin garantía de nada</strong></td>
+<td>Es <em>best-effort</em>: no hay reserva de ancho de banda, de buffer ni de retardo. Un flujo puede tener la mala suerte de encontrar la red ocupada y ser descartado.</td>
+</tr>
+<tr>
+<td><strong>Setup con costo</strong></td>
+<td>En datagramas, cuando cambia un camino hay que recalcular y volver a anunciar rutas. Con VC, un cambio de camino es un evento raro y ruidoso.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Internet entero es esto.</strong> IP no establece nada: el primer paquete sale sin handshake. Cada router decide solo, por prefijo. Si dos paquetes del mismo flujo van por caminos distintos, es <strong>el comportamiento normal, no una excepción</strong>.</p>
+<h2>1.3 Circuitos virtuales</h2>
+<p><strong>Definición operativa:</strong> se establece un <strong>camino lógico</strong> (<em>virtual circuit</em>, VC) y <strong>todos</strong> los paquetes de esa conexión lo siguen, identificados por una <strong>etiqueta de VC</strong> (<em>VC label</em>), que es <strong>un número, no una dirección</strong>. Cada router del camino guarda <strong>estado</strong> para ese circuito: a qué puerto va y qué hacer con las etiqueta que llegan por él.</p>
+<div class="codehilite"><pre><span></span><code>                    ESTABLECIMIENTO (una vez, con señalización)
+   H1 ──── SETUP ───▶ R1 ──── SETUP ───▶ R3 ──── SETUP ───▶ H4
+            "quiero un VC hasta H4, quepa en 2 Mbit/s"
+
+   H1  ◀─ SETUP ACK ─ R1 ◀─ SETUP ACK ─ R3 ◀─ SETUP ACK ─ H4
+
+                    DATOS (muchos paquetes, sin negociar nada más)
+   H1  ──[VC 47]──▶ R1 ──[VC 47]──▶ R3 ──[VC 47]──▶ H4
+   H1  ──[VC 47]──▶ R1 ──[VC 47]──▶ R3 ──[VC 47]──▶ H4
+   H1  ──[VC 47]──▶ R1 ──[VC 47]──▶ R3 ──[VC 47]──▶ H4
+         ▲
+      la etiqueta 47 es LOCAL a cada router:
+      en R1 "47" significa "salí por eth1",
+      en R3 "47" significa "salí por eth2".
+      El mismo número puede significar otra cosa en cada salto.
+</code></pre></div>
+
+<p><strong>Tres condiciones que un VC necesita y que el datagrama no:</strong></p>
+<ol>
+<li><strong>Estado en cada router del camino.</strong> El router tiene que tener una entrada que diga "etiqueta 47 → puerto de salida, y esto es lo que hay que hacer con los paquetes que me lleguen con 47". Sin esa tabla no puede conmutar. Ese estado <strong>no existe</strong> en un router de datagramas.</li>
+<li><strong>Establecimiento previo.</strong> Antes del primer paquete de datos hay un <strong>intercambio de mensajes de señalización</strong> que recorre el camino del destino hacia el origen y vuelve. Ese intercambio, en sí, es un datagrama: la red por la que viaja el setup es una red de datagramas.</li>
+<li><strong>Identificador en la cabecera.</strong> El paquete lleva la etiqueta, que puede ser más corta que la dirección. Esto es lo que hace que la búsqueda en la tabla sea trivial.</li>
+</ol>
+<p><strong>Qué es la etiqueta, en concreto.</strong> En el ejemplo de arriba la etiqueta "47" <strong>sólo significa algo dentro de cada router</strong>. No es una dirección global, no se puede intergenerational, y el router de ingreso y el de egreso pueden coincidir o no con los extremos. Ese es el punto clave: <strong>con VC se reemplaza el problema "¿a dónde va este paquete?" por el problema mucho más fácil "¿qué hago con esta etiqueta?"</strong></p>
+<p><strong>Dónde existen los VC.</strong> Frame Relay (<strong>PVC</strong>, <em>Permanent Virtual Circuit</em>, y <strong>SVC</strong>, <em>Switched Virtual Circuit</em>), <strong>ATM</strong> (con su <em>label switching</em>), <strong>MPLS</strong> (<code>RFC 3031</code> arquitectura, <code>RFC 3032</code> la pila de etiquetas), X.25. Y en IPv6, el <strong>Flow Label</strong> de la cabecera (<code>RFC 8200</code>), que es el intento estandarizado de tener "algo de VC" sin salir del datagrama: por defecto vale <strong>0</strong> (o sea, no se usa), y ningún router de Internet lo interpreta para reenviar.</p>
+<h2>1.4 La tabla de conmutación: por VC o por prefijo</h2>
+<p>Acá está el contraste que más se pregunta.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Conmutación de datagramas</strong></th>
+<th><strong>Conmutación por VC</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Clave de la tabla</strong></td>
+<td><strong>prefijo de dirección</strong> (con longitud)</td>
+<td><strong>etiqueta de VC</strong> (un número)</td>
+</tr>
+<tr>
+<td><strong>Qué se guarda como valor</strong></td>
+<td>enlace o puerto de salida (+ next hop, métricas, ECMP)</td>
+<td><strong>número de VC de salida</strong> en el siguiente router, y la acción a ejecutar (reenviar / encapsular / entregar)</td>
+</tr>
+<tr>
+<td><strong>Tipo de búsqueda</strong></td>
+<td><strong>longest prefix match</strong>: hay que comparar contra <strong>todas</strong> las entradas y quedarse con la más específica</td>
+<td><strong>índice directo</strong>: <code>tabla[etiqueta]</code>, una <strong>lectura de memoria</strong></td>
+</tr>
+<tr>
+<td><strong>Coste de la búsqueda</strong></td>
+<td>O(n) comparaciones, en TCAM, en paralelo</td>
+<td><strong>O(1)</strong>, una lectura</td>
+</tr>
+<tr>
+<td><strong>Tamaño de la clave</strong></td>
+<td>hasta <strong>32 bits + longitud</strong></td>
+<td><strong>4 bits</strong> (MPLS: 20 bits)</td>
+</tr>
+<tr>
+<td><strong>Cantidad de entradas</strong></td>
+<td><strong>una por prefijo agregado</strong> (poco, y crece con los prefijos de Internet)</td>
+<td><strong>una por circuito vigente</strong> (mucho: es el número de conexiones simultáneas)</td>
+</tr>
+<tr>
+<td><strong>Se puede cambiar en caliente</strong></td>
+<td>no: cambiar la ruta es cambiar la tabla de todos</td>
+<td>no: hay que renegociar el circuito</td>
+</tr>
+<tr>
+<td><strong>Tolera que un router se reinicie</strong></td>
+<td>sí, no tiene estado</td>
+<td>no: hay que <strong>re-establecer</strong> los circuitos</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Por qué el VC es más rápido de buscar.</strong> Una etiqueta es una <strong>clave primaria</strong>: <code>tabla[47]</code>. Una tabla de prefijo es una búsqueda con coincidencia parcial: hay que preguntar a las N entradas "¿cuál de ustedes tiene estos bits como prefijo?" y quedarse con la de prefijo más largo. En hardware, la segunda se resuelve en TCAM (que compara N entradas en paralelo y cuesta caro en silicio); la primera, en una RAM normal o en un simple array indexado. <strong>El VC gana la comparación de tabla y pierde en número de entradas y en flexibilidad.</strong></p>
+<p><strong>Y por qué el VC no escala.</strong> Porque su unidad de estado es <strong>la conexión</strong>, no el <strong>prefijo</strong>. Un solo prefijo /24 con 254 hosts es <strong>una</strong> entrada de tabla de datagramas; en el mundo real ese /24 tiene <strong>toda la Internet</strong> detrás. Ese mismo tráfico en VC necesita <strong>una entrada por cada par de extremos que quiera conversar</strong>. Es un ataque a la escalabilidad: el estado crece con el <strong>tráfico y los usuarios</strong>, no con el <strong>espacio de direcciones</strong>. Está en el §2.1 con números.</p>
+<p><strong>Por qué esta es la diferencia profunda.</strong> El plano de datos de un router moderno tiene una FIB de <strong>millones</strong> de entradas, todas en TCAM. Si el estado estuviera organizado por flujo —que es lo que haría falta para "darle calidad a este TCP"— el router tendría que tener una entrada por cada flujo de Internet, y eso no cabe en silicio. Es exactamente el error de <strong>IntServ</strong> (<code>RFC 2211</code>): reservas por flujo que no escalaron. <strong>La razón por la que IP no hizo VC no es que los VC sean malos: es que el estado por flujo no escala.</strong></p>
+<h2>1.5 El establecimiento: en banda o fuera de banda</h2>
+<p>Como en la Clase 24 (§1.5), el setup de un VC puede ir por el mismo canal que los datos o por uno propio.</p>
+<div class="codehilite"><pre><span></span><code>   EN BANDA                          FUERA DE BANDA
+   ─────────                          ────────────
+   El SETUP viaja como un            El SETUP viaja por un camino
+   datagrama más por la misma        distinto del de los datos.
+   red de datos.
+
+   H ──SETUP──▶ R ──SETUP──▶ R ──▶ H      señalización  ║══ datos ══▶
+   ◀─ACK──── R ◀─ACK──── R ◀─ACK H        ║             ║
+   ──datos──▶ ──datos──▶ ──datos──▶      ║═══ datos ═══╬═══ datos ══▶
+   R guarda estado en la RIB/FIB      R tiene tablas de datos Y de
+   y la FIB se actualiza              control SEPARADAS, y el control
+   dinámicamente                      no necesita que los datos funcionen
+</code></pre></div>
+
+<p><strong>En banda (ejemplo real): el signaling de Frame Relay SVC y la señalización ATM UNI/PNNI.</strong> El mensaje de setup es un paquete que viaja por la red como cualquier otro; los routers lo encaminan, tabla de datos incluida. La consecuencia es la de siempre: <strong>si la red de datos se rompe, el setup también</strong>, y no podés establecer un circuito por un camino que no funciona — lo cual es una paradoja notable: <strong>el circuito que querés crear es precisamente el que arregla el problema</strong>.</p>
+<p><strong>Fuera de banda (ejemplo real): la red telefónica clásica.</strong> La voz viaja por <strong>circuitos dedicados</strong> conmutados; el control (establecer la llamada) viaja por una <strong>red de señalización separada</strong>, con enlaces y nodos propios. La consecuencia práctica es la que hay que decir siempre: <strong>si se cae la red de señalización, no se puede establecer ninguna llamada aunque todos los circuitos de voz estén libres.</strong> El plano de datos está perfecto y no puede usarse para nada nuevo.</p>
+<p><strong>El caso límite: el enlace dedicado.</strong> Un enlace punto a punto dedicado (<em>leased line</em>) es un circuito con capacidad <strong>1</strong> y sin multiplexado: sólo puede haber una comunicación a la vez, y el camino no se negocia porque <strong>no hay nada que negociar</strong> — la salida es siempre la misma. Es por eso un circuito conmutado en su forma más degenerada, y por eso su setup es <strong>fuera de banda</strong> por definición: lo instala el operador (o el administrador del cable), no un protocolo.</p>
+<p><strong>Y el razonamiento es el mismo del <code>2007-12 P3</code>.</strong> Ese examen pide comparar <strong>conmutación de circuitos, de paquetes y de mensajes</strong>, y el enlace dedicado es el caso extremo de conmutación de circuitos. La misma comparación aplica:</p>
+<div class="codehilite"><pre><span></span><code>   CIRCUITOS (incluye el enlace dedicado)
+   ✓ Camino fijo,BW garantizado, retardo acotado, orden garantizado
+   ✓ No hace falta dirección completa en cada paquete
+   ✗ Ancho de banda reservado aunque no se use  →  inefficient con
+     tráfico en ráfagas
+   ✗ Establecimiento previo  →  retardo de setup antes del primer dato
+   ✗ Un enlace dedicado = 1 enlace por PAR de nodos = O(n²) enlaces
+   ✗ El equipo de red tiene que asignar y mantener los circuitos
+
+   PAQUETES (datagramas)
+   ✓ Sin setup: el primer dato sale ya
+   ✓ El multiplexado estadístico aprovecha los picos de los otros
+   ✓ Un fallo de enlace no rompe la conexión: se busca otro camino
+   ✗ Sin garantías: retardo, jitter, pérdidas y orden no están acotados
+   ✗ Decisión por paquete (más trabajo en el router)
+   ✗ Reordenamiento y cabecera completa por paquete
+
+   MENSAJES
+   ✓ Coalescing: uno por mensaje de aplicación, no por paquete
+   ✓ Store-and-forward en cada nodo
+   ✗ Cada nodo debe conocer la ruta completa  →  no escala
+   ✗ Retardo grande: el mensaje entero debe llegar al nodo intermedio
+     antes de que pueda reenviarlo
+</code></pre></div>
+
+<h2>1.6 ⚠️ Actualización a 2026</h2>
+<p><strong>Sigue igual, de memoria:</strong></p>
+<ul>
+<li><strong>Internet es conmutación de datagramas.</strong> Forwarding por prefijo, sin estado, caminos distintos por paquete. No cambió.</li>
+<li>Las dos familias y sus ventajas/desventajas (reserva de recursos vs. multiplexado estadístico; control de admisión).</li>
+<li>El <strong>VC necesita estado por router</strong> y <strong>establecimiento previo</strong>.</li>
+<li>La etiqueta de VC es <strong>local a cada router</strong>.</li>
+</ul>
+<p><strong>Cambió:</strong></p>
+<ul>
+<li><strong>MPLS sigue desplegándose masivamente, pero en carriers, no en Internet.</strong> <code>RFC 3031</code> (arquitectura), <code>RFC 3032</code> (pila de etiquetas) y <code>RFC 4364</code> (L3VPN) siguen vigentes. Es el VC por excelencia de la infraestructura: el LSP se establece con LDP o RSVP-TE y los datos reenvían <strong>sólo por etiqueta</strong>.</li>
+<li><strong>El plano de control de MPLS se está moviendo a Segment Routing.</strong> <code>RFC 8402</code> (arquitectura, 2018) y <code>RFC 8986</code> (SRv6) llevan la idea del VC hasta el extremo: <strong>el estado queda sólo en el borde de ingreso</strong>, y el forwarding de los nodos intermedios es "de SID a SID" sin protocolo de control por salto. <strong>SRv6 codifica los SID dentro de la cabecera IPv6 y elimina el MPLS por completo.</strong> ⇒ Consecuencia conceptual fuerte: <strong>la frontera entre "routing" y "forwarding" se vuelve una convención de diseño, no una necesidad física.</strong></li>
+<li><strong>En datacenter, los VC por MPLS fueron reemplazados por EVPN-VXLAN</strong> (<code>RFC 7432</code> + <code>RFC 7348</code>), que es el mismo juego —etiqueta, estado en el borde, replicación por copia— sobre <strong>UDP</strong> en lugar de MPLS. La etiqueta sigue siendo clave (VNI), pero ya no es MPLS.</li>
+<li><strong>IntServ es la demostración histórica de que el VC no escala</strong> (<code>RFC 2211</code>): mantener estado por flujo en cada router es insostenible, y por eso <strong>DiffServ ganó</strong>. Lo que quedó vivo del VC es la <strong>reserva de recursos en el enlace</strong>, no por flujo: <strong>traffic shaping y policing</strong> (<code>RFC 2474</code>/<code>2475</code>) marcar el tráfico en el borde y el core aplica una PHB. ⇒ <strong>Sereserve la idea, no el mecanismo por flujo.</strong></li>
+<li><strong>El IPv6 Flow Label es el VC que nunca se usó.</strong> La cabecera IPv6 tiene un campo <strong>Flow Label</strong> de 20 bits (<code>RFC 8200</code>), que según la especificación debería identificar "flujos que necesitan tratamiento especial". Por defecto es <strong>0</strong> y ningún router de Internet lo usa para reenviar: <strong>el mundo eligió datagramas hasta en el diseño del campo de VC.</strong> Buen ejemplo para el examen de "concepto que existe en el protocolo pero no se usa".</li>
+<li><strong>El ECMP se comió parte del argumento.</strong> Con ECMP, el datagrama ya reparte un flujo entre varios next hops, así que la "ventaja" del VC de que "el camino es fijo" es <strong>cada vez menos una ventaja</strong>: es una diferencia de <em>cuánto control</em> se tiene, no de <em>si se puede</em>.</li>
+</ul>
+<p><strong>Consecuencia para el examen:</strong> la respuesta clásica (datagramas = sin estado ybest-effort; VC = con estado y QoS garantizado) <strong>se sigue preguntando y se sigue respondiendo igual</strong>. Lo que suma es una línea: <em>"hoy el VC persiste como MPLS en carriers y como overlay (VXLAN/EVPN) en datacenter, pero el estado se concentró en el borde con Segment Routing; y el que no escaló fue el VC con reserva por flujo (IntServ), no el VC en sí."</em></p>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — Entradas de tabla para 1000 hosts: VC vs. datagramas</h2>
+<p><strong>Datos.</strong> Una red interna con <strong>1000 hosts</strong>, todos en la misma LAN lógica (una sola subnet), detrás de un router de borde que los conecta a Internet. Se comparan los dos esquemas.</p>
+<p><em>Pregunta:</em> ¿cuántas entradas de tabla necesita cada router?</p>
+<p><strong>Resolución, esquema A — conmutación de datagramas.</strong></p>
+<div class="codehilite"><pre><span></span><code>   Los 1000 hosts están en 192.168.10.0/24 (una sola subnet).
+
+   FIB del router de borde:
+   ┌────────────────────────┬───────────────────────────┐
+   │ 192.168.10.0/24        │ eth0 (directamente conn.) │
+   │ 0.0.0.0/0              │ eth1, next hop 200.1.1.1  │
+   └────────────────────────┴───────────────────────────┘
+                                  ▲
+                     ¡ 2 entradas para 1000 hosts y para
+                       todo Internet, gracias a la AGREGACIÓN !
+
+   Cada host que habla con Internet usa la entrada 0.0.0.0/0.
+   Los 1000 hosts comparten la misma entrada porque comparten
+   prefijo. Nada en la tabla dice "este host".
+</code></pre></div>
+
+<p><strong>Y si cada host estuviera en su propia subnet</strong> (por ejemplo, un /30 por host), entonces sí habría <strong>una entrada por host</strong>: 1000 entradas. Ese es el peor caso del datagrama.</p>
+<p><strong>Resolución, esquema B — circuitos virtuales.</strong></p>
+<p>Para que <strong>cualquiera de los 1000 hosts pueda hablar con cualquier otro</strong> a través de la red conmutada, hace falta un VC por cada par:</p>
+<div class="codehilite"><pre><span></span><code>   número de circuitos entre pares de hosts:
+
+   Si el tráfico es UNIDIRECCIONAL y todos hablan con todos:
+
+        N × (N − 1) = 1000 × 999 = 999 000 circuitos
+
+        ┌──────────────────────────────────────┐
+        │  Tabla de VC del router:              │
+        │  etiqueta 47      → VC 91, eth1       │
+        │  etiqueta 91      → VC 22, eth2       │
+        │  etiqueta 22      → VC 47, eth3       │
+        │  ...                                  │
+        │  999 000 entradas                     │
+        └──────────────────────────────────────┘
+
+   Si el circuito es BIDIRECCIONAL (lo normal):
+
+        N × (N − 1) / 2 = 1000 × 999 / 2 = 499 500 circuitos
+</code></pre></div>
+
+<p><strong>La comparación, que es el punto de la clase:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Datagramas</strong></th>
+<th><strong>VC</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Unidad de estado</td>
+<td>el <strong>prefijo</strong></td>
+<td>el <strong>par de extremos</strong></td>
+</tr>
+<tr>
+<td>Entradas para 1000 hosts en una subnet</td>
+<td><strong>2</strong></td>
+<td>hasta <strong>999 000</strong></td>
+</tr>
+<tr>
+<td>Entradas para 1000 hosts en subnets separadas</td>
+<td><strong>1000</strong></td>
+<td><strong>999 000</strong></td>
+</tr>
+<tr>
+<td>Entradas para <strong>toda Internet</strong></td>
+<td><strong>millones de prefijos</strong> (agregables)</td>
+<td><strong>una por conexión</strong></td>
+</tr>
+<tr>
+<td>Crecimiento</td>
+<td>con el <strong>espacio de direcciones</strong></td>
+<td>con los <strong>usuarios y el tráfico</strong></td>
+</tr>
+</tbody>
+</table>
+<p><em>Interpretación:</em> el VC necesita <strong>tres órdenes de magnitud</strong> más estado, y su estado <strong>no se puede agregar</strong>: no hay forma de decir "estos 1000 hosts se parecen en algo" porque la etiqueta no tiene estructura. El datagrama sí, porque el prefijo <strong>es</strong> una agrupación. <strong>Ésta es, literalmente, la razón por la que Internet no es una red de circuitos virtuales.</strong> Y es la misma razón por la que el enrutamiento <strong>inter-AS</strong> es path-vector y no distance-vector: en un dominio grande, la métrica por flujo o por vecino se vuelve inmanejable.</p>
+<h2>2.2 Ejercicio 2 — ¿Qué pasa si se cae un enlace del camino de un VC?</h2>
+<p><strong>Datos.</strong> Un VC establecio H1 ↔ H4 con la ruta H1 – R1 – R2 – R3 – H4. Se cae el enlace R2–R3.</p>
+<p><strong>Resolución — paso a paso, comparando los dos esquemas.</strong></p>
+<p><em>Opción A: mantener el VC (como haría Frame Relay con una PVC, o MPLS).</em></p>
+<div class="codehilite"><pre><span></span><code>   t0   el enlace R2–R3 se cae.
+
+   t0+  Los paquetes con etiqueta 47 que llegan a R2 seeking salir
+        por el enlace caído: se DESCARTAN. El VC sigue "vivo" en
+        las tablas: R1, R2, R3 no se enteran de nada.
+
+   t0..t+k   Para que alguien lo note hace falta un mecanismo:
+        • Frame Relay: mensajes de keepalive cada ~10 s. Si no
+          llegan, el circuito se declara DOWN.
+        • MPLS con RSVP-TE y LSP de respaldo: Fast Reroute.
+          Un camino secundario ya estaba establecido, así que
+          la transición es de milisegundos.
+        • MPLS con LDP: el LDP se reconecta y vuelve a
+          señalizar. Segundos.
+
+   t+k   Detección: cada router involved notifica al head-end
+        (o al protocolo de señalización).
+
+   t2   Si hay respaldo: el VC pasa a usar el camino nuevo, y el
+        tráfico se reanuda. Los paquetes perdidos en el hueco
+        NO se recuperan: el VC no retransmite.
+
+   Si NO hay respaldo: el VC queda DOWN y hay que
+   re-establecerlo con un nuevo setup. La aplicación tiene que
+   detectar la caída (timeout) y reconectar.
+</code></pre></div>
+
+<p><em>Opción B: red de datagramas.</em></p>
+<div class="codehilite"><pre><span></span><code>   t0   el enlace R2–R3 se cae.
+
+   t0+  Los paquetes que iban por ahí se pierden. Los SIGUIENTES
+        van por otro camino, si la tabla ya se actualizó. Si la
+        tabla todavía no se actualizó, también se pierden
+        (la ruta vieja apunta al enlace caído).
+
+   t1   El plano de control detecta el fallo y recalcula.
+        Con OSPF, los LSA actualizados en ~5 s a 40 s, según el
+        temporizador hello/dead. Con BGP, minutos.
+
+   t2   La FIB nueva se instala. A partir de ahí, el tráfico
+        fluye por el camino nuevo SIN que nadie haya negociado
+        nada: no hay conexión que re-establecer.
+
+   Lo que se pierde: los paquetes que estaban en vuelo.
+   Eso lo resuelve TCP con un timeout o 3 dup-ACKs. Nada
+   necesita renegociar.
+</code></pre></div>
+
+<p><strong>La comparación, y es la respuesta:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>VC</strong></th>
+<th><strong>Datagramas</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Detección del fallo</td>
+<td><strong>explícita</strong>: keepalive, señalización o un LSP de respaldo ya armado</td>
+<td><strong>implícita</strong>: los mensajes dejan de llegar, o el siguiente paquete simplemente no sale</td>
+</tr>
+<tr>
+<td>Convergencia</td>
+<td>hay que <strong>re-establecer</strong>: segundos si hay respaldo, más si no</td>
+<td><strong>automática</strong>: el siguiente paquete ya busca otro camino</td>
+</tr>
+<tr>
+<td>Recuperación de datos</td>
+<td><strong>no hay</strong>: el VC no retransmite</td>
+<td>la <strong>capa de transporte</strong> (TCP) reenvía</td>
+</tr>
+<tr>
+<td>Aplicación</td>
+<td>puede tener que <strong>reconectar</strong></td>
+<td>no se entera</td>
+</tr>
+</tbody>
+</table>
+<p><em>Interpretación:</em> el VC es <strong>más eficiente cuando todo anda bien</strong> (búsqueda O(1), camino conocido, sin reordenamiento, calidad garantizada) y <strong>más frágil cuando algo se rompe</strong>, porque el estado hay que reconstruirlo y hay que reconstruirlo <em>de verdad</em>. El datagrama es al revés:algo más de trabajo por paquete, pero ningún estado que pueda quedar inconsistente. <strong>Ese es el intercambio clásico entre eficiencia y robustez, y es exactamente por lo que Internet eligió robustez.</strong></p>
+<h2>2.3 Ejercicio 3 — Un circuito virtual multipunto</h2>
+<p><strong>Datos.</strong> Un servidor de streaming quiere enviar el mismo flujo a 500 espectadores. ¿Se puede con un solo VC? ¿Qué cambia en los routers?</p>
+<p><strong>Resolución.</strong> Un VC normal es <strong>punto a punto</strong>: un puerto de entrada, un puerto de salida. Si un VC tiene que llegar a varios destinos, hace falta una de dos formas, y en las dos <strong>el router tiene que dejar de ser un conmutador</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   (a) MULTIPOINT-TO-POINT  (bidireccional, "árbol" compartido)
+       Todos los que están en el VC pueden hablar entre sí.
+
+          ┌── V2 ──┐
+          │        ▼
+   R1 ────┼── V1 ──┼── V3 ── R4
+          │        ▼
+          └── V4 ──┘
+
+       En R1: UNA entrada  VC 100 → "copiá a las interfaces eth0..eth3"
+       En los otros: cada uno tiene su VC y reenvía uno a uno.
+       El tráfico entre V2 y V3 pasa por R1 y se duplica si
+       van en sentidos distintos.
+
+   (b) POINT-TO-MULTIPOINT  (unidireccional, "el que manda empuja")
+       Un emisor, muchos receptores. El emisor no recibe.
+
+          R1 ── V1 ──┬── V2 ──► V2
+                     ├── V3 ──► V3
+                     └── V4 ──► V4
+
+       En R1: UNA entrada  VC 100 → "reenviá a eth0, eth1 y eth2"
+       Coste: si las ramas son enlaces distintos, el ancho de banda
+       se multiplica por 500. Si comparten un enlace, se copia en
+       el buffer de salida (y el router tiene que tener RAM para
+       500 copias del mismo paquete).
+</code></pre></div>
+
+<p><strong>Lo que hay que decir:</strong></p>
+<ol>
+<li><strong>Un solo VC multipunto reduce muchísimo la tabla</strong>: una entrada en vez de 500. Ese es su appeal.</li>
+<li><strong>Pero rompe el modelo de conmutación</strong>: un router que copia a N salidas necesita <strong>memoria proportional a N</strong> (o al menos un buffer de replicación), y necesita poder decidir a quién le copia (si el grupo es dinámico, necesita un estado de membresía, que es exactamente el estado que el VC multipunto se supone que elimina).</li>
+<li><strong>Y el ancho de banda se multiplica</strong> si las ramas son independientes.</li>
+<li><strong>El equivalente en el mundo de datagramas es el multicast</strong>, y funciona <em>exactamente por la razón contraria</em>: se paga estado (quien pertenece al grupo) para <strong>no</strong> pagar ancho de banda, y se resuelve con <strong>flooding + prune</strong> (§1.6 de la Clase 24) y no con un VC. La historia de IP multicast es la historia de intentar hacer multicast <strong>sin</strong> estado por VC.</li>
+</ol>
+<blockquote>
+<p>En clase, cuando te pidan "un VC multipunto", dibujá las dos formas (árbol bidireccional y empuje unidireccional), y sumá la comparación con multicast. Es un ejercicio que aparece en varios exámenes de ATM y Frame Relay.</p>
+</blockquote>
+<h2>2.4 Ejercicio 4 — El enlace dedicado como caso extremo</h2>
+<p><strong>Enunciado.</strong> ¿Es lo mismo un "enlace dedicado" que un circuito conmutado? ¿Y un circuito virtual? Justificá.</p>
+<p><strong>Resolución.</strong> Los tres son de la familia de <strong>conmutación de circuitos</strong> — camino fijo y dedicada capacidad — pero difieren en cuánto es el circuito y quién lo instala:</p>
+<div class="codehilite"><pre><span></span><code>   ENLACE DEDICADO                 CIRCUITO VIRTUAL CONMUTADO
+   ────────────────                 ────────────────────────────
+   Un cable físico entre            Un circuito lógico dentro de
+   dos nodos.                        un enlace compartido.
+                                     Switches en el medio eligen
+   dedicated = no comparte           por dónde sale el circuito.
+   Capacidad fija para ese par.      Comparte con otros circuitos.
+
+   El "setup" es el CARLEO del       El "setup" es un protocolo
+   cable: lo instala el operador     de señalización entre los
+   o el administrador.               extremos, en línea.
+
+   1 enlace por PAR de nodos.        1 enlace para N nodos
+   n nodos → n(n−1)/2 enlaces.       (con switches de N puertos).
+</code></pre></div>
+
+<p><strong>Por qué el enlace dedicado es el mismo razonamiento que el <code>2007-12 P3</code>.</strong> Porque los tres casos de aquel examen (circuitos, paquetes, mensajes) son la misma comparación en distintos puntos del espectro:</p>
+<div class="codehilite"><pre><span></span><code>                 CIRCUITOS      PAQUETES       MENSAJES
+                 ──────────     ────────       ─────────
+   Unidad         sesión         paquete        mensaje de
+                                            aplicación
+   Camino         FIJO           por paquete    completo
+   Setup          SÍ             NO             NO
+  BW           reservado       Statistical    reservado
+   Reordena.      NO             SÍ             NO
+   Multiplexado   NO             SÍ             según
+
+   El enlace dedicado es el extremo izquierdo del todo:
+   circuito con capacidad 1, sin multiplexado y sin setup en línea.
+</code></pre></div>
+
+<p><strong>El cálculo que lo mata.</strong> Con <strong>n</strong> nodos:</p>
+<ul>
+<li>Enlace dedicado: <strong>n(n−1)/2</strong> enlaces. Para 20 nodos: <code>20·19/2 = 190</code> enlaces físicos.</li>
+<li>Conmutación de circuitos: <strong>1</strong> switch, <strong>n</strong> enlaces, y los circuitos se crean y se liberan según hacen falta.</li>
+<li>Conmutación de paquetes: <strong>1</strong> switch, <strong>n</strong> enlaces, y los enlaces se comparten dinámicamente sin reservar nada.</li>
+</ul>
+<p>O sea: <strong>190 enlaces contra 20.</strong> El enlace dedicado es la solución correcta cuando el tráfico es constante y de volumen alto (y aun así: 190 leases que pagar). Es la solución <strong>equivocada</strong> para el tráfico en ráfagas de una red de oficinas, porque el 90 % del tiempo estás pagando una capacidad que no usás. <strong>Ese es el mismo argumento del multiplexado estadístico, sólo que con una red de 190 enlaces en vez de uno.</strong></p>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2009-02, Pregunta 4 (9 puntos) — datagramas vs. circuitos virtuales</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0902</code> / <code>sirc0902</code> — 2 de febrero de 2009.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0902.pdf
+<strong>Texto del examen:</strong></p>
+<blockquote>
+<p><strong>a)</strong> Describa la conmutación de paquetes basada en: <strong>i.</strong> Datagramas <strong>ii.</strong> Circuitos virtuales.
+<strong>b)</strong> Explique ventajas y desventajas de cada opción desde el punto de vista de la asignación de recursos en la red.</p>
+</blockquote>
+</blockquote>
+<p><strong>Solución oficial (b, literal del PDF):</strong></p>
+<blockquote>
+<p>Básicamente las redes de datagramas son "de mejor esfuerzo", es decir que consumen los recursos disponibles, y en caso de congestión degradan el servicio por igual a todos los usuarios; aprovechan bien el multiplexado estadístico del tráfico en la red. Las redes de VC ofrecen garantía de QoS basadas en la reserva de recursos, y por lo tanto protegen a los usuarios de las situaciones de congestión, a costo de disponer de más recursos o rechazar conexiones (control de admisión).</p>
+</blockquote>
+<p><strong>Sobre la parte a):</strong> el PDF de solución <strong>copia el enunciado de la parte a) sin contenido</strong> (remite a las transparencias del curso). Lo que sigue para a) es <strong>solución propia</strong>.</p>
+<h3>Parte a) — resolución</h3>
+<p><strong>i. Datagramas.</strong> Cada paquete se reenvía por decisión propia, leyendo <strong>su propia dirección destino</strong> y consultando la tabla (en IP, <em>longest prefix match</em>). <strong>No hay conexión, no hay estado en el router, no hay negociación previa</strong>: el emisor manda el primer paquete sin handshake. Consecuencias: los paquetes de un mismo flujo <strong>pueden tomar caminos distintos</strong> (y entonces pueden llegar desordenados); si la red cambia, los siguientes paquetes ya aprovechan el cambio sin renegociar nada; y el router no guarda información entre paquetes, así que un reinicio de un router no rompe nada.</p>
+<p><strong>ii. Circuitos virtuales.</strong> Antes de enviar datos hay un <strong>establecimiento previo</strong>: un intercambio de mensajes de señalización que recorre el camino del destino al origen y vuelve, y que <strong>reserva recursos</strong> en cada enlace del camino. Los datos viajan después identificados por una <strong>etiqueta de VC</strong> (<em>VC label</em>), que es <strong>un número corto, no una dirección</strong>, y <strong>todos los paquetes de esa conexión siguen el mismo camino</strong>. Cada router del camino guarda <strong>estado</strong> para ese circuito (etiqueta de entrada → etiqueta y puerto de salida), y ese estado <strong>no existe</strong> en un router de datagramas.</p>
+<p><strong>La frase que resume la diferencia, y que hay que decir:</strong> en <strong>datagramas la decisión se toma por paquete</strong> (la unidad de estado es el prefijo); en <strong>circuito virtual la decisión se tomó una vez por conexión</strong> (la unidad de estado es el circuito, identificado por una etiqueta). Todo lo demás —ventajas, desventajas, costo, escalabilidad— se deduce de ahí.</p>
+<h3>Parte b) — análisis de la solución oficial</h3>
+<p>La solución oficial es <strong>excelente</strong> y contiene las tres ideas que hay que dar:</p>
+<ol>
+<li><strong>Datagramas = mejor esfuerzo</strong>: consumen los recursos disponibles y "en caso de congestión <strong>degradan el servicio por igual a todos los usuarios</strong>". O sea: <strong>ningún usuario tiene prioridad</strong>; el router no sabe a quién pertenece el paquete. Eso es <em>best-effort</em> en el sentido fuerte.</li>
+<li><strong>Datagramas = bueniplexado estadístico</strong>: aprovechan bien los recursos porque <strong>el tráfico en Internet es en ráfagas</strong> y las capacidades que se reservan dinámicamente se comparten. Si dos flujos usan el mismo enlace en instantes distintos, el ancho de banda está aprovechado.</li>
+<li><strong>VC = garantía de QoS por reserva</strong>, que "protege a los usuarios de las situaciones de congestión" pero "<strong>a costo de disponer de más recursos o rechazar conexiones</strong> (<strong>control de admisión</strong>)".</li>
+</ol>
+<p><strong>Qué agregaría:</strong></p>
+<ul>
+<li><strong>El costo en memoria del router.</strong> El VC no sólo reserva ancho de banda: reserva <strong>estado</strong>. Cada router tiene que guardar entradas de tabla por circuito. Ese estado es el que no escala (§2.1: hasta <strong>999 000</strong> circuitos para 1000 hosts), y por eso la reserva de recursos por VC tiene un techo muy bajo en Internet.</li>
+<li><strong>La asimetría entre "rechazar conexiones" y "degradar a todos".</strong> El control de admisión es una decisión <strong>explícita y temprana</strong>: si no hay recursos, el usuario recibe un "no". El <em>best-effort</em> es una decisión <strong>implícita y tardía</strong>: el usuario no se entera hasta que ve que le faltó. Para el proveedor, el control de admisión es <strong>predecible</strong>; para el usuario, es <strong>injusto</strong>.</li>
+<li><strong>El coste de la conmutación de circuitos con recursos compartidos es el número de circuits que deben estar "listos"</strong>. Si un VC necesita 2 Mbit/s garantizados y hay 100 usuarios, hacen falta 200 Mbit/s <strong>reservados</strong> en el enlace, o de lo contrario hay que <strong>rechazar</strong> el VC número 101. Ese es exactamente el "costo de disponer de más recursos" de la solución oficial, y es la razón por la que un operador con una red de 1 Gbit/s no puede ofrecer QoS a 100 usuarios de 20 Mbit/s aunque el promedio de uso sea 1 Mbit/s.</li>
+<li><strong>El caso en el que el VC gana de verdad: el tráfico en ráfagas con requirement de calidad.</strong> Si 90 % de la capacidad reservada está ociosa, el VC está desperdiciando; pero si hay una aplicación que necesita un piso de calidad (voz en tiempo real, un enlace de respaldo), la reserva es la única manera de <strong>garantizarlo</strong>. El problema nunca es la idea del VC: es hacerlo <strong>con reserva por flujo</strong> y no por clase.</li>
+</ul>
+<blockquote>
+<p><strong>Tope para 9 puntos</strong> (a ~4, b ~5): en (a), las dos definiciones con sus tres condiciones (decisión por paquete / etiqueta + estado + setup). En (b), <em>best-effort</em> y multiplexado estadístico para datagramas; reserva de recursos, garantía de QoS y <strong>control de admisión</strong> para VC; y el costo (más recursos o rechazo) que es la palabra clave. Con sólo decir "datagramas es mejor esfuerzo y VC garantiza calidad" son 4-5 de 9.</p>
+</blockquote>
+<h2>3.2 Examen 2007-12, Pregunta 3 (10 puntos) — circuitos, paquetes y mensajes</h2>
+<blockquote>
+<p><strong>Fuente:</strong> <code>eirc0712</code> / <code>sirc0712</code> — 27 de diciembre de 2007. <strong>Texto:</strong></p>
+<blockquote>
+<p>Explique en que consiste la conmutación de circuitos, conmutación de paquetes y conmutación de mensajes. Realice un análisis comparativo.</p>
+</blockquote>
+</blockquote>
+<p><strong>Nota:</strong> el PDF de solución no desarrolla esta pregunta. El desarrollo completo de la conmutación de circuitos / paquetes / mensajes es la <strong>Clase 4</strong>; acá va el resumen en la forma de tabla de §1.5, más el enlace al razonamiento del enlace dedicado (§2.4).</p>
+<p><strong>Lo que hay que decir, en una frase cada una.</strong></p>
+<ul>
+<li><strong>Conmutación de circuitos:</strong> se establece un camino dedicado de principio a fin antes de transmitir, y todo el tráfico de esa sesión va por ese camino, con recursos reservados. La red telephone clásica es el ejemplo.</li>
+<li><strong>Conmutación de paquetes:</strong> no hay camino previo; cada paquete lleva la dirección destino y el switch decide por dónde sale. Es la conmutación de datagramas si las decisiones son independientes, y la de <strong>VC</strong> si hay un circuito establecido con etiqueta. Internet es de paquetes.</li>
+<li><strong>Conmutación de mensajes:</strong> la unidad conmutada es el <strong>mensaje completo de la aplicación</strong>. El nodo intermedio tiene que <strong>recibir el mensaje entero</strong> antes de poder reenviarlo (<em>store-and-forward</em>), y necesita <strong>conocer la ruta completa</strong> hasta el destino final, porque cada mensaje lleva un nombre de destino y una lista deilhitos. <strong>No escala</strong> y agrega retardo, a cambio de una muy buena eficiencia en el número de paquetes por mensaje (<strong>coalescing</strong>).</li>
+</ul>
+<p><strong>La tabla comparativa</strong> es la de §1.5. Y si te piden un ejemplo de cada una: <strong>circuitos</strong> = la llamada telefónica (o un enlace dedicado); <strong>paquetes</strong> = un datagrama IP, o un VC de MPLS; <strong>mensajes</strong> = un email que viaja como un único bloque por la red (las redes <em>store-and-forward</em> de los origen de los años '80).</p>
+<h2>3.3 Examen 2010-02, Pregunta 2c — las dos formas de servicio de capa de red</h2>
+<blockquote>
+<p><strong>Fuente:</strong> <code>eirc1002</code> / <code>sirc1002</code> — 2 de febrero de 2010. <strong>Texto:</strong></p>
+<blockquote>
+<p>c) Describa brevemente las dos formas de prestar servicios de capa de red.</p>
+</blockquote>
+</blockquote>
+<p>Es exactamente el tema de esta clase. Las dos formas son:</p>
+<ol>
+<li><strong>Servicio de conmutación de datagramas</strong> (<em>datagram service</em>): sin conexión y sin estado, cada paquete se reenvía por decisión propia con longest prefix match, los paquetes de un mismo flujo pueden tomar caminos distintos, no hay reserva de recursos y el servicio es <em>best-effort</em>. <strong>Es el servicio de Internet.</strong></li>
+<li><strong>Servicio de conmutación de circuitos virtuales</strong> (<em>virtual circuit service</em>): con conexión, hay establecimiento previo, se establece un camino lógico que todos los paquetes siguen identificados por una etiqueta, cada router guarda estado para ese circuito, y puede haber reserva de recursos con control de admisión y garantías de calidad. <strong>Es el servicio de Frame Relay, ATM y MPLS.</strong></li>
+</ol>
+<p><strong>Nota:</strong> el enunciado de 2010-02 es ambigüo y muchos alumnos lo responden como "conexión / sin conexión". La lectura correcta es "datagramas / circuitos virtuales", porque son las dos formas de conmutación dentro de una <strong>red de paquetes</strong> — es la misma pregunta que la <code>2009-02 P4</code> de esta clase, con otra redacción.</p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen</h2>
+<ol>
+<li>Las dos familias se distinguen por <strong>una pregunta</strong>: ¿la decisión depende del <strong>paquete</strong> o de un <strong>camino previamente establecido</strong>?</li>
+<li><strong>Datagramas</strong>: sin conexión, sin estado, decisión <strong>por paquete</strong>, caminos distintos para el mismo flujo, tabla por <strong>prefijo</strong> y <strong>agregable</strong>. Es Internet entero.</li>
+<li><strong>Circuitos virtuales</strong>: <strong>establecimiento previo</strong> + <strong>etiqueta</strong> + <strong>estado en cada router</strong>. La etiqueta es un número <strong>local</strong> a cada router, no una dirección.</li>
+<li>La tabla por VC es una <strong>lectura O(1)</strong>; la de prefijo, un <strong>longest prefix match</strong> en TCAM. El VC gana la búsqueda y pierde en <strong>cantidad de entradas</strong> (999 000 circuitos para 1000 hosts) y en <strong>agregabilidad</strong>.</li>
+<li>La <strong>razón profunda</strong> de que Internet no sea de VC: el estado por flujo <strong>no escala en silicio</strong>. Es el error de IntServ (<code>RFC 2211</code>).</li>
+<li>El <strong>enlace dedicado</strong> es el circuito conmutado en su forma más degenerada: capacidad 1, sin multiplexado, <code>n(n−1)/2</code> enlaces para <code>n</code> nodos, y setup <strong>fuera de banda</strong>.</li>
+<li>El VC es <strong>más eficiente si nada se rompe y más frágil si algo se rompe</strong>: su estado hay que reconstruirlo; el datagrama no tiene estado que pueda quedar inconsistente.</li>
+<li><strong>Multipunto</strong> rompe el modelo de conmutación (hay que copiar a N salidas, con memoria proporcional a N); su equivalente escalable en el mundo datagrama es el <strong>multicast</strong> con <em>flood-and-prune</em>.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> ¿Qué distingue formalmente a un router de datagramas de uno de circuitos virtuales?</p>
+<details><summary>Respuesta</summary>
+
+La **unidad de estado**. En datagramas la decisión se toma **por paquete** y el estado se organiza por **prefijo** (agregable). En VC la decisión se tomó **una vez por conexión** y el estado se organiza por **circuito**, identificado por una etiqueta, con **reserva de recursos**. Todo lo demás se deduce de eso: la tabla, la escalabilidad y el comportamiento ante fallos.
+
+</details>
+
+<p><strong>2.</strong> ¿Por qué la etiqueta de VC es "local a cada router" y qué consecuencia tiene?</p>
+<details><summary>Respuesta</summary>
+
+Porque la etiqueta **no es una dirección**: es un número que sólo significa algo dentro del router que la recibe ("entró 47, salí por eth1, poné 91"). El mismo 47 puede significar otra cosa en el router siguiente. La consecuencia es que **el router no necesita entender la red** para conmutar el circuito, pero que **no se puede agregar**: no hay forma de decir "estos 500 circuitos se parecen", porque la etiqueta no tiene estructura.
+
+</details>
+
+<p><strong>3.</strong> 1000 hosts en una misma subnet. ¿Cuántas entradas de tabla necesita cada esquema?</p>
+<details><summary>Respuesta</summary>
+
+**Datagramas: 2** (la /24 local y el default `0.0.0.0/0`). Aunque los 1000 hosts estuvieran cada uno en su propia subnet, serían 1000 entradas.
+
+**VC: hasta 999 000** circuitos (`N·(N−1)` unidireccionales, `N·(N−1)/2` bidireccionales), porque hace falta un circuito por cada par de extremos que quiera conversar. Tres órdenes de magnitud más, y —peor— ese estado **no se puede agregar**, así que crece con los usuarios y no con el espacio de direcciones.
+
+</details>
+
+<p><strong>4.</strong> ¿Por qué Internet no es una red de circuitos virtuales?</p>
+<details><summary>Respuesta</summary>
+
+Porque el estado por flujo **no escala**: la unidad de estado del VC es la conexión, no el prefijo, así que el estado crece con los usuarios y el tráfico y **no se puede agregar**. La FIB de un router moderno tiene millones de entradas de prefijo, y eso cabe; un estado por cada flujo de Internet, no. Es exactamente el error de IntServ (`RFC 2211`). El VC en sí no es "malo": lo que no escaló fue el **VC con reserva por flujo**.
+
+</details>
+
+<p><strong>5.</strong> ¿Qué le pasa a un VC si se cae un enlace de su camino? ¿Y a un flujo de datagramas?</p>
+<details><summary>Respuesta</summary>
+
+**VC**: los paquetes que llegan al enlace caído se descartan, pero **el circuito sigue "vivo" en las tablas**. Alguien tiene que notar el fallo (keepalive de Frame Relay, señalización de MPLS) y re-establecer el circuito, o cambiar a un LSP de respaldo si lo había (*fast reroute*). Tarda segundos y **el VC no recupera los paquetes perdidos**.
+
+**Datagramas**: los paquetes en vuelo se pierden, y los siguientes **buscan otro camino** apenas la tabla se actualiza, **sin renegociar nada**. La recuperación es cosa de TCP, no de la red. El datagrama es más lento por paquete, pero no tiene estado que pueda quedar inconsistente.
+
+</details>
+
+<p><strong>6.</strong> ¿Qué es un circuito virtual multipunto y por qué rompe el modelo de conmutación?</p>
+<details><summary>Respuesta</summary>
+
+Un VC que llega a varios destinos: en versión **multipoint-to-point** (árbol, bidireccional, todos hablan entre sí) o **point-to-multipoint** (unidireccional, el que manda empuja). Rompe el modelo porque un router tiene que **copiar a N salidas**: necesita memoria proporcional a N (o un buffer de replicación) y, si el grupo es dinámico, necesita saber quién pertenece. Y el ancho de banda se multiplica por el número de ramas. Su equivalente escalable en datagramas es el **multicast** con *flood-and-prune*, que paga estado para no pagar ancho de banda.
+
+</details>
+
+<p><strong>7.</strong> ¿El enlace dedicado es lo mismo que un circuito virtual? Explicá con un cálculo.</p>
+<details><summary>Respuesta</summary>
+
+No: es el **circuito conmutado en su caso más degenerado**. Capacidad 1, sin multiplexado, un cable físico por par de nodos, y el "setup" es el carleo del cable (instalado por el operador, o sea **fuera de banda**). El cálculo lo mata: con **n** nodos hacen falta `n(n−1)/2` enlaces — para 20 nodos, `20·19/2 = 190` enlaces, contra **20** conmutando circuitos en un switch de 20 puertos. Es la solución correcta con tráfico constante y de volumen alto; es la equivocada para el tráfico en ráfagas de una oficina.
+
+</details>
+
+<p><strong>8.</strong> En 2026, ¿sigue siendo verdad que "Internet es conmutación de datagramas"? ¿Qué cambió en el mundo de los VC?</p>
+<details><summary>Respuesta</summary>
+
+Internet **sí** sigue siendo conmutación de datagramas: forwarding por prefijo, sin estado, caminos distintos por paquete.
+
+Lo que cambió es el mundo de los VC: **MPLS sigue en los carriers** (`RFC 3031`, `RFC 3032`, `RFC 4364`), pero su plano de control se mueve a **Segment Routing** (`RFC 8402`, `RFC 8986`), que deja **el estado sólo en el borde de ingreso** y hace que el forwarding intermedio sea "de SID a SID"; en datacenter, MPLS fue reemplazado por **EVPN-VXLAN** (`RFC 7432`, `RFC 7348`). Y el **IPv6 Flow Label** (`RFC 8200`), que sería el VC dentro de IPv6, está en **0** y no lo usa ningún router. O sea: **el VC persiste, pero concentrado en el borde; el que no escaló fue el VC con reserva por flujo.**
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>eirc0902</code> / <code>sirc0902</code></strong> — P4 (9 pts): conmutación por datagramas vs. circuitos virtuales y ventajas/desventajas desde la asignación de recursos. La pregunta central de esta clase.</li>
+<li><strong>Examen <code>eirc0712</code> / <code>sirc0712</code></strong> — P3 (10 pts): conmutación de circuitos, de paquetes y de mensajes, con análisis comparativo (desarrollada en la Clase 4; el enlace dedicado es el caso extremo de circuitos).</li>
+<li><strong>Examen <code>eirc1002</code> / <code>sirc1002</code></strong> — P2c: las dos formas de prestar servicios de capa de red. · <strong>Examen <code>eirc1103</code> / <code>sirc1103</code></strong> — P1: las dos funciones clave de la capa de red.</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 5 "La capa de red" — §5.1 las dos familias de redes: Circuitos virtuales y conmutación de datagramas.</li>
+<li><strong>RFC 791</strong> — Internet Protocol (1981): el modelo de datagrama, sin conexión y best-effort.</li>
+<li><strong>RFC 3031</strong> — MPLS Architecture (2001) · <strong>RFC 3032</strong> — MPLS Label Stack (2001) · <strong>RFC 4364</strong> — MPLS L3VPN.</li>
+<li><strong>RFC 2211</strong> — IntServ (1997): el modelo de reserva por flujo que <strong>no escaló</strong>, y la razón por la que DiffServ ganó.</li>
+<li><strong>RFC 2474 / RFC 2475</strong> — DS field y arquitectura de DiffServ: lo que quedó de la QoS, pero por <strong>clase</strong>, no por flujo.</li>
+<li><strong>RFC 8402</strong> — Segment Routing Architecture (2018) · <strong>RFC 8986</strong> — SRv6 Network Programming (2022): estado sólo en el borde de ingreso.</li>
+<li><strong>RFC 8200</strong> — IPv6 (2017): el campo <strong>Flow Label</strong>, el VC que nunca se usó.</li>
+<li><strong>RFC 7432 / RFC 7348</strong> — EVPN / VXLAN: el VC del datacenter sobre UDP, que reemplazó a MPLS ahí.</li>
+<li><strong>Clase siguiente:</strong> 26 — IPv4: el datagrama y las direcciones</li>
+</ul></body></html>

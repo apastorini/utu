@@ -1,0 +1,1312 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 8 — Modelo cliente/servidor y HTTP/1.1</h1>
+<p><strong>Bloque:</strong> B (Aplicación) · <strong>Semana:</strong> 3 · <strong>Duración estimada:</strong> 110 min
+<strong>Correlativa:</strong> Clase 7 (la capa de aplicación: peer-to-peer y cliente/servidor) · <strong>Sigue con:</strong> Clase 9 (HTTP a fondo: mensajes, cookies, caché y versiones)
+<strong>Material de referencia:</strong> Tanenbaum cap. 7 (§7.1 el modelo cliente/servidor, §7.3 HTTP) · RFC 9110, RFC 9112, RFC 9113, RFC 9114, RFC 6265, RFC 7540 (obsoleto), RFC 7838</p>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 720 400" style="max-width:720px"><rect width="720" height="400" fill="#ffffff"/><text x="360.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Del clic a la primera respuesta</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><rect x="40" y="56" width="110" height="42" rx="5" fill="#2e7d4f" stroke="#2e7d4f" stroke-width="1.2"/><text x="95.0" y="81.55" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#ffffff">DNS</text><rect x="166" y="56" width="330" height="42" rx="4" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="331.0" y="80.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">resolver www.ejemplo.com -&gt; 93.184.216.34</text><rect x="512" y="56" width="110" height="42" rx="4" fill="#fff" stroke="#2e7d4f" stroke-width="1.2"/><text x="567.0" y="80.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#2e7d4f">1 RTT</text><rect x="40" y="112" width="110" height="42" rx="5" fill="#14507a" stroke="#14507a" stroke-width="1.2"/><text x="95.0" y="137.55" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#ffffff">TCP</text><rect x="166" y="112" width="330" height="42" rx="4" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="331.0" y="136.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">handshake de 3 vias contra el puerto 80</text><rect x="512" y="112" width="110" height="42" rx="4" fill="#fff" stroke="#14507a" stroke-width="1.2"/><text x="567.0" y="136.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#14507a">1 RTT</text><rect x="40" y="168" width="110" height="42" rx="5" fill="#c8621a" stroke="#c8621a" stroke-width="1.2"/><text x="95.0" y="193.55" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#ffffff">TLS</text><rect x="166" y="168" width="330" height="42" rx="4" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="331.0" y="192.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">handshake, certificado, claves de sesion</text><rect x="512" y="168" width="110" height="42" rx="4" fill="#fff" stroke="#c8621a" stroke-width="1.2"/><text x="567.0" y="192.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#c8621a">2 RTT</text><rect x="40" y="224" width="110" height="42" rx="5" fill="#b3261e" stroke="#b3261e" stroke-width="1.2"/><text x="95.0" y="249.55" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#ffffff">HTTP</text><rect x="166" y="224" width="330" height="42" rx="4" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="331.0" y="248.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">GET /index.html  -&gt;  200 OK</text><rect x="512" y="224" width="110" height="42" rx="4" fill="#fff" stroke="#b3261e" stroke-width="1.2"/><text x="567.0" y="248.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#b3261e">1 RTT</text><rect x="40" y="280" width="110" height="42" rx="5" fill="#eef2f5" stroke="#666" stroke-width="1.2"/><text x="95.0" y="305.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#666">luego</text><rect x="166" y="280" width="456" height="42" rx="4" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="394.0" y="304.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">una conexion TCP por objeto en HTTP/1.1, o multiplexada en h2/h3</text><rect x="40" y="342" width="582" height="44" rx="5" fill="#e9f4ed" stroke="#2e7d4f" stroke-width="1.2"/><text x="331.0" y="368.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#1a1a1a">En total: ~5 RTT antes de recibir el primer byte de la pagina.</text><text x="40" y="408" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">Por eso importan la cache, las cookies de sesion y la conexion persistente:</text><text x="40" y="426" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">cada RTT ahorrado se siente en el tiempo de carga.</text></svg></p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Explicar qué es el modelo <strong>cliente/servidor</strong>, por qué existe y en qué se diferencia del <strong>peer-to-peer</strong>, y por qué la asimetría (servidor pasivo, cliente activo) simplifica toda la capa de aplicación.</li>
+<li>Enumerar <strong>qué es HTTP y qué NO es</strong>: por qué no es la Web, por qué no es un protocolo de transporte, por qué no tiene estado y por qué no es seguro por sí mismo.</li>
+<li>Escribir <strong>de memoria</strong> un mensaje de petición y uno de respuesta HTTP/1.1 completos, con todas sus cabeceras, y explicar qué significa cada código de estado.</li>
+<li>Calcular <strong>cuántos RTT</strong> cuesta una página con <strong>1 objeto</strong> y con <strong>11 objetos</strong>, en HTTP no persistente y en HTTP persistente, con un solo servidor y con varios, justificando cada RTT.</li>
+<li>Explicar por qué <strong>304 Not Modified</strong> existe, cómo se combine con <code>ETag</code> y <code>Last-Modified</code>, y por qué ahorra transferencia.</li>
+<li>Explicar qué son las <strong>cookies</strong>, qué problema resuelven, dónde vive el estado y por qué <code>RFC 6265</code> las estandariza.</li>
+<li>Resolver completo el <strong>Examen 2010-07 Pregunta 1</strong> (8 puntos), con la cuenta de RTTs.</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2010-07 P1</code> (8 puntos — ★ el problema central de esta clase), <code>2009-07 Problema 2</code> (30 puntos — cliente anti-spam vía HTTP, parte b), <code>2010-02 P1</code> (qué es DNS, misma lógica conceptual).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 El modelo cliente/servidor</h2>
+<h3>Qué es</h3>
+<p>El modelo <strong>cliente/servidor</strong> (<em>client/server</em>) es una organización de la computación
+en la que los procesos se dividen en <strong>dos roles que no son simétricos</strong>:</p>
+<ul>
+<li>El <strong>servidor</strong> (server) es un proceso que <strong>espera</strong>. Ofrece un servicio sobre un
+  puerto bien conocido y no hace nada hasta que alguien le hable.</li>
+<li>El <strong>cliente</strong> (client) es un proceso que <strong>inicia</strong>. Decide hablar, contacta al
+  servidor y consume el servicio.</li>
+</ul>
+<div class="codehilite"><pre><span></span><code>        ── el cliente INICIA la comunicación ──▶
+
+   ┌──────────────┐            ┌──────────────┐
+   │   CLIENTE    │            │   SERVIDOR   │
+   │              │  petición  │              │
+   │  pide        │───────────▶│  espera      │
+   │              │            │  (no hace    │
+   │  (espera la  │            │   NADA hasta │
+   │   respuesta) │◀───────────│   que le     │
+   └──────────────┘  respuesta └──────────────┘
+                                  ▲
+                                  └── el servidor NUNCA inicia
+</code></pre></div>
+
+<p><strong>La asimetría es el dato de diseño central.</strong> Un servidor nunca genera tráfico
+espontáneo hacia un cliente: <strong>solo responde</strong>. Un cliente solo genera tráfico
+porque <strong>quiso</strong>.</p>
+<h3>Por qué existe</h3>
+<p>La razón profunda es la <strong>asimetría de roles entre los extremos</strong>. La Web no es
+simétrica: hay millones de navegadores (que cambian, se mueven, se apagan) y hay
+decenas de miles de servidores de contenido (que son máquinas con costos fijos,
+permanecen y son caros de mantener). Un diseño donde cualquiera pueda servir y
+servirse sería insostenible: los roles no son intercambiables.</p>
+<p>El modelo cliente/servidor <strong>externaliza</strong> el problema: en vez de que cada host
+mantenga una copia de todo el contenido, el contenido vive en <strong>un</strong> servidor y
+los clientes van a buscarlo. Las tres consecuencias prácticas que hacen que gane:</p>
+<table>
+<thead>
+<tr>
+<th>Consecuencia</th>
+<th>Por qué importa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>El servidor no necesita saber quién es el cliente</strong></td>
+<td>Basta con direccionar a un <code>host:puerto</code>. No hay que "descubrir" al cliente.</td>
+</tr>
+<tr>
+<td><strong>El servidor es pasivo ⇒ no hay que resolver el "quién llama"</strong></td>
+<td>El problema de "quién está llamando" desaparece: el que llama se identifica solo al abrir la conexión.</td>
+</tr>
+<tr>
+<td><strong>Se pueden atender muchos clientes desde un servidor</strong></td>
+<td>Un servidor HTTP atiende miles de conexiones simultáneas; los clientes son desechables.</td>
+</tr>
+</tbody>
+</table>
+<p>La tercera consecuencia es la que habilita la <strong>Web</strong> como la conocemos: si cada
+visitante tuviera que publicar su propio contenido desde su casa, no habría nada
+que ver.</p>
+<h3>Cliente/servidor vs. peer-to-peer</h3>
+<p>El <strong>peer-to-peer</strong> (<em>P2P</em>, pares) es el modelo opuesto: <strong>todos los nodos son simultáneamente clientes y servidores</strong>, y no hay un servidor distinguible. Es el modelo de BitTorrent, de Skype en su versión original, y de las redes de compartimiento de archivos.</p>
+<div class="codehilite"><pre><span></span><code>   CLIENTE / SERVIDOR              PEER-TO-PEER
+  ┌──────────────────┐          ┌──────────────────┐
+  │ Cliente ──▶ Serv.│          │  peer A ◀──▶ peer B│
+  │  (roles fijos)   │          │  (roles iguales)  │
+  └──────────────────┘          │  peer C ◀──▶ peer D│
+                                └──────────────────┘
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Cliente/servidor</th>
+<th>Peer-to-peer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Roles</strong></td>
+<td>fijos y distintos</td>
+<td>todos hacen de todo</td>
+</tr>
+<tr>
+<td><strong>¿Quién inicia?</strong></td>
+<td>el cliente</td>
+<td>cualquiera</td>
+</tr>
+<tr>
+<td><strong>Centralización</strong></td>
+<td>hay un punto central (el servidor)</td>
+<td>ninguno</td>
+</tr>
+<tr>
+<td><strong>Escala</strong></td>
+<td>agregar clientes es barato; el <strong>servidor es el cuello de botella</strong></td>
+<td>escala con el número de pares</td>
+</tr>
+<tr>
+<td><strong>Si el servidor cae</strong></td>
+<td>el servicio cae</td>
+<td>el servicio sigue</td>
+</tr>
+<tr>
+<td><strong>Ejemplos</strong></td>
+<td>Web, correo, DNS</td>
+<td>BitTorrent, Skype, IPFS</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Ojo con el ejemplo del examen:</strong> el correo electrónico es cliente/servidor
+aunque el cliente "mande" el correo al servidor. Mandar es <strong>iniciar</strong>, no servir.</p>
+<blockquote>
+<p><strong>Por qué importa en el examen:</strong> el <code>2010-07 P1</code> es enteramente cliente/servidor
+y la cuenta de RTTs sale de ahí. Y el <code>2010-12 Problema 1</code> (el <code>connectCheaper()</code>)
+es un ejemplo híbrido interesante: los <strong>APs son servidores</strong> (hacen broadcast de
+precios, un comportamiento de <em>push</em> típico de servidor) y el usuario es cliente
+que <strong>inicia</strong> el CONNECT.</p>
+</blockquote>
+<h2>1.2 HTTP: qué es y qué NO es</h2>
+<p><strong>HTTP = HyperText Transfer Protocol.</strong> Es un protocolo de <strong>capa de aplicación</strong>
+que transfiere recursos (objetos) entre un cliente y un servidor, con el esquema
+petición/respuesta. Para entenderlo bien, lo más útil es la lista de lo que <strong>no</strong>
+es, porque cada "no es" explica una pregunta de examen.</p>
+<h3>(a) HTTP no es un protocolo de transporte</h3>
+<p>HTTP <strong>no</strong> garantiza entrega, no numera, no retransmite, no ordena y no controla
+la congestión: todo eso lo hace <strong>TCP</strong>, debajo. Corolario práctico: <strong>HTTP no sabe
+si un mensaje llegó.</strong> Si se pierde, TCP lo reintenta por abajo y HTTP nunca se
+entera.</p>
+<h3>(b) HTTP no es lo mismo que la Web</h3>
+<div class="codehilite"><pre><span></span><code>   La WEB  =  un conjunto de TECNOLOGÍAS
+      ├── un espacio de nombres:   los URL (y el DNS que los resuelve)
+      ├── un protocolo de transferencia:  HTTP
+      └── un formato de documento:         HTML
+
+   HTTP    =  SOLO el protocolo de transferencia de esos documentos
+</code></pre></div>
+
+<p>Decir "voy por la Web" mezcla tres capas distintas. Si te preguntan "qué es
+HTTP", la respuesta empieza por "es <strong>un</strong> protocolo de capa de aplicación para
+transferir objetos identificados por URL".</p>
+<h3>(c) HTTP no tiene estado</h3>
+<p><strong>Sin estado</strong> (<em>stateless</em>) significa: <strong>cada petición se atiende sola, sin
+memoria de las anteriores</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   Cliente                              Servidor
+      │  GET /carrito                    │
+      │─────────────────────────────────▶│  ¿Y qué compró el usuario 17?
+      │                                   │  NO SÉ: HTTP es sin estado
+      │  404 (o un carrito vacío)         │
+      │◀─────────────────────────────────│
+      │  GET /carrito?user=17             │  ← el estado va en la URL
+      │─────────────────────────────────▶│  (o en una cookie)
+      │  200 {"camisa": 2}                │
+      │◀─────────────────────────────────│
+</code></pre></div>
+
+<p><strong>Esto es una decisión de diseño, no una limitación.</strong> Un protocolo con estado
+obligaría al servidor a almacenar quién pidió qué, y eso rompe el balanceo de
+carga: si el estado está en el servidor, todas las peticiones de un usuario tienen
+que ir al <strong>mismo</strong> servidor y no podés escalar horizontalmente. HTTP prefirió
+<strong>stateless</strong> y corrió el riesgo de que el estado viaje en la petición. Es el mismo
+compromiso que "DNS versus NAT": simplicidad a cambio de eficiencia.</p>
+<h3>(d) HTTP no es seguro, y viaja sobre TCP</h3>
+<p>En texto plano HTTP viaja <strong>tal cual</strong> por la red: cualquiera en el camino ve las
+cabeceras <code>Authorization</code>, <code>Cookie</code> y los formularios con tu contraseña. Para eso
+está <strong>HTTPS</strong>, que es HTTP sobre <strong>TLS</strong>: <strong>HTTP aporta semántica, TLS aporta
+confidencialidad, integridad y autenticidad</strong> (la Clase 47 muestra TLS entero).</p>
+<p>Y HTTP <strong>no viaja sobre UDP</strong>: viaja sobre <strong>TCP, puerto 80</strong> (o <strong>443</strong> con TLS).
+Eso es lo que lo hace fiable y lo que lo hace lento: la fiabilidad tiene un costo
+de setup.</p>
+<h2>1.3 El mensaje HTTP: la petición</h2>
+<p>Una petición HTTP/1.1 tiene <strong>tres</strong> partes, en este orden y sin falta:</p>
+<div class="codehilite"><pre><span></span><code>   línea de petición (request line)  +  cabeceras  +  línea en blanco  +  cuerpo
+   ────────────────────────────────     ──────────   ───────────────   ──────
+   GET /index.html HTTP/1.1             Host: ...                       (puede
+   &lt;CR&gt;&lt;LF&gt;                             Accept: ...                     ir vacío)
+   &lt;CR&gt;&lt;LF&gt;
+</code></pre></div>
+
+<p><strong>La línea en blanco final es obligatoria</strong>, aunque el cuerpo esté vacío. Sin
+ella el servidor no sabe dónde termina la cabecera. Esto es el mismo principio del
+<strong>framing</strong> de la capa 2: hay que delimitar.</p>
+<p>Un ejemplo <strong>real y completo</strong>, tal como lo manda un navegador:</p>
+<div class="codehilite"><pre><span></span><code>GET /index.html HTTP/1.1
+Host: www.fing.edu.uy
+User-Agent: Mozilla/5.0
+Accept: text/html
+Accept-Encoding: gzip
+Connection: keep-alive
+</code></pre></div>
+
+<p>Fijate que <strong>la última línea es vacía</strong>: ese es el <code>CRLF</code> extra que cierra las
+cabeceras. Sin esa línea en blanco, HTTP no parsea.</p>
+<p>Desglose de la línea de petición, campo por campo:</p>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Significado</th>
+<th>Ejemplo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Método</strong></td>
+<td>qué quiere el cliente</td>
+<td><code>GET</code></td>
+</tr>
+<tr>
+<td><strong>URI</strong> (<em>Uniform Resource Identifier</em>)</td>
+<td>qué recurso</td>
+<td><code>/index.html</code></td>
+</tr>
+<tr>
+<td><strong>Versión</strong></td>
+<td>qué dialecto habla el cliente</td>
+<td><code>HTTP/1.1</code></td>
+</tr>
+</tbody>
+</table>
+<p>Y de las cabeceras que aparecen:</p>
+<table>
+<thead>
+<tr>
+<th>Cabecera</th>
+<th>Para qué sirve</th>
+<th>Por qué importa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Host</code></td>
+<td><strong>obligatoria</strong> en HTTP/1.1: dice a qué <strong>servidor</strong> dentro del destino querés llegar</td>
+<td>Sin ella, un servidor que aloja miles de sitios (como un CDD) no sabe cuál teSirve. Es el motivo de que HTTP/1.1 no pueda esconderse tras NAT.</td>
+</tr>
+<tr>
+<td><code>User-Agent</code></td>
+<td>identifica el cliente</td>
+<td>Los servidores usan esto para decidir qué versión mandarte.</td>
+</tr>
+<tr>
+<td><code>Accept</code></td>
+<td>qué <strong>tipos de contenido</strong> aceptás</td>
+<td><code>text/html</code>, <code>image/png</code></td>
+</tr>
+<tr>
+<td><code>Accept-Encoding</code></td>
+<td>qué <strong>codificaciones</strong> de compresión aceptás</td>
+<td><code>gzip</code>, <code>br</code>. El servidor responde <code>Content-Encoding: gzip</code> si lo comprime.</td>
+</tr>
+<tr>
+<td><code>Connection: keep-alive</code></td>
+<td>el cliente pide <strong>reusar</strong> la conexión</td>
+<td>En HTTP/1.1 es el default, pero lo digo explícito para que no se note.</td>
+</tr>
+</tbody>
+</table>
+<h3>Los métodos: seguros e idempotentes</h3>
+<p><strong>Seguro</strong> = no cambia el estado del servidor. <strong>Idempotente</strong> = si lo repetís <em>n</em>
+veces el efecto es el mismo que si lo hicieras una. <code>GET</code>, <code>HEAD</code>, <code>OPTIONS</code> y
+<code>TRACE</code> son <strong>seguros</strong>; <code>GET</code> y <code>HEAD</code> son además <strong>idempotentes</strong>, igual que
+<code>PUT</code> y <code>DELETE</code>. <code>POST</code> <strong>no es ni seguro ni idempotente</strong>.</p>
+<p><strong>Por qué importa.</strong> Un cliente que reintenta por timeout necesita saber si puede
+reintentar. Si la respuesta se perdió pero el servidor sí la procesó, reintentar un
+<code>POST</code> duplica el cobro; reintentar un <code>GET</code> no pasa nada. La Clase 9 desarrolla
+métodos, seguridad e idempotencia en detalle.</p>
+<h2>1.4 El mensaje HTTP: la respuesta</h2>
+<div class="codehilite"><pre><span></span><code>   línea de estado (status line)  +  cabeceras  +  línea en blanco  +  cuerpo
+</code></pre></div>
+
+<p>Un <strong>200 OK</strong> completo:</p>
+<div class="codehilite"><pre><span></span><code>HTTP/1.1 200 OK
+Date: Tue, 06 Oct 2026 14:22:31 GMT
+Server: Apache/2.4.62 (Ubuntu)
+Last-Modified: Mon, 05 Oct 2026 09:14:07 GMT
+ETag: "3f2a1c8-9b41-6512d3f0"
+Cache-Control: max-age=600
+Content-Type: text/html; charset=utf-8
+Content-Encoding: gzip
+Content-Length: 4096
+Accept-Ranges: bytes
+Connection: keep-alive
+
+&lt;!DOCTYPE html&gt;
+&lt;html lang="es"&gt;
+&lt;head&gt;&lt;meta charset="utf-8"&gt;&lt;title&gt;FING&lt;/title&gt;&lt;/head&gt;
+&lt;body&gt;...&lt;/body&gt;
+&lt;/html&gt;
+</code></pre></div>
+
+<p>La línea de estado son tres cosas separadas por espacio:</p>
+<table>
+<thead>
+<tr>
+<th>Parte</th>
+<th>Qué es</th>
+<th>Ejemplo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Versión</strong></td>
+<td>el dialecto que devuelve el servidor</td>
+<td><code>HTTP/1.1</code></td>
+</tr>
+<tr>
+<td><strong>Código</strong></td>
+<td>número de 3 dígitos</td>
+<td><code>200</code></td>
+</tr>
+<tr>
+<td><strong>Frase de razón</strong></td>
+<td>texto legible, decorativo</td>
+<td><code>OK</code></td>
+</tr>
+</tbody>
+</table>
+<p>Las dos cabeceras que hacen que esto funcione y que hay que mirar siempre:</p>
+<ul>
+<li><strong><code>Content-Length</code></strong>: cuántos bytes tiene el cuerpo. Es lo que le permite al
+  cliente saber dónde termina la respuesta <strong>sin</strong> tener que cerrar la conexión.</li>
+<li><strong><code>Content-Type</code></strong>: qué <strong>tipo</strong> es el cuerpo (<code>text/html</code>, <code>image/png</code>). Sin
+  esto el cliente no sabría si tiene que mostrarlo, guardarlo o ejecutarlo.</li>
+</ul>
+<h3>Un <strong>304 Not Modified</strong> (y por qué existe)</h3>
+<div class="codehilite"><pre><span></span><code>HTTP/1.1 304 Not Modified
+Date: Tue, 06 Oct 2026 14:22:33 GMT
+ETag: "3f2a1c8-9b41-6512d3f0"
+Cache-Control: max-age=600
+Connection: keep-alive
+</code></pre></div>
+
+<p><strong>Fijate que NO hay cuerpo y NO hay <code>Content-Length</code>.</strong> Eso es correcto: un 304
+significa literalmente "el recurso <strong>no cambió</strong>, lo que tenés guardado sirve". El
+cuerpo no viaja porque no hay nada nuevo. Por eso el <code>304</code> no consume ancho de
+banda de contenido: gasta <strong>solo</strong> las cabeceras.</p>
+<p><strong>¿Por qué existe el 304?</strong> Porque descargar un archivo de 4 MB para descubrir que
+es idéntico al que ya tenías es absurdo. El 304 es el mecanismo de <strong>validación
+condicional</strong>: el cliente dice "lo tengo, etiqueta <code>3f2a1c8</code>, ¿sigue siendo
+cierto?" y el servidor responde "sí, te sirve" con 30 bytes de cabeceras en lugar
+de 4 MB de datos. La clase 9 lo desarrolla con el intercambio completo.</p>
+<h3>Un <strong>404 Not Found</strong></h3>
+<div class="codehilite"><pre><span></span><code>HTTP/1.1 404 Not Found
+Date: Tue, 06 Oct 2026 14:22:31 GMT
+Server: Apache/2.4.62 (Ubuntu)
+Content-Type: text/html; charset=utf-8
+Content-Length: 196
+Connection: keep-alive
+
+&lt;html&gt;&lt;body&gt;&lt;h1&gt;404 - Not Found&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;
+</code></pre></div>
+
+<p>El <strong>404</strong> significa "el servidor entendió tu petición pero <strong>no tiene</strong> ese
+recurso". Importante: el 404 <strong>no dice que la URL esté mal escrita</strong> (eso sería un
+<strong>400 Bad Request</strong>). El 404 dice "no existe, pero el servidor está vivo y te
+contesta". Por eso es distinto de un <strong>500</strong> (el servidor se rompió) o de un
+<strong>502/504</strong> (un proxy no pudo hablar con el backend).</p>
+<h2>1.5 Los códigos de estado: las cinco clases</h2>
+<p>El primer dígito del código es la <strong>clase</strong>, y la clase <strong>te dice el tipo de
+problema</strong> sin leer el número:</p>
+<table>
+<thead>
+<tr>
+<th>Clase</th>
+<th>Rango</th>
+<th>Significado</th>
+<th>Ejemplos que hay que saber</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1xx</strong></td>
+<td>100–199</td>
+<td><strong>informativo</strong>: "seguí, todavía no terminé"</td>
+<td><code>100 Continue</code>, <code>101 Switching Protocols</code></td>
+</tr>
+<tr>
+<td><strong>2xx</strong></td>
+<td>200–299</td>
+<td><strong>salió bien</strong></td>
+<td><code>200 OK</code>, <code>201 Created</code>, <code>204 No Content</code>, <code>206 Partial Content</code></td>
+</tr>
+<tr>
+<td><strong>3xx</strong></td>
+<td>300–399</td>
+<td><strong>redirección</strong>: "andá a otro lado"</td>
+<td><code>301</code>, <code>302</code>, <code>304 Not Modified</code>, <code>307</code>, <code>308</code></td>
+</tr>
+<tr>
+<td><strong>4xx</strong></td>
+<td>400–499</td>
+<td><strong>error del cliente</strong>: "vos te equivocaste"</td>
+<td><code>400</code>, <code>401</code>, <code>403</code>, <code>404</code>, <code>405</code>, <code>408</code>, <code>429</code></td>
+</tr>
+<tr>
+<td><strong>5xx</strong></td>
+<td>500–599</td>
+<td><strong>error del servidor</strong>: "yo me rompí"</td>
+<td><code>500</code>, <code>502</code>, <code>503</code>, <code>504</code></td>
+</tr>
+</tbody>
+</table>
+<p>Los que más aparecen y qué significan de verdad: <code>200</code> (acá está, te lo mando acá),
+<code>201 Created</code> (lo creé, te digo dónde, en <code>Location</code>), <code>204 No Content</code> (salió bien
+pero <strong>no hay cuerpo</strong>), <code>206 Partial Content</code> (te mando <strong>parte</strong>, respuesta a un
+<code>Range</code>), <code>301</code> (te mudaste <strong>para siempre</strong>), <code>302</code> (mudate <strong>por ahora</strong>), <code>304</code>
+(no te lo mando, conservá el tuyo), <code>401</code> (<strong>no estás autenticado</strong>), <code>403</code>
+(<strong>no podés</strong>, ni autenticándote), <code>404</code> (no existe), <code>429 Too Many Requests</code> (te
+mandaste demasiadas), <code>500</code> (el servidor se rompió), <code>502 Bad Gateway</code> (un proxy no
+pudo hablar con el backend), <code>503</code> (caído o sobrecargado) y <code>504 Gateway Timeout</code>
+(el proxy esperó demasiado).</p>
+<p><strong>El par 401/403 es la pregunta clásica.</strong> Ambos son 4xx y ambos parecen "no autorizado", pero significan cosas distintas:</p>
+<div class="codehilite"><pre><span></span><code>   401  → "NO SÉ QUIÉN SOS. Mandame credenciales (y reintentá)."
+   403  → "SÉ QUIÉN SOS, y SÍ, no tenés permiso. Reintentar no sirve."
+</code></pre></div>
+
+<p><code>401</code> es recuperable; <code>403</code> no lo es. Confundirlos es un error de examen muy común.</p>
+<h2>1.6 HTTP no persistente vs. persistente — el conteo de RTT</h2>
+<p>Esta es <strong>la</strong> pregunta del examen. Vamos a hacer la cuenta exacta, con los
+números a la vista.</p>
+<h3>Las dos definiciones, sin ambigüedad</h3>
+<ul>
+<li><strong>HTTP no persistente</strong> (<em>non-persistent</em>): por cada objeto, <strong>se abre una conexión TCP nueva, se pide, se recibe, y se cierra</strong>. Una conexión = un objeto.</li>
+<li><strong>HTTP persistente</strong> (<em>persistent</em>): <strong>se abre una conexión TCP y se mantiene</strong> para pedir <strong>varios</strong> objetos seguidos, uno tras otro, en la <strong>misma</strong> conexión.</li>
+</ul>
+<p>El término clave es <strong>"cuántas conexiones TCP"</strong>. No es "cuántas peticiones": en persistente hacés 11 peticiones igual, pero sobre <strong>una sola</strong> conexión.</p>
+<h3>El caso base: 1 objeto, 1 RTT de handshake</h3>
+<p>Toda conexión TCP nueva cuesta <strong>1 RTT</strong> antes de poder mandar datos. El
+handshake de 3 vías es:</p>
+<div class="codehilite"><pre><span></span><code>   Cliente                         Servidor
+      │                               │
+      │─────── SYN seq=x ────────────▶│   RTT 1 empieza
+      │◀────── SYN+ACK ack=x+1 ───────│
+      │─────── ACK ack=y+1 ──────────▶│   RTT 1 termina: conexión ESTABLECIDA
+      │                               │
+      │─────── GET /index.html ─────▶│   RTT 2 empieza (va y vuelve)
+      │◀────── HTTP/1.1 200 OK ───────│
+      │◀────── &lt;html&gt;... ─────────────│
+      │                               │   RTT 2 termina
+</code></pre></div>
+
+<p>Entonces, <strong>1 objeto</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   No persistente:   1 RTT (TCP)  +  1 RTT (petición/respuesta)  =  2 RTT
+   Persistente:      1 RTT (TCP)  +  1 RTT (petición/respuesta)  =  2 RTT
+</code></pre></div>
+
+<p><strong>Con 1 objeto no hay diferencia.</strong> Es el caso trivial y hay que decirlo, porque
+la respuesta "no persistente es peor" sin matices es incorrecta para 1 objeto.</p>
+<h3>El caso de 11 objetos (1 HTML + 10 imágenes), todo en el MISMO servidor</h3>
+<p><strong>No persistente:</strong> cada objeto paga su propio handshake.</p>
+<div class="codehilite"><pre><span></span><code>   objeto 1 (HTML):    1 RTT TCP  +  1 RTT HTTP  =  2 RTT
+   objeto 2 (img 1):   1 RTT TCP  +  1 RTT HTTP  =  2 RTT
+   objeto 3 (img 2):   1 RTT TCP  +  1 RTT HTTP  =  2 RTT
+   ...
+   objeto 11 (img 10): 1 RTT TCP  +  1 RTT HTTP  =  2 RTT
+
+   Total = 11 objetos × 2 RTT = 22 RTT
+</code></pre></div>
+
+<p><strong>Persistente:</strong> un solo handshake, y después 11 RTT de HTTP (uno por objeto).</p>
+<div class="codehilite"><pre><span></span><code>   conexión TCP (una sola):            1 RTT
+   objeto 1 (HTML):                    1 RTT
+   objetos 2..11 (10 imágenes):        10 RTT
+                                           ────
+   Total = 1 + 11 = 12 RTT
+</code></pre></div>
+
+<p><strong>Comparación:</strong> <code>22 RTT</code> vs. <code>12 RTT</code>. <strong>El persistente es 10 RTT más rápido</strong>,
+que es exactamente el <code>N − 1 = 10</code> handshakes que se ahorró. El HTML y las 10
+imágenes van por la misma tubería.</p>
+<div class="codehilite"><pre><span></span><code>   No persistente                      Persistente
+   ─────────────                       ───────────
+   [TCP][HTML]                          [TCP]──[HTML]──[img1]──[img2]── ... ──[img10]
+    2 RTT                               1 RTT      1 RTT   1 RTT             1 RTT
+   ×11                                 ────────────────────────────────────────────────
+   = 22 RTT                            = 12 RTT
+</code></pre></div>
+
+<h3>Y si los objetos vienen de varios servidores</h3>
+<p>Este es el matiz que casi nadie menciona y el que el apartado b) del examen pide
+<strong>discutir</strong>. Supongamos que el HTML viene del servidor A y que las 10 imágenes
+están repartidas en 3 servidores (A, B, C).</p>
+<p><strong>Secuencial</strong> (el navegador no paraleliza):</p>
+<div class="codehilite"><pre><span></span><code>   Persistente, 3 servidores:   3 handshakes (uno por servidor) + 11 RTT de HTTP
+                                 = 3 + 11 = 14 RTT
+
+   No persistente:              11 objetos × 2 RTT = 22 RTT
+</code></pre></div>
+
+<p><strong>En paralelo</strong> (que es lo que hacen los navegadores reales: abren 6 conexiones
+por host):</p>
+<div class="codehilite"><pre><span></span><code>   HTML por A:                1 RTT TCP + 1 RTT HTTP = 2 RTT
+   las 10 imágenes, en paralelo:
+      los 3 handshakes, simultáneos:   1 RTT   (no 3: van a la vez)
+      las 10 peticiones, simultáneas:  1 RTT
+                                        ──────
+   Persistente, 3 servidores, PARALELO   = 2 + 2 = 4 RTT
+   No persistente, 3 servidores, PARALELO = 2 + 2 = 4 RTT   ← ¡empate!
+</code></pre></div>
+
+<p><strong>Conclusión honesta del apartado b).</strong> El persistente <strong>no siempre</strong> es mejor:</p>
+<div class="codehilite"><pre><span></span><code>   Secuencial (1 servidor):   no-pers 22 RTT │ pers 12 RTT   → gana el pers
+   Secuencial (3 servidores): no-pers 22 RTT │ pers 14 RTT   → gana el pers
+   Paralelo   (1 servidor):   no-pers  4 RTT │ pers  3 RTT   → gana el pers
+   Paralelo   (3 servidores): no-pers  4 RTT │ pers  4 RTT   → empate
+</code></pre></div>
+
+<p>Y hay una ventaja extra del no persistente que el enunciado no pide pero que
+<strong>suma puntos</strong>: el <strong>cliente puede elegir</strong> en qué servidor va cada imagen (por
+ejemplo el más cercano geográficamente), porque cada conexión es independiente.</p>
+<h2>1.7 Las estadísticas: por qué HTTP se siente lento</h2>
+<p>Un resultado clásico y muy reproducible: <strong>la mayor parte del tiempo de carga de
+una página no es "bajar bytes", sino "esperar al servidor"</strong>. Vamos a hacerlo con
+números reales, porque es lo que suma puntos.</p>
+<p><strong>Datos.</strong> RTT desde Montevideo hasta un servidor en Estados Unidos: <strong>100 ms</strong>.
+Ancho de banda del cliente: <strong>10 Mbps</strong>. La página tiene <strong>11 objetos</strong> de <strong>50 KB</strong>
+cada uno, servidos en HTTP no persistente desde un solo servidor.</p>
+<div class="codehilite"><pre><span></span><code>   TIEMPO DE ESPERA
+      = 22 RTT × 100 ms = 2200 ms
+
+   TIEMPO REAL DE TRANSFERENCIA
+      Total de datos = 11 × 50 KB = 550 KB
+      t_trans = 550 KB × 8 bits/KB / 10 Mbps
+              = 550 × 1024 × 8 bits / 10·10^6 bits/s
+              = 4.505.600 bits / 10.000.000 bits/s
+              = 0,4505 s ≈ 450 ms
+
+   PROPORCIÓN DE ESPERA
+      = 2200 / (2200 + 450) = 2200 / 2650 = 0,83  →  83 %
+</code></pre></div>
+
+<p><strong>Interpretación: más del 80 % del tiempo se va esperando al servidor, no transfiriendo datos.</strong> Y si lo hacés <strong>persistente</strong>, el mismo cálculo da <code>1200 / (1200 + 450) = 73 %</code>: mejor, pero el tiempo real de transferencia (450 ms) <strong>no cambió en absoluto</strong>. Cambiar de protocolo no acelera la red: <strong>elimina esperas</strong>.</p>
+<p>El tiempo de carga de una página es <code>espera × número de viajes</code>. Todo lo que reduce el número de viajes acelera la página: las conexiones persistentes, el <strong>CDN</strong> (que pone un servidor <em>cerca</em> para que el RTT sea 5 ms en vez de 100 ms), la resolución DNS cacheada. Y por supuesto HTTP/2 y HTTP/3, que existen exactamente para <strong>matar esperas</strong>. La Clase 9 lo desarrolla.</p>
+<h2>1.8 Las cookies</h2>
+<p><strong>Qué son.</strong> Una <strong>cookie</strong> (<em>galletita</em>) es una pequeña cadena de texto que el <strong>servidor</strong> le manda al cliente y que el cliente <strong>guarda y reenvía</strong> en peticiones posteriores al <strong>mismo</strong> dominio.</p>
+<div class="codehilite"><pre><span></span><code>   GET /carrito HTTP/1.1  ────▶  Servidor
+   ◀───  Set-Cookie: sesion=abc123; Path=/; Max-Age=3600
+
+   GET /carrito HTTP/1.1  ────▶  Servidor
+   Cookie: sesion=abc123
+   ◀───  200 {"camisa": 2, "pantalon": 1}
+</code></pre></div>
+
+<p><strong><code>Set-Cookie</code></strong> es la cabecera que <strong>el servidor manda</strong> para <strong>crear o
+actualizar</strong> una cookie. <strong><code>Cookie</code></strong> es la cabecera que <strong>el cliente manda</strong> para
+<strong>devolverla</strong>. Son dos cabeceras distintas con dos roles distintos, y esa
+distinción es lo que se pregunta.</p>
+<h3>El problema que resuelven: el estado en el cliente</h3>
+<p>HTTP es sin estado, pero casi todas las aplicaciones necesitan recordar algo: el <strong>carrito de compras</strong> (<code>carrito=camisa:2,pantalon:1</code>), la <strong>sesión iniciada</strong> (<code>sesion=abc123</code>, para no pedir la contraseña cada vez), las <strong>preferencias de idioma</strong> (<code>lang=es</code>) o el <strong>"recordarme"</strong> (<code>token=xyz</code>).</p>
+<p><strong>El estado vive en el cliente.</strong> Es el precio de la estatitud: si HTTP no puede guardar estado en el servidor, lo guardás <strong>en el cliente</strong> y lo mandás de vuelta en cada petición. El ejemplo canónico es el carrito:</p>
+<div class="codehilite"><pre><span></span><code>   1) El usuario mete una camisa.
+      GET /agregar?item=camisa HTTP/1.1
+      ◀───  Set-Cookie: carrito=camisa; Path=/; Max-Age=86400
+
+   2) El usuario mete un pantalón.
+      GET /agregar?item=pantalon HTTP/1.1
+      Cookie: carrito=camisa                          ← el cliente reenvía
+      ◀───  Set-Cookie: carrito=camisa,pantalon       ← el servidor actualiza
+
+   3) El usuario mira el carrito.
+      GET /carrito HTTP/1.1
+      Cookie: carrito=camisa,pantalon                  ← el estado viaja acá
+      ◀───  200 {"camisa": 1, "pantalon": 1}
+</code></pre></div>
+
+<p>En el paso 3 el servidor <strong>no tiene memoria</strong> de los pasos 1 y 2: todo lo que sabe del usuario está <strong>en la cookie que el cliente le devolvió</strong>.</p>
+<h3>Los atributos de una cookie</h3>
+<div class="codehilite"><pre><span></span><code>   Set-Cookie: sesion=abc123; Path=/; Max-Age=3600; Secure; HttpOnly; SameSite=Lax
+                │                   │       │          │        │          │
+                │                   │       │          │        │          └ no mandar en
+                │                   │       │          │        └ peticiones de terceros
+                │                   │       │          └ no accesible por JavaScript
+                │                   │       └ segundos de vida (si no, "session cookie")
+                │                   └ las rutas donde viaja
+                └ NOMBRE = VALOR
+</code></pre></div>
+
+<p><code>Secure</code> restricts el envío a HTTPS. <code>HttpOnly</code> la vuelve invisible al
+JavaScript de la página (defensa contra el robo por XSS).</p>
+<h3>⚠️ Actualización a 2026 — cookies</h3>
+<p><strong>Sigue igual:</strong> el par <code>Set-Cookie</code> (servidor) / <code>Cookie</code> (cliente) y que el estado
+viaje <strong>en el cliente</strong>.</p>
+<p><strong>Cambió o se agregó:</strong>
+- <strong><code>RFC 6265</code> — HTTP State Management Mechanism</strong> es el estándar que define el formato. Si el enunciado te pide "qué RFC define las cookies", esa es.
+- <strong><code>SameSite</code></strong>: con <code>SameSite=Lax</code> (el default moderno) el navegador <strong>no manda la cookie en peticiones originadas por otros sitios</strong>, lo que corta de raíz el <strong>CSRF</strong> (<em>Cross-Site Request Forgery</em>).
+- <strong>Las cookies de terceros están en retirada.</strong> Chrome (<em>Privacy Sandbox</em>), Safari (ITP) y Firefox (ETP) las bloquean o particionan por defecto: eso obliga a los sitios a volver a <strong>sesiones del lado del servidor</strong>.
+- Con <strong>DoH</strong>, las cookies siguen igual respecto del DNS: son de <strong>capa de aplicación</strong>. Lo que cambia es la privacidad de la resolución.</p>
+<blockquote>
+<p><strong>Consecuencia para el examen:</strong> si te preguntan "cómo se rompe el modelo sin
+estado de HTTP", la respuesta es <strong>cookies</strong> (o equivalentemente <code>Authorization</code>
+con un token). Si te preguntan "dónde vive el estado", la respuesta es <strong>en el
+cliente</strong>, y por eso el servidor puede ser <em>stateless</em> y escalar.</p>
+</blockquote>
+<h2>1.9 ⚠️ Actualización a 2026 — la especificación de HTTP que hay que corregir</h2>
+<p><strong>Sigue igual — de memoria, sin dudar:</strong>
+- Modelo <strong>petición/respuesta</strong>, protocolo <strong>sin estado</strong>.
+- Los <strong>métodos</strong>: GET, HEAD, POST, PUT, DELETE, OPTIONS, TRACE, CONNECT (+ PATCH).
+  GET/HEAD/OPTIONS/TRACE <strong>seguros</strong>; GET/HEAD <strong>idempotentes</strong>.
+- Las <strong>5 clases</strong> de códigos de estado (1xx a 5xx) y los del día a día: 200, 201,
+  204, 206, 301, 302, 304, 307, 308, 400, 401, 403, 404, 405, 408, 429, 500, 502,
+  503, 504.
+- <strong><code>Host</code> obligatoria</strong> en HTTP/1.1, y <strong>persistente por defecto</strong>.
+- <strong><code>Range</code></strong> requests y <strong><code>304 Not Modified</code></strong>.</p>
+<p><strong>Cambió — y esto es lo que hay que corregir si citás material viejo:</strong>
+- El curso de 2012 enseñaba <strong><code>RFC 2616</code></strong> (1999). <strong>Hoy la especificación vigente
+  es de 2022</strong>: <strong><code>RFC 9110</code></strong> (semántica, <em>Internet Standard</em>) + <strong><code>RFC 9112</code></strong>
+  (sintaxis de HTTP/1.1).
+- <strong><code>RFC 7540</code></strong> (HTTP/2, 2015) está <strong>OBSOLETA</strong>: la reemplazó <strong><code>RFC 9113</code></strong>.
+- <strong>HTTP/3 (<code>RFC 9114</code>)</strong> va sobre <strong>QUIC (<code>RFC 9000</code>)</strong>, que <strong>reemplaza a TCP por completo</strong>: no hay handshake de 3 vías ni conexión TCP. Se negocia por <strong><code>Alt-Svc</code> (<code>RFC 7838</code>)</strong>, no por <code>Upgrade:</code>.
+- <strong>Cifra real (Cloudflare Radar, Year in Review 2025):</strong> HTTP/2 <strong>50 %</strong>, HTTP/1.x <strong>29 %</strong>, HTTP/3 <strong>21 %</strong>. <strong>HTTP/3 no se adueñó de la web.</strong> La Clase 9 lo explica.
+- <strong>Wireshark decodifica HTTP/3, QUIC, TLS 1.3 y DoH</strong> built-in.</p>
+<blockquote>
+<p><strong>Consecuencia para el examen:</strong> HTTP/1.1 <strong>sigue siendo totalmente válido y necesario</strong>. Si te piden "qué versión de HTTP es la actual": "HTTP/2 es el más usado; HTTP/3 va en crecimiento y no se adueñó; HTTP/1.1 sigue vivo y es el baseline de comparación".</p>
+</blockquote>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — Contar RTTs para 1 y 11 objetos (★ el del examen)</h2>
+<p><strong>Enunciado.</strong> Un cliente pide una página con <strong>1 objeto</strong> (solo el HTML) y después
+otra con <strong>11 objetos</strong> (1 HTML + 10 imágenes). El RTT cliente-servidor es de
+<strong>50 ms</strong>. Todo se sirve desde <strong>el mismo servidor</strong> y en el modo más simple
+posible (el navegador <strong>no</strong> abre conexiones en paralelo).</p>
+<p><strong>a) ¿Cuántos RTT cuesta cada caso en HTTP no persistente?</strong></p>
+<p><em>Razonamiento.</em> En no persistente, <strong>cada objeto abre su propia conexión TCP</strong>. El
+costo por objeto es <code>(1 RTT de handshake) + (1 RTT de petición/respuesta)</code> = 2 RTT.</p>
+<p><em>Ecuación:</em></p>
+<div class="codehilite"><pre><span></span><code>   No persistente = N objetos × 2 RTT
+
+   1 objeto:   1 × 2 = 2 RTT   → 2 × 50 ms = 100 ms
+   11 objetos: 11 × 2 = 22 RTT → 22 × 50 ms = 1100 ms
+</code></pre></div>
+
+<p><em>Interpretación:</em> con 1 objeto, 100 ms. Con 11, <strong>11 veces más</strong>: 1100 ms. El HTML
+tardó lo mismo, pero las 10 imágenes cada una arrastró su propio setup de TCP.</p>
+<p><strong>b) ¿Y en HTTP persistente?</strong> Un solo handshake para <strong>todos</strong> los objetos, y después
+1 RTT de HTTP por objeto.</p>
+<div class="codehilite"><pre><span></span><code>   Persistente = 1 RTT (TCP) + N × 1 RTT (HTTP)
+
+   1 objeto:   1 + 1×1 = 2 RTT  → 100 ms
+   11 objetos: 1 + 11×1 = 12 RTT → 600 ms
+</code></pre></div>
+
+<p><em>Interpretación:</em> el persistente con 11 objetos tarda <strong>600 ms contra 1100 ms</strong>.
+Ahorró <code>22 − 12 = 10 RTT = 500 ms</code>, que es exactamente <code>N − 1</code> handshakes
+eliminados.</p>
+<p><strong>c) Comparación final, los cuatro casos (el que se pregunta en b) del examen).</strong></p>
+<table>
+<thead>
+<tr>
+<th>Caso</th>
+<th>Modo</th>
+<th>Conexiones TCP</th>
+<th>RTT</th>
+<th>Tiempo (RTT = 50 ms)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 objeto</td>
+<td>no persistente</td>
+<td>1</td>
+<td>2</td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td>1 objeto</td>
+<td>persistente</td>
+<td>1</td>
+<td>2</td>
+<td>100 ms</td>
+</tr>
+<tr>
+<td>11 objetos</td>
+<td><strong>no persistente</strong></td>
+<td><strong>11</strong></td>
+<td><strong>22</strong></td>
+<td>1100 ms</td>
+</tr>
+<tr>
+<td>11 objetos</td>
+<td><strong>persistente</strong></td>
+<td><strong>1</strong></td>
+<td><strong>12</strong></td>
+<td><strong>600 ms</strong></td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code>   No persistente, 11 objetos            Persistente, 11 objetos
+   ────────────────────────             ────────────────────────
+   TCPT  HTTP TCPT  HTTP ...            TCPT HTTP HTTP HTTP ... HTTP
+    ╲   ╱     ╲   ╱                     ╲   ╱   ╱   ╱   ╱     ╱
+     ╲ ╱       ╲ ╱                      ╲ ╱   ╱   ╱   ╱     ╱
+     ╳         ╳                       ╳    ╱   ╱   ╱     ╱
+                                         ↑
+                                    un solo TCP,
+                                    11 pedidos HTTP
+   = 22 RTT                             = 12 RTT
+</code></pre></div>
+
+<p><strong>d) ¿Y si los objetos vienen de varios servidores?</strong> (esto es lo que el apartado
+b) pide <strong>discutir</strong>)</p>
+<p>Supongamos que el HTML viene del servidor A y las 10 imágenes se reparten en <strong>3</strong>
+servidores (A, B y C).</p>
+<p><em>Razonamiento, caso secuencial.</em> En persistente hay que abrir <strong>una conexión por
+servidor</strong> (3 handshakes), y encima los 11 objetos viajan por ellas:</p>
+<div class="codehilite"><pre><span></span><code>   Persistente, 3 servidores, secuencial
+      = (3 servidores × 1 RTT de handshake) + (11 objetos × 1 RTT de HTTP)
+      = 3 + 11 = 14 RTT
+</code></pre></div>
+
+<p><em>Interpretación:</em> <strong>14 RTT contra 22</strong> del no persistente. Sigue ganando el
+persistente, pero <strong>menos</strong> (ganaba 10 RTT, ahora gana 8), porque con más servidores
+hay más handshakes que pagar.</p>
+<p><em>Razonamiento, caso paralelo.</em> Si el navegador abre las conexiones <strong>en paralelo</strong>
+(que es lo que hacen los reales), los 3 handshakes pasan <strong>al mismo tiempo</strong>, así que
+cuestan 1 RTT en total, y las 11 peticiones también en paralelo, 1 RTT:</p>
+<div class="codehilite"><pre><span></span><code>   Persistente, 3 servidores, PARALELO
+      = 1 RTT (los 3 handshakes, en paralelo)
+        + 1 RTT (las 11 peticiones/respuestas, en paralelo)
+      = 2 RTT
+
+   No persistente, 3 servidores, PARALELO
+      = 2 RTT (HTML) + 1 RTT (handshakes) + 1 RTT (peticiones) = 4 RTT
+</code></pre></div>
+
+<p><em>Interpretación:</em> acá <strong>el persistente y el no persistente empatan en 4 RTT</strong>. Con
+paralelismo, <strong>la ventaja del persistente se desvanece</strong> cuando hay varios
+servidores. Por eso el apartado b) dice "puede resultar más performante" y no
+"siempre es más performante". La respuesta completa al examen es: <strong>el
+persistente gana en secuencial; en paralelo, gana sólo si hay un solo servidor.</strong></p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Contar "11 RTT" para el no persistente.</strong> No: son 2 RTT por objeto (uno de
+  TCP + uno de HTTP), así que 22. El error viene de olvidar que <strong>cada objeto abre
+  su conexión</strong>.</li>
+<li><strong>Decir que el persistente siempre gana.</strong> El enunciado pregunta "¿mejora la
+  performance? <strong>Discuta</strong>". Con conexiones en paralelo y varios servidores,
+  <strong>empata</strong>. Hay que decir las dos caras.</li>
+<li><strong>Sumar 1 RTT de TCP por servidor en paralelo.</strong> En paralelo, N handshakes
+  simultáneos cuestan <strong>1 RTT</strong>, no N.</li>
+<li><strong>Olvidar que el <code>Content-Length</code> y la línea en blanco final son parte del
+  mensaje.</strong> En un examen de "escribí el mensaje", eso se cuenta.</li>
+</ul>
+<h2>2.2 Ejercicio 2 — Interpretar un 304</h2>
+<p><strong>Enunciado.</strong> El cliente tiene en su caché <code>index.html</code> con <code>ETag: "3f2a1c8"</code>, y hace esta petición condicional:</p>
+<div class="codehilite"><pre><span></span><code>GET /index.html HTTP/1.1
+Host: www.fing.edu.uy
+If-None-Match: "3f2a1c8"
+</code></pre></div>
+
+<p>Y el servidor responde:</p>
+<div class="codehilite"><pre><span></span><code>HTTP/1.1 304 Not Modified
+Date: Tue, 06 Oct 2026 14:22:33 GMT
+ETag: "3f2a1c8"
+Cache-Control: max-age=600
+</code></pre></div>
+
+<p><strong>a) ¿Qué le está diciendo el servidor al cliente?</strong></p>
+<p><em>Razonamiento.</em> El cliente mandó <code>If-None-Match: "3f2a1c8"</code>, o sea "tengo la versión con esta etiqueta, decime si sigue siendo la actual". El servidor compara su ETag actual con el que le mandaron. Si coinciden, <strong>no manda el cuerpo</strong>.</p>
+<p><em>Respuesta:</em> "lo que tenés guardado sigue siendo correcto, no te mando nada nuevo". El cliente <strong>sigue usando su copia</strong>. Sin esa cabecera condicional el cliente siempre <strong>re-descargaría</strong> todo, porque no tiene forma de decir "esto no te lo pido": el 304 es lo que convierte la caché en algo útil.</p>
+<p><strong>c) ¿Cuánto se ahorró?</strong></p>
+<p><em>Razonamiento.</em> El <code>index.html</code> tiene 4096 bytes de cuerpo (del 200 del §1.4). El
+304 no transmite cuerpo, solo cabeceras.</p>
+<p><em>Ecuación:</em></p>
+<div class="codehilite"><pre><span></span><code>   Con 200 (sin validación):  4096 de cuerpo + ~250 de cabeceras ≈ 4346 B
+   Con 304:                      0 de cuerpo + ~150 de cabeceras ≈  150 B
+
+   Ahorro = 4346 − 150 = 4196 B
+   Porcentaje ahorrado = 4196 / 4346 ≈ 96,5 %
+</code></pre></div>
+
+<p><em>Interpretación:</em> se transfirió el <strong>3,5 %</strong> de lo que se habría transfirido. En una
+página con 11 objetos, si todos dieran 304, la carga pasa de ~2,2 s a unos pocos
+cientos de milisegundos. <strong>El 304 no es una optimización de bytes, es un cambio de
+orden de magnitud.</strong></p>
+<h2>2.3 Ejercicio 3 — ¿Por qué HTTP es sin estado y cómo lo resuelven las cookies?</h2>
+<p><strong>Enunciado.</strong> Explicá por qué HTTP fue diseñado sin estado, qué problema concreto
+genera, y cómo lo resuelven las cookies. Respuesta al estilo del examen.</p>
+<p><strong>a) ¿Por qué sin estado?</strong> La razón profunda es el <strong>balanceo de carga</strong> (<em>load
+balancing</em>). Si el servidor guardara el estado de cada usuario, <strong>todas las
+peticiones de ese usuario tendrían que ir al mismo servidor</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   CON ESTADO en el servidor:
+      user 17 ──► servidor 1 (siempre)    ← si el servidor 1 cae, cae el user
+
+   SIN ESTADO:
+      user 17 ──► servidor 1, 2 o 3, indistinto  ← sobrevive a la caída de cualquiera
+</code></pre></div>
+
+<p><em>Interpretación:</em> el diseño sin estado <strong>sacrificó eficiencia por escalabilidad</strong> y
+eligió bien: la web creció a miles de servidores detrás de balanceadores, algo que
+un diseño con estado en servidor hace muy difícil.</p>
+<p><strong>b) ¿Qué problema concreto genera?</strong> Que el servidor no puede saber quién sos entre peticiones. Si hacés <code>GET /carrito</code> sin cookie, no hay forma de saber qué llevás.</p>
+<p><strong>c) ¿Cómo lo resuelven las cookies?</strong> Poniendo <strong>el estado del lado del cliente</strong> y haciéndolo viajar en cada petición:</p>
+<div class="codehilite"><pre><span></span><code>   El estado del carrito NO está en el servidor.
+   Está en la cookie del cliente:  carrito=camisa,pantalon
+
+   El cliente la manda en cada GET /carrito
+   → el servidor la lee, responde bien, y la "olvida"
+   → el servidor puede ser cualquiera de los 3
+</code></pre></div>
+
+<p>Alternativas a la cookie (también estado en el cliente): la <strong>URL</strong> (<code>GET /carrito?user=17</code>, simple pero queda en el historial y en el log), la cabecera <strong><code>Authorization</code></strong> con un token Bearer (lo que usa OAuth) y el <strong><code>localStorage</code></strong> del navegador (estado en el cliente pero solo para el JS).</p>
+<p><strong>d) El costo de esta decisión.</strong> (esto es lo que suma puntos)</p>
+<div class="codehilite"><pre><span></span><code>   Ventaja:  el servidor es stateless, escala, y es tolerante a la caída de
+             cualquier nodo.
+   Costo 1:  el estado viaja en CADA petición → más bytes por request. Si fuera
+             grande, la cookie se vuelve pesada y hay que pasar el estado al
+             servidor (base de datos), que es lo que hacen las apps grandes.
+   Costo 2:  la cookie la puede leer o alterar el cliente → hay que firmarla o
+             cifrarla, o usar tokens de sesión del lado del servidor.
+</code></pre></div>
+
+<p><em>Interpretación final para el examen:</em> <strong>"HTTP es sin estado, y el estado viaja en el cliente (cookies, URL o tokens), por eso el servidor escala, y el precio es que el estado viaja en cada petición y es manipulable por el cliente".</strong></p>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2010-07, Pregunta 1 (8 puntos) — página HTML con 10 imágenes</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc1007</code> / <code>sirc1007</code> — 27 de julio de 2010.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1007.pdf
+<strong>Este es el problema central de toda la unidad de aplicación.</strong></p>
+</blockquote>
+<h3>Enunciado (texto literal del examen)</h3>
+<blockquote>
+<p><strong>Pregunta 1 (8 puntos)</strong></p>
+<p>Suponga que un usuario intenta cargar en su browser una página HTML. Esta página
+contiene texto y diez imágenes.</p>
+<p><strong>a)</strong> Describa la secuencia de pasos que ocurren a nivel de capa de aplicación en
+el cliente y el servidor a los efectos de desplegar la página completa, suponiendo
+que se utiliza HTTP no persistente.</p>
+<p><strong>b)</strong> ¿Cuál es la diferencia con HTTP persistente? ¿Mejora la performance?
+Discuta.</p>
+</blockquote>
+<h3>Solución oficial (del PDF, textual)</h3>
+<blockquote>
+<p>a)</p>
+<table>
+<thead>
+<tr>
+<th>Paso</th>
+<th>Responsable</th>
+<th>Acción</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Cliente</td>
+<td>Establece la conexión con el servidor</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Cliente</td>
+<td>Envía Request pidiendo la página</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Servidor</td>
+<td>Envía Response con el contenido de la página</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Servidor</td>
+<td>Cierra la conexión</td>
+</tr>
+<tr>
+<td>5*</td>
+<td>Cliente</td>
+<td>Establece la conexión con el servidor</td>
+</tr>
+<tr>
+<td>6*</td>
+<td>Cliente</td>
+<td>Envía Request pidiendo la la imagen 1</td>
+</tr>
+<tr>
+<td>7*</td>
+<td>Servidor</td>
+<td>Envía Response con el contenido de la imagen 1</td>
+</tr>
+<tr>
+<td>8*</td>
+<td>Servidor</td>
+<td>Cierra la conexión</td>
+</tr>
+</tbody>
+</table>
+<p>* Se repiten los pasos 5 al 8 para cada una de las imágenes.</p>
+<p>b) En el caso de HTTP persistente, se establece la conexión una sola vez, se obtiene
+el contenido de la página, y a través de la misma conexión se piden todas las
+imágenes.</p>
+<p>El uso de HTTP persistente puede resultar más performante en los casos en que se
+utilice una sola conexión por vez (por ejemplo si el servidor nos limita por IP),
+ya que no existe el overhead de crear nuevas conexiones para cada imagen.</p>
+<p>Si el navegador abre conexiones en paralelo para obtener varias imágenes a la vez,
+probablemente termine de obtener todos los datos más rápidamente, aprovechando mejor
+el ancho de banda.</p>
+</blockquote>
+<h3>a) La secuencia de pasos — resolución</h3>
+<p><strong>La tabla oficial, reproducida tal cual</strong>, es la respuesta al apartado a) y está
+perfectamente bien para los 8 puntos. Pero le agrego dos precisiones que la oficial
+omite y que suman:</p>
+<p><strong>Precisión 1 — el paso 1 "establece la conexión" es el handshake de TCP.</strong> El
+enunciado dice "a nivel de capa de aplicación" y la oficial abstrae el TCP en un
+solo paso, que es lo que el enunciado pide. <strong>PERO</strong> para contar RTTs hay que
+saber que ese paso 1 vale <strong>1 RTT</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Paso</th>
+<th>Responsable</th>
+<th>Acción</th>
+<th>RTT</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Cliente</td>
+<td>Establece la conexión con el servidor (SYN, SYN+ACK, ACK)</td>
+<td><strong>1</strong></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Cliente</td>
+<td>Envía Request pidiendo la página (<code>GET /index.html HTTP/1.1</code>)</td>
+<td>1 (compartido con el 3)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Servidor</td>
+<td>Envía Response con el contenido (<code>HTTP/1.1 200 OK</code> + HTML)</td>
+<td>cierra el RTT</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Servidor</td>
+<td>Cierra la conexión</td>
+<td>0 (FIN)</td>
+</tr>
+<tr>
+<td>5–8</td>
+<td></td>
+<td>Se repiten por cada una de las 10 imágenes</td>
+<td>2 c/u</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Precisión 2 — la lectura del cuerpo HTML.</strong> El paso 3 dice "envía response con el
+contenido de la página". Lo que la oficial da por supuesto es que el cliente, al
+recibir el HTML, <strong>lo parsea</strong>, ve las 10 imágenes referenciadas por
+<code>&lt;img src="imagen1.png"&gt;</code>, y dispara 10 peticiones, cada una repitiendo 1–4.</p>
+<p><strong>Respuesta redactada, lista para copiar en el examen:</strong></p>
+<blockquote>
+<p><strong>a)</strong> En HTTP <strong>no persistente</strong>, por cada objeto (el HTML y cada una de las 10 imágenes) el cliente ejecuta <strong>cuatro pasos</strong>: (1) establece una conexión TCP con el servidor, (2) envía un request pidiendo el objeto, (3) el servidor envía un response con el contenido del objeto, (4) el servidor cierra la conexión. El primer objeto es la página HTML; al recibirla y parsearla, el cliente descubre las 10 imágenes referenciadas y repite los pasos 1–4 <strong>una vez por cada imagen</strong>. En total son <strong>11 objetos × 4 pasos = 44 pasos</strong>, con <strong>11 conexiones TCP distintas</strong> y <strong>22 RTT</strong> (2 RTT por objeto: 1 de handshake TCP + 1 de request/response).</p>
+<p><strong>b)</strong> En HTTP <strong>persistente</strong> se establece <strong>una sola</strong> conexión TCP y por ella se piden los 11 objetos uno tras otro: <strong>1 RTT</strong> de handshake + <strong>11 RTT</strong> de request/response = <strong>12 RTT</strong>, contra los 22 del no persistente. La mejora es real cuando el navegador trabaja <strong>secuencialmente</strong>, porque se eliminan los <code>N − 1 = 10</code> handshakes. <strong>Pero no siempre mejora.</strong> Si el navegador abre conexiones <strong>en paralelo</strong> (que es lo que hacen los reales) y los objetos vienen de <strong>varios servidores</strong>, los handshakes pasan todos al mismo tiempo: el no persistente baja a <strong>4 RTT</strong> y el persistente queda en <strong>4 RTT</strong>, o sea, la ventaja del persistente <strong>desaparece</strong>. El persistente es claramente superior con un solo servidor (3 RTT contra 4, con paralelo, y 12 contra 22 sin paralelo), pero con varios servidores y paralelismo hay empate.</p>
+<p><strong>Nota sobre mi respuesta contra la oficial:</strong> la oficial dice "puede resultar
+más performante", que es la respuesta honesta y matizada, y agrega un argumento
+que repito: <strong>"si el servidor nos limita por IP"</strong>, o sea, que el navegador no
+puede paralelizar porque el servidor impone un límite por IP. Ese es el mejor
+argumento del apartado b).</p>
+</blockquote>
+<h3>La cuenta de RTT completa, a la vista</h3>
+<p>Este es el corazón del asunto y lo que la oficial no cuantifica:</p>
+<div class="codehilite"><pre><span></span><code>   ══════════ NO PERSISTENTE, 1 SERVIDOR, SECUENCIAL ══════════
+
+   objeto   │  TCP handshake  │  request/resp  │  RTT del objeto
+   ─────────┼─────────────────┼────────────────┼───────────────
+     HTML   │      1          │       1        │     2
+     img 1  │      1          │       1        │     2
+      ...   │      1          │       1        │     2
+     img 10 │      1          │       1        │     2
+   ─────────┼─────────────────┼────────────────┼───────────────
+   TOTAL    │     11          │      11        │    22 RTT
+
+
+   ══════════ PERSISTENTE, 1 SERVIDOR, SECUENCIAL ══════════
+
+   objeto   │  TCP handshake  │  request/resp  │  RTT del objeto
+   ─────────┼─────────────────┼────────────────┼───────────────
+     HTML   │      1          │       1        │     2
+     img 1  │      0          │       1        │     1
+      ...   │      0          │       1        │     1
+     img 10 │      0          │       1        │     1
+   ─────────┼─────────────────┼────────────────┼───────────────
+   TOTAL    │      1          │      11        │    12 RTT
+
+
+   ══════════ PERSISTENTE, PARALELO (6 conexiones), 1 SERVIDOR ══════════
+
+   objeto   │  TCP handshake  │  request/resp  │
+   ─────────┼─────────────────┼────────────────┼
+     HTML   │      1          │       1        │
+   10 imgs   │      1          │       1        │   ← todos a la vez, en paralelo
+   ─────────┼─────────────────┼────────────────┼
+   TOTAL                                                              4 RTT
+
+   ... y si además el navegador REUTILIZA la conexión del HTML para las
+   10 imágenes (que es lo que hace con las 6 conexiones por host):
+
+   TOTAL = 1 (handshake) + 1 (HTML) + 1 (las 10 imágenes, en paralelo) = 3 RTT
+</code></pre></div>
+
+<p><strong>Interpretación, que es lo que hay que escribir:</strong> el mecanismo por el que el persistente mejora es <strong>eliminar handshakes</strong>, no "mandar más rápido". Cada handshake eliminado vale 1 RTT: con 11 objetos y 1 servidor se eliminan 10. En el límite de la conexión paralela el handshake ya <strong>no es el cuello de botella</strong> y lo que manda es el <strong>número de RTT de request/response</strong>, y para eso sirven <strong>HTTP/2 y HTTP/3</strong> (Clase 9).</p>
+<h3>⚠️ Errores típicos en este problema</h3>
+<ul>
+<li><strong>Olvidar que el paso 1 es TCP.</strong> La oficial lo abstrae, y está bien para el
+  apartado a), pero si te piden RTTs <strong>no</strong> podés contarlo como 1 RTT de HTTP.</li>
+<li><strong>"El cliente pide el HTML y después pide las 10 imágenes"</strong> sin notar que en no
+  persistente <strong>cada</strong> petición abre conexión. Ese es el error conceptual central.</li>
+<li><strong>Contar 11 RTT en no persistente.</strong> Son 22.</li>
+<li><strong>Decir "el persistente siempre es mejor".</strong> El enunciado dice <strong>"discuta"</strong>.
+  Hay que dar el caso en que <strong>no</strong> mejora.</li>
+</ul>
+<h2>3.2 Examen 2009-07, Problema 2 — el <code>getMailServer()</code> como puente</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0907</code> / <code>sirc0907</code> — 29 de julio de 2009, Problema 2.</p>
+</blockquote>
+<p>Este problema <strong>une HTTP con DNS</strong> y por eso lo desarrollamos completo en la
+<strong>Clase 14</strong>, donde se implementa <code>getMailServer()</code> con sockets UDP. Lo que aporta
+acá es el <strong>lado HTTP</strong>.</p>
+<blockquote>
+<p><strong>Apartado b)</strong> Implementar <code>bool isSpam(string ipAddress, string subject)</code> que
+devuelve <code>true</code> si naivespamming considera que el correo es spam.</p>
+</blockquote>
+<p>La solución oficial escribe:</p>
+<div class="codehilite"><pre><span></span><code>    Socket s = new Socket("www.naivespamming.org", 80);
+    if (!s.connect()) return false;
+    s.out.write(
+      "GET isspam.cgi?sender=" + ipAddress +
+      "&amp;subject=" + queryStringStuff(subject) +
+      " HTTP/1.1\r\n\r\n");
+    string response = s.in.readLine();
+    s.close();
+    string[] result = response.split();
+    return result[1] == "200";
+</code></pre></div>
+
+<p><strong>Análisis, con lo que aprendimos hoy:</strong></p>
+<ol>
+<li><strong>El <code>GET</code> está mal formado como HTTP/1.1.</strong> Un mensaje <strong>válido</strong> sería:</li>
+</ol>
+<div class="codehilite"><pre><span></span><code>   GET /isspam.cgi?sender=203.0.113.7&amp;subject=Hola HTTP/1.1
+   Host: www.naivespamming.org
+   User-Agent: FING-SpamFilter/1.0
+   Accept: text/plain
+   Connection: close
+</code></pre></div>
+
+<p><strong>Falta el <code>Host</code></strong>, que es obligatoria en 1.1: sin ella, un servidor con
+   <em>vhosts</em> no sabe qué sitio querés. Y usa un <strong>path relativo</strong> (<code>isspam.cgi</code>) en
+   vez de absoluto (<code>/isspam.cgi</code>). El <code>\r\n\r\n</code> final sí es correcto: es la línea
+   en blanco que cierra las cabeceras, tal como vimos en §1.3.
+2. <strong>El parseo es frágil.</strong> <code>response.split()</code> separa por espacios y toma
+   <code>result[1]</code>, que es el <strong>código de estado</strong>. Funciona, pero se rompe si hay
+   redirección. <strong>Lo robusto</strong> es parsear la <strong>primera línea</strong> de la respuesta.
+3. <strong>El <code>return result[1] == "200"</code> tiene la semántica invertida</strong> respecto del
+   enunciado, que dice explícitamente que <strong>404 significa "es spam"</strong> y <strong>200
+   significa "es legítimo"</strong>. La oficial devuelve <code>true</code> con 200, o sea, marca como
+   spam un correo que el servidor dijo que es legítimo. <strong>Es un error real de la
+   solución publicada.</strong> Lo correcto:</p>
+<div class="codehilite"><pre><span></span><code>   código == 404  →  es spam     →  return true
+   código == 200  →  no es spam  →  return false
+   otro / error   →  no se sabe  →  return false  (fail-open: mejor dejar
+                      pasar un correo que trabar todo el servidor)
+</code></pre></div>
+
+<blockquote>
+<p><strong>Nota explícita:</strong> el enunciado y la oficial se contradicen. Si te pasa en un
+examen, <strong>respetá el enunciado</strong> y <strong>señalá la contradicción</strong> por escrito.
+Eso suma puntos: demuestra que leíste los dos documentos.</p>
+</blockquote>
+<p><strong>Lo que aporta esta pregunta al tema de hoy:</strong> los <strong>códigos de estado</strong> importan de
+verdad. Un 404 no es un error técnico: es <strong>información de negocio</strong> para el servidor
+de correo. <strong>HTTP no solo transporta contenido, transporta semántica</strong>, y un
+<code>4xx</code>/<code>2xx</code> puede ser exactamente el dato que la aplicación necesita.</p>
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen</h2>
+<ol>
+<li><strong>Cliente/servidor</strong> = roles <strong>asimétricos</strong>: el servidor <strong>espera</strong>, el cliente
+   <strong>inicia</strong>. La asimetría elimina el problema de "quién llama".</li>
+<li><strong>Peer-to-peer</strong> = todos son cliente y servidor a la vez, sin punto central.
+   Escala con los pares, pero es mucho más complejo.</li>
+<li><strong>HTTP no es</strong> un protocolo de transporte, <strong>ni</strong> la Web, <strong>ni</strong> tiene estado,
+   <strong>ni</strong> es seguro. Es solo un formato de mensajes de aplicación sobre TCP.</li>
+<li>El mensaje HTTP tiene <strong>3 partes</strong>: línea de petición (o de estado) + cabeceras
+   + <strong>línea en blanco obligatoria</strong> + cuerpo.</li>
+<li><code>Host</code> es <strong>obligatoria</strong> en HTTP/1.1; <code>Content-Length</code> y <code>Content-Type</code> son las
+   que hacen que la respuesta sea interpretable.</li>
+<li><strong>No persistente</strong>: 2 RTT por objeto. <strong>Persistente</strong>: 1 RTT de handshake + 1
+   RTT por objeto. Con 11 objetos: <strong>22 RTT vs. 12 RTT</strong> en un solo servidor.</li>
+<li>Con <strong>paralelo</strong> y varios servidores, el persistente <strong>empata</strong> (4 RTT): el
+   handshake deja de ser el cuello de botella.</li>
+<li><strong>304 Not Modified</strong>: no cambia el ETag, no viaja cuerpo, ahorra ~96 % de la
+   transferencia. Es <strong>validación condicional</strong> con <code>If-None-Match</code> /
+   <code>If-Modified-Since</code>.</li>
+<li><strong>401</strong> = "no sé quién sos, mandá credenciales". <strong>403</strong> = "sé quién sos y no
+   podés". No son sinónimos.</li>
+<li>Más del <strong>80 %</strong> del tiempo de carga de una página es <strong>espera</strong>, no
+    transferencia. Cambiar de protocolo no acelera la red: <strong>elimina esperas</strong>.</li>
+<li><strong>Cookies</strong>: el estado vive <strong>en el cliente</strong> (<code>Set-Cookie</code> del servidor,
+    <code>Cookie</code> del cliente). Es el precio de que el servidor sea sin estado y pueda
+    escalar. <code>RFC 6265</code> las define; <code>SameSite</code>/<code>HttpOnly</code> las aseguran.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> ¿Por qué el diseño sin estado de HTTP es, en el fondo, una decisión de
+escalabilidad? Explicá el argumento con un balanceador de carga.</p>
+<details><summary>Respuesta</summary>
+
+Si el servidor guardara el estado de cada usuario, **todas** las peticiones de ese
+usuario tendrían que ir **al mismo** servidor. Con tres servidores y un balanceador,
+si el usuario cae en el servidor 1 y ese servidor se cae, el usuario pierde la
+sesión aunque los otros dos estén perfectos. Con HTTP sin estado, cualquier servidor
+atiende cualquier petición: **se eliminó el punto único de falla a cambio de que el
+estado viaje en cada petición**.
+
+</details>
+
+<p><strong>2.</strong> ¿Cuántos RTT cuesta una página con 11 objetos en HTTP no persistente? Y en
+persistente? Mostrá las cuentas.</p>
+<details><summary>Respuesta</summary>
+
+- **No persistente**: `11 objetos × (1 RTT de handshake + 1 RTT de request/response) = 11 × 2 = 22 RTT`.
+- **Persistente**: `1 RTT de handshake + 11 RTT de request/response = 12 RTT`.
+
+Se ahorran `22 − 12 = 10 RTT`, que es exactamente `N − 1` handshakes eliminados.
+
+</details>
+
+<p><strong>3.</strong> ¿En qué caso el HTTP persistente <strong>no</strong> mejora la performance? Justificá.</p>
+<details><summary>Respuesta</summary>
+
+Cuando el navegador abre **conexiones en paralelo** y los objetos vienen de **varios servidores**. Los handshakes pasan todos al mismo tiempo, así que cuestan 1 RTT en total para todos, no uno por objeto. Con 3 servidores: `no persistente = 4 RTT` y `persistente = 4 RTT`. **Empate.** El persistente gana con un solo servidor (`12` vs `22` secuencial, `3` vs `4` en paralelo) y en cualquier caso secuencial, pero con paralelismo y varios servidores la ventaja desaparece, porque el handshake ya no es el cuello de botella.
+
+</details>
+
+<p><strong>4.</strong> ¿Qué diferencia hay entre <code>Set-Cookie</code> y <code>Cookie</code>? ¿En qué dirección viaja
+cada una?</p>
+<details><summary>Respuesta</summary>
+
+- **`Set-Cookie`** viaja **del servidor al cliente** y **crea o actualiza** la
+  cookie en el navegador. Sus atributos (`Path`, `Max-Age`, `Secure`, `HttpOnly`,
+  `SameSite`) los pone el servidor.
+- **`Cookie`** viaja **del cliente al servidor** y **devuelve** las cookies que
+  aplican a ese host y ese `Path`, para que el servidor reconstruya el estado.
+
+Una crea el estado en el cliente, la otra lo transporta de vuelta.
+
+</details>
+
+<p><strong>5.</strong> ¿Por qué un <strong>304</strong> no tiene <code>Content-Length</code> ni cuerpo? ¿Qué se ahorró?</p>
+<details><summary>Respuesta</summary>
+
+Porque un 304 significa literalmente **"el recurso no cambió"**: si mandara un
+cuerpo, no sería un 304. Viaja **solo** el status line y las cabeceras. Con un HTML
+de 4096 bytes se pasa de ~4346 B a ~150 B: un ahorro de ~96 %, o sea se transfiere
+el 3,5 % de lo que se habría transferido. **No es una optimización marginal, es un
+cambio de orden de magnitud.**
+
+</details>
+
+<p><strong>6.</strong> ¿Cuál es la diferencia entre <code>401</code> y <code>403</code>? ¿Por qué importa?</p>
+<details><summary>Respuesta</summary>
+
+- **`401 Unauthorized`**: "no sé quién sos". El cliente **debe** mandar credenciales
+  y reintentar: es **recuperable**.
+- **`403 Forbidden`**: "sé quién sos, y la respuesta sigue siendo que no tenés
+  permiso". Reintentar **no sirve**, ni autenticándose.
+
+Importa porque determinan **qué tiene que hacer el cliente**: un `401` dispara el
+diálogo de login, un `403` muestra "acceso denegado" y para. Confundirlos hace que
+un sitio le pida la contraseña a un usuario que ya se identificó.
+
+</details>
+
+<p><strong>7.</strong> Un cliente descarga una página de 11 objetos con RTT de 100 ms, ancho de
+banda de 10 Mbps y objetos de 50 KB cada uno, en HTTP no persistente. ¿Qué
+porcentaje del tiempo total se va en <strong>espera</strong>?</p>
+<details><summary>Respuesta</summary>
+
+- **Espera**: `22 RTT × 100 ms = 2200 ms`.
+- **Transferencia real**: `11 × 50 KB = 550 KB`;
+  `t = 550 × 1024 × 8 / 10·10^6 = 0,45 s = 450 ms`.
+- **Proporción**: `2200 / (2200 + 450) = 0,83` → **83 %**.
+
+O sea, más del 80 % del tiempo es **espera al servidor**. Y si lo hacés
+persistente: `1200 / (1200 + 450) = 73 %`. Notá que el tiempo de transferencia
+(450 ms) **no cambió en absoluto**: cambiar de protocolo no acelera la red,
+**elimina esperas**.
+
+</details>
+
+<p><strong>8.</strong> En la solución oficial del <code>2009-07 Problema 2</code>, la función <code>isSpam()</code>
+devuelve <code>true</code> cuando el código HTTP es 200. ¿Es correcto? ¿Qué haría bien?</p>
+<details><summary>Respuesta</summary>
+
+**No, es un error de la solución publicada.** El enunciado dice explícitamente que **404 significa "es spam"** y **200 significa "es legítimo"**:
+
+
+<div class="codehilite"><pre><span></span><code>   código == 404  →  return true   (es spam)
+   código == 200  →  return false  (no es spam)
+   otro o timeout →  return false  (fail-open)
+</code></pre></div>
+
+
+
+La oficial devuelve `true` para el 200, o sea, marca como spam un correo que el servidor dijo que es legítimo. Además el `GET` que escribe está mal formado como HTTP/1.1 (le falta el `Host` obligatorio y usa un path relativo). En un examen, **respetá el enunciado** y **señalá la contradicción** por escrito: eso suma puntos.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>eirc1007</code> / <code>sirc1007</code></strong> — Pregunta 1 completa (8 pts, HTTP no persistente + las 10 imágenes)</li>
+<li><strong>Examen <code>eirc0907</code> / <code>sirc0907</code></strong> — Problema 2 (30 pts): cliente anti-spam vía HTTP; apartados b) y c)</li>
+<li><strong>Examen <code>eirc1002</code> / <code>sirc1002</code></strong> — Pregunta 1a (8 pts): qué es el DNS y su función (desarrollada en la Clase 10)</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 7 §7.1 (modelo cliente/servidor) y §7.3 (HTTP: los dos tipos de conexión, los mensajes, el cálculo de RTT)</li>
+<li><strong>RFC 9110</strong> — HTTP Semantics (2022, <em>Internet Standard</em>; sustituye a RFC 2616) · <strong>RFC 9112</strong> — HTTP/1.1 (2022, sintaxis)</li>
+<li><strong>RFC 9113</strong> — HTTP/2 (2022; obsoleta RFC 7540) · <strong>RFC 9114</strong> — HTTP/3 (2022, sobre QUIC)</li>
+<li><strong>RFC 6265</strong> — HTTP State Management Mechanism (cookies) · <strong>RFC 7838</strong> — Alt-Svc (2016): cómo se negocia HTTP/3</li>
+<li><strong>Clase siguiente:</strong> 9 — HTTP a fondo: mensajes, cookies, caché y versiones</li>
+</ul></body></html>

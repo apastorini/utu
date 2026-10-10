@@ -1,0 +1,771 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 17 — TCP: la cabecera campo por campo</h1>
+<p><strong>Bloque:</strong> C (Transporte) · <strong>Semana:</strong> 6 · <strong>Duración estimada:</strong> 110 min
+<strong>Correlativa:</strong> Clase 16 (mux/demux y UDP) · <strong>Sigue con:</strong> Clase 18 (TCP: establecer y cerrar la conexión)
+<strong>Material de referencia:</strong> Tanenbaum cap. 6 (§6.3, §6.5) · RFC 9293, 2018, 7323, 1122</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Decir qué servicios compra TCP con sus <strong>20 bytes</strong> de cabecera, frente a los 8 de UDP.</li>
+<li>Escribir el <strong>formato de la cabecera</strong> y decodificar un segmento hexadecimal byte a byte.</li>
+<li>Calcular <strong>seq y ack de bytes</strong>, y explicar por qué el ACK es <strong>acumulativo</strong> y cuenta bytes.</li>
+<li>Explicar qué significa realmente <strong>PSH</strong> y por qué <strong>no</strong> garantiza un mensaje por mensaje.</li>
+<li>Describir las <strong>opciones</strong> (MSS, SACK permitted, Timestamps, Window Scale) con su RFC.</li>
+<li>Calcular y verificar el <strong>Internet checksum</strong> de un segmento, y decir qué pasa si falla.</li>
+</ol>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 760 330" style="max-width:760px"><rect width="760" height="330" fill="#ffffff"/><text x="380.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Cabecera TCP, campo por campo</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><rect x="40.0" y="70" width="350.0" height="30" rx="3" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="215.0" y="88.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Source Port</text><text x="215.0" y="114" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">16</text><rect x="390.0" y="70" width="350.0" height="30" rx="3" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="565.0" y="88.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Destination Port</text><text x="565.0" y="114" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">16</text><rect x="40.0" y="104" width="700.0" height="30" rx="3" fill="#dceaf3" stroke="#7aa7c4" stroke-width="1.2"/><text x="390.0" y="122.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Sequence Number</text><text x="390.0" y="148" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">32</text><rect x="40.0" y="138" width="700.0" height="30" rx="3" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="390.0" y="156.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Acknowledgment Number</text><text x="390.0" y="182" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">32</text><rect x="40.0" y="172" width="87.5" height="30" rx="3" fill="#f7d9c8" stroke="#7aa7c4" stroke-width="1.2"/><text x="83.75" y="190.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Data Offset</text><text x="83.75" y="216" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">4</text><rect x="127.5" y="172" width="65.625" height="30" rx="3" fill="#dceaf3" stroke="#7aa7c4" stroke-width="1.2"/><text x="160.3125" y="190.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Res</text><text x="160.3125" y="216" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">3</text><rect x="193.125" y="172" width="196.875" height="30" rx="3" fill="#dceaf3" stroke="#7aa7c4" stroke-width="1.2"/><text x="291.5625" y="190.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Flags</text><text x="291.5625" y="216" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">9</text><rect x="390.0" y="172" width="350.0" height="30" rx="3" fill="#dceaf3" stroke="#7aa7c4" stroke-width="1.2"/><text x="565.0" y="190.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Window Size</text><text x="565.0" y="216" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">16</text><rect x="40.0" y="206" width="350.0" height="30" rx="3" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="215.0" y="224.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Checksum</text><text x="215.0" y="250" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">16</text><rect x="390.0" y="206" width="350.0" height="30" rx="3" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="565.0" y="224.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Urgent Pointer</text><text x="565.0" y="250" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">16</text><rect x="40.0" y="240" width="3500.0" height="30" rx="3" fill="#dceaf3" stroke="#7aa7c4" stroke-width="1.2"/><text x="1790.0" y="258.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Options (variables)</text><text x="1790.0" y="284" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">160</text><text x="40" y="52" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">bit 0</text><text x="40.0" y="52" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">0</text><text x="127.5" y="52" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">4</text><text x="215.0" y="52" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">8</text><text x="302.5" y="52" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">12</text><text x="390.0" y="52" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">16</text><text x="477.5" y="52" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">20</text><text x="565.0" y="52" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">24</text><text x="652.5" y="52" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">28</text><text x="740.0" y="52" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">32</text><text x="40" y="326" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#666">Cabecera minima: 5 filas de 32 bits = 20 bytes. Con opciones puede llegar a 60 bytes.</text><text x="40" y="356" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#c8621a">Los ACKs son de BYTES, no de segmentos:</text><text x="40" y="376" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#c8621a">si seq = 1100 y mandas 20 bytes, el ACK siguiente es 1120.</text></svg></p>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2011-02 P3</code> y <code>2007-03 P4</code> (10 pts cada uno, campos de TCP y UDP) · <code>2001-12 Problema 2</code> (el PUSH no garantiza un mensaje por vez).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 Por qué 20 bytes y no 8</h2>
+<p>UDP tiene 8 bytes y no garantiza nada. TCP tiene 20 y compra con ellos:</p>
+<table>
+<thead>
+<tr>
+<th>Bytes</th>
+<th>Campo</th>
+<th>Qué le compra al protocolo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4</td>
+<td>Puertos (2 + 2)</td>
+<td>saber a qué proceso es el flujo</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Sequence + Acknowledgment</td>
+<td><strong>orden, detección de pérdida y retransmisión</strong></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Window</td>
+<td><strong>control de flujo</strong> (cuánto puede mandar sin desbordar al receptor)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Checksum</td>
+<td><strong>detección de errores</strong> de punta a punta, con pseudo-cabecera</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Data Offset + Reserved + Flags</td>
+<td><strong>ciclo de vida de la conexión</strong> (SYN, ACK, FIN, RST, PSH)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Urgent Pointer</td>
+<td>datos urgentes (URG), que en la práctica no se usa</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Sobrevivir sin conexión</strong>, en cambio, es gratis: TCP no lo necesita porque <strong>el número de secuencia
+no identifica una conexión, identifica un byte</strong>. No tiene que preguntarle "¿de quién es este paquete?",
+porque el socket ya lo sabe. Esa es la diferencia conceptual más importante entre los dos.</p>
+<h2>1.2 El formato de la cabecera</h2>
+<div class="codehilite"><pre><span></span><code> 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|          Source Port          |       Destination Port        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                         Sequence Number                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                    Acknowledgment Number                      |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|  Data Offset  |Res|N|C|E|U|A|P|R|S|F|       Window Size       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|            Checksum            |          Urgent Pointer      |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                      Options (variable)                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                         Data (variable)                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</code></pre></div>
+
+<p><strong>5 palabras de 32 bits = 20 bytes</strong> sin opciones; como las opciones son de largo variable, hace falta
+el <strong>Data Offset</strong> para saber dónde empiezan los datos.</p>
+<p><strong>El byte 12</strong> tiene los 4 bits del Data Offset, 3 reservados y el bit NS (<em>No Significant</em>, de
+<code>RFC 7323</code>); <strong>el byte 13</strong>, los 8 flags:</p>
+<p><strong>El byte 13</strong> son los flags, y cada uno es <strong>un bit</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Bit</th>
+<th>Valor</th>
+<th>Flag</th>
+<th>Significado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>7</td>
+<td><code>0x80</code></td>
+<td>CWR</td>
+<td>obsoleto (era de <em>congestion window reduced</em>)</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>0x40</code></td>
+<td>ECE</td>
+<td>obsoleto (era de <em>ECN-Echo</em>)</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>0x20</code></td>
+<td><strong>URG</strong></td>
+<td>el puntero urgente es válido</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>0x10</code></td>
+<td><strong>ACK</strong></td>
+<td>el campo Acknowledgment es válido</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>0x08</code></td>
+<td><strong>PSH</strong></td>
+<td>no esperes a llenar el buffer para mandar</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>0x04</code></td>
+<td><strong>RST</strong></td>
+<td>resetear la conexión / error</td>
+</tr>
+<tr>
+<td>1</td>
+<td><code>0x02</code></td>
+<td><strong>SYN</strong></td>
+<td>sincronizar números de secuencia (abrir)</td>
+</tr>
+<tr>
+<td>0</td>
+<td><code>0x01</code></td>
+<td><strong>FIN</strong></td>
+<td>no tengo más datos (cerrar)</td>
+</tr>
+</tbody>
+</table>
+<p>CWR y ECE están <strong>reservados</strong> desde que ECN se negocia en el SYN (<code>RFC 3168</code>), y <strong>si ACK = 0 el campo
+Acknowledgment se ignora</strong>: por eso el SYN puede viajar con <code>ack = 0</code>.</p>
+<h2>1.3 Un segmento real, byte a byte</h2>
+<p>Segmento del cliente <code>203.0.113.9:49200</code> al servidor <code>198.51.100.7:80</code>, con 4 bytes de datos
+("HOLA"), sin opciones:</p>
+<div class="codehilite"><pre><span></span><code> Byte   0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19
+      C0 30 00 50 00 00 04 4C 00 00 04 60 50 18 20 00 CB C6 00 00
+       └───┘└───┘└──── seq ────┘└──── ack ────┘└┘└─────┘└──ck──┘└urg┘
+       sport  dport = 1100     = 1120    offset flags  window
+      C0 30 = 49200   00 50 = 80   00 00 04 4C = 1100   00 00 04 60 = 1120
+      50 = 0101 0000  →  Data Offset 5 (= 20 bytes), reservado 0, NS 0
+      18 = 0001 1000  →  ACK (0x10) | PSH (0x08)      20 00 = ventana 8192
+      CB C6 = checksum (calculado en 2.2)  00 00 = urgente nulo
+      datos: 48 4F 4C 41 = "HOLA"
+</code></pre></div>
+
+<p>Las conversiones, con la cuenta a la vista:</p>
+<div class="codehilite"><pre><span></span><code>   49200 = 0xC030   (0xC000 = 49152  +  0x30 = 48)     80 = 0x0050
+     1100 = 0x0000044C   (4·256 = 1024  +  0x4C = 76)   1120 = 0x00000460 (4·256 + 96)
+       20 = 0x14  →  Data Offset = 0x14 / 4 = 5  →  5 × 4 = 20 bytes de cabecera
+     8192 = 0x2000   (2 × 4096)       PSH|ACK = 0x08 | 0x10 = 0x18
+</code></pre></div>
+
+<p><strong>El puntero urgente</strong>: si URG = 1, la secuencia urgente es <code>seq + puntero</code>. En 2026 <strong>nadie lo
+usa</strong>: ni aplicaciones ni bibliotecas lo activan.</p>
+<h2>1.4 Sequence Number y Acknowledgment Number: la aritmética</h2>
+<p>Los dos campos son de <strong>32 bits</strong> y el ACKing es <strong>acumulativo</strong> (<em>cumulative ACK</em>), y por eso el
+número identifica <strong>bytes</strong>, no segmentos. Esta es la clase de error que más puntos cuesta.</p>
+<p><strong>Caso base:</strong> el cliente manda segmentos de <strong>20 bytes</strong> desde <code>seq = 1100</code>.</p>
+<div class="codehilite"><pre><span></span><code>   bytes enviados:  1100 → 1119    1120 → 1139    1140 → 1159    1160 → 1179
+   seq del seg.:        1100           1120           1140           1160
+   ACK que devuelve:    1120           1140           1160           1180
+                        ↑              ↑              ↑              ↑
+                        el receptor dice "espero el 1120": ya tengo 1100-1119
+</code></pre></div>
+
+<p><strong>El ACK es siempre "el próximo byte que espero"</strong>, no "el último que recibí". Por eso el primer
+segmento produce <code>1120 = 1100 + 20</code>.</p>
+<p>Ahora se pierde el segundo segmento:</p>
+<div class="codehilite"><pre><span></span><code>   seg1 (1100-1119) llega → receptor responde  ACK 1120   → el emisor avanza a 1120
+   seg2 (1120-1139) SE PIERDE  → el receptor sigue esperando 1120
+   seg3 (1140-1159) llega → ¿lo acepta? NO: llega fuera de orden.
+                            → el receptor responde ACK 1120  (¡DUPLICADO!)
+   retransmisión de seg2 → ACK 1140
+   seg4 (1160-1179) llega → ACK 1180
+</code></pre></div>
+
+<p>Los <strong>ACKs duplicados</strong> (<code>1120</code>, <code>1120</code>, <code>1120</code>) evidencian que falta un segmento y disparan el <em>fast
+retransmit</em> de la clase 21: con 3 se retransmite sin esperar el RTO.</p>
+<p><strong>Consecuencia:</strong> un solo ACK puede confirmar <strong>varios segmentos a la vez</strong>, y uno puede quedar
+confirmado <strong>parcialmente</strong>: la unidad es <strong>siempre el byte</strong>.</p>
+<h2>1.5 El flag PSH: lo que dice y lo que no dice</h2>
+<p>Acá está el malentendido clásico, y es lo que el examen 2001-12 pregunta explícitamente.</p>
+<p><strong>En el receptor</strong>, PSH no obliga a nada: es una <em>pista</em> (<em>hint</em>) para el stack local. La decisión de
+llamar a <code>read()</code> y devolver uno o varios mensajes es <strong>de la aplicación y del buffer del socket</strong>, y
+entre el cable y el <code>read()</code> hay <strong>tres capas de buffering</strong>: socket, reordenamiento y transporte. En el
+emisor, además, está el <strong>WAL</strong>.</p>
+<p><strong>Las tres razones por las que PUSH no garantiza nada:</strong></p>
+<ol>
+<li><strong>Segmentación.</strong> Si el mensaje es más grande que el MSS, TCP lo parte en varios segmentos: el PSH
+   no lo impide.</li>
+<li><strong>WAL (<em>write-ahead log</em>) en el emisor.</strong> El PSH queda marcado en un buffer y puede no salir si la
+   ventana está llena o si Nagle está activo: se "pierde" hasta que el segmento sale.</li>
+<li><strong>Buffering en el receptor.</strong> Con dos mensajes en el buffer del socket, <strong>un solo <code>read()</code> puede
+   devolver los dos</strong>; y con reordenamiento, el final del 2 junto con el principio del 1.</li>
+</ol>
+<p>En la práctica <strong>todas las implementaciones lo ponen siempre y casi ninguna receptora lo trata de
+forma especial</strong>: hoy es decorativo.</p>
+<h2>1.6 Las opciones</h2>
+<p>Cada opción tiene la forma <code>Kind (1 byte) + Length (1 byte) + datos</code>, y el <strong>Length incluye los dos
+primeros bytes</strong>. Si el total no es múltiplo de 4 se completa con <strong>NOP (Kind 1)</strong>; el fin se marca con
+<strong>EOL (Kind 0)</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Opción</th>
+<th>Kind</th>
+<th>Long.</th>
+<th>Qué negocia</th>
+<th>RFC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EOL</td>
+<td>0</td>
+<td>—</td>
+<td>fin de las opciones</td>
+<td>RFC 9293</td>
+</tr>
+<tr>
+<td>NOP</td>
+<td>1</td>
+<td>1</td>
+<td>alineación</td>
+<td>RFC 9293</td>
+</tr>
+<tr>
+<td><strong>MSS</strong> (Maximum Segment Size)</td>
+<td>2</td>
+<td>4</td>
+<td>máximo de bytes de datos <strong>por segmento</strong></td>
+<td>RFC 9293 (§3.7.1)</td>
+</tr>
+<tr>
+<td><strong>Window Scale</strong></td>
+<td>3</td>
+<td>3</td>
+<td>multiplica la ventana ×2^shift</td>
+<td><code>RFC 7323</code></td>
+</tr>
+<tr>
+<td><strong>SACK Permitted</strong></td>
+<td>4</td>
+<td>2</td>
+<td>"sé usar ACK selectivo"</td>
+<td><code>RFC 2018</code></td>
+</tr>
+<tr>
+<td><strong>Timestamps</strong></td>
+<td>8</td>
+<td>10</td>
+<td>TSval y TSecr para medir RTT y proteger PAWS</td>
+<td><code>RFC 7323</code></td>
+</tr>
+</tbody>
+</table>
+<p>En un SYN se ven así:</p>
+<div class="codehilite"><pre><span></span><code>   02 04 05 B4   →  MSS = 0x05B4 = 1460 bytes de datos por segmento
+   04 02         →  SACK permitted (2 bytes, sin datos)
+   08 0A 00 00 1E D4 00 00 00 00
+                 →  Timestamps: TSval = 0x1ED4 = 7884, TSecr = 0
+   Total = 4 + 2 + 10 = 16 bytes  →  Data Offset = 5 + 16/4 = 9  →  36 bytes
+</code></pre></div>
+
+<p><strong>Las tres que importan:</strong></p>
+<ul>
+<li><strong>MSS</strong>: máximo de <strong>datos</strong>, no de segmento. Con IP y Ethernet (MTU 1500) sale 1500 − 20 − 20 =
+  <strong>1460</strong>. Se anuncia <strong>solo en el SYN</strong> y gana el <strong>menor</strong>: es lo que evita la fragmentación de IP.</li>
+<li><strong>SACK permitted</strong> (<code>RFC 2018</code>, <em>Standards Track</em>): es solo el <strong>permiso</strong>. Si los dos lo mandan,
+  después un segmento puede llevar campos SACK con los bloques que faltan. Sigue siendo
+  comportamiento estándar y es lo que usan Linux y Windows.</li>
+<li><strong>Timestamps</strong> (<code>RFC 7323</code>, que <strong>obsolesce a la RFC 1323</strong>): 10 bytes con <strong>TSval</strong> (el reloj del
+  emisor) y <strong>TSecr</strong> (su eco). Sirven para medir el RTT exacto y para <strong>PAWS</strong> (<em>Protect Against
+  Wrapped Sequence numbers</em>), <strong>obligatorio</strong> si ambos extremos los activan.</li>
+</ul>
+<h2>1.7 El checksum de TCP: Internet checksum, no CRC</h2>
+<p><strong>El pseudo-cabecera</strong> es el mismo de la clase 16, con el protocolo = <strong>6</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   src (4)  dst (4)  zero (1)  protocolo = 6 (1)  longitud del segmento TCP (2)
+</code></pre></div>
+
+<p>La diferencia con UDP: la longitud es la del <strong>segmento TCP completo</strong>, cabecera + opciones + datos (en
+el ejemplo, 20 + 4 = 24 = <code>0x0018</code>).</p>
+<p>Y el punto conceptual que se pregunta: <strong>es un checksum, no un CRC.</strong> Son algoritmos distintos:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Internet checksum (TCP/UDP/IP)</th>
+<th>CRC (Ethernet)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Qué es</td>
+<td><strong>aditivo</strong>: suma y complemento a uno</td>
+<td><strong>polinómico</strong>: división en campo de Galois</td>
+</tr>
+<tr>
+<td>Errores de 1 bit</td>
+<td><strong>siempre los detecta</strong></td>
+<td>siempre</td>
+</tr>
+<tr>
+<td>Errores de varios bits</td>
+<td>solo los que no se compensan</td>
+<td>sí, incluidos los <em>bursts</em></td>
+</tr>
+<tr>
+<td>Coste</td>
+<td>sumar</td>
+<td>tabla + divisiones</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Por qué detecta todos los errores de un bit</strong>: cada bit aporta un <code>±2^k</code> distinto (k = 0..15), así que
+alterar un bit cambia la suma en un valor que <strong>nunca da cero</strong> en complemento a uno. Con dos o más bits,
+las contribuciones pueden <strong>cancelarse</strong>.</p>
+<h2>1.8 Qué pasa si el checksum falla</h2>
+<p><strong>El segmento se descarta en silencio. No hay NAK, no hay ICMP, no hay aviso.</strong> ¿Por qué? (a) un NAK por
+cada datagrama corrupto genera una <strong>tormenta de ACKs negativos</strong>; (b) no arregla nada, porque un NAK
+perdido es tan inútil como el segmento perdido; y (c) el checksum existe para <strong>no entregar datos
+malos</strong>, no para informar.</p>
+<p><strong>Para el emisor, un segmento corrupto es indistinguible de uno perdido</strong>: se dispara el mismo mecanismo
+(RTO o 3 ACKs duplicados) y se retransmite. O sea: <strong>el checksum convierte errores en pérdidas</strong>, y para
+TCP eso es transparente.</p>
+<h2>1.9 ⚠️ Actualización a 2026</h2>
+<p><strong>Sigue igual — de memoria:</strong> 20 bytes mínimos; los 10 campos; seq y ack de <strong>32 bits y de bytes</strong>;
+ACK <strong>acumulativo</strong>; ventana de <strong>16 bits</strong>; los 6 flags; Data Offset en palabras de 32 bits; Internet
+checksum con pseudo-cabecera; y ante un checksum roto, <strong>descarte en silencio</strong>.</p>
+<p><strong>Cambió o hay que corregirlo:</strong></p>
+<ul>
+<li><strong><code>RFC 9293</code> (2022, <em>Internet Standard</em>) sustituye a la <code>RFC 793</code> de 1981</strong> (consolida 793 + RFC 879,
+  2873, 6093, 6429, 6528 y 6691). Citar "RFC 793" como especificación vigente en 2026 está
+  desactualizado; <strong><code>RFC 1122</code></strong> sigue definiendo el comportamiento de los hosts.</li>
+<li><strong>Timestamps y Window Scale: <code>RFC 7323</code> (2014)</strong>, que <strong>obsolesce a la RFC 1323</strong>, y <strong>PAWS es
+  obligatorio</strong> si ambos activan timestamps: con 32 bits y enlaces rápidos, un paquete viejo podría
+  aceptarse como nuevo.</li>
+<li><strong>SACK: <code>RFC 2018</code> (1996)</strong>, <em>Standards Track</em>, <strong>sigue siendo</strong> el mecanismo estándar.</li>
+<li><strong>URG está obsoleto en la práctica</strong>: ninguna aplicación ni biblioteca moderna lo usa. Y <strong>PSH es
+  decorativo</strong>: casi todos los stacks lo mandan siempre. <strong>QUIC elimina el problema de raíz</strong>, porque
+  los <em>streams</em> de HTTP/3 tienen <strong>frontera de mensaje explícita</strong>: un mensaje nunca se parte ni se
+  junta con otro, sin depender de un flag.</li>
+</ul>
+<p><strong>Consecuencia para el examen:</strong> <code>2011-02 P3</code> y <code>2007-03 P4</code> <strong>se siguen preguntando tal cual</strong>: la
+respuesta esperada es la lista de campos con su significado. Para sumar, citá <strong>RFC 9293</strong> en lugar de
+RFC 793.</p>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — Data Offset y largo total de un segmento</h2>
+<p><strong>Enunciado.</strong> Capturás un segmento TCP con estos primeros 20 bytes:</p>
+<div class="codehilite"><pre><span></span><code>   C0 30 00 50 00 00 04 4C 00 00 04 60 70 18 FA F0 12 34 00 00
+   02 04 05 B4 04 02 08 0A 00 00 1E D4 00 00 00 00
+   48 4F 4C 41 41 42 43 ...
+</code></pre></div>
+
+<p><strong>a)</strong> ¿Cuánto vale el Data Offset? <strong>b)</strong> ¿Cuántas opciones hay y cuáles? <strong>c)</strong> ¿Cuánto mide el
+segmento completo si el datagrama IP mide 68 bytes? <strong>d)</strong> ¿Qué flags tiene?</p>
+<p><strong>a) El Data Offset.</strong> El byte 12 es <code>0x70 = 0111 0000</code> → Data Offset = <strong>7</strong> → <strong>7 × 4 = 28 bytes</strong>
+de cabecera (reservados <code>000</code>, NS <code>0</code>).</p>
+<p><strong>b) Las opciones.</strong> Desde el byte 20 hasta el 27 inclusive, o sea <code>28 − 20 = 8</code> bytes:</p>
+<div class="codehilite"><pre><span></span><code>   02 04 05 B4     →  Kind 2 (MSS), Length 4, valor 0x05B4 = 1460
+   04 02           →  Kind 4 (SACK permitted), Length 2
+   ── y sobran 2 bytes sin EOL ni NOP: son padding, u opciones mal formadas.
+</code></pre></div>
+
+<p><em>Interpretación:</em> el Data Offset 7 con solo 8 bytes de opciones visibles deja 8 bytes de hueco; en una
+captura real eso es padding. Lo que <strong>no</strong> puede pasar es que el Data Offset apunte más allá de los datos.</p>
+<p><strong>c) El largo total.</strong> El datagrama IP mide 68 bytes; le restamos la cabecera IPv4 (20):
+<code>68 − 20 = 48</code> bytes de segmento TCP, de los cuales 28 son cabecera ⇒ <strong>20 bytes de datos</strong>. <em>No hay
+contradicción con el MSS de 1460</em>: el MSS es un <strong>máximo</strong>, y se mide en <strong>datos</strong>, sin la cabecera.</p>
+<p><strong>d) Los flags.</strong> El byte 13 es <code>0x18</code>:</p>
+<div class="codehilite"><pre><span></span><code>   0x18 = 0001 1000  →  ACK (bit 4 = 0x10) | PSH (bit 3 = 0x08)
+   →  PSH + ACK, y no es SYN ni FIN ni RST
+</code></pre></div>
+
+<h2>2.2 Ejercicio 2 — Calcular y verificar el Internet checksum de un segmento TCP</h2>
+<p><strong>Datos.</strong> Segmento de <code>203.0.113.9</code> a <code>198.51.100.7</code>, protocolo 6, longitud <strong>24</strong> bytes: la cabecera
+de 20 del ejemplo de §1.3 (<code>seq = 1100</code>, <code>ack = 1120</code>, ventana 8192, flags <code>0x18</code>) y 4 de datos "HOLA".</p>
+<p><strong>a)</strong> Escribí las palabras a sumar. <strong>b)</strong> Sumá. <strong>c)</strong> ¿Cuál es el checksum? <strong>d)</strong> Verificá.</p>
+<p><strong>a) Las palabras</strong> (con el checksum en 0, que es como se calcula):</p>
+<div class="codehilite"><pre><span></span><code>   Pseudo-cabecera  CB00  7109  C633  6407  0006  0018    src, dst, proto 6, long. TCP 24
+   Cabecera TCP     C030  0050  0000  044C  0000  0460    ports, seq 1100, ack 1120
+                    5018  2000  0000  0000               offset+flags, ventana, ck=0, urgente
+   Datos            484F  4C41                            "HO", "LA"
+</code></pre></div>
+
+<p><strong>b) La suma con acarreo devuelto:</strong></p>
+<div class="codehilite"><pre><span></span><code>    CB00 + 7109 = 13C09  → 3C0A
+    3C0A + C633 = 1023D  → 023E
+    023E + 6407 = 06645  → 6645
+    6645 + 0006 = 0664B  → 664B
+    664B + 0018 = 06663  → 6663
+    6663 + C030 = 12693  → 2694
+    2694 + 0050 = 026E4  → 26E4
+    26E4 + 0000 = 026E4  → 26E4
+    26E4 + 044C = 02B30  → 2B30
+    2B30 + 0000 = 02B30  → 2B30
+    2B30 + 0460 = 02F90  → 2F90
+    2F90 + 5018 = 07FA8  → 7FA8
+    7FA8 + 2000 = 09FA8  → 9FA8
+    9FA8 + 0000 = 09FA8  → 9FA8      ← el checksum, en 0
+    9FA8 + 0000 = 09FA8  → 9FA8      ← puntero urgente
+    9FA8 + 484F = 0E7F7  → E7F7
+    E7F7 + 4C41 = 13438  → 3439
+    ────────────────────────────────────────────
+    suma final = 0x3439
+</code></pre></div>
+
+<p><strong>c) El checksum</strong> es el complemento a uno de 16 bits:</p>
+<div class="codehilite"><pre><span></span><code>   0xFFFF − 0x3439 = 0xCBC6
+</code></pre></div>
+
+<p><strong>d) Verificación.</strong> <code>3439 + CBC6 = FFFF</code>, sin acarreo, y el complemento de <code>FFFF</code> es <code>0x0000</code>: <strong>el
+mismo criterio que en UDP, <code>0x0000</code> significa "segmento íntegro"</strong>.</p>
+<h2>2.3 Ejercicio 3 — Si el checksum falla</h2>
+<p><strong>Enunciado.</strong> Al segmento del ejercicio 2.2 le llega un <strong>único bit alterado</strong> en los datos: el byte
+<code>4F</code> de "HO" pasa a <code>50</code>. <strong>a)</strong> ¿Lo detecta el receptor? <strong>b)</strong> ¿Qué hace? <strong>c)</strong> ¿Qué le pasa al
+emisor?</p>
+<p><strong>a)</strong> La palabra <code>484F</code> pasa a <code>4850</code>, o sea <strong>+1</strong> en la suma:</p>
+<div class="codehilite"><pre><span></span><code>   suma original = 0x3439
+   suma nueva   = 0x3439 + 1 = 0x343A
+   checksum que calcularía el receptor = 0xFFFF − 0x343A = 0xCFB7
+   checksum que venía en el segmento   = 0xCBC6
+   0xCFB7 ≠ 0xCBC6  →  HAY ERROR
+</code></pre></div>
+
+<p><em>Interpretación:</em> con <strong>un solo bit</strong> la diferencia es siempre ±<code>2^k</code>, que en complemento a uno nunca
+da cero: por eso se detectan todos los errores de un bit.</p>
+<p><strong>b)</strong> El receptor <strong>descarta el segmento en silencio</strong>: no ACK, no NAK, no ICMP. Los datos no llegan a
+la aplicación.</p>
+<p><strong>c)</strong> El emisor <strong>no se entera de nada</strong> hasta que expira el RTO, o hasta que recibe 3 ACKs
+duplicados. Y como un segmento corrupto es indistinguible de uno perdido, TCP lo <strong>retransmite</strong> igual.
+<strong>El checksum convierte errores de bits en pérdidas, y el mecanismo de pérdida es transparente para
+la aplicación.</strong> Ese es el diseño: el checksum protege la integridad, la retransmisión protege la
+entrega.</p>
+<p><strong>Y el caso inverso, para entender por qué no alcanza:</strong> si se alteran <strong>dos bits de igual peso en
+palabras distintas</strong> (por ejemplo, el bit 0 de <code>C030</code> hacia 1 y el bit 0 de <code>C633</code> hacia 0), las
+contribucciones son <code>+1</code> y <code>−1</code>, se cancelan, la suma da lo mismo y <strong>el receptor acepta el segmento
+dañado</strong>. Por eso TCP no confía en el checksum para detectar corrupción: confía en que la red no
+corrompe, y el checksum es la primera línea, no la última.</p>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2011-02, Pregunta 3 (10 puntos) — Campos más importantes de TCP y UDP</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc1102</code> / <code>sirc1102</code> — 3 de febrero de 2011.</p>
+</blockquote>
+<h3>Enunciado (texto del examen)</h3>
+<blockquote>
+<p>Mencione y explique los campos más importantes de los segmentos TCP y UDP.</p>
+</blockquote>
+<h3>Solución oficial</h3>
+<p>La solución publicada <strong>remite a una diapositiva del teórico</strong> (<code>cap03_3_2009_2xcarilla.pdf</code>, slide 5):
+no hay texto de respuesta. Lo que sigue es <strong>solución propia</strong>.</p>
+<h3>Mi resolución (solución propia)</h3>
+<p><strong>UDP — 4 campos, 8 bytes:</strong> <strong>puertos</strong> origen y destino (16 bits cada uno, que con la IP dan la
+2-tupla del socket no conectado); <strong>Length</strong> (longitud <strong>total</strong> del datagrama, mínimo 8); <strong>Checksum</strong>
+(Internet checksum <strong>con pseudo-cabecera</strong>, opcional en IPv4 y obligatorio en IPv6; si falla se
+<strong>descarta en silencio</strong>); y los <strong>datos</strong> (0 a 65 507 bytes).</p>
+<p><strong>TCP — los 10 campos, 20 bytes:</strong></p>
+<ol>
+<li><strong>Source Port / Destination Port</strong> (16 + 16): con las dos IP forman la <strong>4-tupla</strong> de la conexión.</li>
+<li><strong>Sequence Number</strong> (32): número del <strong>primer byte</strong>; cuenta <strong>bytes</strong>, no segmentos.</li>
+<li><strong>Acknowledgment Number</strong> (32): <strong>próximo byte esperado</strong>, <strong>acumulativo</strong>; solo vale si ACK está
+   activo.</li>
+<li><strong>Data Offset</strong> (4 bits): largo de la cabecera en <strong>palabras de 32 bits</strong>, que marca dónde empiezan
+   los datos.</li>
+<li><strong>Reservado</strong> (3 bits) y <strong>NS</strong> (1 bit), sin uso real.</li>
+<li><strong>Flags</strong> (8 bits): <strong>URG, ACK, PSH, RST, SYN, FIN</strong> (más CWR/ECE reservados).</li>
+<li><strong>Window Size</strong> (16): bytes que puede mandar el emisor desde el último confirmado → <strong>control de
+   flujo</strong>; con <em>Window Scale</em> se multiplica por 2^shift.</li>
+<li><strong>Checksum</strong> (16): Internet checksum con <strong>pseudo-cabecera de protocolo 6</strong> y longitud del <strong>segmento
+   TCP</strong>.</li>
+<li><strong>Urgent Pointer</strong> (16): desplazamiento del dato urgente desde <code>seq</code>, si URG está activo.</li>
+<li><strong>Options</strong>: MSS, SACK permitted, Window Scale, Timestamps, que se anuncian <strong>en el SYN</strong>.</li>
+</ol>
+<p><strong>Tope para 10 puntos:</strong> los 4 de UDP y 8 o 10 de TCP, cada uno con su tamaño en bits y una frase. La
+diferencia clave: <strong>UDP identifica un socket; TCP identifica una conexión</strong>, y por eso necesita
+números de secuencia, ventana y flags de ciclo de vida.</p>
+<h2>3.2 Examen 2007-03, Pregunta 4 (10 puntos) — Campos más importantes de TCP y UDP</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0703</code> / <code>sirc0703</code> — 26 de febrero de 2007.</p>
+</blockquote>
+<h3>Enunciado (texto del examen)</h3>
+<blockquote>
+<p>Mencione y explique los campos más importantes de los segmentos TCP y UDP.</p>
+</blockquote>
+<h3>Solución oficial (verbatim, resumida)</h3>
+<p>Enumera, en el orden de la diapositiva del teórico, <strong>13 ítems de TCP</strong> (puertos, seq/ack, largo del
+cabezal, URG, ACK, PSH, RST, SYN, FIN, ventana, checksum, opciones, datos) y <strong>3 de UDP</strong> (puertos,
+largo del cabezal, checksum).</p>
+<h3>Análisis</h3>
+<p><strong>Bien:</strong> la lista es completa y sigue el orden del formato de la cabecera, que es como hay que
+responder.</p>
+<p><strong>Tres cosas que un corrector riguroso puede marcar:</strong></p>
+<ol>
+<li><strong>PSH.</strong> La solución oficial dice que indica que "los datos deben ser enviados a la capa de
+   aplicación inmediatamente luego de ser recibidos". Eso <strong>describe el efecto observable</strong> pero no el
+   <strong>mecanismo</strong>, y por eso lleva a la confusión clásica: lo correcto es que PSH es un aviso del
+   emisor al stack receptor de que <strong>no espere a llenar el buffer</strong>, y <strong>no</strong> obliga a la entrega
+   inmediata a la aplicación ni garantiza que un mensaje llegue entero.</li>
+<li><strong>"El puerto más la dirección IP forman un único punto de acceso."</strong> Correcto para un socket UDP no
+   conectado, pero incompleto: la clave real del kernel es la <strong>5-tupla</strong>, y la conexión TCP es la
+   <strong>4-tupla</strong>.</li>
+<li><strong>"Utilizar selective repeat en lugar de go back n."</strong> Es una glosa de la opción <strong>SACK</strong>, pero
+   SACK <strong>no es</strong> Go-Back-N ni Selective Repeat de capa 2: es <strong>retransmisión selectiva de bytes sobre
+   un protocolo que igual entrega en orden</strong> (<code>RFC 2018</code>). Si lo decís así sumás; si lo decís como
+   "selective repeat", restás.</li>
+</ol>
+<h2>3.3 Examen 2001-12, Problema 2 — Por qué PUSH no garantiza un mensaje por vez</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0112</code> — 27 de diciembre de 2001.</p>
+</blockquote>
+<h3>Enunciado (texto del examen)</h3>
+<blockquote>
+<p>Es sabido que, al enviar mensajes mediante una conexión TCP, el mero uso del bit de PUSH no asegura
+que, en el destino, la capa de aplicación reciba un mensaje por vez. Se desea realizar una prueba de
+laboratorio que demuestre este concepto.
+Se pide construir un bridge que interconecte los equipos de origen y destino, y manipule el orden de
+transmisión de los paquetes y eventualmente la segmentación de los mismos (como podría ocurrir en
+una red real) de forma que en el destino se experimenten las siguientes situaciones:
+a) Arribo simultáneo de dos mensajes a la capa de aplicación de destino.
+b) Arribo simultáneo de un mensaje y de parte del siguiente a la capa de aplicación de destino.</p>
+</blockquote>
+<h3>Solución oficial (verbatim)</h3>
+<blockquote>
+<p>a) Cambiar el orden de los mensajes. Se envían el 1 y el 2, ambos con push, pero se recibe primero
+el 2. Al recibirse el 1 se enviarán ambos a la capa de aplicación.
+b) Como en a) pero segmentando además los mensajes. Alcanza con que al equipo receptor llegue primero
+el comienzo del mensaje 2 y luego el mensaje 1 completo.</p>
+</blockquote>
+<h3>Mi resolución, explicada</h3>
+<p><strong>a) Dos mensajes en un solo <code>read()</code>.</strong> El emisor manda <code>MSG1</code> y <code>MSG2</code>, ambos con PSH. El bridge
+<strong>los reordena</strong> y entrega primero el de <code>MSG2</code>, que queda esperando en el buffer del socket porque la
+aplicación todavía no hizo <code>read()</code>. Cuando llega <code>MSG1</code>, el stack lo <strong>reencola por número de
+secuencia</strong> y las dos cosas quedan <strong>contiguas</strong>: un solo <code>read()</code> devuelve los dos mensajes pegados.
+<strong>Los dos segmentos tenían PSH y ninguno garantizó nada.</strong></p>
+<p><strong>b) Un mensaje entero y parte del siguiente.</strong> El bridge además <strong>segmenta</strong> <code>MSG2</code>, reordena, y hace
+llegar primero su <strong>primer segmento</strong> (digamos 100 bytes) y después el <code>MSG1</code> completo. El buffer queda
+<code>MSG1 | 100 bytes de MSG2</code>, todo contiguo: <strong>un <code>read()</code> devuelve un mensaje entero y el comienzo del
+siguiente</strong>.</p>
+<p><strong>Las tres razones de fondo</strong> (§1.5), que es la parte teórica que hay que escribir:</p>
+<ol>
+<li><strong>Segmentación</strong>: el PSH no impide que un mensaje se parta si es más grande que el MSS.</li>
+<li><strong>WAL del emisor</strong>: el PSH se marca en el buffer de envío y puede salir tarde si la ventana está
+   llena o si Nagle está activo.</li>
+<li><strong>Buffering del receptor</strong>: el paso de bytes a la aplicación lo deciden el <code>read()</code> y el buffer del
+   socket. El stack solo ve un <strong>flujo de bytes</strong>: <strong>la frontera de mensaje no existe en TCP</strong>, es un
+   concepto de la capa de aplicación.</li>
+</ol>
+<h2>3.4 Examen 2001-12, Problema 1 — Un router que interrumpe una conexión TCP sin que se entere</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0112</code> — 27 de diciembre de 2001. <em>Se resume la idea; el enunciado completo y el
+pseudocódigo están en <code>sirc0112</code>.</em></p>
+</blockquote>
+<p><strong>El problema.</strong> A tiene dos conexiones TCP hacia los puertos 9001 y 9002 de B y manda datos
+continuamente; B solo contesta ACKs. En la congestión hay capacidad para <strong>una</strong> de las dos
+transmisiones, y hay que <strong>interrumpir la del 9002</strong> sin que A ni B se enteren, aceptando pérdida de
+información. El enunciado sugiere alterar los <strong>campos de secuencia</strong> de los datos y de los ACKs.</p>
+<p><strong>La idea en una frase:</strong> el router <strong>descarta</strong> los datos del 9002 y <strong>les miente a los dos extremos</strong>:
+le <strong>falsifica un ACK</strong> a A diciendo que los recibió, y le <strong>resta a B</strong> los bytes descartados, de modo
+que <strong>B no note el hueco</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   A manda 1000..1099 → R lo descarta (dif_SN = 100) y manda a A un ACK 1100 FALSO
+   A cree que recibió todo y sigue con 1100..1199 → R lo pasa a B con SN = 1100..1199 (1200 − 100)
+   B responde ACK 1200 → R lo corrige hacia A como ACK 1100 → A lo retransmite → R lo descarta
+</code></pre></div>
+
+<p><strong>Las dos invariantes:</strong> (1) <strong>A nunca ve un hueco</strong>, porque R le manda un ACK por cada byte que
+descarta; (2) <strong>B nunca ve un hueco</strong>, porque R le resta a los datos hacia B la cantidad total de bytes
+descartados (<code>dif_SN</code>) y suma esa misma cantidad a los ACKs hacia A, para que todo siga cuadrando con lo
+que A cree haber enviado.</p>
+<p><strong>Por qué se puede perder información en silencio:</strong> en TCP <strong>el byte nunca se confirma uno por uno</strong>; lo
+que importa es la <strong>numeración</strong>. Si R la mantiene coherente de los dos lados, ni A ni B detectan el
+hueco. Es el mismo principio que usa un proxy TProxy.</p>
+<p><strong>Dos errores de la solución oficial publicada</strong>, que son material de examen: el <code>select</code> tiene la
+condición <strong>invertida</strong> (<code>if ((status = select(sel)) &lt;&gt; -1) { error; exit(); }</code> mata el proceso cuando
+<code>select</code> <strong>tiene éxito</strong>), y el ACK falso se arma con el <code>largo</code> <strong>ya restado por la cabecera</strong> y con el
+<code>ACK</code> de un paquete de datos en el campo <code>SN</code>. A eso se suman que <strong>no retransmite</strong> el ACK falso ni
+<strong>reinicia <code>dif_SN</code></strong>: los dos bugs que hay que mirar en cualquier implementación de este tipo.</p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen en 10 líneas</h2>
+<ol>
+<li>TCP tiene <strong>20 bytes</strong> mínimos y compra con ellos orden, ACK, control de flujo, checksum y ciclo de
+   vida de la conexión.</li>
+<li><strong>seq</strong> y <strong>ack</strong> son de <strong>32 bits y cuentan BYTES</strong>: el ACK es el <strong>próximo byte esperado</strong> y
+   <strong>acumulativo</strong>.</li>
+<li>Los <strong>ACKs duplicados</strong> evidencian un hueco y disparan el <em>fast retransmit</em>.</li>
+<li><strong>Data Offset</strong> va en <strong>palabras de 32 bits</strong> (<code>5</code> = 20 bytes); el <strong>byte 12</strong> tiene offset +
+   reservados + NS y el <strong>byte 13</strong> los flags (CWR y ECE reservados; URG, ACK, PSH, RST, SYN, FIN).</li>
+<li><strong>PSH</strong> significa "no esperes a llenar el buffer", <strong>no</strong> "entregá esto ahora": segmentación, WAL del
+   emisor y buffering del receptor rompen la frontera de mensaje.</li>
+<li>
+<p><strong>Opciones</strong>: MSS (2), Window Scale (3), SACK permitted (4), Timestamps (8), con su RFC.</p>
+</li>
+<li>
+<p>El <strong>checksum</strong> es un Internet checksum de complemento a uno <strong>con pseudo-cabecera</strong>, <strong>no un CRC</strong>:
+   ve todos los errores de un bit, pero no todos los múltiples.</p>
+</li>
+<li>Si el checksum falla, el segmento <strong>se descarta en silencio</strong> y para el emisor es indistinguible de uno
+   perdido.</li>
+<li><strong><code>RFC 9293</code> (2022)</strong> sustituye a la <code>RFC 793</code>; <code>RFC 7323</code> obsolesce a la 1323; SACK es <code>RFC 2018</code>.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> Un segmento con <code>seq = 1100</code> y 20 bytes de datos. ¿Qué ACK devuelve el receptor?</p>
+<details><summary>Respuesta</summary>
+
+**1120**: el ACK es el **próximo byte esperado**, y el ocuparon los bytes 1100 a 1119. Se suma la
+longitud en **bytes**, no en segmentos.
+
+</details>
+
+<p><strong>2.</strong> Si <code>Data Offset</code> vale 5, ¿cuántos bytes de cabecera tiene el segmento?</p>
+<details><summary>Respuesta</summary>
+
+**20 bytes**: cuenta **palabras de 32 bits**, y 5 × 4 = 20. Si vale 9, son 36.
+
+</details>
+
+<p><strong>3.</strong> ¿Qué le dice realmente el flag PSH?</p>
+<details><summary>Respuesta</summary>
+
+Al stack receptor: "**hay datos pendientes, no esperes a llenar el buffer para mandarlos**". No le dice a
+la aplicación que entregue nada ni garantiza que un mensaje llegue entero.
+
+</details>
+
+<p><strong>4.</strong> ¿Por qué se pone el MSS en el SYN y no en todos los segmentos?</p>
+<details><summary>Respuesta</summary>
+
+Porque es el máximo de **datos por segmento** que admite el receptor y el flujo va en un solo sentido:
+renegociarlo no aporta. Se anuncia una vez para **evitar la fragmentación de IP**.
+
+</details>
+
+<p><strong>5.</strong> Calculá el checksum de un segmento cuya suma (sin el campo checksum) da <code>0x7FF0</code>.</p>
+<details><summary>Respuesta</summary>
+
+`0xFFFF − 0x7FF0 = 0x800F`. Verificación: `0x7FF0 + 0x800F = 0xFFFF`, cuyo complemento `0x0000` significa
+"segmento íntegro".
+
+</details>
+
+<p><strong>6.</strong> Un segmento llega con el checksum corrupto. ¿Qué hace el receptor y qué hace el emisor?</p>
+<details><summary>Respuesta</summary>
+
+El receptor lo **descarta en silencio** (sin NAK ni ICMP). El emisor no se entera hasta el RTO o los 3
+ACKs duplicados, y lo **retransmite**: un segmento corrupto es indistinguible de uno perdido.
+
+</details>
+
+<p><strong>7.</strong> ¿Por qué el checksum de TCP es un Internet checksum y no un CRC como el de Ethernet?</p>
+<details><summary>Respuesta</summary>
+
+Porque el objetivo es **detectar corrupción al pasar por la red**, no errores de trama en un enlace. Es
+**aditivo** y barato: ve **todos los errores de un bit** y los múltiples que no se compensan. Un CRC
+detectaría también los *bursts*, pero cuesta más y no aporta nada extra sobre IP.
+
+</details>
+
+<p><strong>8.</strong> ¿Por qué no basta con tres de los cuatro valores de la 4-tupla para elegir un socket TCP?</p>
+<details><summary>Respuesta</summary>
+
+Porque la IP destino y el puerto destino son **los mismos para todas las conexiones entrantes** de un
+servidor (`203.0.113.9:80`): lo único que distingue una conexión de otra es el **par de puertos**. La
+tabla del kernel usa la **5-tupla**, con la IP destino implícita.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>eirc1102</code> / <code>sirc1102</code></strong> — P3 (10 pts, campos más importantes de TCP y UDP)</li>
+<li><strong>Examen <code>eirc0703</code> / <code>sirc0703</code></strong> — P4 (10 pts, lo mismo, con la lista de 13 + 3 campos)</li>
+<li><strong>Examen <code>eirc0112</code> / <code>sirc0112</code></strong> — Problema 2 (PUSH) · Problema 1 (router que interrumpe una conexión TCP)</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 6 — §6.3 (<em>Segmentos TCP</em>), §6.5</li>
+<li><strong><code>RFC 9293</code></strong> — <em>TCP</em> (2022, <em>Internet Standard</em>; sustituye a la RFC 793) · <strong><code>RFC 1122</code></strong> — requisitos de los hosts · <strong><code>RFC 1071</code></strong> — Internet checksum</li>
+<li><strong><code>RFC 2018</code></strong> — SACK (1996, <em>Standards Track</em>) · <strong><code>RFC 7323</code></strong> — Timestamps y Window Scale (2014; obsolesce la RFC 1323)</li>
+<li><strong><code>RFC 3168</code></strong> / <strong><code>RFC 9768</code></strong> / <strong><code>RFC 9331</code></strong> — ECN, AccECN y L4S · <strong><code>RFC 9000</code></strong> / <strong><code>RFC 9114</code></strong> — QUIC y HTTP/3: el <strong>stream</strong> reemplaza a la frontera de mensaje de TCP</li>
+<li><strong>Clase siguiente:</strong> 18 — TCP: establecer y cerrar la conexión</li>
+</ul></body></html>

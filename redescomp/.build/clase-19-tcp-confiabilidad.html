@@ -1,0 +1,736 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 19 — Cómo garantiza TCP la fiabilidad</h1>
+<p><strong>Bloque:</strong> C (Transporte) · <strong>Semana:</strong> 7 · <strong>Duración estimada:</strong> 110 min
+<strong>Correlativa:</strong> Clase 18 (TCP: establecer y cerrar la conexión) · <strong>Sigue con:</strong> Clase 20 (control de flujo vs. control de congestión)
+<strong>Material de referencia:</strong> Tanenbaum cap. 6 (§6.5 "Reliable Transmission") · RFC 9293, RFC 2018, RFC 7323, RFC 5681, RFC 6928</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Traducir cada palabra del contrato de TCP (<em>entrega ordenada, sin duplicados, sin errores</em>) al mecanismo que la implementa.</li>
+<li>Explicar por qué los números de secuencia son <strong>imprescindibles</strong> aunque el checksum ya detecte errores, y por qué el ACK es <strong>acumulativo y numera bytes</strong>.</li>
+<li>Calcular un <strong>RTO</strong> con Jacobson/Karels a partir de una serie de muestras de RTT, y aplicar el <strong>backoff exponencial</strong>.</li>
+<li>Calcular el <strong>BDP</strong> de un enlace y deducir el <strong>tamaño mínimo de ventana</strong> para no desperdiciar capacidad.</li>
+<li>Dibujar la <strong>ventana deslizante</strong> con <code>LastByteAcked</code>, <code>LastByteSent</code> y los bytes en vuelo.</li>
+<li>Describir cómo <strong>SACK</strong>, <strong>timestamps</strong> y <strong>PAWS</strong> cambian la recuperación de una pérdida, y
+   por qué el flag <strong>PSH no garantiza</strong> un mensaje por <code>read()</code> en el destino.</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2011-03 P4</code> (10 pts — el diagrama de 4 segmentos), <code>2010-12 P4</code> (8 pts — números de secuencia y timers), <code>2009-12 P2</code> (10 pts — fiabilidad en transporte vs. enlace), <code>2001-12 Problema 2</code> (PUSH y segmentación).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 El contrato de TCP, palabra por palabra</h2>
+<table>
+<thead>
+<tr>
+<th>Lo que promete</th>
+<th>Mecanismo que lo cumple</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Ordenada</strong></td>
+<td><strong>Números de secuencia</strong> + buffer de reordenamiento en el receptor</td>
+</tr>
+<tr>
+<td><strong>Sin duplicados</strong></td>
+<td>el receptor <strong>descarta</strong> lo que ya tiene: <code>rcv_nxt</code> es el puntero que avanza</td>
+</tr>
+<tr>
+<td><strong>Sin errores</strong></td>
+<td><strong>checksum</strong> (que detecta) + <strong>retransmisión</strong> (que corrige)</td>
+</tr>
+</tbody>
+</table>
+<p>La distinción "detectar" vs. "corregir" se pregunta siempre: el checksum de TCP <strong>no corrige nada</strong>,
+solo descarta el segmento. Lo que repara es la <strong>retransmisión</strong>, que necesita saber <em>qué</em> falta.
+<strong>Orden → duplicados → errores</strong> es una cadena de dependencias: no podés evitar duplicados si no
+sabés qué tenés, y no podés retransmitir si no numerás.</p>
+<h2>1.2 Números de secuencia: por qué hacen falta</h2>
+<p>La respuesta oficial del examen 2010-12 (P4a) es cortita y hay que saberla de memoria:</p>
+<blockquote>
+<p>TCP es <strong>pipelined</strong>: el emisor envía varios paquetes antes de recibir confirmación de alguno de
+ellos. Por esta razón, el emisor debe poder distinguir <strong>a qué paquete o paquetes corresponde
+una determinada confirmación</strong>, por lo que numera los paquetes enviados secuencialmente.</p>
+</blockquote>
+<p>Hay un segundo motivo, más profundo: <strong>el checksum no te dice <em>qué</em> falta</strong>. Te dice "este paquete
+vino mal". Para retransmitir el correcto necesitás un identificador que sobreviva al viaje, y sin
+números tampoco podés evitar duplicados, porque no sabés qué tenés ya.</p>
+<p><strong>TCP numera BYTES, no segmentos.</strong> El <code>seq</code> de un segmento es el número de su <strong>primer byte</strong>, y
+el <code>ack</code> es el <strong>próximo byte esperado</strong>, no el último recibido:</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────────────────────────────────────────────┐
+   │ ack = 1120 significa: "recibí hasta 1119 inclusive",             │
+   │                       "el próximo byte que espero es el 1120".  │
+   │ NO significa "recibí hasta 1120".                                │
+   └──────────────────────────────────────────────────────────────────┘
+
+              ┌────────┬────────┐
+              │ byte   │ byte   │
+              │ 1119   │ 1120   │
+              └────────┴────────┘
+               ▲        ▲
+               │        └── ack = 1120 (PRÓXIMO esperado)
+               └── último byte recibido
+</code></pre></div>
+
+<p>Por eso los ACKs son <strong>acumulativos</strong> (<em>cumulative ACK</em>): un solo ACK puede confirmar varios
+segmentos. Si B recibe S1..S4 seguidos, un <code>ack=1180</code> confirma los cuatro.</p>
+<h2>1.3 Timers: la pregunta de 2010-12 (P4b), resuelta</h2>
+<p><strong>La situación.</strong> A mandó un segmento. Pasó un rato. No llegó el ACK. ¿Por qué?</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────────────────────────────────────────────┐
+   │  ¿Por qué no llegó el ACK?                                      │
+   │   (1) Se perdió el SEGMENTO de datos                            │
+   │   (2) Se perdió el ACK                                          │
+   │   (3) El ACK no se perdió: simplemente TARDÓ                    │
+   └──────────────────────────────────────────────────────────────────┘
+                    │
+                    ▼
+   ¿Qué puede observar A?  En los tres casos, EXACTAMENTE LO MISMO: "no sé".
+</code></pre></div>
+
+<p>Las tres tienen <strong>la misma consecuencia observable</strong>: la ausencia del ACK. No puede retransmitir
+"por las dudas" al instante (sería un duplicado puro) ni esperar indefinidamente (si el segmento se
+perdió de verdad, la conexión se cuelga). <strong>La única salida es retransmitir</strong>, y para eso hay que
+decidir <strong>cuándo</strong>: esperar un "tiempo prudencial". Eso es un <strong>timer</strong>.</p>
+<p>El enunciado oficial dice textualmente <em>"la única solución es retransmitir el paquete no
+confirmado… necesita un timer que le indique cuándo hacerlo"</em> (la cita completa y el desglose de
+los 4 puntos están en §3.1).</p>
+<p><strong>Un detalle que suma puntos:</strong> el timer se arma <strong>una vez por segmento enviado</strong>, no una vez por
+conexión. Si A manda S1..S4 seguidos hay <strong>cuatro timers corriendo</strong>: es la misma razón por la que
+hacen falta los números de secuencia.</p>
+<h2>1.4 El RTO y cómo se estima (Jacobson/Karels)</h2>
+<p>El <strong>RTO</strong> (<em>Retransmission Timeout</em>) es cuánto espera TCP antes de declarar perdido un segmento.
+Si fuera fijo: demasiado corto → retransmitís de más y generás <strong>duplicados</strong>; demasiado largo →
+cada pérdida cuesta un RTO entero de latencia. La solución: <strong>medir</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   SRTT   = suavizado del RTT
+   RTTVAR = suavizado de la variación del RTT
+   RTO    = SRTT + 4 · RTTVAR
+
+   Con cada nueva muestra R:
+     RTTVAR ← (1 − β) · RTTVAR + β · |SRTT − R|      ← con el SRTT ANTERIOR
+     SRTT   ← (1 − α) · SRTT   + α · R
+     RTO    ← SRTT + 4 · RTTVAR
+
+   α = 7/8   (recuerdo alto: el pasado pesa más que el presente)
+   β = 1/4   (reacción rápida a los cambios)
+
+   Primera muestra:  SRTT = R ;  RTTVAR = R/2 ;  RTO = R + 4·(R/2) = 3R
+</code></pre></div>
+
+<p><strong>¿Por qué <code>SRTT + 4·RTTVAR</code> y no un factor fijo?</strong> Porque la variación es la <strong>incertidumbre</strong> de
+la medida. Si el RTT está en 100 ms con variación de ±20 ms, un RTO de <code>100 + 4·20 = 180 ms</code>
+deja pasar casi cualquier medición posible. Además hay <strong>un piso y un techo</strong>: el RTO no puede ser
+menor que un mínimo histórico (1 s) ni mayor que un máximo (60 s).</p>
+<p><strong>Un detalle fino: no se toman muestras de RTT de los segmentos retransmitidos</strong> (algoritmo de
+<strong>Karn</strong>): si retransmitiste S, no sabés si el ACK que llegó corresponde al S original o a la
+retransmisión, y si es a la retransmisión el RTT medido incluye el RTO entero y <strong>infla</strong> la
+estimación. Los <strong>timestamps</strong> lo resuelven: el ACK hace eco del <code>TSval</code> del segmento.</p>
+<h3>Backoff exponencial</h3>
+<p>Cuando un timeout se dispara, el RTO <strong>se duplica</strong>: con <code>RTO = 240 ms</code>, los timeouts sucesivos dan
+480 ms, 960 ms, 1920 ms. <strong>¿Por qué?</strong> Un timeout <strong>no</strong> es evidencia de congestión: puede ser un
+blackout o un enlace caído. Si además de subir el RTO bajás la ventana, lo que decís es "esto parece
+una avería, esperemos más". Ojo: <strong>las dos cosas pasan a la vez</strong> y no se contradicen — el <code>cwnd</code>
+protege a la red, el backoff protege al emisor de insistir contra algo que no responde.</p>
+<h2>1.5 La ventana deslizante</h2>
+<p>En <em>stop-and-wait</em> el emisor manda un segmento y <strong>espera</strong>: el enlace queda ocioso la mitad del
+tiempo. TCP no: manda hasta <code>ventana</code> bytes sin esperar confirmación.</p>
+<div class="codehilite"><pre><span></span><code>   El emisor A, con ventana = 8 bytes (4 segmentos de 2 bytes):
+
+   LastByteAcked           LastByteSent         la ventana
+        │                        │                  │
+   ─────┼────────────────────────┼──────────────────┼────
+      100                      108                 110
+   bytes ya confirmados     último byte       no se puede
+                            enviado          pasar de acá
+
+   bytes en vuelo = LastByteSent − LastByteAcked = 108 − 100 = 8
+   (la ventana es justamente 8: la ventana está LLENA)
+</code></pre></div>
+
+<p><code>LastByteAcked</code> = último byte confirmado · <code>LastByteSent</code> = último byte enviado ·
+<code>LastByteAcked + ventana</code> = el tope que el emisor no puede pasar.</p>
+<p>Además el emisor no puede mandar más allá de lo que el receptor dice que entra (el <code>rwnd</code>), y por
+eso <code>ventana efectiva = min(cwnd, rwnd)</code>. → El mínimo y el <code>cwnd</code> están desarrollados en las Clases
+20 y 21; lo que hay que internalizar acá es el <strong>sentido físico</strong>: la ventana es "cuánta
+información puedo dejar en el camino antes de tener que parar a esperar".</p>
+<h2>1.6 Por qué la ventana tiene que ser ≥ BDP</h2>
+<p><strong>BDP</strong> = <em>Bandwidth-Delay Product</em>: los bytes que están "en vuelo" en un momento dado si el emisor
+llena el enlace sin pausa.</p>
+<div class="codehilite"><pre><span></span><code>   BDP = ancho_de_banda × RTT          [bytes] = [bits/s] × [s] / 8
+</code></pre></div>
+
+<p><strong>El argumento, en una frase:</strong> si la ventana es menor que el BDP, <strong>el enlace no está lleno</strong>, y
+estás pagando un enlace de 100 Mbps para usar 4 Mbps. Con 100 Mbps y RTT 80 ms:</p>
+<div class="codehilite"><pre><span></span><code>   BDP = 100 · 10⁶ bits/s × 0,080 s = 8 · 10⁶ bits = 1 000 000 bytes ≈ 1 MB
+
+   ventana 64 KB:  throughput = 65 536 / 0,080 = 819 200 B/s = 6,55 Mbit/s   ← 15× menos
+   ventana  1 MB:  throughput = 1 048 576 / 0,080 = 13 107 200 B/s = 104,9 Mbit/s ← lleno
+
+   En MSS (MTU 1500 − 20 IP − 20 TCP = 1460 B):  1 000 000 / 1460 ≈ 685 segmentos
+</code></pre></div>
+
+<p><strong>Ésta es la razón por la que el <code>rwnd</code> importa tanto</strong> y por la que existe el <em>window scale</em>: el
+campo <code>window</code> de la cabecera son <strong>16 bits</strong> (máximo 65 535 bytes), y con RTT de 80 ms eso limita
+el throughput a 6,55 Mbit/s. Con <em>Window Scale</em> (<code>RFC 7323</code>, factor negociado en el SYN) se llega
+a megabits.</p>
+<h2>1.7 Recuperación rápida: fast retransmit y SACK</h2>
+<p><strong>Fast retransmit</strong> está desarrollado en la Clase 21 (§1.4c): 3 ACKs duplicados → retransmitir sin
+esperar el RTO. La idea: <strong>los ACKs duplicados son la señal de que los datos posteriores
+llegaron</strong>. Si hubiera un problema grave de red no habrían llegado.</p>
+<h3>SACK (<code>RFC 2018</code>)</h3>
+<p><strong>El problema sin SACK.</strong> El ACK acumulativo es todo o nada:</p>
+<div class="codehilite"><pre><span></span><code>   A manda S1(1000), S2(1046), S3(1092), S4(1138). Se pierde S2.
+   B recibe S1, S3, S4.
+   B → A:  ACK=1046  ACK=1046  ACK=1046      (3 duplicados)
+   A sólo sabe: "me falta algo a partir de 1046".
+   A NO sabe si es S2 solo, o S2+S3, o S2+S3+S4.
+   → TCP clásico (Tahoe): retransmite S2, espera, y recién con el ACK
+     siguiente descubre que S3 también faltaba. UNO POR UNO.
+</code></pre></div>
+
+<p><strong>Con SACK</strong>, el receptor manda bloques extra que dicen <em>qué</em> bloques exactos recibió. Cada bloque
+es un par <code>(borde izquierdo, borde derecho)</code> en números de secuencia absolutos, y van en el mismo
+segmento que el ACK acumulativo:</p>
+<div class="codehilite"><pre><span></span><code>   B → A:  ACK=1046  SACK=[1092..1138]      (recibí S3)
+   B → A:  ACK=1046  SACK=[1092..1184]      (recibí S3 y S4)
+</code></pre></div>
+
+<p>A ahora sabe que S3 y S4 están bien, así que <strong>retransmite solo S2</strong>, y cuando S2 llega todo se
+confirma de un golpe. <strong>SACK no cambia la corrección: cambia cuánto tarda.</strong></p>
+<p><strong>⚠️ Detalle que se pregunta:</strong> SACK se <strong>negocia en el SYN</strong> (opción <em>SACK permitted</em>). Si no se
+negocia, no hay bloques SACK. Y como SACK solo informa de bytes <strong>dentro de la ventana</strong>, no
+reemplaza al ACK acumulativo: siempre viene acompañado.</p>
+<h3>Timestamps y PAWS (<code>RFC 7323</code>)</h3>
+<p>Un <strong>timestamp</strong> (32 bits, reloj del emisor) que el receptor devuelve <strong>ecoado</strong> en el ACK, con tres
+usos: <strong>medir el RTT sin ambigüedad</strong> (resuelve el problema de Karn), <strong>detectar duplicados
+viejos</strong> —si un segmento trae un <code>TSval</code> menor que el último visto, es un resto de una sesión
+anterior y se descarta, que es exactamente lo que hace <strong>PAWS</strong> (<em>Protect Against Wrapped Sequence
+numbers</em>)— y <strong>proteger del wrap-around</strong> del número de 32 bits. <strong>PAWS es obligatorio si ambos
+extremos activaron timestamps.</strong></p>
+<h2>1.8 Por qué el flag PSH no garantiza nada (examen 2001-12, Problema 2)</h2>
+<blockquote>
+<p><strong>Es sabido que, al enviar mensajes mediante una conexión TCP, el mero uso del bit de
+PUSH no asegura que, en el destino, la capa de aplicación reciba un mensaje por vez.</strong></p>
+</blockquote>
+<p><strong>Qué es PSH.</strong> Es una <strong>sugerencia</strong> de "no tengo más datos en el buffer, podés entregar lo que
+tengas". Cuando un segmento llega con PSH, el receptor entrega a la aplicación todo lo acumulado
+en el buffer <strong>en un solo <code>read()</code></strong>:</p>
+<div class="codehilite"><pre><span></span><code>   A: write("hola") → write("chau")     ← dos mensajes de la aplicación
+   ┌────────────────┬────────────────┐
+   │ "hola"  PSH=1  │ "chau"  PSH=1  │   ← dos segmentos
+   └────────────────┴────────────────┘
+   B: read() → "hola" / read() → "chau"   ← lo que uno ESPERA
+   B: read() → "holachu"                  ← lo que REALMENTE PASA
+</code></pre></div>
+
+<p><strong>Por qué no funciona — tres razones acumulativas:</strong></p>
+<ol>
+<li><strong>PSH no transporta información de frontera de mensaje.</strong> El campo es <strong>un bit</strong>, y no hay
+   ningún campo que diga "este <code>read()</code> debe terminar acá". TCP es un <strong>flujo de bytes</strong>
+   (<em>byte stream</em>) por diseño: tiene bytes, no mensajes.</li>
+<li><strong>Los límites de segmento son invisibles para la aplicación.</strong> El receptor ve una cola de bytes.
+   Si los dos segmentos con PSH llegan en orden inverso, cuando llega el primero el buffer queda
+   <code>["hola","chau"]</code> <strong>contiguo</strong>, y un solo <code>read()</code> devuelve todo junto.</li>
+<li><strong>La segmentación.</strong> Si un mensaje es más grande que el MSS queda partido en varios segmentos, y
+   el PSH final llega después de bytes ya almacenados.</li>
+</ol>
+<h3>El laboratorio que pide el enunciado</h3>
+<p>El enunciado pide <strong>construir un bridge</strong> que manipule orden y segmentación: es factible, un
+bridge es software y el reordenamiento se hace con un <strong>buffer de retardo</strong>.</p>
+<p><strong>(a) Arribo simultáneo de dos mensajes</strong> — el bridge retiene el segmento del mensaje 1:</p>
+<div class="codehilite"><pre><span></span><code>   A ──[MSG1 seq=1000 len=4, PSH]──▶   ┌──────────┐
+                                       │  BRIDGE  │ retiene MSG1
+   A ──[MSG2 seq=1004 len=4, PSH]──▶   │ (reordena)│──▶ MSG2 primero
+   B: buffer = ["chau"]          ← PSH de MSG2, pero falta MSG1 → NO entrega
+   B: buffer = ["hola","chau"]   ← llega MSG1: contiguo
+   B: read() → "holachu"         ← UN read(), dos mensajes  ✗
+</code></pre></div>
+
+<p><strong>(b) Un mensaje y parte del siguiente</strong> — además, el bridge <strong>parte</strong> el segundo mensaje y deja
+pasar primero su primera mitad:</p>
+<div class="codehilite"><pre><span></span><code>   A ──[MSG1 seq=1000 len=4, PSH]──▶   ┌──────────┐
+   A ──[MSG2 seq=1004 len=8, PSH]──▶   │  BRIDGE  │──▶ [MSG2 parte 1: "chau c"]
+                                       │ (retiene  │──▶ (después) [MSG1 completo]
+                                       │  MSG1)    │
+   B: buffer = ["chau c"]              ← fuera de orden, NO entrega
+   B: buffer = ["hola","chau c"]        ← contiguo → read() = "hola" + "chau c"
+</code></pre></div>
+
+<p>⚠️ <strong>El detalle que hace el experimento correcto:</strong> los <code>seq</code> deben ser <strong>coherentes y
+contiguos</strong> (<code>MSG2</code> con <code>seq = 1004</code> va justo después de <code>MSG1</code>), porque si no el receptor lo
+descartaría por estar fuera de ventana y el experimento no probaría nada.</p>
+<p><strong>Cómo se resuelve de verdad.</strong> Si la aplicación necesita fronteras, <strong>tiene que ponerlas ella
+misma</strong>: un prefijo de longitud o un delimitador. Por eso HTTP tiene <code>Content-Length</code> y
+<code>Transfer-Encoding: chunked</code>, y por eso el RPC usa <em>marshalling</em> con longitud. El único transporte
+con noción nativa de mensaje es <strong>SCTP</strong>, y por eso WebRTC lo usa para sus canales de datos.</p>
+<h3>⚠️ Actualización a 2026</h3>
+<p><strong>Sigue igual — de memoria:</strong> números de secuencia de <strong>32 bits</strong> que numeran <strong>bytes</strong>; <strong>ACK
+acumulativo</strong> (<code>ack</code> = próximo byte esperado); <strong>timers por segmento</strong>; Jacobson/Karels con
+α = 7/8, β = 1/4, <code>RTO = SRTT + 4·RTTVAR</code>, piso y techo, y <strong>backoff exponencial</strong>; <strong>3 ACKs
+duplicados</strong> = pérdida aislada y RTO = pérdida grave; <strong>PSH es una sugerencia</strong>.</p>
+<p><strong>Cambió:</strong></p>
+<ul>
+<li>La especificación vigente es <strong><code>RFC 9293</code> (2022, <em>Internet Standard</em>)</strong>, que consolida
+  <code>RFC 793</code> + <code>RFC 879</code>, <code>2873</code>, <code>6093</code>, <code>6429</code>, <code>6528</code>, <code>6691</code>. Presentar <code>RFC 793</code> como "la
+  especificación de TCP" en 2026 está desactualizado. <strong>Lo que no cambió son los mecanismos de esta
+  clase</strong>: <code>RFC 9293</code> describe la misma fiabilidad, reorganizó la redacción y el estado normativo.
+  <code>RFC 1122</code> sigue definiendo el comportamiento de los hosts.</li>
+<li><strong>SACK = <code>RFC 2018</code> (1996)</strong>, <em>Standards Track</em>: es <strong>comportamiento estándar</strong> y está en todos
+  los stacks. Cuando un enunciado pida el diagrama "a la antigua", aclaralo.</li>
+<li><strong>Timestamps + Window Scale = <code>RFC 7323</code> (2014)</strong>, que <strong>obsolesce <code>RFC 1323</code></strong>; <strong>PAWS es
+  obligatorio</strong> si ambos extremos activaron timestamps.</li>
+<li><strong>Initial Window = 10 MSS (<code>RFC 6928</code>, 2013)</strong>: el default en Linux, Windows y macOS. Los
+  apuntes de 2011 dicen 1 MSS porque la <code>RFC 5681</code> lo decía así: <strong>citá las dos cosas y seguí lo
+  que pida el enunciado.</strong></li>
+<li><strong>QUIC (<code>RFC 9002</code>, 2021)</strong> tiene <strong>su propia recuperación de pérdida</strong>: para HTTP/3 el flujo
+  llega confirmado <strong>por stream</strong>, y el <em>Connection ID</em> permite sobrevivir al <em>NAT rebinding</em>, que
+  en TCP se rompe.</li>
+<li><strong>MPTCPv1 (<code>RFC 8684</code>, 2020)</strong> extiende la fiabilidad a varias rutas (cada subflujo aplica
+  <code>RFC 9293</code> por separado). Desplegado pero con cuota marginal (~0,4 % de los bytes pico).</li>
+<li>⚠️ <strong>RACK</strong> existe en stacks reales pero <strong>no figura en <code>ACTUALIZACIONES.md</code></strong>: <strong>verificar</strong>.</li>
+</ul>
+<blockquote>
+<p><strong>Consecuencia para el examen:</strong> los números de secuencia, el ACK acumulativo, los timers,
+Jacobson/Karels y la ventana deslizante <strong>se preguntan exactamente igual que en 2011</strong>. Lo único
+que cambia es la etiqueta: si citás "la RFC de TCP", es <code>RFC 9293</code>.</p>
+</blockquote>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — RTO con Jacobson/Karels a partir de 4 muestras</h2>
+<p><strong>Datos.</strong> α = 7/8, β = 1/4. Cuatro muestras de RTT en orden: <code>R₁ = 100 ms</code>, <code>R₂ = 120 ms</code>,
+<code>R₃ = 90 ms</code>, <code>R₄ = 130 ms</code>. Sin piso ni techo activos.</p>
+<p><strong>Paso 1 — Inicializar con la primera muestra.</strong> Con un solo dato no hay histórico, así que
+no se puede calcular una desviación:</p>
+<div class="codehilite"><pre><span></span><code>   SRTT   = R₁ = 100 ms
+   RTTVAR = R₁ / 2 = 50 ms
+   RTO    = SRTT + 4·RTTVAR = 100 + 4·50 = 300 ms
+</code></pre></div>
+
+<p><strong>Paso 2 — Actualizar con R₂ = 120 ms.</strong> <em>Orden importante:</em> primero <code>RTTVAR</code> (que usa el
+<code>SRTT</code> <strong>anterior</strong>), después <code>SRTT</code>.</p>
+<div class="codehilite"><pre><span></span><code>   RTTVAR = 0,75 · 50 + 0,25 · |100 − 120| = 37,5 + 0,25·20 = 37,5 + 5 = 42,5 ms
+   SRTT   = 0,125 · 100 + 0,875 · 120    = 12,5 + 105       = 117,5 ms
+   RTO    = 117,5 + 4·42,5 = 117,5 + 170 = 287,5 ms
+</code></pre></div>
+
+<p><strong>Paso 3 — Actualizar con R₃ = 90 ms.</strong></p>
+<div class="codehilite"><pre><span></span><code>   RTTVAR = 0,75 · 42,5 + 0,25 · |117,5 − 90| = 31,875 + 6,875 = 38,75 ms
+   SRTT   = 0,125 · 117,5 + 0,875 · 90       = 14,6875 + 78,75 = 93,4375 ms
+   RTO    = 93,4375 + 4·38,75 = 93,4375 + 155 = 248,44 ms
+</code></pre></div>
+
+<p><strong>Paso 4 — Actualizar con R₄ = 130 ms.</strong></p>
+<div class="codehilite"><pre><span></span><code>   RTTVAR = 0,75 · 38,75 + 0,25 · |93,4375 − 130| = 29,0625 + 9,1406 = 38,2031 ms
+   SRTT   = 0,125 · 93,4375 + 0,875 · 130       = 11,6797 + 113,75 = 125,43 ms
+   RTO    = 125,43 + 4·38,2031 = 125,43 + 152,81 = 278,24 ms
+</code></pre></div>
+
+<p><strong>Interpretación — qué está pasando.</strong> El RTO <strong>oscila entre 248 y 300 ms</strong>: ni sigue al RTT
+puntualmente (porque <code>α = 7/8</code> pesa el pasado 7 veces más que el presente) ni se queda corto. Es
+exactamente lo que se busca: <strong>un RTO que cambia suave y no reacciona a un solo RTT raro</strong>. Si el
+RTO fuera "el último RTT + un margen", el valor saltaría de 90 a 130 ms según la última muestra, y
+con 90 ms de RTO real habrías retransmitido de más.</p>
+<p><strong>Paso 5 — Backoff exponencial.</strong> Si ahora se pierde un segmento y vence el RTO, los timeouts
+sucesivos dan <code>2 · 278,24 = 556,48 ms</code>, luego <code>1112,96</code>, luego <code>2225,92</code>. Y cuando llega un ACK que
+<strong>no</strong> corresponde a una retransmisión, se recalcula desde cero: el backoff solo aplica mientras no
+haya progreso.</p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Usar <code>α</code> y <code>β</code> al revés.</strong> <code>α = 7/8</code> es para <code>SRTT</code>; <code>β = 1/4</code> para <code>RTTVAR</code>. <strong>α grande →
+  suavizo lento; β pequeño → reacción rápida.</strong></li>
+<li><strong>Olvidar la inicialización</strong> <code>SRTT = R</code>, <code>RTTVAR = R/2</code>.</li>
+<li><strong>Confundir <code>RTT</code> con <code>RTO</code>.</strong> El <code>RTT</code> es lo que <strong>midió</strong>; el <code>RTO</code>, lo que <strong>va a esperar</strong>.</li>
+<li><strong>Creer que el RTO se recalcula en cada ACK.</strong> Se recalcula por <strong>muestra de RTT</strong> no ambigua.</li>
+</ul>
+<h2>2.2 Ejercicio 2 — BDP y tamaño mínimo de ventana</h2>
+<p><strong>Datos (a–d).</strong> Enlace de <strong>100 Mbps</strong> (datos de capa 3, sin overhead de capas 1 y 2), RTT
+extremo a extremo <strong>80 ms</strong>, MTU 1500 bytes.</p>
+<p><strong>a) ¿Cuál es el BDP?</strong></p>
+<div class="codehilite"><pre><span></span><code>   BDP = 100 · 10⁶ bits/s × 0,080 s = 8 · 10⁶ bits = 8·10⁶ / 8 = 1 000 000 bytes
+       ≈ 1 MB   (en KiB: 1 000 000 / 1024 = 976,6 KiB)
+</code></pre></div>
+
+<p><strong>b) ¿Cuántos segmentos de tamaño máximo hacen falta?</strong></p>
+<p><em>MSS = MTU − cabecera IP − cabecera TCP = 1500 − 20 − 20 = 1460 bytes</em></p>
+<div class="codehilite"><pre><span></span><code>   1 000 000 / 1460 = 684,93 → 685 segmentos
+</code></pre></div>
+
+<p><strong>c) ¿Tamaño mínimo de ventana para usar toda la capacidad?</strong></p>
+<div class="codehilite"><pre><span></span><code>   ventana_mínima = BDP = 1 000 000 bytes
+   comprobación: 1 000 000 / 0,080 s = 12 500 000 B/s = 100 · 10⁶ bits/s = 100 Mbps ✓
+</code></pre></div>
+
+<p><strong>d) ¿Y con la máxima del campo <code>window</code> de 16 bits, sin <em>window scale</em>?</strong></p>
+<div class="codehilite"><pre><span></span><code>   ventana = 65 535 bytes (2¹⁶ − 1)
+   throughput = 65 535 / 0,080 s = 819 187,5 B/s = 6,55 Mbit/s
+</code></pre></div>
+
+<p><strong>Interpretación — y acá está la moraleja.</strong> Con el campo de 16 bits <strong>a secas</strong>, este enlace de
+100 Mbps <strong>es inalcanzable</strong>: sacás 6,55 Mbit/s como máximo. <strong>Es el ejemplo perfecto de por qué
+un protocolo de 1992 necesita revisión</strong>: el campo de 16 bits bastaba para las redes de entonces.</p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Olvidar <code>/8</code>.</strong> Si mezclás bits con bytes te da 8 MB en vez de 1 MB: factor 8 de error.</li>
+<li><strong>Usar 1000 en vez de 1024</strong> (o al revés) sin decirlo. Declaralo.</li>
+<li><strong>Confundir "ventana mínima" con "ventana igual a un MSS".</strong> El mínimo para <strong>usar todo el
+  enlace</strong> es el BDP; el mínimo para <strong>no bloquearse</strong> es 1 MSS (o 2, por el <em>silly window
+  syndrome</em>).</li>
+<li><strong>Olvidar la MTU.</strong> MSS no es "1500": es <code>1500 − 20 − 20 = 1460</code> sin opciones, o
+  <code>1500 − 20 − 32 = 1448</code> con timestamps.</li>
+</ul>
+<h2>2.3 Ejercicio 3 — Comparar cuatro ventanas sobre el mismo enlace</h2>
+<p><strong>Datos.</strong> Enlace de <strong>1 Gbps</strong>, RTT <strong>50 ms</strong> uniforme. Archivo de <strong>4 MB</strong> (<code>4 · 10⁶</code> bytes).</p>
+<div class="codehilite"><pre><span></span><code>   BDP = 10⁹ · 0,050 / 8 = 5 · 10⁷ bits = 6 250 000 bytes ≈ 5,96 MiB   (4281 MSS)
+
+   throughput = min( ventana / 0,050 , 125 · 10⁶ B/s )
+   tiempo     = 4 · 10⁶ B / throughput
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Ventana</th>
+<th><code>ventana/RTT</code></th>
+<th>Throughput real</th>
+<th>Tiempo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>8 KiB = 8 192 B</td>
+<td>163 840 B/s</td>
+<td><strong>1,31 Mbit/s</strong> (limitado por ventana)</td>
+<td><strong>24,4 s</strong></td>
+</tr>
+<tr>
+<td>64 KiB = 65 536 B</td>
+<td>1 310 720 B/s</td>
+<td><strong>10,5 Mbit/s</strong> (limitado por ventana)</td>
+<td><strong>3,05 s</strong></td>
+</tr>
+<tr>
+<td>763 KiB = 781 250 B</td>
+<td>15 625 000 B/s</td>
+<td><strong>125 Mbit/s</strong> (ventana justo = enlace)</td>
+<td><strong>0,256 s</strong></td>
+</tr>
+<tr>
+<td>2 MiB = 2 097 152 B</td>
+<td>41 943 040 B/s</td>
+<td><strong>1 000 Mbit/s</strong> (limitado por enlace)</td>
+<td><strong>0,032 s</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Verificación de la última fila:</strong> <code>4·10⁶ / 41,94·10⁶ = 0,095 s</code>, <strong>mayor</strong> que los <code>0,032 s</code> que
+tarda el enlace: imposible, el enlace no puede ir más rápido que sí mismo. La ventana de 2 MiB
+"sobra".</p>
+<p><strong>Interpretación.</strong> De 8 KiB a 64 KiB el tiempo bajó de 24,4 s a 3,05 s: <strong>8 veces menos tiempo por
+8 veces más ventana</strong>, porque ahí estás limitado por <code>ventana/RTT</code>. A partir de <code>ventana = BDP</code> el
+enlace se satura y <strong>agrandar la ventana ya no sirve</strong>: es el techo físico. Por eso definir bien
+<code>SO_RCVBUF</code>/<code>SO_SNDBUF</code> y el <em>window scale</em> es la diferencia entre 1,31 y 1000 Mbit/s — y por eso
+el <code>rwnd</code> es un problema de <strong>flujo</strong>: agrandarlo no le pide nada a la red.</p>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 Examen 2010-12, Pregunta 4 (8 puntos) — números de secuencia y timers</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc1012</code> — 17 de diciembre de 2010.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1012.pdf
+<strong>Texto del examen:</strong></p>
+<p>En el protocolo de capa de transporte TCP:
+a) ¿Por qué se necesitan números de secuencia?
+b) ¿Por qué son necesarios timers?</p>
+</blockquote>
+<p><strong>Respuesta oficial a) (textual):</strong></p>
+<blockquote>
+<p>Para aprovechar mejor el enlace, TCP es también un protocolo <strong>pipelined</strong> por lo que el emisor
+envía varios paquetes antes de recibir confirmación por alguno de ellos. Por esta razón, el
+emisor debe poder distinguir <strong>a qué paquete o paquetes corresponde una determinada
+confirmación</strong>, por lo que numera los paquetes enviados secuencialmente.</p>
+</blockquote>
+<p><strong>Los 4 puntos:</strong> (1) <strong>pipelining</strong>: para aprovechar el enlace A manda varios antes de esperar;
+(2) <strong>consecuencia</strong>: hay confirmaciones en vuelo y son ambiguas sin identificador; (3)
+<strong>solución</strong>: numerar, y el ACK usa esos números; (4) <strong>matiz que suma</strong>: los números son <strong>de
+bytes</strong>, no de segmentos, y el ACK es <strong>acumulativo</strong>.</p>
+<p><strong>Por qué los números no son un lujo del pipelining.</strong> Aunque TCP fuera <code>stop-and-wait</code>, haría
+falta algo: si el receptor asienta y se pierde el ACK, hay que saber qué reenviar. El pipelining
+<strong>amplifica</strong> la necesidad, no la crea. Y si además hay <strong>reordenamiento</strong> (ida y vuelta por caminos
+distintos), sin números el receptor no podría ni ordenar.</p>
+<p><strong>Respuesta oficial b) (textual):</strong></p>
+<blockquote>
+<p>De no recibir esta confirmación, el emisor no sabe si esto se debe a que se perdió el paquete
+enviado, la confirmación o simplemente alguno de los dos está demorado. <strong>La única solución es
+retransmitir el paquete no confirmado.</strong> Para esta retransmisión debe esperar un tiempo
+prudencial luego de enviado cada paquete, por lo que necesita un timer que le indique cuándo
+hacerlo.</p>
+</blockquote>
+<p><strong>Los 4 puntos:</strong> (1) <strong>las tres causas indistinguibles</strong>: se perdió el dato / se perdió el ACK /
+tardó; (2) <strong>por qué obliga a retransmitir</strong>: no hay forma de distinguirlas, y no retransmitir
+rompe la fiabilidad; (3) <strong>por qué además hace falta saber <em>cuándo</em></strong>: esperar un tiempo
+prudencial; (4) <strong>un timer por segmento</strong>, no por conexión.</p>
+<p><strong>Si querés ir más allá (suma):</strong> el RTO no es fijo sino una estimación (Jacobson/Karels, §1.4),
+ante timeout se <strong>duplica</strong> (<em>backoff exponencial</em>), y con timestamps (<code>RFC 7323</code>) el problema de
+<em>Karn</em> se resuelve.</p>
+<h2>3.2 Examen 2009-12, Pregunta 2 (10 puntos) — fiabilidad en transporte vs. en enlace</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc0912</code> — 12 de diciembre de 2009.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0912.pdf
+<strong>Texto del examen:</strong></p>
+<p>Se considera un servicio de transmisión confiable.
+a) Señale las diferencias de implementación en capa de transporte vs. capa de enlace.
+b) En una red de paquetes arbitraria, ¿es posible implementar un servicio de transmisión
+confiable en capa de enlace? Justifique su respuesta.</p>
+</blockquote>
+<p><strong>Respuesta oficial a):</strong> "En capa de transporte se usan los servicios de la capa de red y la
+señalización del protocolo de transporte, que implica <strong>realimentación de extremo a extremo</strong>,
+teniendo en cuenta la carga de red (congestión). En capa de enlace se señaliza en base a la
+<strong>capacidad del enlace</strong>."</p>
+<p><strong>Respuesta oficial b):</strong> "<strong>No es posible</strong> porque pueden existir múltiples hops, con capas de
+enlace diferentes."</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Capa de enlace</strong></th>
+<th><strong>Capa de transporte (TCP)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Alcance de la fiabilidad</td>
+<td><strong>por salto</strong> (<em>per hop</em>)</td>
+<td><strong>extremo a extremo</strong></td>
+</tr>
+<tr>
+<td>Qué señaliza</td>
+<td>capacidad del <strong>enlace</strong></td>
+<td>carga de la <strong>red</strong></td>
+</tr>
+<tr>
+<td>Estado que guarda</td>
+<td>1 paquete a la vez (2 con Go-Back-N)</td>
+<td>una <strong>ventana</strong> de N bytes</td>
+</tr>
+<tr>
+<td>Numeración</td>
+<td>por <strong>trama</strong> del enlace</td>
+<td>por <strong>bytes</strong>, global a la conexión</td>
+</tr>
+<tr>
+<td>Detecta pérdida</td>
+<td>por <strong>CRC</strong> del enlace</td>
+<td>por <strong>ACK + timer</strong>, y <strong>no sabe</strong> quién falló</td>
+</tr>
+<tr>
+<td>Congestión</td>
+<td>no la maneja</td>
+<td><strong>sí</strong> (es su razón de ser)</td>
+</tr>
+<tr>
+<td>Depende de que los saltos sean fiables</td>
+<td><strong>sí, crítico</strong></td>
+<td><strong>no, en absoluto</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>La parte b) tiene que ir más allá de "hay varios hops".</strong> El contraejemplo mínimo: el paquete se
+pierde <strong>dentro de R2</strong>. La capa 2 del enlace de entrada a R2 no ve nada raro (entró bien y salió
+bien), la del enlace de salida ve un paquete entrar y lo entrega sin retransmitir nunca, y la capa 3
+descartó el paquete sin avisar a nadie. <strong>El paquete se perdió PARA SIEMPRE</strong>: ningún mecanismo de
+capa 2 lo detecta.</p>
+<p><strong>Y una razón estructural más fuerte: el número de secuencia de capa 2 no atraviesa los
+routers.</strong> Para que una capa de enlace fuese <em>extremo a extremo</em> tendría que: <strong>(1)</strong> mantener
+estado por flujo en cada router (o sea, reimplementar TCP en cada salto); <strong>(2)</strong> usar números de
+secuencia globales, imposibles si cada capa 2 no sabe nada de lo que hay aguas arriba; <strong>(3)</strong>
+mandar ACKs de extremo a extremo, y entonces ya no es capa de enlace, es transporte con otro
+nombre.</p>
+<p><strong>Conclusión (una frase):</strong> la fiabilidad <strong>extremo a extremo</strong> es la única que sobrevive a una
+red no confiable. Por eso está <strong>arriba</strong> y no abajo.</p>
+<h2>3.3 Examen 2001-12, Problema 2 — el flag PUSH</h2>
+<p>Resuelto en §1.8. Lo que hay que dejar asentado:</p>
+<ul>
+<li><strong>Tesis:</strong> PSH no define fronteras de mensaje; es un bit de sugerencia.</li>
+<li><strong>Prueba de laboratorio:</strong> un bridge con buffer de retardo reordena y/o segmenta.</li>
+<li><strong>Los dos escenarios pedidos:</strong> (a) dos mensajes que llegan juntos al <code>read()</code>; (b) un
+  mensaje entero y parte del siguiente.</li>
+<li><strong>La solución real:</strong> fronteras a nivel de aplicación (<code>Content-Length</code>, <em>marshalling</em> con
+  longitud).</li>
+</ul>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen en 10 líneas</h2>
+<ol>
+<li><strong>Ordenada</strong> → números de secuencia · <strong>sin duplicados</strong> → el receptor descarta · <strong>sin errores</strong> → checksum + retransmisión.</li>
+<li>TCP es <strong>pipelined</strong>: manda varios segmentos antes de tener ACKs, y por eso el ACK tiene que decir <strong>cuál</strong> confirma.</li>
+<li>Los números son <strong>de bytes</strong>; el <code>ack</code> es el <strong>próximo byte esperado</strong>, y es <strong>acumulativo</strong>.</li>
+<li><strong>Timer por segmento</strong>: sin ACK hay tres causas <strong>indistinguibles</strong> y en las tres "no sé".</li>
+<li>La única salida es <strong>retransmitir</strong>, y para eso hay que saber <strong>cuándo</strong> → RTO.</li>
+<li><strong>Jacobson/Karels</strong>: <code>SRTT = α·SRTT + (1−α)·R</code> con α = 7/8; <code>RTTVAR</code> con β = 1/4; <strong><code>RTO = SRTT + 4·RTTVAR</code></strong>.</li>
+<li>Ante timeout el RTO <strong>se duplica</strong> (<em>backoff exponencial</em>).</li>
+<li><strong>Ventana deslizante</strong> = bytes sin confirmar; para llenar un enlace hace falta <strong><code>ventana ≥ BDP = ancho_de_banda × RTT</code></strong>.</li>
+<li><strong>Fast retransmit</strong> (3 dupACKs) recupera rápido; <strong>SACK (<code>RFC 2018</code>)</strong> dice <em>qué</em> bloques llegaron, así que recupera en 1 RTT en vez de varios.</li>
+<li><strong>PSH no garantiza un mensaje por <code>read()</code></strong>: TCP es un flujo de bytes y las fronteras las pone la aplicación.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> El <code>ack</code> de un segmento es 1120. ¿Cuántos bytes recibió el receptor como mínimo?</p>
+<details><summary>Respuesta</summary>
+
+Todos los bytes **hasta 1119 inclusive** (o sea `ack = próximo byte esperado`). Si hubiera recibido
+hasta 1120 inclusive, mandaría `ack = 1121`.
+
+</details>
+
+<p><strong>2.</strong> A mandó 5 segmentos y el RTO del <strong>primero</strong> se venció. ¿Qué tres cosas pueden estar
+pasando? ¿Puede TCP saber cuál es?</p>
+<details><summary>Respuesta</summary>
+
+(1) se perdió el segmento de datos, (2) se perdió el ACK, (3) el ACK no se perdió: tardó. **TCP no
+puede distinguirlas**, porque en las tres lo único que observa es "no llegó el ACK". Por eso
+retransmite, y por eso necesita un timer para decidir cuándo.
+
+</details>
+
+<p><strong>3.</strong> Calculá el RTO con Jacobson/Karels si <code>SRTT = 100 ms</code>, <code>RTTVAR = 20 ms</code> y llega <code>R = 100 ms</code>.</p>
+<details><summary>Respuesta</summary>
+
+
+<div class="codehilite"><pre><span></span><code>   RTTVAR = 0,75·20 + 0,25·|100−100| = 15 ms
+   SRTT   = 0,125·100 + 0,875·100     = 100 ms
+   RTO    = 100 + 4·15 = 160 ms
+</code></pre></div>
+
+
+
+El `SRTT` no se mueve pero el `RTTVAR` **baja**, así que el RTO se hace **más agresivo**: si los
+RTT son consistentes, hay que retransmitir antes.
+
+</details>
+
+<p><strong>4.</strong> Ancho de banda 1 Gbps, RTT 20 ms. ¿Qué ventana mínima para saturarlo?</p>
+<details><summary>Respuesta</summary>
+
+`BDP = 10⁹ · 0,020 / 8 = 2,5 · 10⁶ bytes = 2,5 MB`, o sea `≈ 1713` MSS de 1460 B. Con el campo
+`window` de 16 bits (`65 535`) llegarías a `≈ 26 Mbit/s`: unas **38 veces menos** que el enlace.
+
+</details>
+
+<p><strong>5.</strong> ¿Por qué <code>SRTT + 4·RTTVAR</code> y no <code>SRTT · 2</code>?</p>
+<details><summary>Respuesta</summary>
+
+Porque el factor fijo no se adapta: si la red pasa de 10 a 200 ms de RTT, `SRTT · 2` se queda
+corto y retransmitís de más durante un rato largo. `4·RTTVAR` es una **estimación de la
+incertidumbre**, y si la red cambia `RTTVAR` sube rápido (β = 1/4) y el RTO se ensancha solo.
+
+</details>
+
+<p><strong>6.</strong> Un switch en el medio reordena dos segmentos con PSH: pasa primero el segundo. ¿Qué lee
+la aplicación en el destino?</p>
+<details><summary>Respuesta</summary>
+
+Un **solo `read()` con los dos mensajes concatenados**: al llegar el segundo con PSH falta el
+primero, así que no se entrega; cuando llega el primero el buffer queda contiguo y un solo `read()`
+devuelve todo. Las fronteras las pone la aplicación, no el PSH.
+
+</details>
+
+<p><strong>7.</strong> ¿Qué cambia, en 2026, respecto de lo que se enseñaba en 2011?</p>
+<details><summary>Respuesta</summary>
+
+La **etiqueta normativa**: la especificación vigente es **`RFC 9293` (2022)**, no `RFC 793`. Los
+mecanismos no cambian y se preguntan **exactamente igual**. Además: SACK (`RFC 2018`) es norma;
+*timestamps + window scale* (`RFC 7323`) hacen obligatorio PAWS; y el Initial Window son 10 MSS
+(`RFC 6928`), no 1.
+
+</details>
+
+<p><strong>8.</strong> ¿Por qué no se puede medir el RTT de un segmento retransmitido?</p>
+<details><summary>Respuesta</summary>
+
+Porque no sabés a cuál instancia corresponde el ACK. Si corresponde a la retransmisión, el RTT
+incluye un RTO entero y **infla** `SRTT`, así que el `RTO` se va para arriba y la conexión se
+frena. Se descarta la muestra (**Karn**). Los **timestamps** lo resuelven: el ACK hace eco del
+`TSval`, así que la instancia queda identificada.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>sirc1103</code></strong> — P4 (10 pts): 4 segmentos con y sin pérdida · Problema 1 (30 pts): ECN</li>
+<li><strong>Examen <code>sirc1012</code></strong> — P4 (8 pts): números de secuencia y timers</li>
+<li><strong>Examen <code>sirc0912</code></strong> — P2 (10 pts): fiabilidad en transporte vs. enlace</li>
+<li><strong>Examen <code>sirc0112</code></strong> — Problema 2: el flag PUSH y la segmentación</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 6 §6.5 (pág. ~590)</li>
+<li><strong><code>RFC 9293</code></strong> — TCP (2022, <em>Internet Standard</em>) · <strong><code>RFC 2018</code></strong> — SACK (1996)</li>
+<li><strong><code>RFC 7323</code></strong> — Timestamps, Window Scale y PAWS (2014) · <strong><code>RFC 5681</code></strong> — Control de congestión (2009)</li>
+<li><strong><code>RFC 6928</code></strong> — IW = 10 MSS (2013) · <strong><code>RFC 9002</code></strong> — QUIC (2021) · <strong><code>RFC 8684</code></strong> — MPTCPv1 (2020)</li>
+<li><strong>Clase siguiente:</strong> 20 — Control de flujo vs. control de congestión</li>
+</ul></body></html>

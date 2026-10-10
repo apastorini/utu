@@ -1,0 +1,651 @@
+===== [pag 1] =====
+
+Solución – 18 de diciembre de 2009
+(ref: sirc0912.odt)
+Instrucciones
+•Indique su nombre completo y número de cédula en cada hoja.
+•Numere todas las hojas e indique la cantidad total de hojas que entrega en la primera.
+•Escriba las hojas de un solo lado.
+•Utilice una caligrafía claramente legible.
+•Comience cada ejercicio en una hoja nueva.
+•Sólo se contestarán dudas de letra. No se aceptarán dudas de ningún tipo los últimos 30 minutos
+del examen.
+•El examen es individual y sin material.
+•Es obligatorio responder correctamente al menos 15 puntos en las preguntas teóricas.
+•El puntaje mínimo de aprobación es de 60 puntos.
+•Para todos los ejercicios, si es necesario, puede suponer que dispone de los tipos de datos
+básicos (p.ej. lista, cola, archivo, string, etc.) y sus funciones asociadas (ej: tail(lista),
+crear(archivo), concatenar(string, string).
+•Duración: 3 horas.
+Preguntas Teóricas
+Pregunta 1 (10 puntos)
+Identifique los componentes del retardo en las redes de paquetes, y señale cuáles son los más
+significativos. En particular:
+a) Señale las diferencias entre el ancho de banda y la velocidad de propagación en el medio.
+b) ¿En qué componente del retardo influye la congestión?
+Pregunta 2 (10 puntos)
+Se considera un servicio de transmisión confiable.
+a) Señale las diferencias de implementación en capa de transporte vs. capa de enlace.
+b) En una red de paquetes arbitraria, ¿es posible implementar un servicio de transmisión confiable en capa
+de enlace? Justifique su respuesta.
+Pregunta 3 (8 puntos)
+a) ¿Cuál es el principal cometido de la capa de red?
+b) La longitud en "hops" es la métrica utilizada habitualmente para definir el costo de un enlace. ¿Es la más
+conveniente? Justifique su respuesta.
+Pregunta 4 (6 puntos)
+a) Defina funciones de hash.
+b) Enumere las propiedades básicas de seguridad en la red, y especifique cuál o cuáles aporta la utilización
+de estas funciones.
+c) Mencione un ejemplo de función de hash comúnmente utilizada para intercambio de mensajes.
+Pregunta 5 (6 puntos)
+Considere ICMPv6, familia de protocolos de control en IPv6. El mismo implementa diversos protocolos
+auxiliares.
+a) Mencione y describa brevemente 2 protocolos definidos como parte de ICMPv6 que utilicen los
+mensajes Neighbour-Solicitation y Neighbour-Advertisement.
+b) Compare su implementación con sus contrapartes en IPv4.
+
+===== [pag 2] =====
+
+Problemas Prácticos
+Problema 1 (30 puntos)
+Sea la red compuesta por tres subredes interconectadas por los routers R1 y R2 presentada en la siguiente
+figura.
+En la misma se indican los nodos conectados en cada subred así como la dirección IP y MAC de cada
+interfaz. Para su direccionamiento se asignó una clase C a cada una de las subredes como se presenta en
+la figura. El enrutamiento es estático.
+Se pide:
+a) Para la topología presentada:
+i) Indique las tablas de enrutamiento de los routers R1 y R2 que permiten conectividad
+extremo a extremo entre todos los equipos de la red.
+ii) Indique las tablas de enrutamiento de los hosts de la topología propuesta.
+iii) Indique el intercambio de frames necesario para enviar un paquete IP desde el host C al
+host F, especificando {MAC_origen, MAC_destino, IP_origen, IP_destino, protocolo, tipo de
+mensaje}. Incluya también los frames que contienen el paquete IP considerado. Suponga
+que las tablas ARP se encuentran vacías.
+b) Se sustituye el router R2 por un switch, al que se conectan todos los equipos de las subredes 2 y
+3, sin modificar las direcciones IP.
+i) Indique la tabla de enrutamiento del router R1 que permite conectividad extremo a
+extremo entre todos los equipos de la red. Justifique las modificaciones realizadas.
+ii) Indique las tablas de enrutamiento de los hosts en la nueva topología. Detalle los
+cambios de configuración necasarios.
+iii) Compare la nueva topología con la original, analizando ventajas y desventajas.
+Problema 2 (30 puntos)
+
+===== [pag 3] =====
+
+Se quiere implementar un protocolo de transferencia de datos confiable restringido a una red donde todos
+los nodos son alcanzables por paquetes de broadcast con las siguientes características:
+•debe poder transferir datos simultáneamente de un computador a todos los computadores que estén en la
+red.
+•en cada momento, la capa de aplicación debe haber recibido los datos de los mismos n paquetes,
+pudiendo diferir solo en los datos incluidos en el paquete n+1.
+•debe recuperarse de fallos de transmisión y eliminar duplicados.
+•no tendrá control de congestión.
+•no tendrá control de flujo.
+Se cuenta con las siguientes primitivas:
+•rdt_send(datos), recibe datos desde la capa superior.
+•udt_send_broadcast(pkt), le entrega el paquete pkt a la capa inferior para ser transmitido a todos los
+computadores de la red.
+•rdt_rcv(pkt), recibe los paquetes desde la capa inferior.
+•deliver_data(datos), entrega datos a la capa superior.
+•make_pkt(numeroDeSecuencia, datos, checksum, origen)
+•extract_data(pkt, datos), extrae los datos de un paquete.
+•extract_orig(pkt, ip), extrae la dirección de origen del paquete.
+•corrupt(pkt), verdadero sii pkt fue corrompido durante su transmisión.
+•isACK(pkt, numeroDeSecuencia), verdadero sii pkt es un ACK con número de secuencia
+numeroDeSecuencia.
+•start_timer
+•stop_timer
+•timeout
+Se considera:
+•que el proceso de conexión ya ha sido realizado, se posee la lista de direcciones IP de los computadores
+conectados (listaConectados) y dicha lista no varía.
+•que solo uno de los computadores en la red envía datos.
+•que ninguno de los computadores o los enlaces de la red tendrá fallos permanentes.
+Se pide:
+Dibujar las máquinas de estados finitos que especifiquen los procesos emisor y receptor del protocolo y el
+pseudocódigo de las estructuras de datos y los procesos auxiliares utilizados (sin incluir las primitivas
+provistas).
+
+===== [pag 4] =====
+
+Pregunta 1 (10 puntos)
+Retardo de procesamiento en el nodo
+Por ejemplo chequeo de paridad (CRC), determinar enlace de salida (enrutamiento).
+Retardo de encolamiento (buffering)
+Espera en colas del enlace de salida para trasmisión
+Retardo de trasmisión
+Sea R=ancho de banda del enlace (bps) y L=longitud del paquete (bits), el tiempo de envío = L/R
+Retardo de propagación
+Sea d = longitud del enlace físico y s = velocidad de propagación en el medio, el retardo de propagación =
+d/s
+a) B es la capacidad de los puertos del dispositivo (switch o router), por ejemplo Ethernet, STM-1, mientras
+que s es una característica del medio, por ejemplo s~2x108 m/seg en cobre.
+b) El retardo de encolamiento depende del nivel de congestión del router.
+Pregunta 2 (10 puntos)
+a) En capa de transporte se usan los servicios de la capa de red y la señalización del protocolo de
+transporte, que implica realimentación de extremo a extremo, teniendo en cuenta la carga de red
+(congestión). En capa de enlace se señaliza en base a la capacidad del enlace.
+b) No es posible porque pueden existir múltiple hops, con capas de enlace diferentes.
+Pregunta 3 (8 puntos)
+a) Asegurar la entrega de información de extremo a extremo.
+b) Si se busca una utilización eficiente de los recursos y/o satisfacer requerimientos de calidad de servicio,
+la métrica de hops puede ser inconveniente, ya que señalará como “mejor” el camino más corto, que no
+necesariamente será el que tenga mejores atributos de calidad (retardo extremo a extremo, pérdidas,
+throughput) y/o menos congestión.
+Pregunta 4 (6 puntos)
+
+a) Un hash o message digest es una función (H) unidireccional que toma una entrada m (mensaje) y
+produce un valor de salida s de longitud fija y en general, de (muchos) menos bits, s=H(m).
+Unidireccional: computacionalmente imposible invertir a la función o sea, dado s encontrar m tal que
+s=H(m).
+b) Las propiedades básicas de seguridad en la red son confidencialidad, integridad y disponibilidad;
+adicionalmente podemos incluir autenticación y no repudio. Estas funciones aportan a la integridad.
+c) Algunas de las más conocidas: MD5, SHA-1.
+Pregunta 5 (6 puntos)
+a) DAD – Duplicated Address Detection protocol y NDP – Neighbor Discovery Protocol (verlos en la
+documentación)
+b) DAD no está implementado en IPv4. NDP es la versión IPv6 de ARP, que en vez de ser un protocolo
+independiente de IP(v4), también utiliza mensajes IPv6 para su implementación.
+
+===== [pag 5] =====
+
+Problema 1 (30 puntos)
+a) Para la topología presentada:
+i) Indique las tablas de enrutamiento de los routers R1 y R2 que permiten conectividad
+extremo a extremo entre todos los equipos de la red.
+Configuración Router R1
+Network
+Gateway
+Interface
+192.168.111.0/24
+-
+eth0
+192.168.108.0/24
+-
+eth1
+192.168.109.0/24
+192.168.108.2
+eth1
+Configuración Router R2
+Network
+Gateway
+Interface
+192.168.109.0/24
+-
+eth1
+192.168.108.0/24
+-
+eth0
+192.168.111.0/24
+192.168.108.1
+eth0
+ii) Indique las tablas de enrutamiento de los hosts de la topología propuesta.
+Configuración hosts subred 1
+Network
+Gateway
+Interface
+192.168.111.0/24
+-
+eth0
+0.0.0.0 def. gateway
+192.168.111.1
+eth0
+Configuración hosts subred 2
+Network
+Gateway
+Interface
+192.168.108/24
+192.168.1
+eth0
+0.0.0.0 def. gateway
+192.168.108.1
+eth0
+Configuración hosts subred 3
+Network
+Gateway
+Interface
+192.168.109.0/24
+-
+eth0
+0.0.0.0 def. gateway
+192.168.109.1
+eth0
+iii) Indique el intercambio de frames necesario para enviar un paquete IP desde el host C al
+host F, especificando {MAC_origen, MAC_destino, IP_origen, IP_destino, protocolo, tipo de
+mensaje}. Incluya también los frames que contienen el paquete IP considerado. Suponga
+que las tablas ARP se encuentran vacías.
+
+===== [pag 6] =====
+
+Paquete IP a enviar:
+IP origen
+IPdestino
+192.168.108.3
+192.168.109.3
+Pasos a seguir
+1.
+Como IP destino no pertence a la red envío al default gateway R1 interface eth1.
+2.
+Envío a R2 interface eth0.
+3.
+Envío a host destino
+Nr
+o
+MAC origen
+MAC destino
+IP origen
+IP destino
+protocolo
+Tipo de mensaje
+1
+00-08-74-4C-7B-1C
+FF-FF-FF-FF-FF-FF
+192.168.108.3
+-
+ARP
+Consuta ARP 192.168.108.1
+2
+00-00-0C-4C-7F-1B
+00-08-74-4C-7B-1C
+192.168.108.1
+192.168.108.3
+ARP
+Respuesta ARP 00-00-0C-4C-7F-1B
+3
+00-08-74-4C-7B-1C
+00-00-0C-4C-7F-1B
+192.168.108.3
+192.168.109.3
+IP
+Envio datagrama a default gateway
+4
+00-00-0C-4C-7F-1B
+FF-FF-FF-FF-FF-FF
+192.168.108.1
+-
+ARP
+Consuta ARP 192.168.108.2
+5
+00-00-0C-4C-8F-1A
+00-00-0C-4C-7F-1B
+192.168.108.2
+192.168.108.1
+ARP
+Respuesta ARP 00-00-0C-4C-8F-1A
+6
+00-00-0C-4C-7F-1B
+00-00-0C-4C-8F-1A
+192.168.108.3
+192.168.109.3
+IP
+Envio datagrama a router R2 - eth0
+7
+00-00-0C-4C-8F-1B
+FF-FF-FF-FF-FF-FF
+192.168.109.1
+-
+ARP
+Consuta ARP 192.168.109.3
+8
+00-08-74-4C-7A-1D
+00-00-0C-4C-8F-1B
+192.168.109.1
+192.168.109.3
+ARP
+Respuesta ARP 00-08-74-4C-7A-1D
+9
+00-00-0C-4C-8F-1B
+00-08-74-4C-7A-1D
+192.168.108.3
+192.168.109.3
+IP
+Envio datagrama a destino
+Datagramas 1-2, 4-5 y 7-8 corresponden a consultas ARP. Los datagrams 3, 6 y 9 corresponden al envío
+del datagrama.
+b) Se sustituye el router R2 por un switch, al que se conectan todos los equipos de las subredes 2 y
+3, sin modificar las direcciones IP.
+i) Indique la tabla de enrutamiento del router R1 que permite conectividad extremo a
+extremo entre todos los equipos de la red. Justifique las modificaciones realizadas.
+Como las redes 192.168.108.0/24 y 192.168.109.0/24 son contiguas, pueden unificarse en la red
+192.168.108.0/23 que contiene a ambas redes.
+Configuración Router R1
+Network
+Gateway
+Interface
+192.168.111.0/24
+-
+eth0
+192.168.108.0/23
+-
+eth1
+ii) Indique las tablas de enrutamiento de los hosts en la nueva topología. Detalle los
+cambios de configuración necasarios.
+
+===== [pag 7] =====
+
+Configuración hosts subred 1
+Network
+Gateway
+Interface
+192.168.111.0/24
+-
+eth0
+0.0.0.0 def. gateway
+192.168.111.1
+eth0
+Configuración hosts subred 2 y 3
+Network
+Gateway
+Interface
+192.168.108.0/23
+-
+eth0
+0.0.0.0 def. gateway
+192.168.108.1
+eth0
+iii) Compare la nueva topología con la original, analizando ventajas y desventajas.
+La red presentada en la parte B en el caso del envío del envío de C->F realiza solamente una consulta ARP
+y el envío directo. Reduce la cantidad de datagramas intercambiados en la red.
+La virtud de la red presentada en el ejercicio es que es más simple su extensión con nuevas redes.
+
+===== [pag 8] =====
+
+Problema 2
+
+E s p e r a
+l l a m
+a d a 0
+d e s d e
+a p l i c a c i ó n
+E s p e r a
+A C K 1
+E s p e r a
+l l a m
+a d a 1
+d e s d e
+a p l i c a c i ó n
+E s p e r a
+A C K 0
+r d t _ s e n d ( d a t o s )
+- - - - - - - - - - - - - - - - - - - - -
+s n d p k t =
+m
+a k e _ p k t ( 0 , d a t o s , c h e c k s u m
+, m
+i I P )
+u d t _ s e n d _ b r o a d c a s t ( s n d p k t )
+s t a r t _ t i m
+e r
+r d t _ r c v ( r c v p k t ) & &
+! c o r r u p t ( r c v p k t )
+& & i s A C K ( r c v p k t , 0 )
+& &
+a c k s A r r a y _ F u l l ( 0 )
+- - - - - - - - - - - - - - - - - - - - -
+s t o p _ t i m
+e r
+r d t _ s e n d ( d a t o s )
+- - - - - - - - - - - - - - - - - - - - -
+s n d p k t =
+m
+a k e _ p k t ( 1 , d a t o s , c h e c k s u m
+, m
+i I P )
+u d t _ s e n d _ b r o a d c a s t ( s n d p k t )
+s t a r t _ t i m
+e r
+r d t _ r c v ( r c v p k t ) & &
+( c o r r u p t ( r c v p k t ) | | i s A C K ( r c v p k t , 1 ) )
+& & a c k s A r r a y _ n o t F u l l
+- - - - - - - - - - - - - - - - - - - - -
+d o _
+n o t h i n g
+r d t _ r c v ( r c v p k t ) & &
+! c o r r u p t ( r c v p k t )
+& & i s A C K ( r c v p k t , 0 )
+& & ! a c k s _ A r r a y _ F u l l ( 0 )
+- - - - - - - - - - - - - - - - - - - - -
+e x t r a c t _ o r i g ( r c v p k t , o r i g I P )
+s t o r e _ a c k ( o r i g I P , 0 )
+r d t _ r c v ( r c v p k t ) & &
+( c o r r u p t ( r c v p k t ) | | i s A C K ( r c v p k t , 0 ) )
+& & a c k s A r r a y _ n o t F u l l
+- - - - - - - - - - - - - - - - - - - - -
+d o _
+n o t h i n g
+r d t _ r c v ( r c v p k t ) & &
+! c o r r u p t ( r c v p k t )
+& & i s A C K ( r c v p k t , 1 )
+& & ! a c k s _ A r r a y _ F u l l ( 1 )
+- - - - - - - - - - - - - - - - - - - - -
+e x t r a c t _ o r i g ( r c v p k t , o r i g I P )
+s t o r e _ a c k ( o r i g I P , 1 )
+r d t _ r c v ( r c v p k t ) & &
+! c o r r u p t ( r c v p k t )
+& & i s A C K ( r c v p k t , 1 )
+& &
+a c k s A r r a y _ F u l l ( 1 )
+- - - - - - - - - - - - - - - - - - - - -
+s t o p _ t i m
+e r
+E m i s o r
+E s p e r a
+0 d e s d e
+a b a j o
+E s p e r a
+1 d e s d e
+a b a j o
+r d t _ r c v ( r c v p k t )
+& & ! c o r r u p t ( r c v p k t )
+& & i s _ n o t _ A C K ( r c v p k t )
+& & h a s _ s e q ( r c v p k t , 0 )
+- - - - - - - - - - - - - - - - - - - - -
+e x t r a c t _ d a t a ( r c v p k t , d a t a )
+d e l i v e r _ d a t a ( d a t a )
+s n d p k t = m
+a k e p k t ( A C K , 0 , c h e c k s u m
+, m
+i I P )
+u d t _ s e n d _ b r o a d c a s t ( s n d p k t )
+p a s o = 1
+- - - - - - - - - - - - -
+p a s o = 0
+r d t _ r c v ( r c v p k t )
+& & ! c o r r u p t ( r c v p k t )
+& & i s _ n o t _ A C K ( r c v p k t )
+& & h a s _ s e q ( r c v p k t , 1 )
+- - - - - - - - - - - - - - - - - - - - -
+e x t r a c t _ d a t a ( r c v p k t , d a t a )
+d e l i v e r _ d a t a ( d a t a )
+s n d p k t = m
+a k e p k t ( A C K , 1 , c h e c k s u m
+, m
+i I P )
+u d t _ s e n d _ b r o a d c a s t ( s n d p k t )
+r d t _ r c v ( r c v p k t )
+& & i s _ n o t _ A C K ( r c v p k t )
+& & ( c o r r u p t ( r c v p k t ) | |
+& & h a s _ s e q ( r c v p k t , 1 )
+- - - - - - - - - - - - - - - - - - - - -
+i f ( p a s o = = 1 )
+u d t _ s e n d _ b r o a d c a s t ( s n d p k t )
+r d t _ r c v ( r c v p k t )
+& & i s _ n o t _ A C K ( r c v p k t )
+& & ( c o r r u p t ( r c v p k t ) | |
+& & h a s _ s e q ( r c v p k t , 0 )
+- - - - - - - - - - - - - - - - - - - - -
+u d t _ s e n d _ b r o a d c a s t ( s n d p k t )
+R e c e p t o r
+r d t _ r c v ( r c v p k t )
+- - - - - - - - - - - - - - -
+d o _ n o t h i n g
+r d t _ r c v ( r c v p k t )
+- - - - - - - - - - - - - - -
+d o _ n o t h i n g
+r d t _ r c v ( r c v p k t )
+& & (
+i s _ A C K ( r c v p k t , 0 ) | |
+i s _ A C K ( r c v p k t , 1 ) )
+- - - - - - - - - - - - - - - - - - - - -
+d o _ n o t h i n g
+r d t _ r c v ( r c v p k t )
+& & (
+i s _ A C K ( r c v p k t , 0 ) | |
+i s _ A C K ( r c v p k t , 1 ) )
+- - - - - - - - - - - - - - - - - - - - -
+d o _ n o t h i n g
+E s p e r a
+l l a m
+a d a 0
+d e s d e
+a p l i c a c i ó n
+E s p e r a
+A C K 1
+E s p e r a
+l l a m
+a d a 1
+d e s d e
+a p l i c a c i ó n
+E s p e r a
+A C K 0
+r d t _ s e n d ( d a t o s )
+- - - - - - - - - - - - - - - - - - - - -
+s n d p k t =
+m
+a k e _ p k t ( 0 , d a t o s , c h e c k s u m
+, m
+i I P )
+u d t _ s e n d _ b r o a d c a s t ( s n d p k t )
+s t a r t _ t i m
+e r
+r d t _ r c v ( r c v p k t ) & &
+! c o r r u p t ( r c v p k t )
+& & i s A C K ( r c v p k t , 0 )
+& &
+a c k s A r r a y _ F u l l ( 0 )
+- - - - - - - - - - - - - - - - - - - - -
+s t o p _ t i m
+e r
+r d t _ s e n d ( d a t o s )
+- - - - - - - - - - - - - - - - - - - - -
+s n d p k t =
+m
+a k e _ p k t ( 1 , d a t o s , c h e c k s u m
+, m
+i I P )
+u d t _ s e n d _ b r o a d c a s t ( s n d p k t )
+s t a r t _ t i m
+e r
+r d t _ r c v ( r c v p k t ) & &
+( c o r r u p t ( r c v p k t ) | | i s A C K ( r c v p k t , 1 ) )
+& & a c k s A r r a y _ n o t F u l l
+- - - - - - - - - - - - - - - - - - - - -
+d o _
+n o t h i n g
+r d t _ r c v ( r c v p k t ) & &
+! c o r r u p t ( r c v p k t )
+& & i s A C K ( r c v p k t , 0 )
+& & ! a c k s _ A r r a y _ F u l l ( 0 )
+- - - - - - - - - - - - - - - - - - - - -
+e x t r a c t _ o r i g ( r c v p k t , o r i g I P )
+s t o r e _ a c k ( o r i g I P , 0 )
+r d t _ r c v ( r c v p k t ) & &
+( c o r r u p t ( r c v p k t ) | | i s A C K ( r c v p k t , 0 ) )
+& & a c k s A r r a y _ n o t F u l l
+- - - - - - - - - - - - - - - - - - - - -
+d o _
+n o t h i n g
+r d t _ r c v ( r c v p k t ) & &
+! c o r r u p t ( r c v p k t )
+& & i s A C K ( r c v p k t , 1 )
+& & ! a c k s _ A r r a y _ F u l l ( 1 )
+- - - - - - - - - - - - - - - - - - - - -
+e x t r a c t _ o r i g ( r c v p k t , o r i g I P )
+s t o r e _ a c k ( o r i g I P , 1 )
+r d t _ r c v ( r c v p k t ) & &
+! c o r r u p t ( r c v p k t )
+& & i s A C K ( r c v p k t , 1 )
+& &
+a c k s A r r a y _ F u l l ( 1 )
+- - - - - - - - - - - - - - - - - - - - -
+s t o p _ t i m
+e r
+E m i s o r
+E s p e r a
+0 d e s d e
+a b a j o
+E s p e r a
+1 d e s d e
+a b a j o
+r d t _ r c v ( r c v p k t )
+& & ! c o r r u p t ( r c v p k t )
+& & i s _ n o t _ A C K ( r c v p k t )
+& & h a s _ s e q ( r c v p k t , 0 )
+- - - - - - - - - - - - - - - - - - - - -
+e x t r a c t _ d a t a ( r c v p k t , d a t a )
+d e l i v e r _ d a t a ( d a t a )
+s n d p k t = m
+a k e p k t ( A C K , 0 , c h e c k s u m
+, m
+i I P )
+u d t _ s e n d _ b r o a d c a s t ( s n d p k t )
+p a s o = 1
+- - - - - - - - - - - - -
+p a s o = 0
+r d t _ r c v ( r c v p k t )
+& & ! c o r r u p t ( r c v p k t )
+& & i s _ n o t _ A C K ( r c v p k t )
+& & h a s _ s e q ( r c v p k t , 1 )
+- - - - - - - - - - - - - - - - - - - - -
+e x t r a c t _ d a t a ( r c v p k t , d a t a )
+d e l i v e r _ d a t a ( d a t a )
+s n d p k t = m
+a k e p k t ( A C K , 1 , c h e c k s u m
+, m
+i I P )
+u d t _ s e n d _ b r o a d c a s t ( s n d p k t )
+r d t _ r c v ( r c v p k t )
+& & i s _ n o t _ A C K ( r c v p k t )
+& & ( c o r r u p t ( r c v p k t ) | |
+& & h a s _ s e q ( r c v p k t , 1 )
+- - - - - - - - - - - - - - - - - - - - -
+i f ( p a s o = = 1 )
+u d t _ s e n d _ b r o a d c a s t ( s n d p k t )
+r d t _ r c v ( r c v p k t )
+& & i s _ n o t _ A C K ( r c v p k t )
+& & ( c o r r u p t ( r c v p k t ) | |
+& & h a s _ s e q ( r c v p k t , 0 )
+- - - - - - - - - - - - - - - - - - - - -
+u d t _ s e n d _ b r o a d c a s t ( s n d p k t )
+R e c e p t o r
+r d t _ r c v ( r c v p k t )
+- - - - - - - - - - - - - - -
+d o _ n o t h i n g
+r d t _ r c v ( r c v p k t )
+- - - - - - - - - - - - - - -
+d o _ n o t h i n g
+r d t _ r c v ( r c v p k t )
+& & (
+i s _ A C K ( r c v p k t , 0 ) | |
+i s _ A C K ( r c v p k t , 1 ) )
+- - - - - - - - - - - - - - - - - - - - -
+d o _ n o t h i n g
+r d t _ r c v ( r c v p k t )
+& & (
+i s _ A C K ( r c v p k t , 0 ) | |
+i s _ A C K ( r c v p k t , 1 ) )
+- - - - - - - - - - - - - - - - - - - - -
+d o _ n o t h i n g
+t i m
+e o u t
+- - - - - - - - - - - - - - - - - - - - -
+u d t _ s e n d _ b r o a d c a s t ( s n d p k t )
+s t a r t _ t i m
+e r
+t i m
+e o u t
+- - - - - - - - - - - - - - - - - - - - -
+u d t _ s e n d _ b r o a d c a s t ( s n d p k t )
+s t a r t _ t i m
+e r

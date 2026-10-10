@@ -1,0 +1,917 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 18 — TCP: establecer y cerrar la conexión</h1>
+<p><strong>Bloque:</strong> C (Transporte) · <strong>Semana:</strong> 6 · <strong>Duración estimada:</strong> 110 min
+<strong>Correlativa:</strong> Clase 17 (TCP: la cabecera campo por campo) · <strong>Sigue con:</strong> Clase 19 (TCP: cómo se garantiza la fiabilidad)
+<strong>Material de referencia:</strong> Tanenbaum cap. 6 (§6.3, §6.5) · RFC 9293, RFC 4987, RFC 1122, RFC 7414</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Dibujar el <strong>three-way handshake</strong> con números de secuencia concretos y explicar qué se acuerda en cada mensaje.</li>
+<li>Explicar <strong>por qué 3 vías y no 2</strong>, y por qué el servidor no debe quedar con un socket abierto para siempre.</li>
+<li>Describir el <strong>SYN flood</strong> y cómo lo mitigan las <strong>SYN cookies</strong> (<code>RFC 4987</code>).</li>
+<li>Dibujar el <strong>cierre de 4 vías</strong> con los números avanzando, y explicar el <strong>semi-cierre</strong> y el <strong>RST</strong>.</li>
+<li>Recorrer los <strong>11 estados</strong> de la máquina de estados y justificar el <strong>TIME-WAIT de 2×MSL</strong>.</li>
+<li>Calcular el <strong>RTT</strong> de establecer una conexión y sus variantes (TLS 1.3, 0-RTT, TCP Fast Open).</li>
+</ol>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 518 362" style="max-width:518px"><rect width="518" height="362" fill="#ffffff"/><text x="259.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Three-way handshake y cierre de 4 vias (Examen 2006-12 P4)</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><rect x="34.0" y="38" width="200" height="36" rx="5" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="134.0" y="59.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">Cliente  :49200</text><line x1="134.0" y1="74" x2="134.0" y2="346" stroke="#7aa7c4" stroke-width="1.2" stroke-dasharray="4 3"/><rect x="284.0" y="38" width="200" height="36" rx="5" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="384.0" y="59.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">Servidor  :80</text><line x1="384.0" y1="74" x2="384.0" y2="346" stroke="#7aa7c4" stroke-width="1.2" stroke-dasharray="4 3"/><line x1="134.0" y1="100" x2="384.0" y2="100" stroke="#14507a" stroke-width="1.8" marker-end="url(#p)"/><text x="259.0" y="93" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#14507a">1)  SYN         seq = 2000</text><line x1="384.0" y1="132" x2="134.0" y2="132" stroke="#2e7d4f" stroke-width="1.8" marker-end="url(#po)"/><text x="259.0" y="125" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#2e7d4f">2)  SYN + ACK   seq = 5000   ack = 2001</text><line x1="134.0" y1="164" x2="384.0" y2="164" stroke="#14507a" stroke-width="1.8" marker-end="url(#p)"/><text x="259.0" y="157" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#14507a">3)  ACK         seq = 2001   ack = 5001</text><line x1="134.0" y1="196" x2="384.0" y2="196" stroke="#14507a" stroke-width="1.8" marker-end="url(#p)"/><text x="259.0" y="189" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#14507a">    datos       seq = 2001   ack = 5001</text><line x1="384.0" y1="228" x2="134.0" y2="228" stroke="#2e7d4f" stroke-width="1.8" marker-end="url(#po)"/><text x="259.0" y="221" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#2e7d4f">    ACK         seq = 5001   ack = 2001+d</text><line x1="134.0" y1="260" x2="384.0" y2="260" stroke="#14507a" stroke-width="1.8" marker-end="url(#p)"/><text x="259.0" y="253" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#14507a">4)  FIN         seq = 2001+d</text><line x1="384.0" y1="292" x2="134.0" y2="292" stroke="#2e7d4f" stroke-width="1.8" marker-end="url(#po)"/><text x="259.0" y="285" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#2e7d4f">    FIN + ACK   seq = 5001+d   ack = ...</text><line x1="134.0" y1="324" x2="384.0" y2="324" stroke="#14507a" stroke-width="1.8" marker-end="url(#p)"/><text x="259.0" y="317" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#14507a">    ACK         ack = ...</text></svg></p>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2006-12 P4</code> (10 pts — three-way handshake, cierre y TPDUs), <code>2009-07 P2a</code> (8 pts — los pasos del handshake).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 Por qué hace falta un handshake</h2>
+<p>Para mandar datos de forma confiable, los dos extremos tienen que ponerse de acuerdo en <strong>cinco cosas</strong>.
+Ninguna se puede inventar solo uno de los dos lados:</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Quién la propone</th>
+<th>Cómo viaja</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>ISN</strong> del cliente (<em>Initial Sequence Number</em>)</td>
+<td>el cliente</td>
+<td>en el <code>seq</code> del SYN</td>
+</tr>
+<tr>
+<td><strong>ISN</strong> del servidor</td>
+<td>el servidor</td>
+<td>en el <code>seq</code> del SYN+ACK</td>
+</tr>
+<tr>
+<td><strong>MSS</strong> de cada lado</td>
+<td>cada uno</td>
+<td>opción MSS en el SYN</td>
+</tr>
+<tr>
+<td><strong>SACK permitted</strong>, <strong>Window Scale</strong>, <strong>Timestamps</strong></td>
+<td>cada uno</td>
+<td>opciones en el SYN</td>
+</tr>
+<tr>
+<td><strong>ECN</strong></td>
+<td>cada uno</td>
+<td>bits CWR/ECE en el SYN</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Ojo con la primera fila: los dos ISN no se "acuerdan", se intercambian.</strong> Cada extremo <strong>elige el
+suyo por su cuenta</strong> y el handshake sirve para que cada uno <strong>se entere del del otro</strong>. La <code>RFC 9293</code>
+da la fórmula:</p>
+<div class="codehilite"><pre><span></span><code>   ISN = M + F(localIP, localPort, remoteIP, remotePort, clave_secreta)
+
+   M = un contador que sube al menos cada ~4 microsegundos
+   F() = función pseudoaleatoria con clave secreta, NO computable de afuera
+</code></pre></div>
+
+<p>El reloj <code>M</code> garantiza que los ISN <strong>no se repitan</strong> dentro de un MSL, y <code>F()</code> con clave secreta evita que
+un atacante <strong>adivine</strong> el número de secuencia (sin eso se puede hacer <em>spoofing</em> de segmentos). El ciclo
+de 32 bits a 4 µs dura <strong>4,55 horas</strong>.</p>
+<h2>1.2 El three-way handshake, con los números</h2>
+<p>Voy a usar estos valores en toda la clase, porque después los ejercicios los retoman:</p>
+<div class="codehilite"><pre><span></span><code>   Cliente 203.0.113.9, puerto 49200, ISN = 2000 (0x07D0)
+   Servidor 198.51.100.7, puerto 80,     ISN = 5000 (0x1388)
+   Ventana anunciada por el cliente: 64240 ; por el servidor: 65535
+   Opciones en ambos SYN: MSS 1460, SACK permitted, Timestamps, Window Scale
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>   Cliente (49200)                    Servidor (80)
+        │                                  │
+        │─── 1) SYN   seq = 2000 ─────────▶│   sin ack (el flag ACK está en 0)
+        │                                  │   El SYN ocupa 1 número
+        │◀── 2) SYN+ACK seq = 5000 ───────│   ack = 2000 + 1 = 2001
+        │          ack  = 2001            │   El SYN+ACK ocupa 1 número
+        │─── 3) ACK   seq = 2001 ────────▶│   ack  = 5000 + 1 = 5001
+        │     ack  = 5001                 │   y este ACK puede llevar DATOS
+        │                                  │
+        │          ESTABLECIDO             │
+</code></pre></div>
+
+<p><strong>Recorrido segmento por segmento, con la cuenta:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Seg.</th>
+<th>Flags</th>
+<th>Long. datos</th>
+<th>seq</th>
+<th>ack</th>
+<th>Columna</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>C→S</td>
+<td>SYN</td>
+<td>0</td>
+<td><strong>2000</strong></td>
+<td>(0, sin uso)</td>
+<td>Empieza la conexión en 2000</td>
+</tr>
+<tr>
+<td>2</td>
+<td>S→C</td>
+<td>SYN+ACK</td>
+<td>0</td>
+<td><strong>5000</strong></td>
+<td><strong>2001</strong></td>
+<td>Confirma que recibió el byte 2000 del cliente</td>
+</tr>
+<tr>
+<td>3</td>
+<td>C→S</td>
+<td>ACK</td>
+<td>0 (+datos)</td>
+<td><strong>2001</strong></td>
+<td><strong>5001</strong></td>
+<td>Confirma que recibió el byte 5000 del servidor</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Las dos reglas que hacen que los números cierren:</strong> (1) <strong>el SYN consume un número</strong> aunque no lleve
+datos, por eso el <code>ack</code> del segundo segmento es <code>2000 + 1 = 2001</code> y no 2000 (el <strong>FIN</strong> también lo hace);
+(2) el <strong><code>ack</code> es siempre "el próximo byte que espero"</strong>, así que el <code>seq</code> del cliente pasa a 2001 y el
+del servidor a 5001.</p>
+<blockquote>
+<p><code>RFC 9293</code>, textual: <em>"the SYN is considered to occur before the first actual data octet of the
+segment in which it occurs, while the FIN is considered to occur after the last actual data octet"</em>.</p>
+</blockquote>
+<p><strong>El tercer segmento puede llevar datos.</strong> Por eso establecer una conexión TCP cuesta <strong>1 RTT y no 2</strong>:
+el cliente manda su primer request en el mismo ACK que cierra el handshake, con <code>seq = 2001</code>.</p>
+<h2>1.3 ¿Por qué 3 vías y no 2?</h2>
+<p>Un handshake de 2 vías sería: el cliente manda SYN, el servidor responde SYN+ACK, y se da por establecida.
+El problema es que <strong>el servidor no tiene ninguna prueba de que el cliente exista</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   Con 3 vías                          Con 2 vías
+   ─────────                          ─────────
+   C ──SYN x──────────▶ S             C ──SYN x──────────▶ S
+   C ◀──SYN+ACK y, x+1─ S             C ◀──SYN+ACK y, x+1─ S
+   C ──ACK x+1, y+1───▶ S             (nada más)
+   ↑ el servidor ya sabe que            ↑ el servidor se queda esperando
+     hay alguien del otro lado            para siempre
+
+   Si se pierde el 3er mensaje:
+     el servidor reintenta el SYN+ACK
+     → el cliente lo re-responde → se resuelve
+</code></pre></div>
+
+<p><strong>Los dos objetivos reales del tercer mensaje:</strong> (1) <strong>que el servidor tenga evidencia de que hay un
+cliente real</strong>: con 2 vías queda con un socket esperando un ACK que nunca llega, ocupando memoria (el
+<strong>TCB</strong>: buffers, números, temporizadores), y un atacante puede abrir miles así solo mandando SYNs;
+(2) <strong>que los dos extremos synchronizeden sus números antes de mandar datos</strong>, para que ninguna respuesta
+se pierda.</p>
+<p><strong>La apertura simultánea.</strong> Existe un caso raro en que <strong>los dos mandan SYN</strong> al mismo tiempo (ambos
+quieren abrir). Los dos pasan a SYN-SENT, cada uno responde al SYN del otro con un SYN+ACK, y cada uno
+envía el ACK final. Son <strong>4 mensajes</strong> y termina igual. Es lo que menciona la solución oficial del
+examen 2006-12 con "intercambio de solicitudes de conexión".</p>
+<h2>1.4 SYN flood y SYN cookies</h2>
+<p><strong>El ataque.</strong> El atacante manda <strong>ráfagas de SYNs</strong> con <strong>IPs de origen falsificadas</strong>. El servidor, que
+no puede distinguir un SYN real de uno falso, <strong>crea un TCB por cada uno</strong> (la <code>RFC 793</code> exige reservar
+estado al recibir el SYN), y como las respuestas van a IPs inventadas <strong>nadie contesta</strong>. El backlog se
+llena y <strong>las conexiones legítimas ya no pueden entrar</strong>. Lo peor: con ~1300 bytes de memoria por TCB,
+<strong>no hace falta mucho tráfico</strong> para tumbar un servidor.</p>
+<div class="codehilite"><pre><span></span><code>   atacante ─── miles de SYNs spoofeados ───▶ servidor: backlog lleno  ✗
+   cliente legítimo ──── SYN ──────────────▶        descartado
+
+   ¿Qué falta? que el servidor pueda DIFERENCIAR un SYN real de uno falso. Con IPs
+   falsificadas la respuesta no vuelve nunca → no hay prueba de nada.
+</code></pre></div>
+
+<p><strong>La defensa: las SYN cookies</strong> (<code>RFC 4987</code> — <em>TCP SYN Flooding Attacks and Common Mitigations</em>,
+<strong>Informational</strong>, agosto 2007, verificado en rfc-editor.org). La idea:</p>
+<div class="codehilite"><pre><span></span><code>   SIN cookies                       CON cookies
+   ───────────                       ───────────
+   SYN → crear TCB (~1 KB)           SYN → NO crear nada
+        ↓                                  ↓
+   SYN+ACK a la IP (puede ser falsa)  calcular una "cookie" con el estado
+   ← queda un TCB por cada ataque     ISN = f(5-tupla, contador, MSS, secreto)
+                                     SYN+ACK con ese ISN   ← no hay estado guardado
+                                          ↓
+                                     llega el ACK → RECALCULAR la cookie
+                                          ↓
+                                     si coincide → recién AHORA se crea el TCB
+</code></pre></div>
+
+<p><strong>La chave genial: no hay nada que guarden.</strong> El estado que el servidor necesitaría (la 5-tupla, el MSS
+del cliente, los timestamps) <strong>se codifica dentro del propio número de secuencia</strong> del SYN+ACK. Cuando
+llega el ACK, el servidor <strong>vuelve a calcular la cookie</strong> desde cero y compara: si coincide, sabe que el
+cliente recibió el SYN+ACK (o sea, que existe) y recién ahí reserva memoria.</p>
+<p>La implementación de referencia trunca el ISN en <strong>5 bits</strong> altos del contador de tiempo (cambia cada 64
+s, para que las cookies no se repitan), <strong>3 bits</strong> con uno de 8 MSS comunes y <strong>24 bits</strong> de un <em>hash</em>
+MD5 de las direcciones, los puertos y un secreto del servidor.</p>
+<p><strong>Los costos (y por eso no se usa todo el tiempo):</strong></p>
+<p><strong>Los costos:</strong> se <strong>pierde el Window Scale</strong> (la ventana efectiva cae ÷ 128), <strong>SACK no se puede usar</strong>
+hasta que el servidor recibe un bloque SACK (lo que limita mucho en flujos unidireccionales), y no se
+pueden mandar <strong>datos piggyback en el SYN</strong>. Por eso en Linux y Windows están <strong>deshabilitadas por
+defecto</strong> y se activan <strong>solo bajo ataque</strong>.</p>
+<blockquote>
+<p><strong>SCTP resolvió el problema mejor</strong>: handshake de <strong>4 vías</strong> con <em>cookies</em> stateless, así que el
+extremo pasivo tiene <strong>evidencia</strong> de que el iniciador existe antes de reservar nada. La <code>RFC 4987</code>
+lo señala como la lección aprendida.</p>
+</blockquote>
+<h2>1.5 El cierre de 4 vías, con los números</h2>
+<p><strong>TCP es full-duplex</strong>, así que cerrar una conexión son <strong>dos cierres independientes</strong>: el de la
+dirección cliente→servidor y el de la dirección servidor→cliente. <strong>Cada uno necesita 2 mensajes</strong>: un
+FIN y su ACK.</p>
+<p>Retomando los números de §1.2: el cliente mandó 100 bytes de datos (<code>2001..2100</code>) y el servidor 500
+bytes (<code>5001..5500</code>).</p>
+<div class="codehilite"><pre><span></span><code>   Cliente (49200)                       Servidor (80)
+        │                                     │
+        │─── FIN+ACK  seq = 2101 ────────────▶│   "no te mando más datos"
+        │      ack = 5501                     │   el FIN ocupa el byte 2101
+        │                                     │
+        │◀── ACK  seq = 2101, ack = 2102 ────│   "recibí tu FIN"
+        │                                     │   → el servidor pasa a CLOSE-WAIT
+        │      (el cliente ya no puede      │      y todavía puede mandar datos:
+        │       mandar, pero sí leer)         │      la conexión está SEMI-CERRADA
+        │                                     │
+        │      ◀── FIN+ACK seq = 5501 ───────│   "yo tampoco"
+        │      ack = 2102                     │   el FIN ocupa el byte 5501
+        │─── ACK  seq = 2102, ack = 5502 ───▶│   "recibí tu FIN" → TIME-WAIT → CLOSED
+</code></pre></div>
+
+<p><strong>La cuenta, que es lo que se corrige:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Seg.</th>
+<th>Flags</th>
+<th>seq</th>
+<th>ack</th>
+<th>Por qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>C→S</td>
+<td>FIN+ACK</td>
+<td><strong>2101</strong></td>
+<td>5501</td>
+<td>el cliente confirmó los 500 bytes del servidor</td>
+</tr>
+<tr>
+<td>2</td>
+<td>S→C</td>
+<td>ACK</td>
+<td>2101</td>
+<td><strong>2102</strong></td>
+<td>el FIN del cliente consumió el 2101</td>
+</tr>
+<tr>
+<td>3</td>
+<td>S→C</td>
+<td>FIN+ACK</td>
+<td><strong>5501</strong></td>
+<td>2102</td>
+<td>el servidor confirmó los 100 del cliente</td>
+</tr>
+<tr>
+<td>4</td>
+<td>C→S</td>
+<td>ACK</td>
+<td>2102</td>
+<td><strong>5502</strong></td>
+<td>el FIN del servidor consumió el 5501</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Por qué 4 y no 3.</strong> Cuando el servidor recibe el FIN del cliente <strong>todavía puede tener datos en vuelo</strong>
+hacia el cliente, así que primero acusa (mensaje 2) y después cierra (mensaje 3). Pero si su FIN viaja
+<strong>piggyback en el ACK</strong> —porque ya estaba escribiendo— solo hay <strong>3 mensajes</strong>: <code>FIN</code>, <code>FIN+ACK</code>, <code>ACK</code>.
+Es la variante que muestra la solución oficial del 2006-12.</p>
+<p><strong>El semi-cierre (<em>half-close</em>)</strong>: entre el FIN de uno y el del otro, el cliente <strong>ya no puede enviar
+pero sí recibe</strong>. Es el caso de HTTP/1.x: el cliente manda el request, hace <code>shutdown(SHUT_WR)</code> y sigue
+leyendo la respuesta. Por eso <strong>CLOSE-WAIT</strong> puede durar minutos: no es un error, es diseño.</p>
+<h2>1.6 RST: el cierre abrupto</h2>
+<p>El <strong>RST</strong> (<em>reset</em>) es la forma de abortar sin ceremonia. <strong>Cuándo se manda:</strong></p>
+<ol>
+<li><strong>Puerto cerrado</strong>: un SYN a un puerto sin proceso escuchando → el kernel responde
+   <code>RST, seq 0, ack = seq del SYN</code>, y el cliente ve <strong>"Connection refused"</strong> (<code>ECONNREFUSED</code>).</li>
+<li><strong>Datos o FIN sobre una conexión que ya no existe</strong> (o en CLOSED) → <code>RST</code> y se descarta todo.</li>
+<li><strong>Abortar con datos pendientes</strong>: <code>close()</code> con <code>SO_LINGER</code> en 0 manda <code>RST</code> en vez del cierre
+   ordenado, y <strong>descarta lo no confirmado</strong>.</li>
+</ol>
+<div class="codehilite"><pre><span></span><code>   SYN a puerto cerrado:
+   cliente ──SYN──▶ servidor :  RST (seq 0, ack = seq del SYN)  → ECONNREFUSED
+</code></pre></div>
+
+<p><strong>RST no es un cierre limpio</strong>: descarta el estado y <strong>pierde los datos no confirmados</strong>. Es lo que
+pasa cuando un proceso mata un servidor o cuando el SO decide que la conexión lleva demasiado tiempo
+inactiva (el <em>keepalive</em> de la clase 19).</p>
+<h2>1.7 La máquina de estados: 11 estados</h2>
+<div class="codehilite"><pre><span></span><code>              Passive OPEN                       Active OPEN
+   CLOSED ─────────────────▶ LISTEN ◀──┐  CLOSED ───────────────▶ SYN-SENT
+      ▲                          │     │  rcv SYN, snd SYN+ACK     │
+      │                          ▼     └──────────┐  snd SYN, rcv SYN │ rcv ACK
+      │                     SYN-RECEIVED ◀──────────┘  (apertura        ▼
+      │                          │                     simultánea)  ESTABLISHED
+      │                          │ snd ACK                │          │
+      │  snd ACK ◀─── FIN-WAIT-1 ◀──┴── rcv FIN ──▶ CLOSING │ close()  │ rcv FIN
+      │                          │ rcv ACK                ▼          ▼
+      │  rcv ACK ─▶ FIN-WAIT-2   │ snd ACK          LAST-ACK   CLOSE-WAIT
+      │              snd FIN     ▼                                  │
+      │            CLOSE-WAIT ◄──┴── (sigue recibiendo datos) ───────┘ rcv FIN
+      │                              ▼ send ACK
+      │                           LAST-ACK ──▶ CLOSED
+      └── send RST / timeout ◀── FIN-WAIT-1 / SYN-SENT
+</code></pre></div>
+
+<p>Y el estado <strong>TIME-WAIT</strong>, que falta en el esquema anterior porque se dibuja aparte:</p>
+<div class="codehilite"><pre><span></span><code>   LAST-ACK ──send ACK──▶ TIME-WAIT ──(2 × MSL)──▶ CLOSED
+</code></pre></div>
+
+<p><strong>Los 11 estados</strong> (los mismos de la <code>RFC 9293</code>): <code>CLOSED</code>, <code>LISTEN</code>, <code>SYN-SENT</code>, <code>SYN-RECEIVED</code>,
+<code>ESTABLISHED</code>, <code>FIN-WAIT-1</code>, <code>FIN-WAIT-2</code>, <code>CLOSE-WAIT</code>, <code>CLOSING</code>, <code>LAST-ACK</code>, <code>TIME-WAIT</code>.</p>
+<p><strong>Los dos estados que se explican menos y siempre se preguntan:</strong> <strong>CLOSING</strong> existe <strong>solo</strong> en el
+<strong>cierre simultáneo</strong>: los dos mandan FIN antes de recibir el del otro, y cada uno queda ahí hasta que
+llegue el ACK de su FIN. <strong>TIME-WAIT</strong> es lo que sigue.</p>
+<h2>1.8 TIME-WAIT: 2 × MSL</h2>
+<p><strong>MSL</strong> es el <em>Maximum Segment Lifetime</em>, el tiempo máximo que un segmento puede estar dando vueltas en
+la red. La <code>RFC 9293</code> dice textual: <em>"For this specification the MSL is taken to be 2 minutes"</em>, y
+obliga (MUST-13): <em>"When a connection is closed actively, it MUST linger in the TIME-WAIT state for a
+time 2xMSL"</em>.</p>
+<div class="codehilite"><pre><span></span><code>   MSL = 120 s  →  TIME-WAIT = 2 × 120 = 240 s = 4 minutos
+</code></pre></div>
+
+<p><strong>El problema que resuelve.</strong> Cuando la 4-tupla se reutiliza para una conexión nueva (y se reutiliza
+constantemente: muchísimos clientes al mismo servidor 80), pueden quedar <strong>segmentos viejos</strong> de la
+conexión anterior dando vueltas por la red. Si el nuevo SYN del cliente empieza con un número de
+secuencia que <strong>ya pasó por la red</strong>, el servidor puede confundirlo con datos de la conexión vieja.</p>
+<div class="codehilite"><pre><span></span><code>   cliente:   SYN ────▶ FIN ──▶ TIME-WAIT (240 s) ──▶ CLOSED
+   red:       ... un duplicado del SYN atrasado 200 s .......................
+   servidor:                          ◀─── llega tarde: lo aceptaría como dato nuevo ⚠
+</code></pre></div>
+
+<p><strong>La solución:</strong> el lado que cierra primero (TIME-WAIT) <strong>no vuelve a usar esa 4-tupla durante 2 × MSL</strong>.
+Si durante ese tiempo llega un segmento con números de la conexión vieja, <strong>no coincide</strong> con la
+conexión nueva y se descarta. Pasados los 2 × MSL ya no puede quedar ningún segmento viejo en la red.</p>
+<p><strong>Los dos MSL sirven para cosas distintas:</strong> el primero cubre el caso de que el ACK final se haya perdido
+y el otro extremo reenvíe su FIN (hay que estar ahí para responder); el segundo, los datos rezagados.</p>
+<p><strong>Un detalle fino de la <code>RFC 9293</code> (MAY-2):</strong> en TIME-WAIT se puede <strong>aceptar un SYN nuevo</strong> y reabrir la
+conexión desde ese estado <strong>si</strong> el ISN asignado es <strong>mayor</strong> que todos los usados en la conexión
+anterior, y <strong>si</strong> el SYN resulta un duplicado viejo se vuelve a TIME-WAIT. Y con <strong>Timestamps</strong> hay un
+algoritmo mejor para <strong>reducir</strong> el TIME-WAIT (<em>Best Current Practice</em>): los timestamps no se repiten, así
+que distinguir conexiones viejas sin esperar 4 minutos.</p>
+<h2>1.9 ⚠️ Actualización a 2026</h2>
+<p><strong>Sigue igual — de memoria:</strong> el <strong>three-way handshake</strong> y sus tres TPDUs (SYN, SYN+ACK, ACK); <strong>el SYN
+consume un número</strong>; <strong>FIN consume un número</strong>; el <strong>cierre de 4 vías</strong> (y su variante de 3 con FIN
+piggyback); el <strong>semi-cierre</strong>; el <strong>TIME-WAIT de 2 × MSL</strong>; el <strong>RST</strong>; y <strong>los 11 estados</strong>, que en
+2026 son exactamente los mismos.</p>
+<p><strong>Cambió o hay que corregirlo:</strong></p>
+<ul>
+<li><strong><code>RFC 9293</code> (2022, <em>Internet Standard</em>) sustituye a la <code>RFC 793</code></strong> y es la referencia de la máquina de
+  estados y del TIME-WAIT. <code>RFC 1122</code> sigue definiendo los hosts, y <code>RFC 7414</code> (2015) es el <strong>índice de
+  todas las RFCs de TCP</strong>.</li>
+<li><strong>SYN cookies: <code>RFC 4987</code></strong> (2007, <em>Informational</em>). Sigue siendo el mecanismo vigente y lo usan
+  Linux, Windows y BSD. ⚠️ Ojo con el matiz: es un documento <strong>informativo</strong>, o sea <strong>no impone
+  requisitos</strong>, pero es <em>la</em> referencia del tema.</li>
+<li><strong>El MSL es "una decisión de ingeniería"</strong>: la <code>RFC 9293</code> toma 2 minutos y dice explícitamente que puede
+  cambiarse con la experiencia. Si te preguntan el número exacto de 4 minutos, es el de RFC 9293.</li>
+<li><strong>TCP Fast Open</strong> manda datos <strong>dentro del SYN</strong> y ahorra 1 RTT. ⚠️ <strong>El número de RFC no está en
+  <code>ACTUALIZACIONES.md</code>: verificá antes de citarlo</strong> (creo que es 7413, pero confirmá).</li>
+<li><strong>QUIC elimina el three-way handshake de TCP.</strong> El handshake de QUIC es de <strong>1 RTT</strong> (y <strong>0 RTT</strong> con
+  reanudación), va en UDP, y <strong>la conexión se identifica por el Connection ID</strong> (<code>RFC 9000</code> §5.1), no por
+  la 4-tupla: eso habilita la <strong>migración de conexión</strong> si cambia la IP o el puerto.</li>
+<li><strong>Aun así, el modelo TCP de 4-tupla es lo que se enseña y lo que se pregunta.</strong> QUIC no reemplazó a
+  TCP: HTTP/3 es el 21 % del tráfico y HTTP/1.1 sigue siendo el 29 % (Cloudflare Radar, 2025). TCP mueve
+  la enorme mayoría del tráfico de la web, del correo, de SSH y de los juegos.</li>
+</ul>
+<p><strong>Consecuencia para el examen:</strong> el diagrama del handshake, los números, el cierre de 4 vías y el
+TIME-WAIT <strong>se preguntan exactamente igual que en 2006</strong>. Si citás <code>RFC 9293</code> en lugar de RFC 793, sumás.</p>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — La secuencia exacta de cada segmento</h2>
+<p><strong>Enunciado.</strong> El cliente (puerto 50000) elige ISN = <strong>1000</strong> y el servidor (puerto 80) ISN = <strong>7000</strong>.
+La conexión abre, el cliente manda <strong>300 bytes</strong> de datos, el servidor le responde con <strong>1000 bytes</strong>, y
+después <strong>cada uno cierra su lado</strong>. Escribí <strong>cada segmento</strong> con sus flags, su <code>seq</code> y su <code>ack</code>.</p>
+<p><strong>Resolución, segmento por segmento.</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Seg.</th>
+<th>Flags</th>
+<th>Datos</th>
+<th>seq</th>
+<th>ack</th>
+<th>De dónde sale el número</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>C→S</td>
+<td>SYN</td>
+<td>0</td>
+<td>1000</td>
+<td>—</td>
+<td>ISN del cliente</td>
+</tr>
+<tr>
+<td>2</td>
+<td>S→C</td>
+<td>SYN+ACK</td>
+<td>0</td>
+<td>7000</td>
+<td><strong>1001</strong></td>
+<td>1000 + 1 (el SYN del cliente)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>C→S</td>
+<td>ACK</td>
+<td>0</td>
+<td>1001</td>
+<td><strong>7001</strong></td>
+<td>1000 + 1 (el SYN del servidor)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>C→S</td>
+<td>PSH+ACK</td>
+<td><strong>300</strong></td>
+<td>1001</td>
+<td>7001</td>
+<td>los datos arrancan en 1001</td>
+</tr>
+<tr>
+<td>5</td>
+<td>S→C</td>
+<td>ACK</td>
+<td>0</td>
+<td>1001</td>
+<td><strong>1301</strong></td>
+<td>1001 + 300 = 1301</td>
+</tr>
+<tr>
+<td>6</td>
+<td>S→C</td>
+<td>PSH+ACK</td>
+<td><strong>1000</strong></td>
+<td>7001</td>
+<td>1301</td>
+<td>los datos arrancan en 7001</td>
+</tr>
+<tr>
+<td>7</td>
+<td>C→S</td>
+<td>ACK</td>
+<td>0</td>
+<td>1301</td>
+<td><strong>8001</strong></td>
+<td>7001 + 1000 = 8001</td>
+</tr>
+<tr>
+<td>8</td>
+<td>C→S</td>
+<td>FIN+ACK</td>
+<td>0</td>
+<td><strong>1301</strong></td>
+<td>8001</td>
+<td>el cliente ya no manda nada más</td>
+</tr>
+<tr>
+<td>9</td>
+<td>S→C</td>
+<td>ACK</td>
+<td>0</td>
+<td>1301</td>
+<td><strong>1302</strong></td>
+<td>1301 + 1 (el FIN del cliente)</td>
+</tr>
+<tr>
+<td>10</td>
+<td>S→C</td>
+<td>FIN+ACK</td>
+<td>0</td>
+<td><strong>8001</strong></td>
+<td>1302</td>
+<td>el servidor ya no manda nada más</td>
+</tr>
+<tr>
+<td>11</td>
+<td>C→S</td>
+<td>ACK</td>
+<td>0</td>
+<td>1302</td>
+<td><strong>8002</strong></td>
+<td>8001 + 1 (el FIN del servidor)</td>
+</tr>
+<tr>
+<td>12</td>
+<td>C→S</td>
+<td>FIN+ACK</td>
+<td>0</td>
+<td>1302</td>
+<td>8002</td>
+<td>el cliente cierra <strong>su</strong> lado</td>
+</tr>
+<tr>
+<td>13</td>
+<td>S→C</td>
+<td>ACK</td>
+<td>0</td>
+<td>1303</td>
+<td>8002</td>
+<td>1302 + 1</td>
+</tr>
+<tr>
+<td>14</td>
+<td>S→C</td>
+<td>FIN+ACK</td>
+<td>0</td>
+<td>8002</td>
+<td>1303</td>
+<td>el servidor cierra <strong>su</strong> lado</td>
+</tr>
+<tr>
+<td>15</td>
+<td>C→S</td>
+<td>ACK</td>
+<td>0</td>
+<td>1303</td>
+<td><strong>8003</strong></td>
+<td>8002 + 1 → <strong>el cliente entra en TIME-WAIT</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Las tres cuentas que hay que escribir en el examen:</strong></p>
+<div class="codehilite"><pre><span></span><code>   Bytes del cliente:  1001 .. 1300   →  próximo esperado: 1301
+   Bytes del servidor: 7001 .. 8000   →  próximo esperado: 8001
+   FIN del cliente en 1301 → siguiente 1302 ;  FIN del servidor en 8001 → siguiente 8002
+</code></pre></div>
+
+<p><em>Interpretación:</em> el <code>seq</code> de cada extremo <strong>solo avanza</strong> cuando ese extremo manda bytes o un SYN/FIN.
+Un error clásico es poner <code>ack = 1300</code> en vez de <code>1301</code>: el ACK es <strong>el próximo esperado</strong>.</p>
+<p>⚠️ <strong>Errores típicos:</strong> (a) olvidar que <strong>SYN y FIN consumen un número</strong>; (b) poner el <code>ack</code> del último byte
+recibido en vez del próximo; (c) hacer el cierre en <strong>3</strong> segmentos cuando los dos lados mandaron datos
+en direcciones opuestas (solo van 3 si el segundo FIN va piggyback en el ACK).</p>
+<h2>2.2 Ejercicio 2 — ¿Qué pasa si se pierde el tercer segmento (el ACK del cliente)?</h2>
+<p><strong>Enunciado.</strong> El SYN del cliente llega, el servidor responde SYN+ACK, y <strong>el ACK del cliente se
+pierde</strong>. Describí qué estado queda cada uno, qué se retransmite y cuánto cuesta.</p>
+<p><strong>Resolución paso a paso.</strong></p>
+<div class="codehilite"><pre><span></span><code>   t=0    C ──SYN seq=2000──▶ S        C: SYN-SENT          S: LISTEN
+   t=RTT  C ◀──SYN+ACK seq=5000, ack=2001── S
+                                 ✗ (este mensaje se pierde)
+          C: ESTABLISHED                   S: SYN-RECEIVED  ← tiene un TCBReservation
+
+   t=RTO  S ──SYN+ACK seq=5000, ack=2001──▶ C   (el servidor reintenta)
+          C ya está ESTABLISHED y recibe un SYN+ACK duplicado:
+          reconoce que es de su propia conexión → responde con el ACK otra vez
+   t=2RTT C ──ACK seq=2001, ack=5001──▶ S
+                                 ✓     S: ESTABLISHED
+</code></pre></div>
+
+<p><strong>Consecuencias, en orden de importancia:</strong></p>
+<ol>
+<li><strong>El cliente queda ESTABLISHED y el servidor en SYN-RECEIVED.</strong> El servidor tiene <strong>un TCB reservado
+   que todavía no sabe si es real</strong> (exactamente el agujero que explotan los SYN floods).</li>
+<li><strong>El servidor reintenta el SYN+ACK</strong> con su temporizador. Como el cliente ya está establecido, el
+   kernel del cliente ve un <strong>SYN+ACK duplicado de su propia conexión</strong> y <strong>reenvía el ACK</strong> en vez de
+   tratar el SYN como una conexión nueva. <strong>El handshake se completa solo en el segundo intento.</strong></li>
+<li><strong>Costo: 1 RTO extra</strong>, no pérdida de datos. Si el cliente ya mandó datos (lo normal, porque el
+   tercer segmento puede llevarlos), llegan al servidor mientras está en SYN-RECEIVED: <strong>no los
+   descarta</strong>, los reordena en el buffer y los entrega cuando se complete el handshake; si no los ve
+   confirmados, los retransmite.</li>
+<li><strong>No es un error del protocolo</strong>, es el comportamiento normal ante pérdida. Por eso el temporizador del
+   SYN+ACK (RTO inicial) es generoso: si se perdiera dos veces, el servidor <strong>cierra la conexión medio
+   abierta</strong> (y con <strong>SYN cookies</strong> ni siquiera hay TCB que cerrar).</li>
+</ol>
+<p>⚠️ <strong>Error típico:</strong> decir "el cliente se queda esperando el ACK del servidor". No: el cliente ya está
+establecido porque <strong>él fue el que mandó el último mensaje del handshake</strong>.</p>
+<h2>2.3 Ejercicio 3 — ¿Cuánto RTT cuesta establecer una conexión?</h2>
+<p><strong>Enunciado.</strong> Calculá el RTT total desde que el cliente decide abrir la conexión hasta que puede
+mandar datos de aplicación, en cuatro escenarios: (a) TCP solo; (b) TCP + <strong>TLS 1.3</strong>; (c) TLS 1.3 con
+<strong>0-RTT</strong> (reanudación); (d) <strong>TCP Fast Open</strong> + TLS 1.3. Suponé RTT de 40 ms.</p>
+<table>
+<thead>
+<tr>
+<th>Escenario</th>
+<th>Vuelos de ida</th>
+<th>RTT</th>
+<th>Total</th>
+<th>¿Datos en el 1.er vuelo?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(a) TCP solo</td>
+<td>SYN · SYN+ACK+ACK</td>
+<td><strong>1</strong></td>
+<td>40 ms</td>
+<td>sí (van en el 3.er segmento)</td>
+</tr>
+<tr>
+<td>(b) TCP + TLS 1.3</td>
+<td>SYN · SYN+ACK · ClientHello+ACK · ServerHello… · fin</td>
+<td><strong>1</strong></td>
+<td><strong>40 ms</strong></td>
+<td>no</td>
+</tr>
+<tr>
+<td>(c) TLS 1.3 0-RTT</td>
+<td>como (b) pero con <em>early data</em></td>
+<td><strong>1</strong></td>
+<td>40 ms</td>
+<td><strong>sí</strong> (datos antes del handshake)</td>
+</tr>
+<tr>
+<td>(d) TCP Fast Open + TLS 1.3</td>
+<td>SYN+datos · SYN+ACK+datos</td>
+<td><strong>0</strong></td>
+<td><strong>0 ms</strong></td>
+<td>sí</td>
+</tr>
+</tbody>
+</table>
+<p><strong>La aritmética y el razonamiento de cada fila:</strong></p>
+<ul>
+<li><strong>(a) TCP solo = 1 RTT.</strong> El cliente abre el flujo de un lado y recibe la respuesta: un RTT. Los datos de
+  aplicación viajan <strong>en el tercer segmento</strong> (el ACK), así que no cuesta nada más.</li>
+<li><strong>(b) TLS 1.3 = 1 RTT total, no 2.</strong> El trick es que el <strong>ClientHello viaja en el tercer segmento del
+  handshake TCP</strong>, que ya estaba en vuelo. O sea: la <code>RFC 8446</code> promete "1-RTT" <strong>contado desde el
+  ClientHello</strong>, y como ese ClientHello piggyback del ACK de TCP, <strong>desde el SYN son 1 RTT</strong>. Por eso
+  HTTPS con TLS 1.3 se ve tan rápido.</li>
+<li><strong>(c) 0-RTT</strong> requiere <strong>reanudar una sesión</strong> (con PSK) y un <strong>token anti-replay</strong> (<code>RFC 8470</code>), sin el
+  cual el servidor no puede aceptarlo: si lo acepta a ciegas, un atacante <strong>repite</strong> una petición vieja.
+  El payload va en el primer vuelo; el costo es que la aplicación tiene que aceptar el replay.</li>
+<li><strong>(d) TCP Fast Open = 0 RTT</strong> para el que ya tiene <em>cookie</em>: manda los datos <strong>dentro del SYN</strong>. ⚠️ <strong>El
+  número de RFC no está en <code>ACTUALIZACIONES.md</code>: verificá</strong> (creo que es 7413). Sin cookie, el servidor
+  la pide en el SYN+ACK y el cliente reenvía los datos: <strong>1 RTT y medio</strong>.</li>
+</ul>
+<p><strong>Conclusión para el examen:</strong> el detalle que más se pregunta es que <strong>TLS 1.3 no agrega un RTT</strong> al
+handshake TCP porque <strong>el ClientHello piggyback del ACK de TCP</strong>, y que <strong>0-RTT existe pero obliga a
+renunciar a la protección contra repetición</strong>.</p>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2006-12, Pregunta 4 (10 puntos) — Three-way handshake y cierre</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0612</code> / <code>sirc0612</code> — 26 de diciembre de 2006.</p>
+</blockquote>
+<h3>Enunciado (texto del examen)</h3>
+<blockquote>
+<p>Describa el proceso por el cual se establece una conexión TCP (three-way handshake), y cómo se cierra
+la misma. ¿Qué TPDU se intercambian en los mismos?</p>
+</blockquote>
+<h3>Solución oficial (verbatim, resumida)</h3>
+<blockquote>
+<p>El establecimiento se realiza con un three-way handshake: un SYN; si el puerto está disponible, un
+SYN-ACK, y finalmente un ACK, y de no estar se envía un RST. También puede realizarse por intercambio de
+solicitudes de conexión (b), aunque no es común. El número inicial de secuencia se acuerda en el momento
+de la conexión. No es 0.
+Desconexión: TCP supone la existencia de dos conexiones simplex que se desconectan
+independientemente. El envío de un paquete con flag FIN implica que yo no deseo enviar más datos al otro
+extremo. En general se necesitan 4 segmentos para cerrar una conexión, aunque pueden ser 3:
+FIN / ACK / FIN / ACK y FIN / FIN+ACK / ACK. Para evitar el problema de los dos ejércitos se colocan
+timers que indican que si ocurren 2 time_outs sin recibir el ACK del FIN se da por finalizada la
+conexión.</p>
+</blockquote>
+<h3>Análisis de la solución oficial</h3>
+<p><strong>Lo que está bien:</strong> los tres TPDUs del handshake y el <strong>RST</strong> cuando el puerto no está disponible; la idea
+de <strong>dos conexiones simplex</strong>; el <strong>cierre de 4 o 3 segmentos</strong>; y la apertura simultánea.</p>
+<p><strong>Tres cosas que hay que corregir o precisar (y que suman puntos si las señalás):</strong></p>
+<ol>
+<li><strong>"El número inicial de secuencia se acuerda en el momento de la conexión."</strong> Impreciso: los dos ISN <strong>no
+   se acuerdan, se intercambian</strong>: cada extremo elige el suyo (aleatorio y con clave secreta, para que
+   nadie lo prediga) y el handshake sirve para que cada uno <strong>se entere del del otro</strong>.</li>
+<li><strong>"Para evitar el problema de los dos ejércitos se colocan timers ... si ocurren 2 time_outs."</strong> Eso
+   <strong>no resuelve</strong> el problema de los dos ejércitos: <strong>abandonar la conexión al segundo timeout resuelve
+   los ENEMIGOS, no los aliados</strong>. La solución canónica es el <strong>TIME-WAIT de 2 × MSL</strong>, que impide que los
+   dos ejércitos se crucen.</li>
+<li><strong>"El del otro extremo notará que no hay nadie escuchando y cortará."</strong> Eso es lo que pasa con un <strong>RST</strong>
+   (el puerto se cerró). En el cierre ordenado con FIN, el otro extremo <strong>sigue escuchando</strong> hasta mandar
+   su propio FIN.</li>
+</ol>
+<h3>Mi resolución, completa</h3>
+<p><strong>Establecimiento:</strong> el cliente manda <strong>SYN</strong> con su ISN en <code>seq</code> (sin <code>ack</code>); el servidor, si el puerto
+está libre, responde <strong>SYN+ACK</strong> con su ISN en <code>seq</code> y <code>ack = ISN del cliente + 1</code>; el cliente manda
+<strong>ACK</strong> con <code>seq = su ISN + 1</code> y <code>ack = ISN del servidor + 1</code>, y <strong>ese tercer segmento puede llevar
+datos</strong>. Si el puerto no está libre, el servidor responde <strong>RST</strong>.</p>
+<p><strong>Cierre (4 vías):</strong> TCP es <strong>full-duplex</strong>, así que hay <strong>dos conexiones simplex</strong> que se cierran por
+separado: el cliente manda <strong>FIN+ACK</strong>, el servidor responde <strong>ACK</strong> (acá el cliente ya está en
+<strong>semi-cierre</strong>), el servidor manda su <strong>FIN+ACK</strong> y el cliente cierra con un <strong>ACK</strong> final, quedando
+en <strong>TIME-WAIT 2 × MSL</strong>. Si el servidor tenía datos pendientes, su FIN viaja <strong>piggyback</strong> en el ACK y
+son <strong>3 segmentos</strong>.</p>
+<p><strong>TPDUs intercambiados:</strong> <code>SYN</code>, <code>SYN+ACK</code>, <code>ACK</code>, <code>FIN</code>, <code>ACK</code>, <code>FIN</code>, <code>ACK</code> (y <code>RST</code> en cualquier
+punto para abortar).</p>
+<blockquote>
+<p><strong>Tope para 10 puntos:</strong> los tres TPDUs del handshake + el RST, el cierre de 4 vías con el <strong>semi-cierre</strong>,
+el <strong>TIME-WAIT de 2 × MSL</strong> justificado con el problema de los dos ejércitos, y los TPDUs del cierre.</p>
+</blockquote>
+<h2>3.2 Examen 2009-07, Pregunta 2a (8 puntos) — Los pasos del handshake</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0907</code> / <code>sirc0907</code> — 29 de julio de 2009.</p>
+</blockquote>
+<h3>Enunciado (texto del examen)</h3>
+<blockquote>
+<p>a) Describa los pasos del "Three Way Handshake" para el inicio de una conexión TCP.</p>
+</blockquote>
+<h3>Solución oficial (verbatim)</h3>
+<blockquote>
+<p>Paso 1: el host cliente envía un segmento SYN al servidor - especifica el nro. de sec. inicial - sin
+datos.
+Paso 2: el host servidor recibe el SYN, responde con un segmento SYN-ACK sin datos. El servidor reserva
+buffers, especifica el nro. de sec. inicial del servidor.
+Paso 3: el cliente recibe el SYN-ACK, responde con un segmento ACK, que puede tener datos.</p>
+</blockquote>
+<h3>Mi resolución, ampliada</h3>
+<p>La solución oficial es correcta y completa. Lo que hay que agregarle para los 8 puntos es <strong>por qué
+tres y no dos</strong> y <strong>qué se negocia</strong>:</p>
+<p><strong>Paso 1 — cliente → servidor: SYN.</strong> El cliente elige su ISN, lo pone en <code>seq</code>, manda <code>ack = 0</code> (con ACK en
+0 el campo Acknowledgment <strong>se ignora</strong>) y <strong>no lleva datos</strong>. Aprovecha para anunciar en las <strong>opciones</strong>
+su MSS, SACK, Window Scale y Timestamps.</p>
+<p><strong>Paso 2 — servidor → cliente: SYN+ACK.</strong> El servidor <strong>reserva TCB y buffers</strong>, elige <strong>su propio ISN</strong> y
+responde con <code>seq = ISN servidor</code> y <code>ack = ISN cliente + 1</code>, más <strong>sus opciones</strong>. <strong>Aquí todavía no hay
+conexión</strong>: está en SYN-RECEIVED y no sabe si el cliente existe de verdad.</p>
+<p><strong>Paso 3 — cliente → servidor: ACK.</strong> <code>seq = ISN cliente + 1</code>, <code>ack = ISN servidor + 1</code>, y <strong>puede llevar
+datos</strong> (es el request HTTP). Con esto los dos saben los números del otro y <strong>la conexión queda
+establecida</strong>: el cliente pasa a ESTABLISHED y el servidor también.</p>
+<p><strong>Y el "cuarto paso" que no está en la solución oficial:</strong> si el servidor no tiene ese puerto abierto,
+responde <strong>RST</strong> y el <code>connect()</code> del cliente falla con <code>ECONNREFUSED</code> al instante. Esa es la razón por
+la que el SYN flood duele tanto: <strong>el SYN reserva estado antes de tener ninguna prueba</strong>.</p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen en 10 líneas</h2>
+<ol>
+<li>El handshake sirve para que <strong>cada extremo se entere del ISN y de las opciones del otro</strong>: los ISN
+   <strong>se intercambian, no se acuerdan</strong>, y son aleatorios con clave secreta.</li>
+<li><strong>SYN y FIN consumen un número de secuencia</strong>; por eso los ACKs son <code>ISN + 1</code>.</li>
+<li>El <strong>tercer segmento</strong> (ACK) <strong>puede llevar datos</strong>, y por eso establecer una conexión TCP cuesta
+   <strong>1 RTT</strong>.</li>
+<li><strong>3 vías y no 2</strong> porque el servidor necesita <strong>evidencia de que el cliente existe</strong> antes de reservar
+   un TCB.</li>
+<li><strong>SYN flood</strong> = SYNs con IP falsificada que llenan el backlog; las <strong>SYN cookies</strong> (<code>RFC 4987</code>) lo
+   evitan <strong>codificando el estado en el ISN</strong> y creándolo recién cuando el ACK valida la cookie.</li>
+<li>El <strong>cierre de 4 vías</strong> cierra <strong>dos conexiones simplex</strong> por separado: FIN, ACK, FIN, ACK; y son <strong>3
+   segmentos</strong> si el segundo FIN va piggyback en el ACK.</li>
+<li>Entre el FIN de uno y el del otro hay <strong>semi-cierre</strong>: se puede seguir leyendo.</li>
+<li>El <strong>RST</strong> es el cierre abrupto: puerto cerrado, datos sobre conexión inexistente, o <code>close()</code> con
+   linger 0. Descarta lo no confirmado.</li>
+<li>La máquina de estados tiene <strong>11 estados</strong>, y <strong>TIME-WAIT = 2 × MSL = 240 s</strong> (MSL = 2 min en
+   <code>RFC 9293</code>) impide que un segmento viejo se confunda con uno de la conexión nueva.</li>
+<li><strong>QUIC elimina el handshake de 3 vías</strong> y usa el <strong>Connection ID</strong>, pero <strong>TCP con 4-tupla sigue
+    siendo lo que se enseña y lo que se pregunta</strong>.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> En el three-way handshake, con ISN del cliente 2000 e ISN del servidor 5000, ¿cuáles son los
+<code>seq</code> y <code>ack</code> de los tres segmentos?</p>
+<details><summary>Respuesta</summary>
+
+1) SYN: `seq 2000`, sin ack. 2) SYN+ACK: `seq 5000`, `ack 2001`. 3) ACK: `seq 2001`, `ack 5001`. El
+**+1** es porque **el SYN consume un número de secuencia**.
+
+</details>
+
+<p><strong>2.</strong> ¿Por qué el handshake tiene 3 mensajes y no 2?</p>
+<details><summary>Respuesta</summary>
+
+Porque el servidor necesita **evidencia de que el cliente existe** antes de reservar memoria (el TCB):
+con 2 vías queda esperando un ACK que nunca llega. Además los dos deben **enterse de los números del
+otro** antes de mandar datos, y con 3 vías el reintento del SYN+ACK resuelve una pérdida.
+
+</details>
+
+<p><strong>3.</strong> ¿Qué es una SYN cookie y por qué funciona?</p>
+<details><summary>Respuesta</summary>
+
+Es **codificar el estado dentro del número de secuencia** del SYN+ACK en vez de guardarlo en memoria.
+Cuando llega el ACK, el servidor **vuelve a calcular** la cookie desde la 5-tupla, el contador y su
+secreto; si coincide, recién ahí crea el TCB. Como nunca guarda estado, el SYN flood no le agota la
+memoria. El costo es Window Scale y SACK.
+
+</details>
+
+<p><strong>4.</strong> En el cierre de 4 vías, ¿cuántos números consume cada FIN y por qué?</p>
+<details><summary>Respuesta</summary>
+
+**Uno cada uno**, igual que el SYN. Un FIN "ocupa" el byte siguiente al último dato, así que después del
+FIN el emisor queda en `seq + 1` y el otro extremo debe confirmar ese `+1`. Por eso, en el ejemplo de la
+clase, el FIN del cliente en 2101 produce `ack 2102`.
+
+</details>
+
+<p><strong>5.</strong> ¿Por qué existe el estado TIME-WAIT de 2 × MSL?</p>
+<details><summary>Respuesta</summary>
+
+Para que un **segmento rezagado de la conexión vieja** no se acepte como dato de la conexión nueva que
+reutiliza la misma 4-tupla. El lado que cierra primero **no reutiliza esa 4-tupla durante 2 × MSL**, así
+que todo lo que llegue con números viejos se descarta. Es también la solución canónica al **problema de
+los dos ejércitos**.
+
+</details>
+
+<p><strong>6.</strong> ¿Cuánto cuesta establecer una conexión TCP con TLS 1.3, y por qué no son 2 RTT?</p>
+<details><summary>Respuesta</summary>
+
+**1 RTT.** El "1-RTT" de TLS 1.3 se cuenta desde el ClientHello, y ese ClientHello **viaja en el tercer
+segmento del handshake TCP** (piggyback del ACK). Con **0-RTT** los datos van en el primer vuelo, pero hay
+que renunciar a la protección contra repetición (token anti-replay de `RFC 8470`).
+
+</details>
+
+<p><strong>7.</strong> ¿Qué es el semi-cierre y en qué caso típico aparece?</p>
+<details><summary>Respuesta</summary>
+
+Es el estado en el que **un extremo ya no puede enviar pero sí recibe**. Aparece entre el FIN de uno y el
+FIN del otro: el cliente manda su request, hace `shutdown(SHUT_WR)` y **sigue leyendo la respuesta**
+(caso clásico de HTTP/1.x). Por eso el estado **CLOSE-WAIT** del servidor puede durar minutos.
+
+</details>
+
+<p><strong>8.</strong> ¿Cuándo se manda un RST y qué efecto tiene?</p>
+<details><summary>Respuesta</summary>
+
+Cuando llega un SYN a un **puerto cerrado** (`ECONNREFUSED`), cuando llegan datos o FIN sobre una
+**conexión que ya no existe**, o cuando un `close()` con `SO_LINGER` en 0 aborta una conexión con datos
+pendientes. **No es un cierre limpio**: descarta el estado y **pierde lo no confirmado**.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>eirc0612</code> / <code>sirc0612</code></strong> — P4 (10 pts, three-way handshake, cierre y TPDUs)</li>
+<li><strong>Examen <code>eirc0907</code> / <code>sirc0907</code></strong> — P2a (8 pts, los pasos del handshake)</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 6 — §6.3 (<em>Segmentos TCP</em>)</li>
+<li><strong><code>RFC 9293</code></strong> — <em>TCP</em> (2022, <em>Internet Standard</em>): máquina de estados, TIME-WAIT (MUST-13, MAY-2), MSL, ISN</li>
+<li><strong><code>RFC 4987</code></strong> — <em>TCP SYN Flooding Attacks and Common Mitigations</em> (2007, <em>Informational</em>): SYN flood, SYN cache, SYN cookies, SCTP</li>
+<li><strong><code>RFC 1122</code></strong> — requisitos de los hosts · <strong><code>RFC 7414</code></strong> — índice de las RFCs de TCP</li>
+<li><strong>TCP Fast Open</strong> — datos en el SYN: ⚠️ <strong>el número de RFC no figura en <code>ACTUALIZACIONES.md</code>: verificá</strong></li>
+<li><strong><code>RFC 8446</code></strong> → <strong><code>RFC 9846</code></strong> — TLS 1.3 (1-RTT y 0-RTT) · <strong><code>RFC 8470</code></strong> — tokens anti-replay</li>
+<li><strong><code>RFC 9000</code> / <code>RFC 9001</code> / <code>RFC 9114</code></strong> — QUIC, TLS 1.3 sobre QUIC y HTTP/3: handshake de 1 RTT, Connection ID y migración</li>
+<li><strong>Clase siguiente:</strong> 19 — TCP: cómo se garantiza la fiabilidad</li>
+</ul></body></html>

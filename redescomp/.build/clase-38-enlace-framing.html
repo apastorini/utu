@@ -1,0 +1,1195 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 38 — La capa de enlace: servicios y entramado (framing)</h1>
+<p><strong>Bloque:</strong> E (Capa de Enlace) · <strong>Semana:</strong> 13 · <strong>Duración estimada:</strong> 120 min
+<strong>Correlativa:</strong> Clase 37 (cierre del bloque anterior) · <strong>Sigue con:</strong> Clase 39 (detección de errores: paridad, checksum y CRC)
+<strong>Material de referencia:</strong> Tanenbaum cap. 3 y 4 · RFC 826 · IEEE 802.3 · IEEE 802.11 · Práctico 5 de 2008</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Explicar <strong>por qué la capa física no alcanza</strong> para entregar un mensaje, y por qué sin <em>framing</em> el receptor no puede hacer nada.</li>
+<li>Enumerar las <strong>cinco funciones</strong> de la capa de enlace y decir cuál de ellas resuelve qué problema.</li>
+<li>Describir los <strong>tres métodos de entramado</strong> —conteo de bytes, <em>byte stuffing</em> y <em>bit stuffing</em>— y decir <strong>por qué</strong> cada uno existe y <strong>qué falla</strong> en cada uno.</li>
+<li>Ejecutar un <strong>bit stuffing bit a bit</strong> y un <strong>byte stuffing byte a byte</strong>, y justificar <strong>por qué HDLC inserta el cero después de cinco unos y no de otro número</strong>.</li>
+<li>Dibujar el formato de las <strong>tramas de HDLC</strong> (Información, Supervisión, No numerada) y las <strong>cuatro fases de PPP</strong>.</li>
+<li>Resolver completo el <strong>Ejamen 2006-12 Pregunta 2</strong> (10 puntos).</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2006-12 P2</code> (10 pts — por qué el framing, una técnica en canal orientado a bit y otra en canal orientado a byte) · <code>2010-03 P3</code> (8 pts — PPP y byte stuffing) · <code>2008-12 P4</code> y <code>2007-03</code>/<code>2006-12</code> (mismo mecanismo de transparencia, aplicado a POP3 y a un protocolo de capa 2).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 El problema: la capa física no sabe de mensajes</h2>
+<p>La capa física es la más tonta del modelo. Su trabajo es <strong>convertir bits en
+señales</strong> y viceversa. No sabe qué es un paquete, ni de quién es, ni a dónde va.
+Manda un voltaje por el cable y listo.</p>
+<p>Y como no sabe nada de mensajes, transmite <strong>una corriente infinita de bits</strong>:</p>
+<div class="codehilite"><pre><span></span><code>  Capa física:   101100101001101011010010110100101101001010110010
+                 ¿Dónde termina el paquete de H1?
+                 ¿Dónde empieza el de H2?
+                 NO SE SABE. No hay ningún modo de saberlo.
+</code></pre></div>
+
+<p>Why is this fatal? Because <strong>el receptor necesita el mensaje entero para
+entregarlo a la capa 3</strong>. Si no sabe dónde termina el datagrama que acaba de
+recibir, no puede calcular el checksum del datagrama, no puede quitarle la
+cabecera, y no puede pasárselo a IP. Y peor todavía: si el datagrama que sigue
+estaba pegado al anterior, <strong>el datagrama recibido sale corrupto</strong>, y sin embargo
+el receptor no tiene forma de saberlo.</p>
+<div class="codehilite"><pre><span></span><code>  ┌─ Lo que le llega al receptor ────────────────────────────────────────┐
+  │  1011 0010 1001 1010 1101 0010 1101 0010 1010 1100 10 1011 0010    │
+  │  └── datagrama 1 ──┘└──────── datagrama 2 ──────────┘                │
+  │  Con el checksum de 1: NO SIRVE NADA.                                │
+  └──────────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p>O sea: <strong>el entramado (<em>framing</em>) es el acto de poner marcas en el flujo de bits
+para que el receptor sepa dónde empieza y termina cada unidad de datos</strong>. Sin
+esas marcas, la capa 2 no puede entregarle nada a la capa 3.</p>
+<h2>1.2 Las cinco funciones de la capa de enlace</h2>
+<p>La capa de enlace no hace una sola cosa: hace cinco. Y el examen las pide
+nombradas, así que conviene tenerlas claras <strong>con su propósito</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Función</th>
+<th>Glosa</th>
+<th>Pregunta que responde</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Entramado</strong></td>
+<td><em>framing</em></td>
+<td>¿dónde empieza y termina cada mensaje?</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Acceso al medio</strong></td>
+<td><em>media access control (MAC)</em></td>
+<td>¿quién tiene derecho a transmitir ahora?</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Detección de errores</strong></td>
+<td><em>error detection</em> (y corrección)</td>
+<td>¿los bits que llegaron son los que salieron?</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Control de flujo</strong></td>
+<td><em>flow control</em></td>
+<td>¿el receptor va a desbordarse?</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Transparencia al enlace</strong></td>
+<td><em>data link transparency</em></td>
+<td>¿el contenido no va a romper el entramado?</td>
+</tr>
+</tbody>
+</table>
+<p>El punto 5 es el que casi todos olvidan y es el que sostiene la mitad del
+examen de hoy. Se conecta con el punto 1 así:</p>
+<div class="codehilite"><pre><span></span><code>  Si el delimitador de trama es el byte 0x7E y el DATO también puede
+  contener 0x7E, entonces el receptor ve un final de trama donde
+  no la hay.
+
+  ┌── Trama 1 ──┐┌── "dato" 0x7E que NO es trama ──┐┌── Trama 2 ──┐
+  │ 7E ... 7E   │           7E                     │  7E ... 7E │
+  └─────────────┴───────────────────────────────────┴─────────────┘
+               ↑ el receptor cortó acá. Datos perdidos.
+</code></pre></div>
+
+<p><strong>Transparencia</strong> significa literalmente "a través de mí podés pasar cualquier
+byte que quieras". Para lograrlo, hay que <strong>escapar</strong> (<em>escape</em>) los bytes
+problemáticos: cambiarlos por una secuencia que el reconocedor de tramas no
+confunde con un delimitador. Es la razón de existir del <em>stuffing</em>.</p>
+<p><strong>Sobre el control de flujo (punto 4)</strong>: es el mismo concepto que en la capa de
+transporte (clases 19 y 20) pero aplicado a <strong>un solo enlace</strong>: el receptor dice
+"me entra(n) N tramas más" y el emisor frena. En Ethernet half-duplex el
+mecanismo real es colisión + <em>backoff</em> (clase 41), no un crédito explícito.</p>
+<h2>1.3 Los tres métodos de entramado</h2>
+<h3>1.3.1 Conteo de bytes (<em>byte count</em>)</h3>
+<p>La idea más ingenua: <strong>el primer byte de la trama dice cuántos bytes de datos
+vienen después</strong>.</p>
+<div class="codehilite"><pre><span></span><code>  ┌───────┬──────────────────────────────┬───────────────┐
+  │ 5 (1B)│  5 bytes de datos           │  checksum     │
+  └───────┴──────────────────────────────┴───────────────┘
+   longitud
+</code></pre></div>
+
+<p>Es elegantísimo y es una <strong>trampa</strong>. El problema es el acoplamiento entre la
+longitud declarada y los delimitadores reales:</p>
+<div class="codehilite"><pre><span></span><code>  EMISOR                                        RECEPTOR
+    │
+    │  00000101  ABCDE
+    │  └─┬─┘     └─ 5 bytes
+    │    └── "van 5"
+    │
+    │  ⚠ Si se pierde UN SOLO BIT del byte de longitud,
+    │    el receptor cree que van 4 bytes (o 6).
+    │    Se come un byte de DATOS como si fuera parte de la trama.
+    │    Y el próximo mensaje empieza, para él, un byte tarde.
+    ▼
+  RECEPTOR:  lee "0000101" = 5? no, lee 0000101|0 = 10 (desfasado 1)
+            → DESFINICIÓN PERMANENTE.
+            → lee basura como si fuera el mensaje siguiente.
+</code></pre></div>
+
+<p><strong>Y lo peor no es que el error sea de esa trama: es que el error es
+irrecuperable y se propaga hacia adelante.</strong> El receptor quedó desfasado un
+byte, y <strong>todas</strong> las tramas siguientes se leen corrida. Sigue desfasado para
+siempre hasta que por casualidad coincide otra vez la alineación.</p>
+<blockquote>
+<p>⚠️ <strong>Ésta es la razón histórica por la que existe el <em>stuffing</em>.</strong> Ningún
+protocolo serio usa conteo de bytes como mecanismo único de delimitación. Se
+usa <strong>junto con</strong> delimitadores (que permiten resincronizarse), nunca solo.
+Si el examen te pregunta "¿cuál es el problema del conteo de bytes?", la
+respuesta es exactamente esta: <strong>un solo bit perdido destruye la
+sincronización de forma permanente, no recuperable</strong>.</p>
+</blockquote>
+<h3>1.3.2 Byte stuffing — canal orientado a byte</h3>
+<p>Cuando el medio transmite <strong>byte a byte</strong> (o sea, el receptor puede mirar byte a
+byte y no le importa la alineación de bits), la técnica es:</p>
+<ol>
+<li>Se elige un <strong>byte delimitador</strong> (<em>flag</em>) que <strong>no pueda aparecer en los
+   datos</strong> por acuerdo previo. Típicamente <code>0x7E</code> (ASCII <code>~</code>).</li>
+<li>Se elige un <strong>byte de escape</strong> (<em>escape</em>, ESC) que tampoco aparece en los
+   datos. Típicamente <code>0x7D</code> (ASCII <code>}</code>).</li>
+<li>El emisor, antes de mandar, recorre el payload:
+   - si encuentra <code>FLAG</code> → lo reemplaza por <code>ESC FLAG</code>
+   - si encuentra <code>ESC</code> → lo reemplaza por <code>ESC ESC</code></li>
+<li>El receptor:
+   - ve <code>FLAG</code> → fin (o comienzo) de trama
+   - ve <code>ESC</code> → <strong>come el ESC</strong> y el byte siguiente es <strong>literal</strong>, no marca</li>
+</ol>
+<p><strong>Ejemplo completo, byte a byte.</strong></p>
+<p>Datos que hay que enviar: <code>FLAG A B ESC C FLAG</code>. O sea, un payload que
+<strong>deliberadamente</strong> contiene el delimitador y el escape, para ver qué hace el
+emisor.</p>
+<div class="codehilite"><pre><span></span><code>  DATOS (payload crudo):   F  L  A  G  A  B  E  C  F  L  A  G
+                            \_________/       ^  ^        \_______/
+                            el FLAG de los   el ESC      otro FLAG
+                            datos se escapa   se escapa
+
+  EMISOR: recorre de izquierda a derecha
+  ────────────────────────────────────────────────────────────
+   pos  byte     ¿es delimitador/escape?      qué mando
+  ────────────────────────────────────────────────────────────
+    1   FLAG      sí, es FLAG            →   ESC FLAG
+    2   A         no                      →   A
+    3   B         no                      →   B
+    4   ESC       sí, es ESC             →   ESC ESC
+    5   C         no                      →   C
+    6   FLAG      sí, es FLAG            →   ESC FLAG
+  ────────────────────────────────────────────────────────────
+
+  SOBRE EL CABLE (trama completa):
+      [FLAG]  ESC FLAG  A  B  ESC ESC  C  ESC FLAG  [FLAG]
+         │                                       │
+    inicio de trama                          fin de trama
+
+  Longitud: 1 + 2 + 1 + 1 + 2 + 1 + 2 + 1 = 11 bytes
+  (el payload original tenía 10)
+</code></pre></div>
+
+<p><strong>RECEPTOR: desescapa</strong></p>
+<div class="codehilite"><pre><span></span><code>   [FLAG]  ESC FLAG  A  B  ESC ESC  C  ESC FLAG  [FLAG]
+      │       │       │   │     │   │     │  │       │
+      │       └───────┴───┘     │   │     └──┴───────┘
+      │       leo ESC: "el      │   │        leo ESC: "el
+      │       siguiente es      │   │        siguiente es
+      │       LITERAL"          │   │        LITERAL"
+      ▼       ▼                ▼   ▼        ▼        ▼
+   inicio  F  L  A   G  A  B  E  S  C    F  L  A  G  fin
+                              ^   ^
+                              los dos ESC se comen UNO SOLO
+                              (queda un ESC literal)
+
+  DATOS RECUPERADOS:  F L A G A B E S C F L A G      ← idénticos al original
+</code></pre></div>
+
+<p><strong>El detalle fino</strong>: <code>ESC ESC</code> se colapsa a <strong>un solo</strong> <code>ESC</code> literal. Si
+colapsáramos a cero, el <code>ESC</code> original se perdería; si no colapsáramos nada,
+quedaría ambiguo.</p>
+<p><strong>PPP usa exactamente este esquema</strong>, y es lo que se pregunta en <code>2010-03 P3b</code>.
+HDLC también, pero con stuffing de <strong>bits</strong>.</p>
+<h3>1.3.3 Bit stuffing — canal orientado a bit</h3>
+<p>En un <strong>canal orientado a bit</strong> (<em>bit-oriented channel</em>) el receptor no tiene
+obligación de recibir bytes alineados: puede perder un bit y desfasarse. Por eso
+el HDLC no puede usar un byte delimitador, porque un byte desalineado ya no es
+un byte.</p>
+<p><strong>La regla de HDLC:</strong></p>
+<blockquote>
+<p>El emisor inserta un <code>0</code> <strong>después de cada secuencia de cinco <code>1</code> seguidos</strong>
+en el campo de datos (descontando los flags). El receptor, al ver cinco <code>1</code>
+seguidos, mira el bit siguiente: si es <code>0</code>, lo descarta; si es <code>1</code>, es que
+venía un flag.</p>
+</blockquote>
+<p><strong>El flag de HDLC es <code>01111110</code></strong> (0x7E, igual byte que en el byte stuffing,
+pero ahora como patrón de bits).</p>
+<p><strong>Ejemplo completo, bit a bit.</strong></p>
+<p>Datos: <code>0111111111110</code> (un 0, once unos, un 0 — es decir, once unos seguidos).</p>
+<div class="codehilite"><pre><span></span><code>  DATO ORIGINAL (13 bits)
+   0 1 1 1 1 1 1 1 1 1 1 1 0
+     └──────── 11 unos ────────┘
+
+  Paso: el emisor cuenta los unos. Al llegar al QUINTO uno, inserta un 0.
+
+   0  1 1 1 1 1  0  1 1 1 1 1  0  1  0
+   │  └── 5 ──┘     └── 5 ──┘
+   1 solo            + 1 solo que ya venía
+   (previo)
+
+  DATO RELLENADO (15 bits)  =  011111011111010
+   0 1 1 1 1 1 0 1 1 1 1 1 0 1 0
+</code></pre></div>
+
+<p><strong>Sobre el cable:</strong></p>
+<div class="codehilite"><pre><span></span><code>  [FLAG] 011111011111010  [FLAG]
+  01111110                01111110
+  └ inicio ┘              └ fin ┘
+</code></pre></div>
+
+<p><strong>Recepción:</strong></p>
+<div class="codehilite"><pre><span></span><code>  Leo 011111011111010
+     ^^^^^ = cinco unos → el siguiente bit DEBE ser un 0 stuffed → lo como
+     (no cuenta para el conteo de cinco)
+  Sigo: 11111 → siguiente bit es 0 → lo como
+  Sigo: 1 → queda uno suelto
+  Sigo: 0
+  ─────────────────────────
+  RECUPERADO: 0 1 1 1 1 1 1 1 1 1 1 1 0  =  el original
+</code></pre></div>
+
+<h4>¿Por qué cinco unos y no tres, ni seis, ni siete?</h4>
+<p>Esta es <strong>la pregunta conceptual</strong> de la clase, y es la que más puntos da.</p>
+<p>Mirá el flag: <code>01111110</code>.</p>
+<div class="codehilite"><pre><span></span><code>      0 1 1 1 1 1 1 0
+        └─ SEIS unos ─┘
+</code></pre></div>
+
+<p><strong>El flag tiene SEIS unos seguidos.</strong> Ese es el número clave. Ahora, ¿qué
+promesa tiene que hacer el relleno?</p>
+<blockquote>
+<p><strong>Promesa del relleno:</strong> en el campo de datos rellenado, <strong>nunca</strong> aparecen seis
+unos seguidos.</p>
+</blockquote>
+<p>Si esa promesa se cumple, entonces cualquier secuencia <code>01111110</code> que encuentre
+el receptor <strong>es un flag y solo un flag</strong>, porque en los datos es imposible. Y
+entonces el receptor puede buscar esa secuencia <strong>bit a bit</strong>, como un nilaija
+ciego, y <strong>siempre se engancha en un flag verdadero</strong>.</p>
+<p>Ahora, ¿qué valor de relleno cumple la promesa?</p>
+<table>
+<thead>
+<tr>
+<th>Relleno cada</th>
+<th>¿Los datos pueden tener 6 unos seguidos?</th>
+<th>¿El flag <code>01111110</code> es único?</th>
+<th>Overhead</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>cada <strong>3</strong> unos</td>
+<td>no (máx. 3)</td>
+<td>sí</td>
+<td><strong>alto</strong>: 1 bit de cada 3</td>
+</tr>
+<tr>
+<td>cada <strong>4</strong> unos</td>
+<td>no (máx. 4)</td>
+<td>sí</td>
+<td>medio</td>
+</tr>
+<tr>
+<td><strong>cada 5 unos</strong></td>
+<td>no (máx. 5)</td>
+<td><strong>sí</strong></td>
+<td><strong>mínimo aceptable</strong></td>
+</tr>
+<tr>
+<td>cada <strong>6</strong> unos</td>
+<td><strong>SÍ</strong> (puede haber 6)</td>
+<td><strong>NO</strong></td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code>  ● Con 6: los DATOS pueden contener "01111110" sin stuffing.
+      0 1 1 1 1 1 1 0   ← esto es un FLAG... o son datos. INDISTINGUIBLE.
+      El receptor corta la trama donde no debe. Se pierden datos.
+
+  ● Con 5: los datos NUNCA tienen 6 unos. El flag es único.
+      Es el MAYOR número de unos que todavía garantiza la unicidad.
+      Por eso 5: es el valor ÓPTIMO — unicidad garantizada con el mínimo
+      overhead posible.
+</code></pre></div>
+
+<p><strong>Y el "slip de un bit" (la sincronización se pierde, pero se recupera).</strong>
+Supongamos que en el medio <strong>se pierde un bit</strong> (o se duplica). El receptor, a
+partir de ahí, lee todos los bits corrido un lugar. ¿Y ahora?</p>
+<div class="codehilite"><pre><span></span><code>  ANTES del error:      el receptor está alineado, ve los flags.
+  ───── error: se pierde 1 bit ─────
+  DESPUÉS:             el receptor lee corrida. Ya no reconoce el flag
+                       de cierre de la trama anterior.
+
+  PERO: sigue escaneando bit a bit buscando "01111110", y como los datos
+        rellenados NO pueden contener seis unos seguidos, no se va a enganchar
+        con ningún falso flag.
+
+  RESULTADO: se engancha en el PRIMER flag verdadero que viene
+             (el de inicio de la trama siguiente, a lo sumo una trama después).
+             Se resincroniza solo. ✓
+</code></pre></div>
+
+<p><strong>Con tres o cuatro</strong>, la promesa también se cumple, así que técnicamente
+también funciona... <strong>pero</strong> el costo es el doble de overhead sin ninguna
+ventaja. Y con stuffing cada 4, el patrón <code>0111 0</code> puede aparecer mil veces en
+los datos y un receptor mal implementado puede engancharse ahí. Lo que
+aprender de la tabla de arriba es el <strong>principio</strong>: <em>el número de stuffing debe
+ser estrictamente menor que la cantidad de bits iguales consecutivos del
+delimitador</em>, y se elige el mayor valor que cumple esa condición porque cada bit
+de relleno es overhead.</p>
+<h3>1.3.4 Framing por flags y el caso de los flags "abreviados" de 802.11</h3>
+<p>Un cuarto caso, muy usado en la práctica: <strong>delimitar sólo con flags de
+principio y de fin</strong>, y confiar en que el medio no inserte bits (canales
+síncronos, enlaces por fibra, enlaces con reloj compartido).</p>
+<p>En <strong>802.11</strong> el entramado es distinto: no hay flags. El principio de cada
+trama lo marca el <strong>preámbulo de 8 bytes</strong> (7 de sincronismo + SFD), que es un
+patrón inequívoco, y el final lo marca el <strong>FCS de 4 bytes</strong> seguido de silencio
+del medio. Pero 802.11 tiene una sutileza que vale la pena conocer:</p>
+<p><strong>Tramas de gestión sin FCS.</strong> El estándar IEEE 802.11 permite que ciertas
+tramas de gestión —<strong>Beacon, Probe Response y Association Response</strong>— se
+transmitan <strong>sin el campo de verificación de trama</strong>, porque la estación que las
+recibe ya está sincronizada por reloj con el AP (se announcement cada 100 ms con
+beacons) y porque el riesgo de colisión en ese instante es muy bajo.</p>
+<div class="codehilite"><pre><span></span><code>  Trama normal:
+  ┌────┬────┬────────┬─────────┬──────────┬──────┐
+  │FC  │Dur │Dir/Orig│Dir/Dest │  cuerpo  │ FCS  │
+  └────┴────┴────────┴─────────┴──────────┴──────┘
+   ▲                              ▲
+   │                              └─ el FCS marca el FINAL
+   └─ el FC (frame control) + duración marcan el INICIO
+
+  Trama de gestión abreviada (Beacon / Probe Response):
+  ┌────┬────┬────────┬─────────┬──────────┐
+  │FC  │Dur │Dir/Orig│Dir/Dest │  cuerpo  │      ← sin FCS
+  └────┴────┴────────┴─────────┴──────────┘
+                                y el SSID puede omitirse
+                                (ya se conoce del beacon anterior)
+</code></pre></div>
+
+<p><strong>El punto conceptual</strong>: en el caso abreviado, <strong>el final de la trama ya no lo
+marca un patrón de bits sino el silencio del medio</strong>, y el reloj de
+sincronización es lo que permite al receptor saber cuánto debía durar. Eso es
+justo lo contrario a "el flag marca el final", y por eso es un caso aparte.</p>
+<h2>1.4 HDLC — High-Level Data Link Control</h2>
+<p>HDLC es <strong>el</strong> protocolo de la capa de enlace con más influencia histórica: de
+él descienden el SDLC de IBM, el LAPB, el <strong>PPP</strong> e incluso el <strong>LAPD</strong> (token
+ring) y el <strong>LLC</strong> de IEEE 802.2, que es la parte de IEEE 802 que define la
+capa 2 "única" para las LAN de 802 (el resto —MAC, CSMA/CD— es específico de
+Ethernet).</p>
+<p><strong>Formato de la trama:</strong></p>
+<div class="codehilite"><pre><span></span><code>   Flag      Address   Control   Information              FCS      Flag
+  01111110   8 bits    8/16 b    variable (0..N)          16 b    01111110
+     │          │         │            │                   │         │
+     │          │         │            │                   │         └─ fin
+     │          │         │            │                   └─ CRC-CCITT
+     │          │         │            └─ payload (puede llevar bit stuffing)
+     │          │         └─ depende del TIPO de trama (ver abajo)
+     │          └─ 0xFE (undirected) | 0x01 (stations) | ...
+     └─ início de trama
+</code></pre></div>
+
+<p><strong>Los tres tipos de trama</strong>, que es lo que se pregunta:</p>
+<table>
+<thead>
+<tr>
+<th>Tipo</th>
+<th>Nombre</th>
+<th>Campo <em>Control</em></th>
+<th>Para qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>I</strong></td>
+<td><strong>Información</strong></td>
+<td><code>0xxx</code> (N(S), N(R), P/F)</td>
+<td>Transporta datos <strong>y</strong> el piggybacking del ACK/NAK</td>
+</tr>
+<tr>
+<td><strong>S</strong></td>
+<td><strong>Supervisión</strong></td>
+<td><code>10xx</code> (SS, P/F)</td>
+<td>Solo control: <strong>RR</strong> (00), <strong>RNR</strong> (01), <strong>REJ</strong> (10), <strong>SREJ</strong> (11)</td>
+</tr>
+<tr>
+<td><strong>U</strong></td>
+<td><strong>No numerada</strong></td>
+<td><code>11xx</code></td>
+<td>SET, SABM, DISC, UA, FRMR, SABME, UI</td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code>  Trama I (Información):    [N(S)] [N(R)] [P/F]
+                            └seq   └ACK   └pide ACK (poll) o fin
+</code></pre></div>
+
+<p><strong>Lo importante conceptualmente:</strong> HDLC implementa un <strong>ARQ con ventana
+deslizante</strong> y <strong>piggybacking</strong> (el ACK viaja dentro de una trama de datos en el
+sentido contrario). Es el mismo esqueleto que vas a ver en la clase 40 (ARQ) y
+en TCP.</p>
+<h2>1.5 PPP — Point-to-Point Protocol</h2>
+<p><strong>¿Por qué existe?</strong> El mundo de los enlaces punto a punto de 1990 (líneas
+telefónicas, líneas dedicadas, RS-232, enlaces conmutados de Frame Relay)
+necesitaba un protocolo que hiciera:</p>
+<ol>
+<li><strong>Multiplexar</strong> varios protocolos de red (IP, IPX, AppleTalk) sobre un mismo
+   enlace. Sin esto, cada uno necesitaría su propio cable.</li>
+<li><strong>Configurar el enlace</strong>: negociar Quality of Service, autenticar, asignar
+   dirección IP.</li>
+<li><strong>Detectar errores</strong> en el enlace (FCS), <strong>encapsular</strong> y ser <strong>fiable</strong>
+   opcionalmente.</li>
+<li>Ser <strong>independiente del medio</strong>: el mismo protocolo sobre cobre, fibra o
+   línea telefónica.</li>
+</ol>
+<p><strong>Formato de la trama PPP:</strong></p>
+<div class="codehilite"><pre><span></span><code>  [FLAG] Address Control Protocol    Payload    FCS        [FLAG]
+  7E     FF       03      2 bytes    0..1500   16 bits    7E
+                  │       │
+                  │       └─ 0021 = IPv4 | 0021... 
+                  └─ 0x03 = "sin numerar, sin ACK, la respuesta por defecto"
+
+  Para las tramas de la capa de red se usa ESCAPE byte-stuffing: 0x7E → 0x7D 0x5E
+</code></pre></div>
+
+<p><strong>Las cuatro fases de PPP</strong> (esto es lo que se pregunta en <code>2010-03 P3a</code>):</p>
+<div class="codehilite"><pre><span></span><code>  FASE 1 ── LCP (Link Control Protocol)
+  │   Configura y testea el enlace. Opciones negociables:
+  │   - MRU (Maximum Receive Unit)
+  │   - MRF (Magic Number, detectar bucles y enlaces loops)
+  │   - Quality of Service
+  │   - Autenticación (requiere que se habilite)
+  │   - Compression (MPPC)
+  ▼   Secuencia: LCP-CONFIG-REQUEST → LCP-CONFIG-ACK / LCP-CONFIG-NACK
+  ▼   Después: LCP-TERMINATE-REQUEST → LCP-TERMINATE-ACK
+  │
+  FASE 2 ── AUTENTICACIÓN
+  │   Sólo si LCP la habilitó. Opciones:
+  │   - PAP (Password Authentication Protocol): TEXTO PLANO. Inseguro.
+  │   - CHAP (Challenge Handshake): desafío-respuesta con MD5. Mejor.
+  │   Secuencia: AUTHENTICATE-REQUEST → AUTHENTICATE-CHALLENGE
+  │              → AUTHENTICATE-RESPONSE → AUTHENTICATE-SUCCESS/FAIL
+  ▼
+  FASE 3 ── NCP (Network Control Protocol)
+  │   Uno por cada protocolo de capa de red que se quiera usar:
+  │   IPCP para IP, IPXCP para IPX, etc. Asigna la dirección IP del enlace
+  │   (funciona como un mini-DHCP).
+  ▼
+  FASE 4 ── DATOS (carry payload)
+      Tramas de datos de capa 3 encapsuladas, con la última trama en la
+      cabecera PPP. State = "Network phase".
+</code></pre></div>
+
+<p><strong>La respuesta oficial a <code>2010-03 P3a</code> es corta y muy precisa</strong>: lo que hace a
+PPP <strong>más simple que un protocolo de acceso al medio como CSMA</strong> es que <strong>no
+opera en un medio de difusión (<em>broadcast</em>), donde muchos emisores compiten por
+el canal</strong>. En un enlace punto a punto hay <strong>exactamente dos estaciones y sólo
+una puede hablar</strong>: no hay.CONTENCIÓN, y por eso <strong>no hace falta direccionamiento
+MAC</strong>. Ese es el argumento central, no "porque tiene menos campos".</p>
+<h3>⚠️ Actualización a 2026</h3>
+<p><strong>Sigue igual — de memoria, sin dudar:</strong>
+- La existencia conceptual del <strong>entramado</strong>: la capa física no sabe de
+  mensajes, la capa 2 tiene que poner las marcas. Es la razón de ser de la capa.
+- <strong>Bit stuffing cada cinco unos</strong> en HDLC, con el flag <code>01111110</code>. La
+  justificación (seis unos en el flag → cinco es el máximo que da unicidad) no
+  cambió en 60 años.
+- <strong>Byte stuffing</strong> con <code>FLAG</code>/<code>ESC</code> en PPP, HDLC y en la práctica mil protocols.
+- El <strong>byte stuffing con DLE STX/DLE ETX</strong> como el mecanismo de transparencia de
+  POP3 (<code>2008-12 P4</code>). Es literalmente el mismo algoritmo con otros nombres.</p>
+<p><strong>Cambió — el dónde, más que el cómo:</strong>
+- <strong>El entramado por stuffing quedó atrás como problema de ingeniería real.</strong> En
+  2026 los enlaces de datos de las LAN son de 1 a 400 Gbit/s sobre fibra o
+  cobre de calidad, con BER del orden de <code>10^-18</code> o mejor. <strong>Un diseño nuevo
+  no elige stuffing</strong>: elige un identificador de longitud explícito y un FCS
+  fuerte (CRC-32 o mejor). El stuffing sobrevive, pero como <strong>herencia histórica
+  en protocolos de 1981</strong>, no como decisión de diseño de hoy.
+- <strong>El estándar de Ethernet nunca hizo stuffing.</strong> Usa <strong>longitud explícita</strong>
+  (campo <em>Type/Length</em>, y el límite de 1518 bytes) más el hecho de que el
+  <em>preámbulo</em> de 8 bytes re-sincroniza a nivel físico en cada trama. El
+  problema del desfasamiento de 1 bit que rompe el conteo de bytes <strong>no existe en
+  Ethernet</strong>: es justamente lo que motivó el diseño con preámbulo.
+- <strong>802.1Q (VLAN) insertó un tag de 4 bytes dentro de la trama</strong> para agregar
+  información de VLAN sin tocar el formato base. Es el ejemplo vivo de que la
+  trama de Ethernet sigue siendo un contenedor del que se pueden meter cosas
+  adentro. Ver §8 de <code>ACTUALIZACIONES.md</code> y la clase 42.
+- <strong>PPP sigue vivo y multiplicado</strong>: PPPoE (<code>RFC 2516</code>, verificar), PPPoA, y PPP
+  en celdas 4G/5G — que es donde realmente se usa hoy: el "demux" del módem es
+  PPP con IPHC.
+- <strong><code>RFC 826</code> — ARP (1982)</strong> es el ejemplo canónico de por qué el entramado sigue
+  siendo indispensable: un ARP request y un ARP reply comparten el mismo formato
+  de trama y sólo el campo <em>Type</em> los distingue.</p>
+<p><strong>Consecuencia para el examen:</strong> la teoría del framing <strong>se sigue preguntando tal
+cual</strong> (es <code>2006-12 P2</code>, de 10 puntos). Lo que se actualiza es el segundo nivel
+del razonamiento: "esto se hacía porque los medios eran ruidosos y los
+protocolos seriales tenían que resincronizarse" es la explicación <strong>de 2011</strong>;
+"esto se hace porque el medio no garantiza alineación de bits" es la
+explicación <strong>correcta</strong>, y sigue siendo la que se corrige.</p>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<blockquote>
+<p>⚠️ <strong>Aclaración sobre el material oficial.</strong> El <strong>Práctico 5 de 2008</strong> no tiene
+un ejercicio de entramado: sus ejercicios 1–12 son de paridad, checksum, CRC,
+CDMA, ALOHA, ARP y CSMA/CD. (El "Ejercicio 12" es de ARP, no de stuffing; las
+figuras 5.11 y 5.12 que se le atribuyen son de CDMA.) Por eso los cuatro
+ejercicios de esta parte son <strong>inventados y resueltos</strong> con el resultado
+<strong>byte a byte</strong>, que es lo que la cátedra exige.</p>
+</blockquote>
+<h2>2.1 Ejercicio 1 — Byte stuffing completo con bytes hexadecimales</h2>
+<p><strong>Enunciado.</strong> Se transmite un payload que, en hexadecimal, es
+<code>7E 41 7D 42 7E</code>. El delimitador es <code>0x7E</code> y el byte de escape es <code>0x7D</code>.
+Determinar byte a byte qué va por el cable y qué reconstruye el receptor.</p>
+<p><strong>Resolución.</strong></p>
+<div class="codehilite"><pre><span></span><code>  Original:  7E  41  7D  42  7E
+            │   │   │   │   │
+            │   │   │   │   └─ 4º tipo: aparece FLAG → hay que escapar
+            │   │   │   └───── dato normal
+            │   │   └───────── 3º tipo: aparece ESC  → hay que escapar
+            │   └───────────── dato normal
+            └───────────────── 2º tipo: aparece FLAG → hay que escapar
+</code></pre></div>
+
+<p><strong>Paso 1 — el emisor recorre de izquierda a derecha y aplica dos reglas.</strong></p>
+<div class="codehilite"><pre><span></span><code>  byte  entrada   regla                        salida
+  ────  ───────   ──────────────────────────   ────────
+  1     0x7E      es FLAG  → ESC + original    0x7D 0x7E
+  2     0x41      dato normal                  0x41
+  3     0x7D      es ESC   → ESC + original    0x7D 0x7D
+  4     0x42      dato normal                  0x42
+  5     0x7E      es FLAG  → ESC + original    0x7D 0x7E
+
+  TOTAL sobre el cable (payload):  8 bytes
+  (el original tenía 5; se agregaron 3 bytes de escape)
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>  TRAMA COMPLETA:
+  ┌──────┬────────────────────────────┬──────┐
+  │ 7E   │ 7D 7E 41 7D 7D 42 7D 7E   │ 7E   │
+  │FLAG  │      payload escapado     │ FLAG │
+  └──────┴────────────────────────────┴──────┘
+</code></pre></div>
+
+<p><strong>Paso 2 — el receptor desescapa.</strong></p>
+<div class="codehilite"><pre><span></span><code>  lee  7E   → "arrancó una trama"
+  lee  7D   → "¡escape!"  → el próximo byte es LITERAL
+  lee  7E   → emite 0x7E, sigue
+  lee  41   → emite 0x41, sigue
+  lee  7D   → "¡escape!"  → el próximo byte es LITERAL
+  lee  7D   → emite 0x7D, sigue          ◄── OJO: come UNO SOLO
+  lee  42   → emite 0x42, sigue
+  lee  7D   → "¡escape!"  → el siguiente es LITERAL
+  lee  7E   → emite 0x7E, sigue
+  lee  7E   → "terminó la trama" (FLAG suelto)
+
+  PAYLOAD RECUPERADO:  7E 41 7D 42 7E    ✓ idéntico al original
+</code></pre></div>
+
+<p><strong>Interpretación.</strong> El receptor <strong>nunca vio un <code>7E</code> dentro del payload</strong>, aunque
+el payload tuviera dos. Por eso puede usar <code>7E</code> como delimitador sin ambigüedad:
+la propiedad que el stuffing garantiza es exactamente <em>"ningún <code>7E</code> en los datos
+del campo de datos puede ser tomado como fin de trama"</em>.</p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Escapar dos veces</strong> el mismo ESC (mandar <code>7D 7D 7D</code>). El emisor sólo
+  <strong>duplica</strong>: cada byte que sea ESC se reemplaza por <strong>exactamente dos</strong>.</li>
+<li><strong>Olvidar el ESC delante de un FLAG que aparece en el medio del payload.</strong>
+  Es el error que arruina la trama entera.</li>
+<li>En el receptor, <strong>no consumir</strong> el byte que sigue al ESC. El ESC <strong>no se
+  emite</strong>: se descarta.</li>
+</ul>
+<h2>2.2 Ejercicio 2 — Bit stuffing bit a bit</h2>
+<p><strong>Enunciado.</strong> Con el protocolo HDLC (flag <code>01111110</code>), enviar el campo de datos
+<code>110110111111101</code>. Mostrar el resultado bit a bit.</p>
+<p><strong>Resolución — paso a paso, contando los unos de a cinco.</strong></p>
+<div class="codehilite"><pre><span></span><code>  DATO ORIGINAL:  1 1 0 1 1 0 1 1 1 1 1 1 1 0 1
+                  └2─┘ └2─┘ └────── 7 unos ──────┘ └─┘
+
+  Recorrido, agrupando cada racha de unos:
+   racha 1:  1 1            (2 unos)  → sin stuffing
+   racha 2:  1 1            (2 unos)  → sin stuffing
+   racha 3:  1 1 1 1 1 | 1 1    (7 unos) → se parte en 5 + 2
+
+  racha de 7 unos =  [1 1 1 1 1] (se completa el grupo) + [0 stuffed] + [1 1]
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>  RESULTADO BIT A BIT:
+   ┌─┬─┐ ┌─┬─┐ ┌─┬─┬─┬─┬─┐   ┌─┬─┐
+   1 1 0 1 1 0 1 1 1 1 1 0   1 1 0 1
+            └─── 5 unos ───┘  ↑
+                              stuffed
+
+  HEXADECIMAL:  1101 1011 1111 101   →   D B F (queda 1 bit de la última fila)
+
+  En binario plano:  1101101111110101     ← 16 bits
+
+  Conteo verificado:
+    original            : 15 bits
+    stuffing: +1 cero   = 16 bits ✓
+    ¿quedó algún grupo de 6 unos?  NO: los grupos son 2, 2, 5, 2. Máximo 5 ✓
+</code></pre></div>
+
+<p><strong>Trama completa:</strong></p>
+<div class="codehilite"><pre><span></span><code>  01111110   1101101111110101   01111110
+  [FLAG]        16 bits          [FLAG]
+</code></pre></div>
+
+<p><strong>Interpretación.</strong> El receptor, al barrer, encuentra <code>11111</code> en la posición 7,
+come el <code>0</code> siguiente, y <strong>el siguiente grupo de unos empieza en el bit 9</strong>:
+<code>1 1 0 1</code>. Cuando llegue al flag de cierre <code>01111110</code> ve <strong>seis</strong> unos seguidos
+— imposible en datos rellenados — y lo reconoce como flag.</p>
+<blockquote>
+<p><strong>Comprobación de la regla:</strong> el receptor sólo puede buscar el flag con
+seguridad <strong>porque</strong> los datos rellenados no tienen seis unos seguidos. Si
+hubiéramos stuffing cada 6, el dato <code>110110111111 1</code> (con 7 unos) se habría
+enviado <strong>sin</strong> stuffing y contendría el flag. Ver §1.3.3.</p>
+</blockquote>
+<h2>2.3 Ejercicio 3 — Conteo de bytes: qué pasa si se pierde un bit</h2>
+<p><strong>Enunciado.</strong> Un protocolo usa conteo de bytes. Se envía el mensaje <code>HELLO</code>
+precedido de un byte de longitud. Explicá y <strong>mostrá numéricamente</strong> qué pasa en
+el receptor si se pierde <strong>un solo bit</strong> de la línea.</p>
+<p><strong>Resolución.</strong></p>
+<p><strong>Sin errores:</strong></p>
+<div class="codehilite"><pre><span></span><code>  EMISOR                                          RECEPTOR
+    │                                              │
+    │  00000101  H  E  L  L  O                     │
+    │  └── 5 ──┘ └──── 5 bytes ───┘                 │
+    │                                              │
+    │                          lee 00000101 = 5      │
+    │                          come 5 bytes → HELLO ✓
+    ▼
+</code></pre></div>
+
+<p><strong>Con un bit perdido (se borra el primer bit del byte de longitud):</strong></p>
+<div class="codehilite"><pre><span></span><code>  Se transmite:      00000101  H  E  L  L  O
+  Se PIERDE el bit:        (borrado)      ↓ queda:  0000101...
+  Sobre el cable:  0 0 0 0 1 0 1  H  E  L  L  O
+                    └────┬───┘
+                  el receptor lee 8 bits:  0 0 0 0 1 0 1 H
+
+  Longitud leída = 0000101H
+     con H = 0 ('H' = 0x48 = 01001000, su primer bit es 0):
+        00001010 = 10 bytes  ← ¡deberían ser 5!
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>  El receptor cree que la trama tiene 10 bytes. Entonces come:
+
+    long=0x48  H    E    L    L    O    [primer byte de la TRAMA SIGUIENTE]
+      └───── 10 bytes "de datos" ──────────────────────────┘
+
+  RECUPERADO: "HELLO" + basura.  ✗  Y la trama SIGUIENTE empieza un byte tarde.
+</code></pre></div>
+
+<p><strong>Y lo grave, que es la segunda parte de la respuesta:</strong></p>
+<div class="codehilite"><pre><span></span><code>  estado real del cable:   [largo=5][ABCDE] [largo=3][XYZ] [largo=2][AB]...
+  lo que el receptor cree:  [largo=10]──────────────┘  desfasado +1 byte
+
+  → sigue corrido 1 byte para siempre.
+  → TODAS las tramas siguientes se leen mal.
+  → No hay forma de resincronizar: el conteo no se autocorrige.
+</code></pre></div>
+
+<p><strong>Interpretación — la frase para el examen:</strong></p>
+<blockquote>
+<p>El conteo de bytes <strong>acopla la longitud declarada con la alineación de la
+trama</strong>. Un único error de bit desplaza el punto de lectura de forma
+<strong>permanente e irrecuperable</strong>: el receptor interpreta bytes de datos como
+longitud, y de ahí en adelante lee todas las tramas corrido. El stuffing
+existe justamente para que el receptor <strong>pueda volver a engancharse</strong> con un
+delimitador inequívoco después de cualquier error de alineación.</p>
+</blockquote>
+<h2>2.4 Ejercicio 4 — Flags abreviados de 802.11</h2>
+<p><strong>Enunciado.</strong> En una red 802.11 en modo infraestructura, un Access Point
+difunde <strong>Beacon</strong> sin campo FCS y con el SSID omitido. (a) ¿Cómo sabe la
+estación receptora dónde termina la trama? (b) ¿Qué se rompe si hay una
+colisión justo durante ese beacon?</p>
+<p><strong>Resolución.</strong></p>
+<p><strong>(a)</strong> El final <strong>no lo marca un patrón de bits</strong>. La estación lo deduce de:</p>
+<div class="codehilite"><pre><span></span><code>  1. El reloj de sincronización. Todas las tramas de una BSS tienen longitud
+     CONOCIDA de antemano para cada tipo de trama: la longitud de un beacon con
+     parámetros fijos es una constante del estándar. Entonces:
+
+        t_inicio + longitud_conocida = t_fin
+
+  2. El silencio del medio. Al terminar la trama, el canal queda en silencio
+     durante el Slot Time (16 µs en 802.11b) → se detecta el fin.
+
+  3. El SFD + sincronía de la trama SIGUIENTE. Si llega otra trama, el
+     preámbulo marca el nuevo comienzo y el receptor resincroniza.
+</code></pre></div>
+
+<p><strong>(b)</strong> El riesgo real: si el beacon se pierde o se corrompe sin que el FCS lo
+diga, <strong>la estación no se entera</strong>. Consecuencias:</p>
+<div class="codehilite"><pre><span></span><code>  ● La estación cuenta el número de beacons perdidos para medir la calidad
+    del enlace (función de RSSI y roaming). Perder beacons sin avisar
+    degrada esa estimación.
+  ● La sincronización temporal (TWT / timetable de Wi-Fi 6, clase 43) puede
+    desfasarse si falta un beacon.
+  ● El SSID omitido significa que un beacon con "hidden SSID" no se puede usar
+    para descubrir la red: hace falta un probe activo.
+</code></pre></div>
+
+<p><strong>Interpretación.</strong> El tradeoff es explícito: <strong>se ahorra overhead</strong> (4 bytes
+de FCS + el elemento SSID ≈ 34 bytes) <strong>a cambio de perder la verificación de
+integridad</strong>. Sólo es aceptable en tramas cuya <strong>pérdida no es crítica</strong>
+(sincronización) y cuya <strong>retransmisión sería inútil</strong> porque el contenido se va
+a repetir igual en el beacon siguiente.</p>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2006-12, Pregunta 2 (10 puntos) — framing</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0612</code> / <code>sirc0612</code> — diciembre de 2006.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0612.pdf</p>
+</blockquote>
+<h3>Enunciado (texto del examen)</h3>
+<blockquote>
+<p>Pregunta 2 (10 puntos)</p>
+<p>En capa 2 se introduce el concepto de "framing" o entramado. Explique por qué
+este proceso es necesario y describa:
+a) una técnica para realizar "framing" en un canal orientado a bit
+b) una técnica para realizar "framing" en un canal orientado a byte</p>
+</blockquote>
+<h3>Respuesta oficial (del PDF de soluciones)</h3>
+<blockquote>
+<p><strong>Framing (Entramado):</strong>
+- El framing le permite al DLC (Data Link Control) receptor, determinar cuando
+  el frame comienza y termina.
+- Adicionalmente busca la sincronización en caso de tiempos muertos de
+  transmisión</p>
+<p><strong>Framing orientado a bits.</strong>
+- En este caso se utilizará un flag para separar frames.
+- El flag es un conjunto de bits conocidos, y para permitir la transparencia de
+  la información se plantea el método de bit stuffing, que es la inserción de
+  bits.
+- Ejemplo: considero la flag <code>01111110</code>, esto implica que la llegada de 5 1's
+  seguidos se debe insertar un 0.</p>
+<p><strong>Framing orientado a bytes.</strong>
+- Bytes stuffing
+- Para implementar el modo transparente, se utiliza el siguiente procedimiento:
+  se utiliza otro carácter de control DLE (Data Link Escape), de la siguiente
+  forma.
+- El DLE es insertado previamente a el carácter STX o ETX
+- Ante la presencia en el frame de un DLE, el protocolo inserta uno más.
+- Garantiza transparencia de datos enviados, ya que si en los datos del frame
+  envío DLE STX, se codificará como DLE DLE STX</p>
+</blockquote>
+<h3>Análisis de la solución oficial, punto por punto</h3>
+<p><strong>Lo que está bien y es el corazón de la respuesta:</strong></p>
+<ol>
+<li><strong>"El framing le permite al DLC receptor determinar cuándo el frame comienza y
+   termina."</strong> Esa es la definición, y es exactamente el punto que abre la clase.</li>
+<li><strong>El segundo punto es fino y suma:</strong> <em>"adicionalmente busca la sincronización
+   en caso de tiempos muertos de transmisión"</em>. O sea: el entramado no sólo
+   delimita, también <strong>permite resincronizar</strong> después de un silencio en el
+   medio (una pausa larga, un enlace que estuvo caído y volvió). Sin flag, una
+   reanudación del medio dejaría al receptor desalineado para siempre. <strong>Esta es
+   la mitad de la respuesta que la mayoría de los alumnos no da.</strong></li>
+<li><strong>La transparentización del flag con bit stuffing</strong> es la respuesta de (a).</li>
+<li><strong>El esquema DLE con STX/ETX</strong> es un caso particular de byte stuffing
+   realmente usado (en SDLC, en POP3, en el protocolo de spicy de FING).</li>
+</ol>
+<p><strong>Lo que se puede mejorar — y el ejercicio para vos:</strong></p>
+<ol>
+<li><strong>La solución oficial NO justifica por qué cinco unos y no otro número.</strong>
+   Es lo que le falta al ítem (a). La respuesta completa es la de §1.3.3: el
+   flag <code>01111110</code> contiene <strong>seis</strong> unos, y cinco es el <strong>mayor</strong> número de unos
+   que garantiza que los datos rellenados no puedan contener un flag.</li>
+<li><strong>"El DLE es insertado previamente al carácter STX o ETX"</strong> suena a que el DLE
+   va siempre delante de STX/ETX. Lo correcto es más general: el DLE se inserta
+   <strong>antes de cualquier byte de control con significado estructural</strong> (STX, ETX,
+   el propio DLE y, en PPP, el FLAG <code>0x7E</code>).</li>
+<li><strong>No menciona el problema del conteo de bytes</strong>, que es lo que da la
+   justificación de por qué hace falta stuffing. La respuesta oficial da la
+   solución sin dar el problema.</li>
+</ol>
+<h3>Mi resolución, completa</h3>
+<p><strong>(Intro) Por qué es necesario el framing.</strong> La capa física transmite un flujo
+continuo de bits y <strong>no tiene ninguna noción de mensaje</strong>: no sabe dónde
+termina un paquete ni dónde empieza el siguiente. El receptor, sin embargo,
+necesita el mensaje <strong>completo y alineado</strong> para poder verificar su checksum,
+extraer la carga útil y entregarla a la capa de red. Si el receptor no puede
+ubicar los límites, cualquier paquete que le llegue junto con el siguiente
+estará corrupto y <strong>no habrá forma de saberlo</strong>. Por eso la capa 2 introduce
+marcas: el <strong>entramado</strong>. Su segundo propósito, menos obvio, es permitir la
+<strong>resincronización</strong> después de un silencio en el medio o de un error de
+alineación.</p>
+<p><strong>(a) Canal orientado a bit — HDLC: flag <code>01111110</code> + bit stuffing.</strong></p>
+<div class="codehilite"><pre><span></span><code>  REGLA: el emisor inserta un 0 después de CADA cinco unos seguidos en los datos.
+  El flag es 01111110, que contiene SEIS unos seguidos.
+  ∴ en los datos rellenados nunca hay seis unos
+  ∴ 01111110 sólo puede ser un flag
+  ∴ el receptor busca ese patrón bit a bit y siempre se engancha al correcto.
+</code></pre></div>
+
+<p><strong>Ejemplo del examen, reconstruido:</strong></p>
+<div class="codehilite"><pre><span></span><code>  Datos (sin rellenar):
+   0 1 1 1 1 1 1 1 0 1 0 0 0 1 1 1 1 1 1 1 1 1 1 1 0
+     └─ 7 unos ─┘             └────── 11 unos ──────┘
+
+  Rellenado (se insertan 3 ceros):
+   0 1 1 1 1 1 0 1 1 0 1 0 0 0 1 1 1 1 1 0 1 1 1 1 1 0 1 0
+         ^             ^                 ^
+       0 stuffed   0 stuffed        0 stuffed
+
+  Sobre el cable:
+  [01111110] 0111110111100100011111011111010 [01111110]
+      flag            datos rellenados               flag
+</code></pre></div>
+
+<blockquote>
+<p><strong>Nota sobre la solución oficial:</strong> el PDF dibuja los datos <strong>sin rellenar</strong>
+y marca arriba los tres ceros a insertar. Eso es correcto como ilustración,
+pero si el examen pide el resultado final hay que <strong>escribir la secuencia
+rellenada completa</strong>, que es lo que hice arriba.</p>
+</blockquote>
+<p><strong>(b) Canal orientado a byte — byte stuffing con DLE (o ESC).</strong></p>
+<div class="codehilite"><pre><span></span><code>  REGLA: se elige un byte delimitador que no aparece en los datos.
+         Si aparece en el payload, se inserta antes un byte de escape (DLE/ESC).
+         Si el propio escape aparece, se duplica.
+
+  Receptor: ve ESC → descarta el ESC y toma el byte siguiente como LITERAL.
+</code></pre></div>
+
+<p><strong>Ejemplo con el esquema del enunciado (STX … DLE STX … ETX):</strong></p>
+<div class="codehilite"><pre><span></span><code>  Payload crudo:   A B DLE STX C ETX
+
+  Emisor:
+    A       → A
+    B       → B
+    DLE     → DLE DLE      (se duplica)
+    STX     → DLE STX      (se escapa)
+    C       → C
+    ETX     → DLE ETX      (se escapa)
+
+  Trama completa:
+  [STX] A B DLE DLE DLE STX C DLE ETX [ETX]
+   ↑                                        ↑
+  delimit.                                 delimit.
+
+  El receptor, al ver DLE, come el DLE y emite el siguiente byte como dato.
+  Un "DLE DLE" → un solo DLE. Un "DLE STX" → un solo STX.
+</code></pre></div>
+
+<p><strong>La comparación que cierra la respuesta y es lo que el corrector busca:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Orientado a <strong>bit</strong></th>
+<th>Orientado a <strong>byte</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Unidad de delimitado</td>
+<td><strong>1 patrón de bits</strong> (<code>01111110</code>)</td>
+<td><strong>1 byte</strong> (<code>DLE</code>, <code>0x7E</code>)</td>
+</tr>
+<tr>
+<td>Mecanismo</td>
+<td><strong>bit stuffing</strong>: un <code>0</code> cada 5 unos</td>
+<td><strong>byte stuffing</strong>: un byte ESC antes de cada byte peligroso</td>
+</tr>
+<tr>
+<td>Robustez ante desalineación</td>
+<td><strong>Sí</strong>: se engancha bit a bit</td>
+<td><strong>No</strong>: si se pierde un bit, deja de ver bytes</td>
+</tr>
+<tr>
+<td>Overhead</td>
+<td><strong>bajo</strong> (solo en las rachas largas)</td>
+<td><strong>mayor</strong> (2 bytes por byte escapado)</td>
+</tr>
+<tr>
+<td>Cuándo se usa</td>
+<td>medios que pueden desalinear bits (HDLC, enlaces síncronos)</td>
+<td>medios byte-a-byte (PPP, POP3, SDLC)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Tope para 10 puntos:</strong> la definición (2), la necesidad + sincronización (1),
+<strong>bit stuffing con el flag <code>01111110</code> y el ejemplo</strong> (3), <strong>byte stuffing con
+el escape y el ejemplo</strong> (3), y la distinción de cuándo se usa cada uno (1).</p>
+</blockquote>
+<h2>3.2 Examen 2010-03, Pregunta 3 (8 puntos) — PPP</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc1003</code> / <code>sirc1003</code> — marzo de 2010.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1003.pdf</p>
+</blockquote>
+<h3>Enunciado (texto del examen)</h3>
+<blockquote>
+<p>Pregunta 3 (8 puntos)</p>
+<p>a) ¿Qué es el protocolo PPP? ¿Qué es lo que lo hace más simple que otros
+protocolos que se ejecutan en la misma capa como por ejemplo CSMA?</p>
+<p>b) PPP utiliza flags para delimitar sus mensajes. Indique cómo es el mecanismo
+por el cual se logra distinguir entre el contenido de los mensajes y las flags
+que lo delimitan.</p>
+</blockquote>
+<h3>Respuesta oficial</h3>
+<blockquote>
+<p><strong>a)</strong> PPP (point-to-point protocol) es un protocolo de capa de enlace que se
+utiliza para enviar y recibir datos entre dos entidades en un enlace
+punto a punto. Es más simple que los protocolos de acceso al medio de la capa
+de enlace debido a que no se utiliza en un medio broadcast, donde muchos
+emisores necesitan competir a la vez por el canal, por lo tanto no se necesita
+un direccionamiento MAC explícito.</p>
+<p><strong>b)</strong> PPP delimita las tramas usando un byte especial considerado como <code>&lt;flag&gt;</code>
+al inicio y al fin de cada trama. Si este byte aparece en algún punto del
+contenido del mensaje se realiza byte stuffing del mismo utilizando un byte de
+<code>&lt;escape&gt;</code>:
+- El emisor agrega un byte <code>&lt;escape&gt;</code> antes de cualquier byte <code>&lt;flag&gt;</code> o byte
+  <code>&lt;escape&gt;</code> que esté en el contenido que debe enviar.
+- Si el receptor encuentra un byte <code>&lt;flag&gt;</code>, considera que es el inicio o el fin
+  de una trama. Si encuentra un byte <code>&lt;escape&gt;</code>, lo descarta y considera el
+siguiente byte como parte del contenido de la trama.</p>
+</blockquote>
+<h3>Resolución</h3>
+<p><strong>(a)</strong> Ya está perfecto arriba. Lo que hay que sumar para llegar al tope: <strong>PPP multiplexa</strong>
+varios protocolos de red (el campo <em>Protocol</em> = 2 bytes dice cuál viaja), lo que
+es imposible sobre un medio broadcast sin una dirección MAC. Y <strong>PPP no
+implementa CSMA/CA ni CSMA/CD</strong> porque en un enlace punto a punto la
+<strong>colisión es estructuralmente imposible</strong>: sólo hay dos estaciones y una está
+en silencio mientras la otra transmite.</p>
+<p><strong>(b)</strong> Es byte stuffing puro, idéntico a §2.1. Lo que hay que agregar para
+completar:</p>
+<div class="codehilite"><pre><span></span><code>  Números concretos de PPP:
+     FLAG = 0x7E  = 01111110
+     ESC  = 0x7D  = 01111101
+     Escape de 0x7E  →  0x7D 0x5E
+     Escape de 0x7D  →  0x7D 0x5D
+
+  Y el formato completo:
+  [0x7E][0xFF][0x03][Protocol:2][Payload:0..1500][FCS:2][0x7E]
+  0xFF = "no hay dirección" (PPP no direcciona: el enlace es punto a punto)
+  0x03 = "trama no numerada, sin secuencia, sin ACK"
+</code></pre></div>
+
+<p><strong>Interpretación.</strong> El campo Address fijo en <code>0xFF</code> es la demostración en el
+formato de lo que dice el ítem (a): <strong>no hay direccionamiento porque no hay a
+quién direccionar</strong>. Sólo dos stations, y ya se sabe quién es quién.</p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen</h2>
+<ol>
+<li>La capa física <strong>no sabe de mensajes</strong>: transmite bits. Sin saber dónde acaba
+   un paquete, el receptor no puede hacer nada con él.</li>
+<li><strong>Entramado</strong> = poner marcas para que el receptor ubique los límites de cada
+   mensaje. Su segundo propósito es permitir la <strong>resincronización</strong>.</li>
+<li>Las <strong>cinco funciones</strong> de la capa 2: entramado, acceso al medio, detección
+   de errores, control de flujo y <strong>transparencia</strong>.</li>
+<li><strong>Conteo de bytes</strong>: un solo bit perdido desplaza la lectura de forma
+   <strong>permanente e irrecuperable</strong>. Por eso no se usa solo.</li>
+<li><strong>Byte stuffing</strong>: se escapan <code>FLAG</code> y <code>ESC</code>. El receptor come el ESC y toma el
+   siguiente byte como literal.</li>
+<li><strong>Bit stuffing</strong> (HDLC): un <code>0</code> después de <strong>cinco</strong> unos seguidos.</li>
+<li><strong>Por qué cinco</strong>: el flag <code>01111110</code> tiene <strong>seis</strong> unos. Cinco es el mayor
+   stuffing que todavía garantiza que los datos no puedan contener un flag ⇒
+   el flag es único ⇒ el receptor se resincroniza solo tras cualquier error.</li>
+<li><strong>HDLC</strong>: tres tipos de trama (Información, Supervisión, No numerada), con
+   <em>piggybacking</em> y ARQ de ventana deslizante.</li>
+<li><strong>PPP</strong>: cuatro fases (LCP → autenticación → NCP → datos). Simple porque no
+   hay contención ni direccionamiento en un enlace punto a punto.</li>
+<li>En 2026 el stuffing es <strong>herencia histórica</strong>; los enlaces de datos usan
+    longitud explícita + CRC fuerte. La teoría <strong>se sigue preguntando</strong>.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> ¿Por qué la capa física no puede, por sí sola, entregar un mensaje?</p>
+<details><summary>Respuesta</summary>
+
+Porque transmite un **flujo continuo de bits** y no tiene ninguna noción de
+mensaje: no sabe dónde termina un paquete ni dónde empieza el siguiente. El
+receptor necesita el mensaje completo y alineado para verificar su checksum y
+entregarlo a la capa 3. Si no puede ubicar los límites, todo lo que reciba
+estará corrupto **y no tendrá forma de saberlo**.
+
+</details>
+
+<p><strong>2.</strong> Enumerá las cinco funciones de la capa de enlace con su propósito.</p>
+<details><summary>Respuesta</summary>
+
+1. **Entramado** (*framing*): dónde empieza y termina cada mensaje.
+2. **Acceso al medio** (*media access control*): quién tiene derecho a
+   transmitir ahora.
+3. **Detección (y corrección) de errores**: si los bits que llegaron son los que
+   salieron.
+4. **Control de flujo**: no saturar al receptor.
+5. **Transparencia al enlace**: que el contenido del payload no pueda romper el
+   entramado (de ahí el *stuffing*).
+
+</details>
+
+<p><strong>3.</strong> ¿Cuál es el problema fatal del conteo de bytes? Formulalo en una frase.</p>
+<details><summary>Respuesta</summary>
+
+Que **acopla la longitud declarada con la alineación de lectura**: si se pierde
+un solo bit del byte de longitud, el receptor cree una cantidad distinta de
+bytes, se come datos como si fueran parte de la trama y queda **desfasado de
+forma permanente e irrecuperable** para todas las tramas siguientes, porque el
+conteo no se autocorrige. Es exactamente el problema que el *stuffing* viene a
+resolver.
+
+</details>
+
+<p><strong>4.</strong> ¿Por qué HDLC inserta un cero después de <strong>cinco</strong> unos seguidos y no
+después de seis, ni de tres?</p>
+<details><summary>Respuesta</summary>
+
+Porque el flag de HDLC es `01111110`, que contiene **seis** unos seguidos. Para
+que el flag sea **único e inequívoco**, los datos rellenados no pueden contener
+seis unos. Cinco es el **mayor** número de unos que garantiza eso, y a la vez el
+que menos overhead agrega. Con seis, los datos podrían contener `01111110` y el
+receptor cortaría la trama donde no es. Con tres o cuatro también funcionaría,
+pero duplicaría el overhead sin ganar nada.
+
+</details>
+
+<p><strong>5.</strong> Con HDLC, si un receptor de HDLC pierde un bit en medio de la trama,
+¿se recupera? Explicá en dos pasos.</p>
+<details><summary>Respuesta</summary>
+
+Sí, **se recupera solo**. Primero, sigue leyendo corrido, sin reconocer el flag
+de cierre de la trama en curso. Segundo, como los datos rellenados **no pueden
+contener seis unos seguidos**, no se engancha a ningún flag falso: cuando llega
+el flag verdadero de la trama siguiente, lo reconoce y se resincroniza. Es la
+misma propiedad la que da unicidad al flag, y por eso el flag es tan buen
+delimitador.
+
+</details>
+
+<p><strong>6.</strong> Hacé el byte stuffing de <code>7E 41 7D 42 7E</code> con FLAG = 0x7E y ESC = 0x7D.
+Decí qué va por el cable.</p>
+<details><summary>Respuesta</summary>
+
+Reglas: `7E` → `7D 7E`; `7D` → `7D 7D`; `41` y `42` pasan sin cambio.
+
+Payload original (5 bytes) → payload escapado (8 bytes):
+`7D 7E 41 7D 7D 42 7D 7E`
+
+Trama completa: `[7E] 7D 7E 41 7D 7D 42 7D 7E [7E]`.
+El receptor come cada `7D` y emite el byte siguiente como literal, recuperando
+exactamente `7E 41 7D 42 7E`.
+
+</details>
+
+<p><strong>7.</strong> ¿Por qué PPP es más simple que CSMA, según la respuesta oficial?</p>
+<details><summary>Respuesta</summary>
+
+Porque **no opera en un medio broadcast**: en un enlace punto a punto hay sólo
+dos estaciones, una de las cuales siempre está en silencio mientras la otra
+transmite. No hay **contensión**, y por lo tanto **no hace falta direccionamiento
+MAC**. Eso se ve hasta en el formato de la trama, donde el campo Address está
+fijo en `0xFF` ("no hay a quién direccionar").
+
+</details>
+
+<p><strong>8.</strong> ¿Qué cuatro fases tiene PPP y para qué sirve cada una?</p>
+<details><summary>Respuesta</summary>
+
+1. **LCP** (*Link Control Protocol*): configura y testea el enlace (MRU, MRF,
+   QoS, autenticación, compresión). Lanza el enlace.
+2. **Autenticación**: sólo si LCP la habilitó. **PAP** (texto plano) o **CHAP**
+   (desafío-respuesta con hash).
+3. **NCP** (*Network Control Protocol*): uno por protocolo de red; el **IPCP**
+   asigna la dirección IP del enlace (un mini-DHCP).
+4. **Datos**: fase de red (*network phase*), los datagramas de capa 3 viajan
+   encapsulados; el último se marca en la cabecera PPP.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>eirc0612</code> / <code>sirc0612</code></strong> — P2 (10 pts, framing: por qué + bit stuffing + byte stuffing) · P5 (5 pts, estación oculta — clase 43)</li>
+<li><strong>Examen <code>eirc1003</code> / <code>sirc1003</code></strong> — P3 (8 pts, PPP y byte stuffing)</li>
+<li><strong>Examen <code>eirc0812</code> / <code>sirc0812</code></strong> — P4 (7 pts, POP3 y el mecanismo DLE, que es byte stuffing con otro nombre)</li>
+<li><strong>Examen <code>eirc0703</code> / <code>sirc0703</code></strong> — Problema 1 (30 pts, protocolo de capa 2 con ARQ Selective Repeat y <em>piggybacking</em> — clase 40)</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 3 (capas inferiores) y cap. 4 (capas de enlace)</li>
+<li><strong>Kurose &amp; Ross</strong>, <em>Computer Networking: A Top-Down Approach</em>, §5.1 ("The Link Layer: Five Parties") — el stuffing y HDLC</li>
+<li><strong>Práctico 5 de 2008</strong> — <code>material-oficial/practicos/png/prac05_2008-p01.png</code>. <strong>Ojo: no tiene ejercicio de entramado</strong>; el Ejercicio 12 es de ARP.</li>
+<li><strong><code>RFC 826</code></strong> — ARP (1982): por qué el entramado sigue siendo necesario</li>
+<li><strong>PPP</strong> — <code>RFC 1661</code> (verificar) · PPPoE — <code>RFC 2516</code> (verificar)</li>
+<li><strong>IEEE 802.3</strong> — formato de trama con longitud explícita (sin stuffing) · <strong>IEEE 802.11</strong> — preámbulo, FCS y tramas de gestión sin FCS</li>
+<li><strong>Clase siguiente:</strong> 39 — Detección de errores: paridad, checksum y CRC</li>
+</ul></body></html>

@@ -1,0 +1,1177 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 26 — IPv4: el datagrama y las direcciones</h1>
+<p><strong>Bloque:</strong> D (Red) · <strong>Semana:</strong> 9 · <strong>Duración estimada:</strong> 110 min
+<strong>Correlativa:</strong> Clase 25 (conmutación en la red) · <strong>Sigue con:</strong> Clase 27 (subnetting, método paso a paso)
+<strong>Material de referencia:</strong> Tanenbaum cap. 5 (§5.4) · RFC 791, RFC 1122, RFC 1812, RFC 1878, RFC 4632, RFC 8200</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li><strong>Dibujar</strong> el formato de la cabecera IPv4 campo por campo en filas de 32 bits, con el <strong>tamaño en bits</strong> de cada campo y un <strong>ejemplo numérico</strong> de cada uno.</li>
+<li><strong>Explicar</strong> para qué sirve el campo <strong>IHL</strong>, por qué la cabecera es de <strong>tamaño variable</strong>, y qué límite impone el campo <em>Longitud total</em>.</li>
+<li><strong>Aplicar una máscara de subred bit a bit</strong> sobre una dirección en binario, y obtener de ahí la <strong>dirección de red</strong>, el <strong>rango de hosts</strong> y la <strong>dirección de broadcast</strong>.</li>
+<li><strong>Identificar la clase</strong> (A/B/C/D/E) de una dirección, dar su <strong>máscara por defecto</strong> y decir <strong>cuántos hosts</strong> caben.</li>
+<li><strong>Explicar</strong> por qué las clases quedaron obsoletas, qué es <strong>CIDR</strong> y qué problema económico resolvió.</li>
+<li><strong>Distinguir</strong> los rangos <strong>especiales</strong> de IPv4 (<code>0/8</code>, <code>127/8</code>, <code>169.254/16</code>, <code>224/4</code>, <code>255.255.255.255</code>) y las <strong>direcciones privadas</strong> (<code>10/8</code>, <code>172.16/12</code>, <code>192.168/16</code>), y decir para qué sirve cada uno.</li>
+<li><strong>Calcular</strong> el <strong>checksum</strong> de una cabecera IPv4 con la suma del complemento a uno, y verificar que da <code>0xFFFF</code>.</li>
+</ol>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 740 340" style="max-width:740px"><rect width="740" height="340" fill="#ffffff"/><text x="370.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Cabecera IPv4, campo por campo</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><rect x="40.0" y="70" width="87.5" height="30" rx="3" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="83.75" y="88.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Version</text><text x="83.75" y="114" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">4</text><rect x="127.5" y="70" width="87.5" height="30" rx="3" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="171.25" y="88.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">IHL</text><text x="171.25" y="114" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">4</text><rect x="215.0" y="70" width="175.0" height="30" rx="3" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="302.5" y="88.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Type of Service</text><text x="302.5" y="114" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">8</text><rect x="390.0" y="70" width="350.0" height="30" rx="3" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="565.0" y="88.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Total Length</text><text x="565.0" y="114" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">16</text><rect x="40.0" y="104" width="350.0" height="30" rx="3" fill="#dceaf3" stroke="#7aa7c4" stroke-width="1.2"/><text x="215.0" y="122.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Identification</text><text x="215.0" y="148" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">16</text><rect x="390.0" y="104" width="65.625" height="30" rx="3" fill="#f7d9c8" stroke="#c8621a" stroke-width="1.2"/><text x="422.8125" y="122.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Flags</text><text x="422.8125" y="148" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">3</text><rect x="455.625" y="104" width="284.375" height="30" rx="3" fill="#f7d9c8" stroke="#c8621a" stroke-width="1.2"/><text x="597.8125" y="122.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Fragment Offset</text><text x="597.8125" y="148" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">13</text><rect x="40.0" y="138" width="175.0" height="30" rx="3" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="127.5" y="156.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Time to Live</text><text x="127.5" y="182" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">8</text><rect x="215.0" y="138" width="175.0" height="30" rx="3" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="302.5" y="156.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Protocol</text><text x="302.5" y="182" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">8</text><rect x="390.0" y="138" width="350.0" height="30" rx="3" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="565.0" y="156.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Header Checksum</text><text x="565.0" y="182" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">16</text><rect x="40.0" y="172" width="700.0" height="30" rx="3" fill="#dceaf3" stroke="#7aa7c4" stroke-width="1.2"/><text x="390.0" y="190.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Source IP Address</text><text x="390.0" y="216" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">32</text><rect x="40.0" y="206" width="700.0" height="30" rx="3" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="390.0" y="224.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Destination IP Address</text><text x="390.0" y="250" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">32</text><rect x="40.0" y="240" width="2800.0" height="30" rx="3" fill="#dceaf3" stroke="#7aa7c4" stroke-width="1.2"/><text x="1440.0" y="258.325" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9.5" font-weight="400" fill="#1a1a1a">Options (variables)</text><text x="1440.0" y="284" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">128</text><text x="40" y="314" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#666">En naranja: los tres campos que hacen posible la fragmentación. El bit DF es el 2.º de Flags.</text><text x="40" y="336" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">IHL = 5 significa cabecera de 20 bytes sin opciones.</text></svg></p>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 780 400" style="max-width:780px"><rect width="780" height="400" fill="#ffffff"/><text x="390.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Como se aplica una mascara de subred, bit a bit</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><text x="40" y="44" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="12" font-weight="700" fill="#0b3d5c">IP</text><text x="400" y="44" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="12" font-weight="700" fill="#0b3d5c">Mascara  (/26)</text><text x="600" y="44" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="12" font-weight="700" fill="#0b3d5c">AND = resultado</text><text x="40" y="76" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="400" fill="#1a1a1a">11000000</text><text x="400" y="76" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="400" fill="#1a1a1a">11111111</text><text x="600" y="76" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#2e7d4f">11000000</text><line x1="36" y1="86" x2="756" y2="86" stroke="#eef2f4"/><text x="40" y="108" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="400" fill="#1a1a1a">10101000</text><text x="400" y="108" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="400" fill="#1a1a1a">11111111</text><text x="600" y="108" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#2e7d4f">10101000</text><line x1="36" y1="118" x2="756" y2="118" stroke="#eef2f4"/><text x="40" y="140" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="400" fill="#1a1a1a">00001010</text><text x="400" y="140" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="400" fill="#1a1a1a">11111111</text><text x="600" y="140" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#2e7d4f">00001010</text><line x1="36" y1="150" x2="756" y2="150" stroke="#eef2f4"/><text x="40" y="172" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="400" fill="#1a1a1a">00110111</text><text x="400" y="172" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="400" fill="#1a1a1a">11000000</text><text x="600" y="172" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#2e7d4f">00000000</text><line x1="36" y1="182" x2="756" y2="182" stroke="#eef2f4"/><text x="40" y="216" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="13" font-weight="700" fill="#0b3d5c">192.168.10.55  AND  255.255.255.192  =  192.168.10.64</text><text x="40" y="248" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#666">Lo que resulta de ese AND:</text><rect x="40" y="268" width="190" height="26" rx="3" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="46" y="284.5" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">direccion de red</text><text x="242" y="286" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#c8621a">192.168.10.64</text><rect x="40" y="297" width="190" height="26" rx="3" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="46" y="313.5" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">primer host</text><text x="242" y="315" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#2e7d4f">192.168.10.65</text><rect x="40" y="326" width="190" height="26" rx="3" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="46" y="342.5" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">ultimo host</text><text x="242" y="344" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#2e7d4f">192.168.10.126</text><rect x="40" y="355" width="190" height="26" rx="3" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="46" y="371.5" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">broadcast</text><text x="242" y="373" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#b3261e">192.168.10.127</text><rect x="40" y="384" width="190" height="26" rx="3" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="46" y="400.5" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">hostables</text><text x="242" y="402" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#0b3d5c">62</text><text x="400" y="248" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#666">El prefijo /26 significa:</text><text x="400" y="270" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">26 bits de red + 6 bits de host</text><text x="400" y="290" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">2^6 = 64 direcciones en la subred</text><text x="400" y="310" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#c8621a">64 - 2 = 62 hostables</text><text x="400" y="344" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#666">El AND pone en 0 todos los bits</text><text x="400" y="360" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#666">de host: por eso el resultado es</text><text x="400" y="376" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#666">la direccion de RED, no una de host.</text></svg></p>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2010-03 Problema 1</code> (30 pts — tres subredes <code>/24</code> con R1 y R2: tablas de enrutamiento y por qué no se pueden renumerar agrupando), <code>2009-12 Problema 1</code> (tres clases C y su agregación), <code>2008-12 P2</code>, <code>2011-03 P2d</code>.</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 El datagrama IPv4 en su contexto</h2>
+<p>Antes de la cabecera hay que tener claro <strong>dónde viaja</strong>. El datagrama IP no viaja solo: viaja <strong>encapsulado</strong> dentro de una trama de capa 2.</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────── Trama Ethernet (o de otro enlace) ───────┐
+   │  PREÁMBULO │  MAC destino 6 │ MAC origen 6 │ Ethertype 2 │  ...     │
+   │  ┌─────────────────────── Datagrama IP (20 a 60 bytes) ──────────┐   │
+   │  │  CABECERA IP: 20 bytes si IHL = 5                          │   │
+   │  │  DATOS: el segmento TCP (20 bytes de cabecera + datos)      │   │
+   │  └─────────────────────────────────────────────────────────────┘   │
+   │  ... │  FCS 4 │                                                 │
+   └──────┴────────┴──────────────────────────────────────────────────┘
+
+   Ethertype = 0x0800  →  "el contenido de esta trama es un datagrama IP"
+   Ethertype = 0x0806  →  "es un mensaje ARP"  (ver Clase 30)
+
+   MTU del enlace = la mayor trama que transmite sin fragmentar.
+   Ethernet: 1500 bytes.  Si la trama completa es 1518 bytes con la
+   cabecera de Ethernet, el datagrama IP disponible es 1500 bytes.
+</code></pre></div>
+
+<p>El <strong>datagrama IP tiene un tamaño máximo de 65 535 bytes</strong> (por el campo <em>Longitud total</em>, 16 bits), pero el <strong>tamaño mínimo obligatorio es 576 bytes</strong> (de <code>RFC 791</code> y <code>RFC 1122</code> §3.2.1), para que las redes con MTU chico no fragmenten. En la práctica el MTU manda: 1500 en Ethernet, 9000 (<em>jumbo frames</em>) en algunos datacenters — ojo, <strong>9000 es una convención, no un estándar IEEE</strong> — y 1280 como mínimo absoluto en IPv6.</p>
+<h2>1.2 La cabecera IPv4, campo por campo</h2>
+<p>La cabecera mínima son <strong>20 bytes</strong> (160 bits), y se dibuja siempre en <strong>cinco filas de 32 bits</strong>:</p>
+<div class="codehilite"><pre><span></span><code> 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|Version|  IHL  |    DSCP   |ECN|         Length                  |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                         Id                                    |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|      Flags     |    Fragment Offset    |     TTL     |Protocol  |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                       Header Checksum                       |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                       Source Address                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                    Destination Address                      |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Campo</th>
+<th>Bits</th>
+<th>Qué significa</th>
+<th>Ejemplo numérico</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Versión</strong></td>
+<td>4</td>
+<td>Qué versión del protocolo IP es este datagrama. <code>0100</code> = 4.</td>
+<td><code>4</code> (IPv4). En IPv6 son los 4 primeros bits de una cabecera de 40 bytes.</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>IHL</strong> (<em>Internet Header Length</em>)</td>
+<td>4</td>
+<td><strong>Longitud de la cabecera en palabras de 32 bits</strong>, no en bytes. Multiplicá por 4 para obtener los bytes.</td>
+<td><code>0101</code> = 5 → <code>5 × 4</code> = <strong>20 bytes</strong>. El mínimo es 5 (20 B); el máximo es 15 (60 B, con 40 bytes de opciones).</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>DSCP</strong></td>
+<td>6</td>
+<td><em>Differentiated Services Code Point</em>: <strong>con qué prioridad</strong> tratar el paquete (DiffServ).</td>
+<td><code>000000</code> = mejor esfuerzo (<em>best effort</em>), que es el valor por defecto. <code>101110</code> = EF (<em>Expedited Forwarding</em>), voz.</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>ECN</strong></td>
+<td>2</td>
+<td><em>Explicit Congestion Notification</em>: los 2 bits de la Clase 21.</td>
+<td><code>00</code> = No-ECT (el origen no usa ECN). <code>11</code> = CE (<em>Congestion Experienced</em>).</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Longitud total</strong> (<em>Total Length</em>)</td>
+<td>16</td>
+<td><strong>Longitud de TODO el datagrama IP: cabecera + datos, en bytes.</strong> Máx. 65 535. Mín. 20 (cabecera sola).</td>
+<td><code>0054</code> = 84 bytes: 20 de cabecera IP + 20 de cabecera TCP + 44 de datos.</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>Identificación</strong> (<em>Identification</em>)</td>
+<td>16</td>
+<td>Identifica <strong>un grupo de fragmentos</strong> del mismo datagrama original. Sólo importa si hay fragmentación.</td>
+<td><code>1C46</code>. Lo usan la fuente y los routers intermedios para reensamblar.</td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong>Flags</strong></td>
+<td>3</td>
+<td>Tres banderas: bit de reserva (<strong>siempre 0</strong>), <strong>DF</strong> (<em>Don't Fragment</em>) y <strong>MF</strong> (<em>More Fragments</em>).</td>
+<td><code>100</code> = DF=1, MF=0 → "<strong>no me fragmentes</strong>" (comportamiento por defecto hoy). <code>001</code> = DF=0, MF=1 → "hay más fragmentos".</td>
+</tr>
+<tr>
+<td>8</td>
+<td><strong>Offset de fragmento</strong> (<em>Fragment Offset</em>)</td>
+<td>13</td>
+<td>Posición <strong>en bytes de los datos</strong> de este fragmento dentro del datagrama original. Se cuenta en <strong>unidades de 8 bytes</strong>, así que los últimos 3 bits no se usan.</td>
+<td><code>0000</code> = este fragmento empieza en el byte 0 del payload original (no es un fragmento). <code>0001</code> = arranca en el byte 8.</td>
+</tr>
+<tr>
+<td>9</td>
+<td><strong>TTL</strong> (<em>Time To Live</em>)</td>
+<td>8</td>
+<td><strong>Contador de saltos.</strong> Cada router lo <strong>decrementa en 1</strong> antes de reenviar; al llegar a 0, descarta el paquete y manda un ICMP <em>Time Exceeded</em>.</td>
+<td><code>40</code> = 64 saltos. Windows empieza en 128, Linux en 64.</td>
+</tr>
+<tr>
+<td>10</td>
+<td><strong>Protocolo</strong></td>
+<td>8</td>
+<td>Qué protocolo va <strong>encapsulado</strong> dentro del campo de datos.</td>
+<td><code>06</code> = TCP · <code>11</code> = UDP · <code>01</code> = ICMP · <code>2E</code> = IPv6 dentro (túnel) · <code>08</code> = un protocolo de GRE.</td>
+</tr>
+<tr>
+<td>11</td>
+<td><strong>Checksum de cabecera</strong></td>
+<td>16</td>
+<td><strong>Suma del complemento a uno</strong> de todos los bytes de la cabecera. <strong>Sólo de la cabecera</strong>: si cambia un dato, el TCP/UDP recalcula el suyo.</td>
+<td><code>5958</code> (el cálculo completo está en §2.3).</td>
+</tr>
+<tr>
+<td>12</td>
+<td><strong>Dirección origen</strong></td>
+<td>32</td>
+<td>De quién es el datagrama. <strong>Cambia en cada salto si hay NAT.</strong></td>
+<td><code>192.168.10.55</code> = <code>0xC0A80A37</code> = <code>11000000.10101000.00001010.00110111</code></td>
+</tr>
+<tr>
+<td>13</td>
+<td><strong>Dirección destino</strong></td>
+<td>32</td>
+<td>A quién va el datagrama. <strong>No cambia</strong> al atravesar la red (salvo NAT).</td>
+<td><code>219.41.31.21</code> = <code>0xDB291F15</code> = <code>11011011.00101001.00011111.00010101</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>El mismo datagrama, escrito en hexadecimal</strong> (que es como lo vas a ver en un <code>wireshark</code>):</p>
+<div class="codehilite"><pre><span></span><code>   45 00 0054 1C46 4000 40 06 5958 C0A8 0A37 DB29 1F15
+   ^^ ^^ ---- ---- ---- ^^ ^^ ---- ---- ---- ----
+   │  │  │    │    │  │  │  │    │    │    │
+   │  │  │    │    │  │  │  │    │    │    └─ destino 219.41.31.21
+   │  │  │    │    │  │  │  │    │    └────── origen   192.168.10.55
+   │  │  │    │    │  │  │  │    └─────────── checksum de cabecera = 0x5958
+   │  │  │    │    │  │  │  └──────────────── protocolo = 06 = TCP
+   │  │  │    │    │  │  └─────────────────── TTL = 0x40 = 64
+   │  │  │    │    │  └────────────────────── Flags/Offset = 0x4000 → DF=1
+   │  │  │    │    └───────────────────────── Identificación = 0x1C46
+   │  │  │    └────────────────────────────── Longitud total = 0x0054 = 84
+   │  │  └─────────────────────────────────── DSCP=0, ECN=0  (byte TOS = 0x00)
+   │  └────────────────────────────────────── IHL = 5
+   └───────────────────────────────────────── Versión = 4
+</code></pre></div>
+
+<h2>1.3 El campo IHL y por qué la cabecera es de tamaño variable</h2>
+<p>La cabecera <strong>no siempre son 20 bytes</strong>. El campo <strong>IHL</strong> dice cuántos bloques de 4 bytes ocupa, y si hay <strong>opciones</strong>, ocupa más.</p>
+<div class="codehilite"><pre><span></span><code>   IHL = 5  →  5 × 4 = 20 bytes   (cabecera mínima, SIN opciones)
+   IHL = 6  →  6 × 4 = 24 bytes   (4 bytes = UNA opción de 4 bytes)
+   IHL = 15 → 15 × 4 = 60 bytes   (máximo: 40 bytes de opciones)
+</code></pre></div>
+
+<p><strong>Opciones.</strong> Cada opción tiene el formato <code>1 byte tipo | 1 byte longitud | datos</code>. Los tipos históricos (de <code>RFC 791</code>) incluyen:</p>
+<table>
+<thead>
+<tr>
+<th>Opción</th>
+<th>Tipo</th>
+<th>Qué hace</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>RR</strong> (<em>Record Route</em>)</td>
+<td>7</td>
+<td><strong>Freeze routing</strong>: obliga a que el paquete pase por una lista de routers que escribe la fuente. Obsoleta, pero es la que da nombre a la opción.</td>
+</tr>
+<tr>
+<td><strong>SSM</strong> (<em>Source Route</em>)</td>
+<td>137</td>
+<td>El campo de destino se usa como <strong>lista de routers por los que tiene que pasar</strong>. Obsoleta y peligrosa.</td>
+</tr>
+<tr>
+<td><strong>Timestamp</strong></td>
+<td>68</td>
+<td>Cada router que pasa mete la hora. Obsoleta.</td>
+</tr>
+<tr>
+<td><strong>EOL</strong> (<em>End of Option List</em>)</td>
+<td>0</td>
+<td>Marca de fin de las opciones.</td>
+</tr>
+<tr>
+<td><strong>Pad</strong></td>
+<td>1</td>
+<td>Relleno para alinear a 4 bytes.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>⚠️ Nota para 2026:</strong> las opciones de IP (source route, record route, timestamp, y lasিনা loosely <em>Loose Source and Record Route</em> de traceroute) están <strong>obsoletec. Se parsean pero no se usan</strong>, y muchos routers y middleboxes las descartan o rechazan por motivos de seguridad. <strong>En la práctica, IHL es siempre 5.</strong> Decir "IHL = 5, 20 bytes, sin opciones" es la respuesta correcta en cualquier examen salvo que pregunten explícitamente por fragmentación o por options de seguridad.</p>
+</blockquote>
+<h2>1.4 La máscara de subred, aplicada bit a bit</h2>
+<p>La máscara es un número de 32 bits con <strong>unos al principio y ceros al final</strong>. El prefijo <code>/n</code> es la <strong>cantidad de unos</strong>. La operación que define todo es un <strong>AND</strong> bit a bit entre la dirección y la máscara:</p>
+<div class="codehilite"><pre><span></span><code>   dirección AND máscara = DIRECCIÓN DE RED
+</code></pre></div>
+
+<p><strong>Ejemplo completo: <code>192.168.10.55</code> con máscara <code>/26</code>.</strong></p>
+<p><em>Paso 1 — Escribo la dirección en binario, octeto por octeto.</em></p>
+<div class="codehilite"><pre><span></span><code>   192 = 11000000    (128 + 64)
+   168 = 10101000    (128 + 32 + 8)
+    10 = 00001010    (8 + 2)
+    55 = 00110111    (32 + 16 + 4 + 2 + 1)
+
+   192.168.10.55 = 11000000.10101000.00001010.00110111
+</code></pre></div>
+
+<p><em>Paso 2 — Escribo la máscara <code>/26</code> en binario y en decimal.</em></p>
+<div class="codehilite"><pre><span></span><code>   /26  →  26 unos seguidos de 6 ceros
+        →  11111111.11111111.11111111.11000000
+        →  255.255.255.192      (128 + 64 = 192)
+</code></pre></div>
+
+<p><em>Paso 3 — Hago el AND bit a bit.</em></p>
+<div class="codehilite"><pre><span></span><code>     dirección   11000000 . 10101000 . 00001010 . 00110111
+     máscara     11111111 . 11111111 . 11111111 . 11000000
+     ─────────────────────────────────────────────────────────
+     AND         11000000 . 10101000 . 00001010 . 00000000
+                 192      . 168      . 10       . 0
+   ─────────────────────────────────────────────────────────
+     AND        1&amp;1 1&amp;1 1&amp;1 1&amp;1 1&amp;1 1&amp;1 1&amp;1 1&amp;1
+              = 1   1   1   1   1   1   1   1  → 11111111 = 255 ✓
+
+     AND del 3er octeto: 00001010 AND 11111111 = 00001010 = 10 ✓
+
+     AND del 4to octeto, que es donde pasa la separable:
+       dirección  0 0 1 1 0 1 1 1
+       máscara    1 1 0 0 0 0 0 0
+       ─────────────────────────────
+       AND        0 0 0 0 0 0 0 0  = 0        ← los 2 unos de la máscara
+                                                     se apagaron
+</code></pre></div>
+
+<p><em>Paso 4 — Interpreto el resultado.</em></p>
+<div class="codehilite"><pre><span></span><code>   DIRECCIÓN DE RED = 192.168.10.0        y el prefijo es /26
+
+   Los bits de HOST de la dirección eran los 6 últimos:
+     00110111  →  bits de red (los 2 primeros) = 00
+                  bits de host (los 6 últimos)  = 110111 = 55
+
+   Como 55 &lt; 64 (= 2⁶), esta dirección cae en el PRIMER /26 de la /24.
+</code></pre></div>
+
+<p><em>Paso 5 — Calculo el tamaño del bloque y los otros tres valores.</em></p>
+<div class="codehilite"><pre><span></span><code>   Tamaño del bloque /26 = 2⁶ = 64 direcciones
+
+   DIRECCIÓN DE RED      = 192.168.10.0     (el AND de arriba)
+   RANGO DE HOSTS       = 192.168.10.1  a  192.168.10.62
+                           (red + 1   hasta  red + 64 − 2)
+   BROADCAST            = 192.168.10.63    (red + 64 − 1)
+   NÚMERO DE HOSTS ÚTILES = 64 − 2 = 62     (2⁶ − 2)
+
+   Chequeo: 1 (red) + 62 (hosts) + 1 (broadcast) = 64 ✓
+   Chequeo: .0 + .63 = 64 direcciones numeradas, la última es 63 ✓
+   Chequeo: .55 está entre .1 y .62  ✓  (y es el host número 55)
+</code></pre></div>
+
+<p><em>Paso 6 — Dibujo el /24 partido en cuatro /26 para verlo.</em></p>
+<div class="codehilite"><pre><span></span><code>   192.168.10.0/24                     (256 direcciones)
+
+   .0                    .63   .64                   .127  .128          .191  .192      .255
+   ├──────────┬──────────┼──────────┬──────────┼──────────┬──────────┼──────────┬──────────┤
+   │ .0/26    │ .64/26   │ .128/26  │ .192/26  │  ↑ ESTA  │          │          │          │
+   │ red .0   │ red .64  │ red .128 │ red .192 │  192.168.10.55/26   │          │          │
+   │ brdc .63  │ brdc .127│ brdc .191│ brdc .255│  = .0/26  │          │          │          │
+   └──────────┴──────────┴──────────┴──────────┴──────────┴──────────┴──────────┴──────────┘
+   ← 64 dir →  ← 64 →    ← 64 →     ← 64 →
+</code></pre></div>
+
+<p><strong>Y el error conceptual más común:</strong> el <strong>broadcast de la subred no es <code>192.168.10.255</code></strong>, es <code>192.168.10.63</code>. El broadcast depende de <strong>la máscara</strong>, no de la dirección. Con la <code>/24</code> el broadcast era <code>.255</code>; con la <code>/26</code> es <code>.63</code>. Esto se desarrolla entero en la Clase 27.</p>
+<h2>1.5 Direcciones claseful (A, B, C, D, E) y por qué quedaron obsoletas</h2>
+<p>Hasta 1993, una dirección IPv4 se leía <strong>con la máscara fija según el primer bit</strong>, sin necesidad de que nadie configurara nada. La tabla que hay que saber de memoria:</p>
+<table>
+<thead>
+<tr>
+<th>Clase</th>
+<th>Primer octeto en binario</th>
+<th>Rango</th>
+<th>Prefijo</th>
+<th>Redes</th>
+<th>Hosts por red</th>
+<th>Uso</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A</strong></td>
+<td><code>0xxxxxxx</code></td>
+<td>1 – 126</td>
+<td><strong>/8</strong></td>
+<td>126</td>
+<td><strong>16 777 214</strong></td>
+<td>redes enormes (gobiernos, Multicast)</td>
+</tr>
+<tr>
+<td><strong>B</strong></td>
+<td><code>10xxxxxx</code></td>
+<td>128 – 191</td>
+<td><strong>/16</strong></td>
+<td>16 384</td>
+<td><strong>65 534</strong></td>
+<td>redes grandes (universidades, empresas)</td>
+</tr>
+<tr>
+<td><strong>C</strong></td>
+<td><code>110xxxxx</code></td>
+<td>192 – 223</td>
+<td><strong>/24</strong></td>
+<td>2 097 152</td>
+<td><strong>254</strong></td>
+<td>redes chicas (empresas, departamentos)</td>
+</tr>
+<tr>
+<td><strong>D</strong></td>
+<td><code>1110xxxx</code></td>
+<td>224 – 239</td>
+<td><strong>/4</strong></td>
+<td>—</td>
+<td>—</td>
+<td><strong>multicast</strong></td>
+</tr>
+<tr>
+<td><strong>E</strong></td>
+<td><code>1111xxxx</code></td>
+<td>240 – 255</td>
+<td><strong>/4</strong></td>
+<td>—</td>
+<td>—</td>
+<td><strong>reservada</strong> para experimentación futura</td>
+</tr>
+</tbody>
+</table>
+<p><em>Cómo se lee la clase de una dirección, sin ninguna máscara:</em> mirá el primer octeto en binario y fijate los primeros bits. <code>192 = 11000000</code> → empieza con <code>110</code> → <strong>clase C</strong> → máscara <code>/24</code>. <code>172 = 10101100</code> → empieza con <code>10</code> → <strong>clase B</strong> → <code>/16</code>. <code>10 = 00001010</code> → empieza con <code>0</code> → <strong>clase A</strong> → <code>/8</code>. <code>224 = 11100000</code> → <code>1110</code> → <strong>clase D</strong>.</p>
+<p><strong>Por qué quedaron obsoletas — el cálculo que lo mata.</strong> El problema era que <strong>las clases no dejaban espacio intermedio</strong>: o te sobraban direcciones (<strong>clase B</strong>) o te faltaban (<strong>clase C</strong>).</p>
+<div class="codehilite"><pre><span></span><code>   Una empresa con 300 hosts en 1993:
+
+   Necesita 300 direcciones.
+   Una clase C tiene 254  →  NO LE ALCANZA (300 &gt; 254)
+   Una clase B tiene 65 534  →  LE SOBRA INFUMAMENTE
+
+   Con la clase B:
+       direcciones totales          65 536
+       utilizables (2⁶⁴ − 2)        65 534
+       usadas por la empresa             300
+       ────────────────────────────────────
+       DESPERDICIADAS                65 234
+
+   O sea: el 99,5 % del bloque queda inútil. Y el agregado es
+   65 234, que es del orden de las decenas de miles (mucho más
+   que 22 000): por cada empresa con 300 hosts "compra" 65 000
+   direcciones que jamás va a usar.
+</code></pre></div>
+
+<p>El otro problema era simétrico: una biblioteca con <strong>20</strong> computers necesitaba una clase C (254) y desperdiciaba 234. Y el mercado lo notaba: <strong>las clases B se agotaron primero</strong> (las asignación del mundo entero eran sólo 16 384), mientras que las clase C sobraban. <strong>Cualquiera podía pedir una clase B y agotarlas.</strong> Ese fue el problema económico que forzó el cambio.</p>
+<h3>La historia en una línea de tiempo</h3>
+<table>
+<thead>
+<tr>
+<th>Año</th>
+<th>Hecho</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1981</td>
+<td><code>RFC 791</code> define IPv4 <strong>con clases</strong>: A, B, C, más D (multicast) y E (reservada).</td>
+</tr>
+<tr>
+<td>1984</td>
+<td><code>RFC 950</code> ("Internet Subnetting") introduce el <strong>subnetting dentro de una clase</strong>: una clase B prestada se divide en subredes. Esto obligaba a que <strong>todos los routers de la red</strong> usaran la misma máscara.</td>
+</tr>
+<tr>
+<td>1993</td>
+<td><strong>Fin de la asignación por clases.</strong> Se implementa <strong>CIDR</strong> y la IANA empieza a asignar por <strong>prefijo de cualquier longitud</strong> (<code>RFC 4632</code>). Se introduce además el <strong>routing CIDR</strong> en los routers de frontera.</td>
+</tr>
+<tr>
+<td>1994</td>
+<td>El problema de las clases B se había resuelto <strong>con subnetting</strong>, que era una solución obligatoria y rígida; con CIDR la longitud del prefijo pasa a ser <strong>una decisión local de cada enlace</strong>.</td>
+</tr>
+<tr>
+<td>1996</td>
+<td><code>RFC 1918</code> (verificar) define las <strong>direcciones privadas</strong> <code>10/8</code>, <code>172.16/12</code> y <code>192.168/16</code>: reutilizables internamente, <strong>no enrutables en Internet</strong>.</td>
+</tr>
+<tr>
+<td>2011</td>
+<td><strong>APNIC se agota</strong>: es el último RIR que asigna direcciones IPv4 de clase C por la vía clásica.</td>
+</tr>
+<tr>
+<td>2019</td>
+<td><strong>RIPE NCC hace su última asignación <code>/22</code></strong> (25 de noviembre): Europa agota IPv4. ARIN ya se había agotado en 2015, LACNIC en 2020 y AfriNIC en 2017.</td>
+</tr>
+<tr>
+<td>2026</td>
+<td><strong>IPv4 es un recurso scarcity_planificado:</strong> CGNAT en todos los ISPs y despliegue de IPv6 por encima del 50 % en los usuarios de Google.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>El <code>/n</code> como atajo y el "número mágico".</strong> Con CIDR, cualquier prefijo es legal, así que los números que importan son los que van del 32 al 0. La forma rápida de WORK es mirar el <strong>"número mágico"</strong>: el <strong>número de hosts</strong> de cada prefijo, que es <code>2^(32−n) − 2</code>. La tabla completa es el Anexo de la <strong><code>RFC 1878</code> (<em>Requirements for IP Address Reservation</em>, 1996)</strong>, y es la tabla que hay que tener a la vista cuando estás haciendo subnetting en un examen de papel:</p>
+<div class="codehilite"><pre><span></span><code>   /n    hosts      /n    hosts      /n    hosts      /n    hosts
+   ────  ───────    ────  ───────    ────  ───────    ────  ───────
+   /32      1       /24    254       /17   32 766     /10   1 048 574
+   /31      0 (*)   /23    510       /16   65 534     /9    2 097 150
+   /30      2       /22  1 022       /15  131 070     /8    4 194 302
+   /29      6       /21  2 046       /14  262 142     /7    8 388 606
+   /28     14       /20  4 094       /13  524 286     /6   16 777 214
+   /27     30       /19  8 190       /12  1 048 574   /5   33 554 430
+   /26     62       /18 16 382       /11  2 097 150   /4   67 108 862
+   /25    126       ...   ...        ...   ...       ...   ...     ...
+
+   (*) el /31 tiene 2 direcciones y 0 hosts "útiles" en el sentido
+       clásico; RFC 3021 (verificar) lo legitima para enlaces
+       punto a punto.  /32 = una sola dirección, el loopback.
+
+   Para leerlo al revés (esto es el atajo del subnetting):
+     "necesito 100 hosts"  →  el menor número ≥ 100 de la tabla es 126 → /25
+     "necesito 200 hosts"  →  254 → /24
+     "necesito 50 hosts"   →  62 → /26
+     "necesito 20 hosts"   →  30 → /27
+     "necesito 13 hosts"   →  14 → /28
+</code></pre></div>
+
+<h2>1.6 CIDR: por qué existe</h2>
+<p><strong>CIDR = Classless Inter-Domain Routing</strong> (<code>RFC 4632</code>, 2006). Tres cambios, y los tres importan:</p>
+<ol>
+<li><strong>La longitud del prefijo es libre.</strong> Ya no hay clases: <code>/8</code>, <code>/13</code>, <code>/27</code>, cualquier valor entre 0 y 32. Se elimina por completo la frontera entre clases.</li>
+<li><strong>La máscara es local, no global.</strong> Antes del subnetting, todos los routers de la red tenían que usar <strong>la misma</strong> máscara. Con CIDR, cada enlace puede usar la que necesite, y un router puede tener <strong>máscaras distintas en cada interfaz</strong> (es exactamente lo que se ve en las tablas de enrutamiento: <code>192.168.1.0/24</code> en una línea y <code>220.10.10.28/30</code> en otra, en el mismo router).</li>
+<li><strong>La sumarización (agregación) vuelve a ser posible.</strong> Un router que se ocupa de <code>192.168.0.0/16</code> puede anunciar <strong>un solo prefijo</strong> en vez de 256. Eso reduce las tablas de enrutamiento de toda la Internet deBackbone. Sin CIDR, la tabla de un router de núcleo habría tenido que tener una entrada por cada red de cada organización del mundo.</li>
+</ol>
+<p><strong>La consecuencia concreta en un examen.</strong> Cuando el enunciado dice "asigne una red para 300 hosts", <strong>la respuesta de hoy no es "clase B"</strong>: es "el menor prefijo que dé 300" → <code>/23</code> (510 hosts). Y cuando dice "asigne una red y quiere dejar espacio para crecer", la respuesta es un bloque <code>/22</code> o <code>/21</code> <strong>y después subnetting</strong> (Clase 27 y 28). <strong>Nadie dice "clase B" en 2026.</strong></p>
+<h2>1.7 Direcciones especiales</h2>
+<table>
+<thead>
+<tr>
+<th>Rango</th>
+<th>Nombre</th>
+<th>Qué es y para qué está</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0.0.0.0/8</code></td>
+<td>"Cero" / <em>"this host on this network"</em></td>
+<td>En un <strong>servidor</strong> significa <em>"escuchá en todas las interfaces"</em> (<code>bind(0.0.0.0)</code>). En una <strong>tabla de enrutamiento</strong> es la <strong>ruta por defecto</strong> (<code>0.0.0.0/0</code>, todos los destinos). Como <strong>dirección de origen</strong>, significa <em>"no tengo dirección"</em> — es lo que manda un host antes de tener IP por DHCP (<code>DHCPDISCOVER</code>). <strong>En ninguna de las tres es una dirección de un host.</strong></td>
+</tr>
+<tr>
+<td><code>10.0.0.0/8</code><br><code>172.16.0.0/12</code><br><code>192.168.0.0/16</code></td>
+<td><strong>Privadas</strong> (<code>RFC 1918</code>, verificar)</td>
+<td><strong>Se pueden repetir en todas las redes del mundo</strong> porque <strong>no se enrutan en Internet</strong>: ningún router de backbone tiene una ruta hacia ellas. Existen porque <strong>IPv4 se agotó</strong> y hace falta reutilizar el mismo espacio internamente. Se usan detrás de un <strong>NAT</strong> (Clase 31). <strong>10/8</strong> = 16 777 214 direcciones · <strong>172.16/12</strong> = 1 048 574 · <strong>192.168/16</strong> = 65 534.</td>
+</tr>
+<tr>
+<td><code>127.0.0.0/8</code></td>
+<td><strong>Loopback</strong></td>
+<td>El <strong>propio host</strong>. Todo lo que se mande a <code>127.x.x.x</code> lo entrega el kernel localmente, sin salir a la red. <code>127.0.0.1</code> se llama <em>localhost</em>. Sirve para probar un servicio en la misma máquina sin tocar la red.</td>
+</tr>
+<tr>
+<td><code>169.254.0.0/16</code></td>
+<td><strong>Link-local</strong> (<em>APIPA</em>)</td>
+<td><strong>Se autoasigna el host cuando el DHCP falla.</strong> El host elige una dirección al azar en ese rango y se verifica con ARP (DAD). Sirve para comunicarse <strong>en el enlace local</strong>, pero <strong>no se enruta</strong>: nunca pasa de la LAN. Es el rango de las cámaras IP mal configuradas y de los enlaces punto a punto sin DHCP. La definición formal está en la <code>RFC 3927</code> (verificar).</td>
+</tr>
+<tr>
+<td><code>224.0.0.0/4</code></td>
+<td><strong>Multicast</strong> (clase D)</td>
+<td>Grupo de destinos. <strong>La dirección es del grupo, no del host.</strong> <code>224.0.0.0</code> a <code>224.0.0.255</code> es <em>link-local</em> (IGMP, <code>224.0.0.5</code> y <code>.6</code> son los multicast de OSPF); <code>239.0.0.0/8</code> es <em>administratively scoped</em> (globales, como los de Cisco Discovery Protocol). El prefijo <code>/4</code> es lo que dice la clase D, <strong>no</strong> una máscara que se configure.</td>
+</tr>
+<tr>
+<td><code>240.0.0.0/4</code></td>
+<td>Reservada (clase E)</td>
+<td>Reservada para uso futuro. En la práctica el último octeto de <code>255</code> se usa para <strong>broadcast</strong>, lo que pisa parcialmente el rango.</td>
+</tr>
+<tr>
+<td><code>255.255.255.255</code></td>
+<td><strong>Broadcast limitado</strong></td>
+<td>Broadcast <strong>de la LAN local, y sólo de ella</strong>. Los routers <strong>no lo reenvían</strong>, jamás. Es el <code>destino</code> del ARP request, del DHCP Discover y de los announcing gratuitous ARP.</td>
+</tr>
+<tr>
+<td><code>100.64.0.0/10</code></td>
+<td><em>Shared Address Space</em> (CGNAT)</td>
+<td>El rango que usan los operadores para la <strong>traducción de direcciones deCarrier-Grade NAT</strong> (<code>RFC 6598</code>, verificar). No es privado ni público: es "compartido", por eso sólo se enruta dentro del operador.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Por qué existen las privadas, en una frase.</strong> Porque el espacio de IPv4 se <strong>agotó</strong> y porque la topología de Internet es <strong>jerárquica</strong>: no todo lo que hay en el mundo tiene que ser alcanzable desde todo el mundo. Si tu notebook tiene <code>192.168.1.5</code> y el servidor del otro lado del mundo también tiene <code>192.168.1.5</code>, no hay ningún conflicto <strong>porque ningún router de Internet enruta ese rango</strong>. La reutilización es lo que nos salvó de haber agotado IPv4 en 1994.</p>
+<h2>1.8 ⚠️ Actualización a 2026</h2>
+<p><strong>Sigue igual, de memoria:</strong></p>
+<ul>
+<li>El <strong>formato de la cabecera IPv4</strong>: 20 bytes mínimos, IHL × 4, los mismos 13 campos, el mismo orden. <strong>No cambió desde 1981</strong> y no va a cambiar.</li>
+<li><strong>Máscara = unos al principio, ceros al final</strong>; dirección de red = AND; broadcast = red + tamaño − 1.</li>
+<li>Las <strong>clases A–E</strong> (historia), el <strong>/n</strong> y el <strong>número mágico</strong>.</li>
+<li>Los <strong>rangos especiales</strong>: <code>0/8</code>, <code>10/8</code>, <code>172.16/12</code>, <code>127/8</code>, <code>169.254/16</code>, <code>192.168/16</code>, <code>224/4</code>, <code>255.255.255.255</code>.</li>
+</ul>
+<p><strong>Cambió:</strong></p>
+<ul>
+<li><strong>La claseful es historia, y hace 30 años que lo es.</strong> Desde 1993 la asignación es por prefijo (<code>RFC 4632</code>) y <strong>las clases no significan nada en el mundo real</strong>: el <code>192.168.1.0/24</code> de tu casa no es "una clase C" sino un <code>/24</code>. Se enseñan porque (a) aparecen en los exámenes viejos, (b) explican por qué existe CIDR, y (c) la máscara <code>/24</code> <strong>se parece</strong> a una clase C por casualidad histórica. ⇒ <strong>En un examen de hoy, nunca respondas "clase C" como solución; respondá "/24".</strong> Si el enunciado dice "clase C", traducilo a <code>/24</code> y seguí.</li>
+<li><strong>IPv4 se agotó, de verdad y por etapas.</strong> APNIC se agotó en abril de 2011, ARIN en septiembre de 2015, AfriNIC en 2017, <strong>RIPE NCC hizo su última asignación <code>/22</code> el 25 de noviembre de 2019</strong>, y LACNIC en 2020. Hoy RIPE mantiene una <em>waiting list</em> para un único <code>/24</code> recuperado. ⇒ <strong>Consejo de examen:</strong> si te preguntan "¿por qué existen las direcciones privadas?", la respuesta es literalmente "porque IPv4 se agotó", y <strong>la cifra para mencionar es la del 25-nov-2019 de RIPE</strong>.</li>
+<li><strong>CGNAT es el nuevo default de la capa 3 de acceso.</strong> <code>100.64.0.0/10</code> es el rango que el operador traduce, y eso rompe conectividad entrante, complica la señalización SIP/IMS y rompe IPsec y peer-to-peer. <strong>Es la respuesta moderna a "mi dirección es privada"</strong>: antes lala traducción era opcional (NAT en la empresa), ahora es la norma en el acceso.</li>
+<li><strong>IPv6 pasó la mitad.</strong> El <strong>28 de marzo de 2026</strong> el acceso a Google por IPv6 superó el <strong>50 %</strong> (50,10 %) por primera vez. Pero es desigual: Francia e India por encima del 70 %, China por debajo del 5 %. ⇒ <strong>Consecuencia para el examen:</strong> si te preguntan "¿IPv6 reemplazó a IPv4?", la respuesta es "a medias y por país"; lo que se mide es distinto en cada fuente, así que <strong>declará qué estás midiendo</strong>.</li>
+<li><strong>La cabecera IPv6 es fija: 40 bytes, sin IHL, sin opciones, sin fragmentación en los routers.</strong> Los routers IPv6 <strong>no</strong> fragmentan; fragmenta el origen. El concepto de "opciones de cabecera IP" no existe en IPv6: lo que hay son <strong>cabeceras de extensión</strong> encadenadas por el campo <em>Next Header</em>, que <strong>no</strong> las ve ningún router intermedio salvo la de <em>Hop-by-Hop</em> (<code>RFC 8200</code>). ⇒ El campo <strong>IHL y todo el mecanismo de opciones de IPv4 es <code>legacy</code></strong> y sólo se estudia por historia.</li>
+<li><strong>Seguridad.</strong> El <strong>source routing de IPv4 sigue siendo un vector de ataque</strong> y muchos middleboxes lo bloquean. <code>RFC 7126</code> (verificar) habla del problema de la cabecera IPv4 con IHL; no lo uses si no lo verificaste.</li>
+</ul>
+<p><strong>Consecuencia para el examen:</strong> la cabecera IPv4 se sigue preguntando <strong>exactamente igual</strong>. Lo que hay que sumar es una línea: <em>"IPv4 está agotado desde 2019 (RIPE), CGNAT es el default del acceso, y el /n con el número mágico reemplazó a las clases; las clases sólo se explican como historia."</em></p>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — Binario y máscara, de punta a punta</h2>
+<p><strong>Datos.</strong> La dirección <strong><code>172.31.199.14</code></strong> con máscara <strong><code>/22</code></strong> (máscara de red y de la interfaz del router).</p>
+<p><strong>Resolución paso a paso.</strong></p>
+<p><em>Paso 1 — La dirección a binario.</em></p>
+<div class="codehilite"><pre><span></span><code>   172 = 10101100    128 + 32 + 8 + 4
+    31 = 00011111    16 + 8 + 4 + 2 + 1
+   199 = 11000111    128 + 64 + 4 + 2 + 1
+    14 = 00001110    8 + 4 + 2
+</code></pre></div>
+
+<p><em>Paso 2 — La máscara <code>/22</code>.</em></p>
+<div class="codehilite"><pre><span></span><code>   /22  →  22 unos + 10 ceros
+        →  11111111 . 11111111 . 11111100 . 00000000
+        →   255      . 255      . 252      . 0        = 255.255.252.0
+
+   Chequeo: 255 + 255 + 252 + 0 = 762. Y 3×255 = 765, así que
+            765 − 762 = 3  →  hay 3 ceros en los dos últimos octetos.
+            8 + 8 + 6 + 0 = 22  ✓  (el /22 tiene 22 unos)
+</code></pre></div>
+
+<p><em>Paso 3 — El AND, octeto por octeto.</em></p>
+<div class="codehilite"><pre><span></span><code>   octeto      dirección   máscara     AND
+   ──────      ─────────   ───────     ───
+     1º         10101100    11111111    10101100  = 172
+     2º         00011111    11111111    00011111  =  31
+     3º         11000111    11111100    11000100  = 196   ← acá cambia
+     4º         00001110    00000000    00000000  =   0   ← y acá se apaga
+
+   DIRECCIÓN DE RED = 172.31.196.0/22
+
+   Ojo con el 3º octeto: 199 AND 252 = 196, NO 199.
+   Los 6 unos de la máscara "comen" los 2 bits más bajos de 199.
+   199 = 11000111
+         11111100
+   AND = 11000100 = 196
+</code></pre></div>
+
+<p><em>Paso 4 — Tamaño del bloque, hosts, broadcast.</em></p>
+<div class="codehilite"><pre><span></span><code>   Tamaño = 2^(32−22) = 2¹⁰ = 1024 direcciones
+   Hosts útiles = 1024 − 2 = 1022
+
+   RED      = 172.31.196.0
+   PRIMER   = 172.31.196.1        (red + 1)
+   ÚLTIMO   = 172.31.199.254      (red + 1024 − 2)
+   BROADCAST= 172.31.199.255      (red + 1024 − 1)
+
+   Chequeo: 172.31.199.14 está entre .196.1 y .199.254  ✓
+   ¿Es broadcast? No (sólo lo es .199.255)  ✓
+   ¿Es la red? No (la red es .196.0)  ✓
+</code></pre></div>
+
+<p><em>Paso 5 — El detalle fino: el número de host.</em></p>
+<div class="codehilite"><pre><span></span><code>   Bits de host = los 10 últimos (todo el 4º octeto + 2 del 3º)
+
+   172.31.199.14
+              3º octeto: 199 = 11000111 → los 2 bits de host son "11" = 3
+              4º octeto:  14 = 00001110 = 14
+
+   número de host = 3 × 256 + 14 = 768 + 14 = 782
+   (2 bits de host del 3er octeto ⇒ 2² = 4 valores posibles, de 0 a 3)
+</code></pre></div>
+
+<p><em>Interpretación:</em> esta dirección está en la <strong>cuarta y última</strong> <code>/22</code> de la <code>/20</code> <code>172.31.192.0/20</code>. Los bloques <code>/22</code> de esa <code>/20</code> son <code>.192.0</code>, <code>.196.0</code>, <code>.200.0</code> y <code>.204.0</code>. Si en un ejercicio te piden "dividir <code>172.31.192.0/20</code> en cuatro <code>/22</code>", la respuesta es exactamente esa cuaterna.</p>
+<h2>2.2 Ejercicio 2 — Clase, máscara por defecto y capacidad</h2>
+<p><strong>Datos.</strong> Determinar la clase y la máscara por defecto de estas cinco direcciones, y cuántas direcciones hosts útiles admite cada red.</p>
+<table>
+<thead>
+<tr>
+<th>Dirección</th>
+<th>Clase</th>
+<th>¿Claseful o CIDR?</th>
+<th>Máscara por defecto</th>
+<th>Hosts útiles</th>
+<th>Nº de redes de ese tamaño</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>10.4.3.2</code></td>
+<td><strong>A</strong> (<code>00001010</code>, empieza con <code>0</code>)</td>
+<td>claseful</td>
+<td><code>/8</code> = 255.0.0.0</td>
+<td>2²⁴ − 2 = <strong>16 777 214</strong></td>
+<td>2⁷ − 2 = <strong>126</strong></td>
+</tr>
+<tr>
+<td><code>172.16.40.9</code></td>
+<td><strong>B</strong> (<code>10101100</code>, empieza con <code>10</code>)</td>
+<td>claseful</td>
+<td><code>/16</code> = 255.255.0.0</td>
+<td>2¹⁶ − 2 = <strong>65 534</strong></td>
+<td>2¹⁴ = <strong>16 384</strong></td>
+</tr>
+<tr>
+<td><code>192.168.1.1</code></td>
+<td><strong>C</strong> (<code>11000000</code>, empieza con <code>110</code>)</td>
+<td>claseful</td>
+<td><code>/24</code> = 255.255.255.0</td>
+<td>2⁸ − 2 = <strong>254</strong></td>
+<td>2²¹ = <strong>2 097 152</strong></td>
+</tr>
+<tr>
+<td><code>224.0.0.251</code></td>
+<td><strong>D</strong> (<code>11100000</code>, empieza con <code>1110</code>)</td>
+<td>multicast</td>
+<td><code>/4</code> (no se configura)</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>240.1.2.3</code></td>
+<td><strong>E</strong> (<code>11110000</code>, empieza con <code>1111</code>)</td>
+<td>reservada</td>
+<td><code>/4</code> (no se configura)</td>
+<td>—</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>La cuenta de cada fila, a la vista:</strong></p>
+<div class="codehilite"><pre><span></span><code>   A  →  /8   → 32−8 = 24 bits de host → 2²⁴ − 2 = 16 777 214
+   B  →  /16  → 32−16 = 16 bits de host → 2¹⁶ − 2 = 65 534
+   C  →  /24  → 32−24 = 8 bits de host  → 2⁸  − 2 = 254
+   D  →  multicast: la dirección es del GRUPO, no de un host
+   E  →  reservada: no se asigna
+</code></pre></div>
+
+<p><strong>Las dos observaciones que hay que hacer en un examen:</strong></p>
+<ol>
+<li><strong>La clase se lee del primer octeto, sin máscara.</strong> Es un residuo histórico: los routers antigos lo usaban para deducir la máscara. <strong>Hoy es inútil</strong>: la clase de <code>10.4.3.2</code> y de <code>10.0.0.1</code> es la misma (A), pero un <code>/8</code> y un <code>/16</code> pueden tener la misma clase.</li>
+<li><strong>Diez es clase A, y sin embargo <code>10.0.0.0/8</code> es una dirección privada.</strong> Las privadas no se definieron por la clase sino por rangos fijos dentro de ella. Esta confusión es la que hace que los alumnos digan "clase A privada": lo correcto es "rango <code>10/8</code>, que está dentro de la clase A por su primer bit, pero que es privado por definición del RFC, no por su clase".</li>
+</ol>
+<h2>2.3 Ejercicio 3 — El checksum de la cabecera IPv4, cálculo completo</h2>
+<p><strong>Datos.</strong> Un datagrama con estos campos:</p>
+<div class="codehilite"><pre><span></span><code>   Versión = 4        IHL = 5         DSCP = 0, ECN = 0
+   Longitud total     = 60 bytes (0x003C)
+   Identificación     = 0x1C46
+   Flags/Offset       = 0x4000   (DF = 1, MF = 0, offset = 0)
+   TTL                = 64 (0x40)
+   Protocolo          = 6 (TCP)
+   Checksum           = 0x0000   ← hay que calcularlo
+   Origen             = 192.168.10.55  (0xC0A80A37)
+   Destino            = 219.41.31.21  (0xDB291F15)
+</code></pre></div>
+
+<p><strong>Resolución: se suman las mitades de 16 bits, se sigue el "acarreo", y se toma el complemento.</strong></p>
+<div class="codehilite"><pre><span></span><code>   La cabecera son 10 palabras de 16 bits (20 bytes ÷ 2):
+
+    1)  4500     Versión+IHL = 0x45,   DSCP+ECN = 0x00
+    2)  003C     Longitud total = 60
+    3)  1C46     Identificación
+    4)  4000     Flags = 100, offset = 0
+    5)  4006     TTL = 0x40, Protocolo = 0x06
+    6)  0000     Checksum (por ahora cero)
+    7)  C0A8     Origen, 1ª mitad
+    8)  0A37     Origen, 2ª mitad   (0x0A = 10, 0x37 = 55)
+    9)  DB29     Destino, 1ª mitad  (0xDB = 219, 0x29 = 41)
+   10)  1F15     Destino, 2ª mitad  (0x1F = 31, 0x15 = 21)
+
+   SUMA (con acarreo: si da 5 dígitos hex, se suma el acarreo y se
+   deja el resto):
+
+    4500 + 003C = 453C
+    453C + 1C46 = 6182
+    6182 + 4000 = A182
+    A182 + 4006 = E188
+    E188 + 0000 = E188
+    E188 + C0A8 = 1A230   →  acarreo 1  →  A231        ← ¡primer acarreo!
+    A231 + 0A37 = AC68
+    AC68 + DB29 = 17768   →  acarreo 1  →  8792       ← ¡segundo acarreo!
+    8792 + 1F15 = A6A7
+
+   CHECKSUM = complemento a uno de A6A7
+            = NOT(A6A7) = 5958
+
+   La cabecera completa queda:
+      45 00 00 3C 1C46 4000 40 06 59 58 C0A8 0A37 DB29 1F15
+</code></pre></div>
+
+<p><strong>Verificación (siempre hay que hacerla, y en el examen suma puntos):</strong></p>
+<div class="codehilite"><pre><span></span><code>   Volvemos a sumar TODO, esta vez con el checksum ya puesto:
+
+    (4500 + 003C + 1C46 + 4000 + 4006 + 0000 + C0A8 + 0A37 + DB29 + 1F15)
+                                                        =  A6A7
+    A6A7 + 5958 =  FFFF
+
+   Si la suma da 0xFFFF, el checksum es correcto.
+   Esa es la definición de "complemento a uno": el checksum es el
+   valor que hace que la verificación dé todo 1s.
+</code></pre></div>
+
+<p><em>Interpretación:</em> el checksum <strong>cubre sólo la cabecera</strong>, y por eso <strong>no se recalcula en los routers</strong> (que sólo cambian TTL, y ese campo tiene su propio mecanismo: el checksum se ajusta en incremental). El del <strong>TCP y el del UDP</strong> cubren cabecera <strong>y</strong> datos, con una pseudo-cabecera de IP que incluye las direcciones; por eso un NAT que cambia una IP <strong>tiene que recalcular el checksum del transporte</strong>.</p>
+<h2>2.4 Ejercicio 4 — ¿Por qué DHCP asigna <code>169.254.x.x</code> y no <code>0.0.0.0</code>?</h2>
+<p><strong>Enunciado.</strong> Cuando un host busca un servidor DHCP y no encuentra ninguno, se autoasigna una dirección del rango <code>169.254.0.0/16</code> (APIPA). ¿Por qué <strong>no</strong> puede autoasignarse <code>0.0.0.0</code>? Y si puede usar <code>169.254.x.x</code>, ¿por qué no se usa <code>192.168.1.5</code> "porque total es mi red"?</p>
+<p><strong>Resolución — la regla general primero: los rangos especiales están definidos por lo que hacen con ellos.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Rango</th>
+<th>Semántica</th>
+<th>¿Se puede autoasignar un host?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0.0.0.0/8</code></td>
+<td><em>"no tengo dirección"</em> (fuente) · <em>"escuchá en todas"</em> (servidor) · <em>"por cualquier lado"</em> (ruta por defecto)</td>
+<td><strong>No.</strong> Significa <strong>inexistencia</strong> de dirección. Si un host se autoasignara <code>0.0.0.0</code>, los demás no sabrían ni si siquiera que hay alguien, y no podría arrancar ninguna conexión: <strong>no hay dirección a la que responder.</strong></td>
+</tr>
+<tr>
+<td><code>127.0.0.0/8</code></td>
+<td><em>"yo mismo"</em></td>
+<td><strong>No.</strong> Está cableada al loopback del kernel, así que <code>127.x.x.x</code> <strong>nunca sale a la red</strong>: sería inútil para comunicarse con los demás.</td>
+</tr>
+<tr>
+<td><code>169.254.0.0/16</code></td>
+<td><em>"este enlace local"</em></td>
+<td><strong>Sí.</strong> Es un rango <strong>asignado justamente para la autoconfiguración</strong>: el host elige una dirección al azar de 16 bits, manda un <strong>ARP request</strong> con esa dirección (<strong>DAD</strong>, <em>Duplicate Address Detection</em>, ver <code>RFC 3927</code>, verificar) y si nadie contesta, se la queda.</td>
+</tr>
+<tr>
+<td><code>10/8</code>, <code>172.16/12</code>, <code>192.168/16</code></td>
+<td><em>"privada"</em></td>
+<td><strong>No se puede adivinar.</strong> Una dirección privada es sólo válida <strong>detrás de un router que hace NAT</strong>, y ese router tiene que tener una <strong>tabla de traducción</strong> con una entrada para esa dirección. Si el host se autoasigna <code>192.168.1.5</code> sin NAT, <strong>el router no tiene entrada y descarta el paquete de salida.</strong></td>
+</tr>
+<tr>
+<td><code>224.0.0.0/4</code></td>
+<td><em>"grupo"</em></td>
+<td><strong>No.</strong> La dirección es del <strong>grupo</strong>, no del emisor: la fuente también necesita una dirección unicast.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Por qué <code>169.254/16</code> sí funciona, en tres pasos.</strong></p>
+<div class="codehilite"><pre><span></span><code>   t0   El host arranca. No tiene IP. Configura su IPv4 como
+        0.0.0.0 (significa "ninguna") y la máscara a 0.0.0.0.
+
+   t1   Intenta DHCP. No hay servidor → timeout.
+
+   t2   El host se AUTOASIGNA una dirección al azar de 169.254/16
+        (en Windows, además elige un sufijo de fecha y hora).
+        Toma la máscara /16, que viene de la definición del rango:
+            169.254.0.0  169.254.255.255
+            ↑                ↑
+            169 = 10101001  se fija el /16
+            254 = 11111110
+
+   t3   Manda un ARP request por esa dirección para hacer DAD
+        ("¿hay alguien con esta dirección?"). Si nadie contesta
+        en un par de segundos, se la queda.
+
+   t4   A partir de ahí puede hablar con los demás del ENLACE, y
+        sólo del enlace: 169.254/16 es link-local, los routers
+        NO lo enrutan. Sirve para compartir archivos dentro de la red local, y nada más.
+</code></pre></div>
+
+<p><strong>La respuesta a "¿por qué no <code>192.168.1.5</code>?", que es la parte interesante:</strong> porque <code>192.168/16</code> <strong>existe sólo dentro de una red que alguien administrationó</strong>. La dirección privada es una <strong>convención entre el administrador y el NAT</strong>, no una dirección "del mundo". Si el host se autoasignara una sin NAT detrás, el paquete saldría del host con destino/source <code>192.168.1.5</code>, <strong>el router de salida lo descartaría</strong> (no tiene ruta ni entrada de traducción) y el host <strong>quedaría sin comunicación</strong>, que es exactamente el problema que se intenta resolver. <strong><code>169.254/16</code> está diseñado para ser usable sin ninguna infraestructura detrás</strong>; <code>192.168/16</code> no.</p>
+<blockquote>
+<p>En clase: si te preguntan "qué hace el host si no tiene DHCP", la respuesta completa es: <code>0.0.0.0</code> → espera → se autoasigna <code>169.254.x.x</code> con <strong>DAD</strong> → habla <strong>sólo en el enlace local</strong> → si tiene un APIPA válido pero no gateway, la aplicación que necesita Internet <strong>falla aunque el host "tenga IP"</strong>. Ese último punto es la trampa de examen.</p>
+</blockquote>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2010-03, Problema 1 (30 puntos) — tres subredes /24, R1 y R2</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc1003</code> / <code>sirc1003</code> — 24 de febrero de 2010.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1003.pdf
+<strong>Texto del examen:</strong></p>
+<blockquote>
+<p>Sea la red compuesta de tres subredes interconectadas por los routers R1 y R2 presentada en la siguiente figura. En la misma se indican los nodos conectados en cada subred así como la dirección IP de cada interfaz. Para su direccionamiento se asignó una red /24 a cada una de las subredes como se presenta en la figura, y se supone la existencia de 100 hosts en cada subred. El enrutamiento es estático.
+<strong>a)</strong> i. Indique las tablas de enrutamiento de los routers R1 y R2 de forma que permita conectividad extremo a extremo entre todos los equipos de la red. ii. Indique las tablas de enrutamiento para los hosts de cada subred.
+<strong>b)</strong> Se sustituye el router R2 por un switch, al que se conectan todos los equipos de las subredes 2 y 3. Para lograr un nuevo esquema de numeración operativo, se desea modificar la menor cantidad de direcciones IP posibles. i. Justifique la necesidad de renumerar alguna red para lograr una solución al problema. ii. Represente gráficamente su solución... iii. Indique la tabla de enrutamiento del router R1...</p>
+</blockquote>
+</blockquote>
+<p><strong>Solución oficial (literal):</strong></p>
+<blockquote>
+<p><strong>a-i)</strong> R1: <code>192.168.0.0/24 → eth0</code>, <code>192.168.1.0/24 → eth1</code>, <code>192.168.2.0/24 → next hop 192.168.1.2, eth1</code>. R2: <code>192.168.2.0/24 → eth1</code>, <code>192.168.1.0/24 → eth0</code>, <code>192.168.0.0/24 → next hop 192.168.1.1, eth0</code>.
+<strong>a-ii)</strong> Hosts de la subred 1: <code>192.168.0.0/24 → eth0</code>, <code>0.0.0.0 → 192.168.0.1</code>. Hosts subred 2: <code>192.168.1.0/24</code>, <code>0.0.0.0 → 192.168.1.1</code>. Hosts subred 3: <code>192.168.2.0/24</code>, <code>0.0.0.0 → 192.168.2.1</code>.
+<strong>b-i)</strong> <em>"Las direcciones IP consideradas para las subredes 1, 2 y 3 corresponden a redes contiguas. Para agrupar direcciones se debe modificar la máscara de red, disminuyendo la cantidad de bits de la máscara [...] El problema que surge es que para incluir en una subred las subredes 192.168.1.0/24 y 192.168.2.0/24 se necesita una máscara /22 que incluye la red 192.168.0.0/24. Por lo tanto la solución es renumerar tal que las subredes sean diferenciables por la máscara."</em>
+<strong>b-ii)</strong> Dos soluciones: renumerar la subred 1 como <code>192.168.4.0/24</code> (quedando subredes 2 y 3 como <code>192.168.0.0/22</code>), <strong>o</strong> renumerar la subred 2 como <code>192.168.3.0/23</code> (quedando <code>192.168.0.0/24</code> y <code>192.168.2.0/23</code>). <em>"De las soluciones propuestas la primera es la ideal dado que modifica una IP menos."</em>
+<strong>b-iii)</strong> R1: <code>192.168.4.0/24 → eth0</code>, <code>192.168.0.0/22 → eth1</code>.</p>
+</blockquote>
+<h3>a-i) Tablas de enrutamiento de R1 y de R2</h3>
+<p><em>Suposición que hago y justifico:</em> por el enunciado, cada subred es una <code>/24</code> y hay 100 hosts en cada una. Las direcciones de gateway (<code>192.168.0.1</code>, <code>192.168.1.1</code>, <code>192.168.1.2</code>, <code>192.168.2.1</code>) son las que da el enunciado en la figura.</p>
+<p><strong>R1</strong> — tiene una interfaz en la subred 1 (<code>eth0</code>) y otra en la subred 2 (<code>eth1</code>):</p>
+<div class="codehilite"><pre><span></span><code>   Configuración R1
+   Red destino / Máscara      Gateway (next hop)   Interfaz
+   ─────────────────────────  ───────────────────  ─────────
+   192.168.0.0 / 255.255.255.0   —                eth0
+   192.168.1.0 / 255.255.255.0   —                eth1
+   192.168.2.0 / 255.255.255.0   192.168.1.2      eth1
+</code></pre></div>
+
+<p><strong>¿Por qué la tercera línea lleva next hop <code>192.168.1.2</code> y no <code>192.168.2.1</code>?</strong> Porque <code>192.168.1.2</code> es la dirección <strong>de la interfaz de R2 dentro de la red que R1 ya tiene conectada</strong>. R1 no tiene por qué conocer la dirección de un host o de otra red: le alcanza con el vecino. <strong>Y esa es la razón de existir del campo <em>Gateway</em> de una tabla de reenvío</strong> (Clase 24, §1.1): el router necesita un next hop <strong>alcanzable directamente</strong>.</p>
+<p><strong>R2</strong> — una interfaz en la subred 2 (<code>eth0</code>) y otra en la subred 3 (<code>eth1</code>):</p>
+<div class="codehilite"><pre><span></span><code>   Configuración R2
+   Red destino / Máscara      Gateway (next hop)   Interfaz
+   ─────────────────────────  ───────────────────  ─────────
+   192.168.2.0 / 255.255.255.0   —                eth1
+   192.168.1.0 / 255.255.255.0   —                eth0
+   192.168.0.0 / 255.255.255.0   192.168.1.1      eth0
+</code></pre></div>
+
+<p><em>Interpretación:</em> <strong>la fila "directamente conectada" no tiene next hop</strong>, porque no hay nadie a quien saltar: el router entrega el paquete directo a la interfaz. Y la fila con next hop <strong>también lleva interfaz</strong>, porque el next hop dice <em>a qué router</em> y la interfaz dice <em>por qué cable</em>.</p>
+<h3>a-ii) Tablas de enrutamiento de los hosts</h3>
+<div class="codehilite"><pre><span></span><code>   Hosts subred 1                    Hosts subred 2
+   Red destino / Máscara   Gateway   Red destino / Máscara   Gateway
+   192.168.0.0 /24        —         192.168.1.0 /24        —
+   0.0.0.0    /0           192.168.0.1  0.0.0.0  /0       192.168.1.1
+
+   Hosts subred 3
+   Red destino / Máscara   Gateway
+   192.168.2.0 /24        —
+   0.0.0.0    /0           192.168.2.1
+</code></pre></div>
+
+<p><em>Por qué el host tiene una sola entrada además de la red:</em> porque un host <strong>no enruta</strong>, sólo entrega. Todo lo que no sea de su propia subred va al <strong>default gateway</strong> (<code>0.0.0.0/0</code>). Y <strong>por qué el gateway es el router que está en su propia subred</strong> (<code>192.168.0.1</code> para la subred 1): por la misma razón del <em>next hop</em> de arriba: para poder hablar con el gateway tiene que poder <strong>alcanzarlo directamente</strong>, o sea que su IP debe estar en la subred del host.</p>
+<p><em>Suposición justificada:</em> los routers usan la <strong>dirección más baja</strong> de cada subred como gateway (<code>192.168.0.1</code>, <code>.1.1</code>, <code>.2.1</code>), que es la convención que aparece en las soluciones oficiales de FING y la que se usa en el enunciado (<code>sirc1003</code>).</p>
+<h3>b-i) ¿Por qué hay que renumerar?</h3>
+<p>Acá está el corazón conceptual de la clase, y es <strong>sumarización</strong> aplicada bit a bit.</p>
+<p><strong>Lo que se quiere:</strong> un solo switch para las subredes 2 y 3 ⇒ <strong>una sola subred IP</strong> que las contenga a las dos. Si R1 tiene que announcement una sola entrada para las dos, ambas tienen que ser <strong>contiguas en el espacio de direcciones</strong> y tener un prefijo común que las cubra.</p>
+<p><strong>Intentando incluir <code>192.168.1.0/24</code> y <code>192.168.2.0/24</code>:</strong></p>
+<div class="codehilite"><pre><span></span><code>   Bloque /22 que empieza en 192.168.0.0:
+     192.168.0.0/22  =  192.168.0.0  a  192.168.3.255
+     ▲              ▲
+     incluye        incluye hasta 192.168.3.255
+     192.168.0.0/24
+     e incluye 192.168.1.0/24 y 192.168.2.0/24  ✓
+
+   ¿Es el prefijo más corto que las cubre? Sí:
+     /23 desde 192.168.0.0  = 192.168.0.0  a  192.168.1.255   → NO incluye la .2
+     /23 desde 192.168.2.0  = 192.168.2.0  a  192.168.3.255   → NO incluye la .1
+
+   Entonces el mínimo es /22, y ese /22 mete adentro
+   192.168.0.0/24, que es LA SUBRED 1.  ← el problema
+</code></pre></div>
+
+<p><strong>Verificación bit a bit de por qué el /22 es el mínimo</strong> (esto es lo que hay que saber hacer):</p>
+<div class="codehilite"><pre><span></span><code>   Los tres /24 de la subred:
+     192.168.0.0/24   tercer octeto: 0   = 00000000
+     192.168.1.0/24   tercer octeto: 1   = 00000001
+     192.168.2.0/24   tercer octeto: 2   = 00000010
+                                                     ▲
+     los 3 octetos son iguales → los bits que importan
+     son los últimos 8 del TERCER octeto
+
+   Para que un prefijo cubra los valores 0, 1 y 2, tiene que
+   cubrir el rango 0 a 3, porque los bits que los distinguen son
+   los DOS últimos:
+
+     00000000 = 0    ┐
+     00000001 = 1    ├─ los dos últimos bits
+     00000010 = 2    ┘
+
+     Un prefijo que no toque esos 2 bits tiene que llegar hasta
+     el 3er octeto = 00000011 (= 3)  →  /22  →  192.168.0.0/22
+
+   Un /23 sólo congelaría 1 bit (0000000_), o sea o el 0-1 o el
+   2-3, y por lo tanto no alcanza para los tres.
+
+   Conclusión: cualquier prefijo que cubra las subredes 1, 2 y 3
+   (en la numeración original) tiene que incluir 192.168.0.0/24.
+   ⇒ hay que renumerar.
+</code></pre></div>
+
+<h3>b-ii) Las dos soluciones, y por qué la primera es la mejor</h3>
+<div class="codehilite"><pre><span></span><code>   SOLUCIÓN 1 (la oficial, y la elegida)
+   ─────────────────────────────────────
+   Subred 1:  192.168.0.0/24  →  RENUMERADA a  192.168.4.0/24
+   Subred 2 + 3:  192.168.1.0/24 + 192.168.2.0/24
+                 ────────────────────────────────
+                    192.168.1.0/23   (192.168.1.0 – 192.168.2.255)
+                 ^^^^^^^^^^^^^^^^^^^^^
+                 un solo prefijo, un solo dominio de broadcast
+
+        ┌──────────────────┐        ┌──────────────────────────────┐
+        │  Subred 1        │        │  Subred 2 + Subred 3 (SWITCH) │
+        │  192.168.4.0/24  │        │  192.168.1.0/23              │
+        │                  │        │                              │
+        │  H1 ─── .4  .1   │        │  H2 ─ .2 .1      R1: .1      │
+        │             R1   │════════│  H3 ─ .3 .1                │
+        │                  │  enlace│       (un switch, no R2)    │
+        └──────────────────┘  físico└──────────────────────────────┘
+        Se renumeran 100 direcciones (todas las de la subred 1).
+
+   SOLUCIÓN 2
+   ──────────
+   Subred 1:  192.168.0.0/24  (sin tocar)
+   Subred 2:  192.168.1.0/24  →  renumerada a  192.168.3.0/23
+   Subred 3:  192.168.2.0/24  →  queda dentro de 192.168.2.0/23
+
+        192.168.2.0/23 = 192.168.2.0 – 192.168.3.255
+                          ▲                    ▲
+                          incluye la subred 3  incluye la subred 2 renumerada
+
+        Se renumeran 100 direcciones también, PERO la subred 2
+        ahora es un /23, o sea que pasa de 254 a 510 direcciones.
+</code></pre></div>
+
+<p><strong>Comparación honesta de las dos (esto es lo que el examen pide implícitamente con "la menor cantidad de direcciones posibles"):</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Solución 1</th>
+<th>Solución 2</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Subredes renumeradas</td>
+<td><strong>1</strong> (la subred 1)</td>
+<td><strong>1</strong> (la subred 2)</td>
+</tr>
+<tr>
+<td>Direcciones de host modificadas</td>
+<td>~100</td>
+<td>~100</td>
+</tr>
+<tr>
+<td>Tamaño del bloque del switch</td>
+<td><code>/23</code> = 510 direcciones</td>
+<td><code>/23</code> = 510 direcciones</td>
+</tr>
+<tr>
+<td>Direcciones de <strong>red</strong> de las subredes</td>
+<td>1 renumerada</td>
+<td>1 renumerada</td>
+</tr>
+<tr>
+<td><strong>Problema de la 2</strong></td>
+<td>—</td>
+<td>la subred 2 pasa de <code>/24</code> a <code>/23</code>: <strong>cambia su máscara</strong>, o sea que hay que reconfigurar la máscara de 100 hosts además de la dirección</td>
+</tr>
+<tr>
+<td>Tabla de R1</td>
+<td>2 entradas</td>
+<td>2 entradas</td>
+</tr>
+</tbody>
+</table>
+<p><strong>La oficial prefiere la 1</strong> porque en la 1 <strong>sólo cambian direcciones IP</strong>: la subred renumerada conserva su <code>/24</code>, así que su máscara no cambia y los hosts sólo cambian su IP. En la 2 hay que cambiar IP <strong>y</strong> máscara. Con una red de 100 hosts eso es la misma cantidad de direcciones, pero <strong>más configuración</strong>.</p>
+<p><em>Suposición que hago y declaro:</em> el enunciado dice "modificar la menor cantidad de <strong>direcciones IP</strong> posibles", y en sentido estricto las dos soluciones modifican un número parecido de direcciones. Si en tu material aparece sólo la solución 1, es por este criterio de máscara. <strong>Si el enunciado te permitiera dejar una subred con máscara /23 y no te importara la reconfiguración, la 2 también es válida</strong> — y eso es exactamente el tipo de decisión que hay que justificar por escrito en un examen.</p>
+<h3>b-iii) La nueva tabla de R1 (solución 1)</h3>
+<div class="codehilite"><pre><span></span><code>   Configuración R1
+   Red destino / Máscara      Gateway   Interfaz
+   ─────────────────────────  ─────────  ─────────
+   192.168.4.0 / 255.255.255.0   —      eth0
+   192.168.0.0 / 255.255.255.0   —      eth1     ← 192.168.0.0/22
+   192.168.1.0 / 255.255.254.0   —      eth1
+</code></pre></div>
+
+<p><em>Interpretación:</em> la subred 1 <strong>dejó de estar en <code>192.168.0.0/24</code></strong> y pasó a <code>192.168.4.0/24</code>, así que R1 ya <strong>no</strong> necesita una entrada para ella: ahora la anuncia con el <strong>default <code>0.0.0.0/0</code></strong> hacia su ISP, que es lo que corresponde a una red privada. Y la subred del switch cambió de máscara de <code>/24</code> a <strong><code>/23</code></strong>: los hosts de la subred 3 (<code>192.168.2.x</code>) ahora son de la <strong>misma subred</strong> que los de la subred 2, así que <strong>ya no necesitan salir al router para comunicarse entre ellos</strong>: se entregan directo por el switch. <strong>Ese es el beneficio real del ejercicio</strong>: menos tránsito por el router, menos encapsulación, y un dominio de broadcast compartido.</p>
+<h2>3.2 Nota: cuándo sí se pueden agrupar dos <code>/24</code> — el caso del Examen 2009-12</h2>
+<p>El <code>sirc0912</code> Problema 1 usa las subredes <code>192.168.108.0/24</code>, <code>192.168.109.0/24</code> y <code>192.168.111.0/24</code>, y su solución oficial <strong>agrupa 108 y 109 en <code>192.168.108.0/23</code></strong> sin renumerar nada. ¿Por qué ahí sí y en el caso anterior no? <strong>Por la paridad del tercer octeto</strong>, y es el mismo razonamiento bit a bit:</p>
+<div class="codehilite"><pre><span></span><code>   /23 = el último bit del TERCER octeto queda libre.
+   Un /23 cubre X.0.0 – X.1.255, es decir los pares {0,1}, {2,3},
+   {4,5}, ... Necesita que el 3er octeto sea PAR para arrancar.
+
+   108 = 01101100  (par)   109 = 01101101  (impar)
+        └─ los 6 primeros bits iguales, difieren sólo en el último
+   → 01101100|0 = 192.168.108.0/23  los cubre a los dos   ✓ SIN renumerar
+
+   111 = 01101111  (impar)  110 = 01101110  (par)
+   → 0110111|0 = 111 = 192.168.110.0/23  cubre 110 y 111   ✓
+   → y 192.168.108.0/23 cubre 108 y 109                      ✓
+
+   Pero 110, 111, 112, 113 sería 4 redes y ningún /23 (ni /22
+   alcanzable sin arrastrar la 192.168.108.0/24) las cubre todas
+   sin meter una subred de más.
+</code></pre></div>
+
+<p><strong>La regla para el examen, en una línea:</strong> <em>dos <code>/24</code> contiguos se pueden sumar en un <code>/23</code> </em><em>si y sólo si el primero tiene el tercer octeto par</em><em>.</em> Si es impar, hay que renumerar. Y para tres <code>/24</code> hay que mirar los <strong>dos</strong> últimos bits, como hicimos en §3.1 b-i.</p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen</h2>
+<ol>
+<li>La cabecera IPv4 mínima son <strong>20 bytes</strong> = <strong>5 filas de 32 bits</strong>, con <strong>13 campos</strong>. <strong>No cambió desde 1981.</strong></li>
+<li><strong>IHL</strong> dice el tamaño de la cabecera en <strong>palabras de 4 bytes</strong>: <code>IHL × 4</code>. Con opciones, de 20 a 60 bytes. <strong>En la práctica, IHL = 5 siempre.</strong></li>
+<li><strong>Dirección de red = dirección AND máscara.</strong> <strong>Broadcast = red + 2^(32−n) − 1.</strong> <strong>Rango de hosts = red + 1 … red + 2^(32−n) − 2.</strong> <strong>Chequeo: <code>2^(32−n) − 2</code> hosts útiles.</strong></li>
+<li>Las <strong>clases A/B/C/D/E</strong> son historia de 1981. Con una clase B para 300 hosts se desperdician <strong>65 234</strong> de 65 534 direcciones: el 99,5 %. Por eso CIDR, en 1993.</li>
+<li><strong>El <code>/n</code> y el número mágico</strong> (<code>RFC 1878</code>) son el atajo del subnetting: el menor número de la tabla que sea ≥ lo que necesitás.</li>
+<li><strong>CIDR</strong> (<code>RFC 4632</code>) liberó la longitud del prefijo, volvió la máscara <strong>local a cada enlace</strong> y rehabilitó la <strong>sumarización</strong>, sin la cual la tabla de Internet no cabría.</li>
+<li>Los rangos especiales existen <strong>cada uno por un motivo semántico</strong>: <code>0/8</code> = inexistencia, <code>127/8</code> = yo mismo, <code>169.254/16</code> = autoconfiguración en el enlace, <code>224/4</code> = grupo, <code>255.255.255.255</code> = broadcast local. Las <strong>privadas</strong> existen porque IPv4 se agotó y porque no todo tiene que ser alcanzable desde todo el mundo.</li>
+<li>El <strong>checksum</strong> es la suma del complemento a uno de las palabras de 16 bits de la cabecera, <strong>con acarreo</strong>, y se verifica porque al verificar da <code>0xFFFF</code>. Cubre <strong>sólo la cabecera</strong>.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> ¿Por qué existe el campo IHL si la cabecera IPv4 "son 20 bytes"?</p>
+<details><summary>Respuesta</summary>
+
+Porque la cabecera puede llevar **opciones**, que ocupan de 4 a 40 bytes. El campo **IHL** dice cuántos bloques de 32 bits (4 bytes) ocupa la cabecera, así que el tamaño real es `IHL × 4`. Sin él, el receptor no sabría dónde empieza el campo de datos. El rango va de **5** (20 bytes, sin opciones) a **15** (60 bytes). Hoy, en la práctica, **IHL = 5 siempre**: las opciones históricas (record route, source route, timestamp) están obsoletas y casi todo las descarta.
+
+</details>
+
+<p><strong>2.</strong> Calculá la red, el rango de hosts y el broadcast de <code>192.168.10.55</code> con máscara <code>/26</code>.</p>
+<details><summary>Respuesta</summary>
+
+`192.168.10.55` = `11000000.10101000.00001010.00110111`. La `/26` = `11111111.11111111.11111111.11000000` = `255.255.255.192`. El AND da `11000000.10101000.00001010.00000000` = **`192.168.10.0`**.
+
+Tamaño `2⁶ = 64`. **Red** `192.168.10.0` · **hosts** `.1` a `.62` (62 útiles) · **broadcast** `.63`. Chequeo: `1 + 62 + 1 = 64`. Y el broadcast **no es** `.255`: depende de la máscara.
+
+</details>
+
+<p><strong>3.</strong> ¿Qué clase tiene <code>172.16.40.9</code> y qué máscara lleva "por defecto"?</p>
+<details><summary>Respuesta</summary>
+
+`172` = `10101100`, y empieza con `10` ⇒ **clase B** ⇒ máscara `/16` = `255.255.0.0`, con **65 534** hosts útiles. Ojo: que la clase sea B **no significa que la máscara sea /16**. La clase sólo servía para que los routers dedujeran la máscara automáticamente; con CIDR la máscara se configura, y de hecho `172.16.40.9/16` es una dirección **privada** (rango `172.16/12`).
+
+</details>
+
+<p><strong>4.</strong> ¿Por qué se agotaron las clases B? Poné los números.</p>
+<details><summary>Respuesta</summary>
+
+Porque **no había clase intermedia**. Una empresa con 300 hosts no entra en una clase C (254) y sí en una clase B (65 534): le sobran **65 234 direcciones**, el 99,5 % del bloque. Y en el otro extremo, una biblioteca con 20 computers "necesita" una clase C y desperdicia 234. Como sólo había **16 384 clases B en todo el mundo** y cualquiera podía pedir una, **se agotaron primero**, mientras sobraban clases C. Eso es lo que forzó el **CIDR en 1993**.
+
+</details>
+
+<p><strong>5.</strong> ¿Por qué DHCP autoasigna <code>169.254.x.x</code> y no <code>0.0.0.0</code> ni <code>192.168.1.5</code>?</p>
+<details><summary>Respuesta</summary>
+
+**`0.0.0.0` significa "no tengo dirección"**: es la dirección de fuente que se manda antes de tener IP, la que usa un servidor para "escuchá en todas las interfaces" y la de la ruta por defecto. Un host que se autoasignara `0.0.0.0` **no tendría a dónde responder**.
+
+**`192.168.1.5` es privada**, y las privadas sólo funcionan **detrás de un NAT**, que necesita una entrada de traducción para esa dirección. Sin NAT detrás, el router de salida descarta el paquete y el host queda sin comunicación: es el problema que se intenta resolver.
+
+**`169.254/16` está diseñada justamente para la autoconfiguración**: el host elige una dirección al azar, manda un ARP request para hacer **DAD** y si nadie contesta se la queda. Es **link-local**: nunca sale de la LAN, y sirve para algo local (compartir archivos) pero no para Internet.
+
+</details>
+
+<p><strong>6.</strong> Calculá el checksum de la cabecera de un datagrama con longitud total 60, TTL 64, protocolo TCP, origen <code>192.168.10.55</code> y destino <code>219.41.31.21</code>.</p>
+<details><summary>Respuesta</summary>
+
+Palabras de 16 bits: `4500 003C 1C46 4000 4006 0000 C0A8 0A37 DB29 1F15`.
+
+Suma con acarreo: `4500+003C=453C` · `+1C46=6182` · `+4000=A182` · `+4006=E188` · `+0000=E188` · `+C0A8=1A230 → acarreo → A231` · `+0A37=AC68` · `+DB29=17768 → acarreo → 8792` · `+1F15=A6A7`.
+
+Checksum = `NOT(A6A7)` = **`0x5958`**. Verificación: `A6A7 + 5958 = FFFF`. Cubre **sólo la cabecera**, por eso los routers ajustan el suyo en incremental al cambiar el TTL y no lo recalculan.
+
+</details>
+
+<p><strong>7.</strong> Dos <code>/24</code> contiguos, <code>192.168.1.0/24</code> y <code>192.168.2.0/24</code>. ¿Se pueden agrupar en un solo prefijo? ¿Por qué?</p>
+<details><summary>Respuesta</summary>
+
+Sí, en **`192.168.0.0/22`**. Porque un `/23` sólo congela el último bit del tercer octeto, o sea cubre `{0,1}` o `{2,3}` pero no los tres valores `0, 1, 2`. Para cubrir los tres hay que dejar libres los **dos** últimos bits, y eso exige un `/22` que arranca en `192.168.0.0`.
+
+**El problema:** ese `/22` incluye `192.168.0.0/24`, que es una tercera subred del ejercicio. Por eso hay que **renumerar**. Ése es el argumento bit a bit del `2010-03 Problema 1 b-i`.
+
+</details>
+
+<p><strong>8.</strong> ¿Y si las dos subredes fueran <code>192.168.108.0/24</code> y <code>192.168.109.0/24</code>? ¿Se pueden agrupar?</p>
+<details><summary>Respuesta</summary>
+
+**Sí**, en **`192.168.108.0/23`**, sin renumerar nada. Un `/23` deja libre el último bit del tercer octeto, así que cubre `{0,1}`, `{2,3}`, ... y necesita **que el tercero sea par**. `108` es par y `109` es su impar contiguo: `01101100|0` = `192.168.108.0/23`. Ese es el caso del `sirc0912`, donde la solución oficial agrupa 108 y 109 sin tocar una sola dirección. **La regla: dos `/24` contiguos se suman en un `/23` si y sólo si el primero tiene el tercer octeto par.**
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>eirc1003</code> / <code>sirc1003</code></strong> — Problema 1 (30 pts): tres subredes <code>/24</code> con R1 y R2, tabla de enrutamiento de routers y de hosts, y el renumerado mínimo al reemplazar R2 por un switch. El mejor ejemplo de <strong>sumarización</strong> del banco.</li>
+<li><strong>Examen <code>eirc0912</code> / <code>sirc0912</code></strong> — Problema 1: tres clases C y la agregación de <code>192.168.108.0/24</code> + <code>192.168.109.0/24</code> en una <code>/23</code>.</li>
+<li><strong>Examen <code>eirc1103</code> / <code>sirc1103</code></strong> — Problema 2d: dividir un <code>/24</code> en dos subredes de tamaños distintos. · <strong>Examen <code>eirc0812</code> / <code>sirc0812</code></strong> — P2: plan de numeración.</li>
+<li><strong>Examen <code>eirc0712</code> / <code>sirc0712</code></strong> — Problema 2a: ARP entre dos hosts y un router. · <strong>Examen <code>eirc0608</code></strong> — P4: <code>200.40.224.0/25</code> subdividido en redes de 18, 11 y 9 hosts.</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 5 "La capa de red" — §5.4 el protocolo IP: la cabecera.</li>
+<li><strong>RFC 791</strong> — Internet Protocol (1981): el formato de la cabecera, el TTL, la fragmentación y el mínimo de 576 bytes.</li>
+<li><strong>RFC 1122</strong> — Requirements for Internet Hosts (1981): comportamiento de host, incluido el mínimo de 576 bytes.</li>
+<li><strong>RFC 1812</strong> — Requirements for IP Version 4 Routers (1995): qué debe hacer un router con la cabecera, incluido el checksum y el TTL.</li>
+<li><strong>RFC 1878</strong> — Requirements for IP Address Reservation (1996): <strong>el anexo con el "número mágico"</strong>, la tabla de hosts por prefijo.</li>
+<li><strong>RFC 4632</strong> — CIDR: An Address Assignment Plan for IPv4 (2006): el fin de las clases, el prefijo libre y la sumarización.</li>
+<li><strong>RFC 8200</strong> — IPv6 (2017): la cabecera fija de 40 bytes, sin IHL ni opciones, y el campo <em>Flow Label</em>.</li>
+<li>⚠️ <strong>RFC que hay que verificar antes de citar en un examen</strong> (no figuran en <code>ACTUALIZACIONES.md</code>): <strong><code>RFC 1918</code></strong> (direcciones privadas), <strong><code>RFC 950</code></strong> (subnetting, 1984, obsoleta), <strong><code>RFC 3927</code></strong> (link-local/APIPA), <strong><code>RFC 6598</code></strong> (CGNAT, <code>100.64/10</code>) y <strong><code>RFC 7126</code></strong> (cabecera IPv4 con IHL). Confirmalos en <code>rfc-editor.org</code>.</li>
+<li><strong>Clase siguiente:</strong> 27 — Subnetting, método paso a paso</li>
+</ul></body></html>

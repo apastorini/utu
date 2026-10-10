@@ -1,0 +1,116 @@
+===== [pag 1] =====
+1/3
+Examen de Introducción a las Redes de Computadoras
+y Comunicación de Datos
+(ref: eirc0602.doc)
+6 de febrero de 2006
+
+Atención: para todos los ejercicios, suponga que dispone de los tipos de datos básicos (p.ej. lista,
+cola, archivo, string, etc.) y sus funciones asociadas (ej: tail(lista), crear(archivo), concatenar(string, string).
+
+Ejercicio 1
+
+Se desea implementar sobre un enlace la posibilidad de controlar para ciertos flujos TCP/UDP en paquetes
+IP, tal que el retardo generado por el nodo para los mismos, no supere cierto valor. El resto de los flujos se
+deberán tratar con una política “best effort”.
+
+Para diferenciar los flujos con control de retardo del resto, se codifica en el campo TOS (Type of Service)
+del encabezado IP, donde el último bit del mismo en 1 indica que debe controlarse el tiempo de retardo,
+mientras que cuando el campo termina en 0, se realiza una política “best effort”. Los paquete IP, ya se
+reciben clasificados, como se indica anteriormente.
+
+Se cumplen las siguientes condiciones:
+•
+El enlace de salida para el cual se desea controlar el retardo es de 64 Kbps
+•
+Los paquetes de flujo con control de retardo son todos de tamaño 256 bytes
+•
+El resto de los paquetes pueden tener cualquier largo
+•
+El retardo máximo aceptado para flujos con control de retardo es de 200 mseg. En caso de no
+poder cumplirse deberá descartarse el paquete.
+
+Se cuentan con
+•
+Funciones que permiten fragmentar paquetes, los que serán rearmados en el destino. Igualmente
+se debe utilizar la fragmentación solamente cuando sea necesario.
+•
+Estructuras de encolamiento de paquetes, para posterior transmisión con política FIFO de los
+mismos.
+
+Se pide:
+a) Defina con lo presentado como resolver el problema planteado con las restricciones indicadas.
+b) Especifique las funciones requeridas para resolver el problema propuesto, (incluyendo manejo de
+colas).
+c) Especificar en un lenguaje de alto nivel la solución.
+
+Ejercicio 2
+
+Se pretende que una computadora mantenga su dirección IP original aún cuando ya no esté conectada
+físicamente a la red donde se le asignó. Se pretende además que cuando se encuentre en otra red pueda
+seguir enviando y recibiendo paquetes hacia y desde los hosts con los que se comunica estando en su red
+LAN.
+
+===== [pag 2] =====
+2/3
+a) ¿Qué beneficio implica para el usuario de dicha computadora, mantener su dirección IP original y
+no simplemente cambiarla a una que pertenezca al rango asignado a la red que visita en cada
+momento?
+
+b) Considere la siguiente topología, donde una
+computadora con dirección IP perteneciente
+al prefijo asignado para las computadoras
+de la LAN A, pretende moverse a la LAN B.
+¿Cómo lo resolvería para éste caso?
+
+Se pretende que la solución sea de rápida
+adopción en el mercado, por lo tanto debe hacer uso de protocolos conocidos.
+
+c) Considere ahora la siguiente topología, donde la computadora se mueve de la LAN A a la LAN C.
+¿Cómo lo resolvería para éste caso?
+
+LAN C
+LAN A
+COMPUTADORA
+INTERNET
+ROUTER
+ROUTER
+
+Tenga presente que en éste caso se encuentra la red Internet de por medio por lo tanto la solución,
+para que sea escalable, no debe implicar un cambio en toda la red.
+
+d) Escriba los procesos que implementan las soluciones propuestas en b) y c) e indique en que
+equipos deberían ejecutarse.
+
+Nota: (Aclaraciones para todo el ejercicio)
+•
+Todas las redes LAN del presente ejercicio son Ethernet (IEEE 802.3).
+•
+Todos los traslados insumen menos de un minuto.
+
+Ejercicio 3
+
+Se desea diseñar un sistema para realizar transmisiones de radio por Internet. Para ello se querrá diseñar
+un protocolo para transportar las muestras de voz digitalizada teniendo en cuenta las características
+usuales de una transmisión de radio, es decir, que la comunicación es en una dirección únicamente (no hay
+una “conversación” como en el caso de la telefonía) y que por ello la tolerancia al retardo puede ser mayor
+que en el caso de la telefonía.
+LAN A
+LAN B
+ROUTER
+COMPUTADORA
+
+===== [pag 3] =====
+3/3
+
+1. Proponga un protocolo para este uso. Considere que se dispone de un buffer de tamaño fijo donde
+almacenar los mensajes con muestras de voz que arriban y que este buffer tiene la capacidad de
+insertar un paquete en cualquier posición.
+Tenga en cuenta que la Internet introduce problemas tales como duplicaciones de paquetes,
+entrega de paquetes fuera de órden y pérdidas de los mismos.
+Se tratará de explotar el hecho de la mayor sensibilidad al retardo para lograr la máxima inmunidad
+frente al jitter y a las entregas fuera de orden.
+
+2. Implemente los procesos de recepción de mensajes y de servicio del buffer. Tenga en cuenta que
+la entrega de muestras de voz al sistema de reproducción debe realizarse a una tasa constante y
+recuerde la capacidad de inserción en cualquier posición de la que dispone el buffer.

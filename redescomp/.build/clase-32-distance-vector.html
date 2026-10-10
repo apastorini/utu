@@ -1,0 +1,1172 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 32 — Enrutamiento distance-vector: Bellman-Ford y el conteo a infinito</h1>
+<p><strong>Bloque:</strong> D (Capa de red) · <strong>Semana:</strong> 11 · <strong>Duración estimada:</strong> 115 min
+<strong>Correlativa:</strong> Clase 31 (NAT, PAT y sus tricks) · <strong>Sigue con:</strong> Clase 33 (link-state, Dijkstra y OSPF)
+<strong>Material de referencia:</strong> Tanenbaum cap. 5 (§5.6) · RFC 2453, RFC 1058, RFC 2080</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Explicar qué intercambian dos routers <strong>distance-vector</strong> y por qué no conocen la topología.</li>
+<li>Escribir la <strong>ecuación de Bellman-Ford</strong> y justificar por qué es correcta desde el <strong>principio de optimalidad</strong>.</li>
+<li>Ejecutar <strong>a mano, con la tabla de iteraciones</strong>, el algoritmo DV hasta la convergencia.</li>
+<li>Reproducir <strong>el conteo a infinito</strong> ronda por ronda y explicar <strong>por qué</strong> los routers se realimentan.</li>
+<li>Describir las <strong>cuatro soluciones</strong> clásicas y argumentar por qué <strong>ninguna es completa</strong>.</li>
+<li>Enumerar <strong>ventajas y desventajas</strong> de distance-vector con la nomenclatura de la cátedra.</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2006-08 P3</code> (10 pts), <code>2008-12 Problema 2</code> (30 pts), <code>2010-02 Problema 2</code> (30 pts), <code>2010-07 Problema 2b</code>, <code>2007-02 P3</code> (10 pts).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 Tres maneras de que un router sepa a dónde mandar un paquete</h2>
+<div class="codehilite"><pre><span></span><code> (a) ENRUTAMIENTO CENTRALIZADO
+     ┌──────────────────┐
+     │  Router "jefe"   │  conoce TODA la topología y se la baja a
+     │  con la tabla    │  cada uno de los demás
+     │  completa        │
+     └────────┬─────────┘
+              │  "tu camino a Y es por Z"
+     ┌────────┴─────────┐
+     │ R1    R2    R3   │   cada uno sólo recibe SU fila
+     └──────────────────┘
+     ruta siempre optima · un punto unico de falla · no escala
+
+ (b) DISTANCE-VECTOR  &lt;-- ESTA CLASE
+        R1 &lt;--vector--&gt; R2
+         ^              ^
+       vector        vector
+         |              |
+        R3 &lt;------------+
+     Cada nodo conoce SOLO lo que le dijeron sus vecinos. En el
+     sistema no existe ninguna nocion de "topologia".
+
+ (c) FORWARDING POR PREFIJO  &lt;-- clase de capa de red
+     ┌────────────────────────┐
+     │ 10.0.0.0/8   -&gt; R1     │  LONGEST PREFIX MATCH:
+     │ 10.1.0.0/16  -&gt; R2     │  se busca el prefijo y se sale
+     │ 0.0.0.0/0    -&gt; R3     │  por esa interfaz
+     └────────────────────────┘
+     NO calcula nada: solo consulta.
+</code></pre></div>
+
+<p><strong>El punto que vale la mitad de la nota conceptual:</strong> en (c) <strong>no hay cálculo</strong> (el <em>longest prefix
+match</em> busca en una tabla que alguien ya llenó); en (b) el cálculo lo hace <strong>cada router por su
+cuenta</strong> y el resultado se traduce a una tabla de forwarding. Cuando el enunciado pida "la tabla
+de forwarding", quiere esa <strong>traducción</strong> a <code>(Destino, Próximo Salto, Costo)</code>.</p>
+<h2>1.2 La ecuación de Bellman-Ford</h2>
+<div class="codehilite"><pre><span></span><code>  c(x,v)  costo del enlace DIRECTO entre x y su vecino v.
+          NO se envia: cada router lo tiene en su propia interfaz.
+  D_v(y)  lo que el vecino v me anuncio que le cuesta llegar a y.
+  D_x(y)  mi estimacion actual de la distancia a y.
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>  ┌───────────────────────────────────────────────────────┐
+  │   D_x(y)  =  min  {  c(x,v)  +  D_v(y)  }            │
+  │                v en V(x)                             │
+  └───────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<h3>Por qué la ecuación es correcta (principio de optimalidad)</h3>
+<p>Es lo que pide <code>2006-08 P3</code> cuando dice "<strong>detalladamente</strong>". Supongamos que el mejor camino de
+<code>x</code> a <code>y</code> es <code>x --(c1)--&gt; n1 --(c2)--&gt; n2 --&gt; ... --&gt; y</code>. <code>x</code> tiene que entregar el paquete a
+<strong>alguien</strong>, y ese alguien es <code>n1</code>. ¿Qué tiene que hacer <code>n1</code> desde <code>n1</code>?</p>
+<blockquote>
+<p><strong>El mejor camino de <code>n1</code> a <code>y</code>.</strong> Porque si el tramo que le queda a <code>n1</code> <strong>no fuera óptimo</strong>,
+yo podría construir un camino mejor de <code>x</code> a <code>y</code>: tomaría mi enlace <code>x -&gt; n1</code> (costo <code>c1</code>) y
+seguiría por ese camino suboptimal. Eso <strong>contradice</strong> que el mío era el mejor.</p>
+</blockquote>
+<p>Eso es el <strong>principio de optimalidad</strong> (Bellman, 1957): <em>si el camino óptimo de <code>x</code> a <code>y</code> pasa
+por <code>v</code>, el tramo de <code>v</code> a <code>y</code> es él mismo óptimo desde <code>v</code></em>. De ahí sale la ecuación: el camino
+óptimo <strong>tiene que empezar</strong> por algún vecino <code>v</code>; llegar a <code>v</code> cuesta <code>c(x,v)</code>; y de <code>v</code> a <code>y</code>
+cuesta como mínimo <code>D_v(y)</code>. Elegir <code>v</code> cuesta <code>c(x,v) + D_v(y)</code>, y el óptimo es el <code>min</code> sobre
+todos los vecinos. QED</p>
+<p><strong>Corolario:</strong> <code>D_x(y)</code> es no negativo y, como la recurrencia es sobre caminos <strong>sin ciclos</strong>, el
+algoritmo converge. <strong>Justo lo que se rompe en §1.4</strong>: el principio de optimalidad deja de ser
+aplicable cuando hay un bucle, porque el supuesto "sin ciclos" ya es falso.</p>
+<h2>1.3 La actualización: cuándo y qué se manda</h2>
+<p><strong>Qué se manda: un VECTOR, no una topología.</strong> Eso es <strong>todo</strong> el mensaje:</p>
+<div class="codehilite"><pre><span></span><code>  ┌───────────────────────────────────────────────┐
+  │  VECTOR DE DISTANCIAS de x  (= su tabla)    │
+  │   destino        distancia   próximo salto │
+  │   192.168.1/24       0          local       │
+  │   192.168.2/24       2          R2          │
+  │   0.0.0.0/0          6          R2          │
+  └───────────────────────────────────────────────┘
+</code></pre></div>
+
+<p>Un LSA (clase siguiente) describe <strong>un</strong> enlace de quien lo emite; el vector describe <strong>todas</strong> las rutas
+de quien lo emite. De ahí el nombre "rumor": es una afirmación sobre el mundo entero, basada en
+información que el emisor ya está viejo.</p>
+<div class="codehilite"><pre><span></span><code> PERIODICO:  un timer T (en RIP, 30 s). Al vencer, mando mi tabla completa
+             por TODOS los enlaces.      + simple, robusto
+                                         - una noticia mala tarda hasta T
+ DISPARADO POR CAMBIO (triggered update): mi tabla cambió, mando el vector
+             AHORA.                      + la noticia buena viaja rápido
+             - con la mala dispara MUCHAS veces seguidas, y ahí aparece el
+               conteo a infinito. Por eso RIP limita los triggered updates
+               a 1 cada 1 a 5 s.
+</code></pre></div>
+
+<p><strong>El procedimiento exacto (solución oficial de <code>2006-08 P3</code>, citado):</strong></p>
+<blockquote>
+<p>Sea <code>T0</code> la tabla propia y <code>T1</code> la tabla recibida del router vecino <code>R</code>. Para cada ruta a un host
+<code>A</code> en <code>T1</code> <strong>a través de <code>R</code></strong>: si <strong>no existe</strong> en <code>T0</code>, <strong>agrego</strong> la ruta hacia <code>A</code> por <code>R</code>
+incrementando la distancia; si <strong>existe</strong> en <code>T0</code> pero con una <strong>métrica mayor</strong>, la <strong>sustituyo</strong>
+por la de <code>R</code>; si <strong>existe</strong> la misma ruta, la marco como <strong>"refrescada"</strong>. Luego de recibidos updates
+por <strong>todas</strong> las interfaces, <strong>borro</strong> todas las rutas <strong>"no refrescadas"</strong>.</p>
+</blockquote>
+<p>⚠ <strong>El último punto responde a la pregunta clásica de DV: ¿cómo sabe <code>x</code> que un vecino dejó de existir?</strong>
+No hay detección de caída de enlace en el mensaje: hay un <strong>timeout por ruta</strong>. Si una ruta no fue
+refrescada en esta ronda, el vecino que la anunciaba ya no existe y se borra. En RIP: <strong>180 s</strong>.</p>
+<h2>1.4 ⭐ El conteo a infinito — el diagrama más importante de la clase</h2>
+<p>Éste es <strong>el</strong> problema de distance-vector. Armemos la red mínima donde el conteo a infinito
+<strong>ocurre de verdad</strong>. La condición necesaria es que <strong>el destino tenga una única boca de salida
+y que esa boca la crucen juntos dos routers</strong>. Un triángulo simple NO sirve: el tercer router
+tiene siempre la verdad y el bucle se deshace en una ronda.</p>
+<div class="codehilite"><pre><span></span><code>                    Internet
+              destino: 0.0.0.0/0
+                       |
+                       |  enlace ISP, costo 1
+            ===========+============
+            ESTE ENLACE SE CAE (en t=1)
+            ==============================
+                       |
+                      R1
+                     /  \
+                    1    1
+                   /      \
+                 R2 ------ R3
+                    1
+</code></pre></div>
+
+<p>Enlaces del triángulo: <code>R1—R2 = 1</code>, <code>R1—R3 = 1</code>, <code>R2—R3 = 1</code>. Cada router tiene su LAN
+detrás, a costo 1. <strong>Internet se alcanza únicamente saliendo por R1.</strong></p>
+<h3>t = 0 — estado estable</h3>
+<p><code>D_R1(Internet) = 1 + 1 = 2</code>; <code>D_R2 = 1 + 2 = 3</code>; <code>D_R3 = 3</code>.</p>
+<table>
+<thead>
+<tr>
+<th>destino</th>
+<th>R1</th>
+<th>R2</th>
+<th>R3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LAN1</td>
+<td><strong>1</strong> (local)</td>
+<td>2 (vía R1)</td>
+<td>2 (vía R1)</td>
+</tr>
+<tr>
+<td>LAN2</td>
+<td>2 (vía R2)</td>
+<td><strong>1</strong> (local)</td>
+<td>2 (vía R2)</td>
+</tr>
+<tr>
+<td>LAN3</td>
+<td>2 (vía R3)</td>
+<td>2 (vía R3)</td>
+<td><strong>1</strong> (local)</td>
+</tr>
+<tr>
+<td>Internet</td>
+<td><strong>2</strong> (vía ISP)</td>
+<td>3 (vía R1)</td>
+<td>3 (vía R1)</td>
+</tr>
+</tbody>
+</table>
+<h3>t = 1 — R1 detecta la caída de su enlace al ISP</h3>
+<ul>
+<li>El enlace de R1 con el ISP <strong>no lo usa nadie más</strong>: la <strong>interfaz</strong> lo reporta caído y R1 pone
+  <code>D_R1(Internet) = ∞</code>.</li>
+<li><strong>R2 y R3 todavía no saben nada</strong>: su enlace con R1 está perfecto y lo único que escucharon de R1
+  fue <code>Internet = 2</code>. Siguen con 3.</li>
+</ul>
+<div class="codehilite"><pre><span></span><code>  R1 -&gt; Internet = INF         (¿y ahora qué? no tengo a quién preguntarle)
+  R2 -&gt; Internet = 3 vía R1    (¡sigue usando un enlace que ya no sirve!)
+  R3 -&gt; Internet = 3 vía R1
+</code></pre></div>
+
+<h3>t = 2 — el descubrimiento: los tres se realimentan</h3>
+<p>Acá está la <strong>semilla del bucle</strong>. Cada uno escucha a sus vecinos y aplica la ecuación:</p>
+<div class="codehilite"><pre><span></span><code>  R1 recibe de R2: "Internet está a 3 por mí"    -&gt;  c(R1,R2) + 3 = 1 + 3 = 4
+  R1 recibe de R3: "Internet está a 3 por mí"    -&gt;  1 + 3 = 4
+      -&gt;  R1 adopta 4, vía R2      ¡el camino que le pasa R2 pasa por R1!
+
+  R2 recibe de R1: "Internet está a INF"         -&gt;  1 + INF = INF  (invalida su 3)
+  R2 recibe de R3: "Internet está a 3 por R1"    -&gt;  1 + 3 = 4
+      -&gt;  R2 adopta 4, vía R3      ¡el camino vuelve por R1!
+
+  R3 recibe de R1: "Internet está a INF"         -&gt;  INF
+  R3 recibe de R2: "Internet está a 3 por R1"    -&gt;  1 + 3 = 4
+      -&gt;  R3 adopta 4, vía R2      ¡y vuelve por R1 otra vez!
+</code></pre></div>
+
+<p><strong>Leé el detalle importante:</strong> el <code>4</code> que R1 calcula sale de un rumor <strong>de R2</strong> que dice "llego
+a Internet en 3 por R1". O sea: <strong>R2 le está contando a R1 un camino que pasa por R1 mismo.</strong>
+Ese es el bucle, y por eso la métrica <strong>sube</strong> en vez de bajar a ∞.</p>
+<h3>t = 3, 4, 5, ... — la cuenta ascendente</h3>
+<table>
+<thead>
+<tr>
+<th>ronda</th>
+<th>R1 oye de R2</th>
+<th>R1 oye de R3</th>
+<th><strong>R1</strong></th>
+<th><strong>R2</strong></th>
+<th><strong>R3</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2</td>
+<td>1+4 = 5</td>
+<td>1+4 = 5</td>
+<td><strong>5</strong></td>
+<td><strong>5</strong></td>
+<td><strong>5</strong></td>
+</tr>
+<tr>
+<td>3</td>
+<td>1+5 = 6</td>
+<td>1+5 = 6</td>
+<td><strong>6</strong></td>
+<td><strong>6</strong></td>
+<td><strong>6</strong></td>
+</tr>
+<tr>
+<td>4</td>
+<td></td>
+<td></td>
+<td><strong>7</strong></td>
+<td><strong>7</strong></td>
+<td><strong>7</strong></td>
+</tr>
+<tr>
+<td><em>k</em></td>
+<td></td>
+<td></td>
+<td><em>k+2</em></td>
+<td><em>k+2</em></td>
+<td><em>k+2</em></td>
+</tr>
+<tr>
+<td>14</td>
+<td></td>
+<td></td>
+<td><strong>16</strong></td>
+<td><strong>16</strong></td>
+<td><strong>16</strong></td>
+</tr>
+<tr>
+<td>15</td>
+<td></td>
+<td></td>
+<td><strong>INF</strong></td>
+<td><strong>INF</strong></td>
+<td><strong>INF</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Interpretación.</strong> Durante ~14 rondas la red <strong>cree</strong> que tiene camino a Internet, y ese camino es un
+<strong>círculo</strong>: los paquetes dan vueltas hasta que el TTL los mate. En la práctica nunca se llega al ∞
+matemático: en RIP el infinito es <strong>16</strong> y el <em>garbage collection</em> borra la ruta en la ronda 14. <strong>Las
+filas de las LANs no se mueven nunca:</strong> el conteo a infinito afecta <strong>exactamente a la fila que se rompió</strong>.</p>
+<h3>Por qué el problema persiste aunque los tres hagan todo bien</h3>
+<p>Los tres están <strong>aplicando Bellman-Ford correctamente</strong>: el error no es de implementación sino de la
+<strong>ecuación</strong>, porque el principio de optimalidad ya no aplica (el supuesto "sin ciclos" es falso). La
+red se autoalimenta con un rumor falso. Por eso la solución no es "calcular mejor" sino <strong>romper la
+realimentación</strong>; y lo único que corta el círculo en el plano de datos es el <strong>TTL</strong> (ICMP tipo 11).</p>
+<h2>1.5 Las cuatro soluciones, y por qué ninguna es completa</h2>
+<h3>(1) Split horizon</h3>
+<blockquote>
+<p><strong>Regla:</strong> no le anuncies a <code>X</code> lo que aprendiste <strong>de</strong> <code>X</code>.</p>
+</blockquote>
+<p>Cada entrada marca <strong>de quién</strong> la aprendí; al generar el vector para <code>v</code> se omiten las entradas
+cuyo origen sea <code>v</code>.</p>
+<h3>(2) Split horizon con poison reverse (reverse envenenado)</h3>
+<blockquote>
+<p><strong>Regla:</strong> en vez de <strong>silenciar</strong>, anunciá <strong>INF</strong> ("inalcanzable") para lo que aprendiste de
+ese vecino.</p>
+</blockquote>
+<p>El silencio es ambiguo: el vecino no sabe si te callaste porque no tenés nada o porque no te
+llegó. El poison reverse es una <strong>afirmación explícita de falsedad</strong>.</p>
+<p>Los dos, aplicados a la red de §1.4 (modelo síncrono; <code>(*)</code> = "lo que yo tenía venía de vos, así
+que te enveneno INF"):</p>
+<div class="codehilite"><pre><span></span><code>  ronda  R1-&gt;R2  R1-&gt;R3  R2-&gt;R3  R3-&gt;R2  |  R1          R2          R3
+  ────────────────────── SPLIT HORIZON ───────────────────────────────────
+   1      INF      INF     3       3     |  INF         3           3
+   2      INF      INF     4       4     |  4 vía R2    4 vía R3    4 vía R2
+   2   silencio    4    silencio   4     |  (R1 se calló sobre R3; R3 sobre R2)
+   3      INF      5      INF      5     |  5 vía R3    INF         5 vía R1
+   4      INF      INF     INF      INF   |  INF         6 vía R1    INF
+   5                              |      INF         INF         INF
+   ⇒ los tres en INF, en 5 rondas
+
+  ────────────────────── POISON REVERSE ──────────────────────────────────
+   1      INF      INF     3       3     |  INF         3           3
+   2      INF      INF     INF (*)  INF (*)|  4           4           4
+   3      INF (*)  4      INF      INF    |  5 vía R3    INF         5 vía R1
+   4      5       INF (*)  INF      INF   |  INF         INF         INF
+   ⇒ los tres en INF, en 4 rondas, y con el mensaje explícito
+</code></pre></div>
+
+<p><strong>El caso real de <code>2010-07 P2b</code></strong> (el ISP es la única salida de una red de 3 routers, R1--R2,
+R1--R3, R2--R3, con <code>D_R1(Internet) = 2</code>): al caerse el enlace R1--ISP, <code>t=1</code> deja a R1 en ∞ y R2/R3
+siguen con 3 vía R1; en <code>t=2</code> los tres recalculan con lo que oyen y quedan en <strong>4</strong>; de <code>t=3</code> en adelante
+<strong>suman 1 por ronda</strong> hasta el 16 de RIP. Con split horizon + poison reverse: <strong>3 rondas</strong>. La oficial
+dice que R1 elige "a través de R1", lo cual está <strong>mal</strong>: <em>un router no puede usar su propia ruta
+como próximo salto</em>.</p>
+<p><strong>Limitación de los dos:</strong> atacan el rumor <strong>de vuelta por el vecino inmediato</strong>, no globalmente; con
+bucles de <strong>tres o más</strong> routers en malla, split horizon solo <strong>no alcanza</strong>. <strong><code>RFC 2080</code> dice
+textualmente que poison reverse es "el método preferido de operación"</strong>, y es lo que usa RIP: una ronda
+menos y sin ambigüedad.</p>
+<blockquote>
+<p><strong>(3) Hold-down:</strong> cuando una ruta cambia (sobre todo si empeora o pasa a ∞), <strong>no aceptes ningún
+cambio</strong> sobre ella durante <code>holddown</code> segundos. <strong>Qué resuelve:</strong> el <em>route flapping</em> corto: sin
+hold-down, <code>R2: 3 → INF</code>, <code>R1: INF → 5</code>, <code>R2: INF → 5</code>... un "ping-pong" de rutas. <strong>Costo:</strong> retrasa
+la recuperación de las buenas rutas (si el enlace vuelve en 1 s, con hold-down de 180 s la ruta queda
+muerta 3 minutos). Por eso nunca va solo.</p>
+<p><strong>(4) Triggered updates:</strong> cuando tu tabla cambia, mandá el vector <strong>en el acto</strong>. <strong>Qué resuelve:</strong>
+la velocidad de las <strong>buenas</strong> noticias (sin ellos, una ruta nueva tarda hasta 30 s en existir en toda
+la red).
+<strong>La paradoja:</strong> <em>acelera la convergencia normal, pero también hace que el conteo
+a infinito sea rápido</em>. Por eso RIP los limita a uno cada <strong>1 a 5 segundos</strong>.</p>
+</blockquote>
+<h3>Por qué, con las cuatro juntas, el problema persiste</h3>
+<p>Porque las cuatro atacan <strong>síntomas</strong>, no la <strong>causa</strong>:</p>
+<div class="codehilite"><pre><span></span><code>  split horizon      atacan el RUMOR que vuelve por el vecino inmediato
+  poison reverse     (ataque local, no global)
+  hold-down          atacan la FLUCTUACION
+  triggered updates  atacan la VELOCIDAD (y la aceleran de mas)
+        |
+        └-&gt; NINGUNA ataca la causa: que la metrica es un NUMERO y no un
+            IDENTIFICADOR del camino. Dos caminos distintos con la misma
+            metrica son INDISTINGUIBLES para Bellman-Ford. La informacion
+            para romper el bucle (la ruta completa) NO ESTA en el mensaje.
+</code></pre></div>
+
+<p><strong>La solución de fondo</strong> es la que usa BGP: mandar en el mensaje <strong>la lista de por dónde pasó la
+ruta</strong> (<code>AS_PATH</code>) y rechazarla si esa lista ya contiene a uno mismo. Ahí el bucle se detecta
+<strong>exactamente</strong>, no aproximadamente.</p>
+<h2>1.6 RIP — el DV que existió de verdad</h2>
+<p><code>RIP</code> = <strong>Routing Information Protocol</strong>, primer protocolo de Internet (<code>RFC 1058</code>, 1988),
+derivado del <code>routed</code> de Berkeley. La versión que se estudia es <strong>RIPv2</strong> (<code>RFC 2453</code>, 1998).</p>
+<table>
+<thead>
+<tr>
+<th>Parámetro</th>
+<th>Valor en RIPv2</th>
+<th>Por qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Métrica</strong></td>
+<td><strong>hops</strong> (cada enlace vale 1)</td>
+<td>la más simple de calcular</td>
+</tr>
+<tr>
+<td><strong>Infinito</strong></td>
+<td><strong>16</strong>; máximo válido <strong>15</strong></td>
+<td>con tope, cualquier bucle se disuelve en ≤ 15 rondas</td>
+</tr>
+<tr>
+<td><strong>Split horizon</strong> / <strong>poison reverse</strong></td>
+<td>sí / sí (forma preferida)</td>
+<td>§1.5</td>
+</tr>
+<tr>
+<td><strong>Triggered updates</strong> / <strong>hold-down</strong></td>
+<td>sí (throttle 1–5 s) / sí (~180 s)</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Timer periódico</strong></td>
+<td>30 s</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Timeout</strong> (ruta no refrescada)</td>
+<td>180 s (6 × 30)</td>
+<td>así se detecta que un vecino murió</td>
+</tr>
+<tr>
+<td><strong>Garbage collection</strong></td>
+<td>120 s tras el timeout</td>
+<td>anuncia 16 para que los vecinos también borren</td>
+</tr>
+<tr>
+<td><strong>Transporte</strong></td>
+<td><strong>UDP 520</strong></td>
+<td>sin conexión, best effort</td>
+</tr>
+<tr>
+<td><strong>Mensaje</strong></td>
+<td>Request (1) / Response (2); RTE de 20 bytes; máx. 25 RTE (500 B)</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>RIPng: la versión para IPv6 — <code>RFC 2080</code> (enero 1997, Proposed Standard).</strong> Es <strong>el mínimo
+cambio</strong> de RIPv2: prefijo de <strong>128 bits</strong>; métrica <strong>1..15</strong> y <strong>16 = ∞</strong>; <strong>split horizon con poison
+reverse</strong> ("método preferido"); <strong>timers idénticos</strong> (30 s / 180 s / 120 s) más un <strong>offset aleatorio de
+±15 s</strong> para que los routers no se sincronicen; <strong>UDP 521</strong> y <strong>multicast <code>FF02::9</code></strong>; campo <strong>route tag</strong>
+para separar rutas internas de externas; y el <strong>next hop va en un RTE especial</strong> (métrica <code>0xFF</code>) que
+aplica a todas las entradas siguientes.</p>
+<h3>⚠️ Actualización a 2026</h3>
+<p><strong>Sigue igual, de memoria:</strong> la ecuación de Bellman-Ford y el principio de optimalidad; el
+conteo a infinito y las cuatro soluciones; <strong>RIPv2</strong> con hops, tope 15 e infinito 16; y que
+<strong>RIP es Internet Standard pero está muerto de facto</strong>.</p>
+<p><strong>Cambió o hay que matizar:</strong>
+- <strong>No existe un "RIP v3" ni un reemplazo de RIP.</strong> Lo que cambió es que <strong>nadie lo despliega</strong>:
+  sobrevive en laboratorios y campus. Su lugar lo tomó <strong>OSPF</strong> (interior) y <strong>BGP</strong> (exterior).
+- Lo que reemplazó la lógica de "elegir el camino más corto" en los operadores es el <strong>Segment
+  Routing</strong> (<code>RFC 8402</code>, <code>RFC 8660</code> SR-MPLS, <code>RFC 8986</code> SRv6): <em>source routing</em> con SIDs y <strong>estado sólo
+  en el borde de ingreso</strong>. En datacenter, <strong>EVPN (<code>RFC 7432</code>) + VXLAN (<code>RFC 7348</code>)</strong> sobre UDP/4789.
+- ⚠️ <strong>Trampa:</strong> si preguntan "el RIP de 2026", la respuesta es <strong>RIPv2, <code>RFC 2453</code>, sin cambios</strong>.</p>
+<h2>1.7 Ventajas y desventajas — la respuesta de <code>2006-08 P3</code></h2>
+<p><strong>Las TRES ventajas:</strong> <strong>(1) Simplicidad:</strong> es un <code>loop</code>, un <code>min</code> y una tabla. <strong>(2) Poco estado:</strong> cada
+router guarda <strong>su</strong> tabla de <code>N</code> entradas y <strong>no conoce la topología</strong>. <strong>(3) Funciona en topologías
+donde otros no:</strong> sólo necesita vecinos que le hablen (el único IGP que sobrevive en NBMA).</p>
+<p><strong>Las CUATRO desventajas:</strong> <strong>(1) Convergencia lenta:</strong> hasta <code>D</code> rondas en una red de <code>D</code> saltos.
+<strong>(2) "Rumor" e inconsistencia transitoria:</strong> la tabla de <code>x</code> no es el camino de nadie, es una
+<strong>combinación</strong> de lo que dijo cada vecino en el último tick; puede haber bucles, caminos imposibles y
+<em>black holes</em>. <strong>(3) El conteo a infinito (§1.4).</strong> <strong>(4) Escala:</strong> <code>N</code> routers × <code>N</code> destinos =
+<strong><code>N²</code> entradas circulando por ronda</strong>.</p>
+<p>Cada ronda cada router manda su tabla COMPLETA a cada vecino: circulan <code>N x N</code> entradas. Con 1 000
+routers son 10^6 entradas por ronda = 4 MB por router cada 30 s = <strong>~133 kB/s sostenidos sólo de
+ripo, en cada router</strong>. Ese es el motivo del tope de 15 hops.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Distance-Vector</th>
+<th>Link-State (OSPF)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Qué conoce cada nodo</strong></td>
+<td>sólo lo que le dicen sus vecinos</td>
+<td>la topología <strong>completa</strong></td>
+</tr>
+<tr>
+<td><strong>Qué se envía</strong></td>
+<td>el vector de distancias (<code>N</code> entradas)</td>
+<td>un LSA por enlace (pocos bytes)</td>
+</tr>
+<tr>
+<td><strong>Algoritmo</strong></td>
+<td>Bellman-Ford</td>
+<td>Dijkstra</td>
+</tr>
+<tr>
+<td><strong>Convergencia</strong></td>
+<td><strong>lenta</strong>, con conteo a infinito</td>
+<td><strong>rápida</strong>, sin conteo a infinito</td>
+</tr>
+<tr>
+<td><strong>Memoria por router</strong></td>
+<td><code>O(N)</code></td>
+<td><code>O(V+E)</code> del área</td>
+</tr>
+<tr>
+<td><strong>Control por ronda</strong></td>
+<td><code>O(N²)</code></td>
+<td><code>O(N)</code></td>
+</tr>
+<tr>
+<td><strong>Tope práctico</strong></td>
+<td>15 hops</td>
+<td>miles de routers</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Una distinción que separa a los que entendieron:</strong> el <em>forwarding</em> es un problema de <strong>tiempo real</strong>
+(se ejecuta por paquete, error = paquete perdido); el <strong>cálculo de enrutamiento</strong> es de <strong>tiempo
+diferido</strong> (cada 30 s, no hay deadline, error = la red anda mal). Por eso los protocolos de
+enrutamiento pueden ser lentos: <strong>no están en el camino crítico del paquete</strong>.</p>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — 4 routers con costos distintos, convergencia en 3 rondas</h2>
+<div class="codehilite"><pre><span></span><code>        R1
+      1/  \4
+      /     \
+    R2--3---R3
+      \     /
+      6\   /2
+        R4
+</code></pre></div>
+
+<p>Costos: <code>R1—R2 = 1</code>, <code>R2—R3 = 3</code>, <code>R3—R4 = 2</code>, <code>R1—R3 = 4</code>, <code>R2—R4 = 6</code>. Los routers arrancan
+<strong>sincrónicamente</strong> con la tabla vacía.</p>
+<p><strong>Paso 0 — sólo vecinos directos.</strong> Cada router conoce <code>D_x(x) = 0</code> y <code>c(x,v)</code> de sus vecinos
+(los costos están en sus interfaces, nadie tiene que decírselos).</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>R1</th>
+<th>R2</th>
+<th>R3</th>
+<th>R4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong></td>
+<td><strong>0</strong></td>
+<td><strong>1</strong></td>
+<td><strong>4</strong></td>
+<td>INF</td>
+</tr>
+<tr>
+<td><strong>R2</strong></td>
+<td><strong>1</strong></td>
+<td><strong>0</strong></td>
+<td><strong>3</strong></td>
+<td><strong>6</strong></td>
+</tr>
+<tr>
+<td><strong>R3</strong></td>
+<td><strong>4</strong></td>
+<td><strong>3</strong></td>
+<td><strong>0</strong></td>
+<td><strong>2</strong></td>
+</tr>
+<tr>
+<td><strong>R4</strong></td>
+<td>INF</td>
+<td><strong>6</strong></td>
+<td><strong>2</strong></td>
+<td><strong>0</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Ronda 1:</strong></p>
+<div class="codehilite"><pre><span></span><code>  D_R1(R4) = min{ 1 + D_R2(R4), 4 + D_R3(R4) }     = min{ 1+6, 4+2 }     = 6  vía R3
+  D_R2(R4) = min{ 1 + D_R1(R4), 3 + D_R3(R4), 6 } = min{ 1+INF, 3+2, 6+0 } = 5  vía R3
+  D_R4(R1) = min{ 2 + D_R3(R1), 6 + D_R2(R1) }     = min{ 2+4, 6+1 }     = 6  vía R3
+  D_R4(R2) = min{ 2 + D_R3(R2), 6 + D_R2(R2) }     = min{ 2+3, 6+0 }     = 5  vía R3
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th></th>
+<th>R1</th>
+<th>R2</th>
+<th>R3</th>
+<th>R4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong></td>
+<td>0</td>
+<td>1</td>
+<td><strong>1</strong></td>
+<td><strong>6</strong></td>
+</tr>
+<tr>
+<td><strong>R2</strong></td>
+<td>1</td>
+<td>0</td>
+<td>3</td>
+<td><strong>5</strong></td>
+</tr>
+<tr>
+<td><strong>R3</strong></td>
+<td>4</td>
+<td>3</td>
+<td>0</td>
+<td>2</td>
+</tr>
+<tr>
+<td><strong>R4</strong></td>
+<td><strong>6</strong></td>
+<td><strong>5</strong></td>
+<td>2</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Ronda 2:</strong></p>
+<div class="codehilite"><pre><span></span><code>  D_R2(R3) = min{ 1 + D_R1(R3), 3 + D_R3(R3), 6 + D_R4(R3) }
+           = min{ 1+1, 3+0, 6+2 } = 2  vía R1     &lt;-- CAMBIÓ
+</code></pre></div>
+
+<p><strong>Interpretación:</strong> R2 descubrió que ir a R3 pasando por R1 (costo <code>1+1 = 2</code>) es <strong>más barato</strong>
+que el enlace directo de costo 3. Acá está el corazón de DV: la métrica no la da el enlace, la
+da <strong>todo</strong> el camino.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>R1</th>
+<th>R2</th>
+<th>R3</th>
+<th>R4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>R1</strong></td>
+<td>0</td>
+<td>1</td>
+<td>1</td>
+<td>6</td>
+</tr>
+<tr>
+<td><strong>R2</strong></td>
+<td>1</td>
+<td>0</td>
+<td><strong>2</strong></td>
+<td>5</td>
+</tr>
+<tr>
+<td><strong>R3</strong></td>
+<td>4</td>
+<td>3</td>
+<td>0</td>
+<td>2</td>
+</tr>
+<tr>
+<td><strong>R4</strong></td>
+<td>6</td>
+<td>5</td>
+<td>2</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>Los demás no cambian: <code>D_R1(R4) = min{1+5, 4+2} = 6</code> (empate, vía R3); <code>D_R3(R1) =
+min{3+1, 4+0, 2+6} = 4</code> (empate, directo); <code>D_R4(R1) = 6</code>; <code>D_R4(R2) = 5</code>.</p>
+<p><strong>Ronda 3 — convergió:</strong> <code>D_R2(R3) = min{1+1, 3+0, 6+2} = 2</code>; <code>D_R1(R4) = min{1+5, 4+2} = 6</code>;
+<code>D_R3(R1) = min{3+1, 4+0, 2+6} = 4</code>; <code>D_R4(R1) = min{2+4, 6+1} = 6</code>; <code>D_R4(R2) =
+min{2+3, 6+0} = 5</code>. <strong>Ninguna celda cambió ⇒ convergió en 3 rondas.</strong></p>
+<p><strong>Caminos óptimos:</strong> R1→R2 directo (1) · R1→R3 <strong>vía R2</strong> (1+1 = 2, ¡mejor que el directo de 4!) ·
+R1→R4 <strong>vía R3</strong> (4+2 = 6) · R2→R3 <strong>vía R1</strong> (1+1 = 2) · R2→R4 <strong>vía R3</strong> (3+2 = 5) · R3→R1
+directo (empate con R3→R2→R1: 4 = 3+1) · R4→R2 <strong>vía R3</strong> (2+3 = 5).</p>
+<p>⚠️ <strong>Errores típicos:</strong> <strong>olvidar el <code>+ c(x,v)</code></strong> (el error nº 1); <strong>confundir el paso 0</strong>
+("vacía" no es "todo ∞"); <strong>no decir en qué ronda convergió</strong>; y en los empates, elegí el
+directo y <strong>decilo</strong> — la cátedra en <code>2010-07 P2b</code> dice <em>"ante caminos de igual distancia se
+elige uno al azar"</em>.</p>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2008-12, Problema 2 (30 puntos) — distance-vector en una red de 4 nodos</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0812</code> / <code>sirc0812</code> — 20 de diciembre de 2008.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0812.pdf</p>
+<p><strong>Texto del examen:</strong> <em>Se considera una red de cuatro nodos A, B, C y D con la topología que se
+muestra en la figura; los enlaces tienen costo unitario. Esta red ejecuta un protocolo de
+enrutamiento genérico de la familia "vector-distancia" (distance-vector).</em>
+<strong>a)</strong> <em>...los nodos se inician todos en el mismo estado con sus tablas de distancias vacías; deduzca
+las sucesivas tablas de distancias de A, B, C y D hasta llegar al estado estable.</em>
+<strong>b)</strong> <em>Escriba la tabla de forwarding de cada nodo en el formato Destino, Próximo Salto, Costo.</em>
+<strong>c)</strong> <em>Explique qué sucede con las tablas de distancias si se apaga el nodo D.</em></p>
+</blockquote>
+<h3>La topología — <em>adaptamos la figura a texto</em></h3>
+<p>La figura del PDF es una imagen; los valores de la tabla de abajo son los del examen y se
+deducen de las tablas que la cátedra publica como solución. La red es <strong>un triángulo A-B-C con D
+colgando de C</strong>:</p>
+<div class="codehilite"><pre><span></span><code>          A
+         / \
+        /   \
+       B-----C
+             |
+             D
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>enlace</th>
+<th>A</th>
+<th>B</th>
+<th>C</th>
+<th>D</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A</strong></td>
+<td>—</td>
+<td>1</td>
+<td>1</td>
+<td>INF</td>
+</tr>
+<tr>
+<td><strong>B</strong></td>
+<td>1</td>
+<td>—</td>
+<td>1</td>
+<td>INF</td>
+</tr>
+<tr>
+<td><strong>C</strong></td>
+<td>1</td>
+<td>1</td>
+<td>—</td>
+<td><strong>1</strong></td>
+</tr>
+<tr>
+<td><strong>D</strong></td>
+<td>INF</td>
+<td>INF</td>
+<td><strong>1</strong></td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Cómo lo verifiqué:</strong> la tabla de distancias que <code>sirc0812</code> publica como estado estable es
+<code>A(0,1,1,2) B(1,0,1,2) C(1,1,0,1) D(2,2,1,0)</code>, y eso <strong>sólo</strong> es consistente con <code>A—B=1</code>,
+<code>A—C=1</code>, <code>B—C=1</code>, <code>C—D=1</code> y <strong>sin</strong> enlace directo <code>A—D</code> ni <code>B—D</code>: si hubiera <code>A—D=1</code>, la
+distancia A→D sería 1, no 2.</p>
+<h3>Parte a) — las sucesivas tablas de distancias</h3>
+<p><strong>Ronda 0 (arranque con tablas vacías ⇒ sólo vecinos directos).</strong> ⚠️ "Tablas vacías" significa
+que <strong>no hay ninguna ruta aprendida de nadie</strong>. Lo que el router sabe de entrada es <code>D_x(x) = 0</code>
+y <code>c(x,v)</code> de sus vecinos, porque los costos de sus propios enlaces están en sus interfaces. La
+cátedra rotula esta ronda <code>t=0</code>, y ahí las tablas son, de hecho, la <strong>fila de costos</strong> de la
+matriz de adyacencia.</p>
+<div class="codehilite"><pre><span></span><code>  ┌─────────┬───┬───┬───┬───┐   ┌─────────┬───┬───┬───┬───┐
+  │ desde A │ A │ B │ C │ D │   │ desde B │ A │ B │ C │ D │
+  ├─────────┼───┼───┼───┼───┤   ├─────────┼───┼───┼───┼───┤
+  │   A     │ 0 │ 1 │ 1 │INF│   │   B     │ 1 │ 0 │ 1 │INF│
+  └─────────┴───┴───┴───┴───┘   └─────────┴───┴───┴───┴───┘
+  ┌─────────┬───┬───┬───┬───┐   ┌─────────┬───┬───┬───┬───┐
+  │ desde C │ A │ B │ C │ D │   │ desde D │ A │ B │ C │ D │
+  ├─────────┼───┼───┼───┼───┤   ├─────────┼───┼───┼───┼───┤
+  │   C     │ 1 │ 1 │ 0 │ 1 │   │   D     │INF│INF│ 1 │ 0 │
+  └─────────┴───┴───┴───┴───┘   └─────────┴───┴───┴───┴───┘
+</code></pre></div>
+
+<p><strong>Ronda 1 — primera ronda de intercambio.</strong> Para el destino <code>D</code>:</p>
+<div class="codehilite"><pre><span></span><code>  A:  D_A(D) = min{ 0+D_A(D), 1+D_B(D), 1+D_C(D), INF+D_D(D) } = min{INF, 1+INF, 1+1, INF} = 2  vía C
+  B:  D_B(D) = min{ 1+D_A(D), 0+D_B(D), 1+D_C(D), INF+D_D(D) } = min{1+INF, INF,  1+1, INF } = 2  vía C
+  C:  D_C(D) = min{ 1+D_A(D), 1+D_B(D), 0+D_C(D), 1+D_D(D) } = min{INF, INF,  0+1, 1+0 } = 1  directo
+  D:  D_D(A) = min{ INF, INF, 1 + D_C(A), 0 + D_D(A) }             = 1 + 1 = 2               vía C
+     D_D(B) = min{ INF, INF, 1 + D_C(B), 0 + D_D(B) }             = 1 + 1 = 2               vía C
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>  ┌─────────┬───┬───┬───┬───┐   ┌─────────┬───┬───┬───┬───┐
+  │ desde A │ A │ B │ C │ D │   │ desde B │ A │ B │ C │ D │
+  │         │ 0 │ 1 │ 1 │ 2 │   │         │ 1 │ 0 │ 1 │ 2 │
+  ├─────────┼───┼───┼───┼───┤   ├─────────┼───┼───┼───┼───┤
+  │ desde C │ A │ B │ C │ D │   │ desde D │ A │ B │ C │ D │
+  │         │ 1 │ 1 │ 0 │ 1 │   │         │ 2 │ 2 │ 1 │ 0 │
+  │ = ESTADO ESTABLE         │   │ = ESTADO ESTABLE         │
+  └─────────┴───┴───┴───┴───┘   └─────────┴───┴───┴───┴───┘
+</code></pre></div>
+
+<p><strong>Interpretación — la observación clave del examen: una sola ronda bastó</strong>, porque <code>C</code> es el <strong>único
+cuello de botella</strong> hacia <code>D</code> y todo lo que había que aprender de <code>D</code> cabía en su mensaje. La red
+tiene <strong>diámetro de información 1</strong> hacia <code>D</code>: es lo que se llama <strong>convergencia trivial</strong>.</p>
+<p><strong>Ronda 2 — se verifica que no cambia nada:</strong> <code>A: min{INF, 1+2, 1+1, INF} = 2</code> ✓ ·
+<code>B: min{1+INF, INF, 1+1, INF} = 2</code> ✓ · <code>C: min{1+2, 1+2, 0+1, 1+0} = 1</code> ✓ ·
+<code>D: min{INF, INF, 1+1, 0} = 2</code> ✓. ⇒ <strong>El estado estable se alcanza en la ronda 1.</strong></p>
+<h3>Parte b) — las tablas de forwarding</h3>
+<table>
+<thead>
+<tr>
+<th><strong>A</strong></th>
+<th>Próx. salto</th>
+<th>Costo</th>
+<th></th>
+<th><strong>B</strong></th>
+<th>Próx. salto</th>
+<th>Costo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>— (local)</td>
+<td>0</td>
+<td></td>
+<td>A</td>
+<td>— (local)</td>
+<td>0</td>
+</tr>
+<tr>
+<td>B</td>
+<td>B</td>
+<td>1</td>
+<td></td>
+<td>B</td>
+<td>— (local)</td>
+<td>0</td>
+</tr>
+<tr>
+<td>C</td>
+<td>C</td>
+<td>1</td>
+<td></td>
+<td>C</td>
+<td>C</td>
+<td>1</td>
+</tr>
+<tr>
+<td>D</td>
+<td>C</td>
+<td>2</td>
+<td></td>
+<td>D</td>
+<td>C</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th><strong>C</strong></th>
+<th>Próx. salto</th>
+<th>Costo</th>
+<th></th>
+<th><strong>D</strong></th>
+<th>Próx. salto</th>
+<th>Costo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>A</td>
+<td>1</td>
+<td></td>
+<td>A</td>
+<td>C</td>
+<td>2</td>
+</tr>
+<tr>
+<td>B</td>
+<td>B</td>
+<td>1</td>
+<td></td>
+<td>B</td>
+<td>C</td>
+<td>2</td>
+</tr>
+<tr>
+<td>C</td>
+<td>— (local)</td>
+<td>0</td>
+<td></td>
+<td>C</td>
+<td>C</td>
+<td>1</td>
+</tr>
+<tr>
+<td>D</td>
+<td>D</td>
+<td>1</td>
+<td></td>
+<td>D</td>
+<td>— (local)</td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Comparación con la oficial.</strong> <code>sirc0812</code> publica estas cuatro tablas (con la extracción descentrada) y
+<strong>coinciden con las mías</strong>: para <code>A</code>, <code>(B,B,1) (C,C,1) (D,C,2)</code>; para <code>D</code>, <code>(A,C,2) (B,C,2)
+(C,C,1)</code>. Lo que la oficial no publica son las completas de <code>B</code> y <code>C</code>; las derivé igual. ⚠ <strong>El
+destino "A" de la tabla de A tiene próximo salto = local, costo 0</strong>: no es "A→A", es "esto lo
+despierto yo".</p>
+<h3>Parte c) — Qué pasa si se apaga D</h3>
+<p><strong>Solución oficial (citada):</strong></p>
+<blockquote>
+<p><em>"Si se apaga el nodo D se produce un fenómeno de 'conteo a infinito' en los nodos A y B. Esto
+se debe a que cada uno dice saber llegar a C con cierta distancia (inicialmente 1) y en cada
+intercambio de tablas se va incrementando en cada nodo (A y B), potencialmente a infinito."</em></p>
+</blockquote>
+<p>Se cae el nodo <code>D</code>, o lo que es lo mismo, el enlace <code>C—D</code> (único que <code>D</code> tenía):</p>
+<div class="codehilite"><pre><span></span><code>  ronda 2
+  C:  D_C(D) = min{ 1+D_A(D), 1+D_B(D), 0+INF, INF } = min{1+2, 1+2, INF, INF} = 3  (vía A o B)
+  A:  D_A(D) = min{ 1 + D_B(D), 1 + D_C(D) }       = min{1+2, 1+3} = 3  &lt;-- CAMBIÓ
+  B:  D_B(D) = min{ 1 + D_A(D), 1 + D_C(D) }       = min{1+3, 1+3} = 3  &lt;-- CAMBIÓ
+
+  ronda 3 :  A: min{1+3, 1+3} = 4 ;  B: 4 ;  C: min{1+3, 1+3, INF, INF} = 4
+  ronda 4 :  A: 5 ;  B: 5 ;  C: 5
+  ronda k :  los tres suben 1 por ronda
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>ronda</th>
+<th><code>D_A(D)</code></th>
+<th><code>D_B(D)</code></th>
+<th><code>D_C(D)</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>2</td>
+<td>2</td>
+<td>1</td>
+</tr>
+<tr>
+<td>1</td>
+<td>2</td>
+<td>2</td>
+<td><strong>INF</strong></td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>3</strong></td>
+<td><strong>3</strong></td>
+<td>3</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>4</strong></td>
+<td><strong>4</strong></td>
+<td>4</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>5</strong></td>
+<td><strong>5</strong></td>
+<td>5</td>
+</tr>
+<tr>
+<td><em>k</em></td>
+<td><em>k+1</em></td>
+<td><em>k+1</em></td>
+<td><em>k+1</em></td>
+</tr>
+<tr>
+<td>15</td>
+<td><strong>INF</strong></td>
+<td><strong>INF</strong></td>
+<td><strong>INF</strong></td>
+</tr>
+</tbody>
+</table>
+<p>⚠️ <strong>El error conceptual más caro de esta clase, y donde muchas soluciones se caen:</strong> A <strong>no</strong>
+se queda con su <code>2</code> viejo. DV <strong>recalcula desde cero</strong> cada ronda sobre lo que dicen los
+vecinos: <code>min{1+2, 1+3} = 3</code>. No es "monótono decreciente".</p>
+<p><strong>Interpretación.</strong> Durante 15 rondas los tres routers <strong>creen</strong> que llegan a la red de D por un camino
+que <strong>ya no existe</strong>: los paquetes que salgan con esas tablas se pierden. En RIP se corta solo en
+la ronda 15, cuando la métrica llega a 16 y se borra.</p>
+<p><strong>Lo que lo arregla: poison reverse.</strong> <code>C</code> es el único que tiene la verdad, así que en cuanto envenena
+<code>D = 16</code> para todos, <code>A</code> y <code>B</code> bajan directo a ∞ en <strong>una</strong> ronda (todo en <code>t=2</code>). ⇒ <strong>15 rondas de
+convergencia mala contra 1 de convergencia correcta.</strong> Ese es el argumento si el enunciado pide
+"cómo lo mejoraría".</p>
+<h3>Nota: el mismo problema en <code>2010-02</code> (<code>sirc1002</code>), y dos desvíos del PDF oficial</h3>
+<p><strong>La topología es idéntica</strong> y las tablas son las de la parte a). Lo valioso son dos desvíos del
+PDF oficial. <strong>(1) La numeración de las rondas:</strong> el bloque rotulado <code>t=1</code> para el nodo <code>A</code> dice
+<code>0 1 INF 1</code>, que es <strong>exactamente la tabla inicial</strong>: <strong>el PDF duplica la tabla inicial</strong> en el rótulo
+<code>t=1</code> (lo mismo en <code>sirc0812</code>). La lectura correcta es <code>t=0</code> inicial, <code>t=1</code> primera ronda
+(<code>A(0,1,1,2) B(1,0,1,2) C(1,1,0,1) D(2,2,1,0)</code>), <code>t=2</code> sin cambios. <strong>Una ronda alcanza</strong>, porque para
+el destino <code>D</code> toda la información cabe en el mensaje de <code>C</code> (que anuncia <code>D=1</code>). <strong>(2) Un error de
+tipeo:</strong> la tabla <code>t=2</code> de <code>A</code> dice <code>0 1 2 1</code>, o sea <code>D_A(D) = 1</code>, lo cual <strong>no puede ser</strong> (implicaría un
+enlace directo <code>A—D</code> que no existe; si existiera, la tabla estable de <code>sirc0812</code> tendría <code>A→D = 1</code>, y
+tiene 2). La fila correcta es <code>0 1 1 2</code>. ⚠ <strong>Cuando el PDF y la matemática no cierran,
+reconstruí la topología desde los datos de otras partes, declarás el supuesto y escribilo.</strong></p>
+<p>La solución oficial de la parte b) dice: <em>"el nodo C detecta que la ruta más corta a D es
+inaccesible y por lo tanto elige la segunda más corta que es a través de B con distancia total 3"</em>
+— verificado, <code>1 + D_B(D) = 1 + 2 = 3</code>, <strong>la cuenta está bien escrita</strong>; pero <em>"luego B aumenta la suya a
+4"</em> usa un modelo <strong>asíncrono</strong>, cuando las tablas del enunciado son <strong>síncronas</strong>
+(<code>D_B(D) = min{1+2, 1+3} = 3</code> en la primera ronda).</p>
+<h2>3.4 Examen 2006-08, Pregunta 3 (10 puntos) — funcionamiento, ventajas y desventajas</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc0608</code> — 5 de agosto de 2006.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0608.pdf
+<strong>Texto del examen:</strong> <em>Describa detalladamente el funcionamiento de un protocolo de enrutamiento
+de tipo DISTANCE-VECTOR (VECTOR-DISTANCIA). Mencione posibles ventajas y desventajas del mismo.</em></p>
+</blockquote>
+<p><strong>(a) Funcionamiento (≈5 puntos), en cinco pasos.</strong> <strong>(1) Modelo de tabla:</strong> un <strong>vector de distancias</strong>
+por destino, con la distancia mínima y el <strong>primer salto</strong>. <strong>(2) Inicialización:</strong> arranca "vacía", o
+sea sólo conoce <code>D_x(x) = 0</code> y <code>c(x,v)</code> de sus vecinos directos. <strong>(3) Timer:</strong> un timer <code>T</code> (en RIP,
+30 s); al vencer, envía su tabla a <strong>todos</strong> sus vecinos. <strong>(4) Actualización:</strong> al recibir la tabla de
+un vecino <code>R</code>, la <strong>compara con la propia</strong> y la actualiza con Bellman-Ford. <strong>(5) Refresco:</strong> toda
+ruta no refrescada en la ronda se <strong>borra</strong>, y así se detecta que un vecino dejó de anunciar.</p>
+<p><strong>(b) Ventajas (≈2,5 pts) y (c) desventajas (≈2,5 pts):</strong> las tres y las cuatro de §1.7.</p>
+<p><strong>Solución oficial (citada):</strong> <em>"Conteo a Infinito. Las malas noticias se propagan lento. Cuando un
+enlace cae, hay un gran número de iteraciones hasta que todos los nodos se dan cuenta que hay un
+problema."</em> ⚠ "Las malas noticias se propagan lento" y "el conteo a infinito" son <strong>el mismo problema
+desde dos ángulos</strong> (síntoma vs. mecanismo).</p>
+<p><strong>Bonus del Problema 1 de ese mismo examen</strong> (6 routers): la columna "<strong>Costo en dicho
+enlace</strong>" es el costo del <strong>primer salto</strong>, no la distancia — la distancia es la <strong>suma</strong> de todos los
+saltos. Y cada router tiene <strong>dos entradas</strong> por LAN remota ⇒ <strong>ECMP</strong> (<em>Equal-Cost Multi-Path</em>). Y el
+<code>TTL</code> es lo único que corta un bucle en el plano de datos: al llegar a 0 manda un ICMP tipo 11.</p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen</h2>
+<ol>
+<li><strong>Distance-vector</strong>: cada router conoce <strong>la distancia a cada destino</strong> y <strong>el primer salto</strong>. No conoce la topología.</li>
+<li>Por el enlace viaja un <strong>vector de distancias</strong>, no la topología: por eso se lo llama "rumor".</li>
+<li>La ecuación es <strong><code>D_x(y) = min_v{ c(x,v) + D_v(y) }</code></strong>, correcta por el <strong>principio de optimalidad</strong>.</li>
+<li>La actualización es <strong>periódica</strong> (30 s en RIP) o <strong>disparada por cambio</strong> (triggered update); las rutas no refrescadas se borran.</li>
+<li><strong>Conteo a infinito</strong>: un router vuelve a aceptar un rumor que él mismo originó, y la métrica <strong>sube 1 por ronda</strong>. <strong>DV recalcula desde cero</strong> cada ronda: no es monótono decreciente.</li>
+<li>Las <strong>4 soluciones</strong>: split horizon, poison reverse, hold-down, triggered updates. <strong>Ninguna es completa</strong>: la métrica es un número, no un identificador de camino.</li>
+<li><strong>RIP (<code>RFC 2453</code>)</strong>: hops, tope <strong>15</strong>, infinito <strong>16</strong>, UDP 520. <strong>RIPng (<code>RFC 2080</code>)</strong>: UDP 521, <code>FF02::9</code>, 128 bits.</li>
+<li><strong>Ventajas</strong>: simple, poca memoria, topologías raras. <strong>Desventajas</strong>: convergencia lenta, rumor, conteo a infinito, escala <code>O(N²)</code>.</li>
+<li>La <strong>solución de fondo</strong> es <strong>path-vector</strong> (BGP): mandar la lista de por dóndé pasó la ruta y rechazarla si uno ya está en ella.</li>
+<li><strong>Forwarding ≠ enrutamiento</strong>: el forwarding consulta la tabla en tiempo real; el cálculo no tiene deadline.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p><strong>1.</strong> Escribí la ecuación de Bellman-Ford y explicá por qué el camino óptimo de <code>x</code> a <code>y</code> empieza por el vecino que minimiza <code>c(x,v) + D_v(y)</code>.</p>
+<details><summary>Respuesta</summary>
+
+`D_x(y) = min_{v en V(x)} { c(x,v) + D_v(y) }`. El camino óptimo **tiene que empezar** por algún vecino
+`v`: llegar a `v` cuesta `c(x,v)`, y de ahí en adelante lo mínimo que se gasta es `D_v(y)`, por
+el principio de optimalidad. El óptimo es el `min` sobre todos los vecinos.
+
+</details>
+
+<p><strong>2.</strong> En la topología del §1.4, ¿en qué ronda exacta R1 pasa de ∞ a 4?</p>
+<details><summary>Respuesta</summary>
+
+En la **ronda 2**: R1 oye de R2 y de R3 el vector de la ronda 1, donde ambos anuncian `Internet = 3
+vía R1`, y aplica `c(R1,v) + 3 = 1 + 3 = 4` ⇒ `min{4,4} = 4`. En la ronda 1 **no podía** calcular
+nada, porque lo único que había escuchado era el vector de la ronda 0 (`2` vía el ISP, ya caído).
+El `3` de la ronda 2 es un rumor que **él mismo** lanzó.
+
+</details>
+
+<p><strong>3.</strong> ¿Por qué poison reverse converge más rápido que split horizon solo?</p>
+<details><summary>Respuesta</summary>
+
+Los dos convergen a ∞, pero poison reverse en **4 rondas** y split horizon en **5**, porque **el
+silencio es ambiguo**: cuando R1 se calla sobre R2, R2 no sabe si es porque no tiene nada o porque
+no le llegó el rumor. Con poison reverse R1 afirma activamente *"Internet = ∞ por lo que a mí
+respecta"*: es la diferencia entre "no sé" y "sé que no".
+
+</details>
+
+<p><strong>4.</strong> Un router tiene dos rutas al mismo destino de costo 3, aprendidas de R2 y de R3. ¿Qué pasa con split horizon?</p>
+<details><summary>Respuesta</summary>
+
+Es **ECMP** (*Equal-Cost Multi-Path*). Con split horizon sigue pudiendo: cada entrada se anuncia a
+**todos** los vecinos **excepto** al del que se aprendió, así que no se pierde información. Si R2 y R3 se
+anuncian entre ellos rutas de costo 3, cada uno descarta la del otro: no hay bucle porque la ruta de R3
+nunca vuelve a R3.
+
+</details>
+
+<p><strong>5.</strong> ¿Por qué el enunciado dice "tablas vacías" y por qué la primera tabla no es todo ∞?</p>
+<details><summary>Respuesta</summary>
+
+"Vacías" = **sin rutas aprendidas de nadie**. Pero un router siempre conoce (1) `D_x(x) = 0`,
+porque está en su propia máquina, y (2) `c(x,v)` para cada vecino `v`, porque el costo de un
+enlace está en la **interfaz**. Con todo ∞ y una pasada de Bellman-Ford,
+`D_x^(1)(y) = min_v{ c(x,v) + D^(0)_v(y) }` y `D^(0)_v(y)` sólo vale 0 cuando `v = y`, o sea
+`D_x^(1)(y) = c(x,y)` si `y` es vecino, ∞ si no.
+
+</details>
+
+<p><strong>6.</strong> ¿Cuánto tarda RIP en suprimir una ruta a 15 hops? Explicá el mecanismo.</p>
+<details><summary>Respuesta</summary>
+
+**15 rondas**: el "16" viaja **un salto por ronda** desde el router que detectó la caída hasta el
+último de la cadena, en una cascada de poison reverse (cada router que borra la ruta la envenena y la
+reenvía). Con el periódico de 30 s: 15 × 30 = **450 s**; con triggered updates: **15 a 75 s**. Sin
+poison reverse la cuenta es peor, porque el `min` **siempre gana al poison**.
+
+</details>
+
+<p><strong>7.</strong> ¿Qué tiene de malo decir que DV es "O(N²)"?</p>
+<details><summary>Respuesta</summary>
+
+Es una simplificación: estado `O(N)`, bytes por mensaje `O(N)`, total que circula por ronda `O(N²)`. Lo
+que de verdad limita es el **ancho de banda por router**: ~133 kB/s sostenidos con 1000 routers. Eso
+justifica el tope de 15 hops.
+
+</details>
+
+<p><strong>8.</strong> Cuando R1 tiene <code>Internet = 4 vía R2</code>, R2 <code>4 vía R3</code> y R3 <code>4 vía R2</code>, ¿qué le pasa a un paquete real que sale de R1?</p>
+<details><summary>Respuesta</summary>
+
+Se pierde, porque **no hay salida**: R1 → R2 → R3 → R2... Lo único que corta el círculo es el **TTL**:
+al llegar a 0 el router descarta el paquete y manda un **ICMP tipo 11 (Time Exceeded)**. El TTL es la
+**última red de seguridad**, no el mecanismo primario.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong><code>eirc0608</code> / <code>sirc0608</code></strong> — P3 (10 pts) · Problema 1 (30 pts: 6 routers, TTL, traceroute). Ojo: "<strong>Costo en dicho enlace</strong>" es el costo del <strong>primer salto</strong>, no la distancia; y hay <strong>dos entradas</strong> por LAN remota ⇒ <strong>ECMP</strong>.</li>
+<li><strong><code>eirc0702</code></strong> — P3 (10 pts: conteo a infinito y una solución). <em>Sin solución oficial publicada.</em></li>
+<li><strong><code>eirc0812</code> / <code>sirc0812</code></strong> — Problema 2 (30 pts) · <strong><code>eirc1002</code> / <code>sirc1002</code></strong> — Problema 2 (misma red) · <strong><code>sirc1007</code></strong> — Problema 2b</li>
+<li><strong><code>sirc0008</code></strong> — Problema 1: <strong>aprendizaje reverso</strong> (<em>backward learning</em>). Es DV sin métricas: al recibir un datagrama de origen <code>H</code> por la interfaz <code>origen</code>, <code>x</code> aprende "para llegar a <code>H</code>, salí por <code>origen</code>". Elige con <strong>papa caliente</strong> (métrica = <code>tamaño_cola</code>) y resuelve los cambios de topología con <strong>envejecimiento</strong>, que es <strong>exactamente el timeout de RIP</strong>.</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadores</em>* 5ª ed., cap. 5 §5.6 "Interior Gateway Protocols"</li>
+<li><strong>RFC 2453</strong> — RIP v2 · <strong>RFC 1058</strong> — RIP · <strong>RFC 2080</strong> — RIPng · <strong>RFC 8402 / 8660 / 8986</strong> — Segment Routing · <strong>RFC 7432 / 7348</strong> — EVPN / VXLAN</li>
+<li><strong>Clase siguiente:</strong> 33 — Enrutamiento link-state, Dijkstra y OSPF</li>
+</ul></body></html>

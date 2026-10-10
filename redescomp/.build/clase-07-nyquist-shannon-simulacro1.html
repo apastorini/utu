@@ -1,0 +1,1385 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 7 — Nyquist, Shannon y la capa física + Simulacro 1</h1>
+<p><strong>Bloque:</strong> A (Fundamentos) · <strong>Semana:</strong> 3 · <strong>Duración estimada:</strong> 120 min
+<strong>Correlativa:</strong> Clase 6 (taller de retardos) · <strong>Sigue con:</strong> Clase 8 (HTTP: la web como aplicación de la capa de aplicación)
+<strong>Material de referencia:</strong> Tanenbaum cap. 1 §1.1 y §1.6 · Exámenes <code>sirc0608</code>, <code>sirc0707</code>, <code>sirc0903</code></p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li><strong>Describir</strong> el único encargo de la capa física y explicar <strong>qué no hace</strong>.</li>
+<li><strong>Comparar</strong> los cuatro medios en una tabla con ancho de banda, inmunidad al ruido y alcance.</li>
+<li><strong>Distinguir</strong> full duplex de half duplex, con la tabla de qué tecnología usa qué modo.</li>
+<li><strong>Enunciar</strong> Nyquist con sus <strong>hipótesis</strong> y calcular la capacidad dado <code>B</code> y <code>V</code>.</li>
+<li><strong>Enunciar</strong> Shannon con sus <strong>hipótesis</strong> y calcular la capacidad con el <code>S/N</code> <strong>en lineal</strong>, convirtiendo desde dB.</li>
+<li><strong>Explicar</strong> cuándo aplica cada teorema y por qué Shannon queda por debajo de Nyquist.</li>
+<li><strong>Describir</strong> ASK, FSK, PSK y <strong>QAM</strong>, y calcular los bits por símbolo de una constelación de <code>M</code> puntos.</li>
+<li><strong>Hacer</strong> el <strong>Simulacro 1</strong> completo: 5 preguntas teóricas y 2 problemas, con cronómetro.</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2006-08 P1</code> (5 pts), <code>2007-07 P1</code> (10 pts), <code>2009-02 P3</code> (5 pts), <code>2009-03 P5</code> (6 pts), <code>2011-03 P5</code> (10 pts).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 La capa física: qué hace y qué NO hace</h2>
+<p>La capa física es <strong>la más tonta del modelo y por eso la más fácil de recordar</strong>: no
+razona, no mira contenido, no decide. Su único encargo es transmitir <strong>bits</strong>:</p>
+<div class="codehilite"><pre><span></span><code>  ┌─────────────────────────────────────────────────────────────────────┐
+  │   La capa física TRANSMITE BITS de un nodo al nodo vecino:          │
+  │     1  0  1  1  0  0  1  0  1  1  1  0  →  señal en el medio      │
+  │   Nada más. No sabe qué hay adentro del paquete.                    │
+  └─────────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Lo que la capa física NO hace (y esto es lo que se pregunta):</strong> no distingue un bit de
+otro (<code>10110010</code> y <code>01001101</code> son "lo mismo" para ella, y el significado lo pone la capa 2);
+no detecta errores (el CRC es de la capa 2); no reenvía ni enruta (el bit que entra por un
+puerto sale por el otro, y nada más); no reconoce direcciones; y no reintenta, no comprime ni
+cifra.</p>
+<p><strong>Por qué se llama "física":</strong> porque todo lo que hace depende de la física real — la
+velocidad con que la señal viaja por el cobre, la atenuación con la distancia, el
+electromagnetismo alrededor, la temperatura. Un enlace de 400 Gbps sobre <strong>fibra multimodo</strong>
+tiene un alcance de 100 m, y sobre <strong>fibra monomodo</strong> llega a 40 km: la diferencia es
+física.</p>
+<h2>1.2 Los cuatro medios, y por qué la fibra ganó</h2>
+<div class="codehilite"><pre><span></span><code>  PAR TRENZADO                          FIBRA ÓPTICA
+  ╔══╗   ╔══╗   ╔══╗   ╔══╗             ╭────────────╮
+  ║  ║╲╱║  ║╲╱║  ║╲╱║  ║  ║             │ ═══ luz ═══│
+  ╚══╝ ╲╚═╝ ╱╚═╝ ╱╚═╝ ╱╚═╝             ╰────────────╯
+   se ROTA el campo de uno con el del otro:
+   se CANCELA el ruido (crosstalk)
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Par trenzado</strong> (UTP/STP)</th>
+<th><strong>Coaxial</strong></th>
+<th><strong>Fibra óptica</strong></th>
+<th><strong>Inalámbrico</strong> (radio / satélite)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Medio</strong></td>
+<td>cobre, pares trenzados</td>
+<td>cobre con malla blindada</td>
+<td>luz en vidrio de sílice</td>
+<td>ondas de radio o infrarrojo</td>
+</tr>
+<tr>
+<td><strong>Truco</strong></td>
+<td>el <strong>trenzado</strong> cancela el <em>crosstalk</em>; el blindaje (STP) protege del <strong>EMI</strong></td>
+<td>la malla es el retorno y <strong>apantalla</strong></td>
+<td><strong>inmune al EMI</strong>: la luz no es campo eléctrico</td>
+<td>el medio es <strong>aire</strong>, y es compartido</td>
+</tr>
+<tr>
+<td><strong>Ancho de banda</strong></td>
+<td>10 Mbps → 10 Gbps (Cat 6/8)</td>
+<td>~10 Mbps (TV e internet CATV)</td>
+<td><strong>decenas de Gbps a Tbps</strong></td>
+<td>10 Mbps (Wi-Fi) a Gbps (5G, Wi-Fi 7)</td>
+</tr>
+<tr>
+<td><strong>Alcance sin electrónica</strong></td>
+<td><strong>100 m</strong></td>
+<td>~500 m</td>
+<td><strong>40 km (monomodo)</strong> a 100 m (multimodo)</td>
+<td>km a 36 000 km</td>
+</tr>
+<tr>
+<td><strong>Inmune al ruido</strong></td>
+<td>no</td>
+<td>no</td>
+<td><strong>SÍ, totalmente</strong></td>
+<td>no</td>
+</tr>
+</tbody>
+</table>
+<h3>⚠️ El dato del satélite, que es el mejor ejemplo del curso</h3>
+<div class="codehilite"><pre><span></span><code>  d = 36 000 km (altura de un geoestacionario)   s = 3 · 10⁸ m/s (va por aire)
+  d_prop de ida = 3,6·10⁷ / 3·10⁸ = 0,12 s = 120 ms      RTT = 240 ms
+
+  ⚠️ 120 ms de latencia es IRRECUPERABLE: es geometría, no ingeniería. Por eso el
+     satélite SÍ sirve para STREAMING (tolerás 2 s de arranque) y NO para VoIP
+     INTERACTIVO (el humano no aguanta más de 150 ms de ida en una conversación).
+</code></pre></div>
+
+<p><strong>Por qué es el ejemplo clave:</strong> un enlace satelital puede tener 50 Mbps y aun así ser
+<strong>peor</strong> para una videollamada que una fibra de 1 Gbps. El ancho de banda responde a
+<em>"¿cuánta información por segundo?"</em> y la latencia a <em>"¿cuánto tarda?"</em>: preguntas
+distintas, con variables distintas (<code>R</code> contra <code>d/s</code>). Es el núcleo conceptual de la Clase 5
+y lo que se pregunta en el Examen 2009-12 P1a.</p>
+<h2>1.3 Full duplex vs. half duplex (Examen 2009-03 P5)</h2>
+<p><strong>Definiciones, con las palabras de la solución oficial:</strong> <strong>full duplex</strong> es que se puede
+<strong>transmitir y recibir simultáneamente</strong>; <strong>half duplex</strong> es que se puede transmitir o
+recibir, pero <strong>no a la vez</strong>, y se alterna. Es como un teléfono (full duplex: hablás y
+escuchás a la vez) contra una radio de baquelita (half duplex: apretás para hablar, soltás
+para escuchar).</p>
+<p><strong>La tabla de qué tecnología usa qué modo:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Tecnología</th>
+<th>Modo</th>
+<th>Por qué o con qué matiz</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Ethernet conmutado</strong> (Fast, Gigabit, 10 GigE)</td>
+<td><strong>FULL DUPLEX</strong></td>
+<td>Cada puerto es un enlace punto a punto dedicado: un par para ir y otro para volver.</td>
+</tr>
+<tr>
+<td><strong>Ethernet con hub</strong> (coax compartido, 10BASE legacy)</td>
+<td><strong>HALF DUPLEX</strong></td>
+<td>Un único medio compartido: si dos transmiten a la vez, colisión. Necesita CSMA/CD.</td>
+</tr>
+<tr>
+<td><strong>Bluetooth</strong> (802.15)</td>
+<td><strong>HALF DUPLEX</strong> (formalmente)</td>
+<td><em>Time Division Duplex</em>: el maestro y los esclavos se turnan en ranuras de 625 µs. Con poca rigurosidad se lo llama full duplex, pero <strong>no es simultáneo real</strong>.</td>
+</tr>
+<tr>
+<td><strong>Wi-Fi</strong> (802.11)</td>
+<td><strong>HALF DUPLEX siempre</strong></td>
+<td>El medio es el <strong>aire</strong>, inherentemente compartido. En 802.11 <strong>no existe full duplex</strong>.</td>
+</tr>
+<tr>
+<td><strong>Fibra y enlaces seriales</strong></td>
+<td><strong>FULL DUPLEX</strong></td>
+<td>Suele haber un par (TX/RX) separado por dirección.</td>
+</tr>
+<tr>
+<td><strong>DSL</strong></td>
+<td><strong>FULL DUPLEX</strong> (por frecuencias)</td>
+<td>Usa bandas distintas para subida y bajada.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ <strong>La frase clave para el examen:</strong> Ethernet conmutado es <strong>full duplex</strong>; Wi-Fi es
+<strong>siempre half duplex</strong>. Si el enunciado dice "Ethernet (IEEE 802.3)", la respuesta es
+full duplex en los enlaces conmutados modernos, y half duplex en los hubs antiguos.</p>
+</blockquote>
+<h3>⚠️ Actualización a 2026 — el half-duplex en Ethernet</h3>
+<p><strong>Sigue igual:</strong> Ethernet nació half duplex y se hizo full duplex con el switch; Wi-Fi nunca
+tuvo full duplex.</p>
+<p><strong>Cambió:</strong>
+- <strong>El half-duplex Ethernet es historia por encima de 1 Gb/s.</strong> A 10 GbE y más el
+  full-duplex punto a punto es <strong>obligatorio</strong>. Es una decisión de <strong>IEEE 802.3</strong>, no de la
+  IETF: <strong>no existe RFC que lo depreque</strong>. ⚠️ <strong><code>RFC 8984</code> es JSCalendar</strong>, no Ethernet.
+- <strong>PERO no desapareció del todo:</strong> <strong>IEEE 802.3cg 10BASE-T1S</strong> (un solo par, para redes
+  industriales) es <strong>obligatoriamente half-duplex con PLCA</strong>, y el módulo YANG <code>csma-cd</code> de
+  <code>802.3cf</code> está marcado <code>status deprecated</code>.</p>
+<h2>1.4 Nyquist — el techo del medio limpio</h2>
+<h3>El teorema</h3>
+<div class="codehilite"><pre><span></span><code>  ┌─────────────────────────────────────────────────────────────────────┐
+  │                                                                     │
+  │        C = 2 · B · log₂(V)          [bits por segundo, bps]       │
+  │                                                                     │
+  │   B = ancho de banda del enlace, en HERTZ (Hz)                     │
+  │   V = cantidad de niveles de señal (estados posibles por símbolo)   │
+  │                                                                     │
+  └─────────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<h3>Las hipótesis del teorema (lo que pregunta el Examen 2006-08 P1)</h3>
+<p>Según la solución oficial, tres:</p>
+<div class="codehilite"><pre><span></span><code>  1. Canal de comunicaciones de ANCHO DE BANDA LIMITADO B, SIN RUIDO de ningún tipo.
+  2. La señal transmitida es una SEÑAL DIGITAL de V NIVELES DISCRETOS.
+  3. (implícita) El medio transmite 2 SEÑALES por segundo, una por cada cambio de nivel.
+</code></pre></div>
+
+<h3>El ejemplo canónico de la cátedra, resuelto</h3>
+<p>Una línea telefónica clásica: <code>B = 3100 Hz</code>, <code>V = 2</code> (dos niveles: +1 y −1).
+<code>C = 2 · 3100 · log₂(2) = 6200 bps</code>. El detalle importante: <code>log₂(2) = 1</code>, porque con <code>V = 2</code>
+cada <strong>símbolo</strong> transporta 1 bit; y con 2 símbolos por segundo salen 2 bits por segundo y
+por Hz, que es justamente el <code>2</code> del <code>2·B</code>.</p>
+<p>Si el mismo enlace admite <strong>4 niveles</strong> (<code>V = 4</code>): <code>C = 2 · 3100 · log₂(4) = 12 400 bps</code>. El
+ancho de banda <strong>no cambió</strong> (siguen siendo 3100 Hz): lo que cambió fue la <strong>modulación</strong>, y
+ahora cada símbolo lleva 2 bits. <strong>Se dobló la velocidad sin tocar el medio.</strong></p>
+<h3>Por qué el factor 2 (la intuición)</h3>
+<p>En un medio de ancho de banda <code>B</code> se pueden mandar <strong>2 señales por segundo</strong> (una por
+cada oscilación o cambio de nivel). Cada una vale <code>log₂(V)</code> bits, porque tenés <code>V</code> estados
+posibles y hacen falta <code>log₂(V)</code> bits para distinguirlos (2 estados → 1 bit, 4 → 2 bits,
+16 → 4 bits).</p>
+<div class="codehilite"><pre><span></span><code>  2 señales/segundo   ×   log₂(V) bits/señal
+  ───────────────────────────────────────────────
+       =  2 · log₂(V)   bits por segundo y por Hz
+
+  y multiplicando por los B Hz:   C = 2 · B · log₂(V)
+</code></pre></div>
+
+<h2>1.5 La modulación: cómo se mandan los bits por el medio</h2>
+<p>La capa física convierte bits en <strong>señal</strong>; la <strong>modulación</strong> es ese proceso:</p>
+<div class="codehilite"><pre><span></span><code>  ASK (Amplitude Shift Keying) — modula la AMPLITUD
+       bit 0:  ─────┐        ┌───────       Con V niveles:
+       bit 1:         └────────┘             V amplitudes por símbolo
+
+  FSK (Frequency Shift Keying) — modula la FRECUENCIA
+       bit 0:  ~~~~~   (frecuencia baja)     bit 1:  ∿∿∿∿∿ (alta)
+
+  PSK (Phase Shift Keying) — modula la FASE
+       bit 0:  ─────   (fase 0°)              bit 1:  ‾‾‾‾‾ (fase 180°)
+
+  QAM (Quadrature Amplitude Modulation) — combina AMPLITUD y FASE
+       constelación de puntos: cada PUNTO = un símbolo distinto
+       16-QAM = 16 puntos = 4 bits por símbolo
+</code></pre></div>
+
+<h3>QAM: la estrella del curso</h3>
+<div class="codehilite"><pre><span></span><code>  16-QAM (constelación de 16 puntos):
+
+          I (Eje en cuadratura)
+          │
+      · · ·┼· · ·      ● ●     ← 4 niveles de amplitud en I
+      ──────┼──────────────  Q (Eje en fase)
+      · · ·┼· · ·      ● ●
+          │
+
+  4 puntos en cada cuadrante × 4 cuadrantes = 16 puntos
+  bits por símbolo = log₂(16) = 4
+
+  En un canal de 3100 Hz: C = 2 · 3100 · log₂(16) = 24 800 bps
+</code></pre></div>
+
+<p><strong>El punto conceptual:</strong> QAM <strong>exploita los dos indicadores</strong> que Nyquist dice que tenés (la
+amplitud <strong>y</strong> la fase). Con <code>A</code> niveles de amplitud y <code>F</code> fases distintas se consigue una
+constelación de <code>M = A · F</code> puntos, y cada punto vale <code>log₂(M)</code> bits. Por eso las
+modulaciones reales de alta velocidad (Wi-Fi 5/6/7, 5G, cable) son todas QAM de orden alto:
+256-QAM, 1024-QAM, 4096-QAM.</p>
+<h2>1.6 Shannon — el techo del medio ruidoso</h2>
+<h3>El teorema</h3>
+<div class="codehilite"><pre><span></span><code>  ┌─────────────────────────────────────────────────────────────────────┐
+  │        C = B · log₂(1 + S/N)          [bits por segundo, bps]      │
+  │   B  = ancho de banda del enlace, en HERTZ (Hz)                     │
+  │   S  = potencia de la señal;  N = potencia del ruido                │
+  │   S/N = relación señal-ruido, EN LINEAL (¡no en dB!)                │
+  │                                                                     │
+  │   Es la CAPACIDAD del canal: el máximo de bits que pasan           │
+  │   LIMPIAMENTE, con corrección de errores tolerable.                 │
+  └─────────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<h3>⚠️ LA CONVERSIÓN DE dB A LINEAL (el paso que más se olvida)</h3>
+<div class="codehilite"><pre><span></span><code>  ┌─────────────────────────────────────────────────────────────────────┐
+  │        S/N_lineal = 10 ^ (S/N_dB / 10)                              │
+  └─────────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>S/N (dB)</th>
+<th>S/N (lineal)</th>
+<th><code>log₂(1 + S/N)</code></th>
+<th>Con <code>B = 3100 Hz</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0 dB</td>
+<td>1</td>
+<td>log₂(2) = 1</td>
+<td>3100 bps</td>
+</tr>
+<tr>
+<td><strong>20 dB</strong></td>
+<td><strong>100</strong></td>
+<td>log₂(101) ≈ 6,66</td>
+<td>≈ 20 600 bps</td>
+</tr>
+<tr>
+<td><strong>30 dB</strong></td>
+<td><strong>1000</strong></td>
+<td>log₂(1001) ≈ 9,97</td>
+<td>≈ 30 900 bps</td>
+</tr>
+<tr>
+<td>40 dB</td>
+<td>10 000</td>
+<td>log₂(10 001) ≈ 13,29</td>
+<td>≈ 41 200 bps</td>
+</tr>
+</tbody>
+</table>
+<p><strong>El ejemplo paso a paso (30 dB → lineal):</strong></p>
+<div class="codehilite"><pre><span></span><code>  S/N = 30 dB   →   S/N_lineal = 10^(30/10) = 10³ = 1000
+  C = 3100 · log₂(1 + 1000) = 3100 · log₂(1001) = 3100 · 9,97 ≈ 30 900 bps
+
+  ⚠️ El error clásico es meter 30 (el dB) en vez de 1000 (el lineal):
+     da 3100 · log₂(31) ≈ 15 700 bps, LA MITAD.
+</code></pre></div>
+
+<h3>Las hipótesis del teorema</h3>
+<p>(1) El canal tiene ancho de banda limitado <code>B</code> (Hz). (2) El ruido es <strong>gaussiano</strong> (blanco,
+distribución normal) de potencia <code>N</code>. (3) Hay una señal de potencia <code>S</code>. (4) El límite <strong>no
+son los niveles de señal</strong> (<code>V</code> no aparece): son el ancho de banda y el ruido. Ésta es la
+diferencia clave con Nyquist.</p>
+<h2>1.7 Nyquist y Shannon juntos: cuándo aplica cada uno</h2>
+<div class="codehilite"><pre><span></span><code>  ┌─────────────────────────────────────────────────────────────────────┐
+  │   NYQUIST  = techo del medio IDEAL (sin ruido)                     │
+  │               C_N = 2 · B · log₂(V)                                 │
+  │                                                                     │
+  │   SHANNON  = techo del medio REAL (con ruido gaussiano)             │
+  │               C_S = B · log₂(1 + S/N)                               │
+  │                                                                     │
+  │   SIEMPRE:  C_S ≤ C_N                                              │
+  └─────────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>  capacidad (bps)
+     │                    ╭───────────  NYQUIST: 2·B·log₂(V)   (medio sin ruido)
+     │                  ╱ │
+     │    SHANNON    ╱     │  ← SHANNON SIEMPRE DEBAJO DE NYQUIST;
+     │   B·log₂(1+S/N)     │    la distancia entre las dos curvas es el RUIDO
+     │  ╱                  │
+     │╱                    │
+     └─────────────────────┼──────────────►  B (Hz)
+
+  Si S/N → ∞ (ruido despreciable), SHANNON → NYQUIST.
+</code></pre></div>
+
+<p><strong>¿Cuándo se aplica cada uno?</strong></p>
+<table>
+<thead>
+<tr>
+<th>Situación</th>
+<th>Teorema</th>
+<th>Por qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Medio <strong>limpio</strong> (cobre corto, fibra nueva)</td>
+<td><strong>Nyquist</strong></td>
+<td>El ruido es despreciable; el límite es la modulación (<code>V</code> niveles).</td>
+</tr>
+<tr>
+<td>Medio <strong>ruidoso</strong> (línea telefónica, radio, cobre de largo recorrido)</td>
+<td><strong>Shannon</strong></td>
+<td>El ruido es el factor limitante; el límite es el <code>S/N</code>.</td>
+</tr>
+<tr>
+<td><strong>Diseño de sistema</strong></td>
+<td><strong>Los dos</strong></td>
+<td>Nyquist da el techo del hardware y Shannon el techo usable; el diseño real queda <strong>por debajo de Shannon</strong>, y <strong>Nyquist nunca se alcanza</strong>.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>La relación, con números:</strong> con <code>B = 3100 Hz</code> y <code>V = 4</code>, Nyquist da <code>12 400 bps</code>, y el
+mismo medio con <code>S/N = 20 dB</code> da por Shannon <code>20 650 bps</code>. Parece que Shannon <strong>supera</strong> a
+Nyquist, pero <strong>no están comparados con el mismo <code>V</code></strong>: para igualarlos haría falta
+<code>2·log₂(V) = log₂(101)</code>, o sea <code>V ≈ 10</code>, y con <code>V ≈ 10</code> Nyquist da <code>≈ 20 600 bps</code>. <strong>Shannon
+da el techo REAL; Nyquist, el IDEAL de un medio limpio con una modulación dada.</strong></p>
+<h2>1.8 Los tres conceptos juntos, y qué cambió hasta 2026</h2>
+<div class="codehilite"><pre><span></span><code>  ┌───────────────┬──────────────────┬──────────────────┬──────────────────┐
+  │               │  NYQUIST         │  SHANNON         │  RETARDO         │
+  │ Pregunta      │ bits por SEGUNDO │ pasan LIMPIAMENTE│ cuánto tarda     │
+  │ Fórmula       │ 2·B·log₂(V)      │ B·log₂(1+S/N)    │ L/R  y  d/s      │
+  │ Variable clave│ V (niveles)      │ S/N (calidad)    │ R, d, L          │
+  │ Modelo        │ medio SIN ruido  │ medio CON ruido  │ cualquier medio  │
+  │ Saturado por  │ los NIVELES      │ el RUIDO         │ distancia o R    │
+  └───────────────┴──────────────────┴──────────────────┴──────────────────┘
+</code></pre></div>
+
+<h3>⚠️ Actualización a 2026 — qué cambió en la capa física</h3>
+<p><strong>Sigue igual — de memoria:</strong> <strong>Nyquist</strong> (<code>C = 2·B·log₂(V)</code>, medio sin ruido), <strong>Shannon</strong>
+(<code>C = B·log₂(1+S/N)</code>, ruido gaussiano, <code>S/N</code> en lineal), la conversión
+<code>S/N_lineal = 10^(dB/10)</code>, las definiciones de full y half duplex, las características de los
+cuatro medios, y la modulación (ASK, FSK, PSK, QAM).</p>
+<p><strong>Cambió — y esto es lo que hay que contar en 2026:</strong>
+- <strong>La fibra se volvió el medio dominante</strong>: el cobre sigue para el último tramo de acceso
+  (unos 100 m), pero <strong>todo el backbone y casi todo el centro de datos</strong> es fibra.
+- <strong>El half-duplex Ethernet murió en el backbone</strong>, como se explicó en §1.3.
+- <strong>Wi-Fi dejó atrás el CSMA/CD por completo</strong>: hoy es <strong>CSMA/CA</strong>, con <strong>OFDMA</strong> (Wi-Fi
+  6/6E), <strong>MU-MIMO</strong> y <strong>MLO</strong>. <strong>Wi-Fi 7</strong> (<code>IEEE 802.11be-2024</code>, publicado el 22-jul-2025)
+  trae 320 MHz de canal y <strong>4096-QAM</strong>: Nyquist con <code>V = 4096</code>, o sea <code>log₂(4096) = 12</code>
+  bits por símbolo. <strong>Wi-Fi 8</strong> (<code>802.11bn</code>, objetivo mayo-2028) se enfoca en confiabilidad.
+  Un curso de 2012 sobre <code>802.11n</code> está <strong>cuatro generaciones</strong> atrás.</p>
+<blockquote>
+<p><strong>Consecuencia para el examen:</strong> los <strong>dos teoremas no cambiaron</strong>: son matemáticas, no
+ingeniería. Lo que cambió son las cifras (4096-QAM en Wi-Fi 7) y el medio dominante
+(fibra). Si el enunciado es de Nyquist o Shannon, la fórmula y las hipótesis van
+<strong>exactamente iguales</strong> que en 2011.</p>
+</blockquote>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — Nyquist con 3100 Hz y 4 niveles</h2>
+<p><strong>Datos.</strong> Una línea telefónica de <strong>B = 3100 Hz</strong> con una modulación de <strong>V = 4 niveles</strong>.
+<strong>a)</strong> ¿Cuál es la capacidad máxima? <strong>b)</strong> ¿Cuántos bits por símbolo?</p>
+<div class="codehilite"><pre><span></span><code>  a) C = 2 · B · log₂(V) = 2 · 3100 · log₂(4) = 2 · 3100 · 2 = 12 400 bps
+  b) bits por símbolo = log₂(V) = log₂(4) = 2 bits
+</code></pre></div>
+
+<p><em>Interpretación:</em> cada 1/6200 de segundo mando un símbolo, y cada símbolo vale 2 bits:
+<code>C = 6200 símbolos/s × 2 bits = 12 400 bps</code>.</p>
+<p><strong>Variante:</strong> ¿y con <strong>V = 16</strong> (16-QAM)? <code>C = 2 · 3100 · log₂(16) = 24 800 bps</code>. El medio
+<strong>no cambió</strong>; lo que cambió fue la <strong>modulación</strong>, y con ella los bits por símbolo (de 2 a
+4). Ése es el juego de Nyquist: <strong>multiplicar los niveles es multiplicar la velocidad sin
+tocar el cable.</strong></p>
+<h2>2.2 Ejercicio 2 — Shannon con S/N en dB (la conversión a la vista)</h2>
+<p><strong>Datos.</strong> Un enlace de <strong>B = 3100 Hz</strong> con ruido de <strong>S/N = 30 dB</strong>. <strong>a)</strong> Convertí el
+S/N a lineal. <strong>b)</strong> ¿Cuál es la capacidad máxima?</p>
+<div class="codehilite"><pre><span></span><code>  a) S/N_dB = 30
+     S/N_lineal = 10^(30/10) = 10³ = 1000
+
+  b) C = B · log₂(1 + S/N_lineal) = 3100 · log₂(1 + 1000) = 3100 · log₂(1001)
+     log₂(1001): como 2¹⁰ = 1024, está apenas por debajo de 10.
+        log₂(1001) = 10 + log₂(1001/1024) = 10 + log₂(0,977) ≈ 10 − 0,034 ≈ 9,97
+     C = 3100 · 9,97 ≈ 30 900 bps
+</code></pre></div>
+
+<p><strong>Interpretación — la moraleja:</strong></p>
+<blockquote>
+<p>Con 30 dB de calidad de señal (una relación señal-ruido de 1000 a 1), la línea
+telefónica clásica <strong>no puede pasar de ~31 kbps</strong>, aunque la modulación sea perfecta.
+Ése es el techo de Shannon: <strong>el ruido, no el cable, es el límite</strong>. Por eso los
+módems de la época llegaban a ~33,6 kbps y ahí paraban: no era el cable ni el módem,
+era Shannon.</p>
+</blockquote>
+<h3>⚠️ Errores típicos del ejercicio 2</h3>
+<ul>
+<li><strong>Meter 30 (dB) en la fórmula en vez de 1000 (lineal).</strong> Da <code>3100 · log₂(31) ≈ 15 700 bps</code>: la mitad. <strong>Este es EL error del ejercicio.</strong></li>
+<li><strong>Olvidar el <code>1 +</code>:</strong> es <code>log₂(1 + S/N)</code>, no <code>log₂(S/N)</code>.</li>
+<li><strong>Usar <code>10^(dB/20)</code>:</strong> esa es la fórmula de potencia contra amplitud; el <code>S/N</code> en redes es
+  siempre <strong>potencia</strong>, así que va con <code>/10</code>.</li>
+</ul>
+<h2>2.3 Ejercicio 3 — Teórico máximo contra capacidad real</h2>
+<p><strong>Datos.</strong> Un enlace tiene <code>B = 1 MHz</code>, <code>S/N = 40 dB</code> y se modula con <code>V = 1024</code>
+(1024-QAM, o sea 10 bits por símbolo). <strong>a)</strong> Nyquist. <strong>b)</strong> Shannon. <strong>c)</strong> ¿Cuál manda?</p>
+<div class="codehilite"><pre><span></span><code>  a) Nyquist:  C_N = 2 · 10⁶ · log₂(1024) = 2 · 10⁶ · 10 = 20 Mbps
+
+  b) Shannon:  S/N = 10^(40/10) = 10 000 (lineal)
+               C_S = 10⁶ · log₂(1 + 10 000) = 10⁶ · log₂(10 001) ≈ 10⁶ · 13,29
+               C_S ≈ 13,3 Mbps
+
+  c) Mandan los dos: la capacidad real es el MÍNIMO, o sea 13,3 Mbps. Los
+     20 Mbps son el techo del transmisor; los 13,3 Mbps, el del medio. En la
+     práctica la capacidad real es un 50-70 % de Shannon, por atenuación,
+     pérdida de sincronismo y overhead de protocolo.
+</code></pre></div>
+
+<h2>2.4 Ejercicio 4 — QAM y bits por símbolo</h2>
+<p><strong>Datos.</strong> Una constelación QAM tiene <strong>16 puntos</strong> en un enlace de 3100 Hz.</p>
+<div class="codehilite"><pre><span></span><code>  16-QAM = 4 niveles de amplitud × 4 fases  →  M = A · F = 4 · 4 = 16 puntos
+  Cada punto = 1 símbolo, y bits por símbolo = log₂(16) = 4 bits
+
+  C = 2 · 3100 · log₂(16) = 2 · 3100 · 4 = 24 800 bps
+</code></pre></div>
+
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 Examen 2006-08, Pregunta 1 (5 puntos) — Nyquist y Shannon con sus hipótesis</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc0608</code> — 5 de agosto de 2006, Pregunta 1 (5 puntos).
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0608.pdf</p>
+</blockquote>
+<h3>Enunciado (texto literal del examen)</h3>
+<blockquote>
+<p>Enuncie los resultados de Nyquist y Shannon vistos en el teórico. Comente sobre las
+hipótesis de cada uno de ellos.</p>
+</blockquote>
+<h3>Solución oficial (textual)</h3>
+<blockquote>
+<p><strong>Teorema de Nyquist</strong>
+<em>Hipótesis:</em>
+· Canal de comunicaciones de ancho de banda limitado H, <strong>sin ruido de ningún tipo</strong>
+· La señal transmitida por el canal es una <strong>señal digital de V niveles discretos</strong></p>
+<p><em>Resultado:</em> La máxima tasa de transmisión de bits alcanzable es <strong>M = 2 H log₂(V)</strong></p>
+<p><strong>Ley de Shannon</strong>
+<em>Hipótesis:</em>
+· Canal de ancho de banda H
+· Canal sometido a <strong>ruido gaussiano de potencia N</strong>
+· Señal de transmisión de potencia <strong>S</strong></p>
+<p><em>Resultado:</em> La capacidad del canal (en bits) tiene un máximo teórico <strong>C = 2 H log₂[1 + S/N]</strong></p>
+</blockquote>
+<h3>Análisis de la solución oficial</h3>
+<p><strong>Lo que está bien:</strong> las hipótesis correctas de cada uno (Nyquist sin ruido y con <code>V</code>
+niveles; Shannon con ruido gaussiano y potencias <code>S</code> y <code>N</code>), y las dos fórmulas con sus
+variables.</p>
+<p>🔴 <strong>Una errata en la oficial:</strong> escribe Shannon como <code>C = 2 H log₂(1+S/N)</code>, que es un
+error de transcripción: <strong>la fórmula correcta es <code>C = B · log₂(1 + S/N)</code>, SIN el 2 delante.</strong>
+El <code>2</code> es de Nyquist, cuya fórmula (<code>M = 2·H·log₂(V)</code>) sí está bien.</p>
+<p><strong>Lo que falta y son los puntos que se ganan:</strong>
+1. <strong>No explica cada variable con sus unidades</strong> (Hz, niveles, lineal).
+2. <strong>No dice que <code>S/N</code> va en lineal, no en dB.</strong>
+3. <strong>No relaciona los dos teoremas</strong> (cuándo aplica cada uno).</p>
+<h3>Mi respuesta completa (5 puntos)</h3>
+<p><strong>Nyquist</strong> — teorema de muestreo sin ruido:</p>
+<div class="codehilite"><pre><span></span><code>  C_N = 2 · B · log₂(V)   [bps]
+    · B = ancho de banda del enlace, en HERTZ (Hz)
+    · V = cantidad de niveles discretos de la señal
+
+  Hipótesis:
+    (1) el canal tiene ancho de banda LIMITADO a B;
+    (2) NO hay ruido de ningún tipo;
+    (3) la señal es digital, de V niveles;
+    (4) (implícita) el medio transmite 2 SEÑALES por segundo, una por cada
+        cambio de nivel; de ahí el factor 2.
+
+  Idea: cada símbolo puede estar en uno de V estados, así que vale log₂(V) bits, y caben
+  2 símbolos por Hz de ancho de banda.
+</code></pre></div>
+
+<p><strong>Shannon</strong> — teorema de la capacidad del canal:</p>
+<div class="codehilite"><pre><span></span><code>  C_S = B · log₂(1 + S/N)   [bps]
+    · B = ancho de banda del enlace, en HERTZ (Hz)
+    · S = potencia de la señal;  N = potencia del ruido (en W)
+    · S/N = relación señal-ruido, EN LINEAL (si viene en dB: 10^(dB/10))
+
+  Hipótesis:
+    (1) el canal tiene ancho de banda limitado B;
+    (2) el ruido es GAUSSIANO de potencia N;
+    (3) hay una señal de potencia S;
+    (4) el límite NO son los niveles de señal (V no aparece), sino el ruido.
+</code></pre></div>
+
+<p><strong>La relación entre ambos:</strong></p>
+<blockquote>
+<p>Nyquist es el techo de un medio <strong>ideal sin ruido</strong> con una modulación dada; Shannon es el
+techo del medio <strong>real con ruido</strong>. <strong>Nyquist se usa para el medio limpio</strong> (diseño del
+transmisor) y <strong>Shannon para el medio real</strong> (diseño del sistema). En la práctica la
+capacidad real está <strong>por debajo de Shannon</strong>, por atenuación, pérdida de sincronismo y
+overhead de protocolo.</p>
+</blockquote>
+<h3>⚠️ Errores típicos del 2006-08 P1</h3>
+<ul>
+<li><strong>Poner <code>2 · B · log₂(1+S/N)</code></strong> en Shannon: <strong>no lleva el 2</strong>. Y <strong>meter <code>S/N</code> en dB</strong> sin
+  convertir a lineal.</li>
+<li><strong>Intercambiar las hipótesis:</strong> decir "Nyquist necesita ruido gaussiano" o "Shannon
+  necesita V niveles".</li>
+<li><strong>No dar las unidades</strong> de <code>B</code> (Hz) ni de <code>V</code> (niveles).</li>
+</ul>
+<h2>3.2 Examen 2007-07, Pregunta 1, apartado a (10 puntos) — capacidad sobre línea telefónica</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc0707</code> — 31 de julio de 2007, Pregunta 1, apartado a.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0707.pdf</p>
+</blockquote>
+<h3>Enunciado (texto literal del examen)</h3>
+<blockquote>
+<p><strong>a)</strong> Si se quiere calcular la máxima capacidad de transmisión de datos sobre una línea
+telefónica, ¿qué teorema visto en el curso se debe aplicar? Justifique y escriba la
+fórmula para calcularla, explicando el significado de las variables en la fórmula y qué
+unidades se suelen utilizar.</p>
+</blockquote>
+<h3>Sobre la solución oficial</h3>
+<p>El PDF de <code>sirc0707</code> <strong>no trae la solución publicada del apartado 1a</strong>: trae el enunciado y
+las soluciones de los problemas prácticos. La resolución de abajo es <strong>solución propia</strong>.</p>
+<h3>Resolución (solución propia, para los 10 puntos)</h3>
+<p><strong>Paso 1 — Qué teorema aplicar: Shannon, no Nyquist.</strong></p>
+<blockquote>
+<p><strong>Justificación:</strong> la línea telefónica es un medio <strong>ruidoso</strong> (par trenzado, susceptible a
+interferencia, diafonía y ruido térmico). Como el ruido <strong>no es despreciable</strong>, Nyquist,
+que asume un medio <strong>sin ruido</strong>, daría un techo optimista. Corresponde la <strong>ley de
+Shannon</strong>, creada exactamente para este caso.</p>
+</blockquote>
+<p><strong>Paso 2 — La fórmula.</strong></p>
+<div class="codehilite"><pre><span></span><code>  C = B · log₂(1 + S/N)   [bits por segundo, bps]
+</code></pre></div>
+
+<p><strong>Paso 3 — Significado y unidades de cada variable.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Significado</th>
+<th>Unidad</th>
+<th>Nota</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>C</code></td>
+<td>capacidad: máximo de bits transmitibles <strong>sin errores</strong></td>
+<td><strong>bps</strong></td>
+<td>Es un techo <strong>teórico</strong>.</td>
+</tr>
+<tr>
+<td><code>B</code></td>
+<td>ancho de banda del canal</td>
+<td><strong>Hertz (Hz)</strong></td>
+<td>Para una línea telefónica, <code>B ≈ 3100 Hz</code>.</td>
+</tr>
+<tr>
+<td><code>S</code> / <code>N</code></td>
+<td>potencia de la señal / del ruido</td>
+<td><strong>W (watts)</strong></td>
+<td></td>
+</tr>
+<tr>
+<td><code>S/N</code></td>
+<td>relación señal-ruido, o sea calidad del canal</td>
+<td><strong>adimensional (lineal)</strong></td>
+<td>⚠️ Si la dan en <strong>decibeles</strong>: <code>S/N = 10^(dB/10)</code>.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Pasos 4 y 5 — Valores típicos y un ejemplo numérico.</strong></p>
+<div class="codehilite"><pre><span></span><code>  B = 3100 Hz,  S/N = 30 dB:
+      S/N_lineal = 10^(30/10) = 1000
+      C = 3100 · log₂(1 + 1000) = 3100 · 9,97 ≈ 30 900 bps
+</code></pre></div>
+
+<p><em>Interpretación:</em> el máximo teórico de una línea telefónica decente es de unos <strong>30 kbps</strong>.
+Por eso los módems de la época llegaban a 33,6 kbps y ahí paraban: <strong>no era el cable ni el
+módem, era Shannon</strong>.</p>
+<h3>⚠️ Errores típicos del 2007-07 P1</h3>
+<ul>
+<li><strong>Elegir Nyquist en vez de Shannon</strong> (el error conceptual central). La línea telefónica tiene ruido, así que va Shannon.</li>
+<li><strong>No justificar por qué NO es Nyquist</strong>, que es lo que pide el enunciado.</li>
+<li><strong>Meter el S/N en dB</strong> sin convertir. <strong>Olvidar las unidades de <code>B</code> (Hz).</strong></li>
+</ul>
+<hr />
+<h1>PARTE 4 — SIMULACRO 1</h1>
+<blockquote>
+<p><strong>Instrucciones (reproducción del formato real de FING):</strong>
+- Individual, <strong>sin material</strong>, <strong>3 horas (180 min)</strong>.
+- <strong>5 Preguntas Teóricas</strong> (~40 pts) + <strong>2 Problemas Prácticos</strong> (30 pts cada uno).
+- Aprobación: <strong>60 puntos</strong>.
+- ⚠️ <strong>Es obligatorio responder correctamente al menos 15 puntos en las preguntas
+  teóricas.</strong> Si no llegás a 15 en teoría, no aprobás aunque sumes 60 con los problemas.
+- Empezá cada pregunta y cada problema en una hoja nueva. Para los problemas podés
+  suponer que disponés de los tipos básicos (lista, cola, archivo, string) y sus funciones.</p>
+<p>⏱️ <strong>Cronómetro sugerido (180 minutos):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Etapa</th>
+<th>Min</th>
+<th>Objetivo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Lectura inicial</td>
+<td>5</td>
+<td>leer entero, elegir por dónde empezar</td>
+</tr>
+<tr>
+<td>T1 (10 pts)</td>
+<td>15</td>
+<td></td>
+</tr>
+<tr>
+<td>T2 (10 pts)</td>
+<td>15</td>
+<td></td>
+</tr>
+<tr>
+<td>T3 (8 pts)</td>
+<td>13</td>
+<td></td>
+</tr>
+<tr>
+<td>T4 (8 pts)</td>
+<td>12</td>
+<td></td>
+</tr>
+<tr>
+<td>T5 (4 pts)</td>
+<td>8</td>
+<td><strong>63 min de teoría, ~40 pts</strong></td>
+</tr>
+<tr>
+<td>Problema 1 (30 pts)</td>
+<td>52</td>
+<td>aritmética larga: dejar la fórmula y la cuenta a medias</td>
+</tr>
+<tr>
+<td>Problema 2 (30 pts)</td>
+<td>48</td>
+<td>tablas antes que prosa; re-leer los números</td>
+</tr>
+<tr>
+<td>Repaso final</td>
+<td>7</td>
+<td>re-leer los números de los dos problemas</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>180</strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>El consejo de la cátedra:</strong> los problemas se corrigen <strong>por lo que escribiste</strong>. Si no te
+da el número exacto, <strong>dejá la fórmula y la cuenta a medias</strong> con la unidad anotada:
+parcialmente es puntos. Un apartado en blanco es cero.</p>
+</blockquote>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 760 330" style="max-width:760px"><rect width="760" height="330" fill="#ffffff"/><text x="380.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Los 6 bloques del curso</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><rect x="34" y="48" width="190" height="38" rx="4" fill="#14507a" stroke="#14507a" stroke-width="1.2"/><text x="129.0" y="70.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#ffffff">A · Fundamentos</text><text x="244" y="72" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#1a1a1a">1-7</text><text x="300" y="72" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">redes, capas, retardo, Nyquist/Shannon</text><rect x="34" y="93" width="190" height="38" rx="4" fill="#2e7d4f" stroke="#2e7d4f" stroke-width="1.2"/><text x="129.0" y="115.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#ffffff">B · Aplicacion</text><text x="244" y="117" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#1a1a1a">8-15</text><text x="300" y="117" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">HTTP, DNS, correo, sockets, DHCP</text><rect x="34" y="138" width="190" height="38" rx="4" fill="#c8621a" stroke="#c8621a" stroke-width="1.2"/><text x="129.0" y="160.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#ffffff">C · Transporte</text><text x="244" y="162" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#1a1a1a">16-23</text><text x="300" y="162" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">UDP, TCP, control de congestion</text><rect x="34" y="183" width="190" height="38" rx="4" fill="#b3261e" stroke="#b3261e" stroke-width="1.2"/><text x="129.0" y="205.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#ffffff">D · Red</text><text x="244" y="207" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#1a1a1a">24-37</text><text x="300" y="207" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">IPv4, subnetting, ruteo, BGP, IPv6</text><rect x="34" y="228" width="190" height="38" rx="4" fill="#7aa7c4" stroke="#7aa7c4" stroke-width="1.2"/><text x="129.0" y="250.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#ffffff">E · Enlace</text><text x="244" y="252" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#1a1a1a">38-43</text><text x="300" y="252" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">framing, CRC, ARQ, acceso, 802.11</text><rect x="34" y="273" width="190" height="38" rx="4" fill="#2e7d4f" stroke="#2e7d4f" stroke-width="1.2"/><text x="129.0" y="295.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#ffffff">F · Servicios</text><text x="244" y="297" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#1a1a1a">44-48</text><text x="300" y="297" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">multimedia, QoS, SNMP, seguridad</text></svg></p>
+<hr />
+<h2>4.1 El repaso que hay que tener delante antes del simulacro</h2>
+<p><strong>Las fórmulas, de memoria:</strong></p>
+<div class="codehilite"><pre><span></span><code>  d_transmisión = L/R            (L en BITS,  R en bps)          clases 5-6
+  d_propagación = d/s            (d en METROS, s en m/s)          clases 5-6
+  BDP           = R · RTT        (bits en vuelo)                 clases 5-6 y 19
+  latencia    ≈ RTT/2            (solo con camino simétrico)      clases 5-6
+  Nyquist:  C = 2 · B · log₂(V)                                 esta clase
+  Shannon:  C = B · log₂(1 + S/N)    (S/N EN LINEAL)             esta clase
+  dB → lineal:  S/N = 10^(dB/10)                                 esta clase
+  QAM:  bits por símbolo = log₂(M)  (M = puntos de la constelación) esta clase
+</code></pre></div>
+
+<p><strong>OSI contra TCP/IP, y las PDU:</strong> en OSI son 7 capas y las PDU son <strong>mensaje → segmento →
+paquete → trama → bit</strong>; en TCP/IP son <strong>4 capas</strong> (Aplicación, Transporte, Internet,
+Acceso), que se leen <strong>5</strong> si partís Acceso en Enlace y Física. Correspondencia: OSI 7-5 ↔
+Aplicación, OSI 4 ↔ Transporte, OSI 3 ↔ Internet, OSI 2-1 ↔ Acceso.</p>
+<p>⚠️ El modelo TCP/IP se cuenta como <strong>4 capas</strong> (Acceso, Internet, Transporte, Aplicación) o
+como <strong>5</strong> si separás Acceso en Enlace y Física. La cátedra lo explica en la Clase 2.</p>
+<p><strong>Las tres técnicas de conmutación:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Circuito</th>
+<th>Paquetes (store-and-forward)</th>
+<th>Mensajes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Conexión</td>
+<td>sí</td>
+<td>no (o circuito virtual)</td>
+<td>no</td>
+</tr>
+<tr>
+<td>Unidad</td>
+<td>flujo continuo</td>
+<td>paquete de tamaño fijo</td>
+<td>mensaje completo</td>
+</tr>
+<tr>
+<td>Reserva recursos</td>
+<td><strong>sí</strong></td>
+<td><strong>no</strong></td>
+<td><strong>no</strong></td>
+</tr>
+<tr>
+<td>Retardo</td>
+<td>fijo y predecible</td>
+<td>variable, con cola</td>
+<td>muy variable</td>
+</tr>
+<tr>
+<td>Orden</td>
+<td>sí</td>
+<td><strong>no</strong></td>
+<td><strong>no</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Los parámetros que se confunden entre sí:</strong> <code>R</code> (ancho de banda, <strong>bps</strong>, del equipo),
+<code>s</code> (velocidad de propagación, <strong>m/s</strong>, del medio), <strong>latencia</strong> (un viaje de ida, ≈ <code>RTT/2</code>
+si el camino es simétrico), <strong>RTT</strong> (ida y vuelta, lo mide <code>ping</code>), <strong>throughput</strong>
+(<code>min(R, ventana/RTT)</code>) y <strong>jitter</strong> (<code>R_máx − R_mín</code>).</p>
+<h2>4.2 Los 8 errores más frecuentes del Bloque A</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>El error</th>
+<th>Lo correcto</th>
+<th>Por qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Meter <code>R</code> (bps) en <code>d/s</code>.</td>
+<td><code>d/s</code> solo lleva <code>d</code> (m) y <code>s</code> (m/s).</td>
+<td><code>s</code> es del <strong>medio</strong>; <code>R</code> del <strong>equipo</strong>.</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Confundir <code>R</code> con <code>s</code>.</td>
+<td><code>R</code> en bps, <code>s</code> en m/s.</td>
+<td>"Cuánta info/s" contra "qué tan rápido viaja".</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Poner <code>n·d_proc</code> con <code>n</code> enlaces.</td>
+<td>Con <code>n</code> enlaces hay <code>n−1</code> routers.</td>
+<td>Los extremos A y B son hosts.</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Poner <code>2·B·log₂(1+S/N)</code>.</td>
+<td>Shannon es <code>B·log₂(1+S/N)</code>, <strong>sin el 2</strong>.</td>
+<td>El <code>2</code> es de Nyquist.</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Meter <code>S/N</code> en dB.</td>
+<td>Convertir: <code>10^(dB/10)</code>.</td>
+<td>Shannon pide el cociente <strong>lineal</strong>.</td>
+</tr>
+<tr>
+<td>6</td>
+<td>Confundir latencia con RTT.</td>
+<td><code>latencia ≈ RTT/2</code> <strong>solo</strong> con camino simétrico.</td>
+<td>Ida y vuelta pueden diferir.</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Decir que el jitter es el retardo.</td>
+<td>Jitter = <strong>variación</strong> del retardo.</td>
+<td>Retardo alto y constante no rompe el audio; el jitter sí.</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Decir que la fibra es "más rápida".</td>
+<td>La fibra tiene <code>s</code> apenas mayor y mucha más <strong>alcance</strong>.</td>
+<td><code>s</code> es casi igual; cambia la atenuación: 100 m contra 100 km.</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Decir que la fibra es "más rápida" que el cobre.</td>
+<td>La fibra tiene <code>s</code> apenas mayor y mucha más <strong>alcance</strong>.</td>
+<td><code>s</code> es casi igual; cambia la atenuación: 100 m contra 100 km.</td>
+</tr>
+</tbody>
+</table>
+<h2>4.3 Enunciado del simulacro (sin respuestas)</h2>
+<h3>Preguntas Teóricas</h3>
+<p><strong>T1 (10 puntos).</strong> En una red de paquetes, un paquete de longitud <code>L</code> cruza un medio.
+a) Identifique los <strong>componentes del retardo</strong> y diga cuáles son los más significativos.
+b) Diferencie el <strong>ancho de banda</strong> de la <strong>velocidad de propagación</strong> en el medio.
+c) ¿En qué componente del retardo influye la <strong>congestión</strong>?</p>
+<p><strong>T2 (10 puntos).</strong> En una red de conmutación de paquetes:
+a) Explique los conceptos de <strong>congestión</strong>, <strong>pérdida</strong> y <strong>retardo</strong>, y cómo se
+   relacionan entre sí.
+b) Una red pierde paquetes. Mencione <strong>dos causas de pérdida que no sean por
+   congestión</strong>, y explique por qué un protocolo de transporte como TCP no puede
+   distinguirlas.</p>
+<p><strong>T3 (8 puntos).</strong> Dos usuarios comparten un canal de comunicación.
+a) Indique el significado de <strong>FDMA</strong> y de <strong>TDMA</strong>, y explique el principio de operación
+   de cada uno.
+b) ¿Son equitativos? ¿En qué sentido de "equitativo" se parecen a la conmutación por
+   circuitos y en cuál a la de paquetes?</p>
+<p><strong>T4 (8 puntos).</strong> Sobre las tecnologías de transmisión:
+a) Indique en qué consisten el modo <strong>full duplex</strong> y el modo <strong>half duplex</strong>.
+b) Especifique para <strong>Ethernet (IEEE 802.3)</strong> y para <strong>Wi-Fi (IEEE 802.11)</strong> qué modo se
+   usa y justifique. Explique por qué en uno de los dos el otro modo es imposible.</p>
+<p><strong>T5 (4 puntos).</strong> Compare la conmutación por <strong>circuito</strong>, por <strong>paquetes</strong> y por
+<strong>mensajes</strong>: indique para cada una si reserva recursos en la red y qué unidad de datos
+transmite.</p>
+<h3>Problemas Prácticos</h3>
+<p><strong>Problema 1 (30 puntos) — Retardos.</strong> Un paquete de <code>L = 12 000 bits</code> viaja de A hasta B
+por <strong>cuatro enlaces</strong> unidos por <strong>tres conmutadores</strong>.</p>
+<div class="codehilite"><pre><span></span><code>  ┌────┐     e1     ┌────┐     e2     ┌────┐     e3     ┌────┐     e4     ┌────┐
+  │  A │══════════▶│SW1 │══════════▶│SW2 │══════════▶│SW3 │══════════▶│ B │
+  └────┘          └────┘          └────┘          └────┘          └────┘
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Enlace</th>
+<th><code>R</code></th>
+<th><code>d</code> (todos con <code>s = 2·10⁸ m/s</code>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>e1</code></td>
+<td>2 Mbps</td>
+<td>500 km</td>
+</tr>
+<tr>
+<td><code>e2</code></td>
+<td>100 Mbps</td>
+<td>200 km</td>
+</tr>
+<tr>
+<td><code>e3</code></td>
+<td>100 Mbps</td>
+<td>2000 km</td>
+</tr>
+<tr>
+<td><code>e4</code></td>
+<td>1 Gbps</td>
+<td>50 km</td>
+</tr>
+</tbody>
+</table>
+<p>Cada conmutador retarda cada paquete <code>d_proc = 4 µs</code>. No hay retardo de cola.</p>
+<p><strong>a)</strong> Escriba la fórmula general del retardo total extremo a extremo, indicando cuántas
+veces aparece cada término y <strong>por qué</strong> esas cantidades.
+<strong>b)</strong> Calcule el retardo total con la aritmética a la vista, y diga qué componente domina y
+qué porcentaje representa.
+<strong>c)</strong> Suponga ahora <code>R₁ = R₂ = R₃ = R₄ = R = 100 Mbps</code>, <code>d_proc = 0</code>, y que cada
+conmutador <strong>transmite inmediatamente cada bit que recibe, sin esperar a que llegue el
+paquete completo</strong>. Escriba el nuevo retardo, explique <strong>por qué</strong> mejora respecto de (b) y
+<strong>en qué condición dejaría de mejorar</strong>.
+<strong>d)</strong> Calcule el RTT de la conexión y el <em>bandwidth-delay product</em> del enlace <code>e2</code>.</p>
+<p><strong>Problema 2 (30 puntos) — Nyquist, Shannon, encapsulación y capas.</strong> Dos sedes unidas por
+un enlace de radio de <strong>B = 500 kHz</strong>, con <strong>S/N = 40 dB</strong> y modulación <strong>16-QAM</strong>. Cada
+router tiene <code>d_proc = 3 µs</code>.</p>
+<p><strong>a)</strong> Escriba la fórmula de <strong>Nyquist</strong> con el significado y las unidades de cada
+variable, y calcule la capacidad máxima del enlace con esa modulación.
+<strong>b)</strong> Escriba la fórmula de <strong>Shannon</strong>, <strong>convierta el S/N a lineal</strong> mostrando la cuenta,
+y calcule la capacidad máxima. Explique cuál de los dos resultados manda y por qué.
+<strong>c)</strong> Para un mensaje de aplicación de 1200 bytes que viaja por capa 2, 3 y 4 (Ethernet,
+IP, TCP), calcule el <strong>tamaño de cada PDU</strong> con cabeceras típicas (Ethernet 18 B, IP 20 B,
+TCP 20 B) y la <strong>eficiencia</strong> resultante. Diga qué capa se ocupa de qué.
+<strong>d)</strong> Mencione las <strong>capas del modelo OSI</strong> y sus <strong>PDU</strong>, y diga en cuál se ubica cada uno
+de los cálculos anteriores (capacidad, retardo, tamaño del segmento). Justifique.</p>
+<hr />
+<h2>4.4 Resolución del simulacro</h2>
+<h3>T1 (10 puntos) — Componentes del retardo, BW contra propagación, congestión</h3>
+<div class="codehilite"><pre><span></span><code>  d_end2end = Σ ( d_proc + d_cola + d_transmisión + d_propagación )
+</code></pre></div>
+
+<p><strong>a)</strong> Los <strong>cuatro componentes</strong> son: (1) <strong>procesamiento</strong> <code>d_proc</code> (CRC, leer la
+cabecera, buscar el puerto de salida); (2) <strong>encolamiento</strong> <code>d_cola</code> (espera en la cola del
+enlace de salida); (3) <strong>transmisión</strong> <code>d_trans = L/R</code> (meter el paquete entero en el
+cable); (4) <strong>propagación</strong> <code>d_prop = d/s</code> (la señal recorriendo el medio).</p>
+<p><strong>Los más significativos</strong> son <code>d_transmisión</code> y <code>d_propagación</code>: son los únicos
+<strong>calculables</strong> con los datos del enunciado (<code>L</code>, <code>R</code>, <code>d</code>, <code>s</code>) y los que <strong>dominan</strong> en
+enlaces de cualquier longitud relevante. <code>d_proc</code> es despreciable (microsegundos) y <code>d_cola</code>
+no se puede calcular a priori, porque depende del estado de la cola.</p>
+<p><strong>b)</strong> El <strong>ancho de banda</strong> <code>R</code> se mide en <strong>bps</strong> y depende del <strong>equipo</strong> (puerto,
+transceptor, modulación); aparece en <code>d_trans = L/R</code>. La <strong>velocidad de propagación</strong> <code>s</code> se
+mide en <strong>m/s</strong> y depende del <strong>medio físico</strong>; aparece en <code>d_prop = d/s</code>. Duplicar el ancho de
+banda reduce <code>d_trans</code> a la mitad y <strong>no cambia</strong> <code>d_prop</code>: un enlace de 1 Gbps no es "50
+veces más rápido" que uno de 100 Mbps, es 50 veces más <strong>ancho</strong>.</p>
+<p><strong>c)</strong> La congestión influye <strong>solo en el retardo de encolamiento</strong> <code>d_cola</code>, que es el
+único componente que depende del estado de la cola, y la congestión <strong>es</strong> el estado de la
+cola. La cadena: más tráfico → las colas se agrandan → <code>d_cola</code> sube → el retardo total
+sube; y si la cola desborda el buffer, aparecen <strong>pérdidas</strong>. Los otros tres (<code>d_proc</code>,
+<code>d_trans</code>, <code>d_prop</code>) no dependen de la carga.</p>
+<h3>T2 (10 puntos) — Congestión, pérdidas y retardo</h3>
+<p><strong>a)</strong> <strong>Congestión:</strong> escasez, <strong>durante un período de tiempo</strong>, de los <strong>recursos
+compartidos</strong> para procesar todos los paquetes que los pretenden usar (capacidad de
+procesamiento y buffers de los routers, y ancho de banda de los enlaces). Se manifiesta en
+<strong>pérdidas y/o retardos</strong>. <strong>Pérdida:</strong> un paquete <strong>se descarta cuando no encuentra lugar
+en un buffer</strong>; es <strong>irreversible</strong>, porque IP no reintenta. <strong>Retardo:</strong> el tiempo que
+tarda un paquete en ir de un nodo al siguiente, con sus cuatro componentes.</p>
+<p><strong>La relación:</strong> la <strong>congestión es la causa</strong>; el <strong>retardo de cola</strong> y la <strong>pérdida</strong> son
+los <strong>dos síntomas</strong> y vienen del mismo mecanismo. Primero aparece el retardo (la cola
+crece) y después, si se desborda el buffer, la pérdida.</p>
+<p><strong>b)</strong> Dos causas que <strong>no</strong> son por congestión: un <strong>checksum o CRC incorrecto</strong> por un
+error del medio, y un <strong>descarte por ACL o firewall</strong>, o porque el <strong>TTL llega a 0</strong>, o
+porque se perdió un <strong>fragmento</strong> en IPv4.</p>
+<p><strong>Por qué TCP no las distingue:</strong> un paquete perdido es un paquete perdido; para TCP los tres
+casos son <strong>lo mismo</strong>, y no hay forma de saber <em>por qué</em> se perdió desde el emisor. Por eso
+su reacción (reducir la ventana) es <strong>conservadora en unos casos y correcta en otros</strong>.</p>
+<h3>T3 (8 puntos) — FDMA y TDMA</h3>
+<p><strong>a)</strong> <strong>FDMA</strong> (<em>Frequency Division Multiple Access</em>): divide el <strong>espectro de frecuencias</strong>
+en sub-bandas y asigna <strong>una sub-banda fija a cada usuario</strong>, que la usa <strong>todo el tiempo</strong>.
+<strong>TDMA</strong> (<em>Time Division Multiple Access</em>): un usuario usa <strong>toda la banda disponible</strong> pero
+<strong>solo en su ranura de tiempo</strong> (<em>timeslot</em>), que se repite periódicamente.</p>
+<div class="codehilite"><pre><span></span><code>  FDMA (eje vertical = frecuencia; cada usuario tiene su franja fija)
+
+  ┌─────────┬─────────┬─────────┬─────────┐
+  │ usuario 1 │ usuario 2 │ usuario 3 │ usuario 4 │
+  │    ⋮    │    ⋮    │    ⋮    │    ⋮    │  ← el tiempo corre hacia
+  │    ⋮    │    ⋮    │    ⋮    │    ⋮    │    abajo: cada uno transmite
+  └─────────┴─────────┴─────────┴─────────┘     a la vez, en su banda
+
+  TDMA (eje horizontal = tiempo; cada usuario tiene su ranura fija)
+
+  ┌────┬────┬────┬────┐┌────┬────┬────┬────┐
+  │ u1 │ u2 │ u3 │ u4 ││ u1 │ u2 │ u3 │ u4 │   tiempo →
+  └────┴────┴────┴────┘└────┴────┴────┴────┘
+   cada ranura usa toda la banda
+</code></pre></div>
+
+<p><strong>b)</strong> Los dos son <strong>equitativos y estáticos</strong>: a cada usuario se le asigna siempre la misma
+fracción del recurso, sin reparto dinámico. Se parecen a la <strong>conmutación por circuitos</strong>
+(asignación fija) y no a la de paquetes, que no reserva nada y aprovecha el canal
+<strong>estadísticamente</strong>, desperdiciando menos capacidad cuando hay usuarios inactivos.</p>
+<h3>T4 (8 puntos) — Full duplex y half duplex</h3>
+<p><strong>a)</strong> <strong>Full duplex:</strong> se puede <strong>transmitir y recibir a la vez</strong>. <strong>Half duplex:</strong> se
+puede transmitir o recibir, pero <strong>no simultáneamente</strong> (se alternan por turnos).</p>
+<p><strong>b)</strong> <strong>Ethernet (IEEE 802.3) con switch: full duplex.</strong> Cada puerto es un enlace punto a
+punto dedicado, con un par para transmitir y otro para recibir, así que no hay colisión. (En
+los <strong>hubs</strong> antiguos, half duplex con CSMA/CD.) <strong>Wi-Fi (IEEE 802.11): siempre half
+duplex.</strong> El medio es el <strong>aire</strong>, inherentemente compartido.</p>
+<p><strong>Por qué en Wi-Fi el otro modo es imposible:</strong> una radio <strong>no puede transmitir y recibir a
+la vez en la misma banda</strong>, así que <strong>no puede detectar una colisión mientras transmite</strong>:
+nadie "oye" el choque. Por eso Wi-Fi usa <strong>CSMA/CA</strong> en lugar de CSMA/CD: en vez de
+detectar la colisión <em>después</em> de que ocurrió, la <strong>evita</strong> de antemano, con el tiempo de
+espera aleatorio (<em>backoff</em>), el <strong>NAV</strong> (<em>Network Allocation Vector</em>) y el <strong>RTS/CTS</strong>
+opcional, que resuelve el nodo oculto.</p>
+<h3>T5 (4 puntos) — Las tres técnicas de conmutación</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Circuito</th>
+<th>Paquetes</th>
+<th>Mensajes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Unidad</strong></td>
+<td>flujo continuo de datos</td>
+<td>paquete de tamaño fijo</td>
+<td>mensaje completo</td>
+</tr>
+<tr>
+<td><strong>Recursos</strong></td>
+<td><strong>sí</strong> (reserva ancho de banda y buffers en cada nodo)</td>
+<td><strong>no</strong> (mejor esfuerzo)</td>
+<td><strong>no</strong></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Circuito:</strong> se establece un camino y se <strong>reservan</strong> recursos, como una línea telefónica
+  dedicada: retardo fijo y predecible, pero desperdicia capacidad cuando el usuario está
+  callado.</li>
+<li><strong>Paquetes:</strong> cada paquete se enruta por separado, <strong>sin reservar</strong>: aprovecha el canal
+  estadísticamente, con retardo variable y posibles pérdidas.</li>
+<li><strong>Mensajes:</strong> se transmite el mensaje entero, todo o nada, sin conexión ni reserva.</li>
+</ul>
+<h3>Problema 1 (30 puntos) — Retardos · Resolución</h3>
+<p><strong>a) Fórmula general y conteo de términos.</strong> Con <code>n = 4</code> enlaces hay <strong>4</strong> términos de
+<code>d_trans</code> y <strong>4</strong> de <code>d_prop</code>; con <code>k = 3</code> conmutadores hay <strong>3</strong> de <code>d_proc</code> y <strong>3</strong> de
+<code>d_cola</code> (que aquí valen 0).</p>
+<div class="codehilite"><pre><span></span><code>  d_end2end = Σ_{i=1..4} [ d_proc + d_cola + L/R_i + d_i/s_i ]
+            = 3·d_proc + (L/R₁+L/R₂+L/R₃+L/R₄) + (d₁/s₁+d₂/s₂+d₃/s₃+d₄/s₄)
+
+  ⚠️ El d_proc va 3 VECES (uno por conmutador), NO 4: hay 4 enlaces pero
+     solo 3 conmutadores; A y B son sistemas terminales.
+</code></pre></div>
+
+<p><strong>b) Cálculo del retardo total con la aritmética a la vista.</strong></p>
+<div class="codehilite"><pre><span></span><code>  L = 12 000 bits
+
+  e1: R₁ = 2·10⁶,  d₁ = 5·10⁵ m,  s₁ = 2·10⁸
+     d_trans = 12 000/2·10⁶  = 6,0·10⁻³ s =  6,000 ms
+     d_prop  = 5·10⁵/2·10⁸   = 2,5·10⁻³ s =  2,500 ms   subtotal  8,500 ms
+
+  e2: R₂ = 10⁸,  d₂ = 2·10⁵ m
+     d_trans = 12 000/10⁸    = 1,2·10⁻⁴ s =  0,120 ms
+     d_prop  = 2·10⁵/2·10⁸   = 1,0·10⁻³ s =  1,000 ms   subtotal  1,120 ms
+
+  e3: R₃ = 10⁸,  d₃ = 2·10⁶ m
+     d_trans = 12 000/10⁸    = 1,2·10⁻⁴ s =  0,120 ms
+     d_prop  = 2·10⁶/2·10⁸   = 1,0·10⁻² s = 10,000 ms   subtotal 10,120 ms
+
+  e4: R₄ = 10⁹,  d₄ = 5·10⁴ m
+     d_trans = 12 000/10⁹    = 1,2·10⁻⁵ s =  0,012 ms
+     d_prop  = 5·10⁴/2·10⁸   = 2,5·10⁻⁴ s =  0,250 ms   subtotal  0,262 ms
+
+  d_proc total = 3 × 4 µs = 0,012 ms        d_cola total = 0
+
+  d_end2end = 8,500 + 1,120 + 10,120 + 0,262 + 0,012 = 20,014 ms
+</code></pre></div>
+
+<p><strong>Qué componente domina y qué porcentaje:</strong></p>
+<div class="codehilite"><pre><span></span><code>  d_propagación  = 2,500 + 1,000 + 10,000 + 0,250 = 13,750 ms  →  68,7 %  ◄── DOMINA
+  d_transmisión  = 6,000 + 0,120 +   0,120 + 0,012 =  6,252 ms  →  31,2 %
+  d_procesamiento                                        0,012 ms  →   0,06 %
+  TOTAL                                                   20,014 ms  → 100 %
+
+  El enlace e3 aporta 10,120 ms (50,6 %) y es el más lento por distancia;
+  el e1 aporta 8,500 ms y es el de menor ancho de banda. Son dos cuellos de
+  botella distintos: uno por distancia, el otro por ancho de banda.
+</code></pre></div>
+
+<p><strong>c) Cut-through (reenvío al vuelo), <code>R</code> uniforme y <code>d_proc = 0</code>.</strong></p>
+<div class="codehilite"><pre><span></span><code>  R₁ = R₂ = R₃ = R₄ = R = 100 Mbps = 10⁸ b/s, y cada conmutador transmite
+  cada bit apenas lo recibe.
+
+  d_end2end = 1 · (L/R) + Σ_{i=1..4} (d_i/s_i)
+            = 12 000/10⁸ + (5·10⁵ + 2·10⁵ + 2·10⁶ + 5·10⁴)/2·10⁸
+            = 1,2·10⁻⁴ s + (2,85·10⁶ / 2·10⁸) s
+            = 0,00012 s + 0,01425 s
+            = 0,01437 s = 14,370 ms
+</code></pre></div>
+
+<p><strong>Por qué mejora, y en qué condición dejaría:</strong></p>
+<blockquote>
+<p>En store-and-forward cada conmutador debe <strong>recibir el paquete completo</strong> antes de emitirlo
+por el enlace siguiente (necesita leer la MAC destino), así que cada enlace intermedio
+aporta <strong>otro <code>L/R</code> en serie</strong>. Con cut-through el conmutador <strong>no espera</strong>: reenvía cada
+bit apenas lo recibe, así que <strong>los <code>L/R</code> se pisan en vez de sumarse</strong> y queda <strong>uno solo</strong>,
+y además desaparece el <code>d_proc</code>.</p>
+<p><strong>Condición:</strong> el cut-through solo funciona si <code>R_entrada = R_salida</code> en <strong>todos</strong> los
+enlaces (aquí se cumple: los cuatro son 100 Mbps). Si un conmutador recibiera más rápido
+de lo que transmite (<code>R₁ = 1 Gbps</code> y <code>R₂ = 100 Mbps</code>), se acumularía cola y <strong>volvería a
+comportarse como store-and-forward</strong>, y además propagaría la congestión antes de tiempo
+(<em>congestion crunch</em>).</p>
+<p>⚠️ <strong>Ojo al comparar (b) con (c):</strong> los dos resultados no son comparablesdirectly,
+porque en (b) los <code>R</code> y las <code>d</code> son heterogéneos y en (c) todo es 100 Mbps. La comparación
+justa es "a igual topología", y ahí la mejora es <code>(n−1)·(L/R) + k·d_proc</code>.</p>
+</blockquote>
+<p><strong>d) RTT y BDP del enlace <code>e2</code>.</strong></p>
+<div class="codehilite"><pre><span></span><code>  Latencia de ida por e2 = 1,000 + 0,120 = 1,120 ms
+  RTT (camino simétrico) ≈ 2 × 1,120 = 2,240 ms = 2,24 s
+  BDP = R₂ × RTT = 10⁸ × 2,24 = 2,24·10⁸ bits = 28 000 000 bytes = 28 MB
+
+  ⚠️ El BDP NO depende del tamaño del paquete, sino de R y del RTT. Con un RTT de 2,24 s el
+     enlace necesita 28 MB "en vuelo" para llenarse: eso exige una ventana enorme, y de ahí
+     `RFC 7323` (*Window Scale*).
+</code></pre></div>
+
+<p><strong>Puntos:</strong> (a) fórmula y conteo (8), (b) aritmética (10), (c) cut-through (8), (d) RTT y BDP (4).</p>
+<h3>Problema 2 (30 puntos) — Nyquist, Shannon, encapsulación, capas · Resolución</h3>
+<p><strong>a) Nyquist: fórmula, variables y cálculo.</strong></p>
+<div class="codehilite"><pre><span></span><code>  C_N = 2 · B · log₂(V)   [bps]
+  · B = ancho de banda del enlace, en HERTZ (Hz).  Aquí B = 500 kHz = 5·10⁵ Hz.
+  · V = niveles de la señal (estados por símbolo). Con 16-QAM, V = 16.
+
+  C_N = 2 · 5·10⁵ · log₂(16) = 2 · 5·10⁵ · 4 = 4·10⁶ bps = 4 Mbps
+</code></pre></div>
+
+<p><strong>b) Shannon: fórmula, conversión del S/N y cálculo.</strong></p>
+<div class="codehilite"><pre><span></span><code>  C_S = B · log₂(1 + S/N)   [bps],  con S/N EN LINEAL
+
+  1) Convertir de dB a lineal:
+        S/N_dB = 40
+        S/N_lineal = 10^(40/10) = 10⁴ = 10 000
+
+  2) Aplicar Shannon:
+        C_S = 5·10⁵ · log₂(1 + 10 000) = 5·10⁵ · log₂(10 001)
+
+  3) El logaritmo: 2¹³ = 8192 y 2¹⁴ = 16384, así que 10 001 está entre
+     ambos y log₂(10 001) ≈ 13,29.
+
+  4) C_S = 5·10⁵ · 13,29 ≈ 6,64·10⁶ bps ≈ 6,64 Mbps
+</code></pre></div>
+
+<p><strong>Cuál manda y por qué:</strong></p>
+<blockquote>
+<p>La capacidad real de un enlace es el <strong>mínimo de los dos techos</strong>, y en la práctica no
+alcanza ninguno: los medios reales <strong>siempre tienen ruido</strong>, y además hay pérdida de
+sincronismo, atenuación y overhead, así que los sistemas reales se <strong>diseñan al 50-70 % de
+Shannon</strong>.</p>
+<p>En este caso el enunciado <strong>fija la modulación</strong> (<code>V = 16</code>), así que Nyquist da 4 Mbps y el
+cuello es el <strong>transmisor</strong>; el piso que impone la calidad del medio es Shannon, con
+6,64 Mbps.</p>
+</blockquote>
+<p><strong>c) Tamaño de las PDU y eficiencia.</strong> Con cabecera TCP de 20 B, IP de 20 B y trama
+Ethernet de 18 B (preámbulo y FCS incluidos):</p>
+<div class="codehilite"><pre><span></span><code>  Capa 4 (Transporte):  segmento TCP = 1200 + 20 = 1220 bytes
+  Capa 3 (Red):         paquete IP   = 1220 + 20 = 1240 bytes
+  Capa 2 (Enlace):      trama        = 1240 + 18 = 1258 bytes
+  Eficiencia  η = 1200 / 1258 ≈ 0,954  →  95,4 %
+</code></pre></div>
+
+<p><strong>Qué capa se ocupa de qué:</strong> la <strong>capa 2</strong> arma la trama (MAC y CRC); la <strong>capa 3</strong> arma el
+paquete (IP y enrutamiento); la <strong>capa 4</strong> arma el segmento (puertos, secuencia y checksum);
+y la <strong>capa 1</strong> transmite los bits por el medio.</p>
+<p><strong>d) Las capas del modelo OSI, sus PDU y dónde caen los cálculos.</strong></p>
+<div class="codehilite"><pre><span></span><code>  Capa OSI      PDU                ¿Qué calcula?
+  ───────────────────────────────────────────────────────────────────
+  7-5 Aplicación, mensaje           — (los datos del usuario)
+  4 Transporte  segmento            — el tamaño del segmento (apartado c)
+  3 Red         paquete             — el retardo extremo a extremo
+  2 Enlace      trama               — el tamaño de la trama (apartado c)
+  1 Física      bit                 — la CAPACIDAD: Nyquist y Shannon
+</code></pre></div>
+
+<p><strong>Justificación:</strong> la <strong>capacidad</strong> (Nyquist y Shannon) es propiedad de la <strong>capa física</strong>,
+porque depende solo del medio y del transceptor. El <strong>retardo extremo a extremo</strong> es un
+concepto de la <strong>capa 3 (Red)</strong>: es el tiempo que tarda un <strong>paquete</strong> en viajar de un nodo
+a otro. El <strong>tamaño del segmento</strong> depende de la <strong>capa 4 (Transporte)</strong>, que agrega la
+cabecera TCP.</p>
+<hr />
+<h1>PARTE 5 — CIERRE</h1>
+<h2>📌 Resumen</h2>
+<ol>
+<li>La <strong>capa física</strong> solo transmite <strong>bits</strong>: no detecta errores, no reenvía, no reintenta.</li>
+<li>Los cuatro medios: <strong>par trenzado</strong> (100 m, sensible al EMI), <strong>coaxial</strong> (~10 Mbps), <strong>fibra</strong> (inmune al EMI, 100 km), <strong>inalámbrico</strong> (aire compartido).</li>
+<li><strong>Full duplex</strong> = transmitir y recibir a la vez; <strong>half duplex</strong> = por turnos. <strong>Ethernet conmutado es full duplex; Wi-Fi es siempre half duplex.</strong></li>
+<li><strong>Nyquist</strong>: <code>C = 2·B·log₂(V)</code>, medio <strong>sin ruido</strong>, techo de la modulación.</li>
+<li><strong>Shannon</strong>: <code>C = B·log₂(1+S/N)</code>, medio <strong>con ruido gaussiano</strong>, <code>S/N</code> <strong>en lineal</strong> (<code>10^(dB/10)</code>), <strong>sin el 2 delante</strong>.</li>
+<li><strong>Shannon siempre queda por debajo de Nyquist</strong>, y el diseño real queda por debajo de Shannon.</li>
+<li><strong>QAM</strong> combina amplitud y fase: una constelación de <code>M</code> puntos vale <code>log₂(M)</code> bits por símbolo.</li>
+<li>Con <strong><code>n</code> enlaces</strong> y <strong><code>k</code> conmutadores</strong>: <code>k·d_proc + n·(L/R) + n·(d/s)</code>. <strong>Cut-through</strong> deja <strong>un solo</strong> <code>L/R</code>.</li>
+<li><strong>Satélite</strong>: 120 ms de ida, irrecuperables. El mejor ejemplo de por qué ancho de banda y latencia son cosas distintas.</li>
+<li>Nyquist es <code>2·B·log₂(V)</code> y Shannon <code>B·log₂(1+S/N)</code>: <strong>nunca se mezclan.</strong></li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> Un enlace de cobre de 3 km soporta 100 Mbps, con <code>s = 2·10⁸ m/s</code>. ¿Cuánto tarda la <strong>propagación</strong> de un bit? ¿Y la <strong>transmisión</strong> de un paquete de 1500 bytes? Si duplico el ancho de banda, ¿cambia la propagación?</p>
+<details><summary>Respuesta</summary>
+
+`d_prop = 3000 / 2·10⁸ = 15 µs` y `d_trans = 12 000 / 10⁸ = 120 µs`. Al duplicar el ancho de
+banda, `d_prop` **NO cambia** (sigue en 15 µs, porque `d/s` no contiene `R`) y `d_trans` baja
+a la mitad, a 60 µs.
+
+</details>
+
+<p><strong>2.</strong> ¿Por qué la velocidad de propagación es casi la misma en cobre y en fibra, si la
+fibra "gana"? ¿Qué gana entonces?</p>
+<details><summary>Respuesta</summary>
+
+Porque `s` depende de las propiedades electromagnéticas del material: cobre ≈ 2,00·10⁸ m/s y
+fibra de sílice ≈ 2,04·10⁸ m/s. **Un 2 % de diferencia**, que sobre 1000 km son 0,1 ms.
+
+Lo que gana la fibra es la **atenuación** (26 dB/km contra los 20 del cobre) y por eso el
+**alcance sin electrónica**: 100 km en monomodo contra 100 m en cobre. No es "más rápida":
+es más **alcance** y más **ancho de banda**, con el mismo `d/s`.
+
+</details>
+
+<p><strong>3.</strong> Un canal tiene <code>B = 4000 Hz</code> y <code>S/N = 20 dB</code>. ¿Cuál es la capacidad de Shannon?</p>
+<details><summary>Respuesta</summary>
+
+`S/N = 10^(20/10) = 100` y `C = 4000 · log₂(101) = 4000 · 6,66 ≈ 26 600 bps`. Ojo: el
+enunciado da **20 dB**, no 30. Y **Shannon es un techo teórico**: en la práctica la capacidad
+real está al **50-70 %**, por atenuación, sincronismo, errores de constelación y overhead.
+
+</details>
+
+<p><strong>4.</strong> ¿Por qué la fibra es inmune al <strong>EMI</strong>, y por qué el par trenzado también reduce el
+ruido si es cobre?</p>
+<details><summary>Respuesta</summary>
+
+La fibra transmite **luz**, no campo eléctrico. La luz no es un campo electromagnético que se
+pueda acoplar a un cable vecino, así que es **inmune al EMI** y a las descargas y
+interferencias de radio. El cobre, en cambio, **sí** es campo eléctrico. El **par trenzado**
+combate el ruido de dos formas: el **trenzado** hace que la interferencia externa afecte a
+los **dos** hilos por igual, y como la señal se recibe como **diferencia**, se **cancela**; y
+el **blindaje** (STP) agrega una malla metálica que hace de jaula de Faraday.
+
+</details>
+
+<p><strong>5.</strong> Si duplico la longitud del paquete, ¿qué componente del retardo cambia? ¿Y si duplico
+la distancia? ¿Y el ancho de banda?</p>
+<details><summary>Respuesta</summary>
+
+- **Duplico `L`:** cambia **solo `d_transmisión`** (se duplica); no cambia `d_prop`, ni
+  `d_proc` (el CRC es de hardware), ni `d_cola`.
+- **Duplico `d`:** cambia **solo `d_propagación`** (se duplica).
+- **Duplico `R`:** cambia **solo `d_transmisión`**, que se reduce a la **mitad**.
+
+**Las dos frases de examen:** "el ancho de banda nunca cambia la propagación" y "la distancia
+nunca cambia la transmisión".
+
+</details>
+
+<p><strong>6.</strong> ¿En cuál de las tres técnicas de conmutación se <strong>reservan</strong> recursos y por qué tiene
+un precio?</p>
+<details><summary>Respuesta</summary>
+
+Solo el **circuito** reserva recursos (ancho de banda y buffers) en cada nodo del camino;
+paquetes y mensajes son de "mejor esfuerzo" (*best effort*).
+
+**El precio:** los recursos reservados quedan **ocupados** aunque el usuario no envíe nada,
+así que se desperdicia capacidad; a cambio se garantiza retardo fijo. Paquetes aprovecha el
+canal **estadísticamente** y es más eficiente con carga variable, a costa de retardo variable.
+
+</details>
+
+<p><strong>7.</strong> ¿Por qué no se puede implementar full duplex en Wi-Fi, y por qué usa CSMA/CA en vez
+de CSMA/CD?</p>
+<details><summary>Respuesta</summary>
+
+Porque el medio es el **aire**, inherentemente compartido: una radio **no puede transmitir
+y recibir al mismo tiempo** en la misma banda, así que **no puede detectar una colisión
+mientras transmite**. Por eso usa **CSMA/CA**: en vez de detectar la colisión *después*, la
+**evita** con el *backoff* aleatorio, el **NAV** (*Network Allocation Vector*) y el
+**RTS/CTS** opcional, que resuelve el **nodo oculto**. Es **siempre half duplex**.
+
+</details>
+
+<p><strong>8.</strong> ¿Cuál de los ocho errores es el más caro? Da un ejemplo numérico.</p>
+<details><summary>Respuesta</summary>
+
+Meter **`S/N` en dB donde va en lineal** (o poner el `2` delante de la fórmula de Shannon).
+En el Problema 2 del simulacro: `C = 5·10⁵ · log₂(1+40) ≈ 2,68 Mbps` en vez de
+`C = 5·10⁵ · log₂(1+10 000) ≈ 6,64 Mbps`: **la mitad**. El otro caro es **poner `n·d_proc`
+con `n` enlaces**: debe ser `(n−1)·d_proc`, porque los extremos del camino son sistemas
+terminales, no dispositivos de conmutación.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<p><strong>Exámenes</strong>
+- <code>sirc0608</code> (5-ago-2006) — <strong>P1 (5 pts): Nyquist y Shannon con sus hipótesis</strong>. §3.1.
+- <code>sirc0707</code> (31-jul-2007) — <strong>P1 (10 pts): capacidad máxima sobre línea telefónica</strong>. §3.2.
+- <code>sirc0902</code> (2-feb-2009) — P3 (5 pts): FDMA y TDMA. Simulacro 1, T3.
+- <code>sirc0903</code> (20-feb-2009) — P5 (6 pts): full duplex contra half duplex. §1.3 y T4.
+- <code>sirc0912</code> (18-dic-2009) — P1 (10 pts): componentes del retardo, BW contra propagación, congestión. Clase 5 §3.1 y T1.
+- <code>sirc1103</code> (21-feb-2011) — P2 (6 pts): congestión, pérdidas y retardo. Clase 5 §3.2 y T2.
+- <code>sirc0712</code> (dic-2007) — P2 (4 pts): datagramas contra circuitos virtuales. T5.</p>
+<p><strong>Bibliografía</strong>
+- Tanenbaum &amp; Wetherall, <em>Redes de computadoras</em>, 5ª ed., cap. 1 §1.1 (la capa física y los medios) y §1.6 (el espectro inalámbrico).</p>
+<p><strong>Normas (no RFC)</strong>
+- ⚠️ <strong>Nyquist y Shannon no tienen RFC</strong>: son resultados matemáticos, no protocolos. La capa
+  física y la de enlace se estandarizan por <strong>IEEE</strong> (802.3, 802.11, 802.1Q); la capa
+  física es <strong>anterior a Internet</strong>.
+- <code>IEEE 802.11be-2024</code> — Wi-Fi 7, publicada el 22-jul-2025 (320 MHz y 4096-QAM).
+- <code>IEEE 802.3cg</code> — 10BASE-T1S, obligatoriamente half-duplex con PLCA.</p>
+<p><strong>Clases relacionadas</strong>
+- Clase 5 y 6 (el retardo y su taller) · Clase 8 (HTTP) · Clase 19 (BDP) · Clase 38 y 39 (capa de enlace).</p></body></html>

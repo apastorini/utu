@@ -1,0 +1,50 @@
+===== [pag 1] =====
+Comunicación de Datos e Introducción a las Redes de Computadoras
+9 de febrero de 2005
+
+Problema 1.
+
+El encabezado (header) TCP contiene un campo denominado Window size (tamaño de la ventana), de 16 bits. Este
+campo indica cuántos bytes es capaz de aceptar, la entidad que lo emite, a partir del próximo byte esperado (que se
+indica en el campo Acknowledgmente number).
+
+Parte a. Programar, en un lenguaje de alto nivel, un algoritmo que determine qué valor debe incluir una entidad en el
+campo window size, considerando que para cada conexión se dispondrá de a lo sumo N bytes para buffers de
+recepción. Todo otro dato que se requiera se obtendrá mediante la invocación de funciones adecuadas, que se
+especificarán.
+
+Parte b. Sabiendo que uno de los posibles valores para el campo Window size es cero, explicar cómo debiera
+proceder una entidad que quisiera suspender transitoriamente la recepción de datos, y cómo podría resumirla luego.
+
+Problema 2.
+
+Se considera un enlace full dúplex que comunica los equipos A y B. Este enlace tiene una distancia L, es capaz de
+transportar V bits por segundo, y se asumirá que es libre de errores. La velocidad de propagación de la señal en él es
+C.
+
+El equipo A envía paquetes de datos hacia el equipo B. Estos paquetes contienen un encabezado, de largo H (bits) y
+un campo de datos, de largo D (bits). En el equipo A siempre hay datos esperando para ser enviados hacia B.
+
+Cada vez que el equipo B recibe un paquete, contesta a A con un paquete especial, de acuse de recibo (ACK), cuyo
+largo es incidentalmente igual a H. El equipo A no necesariamente espera el ACK de un paquete para transmitir el
+siguiente, sino que puede enviar hasta W paquetes sin haber recibido sus ACK.
+
+Se asumirá que no se introducen otras demoras de proceso ni en A ni en B.
+
+Parte a: escribir una fórmula que permita obtener la utilización de la porción del enlace que permite transportar datos
+desde A hacia B. Por utilización se entiende el porcentaje del tiempo que el dispositivo está en uso.
+
+Parte b: calcular el valor de la utilización para los casos W=1 y W=5, en una situación de régimen (es decir,
+ignorando el inicio y el fin del proceso), siendo los otros parámetros: L=60.000 Km, V=200.000 bits/segundo,
+C=300.000 Km/segundo, H=200 bits, D=19.800 bits.
+
+Problema 3.
+
+Durante el establecimiento de una conexión TCP, cada uno de los participantes elige un número de secuencia inicial
+(sequence number, de 32 bits). Por varias razones, es interesante que este número inicial sea pseudo aleatorio.
+
+Se pide: Especificar, en un lenguaje de alto nivel, un programa que permita determinar si un servidor, que realiza
+operaciones de open pasivas, cumple con la regla indicada. A esos efectos, el programa recibirá la dirección IP y el
+número de port a controlar, realizará 100 pruebas y devolverá la serie de números iniciales detectados.
+
+----------

@@ -1,0 +1,1538 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 3 — Encapsulación y comparación OSI ↔ TCP/IP</h1>
+<p><strong>Bloque:</strong> A (Fundamentos) · <strong>Semana:</strong> 1 · <strong>Duración estimada:</strong> 110 min
+<strong>Correlativa:</strong> Clase 2 (los modelos de capas: OSI y TCP/IP) · <strong>Sigue con:</strong> Clase 4 (conmutación: circuitos, paquetes y mensajes)
+<strong>Material de referencia:</strong> Tanenbaum cap. 1 §1.4 (pág. ~20 a ~26 del PDF de tu carpeta) · RFC 8200, RFC 9293, RFC 768, RFC 826, RFC 1122</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li><strong>Definir</strong> encapsulación y desencapsulación, y explicar <strong>por qué existen</strong> (cada capa necesita su propio control).</li>
+<li><strong>Hacer la cuenta byte a byte</strong> de un mensaje que baja por la pila: 500 B de aplicación → 558 B en el medio, con la aritmética visible.</li>
+<li><strong>Calcular la eficiencia</strong> en función del tamaño del mensaje y explicar <strong>por qué el overhead relativo se dispara con mensajes chicos</strong>.</li>
+<li><strong>Dibujar</strong> el camino completo de un mensaje con los dos extremos, y <strong>marcar dónde se invierte</strong> la encapsulación.</li>
+<li><strong>Explicar</strong> qué más cambia al bajar de capa además del tamaño: <strong>el direccionamiento</strong> (IP → MAC) y <strong>el objetivo</strong> (llegar al host → llegar al proceso).</li>
+<li><strong>Describir</strong> qué es un <strong>servicio</strong> entre capas y por qué es la clave de la encapsulación.</li>
+<li><strong>Desarrollar</strong> la capa de Presentación con casos concretos, porque es la que más se olvida.</li>
+<li><strong>Resolver entero</strong> el Examen <code>2009-02 P2</code> (forwarding vs. routing y flooding), que es la demostración de que la capa 3 existe por el alcance.</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2009-02 P2</code> (10 pts — forwarding vs. routing, flooding controlado), <code>2011-03 Problema 2</code> (el intercambio de tramas con ARP), <code>2006-12 P1</code> y <code>2007-03 P1</code> (modelos de capas), <code>2009-12 P1</code> (componentes del retardo).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 Qué es la encapsulación y por qué existe</h2>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 760 510" style="max-width:760px"><rect width="760" height="510" fill="#ffffff"/><text x="380.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Encapsulación: de 500 bytes a 558</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><text x="50" y="64" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#666">Cada capa ENVUELVE a la anterior. Lo naranja es overhead nuevo.</text><text x="50" y="92" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#14507a">Aplicación</text><rect x="146" y="76" width="20" height="42" rx="3" fill="#fbe0d0" stroke="#c8621a" stroke-width="1.2"/><text x="156.0" y="101.55" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#c8621a">+</text><rect x="166" y="76" width="360" height="42" rx="4" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="346.0" y="100.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">500 B  de datos</text><text x="538" y="93" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">500 B</text><text x="50" y="146" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#14507a">Transporte</text><rect x="146" y="130" width="20" height="42" rx="3" fill="#fbe0d0" stroke="#c8621a" stroke-width="1.2"/><text x="156.0" y="155.55" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#c8621a">+</text><rect x="166" y="130" width="100" height="42" rx="4" fill="#fbe0d0" stroke="#c8621a" stroke-width="1.2"/><text x="216.0" y="154.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">20 B</text><rect x="266" y="130" width="260" height="42" rx="4" fill="#d8e8f2" stroke="#7aa7c4" stroke-width="1.2"/><text x="396.0" y="154.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">cabecera TCP</text><text x="538" y="147" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">540 B</text><text x="50" y="200" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#14507a">Internet</text><rect x="146" y="184" width="20" height="42" rx="3" fill="#fbe0d0" stroke="#c8621a" stroke-width="1.2"/><text x="156.0" y="209.55" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#c8621a">+</text><rect x="166" y="184" width="100" height="42" rx="4" fill="#fbe0d0" stroke="#c8621a" stroke-width="1.2"/><text x="216.0" y="208.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">20 B</text><rect x="266" y="184" width="260" height="42" rx="4" fill="#c2dcee" stroke="#7aa7c4" stroke-width="1.2"/><text x="396.0" y="208.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">cabecera IP</text><text x="538" y="201" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">560 B</text><text x="50" y="254" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#14507a">Enlace</text><rect x="146" y="238" width="20" height="42" rx="3" fill="#fbe0d0" stroke="#c8621a" stroke-width="1.2"/><text x="156.0" y="263.55" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#c8621a">+</text><rect x="166" y="238" width="100" height="42" rx="4" fill="#fbe0d0" stroke="#c8621a" stroke-width="1.2"/><text x="216.0" y="262.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">18 B</text><rect x="266" y="238" width="260" height="42" rx="4" fill="#aacfe8" stroke="#7aa7c4" stroke-width="1.2"/><text x="396.0" y="262.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">cabecera Ethernet + FCS</text><text x="538" y="255" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">572 B</text><rect x="146" y="304" width="380" height="42" rx="4" fill="#f7d9c8" stroke="#c8621a" stroke-width="1.2"/><text x="336.0" y="329.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#1a1a1a">558 bytes en el medio físico</text><text x="50" y="392" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="12" font-weight="700" fill="#2e7d4f">Eficiencia = 500 / 558 = 89.6%</text><rect x="50" y="404" width="380" height="18" fill="#eee" stroke="#b8cfdb"/><rect x="50" y="404" width="340.5" height="18" fill="#2e7d4f"/><text x="438" y="418" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#2e7d4f">datos 89,6%</text><text x="438" y="434" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#c8621a">overhead 10,4%</text><text x="50" y="474" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#666">El receptor hace lo mismo pero al revés: desempaqueta capa por capa.</text><text x="50" y="496" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#c8621a">Con un mensaje de 50 bytes el overhead sería del 54%: por eso HTTP agrupa los objetos pequeños.</text></svg></p>
+<h3>La definición</h3>
+<p><strong>Encapsular</strong> es el proceso por el cual, al bajar por la pila, cada capa <strong>antepone su propia cabecera</strong> (y a veces su trailer) a los datos que le entrega la capa de arriba. <strong>Desencapsular</strong> es lo inverso: al subir, cada capa <strong>quita su propia cabecera</strong> y le entrega a la de arriba la PDU que tenía abajo.</p>
+<div class="codehilite"><pre><span></span><code>                    ENCAPSULACIÓN (bajar)
+   Aplicación   ──────────────────────────────────▶
+   Transporte   ──────────────────────────────────▶   + 20 B
+   Red          ──────────────────────────────────▶   + 20 B
+   Enlace       ──────────────────────────────────▶   + 18 B
+   Física       ──────────────────────────────────▶   bits
+
+
+                    DESENCAPSULACIÓN (subir)
+   Física       ◀──────────────────────────────────
+   Enlace       ◀──────────────────────────────────   − 18 B
+   Red          ◀──────────────────────────────────   − 20 B
+   Transporte   ◀──────────────────────────────────   − 20 B
+   Aplicación   ◀──────────────────────────────────
+</code></pre></div>
+
+<p><strong>"Encapsular" es "meter algo dentro de una cápsula".</strong> La cápsula es la cabecera. Lo que viaja por el medio es la cápsula con el contenido adentro.</p>
+<h3>Las cuatro razones por las que existe</h3>
+<p><strong>Razón 1 — Control local.</strong> Si cada capa metiera sus cosas <strong>al principio</strong> de la unidad de datos, entonces una capa de arriba no podría volver a leer el mensaje sin recorrer todo. Con la cabecera <strong>delante</strong>, cada capa puede <strong>encontrar y quitar la suya en tiempo constante</strong>: la de transporte está en el byte 0, la de red en el byte 20 (si el offset de datos de transporte es 0) o en el byte 34, y la de enlace en el byte 14 del cable. Es el mismo motivo por el que el <strong>TCP payload offset</strong> existe: para que la capa IP sepa dónde empieza su propia cabecera sin recorrer la trama entera.</p>
+<p><strong>Razón 2 — Multiplexación.</strong> Con las cabeceras al principio, un router puede leer la dirección de destino <strong>sin leer el payload</strong>. Mira los 20 bytes de cabecera IP, decide el puerto de salida, y reenvía: <strong>no tiene que abrir el sobre</strong>. Si la dirección estuviera al final, el router tendría que recorrer los 1500 bytes para enterarse adónde va. Es la razón de performance más importante.</p>
+<p><strong>Razón 3 — cada capa habla su propio idioma.</strong> La capa de enlace necesita decir "esto es una trama Ethernet con destino esta MAC"; la capa de red necesita decir "esto va a 10.0.0.7 con TTL 63". Son <strong>afirmaciones que ninguna otra capa puede hacer ni verificar</strong>. La cabecera es el lugar donde cada capa deja su información.</p>
+<p><strong>Razón 4 — Independencia.</strong> Si el medio pasa de cobre a fibra, <strong>solo cambia la capa 1</strong>; los bytes de las capas 2 a 7 no se tocan. Si IP pasa de v4 a v6, <strong>solo cambia la capa 3</strong>; TCP no se entera. La encapsulación es lo que hace posible el <strong>intercambio de una capa sin arrastrar a las demás</strong>.</p>
+<h3>El error conceptual más frecuente: la aplicación "ve" la red</h3>
+<p>Hay una intuición muy extendida y <strong>equivocada</strong>: que la capa de aplicación "sabe" que está usando una red, o que "el paquete viaja por la red como una entidad visible".</p>
+<div class="codehilite"><pre><span></span><code>  ✗  LA INTUICIÓN EQUIVOCADA                  ✓  LO QUE PASA
+
+  Aplicación                                  Aplicación
+     │                                           │
+     │  "¿mandamos esto?"                        │  write(fd, buf, 500)
+     ▼                                           ▼
+  SO / red  ◄── "sé que hay una red"        SO:  socket(2)
+     │                                           │
+     ▼                                           ▼
+  ┌──────────────┐                            TCP decide cómo
+  │ LA RED       │                            IP decide el camino
+  │  (la[nidad]  │                            Ethernet decide el cable
+  │   de paquetes│                            La NIC pone voltajes
+  └──────────────┘                            El cable los lleva
+
+  ✗  Cree que la aplicación elige            ✓  La aplicación elige el
+     la ruta, el medio, el ancho de              DESTINO y el FORMATO.
+     banda, el protocolo de transporte.           Todo lo demás lo decide
+                                                   la pila sola.
+</code></pre></div>
+
+<p><strong>Por qué importa en el examen.</strong> Si creés que la aplicación elige el protocolo de transporte, no entendés por qué <strong>HTTP sobre TCP y HTTP sobre QUIC usan la misma aplicación</strong> (el navegador), ni por qué <strong>un <code>ping</code> no usa ninguna aplicación</strong>. Si creés que la aplicación "ve" los paquetes, no entendés por qué <strong>un sniffing a nivel de socket no ve nada de IP</strong>.</p>
+<p><strong>La frase exacta:</strong> <em>la capa de aplicación </em><em>nunca ve la red</em><em>. Le entrega bytes a la capa de transporte mediante una interfaz, y recibe bytes. La red existe para ella como un detalle de implementación de la máquina donde corre.</em></p>
+<hr />
+<h2>1.2 El diagrama completo: un byte viajando</h2>
+<h3>Los datos</h3>
+<div class="codehilite"><pre><span></span><code>  Aplicación en H1 escribe una solicitud HTTP de 500 bytes.
+  L_app = 500 bytes
+
+  Cabeceras del escenario:
+    cabecera TCP           = 20 bytes  (sin opciones)
+    cabecera IPv4          = 20 bytes  (sin opciones)
+    trama Ethernet         = 18 bytes  (14 de cabecera + 4 de FCS)
+    preámbulo + IFG       =  8 bytes  (7 preámbulo + 1 SFD, + 12 de IFG
+                                        que van entre tramas, NO dentro)
+</code></pre></div>
+
+<blockquote>
+<p>⚠️ <strong>Precisión que importa:</strong> el <strong>preámbulo (7 bytes) y el SFD (1 byte)</strong> son parte de la trama en el medio, pero <strong>no forman parte de la PDU de capa 2</strong> que se le entrega a la capa 3. Y el <strong>IFG (Inter Frame Gap) de 96 bits = 12 bytes</strong> va <strong>entre</strong> tramas, no dentro. Cuando un problema de examen dice "tamaño de la trama Ethernet", casi siempre quiere decir <strong>14 + payload + 4</strong>, sin preámbulo. Lo aclaro abajo.</p>
+</blockquote>
+<h3>La cuenta, paso a paso</h3>
+<p><strong>Paso 1 — Capa 4: el segmento TCP.</strong></p>
+<div class="codehilite"><pre><span></span><code>  Segmento TCP = cabecera TCP + datos de aplicación
+               = 20 B        + 500 B
+               = 520 bytes
+</code></pre></div>
+
+<p><strong>Paso 2 — Capa 3: el paquete IP.</strong></p>
+<div class="codehilite"><pre><span></span><code>  Paquete IP = cabecera IP + segmento TCP
+             = 20 B        + 520 B
+             = 540 bytes
+</code></pre></div>
+
+<p><strong>Paso 3 — Capa 2: la trama Ethernet.</strong></p>
+<div class="codehilite"><pre><span></span><code>  Trama = MAC dest (6) + MAC orig (6) + Ethertype (2) + datos + FCS (4)
+        = 6 + 6 + 2 + 540 + 4
+        = 558 bytes
+</code></pre></div>
+
+<p><strong>Paso 4 — El total y el overhead.</strong></p>
+<div class="codehilite"><pre><span></span><code>  Bytes de datos útiles           = 500
+  Bytes de overhead              = 20 + 20 + 18 = 58
+  ──────────────────────────────────────────────────
+  Bytes totales en el medio       = 558
+
+  OVERHEAD ABSOLUTO  = 58 bytes
+  OVERHEAD RELATIVO  = 58 / 558 = 10,39 %
+  EFICIENCIA         = 500 / 558 = 89,61 %
+</code></pre></div>
+
+<p><strong>Paso 5 — El diagrama visual del byte viajando.</strong></p>
+<div class="codehilite"><pre><span></span><code>  H1 (emisor)                          H2 (receptor)
+  ═══════════                           ═══════════
+
+  Cap 7   ┌────────────────────────────┐
+          │  DATOS DE APLICACIÓN      │   500 B
+          │  "GET /index.html HTTP/1.1│
+          │   Host: www.udelar.edu.uy  │
+          │   ..."                    │
+          └────────────────────────────┘
+                │  la capa 4 le antepone su cabecera
+  Cap 4   ┌────────────────────────────┐
+          │┌──┐┌─────────────────────┐ │
+          ││  ││  DATOS DE APLIC.    │ │
+          ││TC││                     │ │
+          ││  ││      500 B          │ │
+          ││20││                     │ │
+          ││B ││                     │ │
+          │└──┘└─────────────────────┘ │
+          │ 20 B         500 B         │   520 B
+          └────────────────────────────┘
+                │  la capa 3 le antepone su cabecera
+  Cap 3   ┌────────────────────────────┐
+          │┌──┐┌──┐┌─────────────────┐ │
+          ││IP││TC││  DATOS 500 B    │ │
+          ││20││20││                 │ │
+          │└──┘└──┘└─────────────────┘ │
+          └────────────────────────────┘
+           20 B 20 B      500 B        │   540 B
+                │  la capa 2 le antepone cabecera y agrega FCS
+  Cap 2   ┌──────────────────────────────────────┐
+          │┌────┐┌────┐┌──┐┌──┐┌──┐┌───────┐┌──┐│
+          ││DST ││SRC ││ET││IP││TC││DATOS  ││FC││
+          ││MAC ││MAC ││YP││20 ││20 ││ 500 B ││S ││
+          ││ 6  ││ 6  ││ 2 ││B  ││B  ││       ││4 ││
+          │└────┘└────┘└──┘└──┘└──┘└───────┘└──┘│
+          │  6    6    2   20  20     500     4 │  558 B
+          └──────────────────────────────────────┘
+                │  la capa 1 codifica bit a bit
+  Cap 1   │ 01001001 01001100 00001011 ...        │  4464 bits
+          │            ↑ un 0 y un 1 por voltaje   │
+          └────────────────────────────────────────┘
+
+           ◄─────────────────── 6 500 km de fibra ───────────────────►
+</code></pre></div>
+
+<h3>La desencapsulación, del otro lado</h3>
+<div class="codehilite"><pre><span></span><code>  Cap 1   │ llega la señal → la NIC la convierte a bits │
+          ▼
+  Cap 2   ┌──────────────────────────────────────┐
+          │  ¿el FCS coincide?                    │
+          │   SÍ → quitar 6+6+2+4 = 18 B          │
+          │   NO → descartar la trama (ARQ)        │
+          │  ¿es para mí? (MAC destino = la mía)   │
+          │   NO → pasarla al switch (Capa 3 no)   │
+          │   SÍ → entregar los 540 B a la capa 3  │
+          └──────────────────────────────────────┘
+                │  ▼
+  Cap 3   ┌──────────────────────────────────────┐
+          │  verificar el checksum de cabecera IP │
+          │  TTL −1 = 59 &gt; 0 → seguir             │
+          │  ¿es para mí? (IP destino = la mía)   │
+          │   NO → reenviar por el puerto correcto │
+          │   SÍ → quitar los 20 B y entregar 520 │
+          └──────────────────────────────────────┘
+                │  ▼
+  Cap 4   ┌──────────────────────────────────────┐
+          │  verificar el checksum TCP            │
+          │  ¿el número de secuencia es el       │
+          │   esperado? ¿está la ventana abierta?│
+          │  actualizar la posición de la ventana │
+          │  quitar los 20 B → entregar 500 B     │
+          └──────────────────────────────────────┘
+                │  ▼
+  Cap 7   ┌──────────────────────────────────────┐
+          │  500 B al proceso, según el puerto    │
+          │  (puerto 80 → el navegador)           │
+          └──────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Lo que hay que ver en este diagrama:</strong> la curva es simétrica. <strong>Cada capa quita exactamente los bytes que antepuso.</strong> Los 500 bytes que escribió la aplicación de H1 son <strong>bit a bit</strong> los mismos 500 bytes que lee la aplicación de H2. Lo único que hace el camino es <strong>agregar 58 bytes de andamiaje</strong> y sacarlos.</p>
+<h3>La tabla de tamaños</h3>
+<div class="codehilite"><pre><span></span><code>  ┌────────────────┬──────────────┬────────────┬────────────┬──────────┐
+  │ Capa           │ PDU          │ cabecera   │ datos      │ total    │
+  ├────────────────┼──────────────┼────────────┼────────────┼──────────┤
+  │ 7 Aplicación   │ mensaje      │    0 B     │    500 B   │  500 B   │
+  │ 4 Transporte   │ segmento     │   20 B     │    500 B   │  520 B   │
+  │ 3 Red          │ paquete      │   20 B     │    520 B   │  540 B   │
+  │ 2 Enlace       │ trama        │   18 B     │    540 B   │  558 B   │
+  │ 1 Física       │ bits         │    —       │    540 B   │ 4464 bits│
+  └────────────────┴──────────────┴────────────┴────────────┴──────────┘
+
+  overhead acumulado:   +20          +40           +58
+</code></pre></div>
+
+<hr />
+<h2>1.3 El overhead: la cuenta que siempre preguntan</h2>
+<h3>La fórmula</h3>
+<div class="codehilite"><pre><span></span><code>  Para un mensaje de L bytes de datos con cabeceras de tamaño fijo:
+
+                    ┌──────────────────────────────────────┐
+                    │                                      │
+                    │        L                            │
+  eficiencia  =    ───────────────────  =                    │
+                    │        L + overhead                   │
+                    └──────────────────────────────────────┘
+
+  overhead = H_TCP + H_IP + H_ENLACE
+           =    20   +  20  +    18      = 58 bytes
+</code></pre></div>
+
+<p><strong>El punto clave que hay que entender:</strong> el overhead es <strong>constante</strong> (58 bytes) pero el mensaje <strong>no</strong>. Entonces:</p>
+<ul>
+<li>Para mensajes <strong>grandes</strong>, el 58 es una fracción chica → eficiencia alta.</li>
+<li>Para mensajes <strong>chicos</strong>, el 58 es una fracción enorme → eficiencia bajísima.</li>
+</ul>
+<h3>La cuenta con tres tamaños (este es el tipo de pregunta que aparece)</h3>
+<div class="codehilite"><pre><span></span><code>  overhead = 58 bytes (20 TCP + 20 IP + 18 Ethernet)
+
+  ┌────────────┬──────────┬───────────┬────────────┬──────────────┐
+  │ L_app      │ total     │ eficiencia│ overhead % │ comentario   │
+  ├────────────┼──────────┼───────────┼────────────┼──────────────┤
+  │   50 B     │  50 + 58 │ 50/108    │            │              │
+  │            │  = 108 B │ = 46,3 %  │   53,7 %   │ ¡peor que 50%!│
+  ├────────────┼──────────┼───────────┼────────────┼──────────────┤
+  │  100 B     │ 100 + 58 │ 100/158   │            │              │
+  │            │  = 158 B │ = 63,3 %  │   36,7 %   │              │
+  ├────────────┼──────────┼───────────┼────────────┼──────────────┤
+  │  500 B     │ 500 + 58 │ 500/558   │            │              │
+  │            │  = 558 B │ = 89,6 %  │   10,4 %   │              │
+  ├────────────┼──────────┼───────────┼────────────┼──────────────┤
+  │ 1500 B     │1500 + 58 │1500/1558  │            │              │
+  │            │ = 1558 B │ = 96,3 %  │    3,7 %   │ MTU de Eth.  │
+  ├────────────┼──────────┼───────────┼────────────┼──────────────┤
+  │ 64 000 B   │64000 + 58 │64000/…   │            │              │
+  │            │=64058 B   │ = 99,91 % │    0,09 %  │              │
+  └────────────┴──────────┴───────────┴────────────┴──────────────┘
+</code></pre></div>
+
+<h3>El caso extremo: mensaje de 50 bytes</h3>
+<p>Este es el que <strong>siempre se pide</strong>, y el número es mengingatkan:</p>
+<div class="codehilite"><pre><span></span><code>  L_app = 50 bytes
+  overhead = 58 bytes
+  ──────────────────────────────
+  total = 108 bytes
+
+  eficiencia = 50/108 = 0,4629 = 46,3 %
+  overhead   = 58/108 = 0,5370 = 53,7 %   ← MÁS DE LA MITAD
+
+  El mensaje de aplicación ocupa menos de la mitad de lo que
+  viaja por el cable. La red está transportando overhead.
+</code></pre></div>
+
+<p><strong>El caso de 40 bytes</strong> (que es el mínimo absoluto):</p>
+<div class="codehilite"><pre><span></span><code>  L_app = 40 B
+  total = 40 + 58 = 98 B
+  eficiencia = 40/98 = 40,8 %
+  overhead   = 58/98 = 59,2 %
+</code></pre></div>
+
+<p><strong>Y el caso de 1 byte:</strong></p>
+<div class="codehilite"><pre><span></span><code>  L_app = 1 B
+  total = 1 + 58 = 59 B
+  eficiencia = 1/59 = 1,7 %
+  → 98,3 % del tráfico es overhead. Absurdo.
+</code></pre></div>
+
+<h3>Por qué esto importa de verdad (no es un ejercicio abstracto)</h3>
+<p><strong>Motivo 1 — El MTU.</strong> El MTU de Ethernet son <strong>1500 bytes de payload</strong>. El tamaño máximo de un datagrama IP que cabe es <code>1500 − 20 (IP) − 20 (TCP) = 1460 bytes</code> de datos de aplicación, que es el <strong>MSS (<em>Maximum Segment Size</em>) de TCP</strong>. Los 40 bytes restantes los pone Ethernet. Es exactamente la misma cuenta, vista al revés.</p>
+<p><strong>Motivo 2 — La Ethernet no permite frames de menos de 64 bytes.</strong> Si tu mensaje de aplicación mide 10 bytes, el total sería 68 bytes, que ya supera el mínimo... pero el mínimo existe por otra razón: <strong>el emisor tiene que transmitir al menos 64 bytes para que el receptor pueda tener tiempo de detectar una colisión</strong>. Por eso las tramas se rellenan con <em>padding</em> hasta 64 bytes.</p>
+<p><strong>Motivo 3 — Protocolos que optimizan.</strong> Cuando importan los mensajes chicos:</p>
+<ul>
+<li><strong>UDP</strong> tiene <strong>8 bytes</strong> de cabecera, no 20. Un datagrama de voz con 20 bytes de audio tiene 8/28 = 28,6 % de overhead en vez de 53,7 %. <strong>Por eso el códec del RTP mete 20 bytes de audio por paquete y no 100</strong>: cada ms de audio a 20 bytes es un paquete, y el tamaño de cabecera importa.</li>
+<li><strong>HTTP/2 (RFC 9113)</strong> comprime las cabeceras con <strong>HPACK (RFC 7541)</strong>: una Headers repetitiva de 80 bytes puede quedar en 20.</li>
+<li><strong>QUIC</strong> (RFC 9000) usa <strong>cifrado integrado</strong>, lo que agrega entre 16 y 40 bytes al inicio pero <strong>elimina el handshake de 3 vías</strong>, y el resultado es menos round trips aunque el sobre sea mayor.</li>
+</ul>
+<p><strong>Motivo 4 — La MTU y la fragmentación.</strong> Un datagrama IP de 2000 bytes <strong>no cabe</strong> en el MTU de 1500. O se fragmenta, o se descarta con ICMP. Cada fragmento lleva sus <strong>propios 20 bytes de cabecera IP</strong>. Fragmentar un mensaje de 2000 en 2 fragments agrega 20 bytes de overhead extra. Es la capa 3 reproducciendo el mismo efecto.</p>
+<hr />
+<h2>1.4 Lo que además cambia al bajar de capa</h2>
+<p>El tamaño no es lo único que cambia. Hay <strong>dos cambios más</strong>, y son los que de verdad justifican la encapsulación.</p>
+<h3>(a) El direccionamiento: de IP a MAC</h3>
+<div class="codehilite"><pre><span></span><code>  ENCAPSULANDO (H1 → la red):
+
+    El paquete IP dice:  192.168.1.25  →  8.8.8.8     (CAPA 3)
+    La trama dice:       AA:BB:CC:DD:EE:01 → 00:1A:2B:3C:4D:5E   (CAPA 2)
+
+    ¿Por qué NO puede ser la misma dirección en las dos capas?
+
+    Porque son cosas distintas:
+    ──────────────────────────────────────────────────────────────
+    IP  = IDENTIDAD GLOBAL del host, JERÁRQUICA y ESTABLE.
+          El paquete IP viaja de extremo a extremo: la IP destino
+          no cambia en 12 routers. Es la que sabe el servidor de
+          DNS, la que escribe la ACL del firewall, la que aparece
+          en los logs del servidor.
+
+    MAC = IDENTIDAD LOCAL del ENLACE, PLANA y REESCRIBIBLE.
+          Solo tiene sentido dentro de un mismo medio físico.
+          Cambia en CADA router:
+             enlace 1:  AA:BB:CC:DD:EE:01 → 00:1A:2B:3C:4D:5E
+             enlace 2:  FF:11:22:33:44:07 → 00:AA:BB:CC:DD:99
+             enlace 3:  ...
+    ──────────────────────────────────────────────────────────────
+
+  DESENCAPSULANDO (una trama llega a un router):
+
+    El router hace:  NIC recibe la trama, ve que MAC destino
+                     es la suya → se la pasa a la capa 3.
+    La capa 3 hace:  lee la IP destino 8.8.8.8.
+                     "No es mío." → busca en la tabla de reenvío.
+                     "Va por eth1."  → se lo dice a la capa 2.
+    La capa 2 hace:  busca en la tabla ARP qué MAC tiene eth1,
+                     arma una trama nueva, la manda.
+
+    → El router NUNCA ve la IP origen ni la IP destino en la trama.
+      Las ve en el PAQUETE, que es otra cosa.
+</code></pre></div>
+
+<p><strong>El corolario que se pregunta en los exámenes:</strong> si en un traceroute ves la IP pero no la MAC, es porque <strong>cada router es un nuevo enlace con sus propias MACs</strong>. Y si en un ejercicio te piden "las tramas del camino de C a F", lo que cambia entre filas es <strong>siempre</strong> la MAC y <strong>nunca</strong> la IP (salvo NAT, Clase 31).</p>
+<h3>(b) El objetivo: de "llegar al host" a "llegar al proceso"</h3>
+<div class="codehilite"><pre><span></span><code>  ─────────────────────────────────────────────────────────────────
+  CAPA 3 (Red):   "Este paquete tiene que llegar a la MÁQUINA
+                   8.8.8.8."  El objetivo es un HOST.
+
+  CAPA 4 (Transporte): "Y una vez ahí, tiene que llegar al
+                   PROCESO que escucha en el puerto 443 de esa
+                   máquina, y no al que escucha en el 22 ni en el
+                   53."  El objetivo es un PROCESO.
+  ─────────────────────────────────────────────────────────────────
+
+  Por qué hace falta y por qué la capa 3 no alcanza:
+
+  Un servidor web en 8.8.8.8 tiene, típicamente, escuchando:
+     :22    sshd
+     :53    named (DNS)
+     :80    httpd
+     :443   httpd (TLS)
+     :3306  mysqld
+     :6379  redis
+
+  Las IP destino son TODAS 8.8.8.8. La IP no distingue.
+  La que distingue es el PUERTO, y por eso el puerto tiene que
+  ser un campo de la CABECERA DE CAPA 4.
+</code></pre></div>
+
+<p><strong>La demostración clásica (y es un problema de examen)</strong>: en un servidor, el <em>packet filter</em> de <code>iptables</code>/<code>nftables</code> puede hacer <code>DROP</code> por <strong>puerto</strong> porque la capa 3 le <strong>pasa el paquete completo a la capa 4</strong> en Linux (<code>netfilter</code> trabaja con cadenas por capa: <code>-p tcp --dport 443</code>). Ese es el motivo por el que un <strong>firewall stateful implementa capas 3 y 4</strong> (tabla de la Clase 1) y por el que la NAT necesita leer el puerto: <strong>para poder multiplexar</strong> varias conexiones internas detrás de una sola IP pública (Clase 31).</p>
+<h3>(c) Y un tercer cambio, más sutil: la granularidad de la direccionación</h3>
+<div class="codehilite"><pre><span></span><code>  ┌────────────┬──────────────────┬─────────────────────────────────┐
+  │ Capa       │ ¿Qué identifica? │ Dónde está esa información       │
+  ├────────────┼──────────────────┼─────────────────────────────────┤
+  │ 4 Transporte│ una CONEXIÓN    │ 4-tupla (IP:port origen/destino)│
+  │ 3 Red       │ un HOST          │ IP destino (con prefijo /n)     │
+  │ 2 Enlace    │ una TARJETA      │ MAC destino                    │
+  │ 1 Física    │ un BIT           │ voltaje / fase / frecuencia     │
+  └────────────┴──────────────────┴─────────────────────────────────┘
+
+  Y la granularidad va de uno a muchos:
+   1 conexión TCP  →  1 paquete IP  →  1 trama  →  miles de bits
+</code></pre></div>
+
+<p><strong>Un paquete IP puede contener varios segmentos TCP</strong> (eso es la segmentación de IP, distinta de la de TCP), y <strong>una trama puede contener varios paquetes IP</strong> si el medio lo permite. Por eso "un paquete" y "una trama" <strong>no son sinónimos</strong> y por eso los problemas de examen que mezclan PDU hay que mirarlos con cuidado.</p>
+<hr />
+<h2>1.5 Servicios e interfaces entre capas</h2>
+<h3>Qué es un servicio</h3>
+<p>Cada capa <strong>ofrece</strong> un servicio a la de arriba y <strong>usa</strong> un servicio de la de abajo. "Servicio" no es un IND: es <strong>una especificación de qué operaciones puede pedir la capa de arriba y qué garantías le da la capa de abajo</strong>.</p>
+<div class="codehilite"><pre><span></span><code>  ┌──────────────────────────────────────────────────┐
+  │ CAPA 5                                          │
+  │   USA el servicio:  "decime qué es una IP"       │  ← lo que la 4 le
+  │   OFRECE el servicio: "transportame 500 bytes    │     promete hacer
+  │                      al puerto 443 de 8.8.8.8,   │
+  │                      ordenados, sin errores"      │
+  └──────────────────────────────────────────────────┘
+        ▲                    │
+        │ servicio           │ interfaz
+        │                    ▼
+  ┌──────────────────────────────────────────────────┐
+  │ CAPA 4                                          │
+  │   USA el servicio:  "encaminame este datagrama    │
+  │                      a 8.8.8.8, best effort"     │
+  │   OFRECE el servicio: (lo de arriba)              │
+  └──────────────────────────────────────────────────┘
+</code></pre></div>
+
+<h3>Los servicios de cada capa</h3>
+<table>
+<thead>
+<tr>
+<th>Capa</th>
+<th><strong>Qué le promete a la de arriba</strong> (servicio)</th>
+<th><strong>Qué espera de la de abajo</strong> (usa)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>7 Aplicación</td>
+<td>Datos de aplicación, puffed a un proceso remoto</td>
+<td>Un flujo de bytes confiable a un proceso remoto</td>
+</tr>
+<tr>
+<td>6 Presentación</td>
+<td>Datos en una <strong>representación común</strong></td>
+<td>Datos en la representación nativa</td>
+</tr>
+<tr>
+<td>5 Sesión</td>
+<td>Diálogo abierto, sincronizado, con recuperación</td>
+<td>Un intercambio de datos ordenado</td>
+</tr>
+<tr>
+<td>4 Transporte</td>
+<td>Flujo <strong>fiable y ordenado</strong> de bytes entre procesos</td>
+<td>Paquetes <strong>no fiables</strong> que pueden perderse o reordenar</td>
+</tr>
+<tr>
+<td>3 Red</td>
+<td>Paquetes <strong>best effort</strong> hacia un destino</td>
+<td>Tramas confiables en un enlace</td>
+</tr>
+<tr>
+<td>2 Enlace</td>
+<td>Tramas <strong>sin errores</strong> entre dos vecinos</td>
+<td>Bits crudos, que pueden llegar corruptos</td>
+</tr>
+<tr>
+<td>1 Física</td>
+<td>Bits, con la tasa de errores del medio</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h3>Por qué esto es la clave de la encapsulación</h3>
+<p>Porque <strong>el contrato entre capas es lo que permite el intercambio</strong>. Cuatro consecuencias concretas:</p>
+<p><strong>1. La capa de arriba no necesita saber cómo funciona la de abajo.</strong> El navegador HTTP no sabe que hay cobre debajo. La capa 4 (TCP) <strong>no sabe si el camino tiene 3 o 25 saltos</strong>, ni si los saltos son Ethernet o Wi-Fi, ni si hay pérdida. Y <strong>por eso TCP funciona sobre cualquier cosa.</strong></p>
+<p><strong>2. Una capa puede implementarse de mil maneras.</strong> El servicio "encaminame paquetes a 10.0.0.7" lo pueden dar un router de 300 dólares con un chip o un backbone con routing fabric. La aplicación no se entera.</p>
+<p><strong>3. Los sniffers funcionan por capas.</strong> Un <em>packet capture</em> de capa 2 te da tramas. Uno de capa 3 te da datagramas. Uno de capa 4 te da segmentos. Y <strong><code>tcpdump</code>/Wireshark necesitás conocer el nivel para filtrar</strong> (<code>-p</code> para capa 3). Si entendés los servicios, entendés por qué la herramienta tiene esa sintaxis.</p>
+<p><strong>4. Es lo que hace que se pueda cambiar una capa.</strong> Cambiar el medio (cobre → fibra) es cambiar la implementación de la capa 1 que <strong>cumple el mismo servicio</strong>. Cambiar el protocolo de transporte (TCP → QUIC) es cambiar la implementación de la capa 4. En los dos casos, <strong>las capas de arriba no cambian</strong>.</p>
+<h3>La relación entre servicio e interfaz</h3>
+<ul>
+<li>La <strong>interfaz</strong> es <strong>la frontera</strong>: <em>dónde</em> se llama.</li>
+<li>El <strong>servicio</strong> es <strong>el contrato</strong>: <em>qué</em> se promete.</li>
+</ul>
+<div class="codehilite"><pre><span></span><code>  ┌─────────────────────────────────────────────┐
+  │  La interfaz es la PUERTA.                  │
+  │  El servicio es lo que hay DEL OTRO LADO.  │
+  │                                             │
+  │  Si el servicio cambia (promete otra cosa), │
+  │  la implementación cambia.                  │
+  │  Si la implementación cambia, la interfaz    │
+  │  puede quedar igual.                        │
+  └─────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>El ejemplo para explicar por qué el cambio de una capa no rompe las demás:</strong> si la capa 2 pasa de Ethernet a Wi-Fi, <strong>la interfaz "encaminame este paquete a esta IP" sigue siendo exactamente la misma</strong>. Wi-Fi cumple el mismo servicio de la capa 2 que cumple Ethernet: entregar tramas sin errores dentro de un alcance dado. Por eso un driver de IP no sabe si está sobre Ethernet o sobre Wi-Fi. Por eso tu laptop puede estar conectada a una red y no cambia una línea de código de tu navegador.</p>
+<hr />
+<h2>1.6 La capa de presentación, desarrollada</h2>
+<p>La capa 6 resuelve <strong>el problema de la heterogeneidad de representación</strong>. Lo desarrollamos con casos reales, porque es la capa que más se olvida y la que más puntos da.</p>
+<h3>(a) <em>Endianness</em> — el orden de los bytes</h3>
+<p><strong>El problema.</strong> Un número de 32 bits con valor <code>0x12345678</code> ocupa 4 bytes. Esos 4 bytes se pueden ordenar de dos maneras:</p>
+<div class="codehilite"><pre><span></span><code>  BIG-ENDIAN ("network byte order", orden de red)
+  ┌────────┬────────┬────────┬────────┐
+  │ 0x12   │ 0x34   │ 0x56   │ 0x78   │
+  └────────┴────────┴────────┴────────┘
+   MSB                            LSB
+   (peso 2²⁴)                     (peso 2⁰)
+   se manda primero el de MAYOR peso
+
+  LITTLE-ENDIAN (orden de x86, ARM y casi todos los microcontroladores)
+  ┌────────┬────────┬────────┬────────┐
+  │ 0x78   │ 0x56   │ 0x34   │ 0x12   │
+  └────────┴────────┴────────┴────────┘
+   LSB                            MSB
+   se manda primero el de MENOR peso
+
+  ─────────────────────────────────────────────────────────────────
+  El MISMO conjunto de 4 bytes significa:
+     305 419 896   si es big-endian
+  2 018 915 346   si es little-endian
+
+  Si no me decís la endianness, el dato NO TIENE SIGNIFICADO.
+  ─────────────────────────────────────────────────────────────────
+</code></pre></div>
+
+<p><strong>La regla de la red:</strong> todos los campos de más de 8 bits de <strong>IP, TCP, UDP, ICMP</strong> van en <strong>network byte order (big-endian)</strong>. Por eso en C existen <code>htons()</code>, <code>htonl()</code>, <code>ntohs()</code>, <code>ntohl()</code>.</p>
+<div class="codehilite"><pre><span></span><code>  Sin htons(), este código funciona en x86 y falla en big-endian:
+
+      struct sockaddr_in sa;
+      sa.sin_port = htons(80);      // htons converts to Network Order
+      //  si pongo sa.sin_port = 80;  → funciona en little-endian
+      //                              y FALLA en big-endian
+
+  Por eso la PI de la capa de presentación no es teórica:
+  es la razón por la que C tiene esas cuatro funciones.
+</code></pre></div>
+
+<h3>(b) Formatos de caracteres y de archivos — el bug de UTF-8</h3>
+<p><strong>El caso canónico del bug de UTF-8:</strong> tomemos la palabra <strong>"mañana"</strong> y veamos cómo se representa la letra Ñ:</p>
+<div class="codehilite"><pre><span></span><code>  La letra Ñ (U+00D1) en distintos esquemas:
+
+  ASCII      : no existe
+  ISO-8859-1 : 1 byte   0xD1
+  UTF-8      : 2 bytes  0xC3 0x91      (prefijo 110xxxxx + continuation)
+
+  Si el emisor manda ISO-8859-1 (0xD1) y el receptor asume UTF-8,
+  el receptor ve 0xD1 = un byte de inicio de un carácter de 2 bytes
+  y espera el siguiente, que es otra cosa. Resultado: "mojibake".
+
+  Si el emisor manda UTF-8 (0xC3 0x91) y el receptor asume ISO-8859-1,
+  el receptor ve dos caracteres: Ã (±) y Ñ. Resultado: "maÃ±ana".
+</code></pre></div>
+
+<p><strong>Por qué UTF-8 ganó:</strong> es <strong>backward-compatible</strong>: un texto ASCII válido en UTF-8 es <strong>idéntico</strong> en ASCII. Eso permitió que durante años se usara UTF-8 en casi todo y no rompiera nada. La longitud es variable (1 a 4 bytes), y por eso "la cantidad de caracteres" <strong>no</strong> es "la cantidad de bytes".</p>
+<div class="codehilite"><pre><span></span><code>  "hola"  en ASCII   = 4 bytes
+  "hola"  en UTF-8   = 4 bytes  (idéntico)
+  "ñ"     en ISO-8859-1 = 1 byte
+  "ñ"     en UTF-8   = 2 bytes
+  "😀"  en UTF-8   = 4 bytes  (¡y no existe en ASCII ni en ISO-8859-1!)
+  ───────────────────────────────────────────────────────────────────
+  Un emoji ocupa 4 BYTES, no 4 caracteres. Es 1 carácter.
+  Si tu aplicación calcula "el string tiene 4 caracteres, mando 4 bytes",
+  manda la mitad de los bytes y rompe el mensaje.
+</code></pre></div>
+
+<p><strong>Esto es un problema real de red, no de teoría:</strong> es la razón por la que el <code>Content-Length</code> de HTTP está en <strong>bytes</strong> y no en caracteres, y la razón por la que un cliente que anuncia <code>charset=iso-8859-1</code> y manda UTF-8 rompe la página.</p>
+<h3>(c) Compresión</h3>
+<p>Si el medio es caro (un enlace satelital de 300 Mbps que cuesta 4000 dólares al mes) o el tiempo es caro (un disco de 10 TB), <strong>comprimir los datos antes de mandarlos</strong> vale la pena.</p>
+<div class="codehilite"><pre><span></span><code>  MENSAJE ORIGINAL                        COMPRIMIDO
+  ┌────────────────────────────┐          ┌──────────────────────┐
+  │ GET /index.html HTTP/1.1   │          │  0x1F 0x8B 0x08 ...   │
+  │ Host: www.udelar.edu.uy    │          │  ...datos comprimidos│
+  │ Accept: text/html          │   ────►  │  ...                  │
+  │ User-Agent: Mozilla/5.0... │   gzip   │  1 842 bytes          │
+  │ (4 730 bytes)              │          │  (1 842 bytes)       │
+  └────────────────────────────┘          └──────────────────────┘
+
+  Ratio = 4730/1842 = 2,57×  →  AHORRO DE 61 %
+</code></pre></div>
+
+<p><strong>El compromiso:</strong> la compresión <strong>cuesta CPU</strong> y <strong>empeora la latencia</strong> (hay que comprimir antes de mandar y descomprimir después de recibir). Para texto HTML (muy redundante) compensa muchísimo; para video ya comprimido (H.264, AV1) <strong>empeora</strong> la calidad sin ganar nada. Por eso <code>Content-Encoding: br</code> y <code>gzip</code> se aplican a texto, JSON y CSS, y <strong>no</strong> a video.</p>
+<h3>(d) Cifrado</h3>
+<p>La confidencialidad también es una función de "presentación": el dato tiene que ser <strong>legible para el destinatario y no para nadie más</strong>. En la práctica esto vive en <strong>TLS</strong> (<code>RFC 8446</code>, actualizado por <code>RFC 9846</code> en 2026), que es una biblioteca entre la aplicación y el socket.</p>
+<p><strong>Por qué en la capa de OSI y no en otra:</strong> porque el cifrado es <strong>una transformación de la representación</strong> del dato que debe hacerse de manera <strong>transparente</strong> a las capas 5 y 7. Si el cifrado fuera de capa 3 (como IPsec), cada host tendría que configurar la clave por ruta y no podría haber <em>NAT traversal</em>. Si fuera de capa 4, el <em>endpoint</em> de la aplicación tendría que saber del tema. En la capa 6, <strong>la aplicación llama a una biblioteca y sigue escribiendo texto plano</strong>.</p>
+<h3>La síntesis de la capa 6</h3>
+<div class="codehilite"><pre><span></span><code>  ┌────────────────────────────────────────────────────────────────┐
+  │  CAPA 6 — PRESENTACIÓN                                         │
+  │                                                                │
+  │  Problema: los datos de un host pueden NO ser compatibles      │
+  │            con los de otro, aunque los bits lleguen bien.      │
+  │                                                                │
+  │  Cuatro funciones concretas:                                  │
+  │    1. REPRESENTACIÓN: endianness, punto flotante, entero       │
+  │    2. FORMATO:         codificación de caracteres, archivos    │
+  │    3. COMPRESIÓN:      reducir lo que viaja                     │
+  │    4. CIFRADO:         que solo el destinatario entienda       │
+  │                                                                │
+  │  En TCP/IP: no existe como capa. Vive en la APLICACIÓN,        │
+  │  y el cifrado en la biblioteca TLS.                            │
+  └────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>La frase oficial del Examen 2006-12, textual:</strong></p>
+<blockquote>
+<p><em>"Busca la solución de problemas particulares, que hacen referencia a la semántica y sintaxis de lo enviado. Por ejemplo la resolución de diferentes representaciones entre máquinas (pto flotante), corresponde a esta capa."</em></p>
+</blockquote>
+<p><strong>Análisis.</strong> La oficial dice <strong>"semántica y sintaxis"</strong>, que es más amplio que "los bytes": la capa 6 no solo traduce bytes, traduce <strong>significados</strong>. Y el ejemplo que da — el <strong>punto flotante</strong> — es exactamente <em>endianness</em> + <strong>rango</strong> + <strong>precisión</strong> + formato de la representación de un <code>float</code>. Los 4 bytes de un <code>float</code> de precisión simple: si el endianness difiere, el valor cambia; si el hardware no soporta ese <code>float</code>, el valor se convierte; si la longitud difiere (4 vs 8 bytes), el mensaje se rompe entero.</p>
+<p><strong>Lo que hay que agregar para el punto extra:</strong> que en TCP/IP estas funciones <strong>no tienen capa propia</strong>, y que la consecuencia práctica es que <strong>cada protocolo de aplicación normaliza su representación</strong> (JSON, protobuf, DER, X.509, JPEG, PNG), y que el cifrado se resuelve en TLS.</p>
+<h3>⚠️ Actualización a 2026</h3>
+<p><strong>Sigue igual — de memoria, sin dudar:</strong>
+- <strong>El overhead de 58 bytes</strong>: 20 de TCP + 20 de IP + 18 de Ethernet (14 + 4 de FCS). Es el número con el que hay que trabajar.
+- <strong>La fórmula <code>eficiencia = L / (L + overhead)</code></strong> y el hecho de que el overhead relativo <strong>se dispara con mensajes chicos</strong>.
+- <strong>MTU de Ethernet = 1500</strong>; <strong>MSS de TCP = 1460 = 1500 − 20 − 20</strong>.
+- <strong>Trama mínima de 64 bytes</strong>, preámbulo de 7 + SFD de 1, e <strong>IFG de 12 bytes entre tramas</strong>.
+- <strong>La IP no cambia en tránsito; la MAC cambia en cada router.</strong>
+- <strong>Que la capa de aplicación no ve la red.</strong></p>
+<p><strong>Cambió o se modificado:</strong></p>
+<ul>
+<li><strong>IPv6 cambió el cálculo de la MTU.</strong> En IPv4, el <code>Total Length</code> incluye <strong>todas</strong> las cabeceras. En IPv6, el campo <strong>Payload Length excluye las cabeceras de extensión</strong> (<code>RFC 8200</code> §3): los 40 bytes fijos de la cabecera IPv6 <strong>no</strong> están en el <code>Payload Length</code>. ⇒ <strong>Cuando un problema de examen Fragmente un paquete IPv6, la cuenta de qué entra y qué no es distinta</strong>, y es un error muy común tomarla de la fórmula IPv4.</li>
+<li><strong>El MTU mínimo absoluto de IPv6 es 1280 bytes</strong> (<code>RFC 8200</code> §5, verificado textualmente). Por eso una conexión que <em>"funciona"</em> en IPv4 puede romperse en IPv6 si algún camino tiene MTU menor.</li>
+<li><strong>El MTU ya no es 1500 y ya no es una constante.</strong> <strong>Jumbo frames de 9000 bytes</strong> son una <strong>convención, no un estándar IEEE</strong>: se usan sobre todo intra-datacenter y en almacenamiento, y <strong>nunca</strong> sobre Internet o túneles sin <em>clamp MSS</em>. Además, con <strong>ECMP el PMTU es propiedad del camino, no del prefijo</strong>, así que dos flujos al mismo destino pueden tener MTU distinto.</li>
+<li><strong>Cada overlay consume MTU.</strong> MPLS, VXLAN (<code>RFC 7348</code>), IPsec y WireGuard restan bytes disponibles. Por eso el desajuste de MTU es <strong>omnipresente</strong> en redes cloud híbridas, y es el contenido de la Pregunta 2 del Examen 2010-12.</li>
+<li><strong>La capa 4 ya no es TCP ni UDP solamente.</strong> QUIC (<code>RFC 9000</code>) <strong>reemplaza a TCP en HTTP/3</strong> y lleva su propio <em>header protection</em> y su propia recuperación. <strong>El cifrado de la "capa de presentación" se mudó de sitio otra vez</strong>: en QUIC, el <em>handshake</em> de TLS viaja en frames <code>CRYPTO</code>, no en un stream de bytes (<code>RFC 9001</code>). Un middlebox que solo entienda TCP/UDP plano no puede inspeccionarlo.</li>
+<li><strong>La fragmentación cambió por completo.</strong> En IPv6 <strong>el router nunca fragmenta</strong>; fragmenta el origen. Y <strong>DPLPMTUD (<code>RFC 8899</code>, 2022) reemplazó a la PMTUD clásica</strong> porque ya no depende de ICMP: el transporte sondea con su propio paquete de datos. Es la respuesta canónica al <em>black hole</em>.</li>
+<li><strong>VLANs con etiqueta doble.</strong> En carrier Ethernet y en EVPN-VXLAN el estándar real es <strong>C-TAG (<code>0x8100</code>) + S-TAG (<code>0x88A8</code>)</strong>, o sea <strong>dos</strong> cabeceras de capa 2. La encapsulación de capa 2 ya no es "una cabecera": es un stack.</li>
+</ul>
+<blockquote>
+<p><strong>Consecuencia para el examen:</strong> los <strong>números</strong> cambian según la versión (MTU 1500 o 1280 mínimo, MSS 1460 o 1430), pero <strong>el mecanismo</strong> — encapsulation, overhead fijo, eficiencia <code>L/(L+H)</code>, IP global contra MAC local — <strong>no cambió en 37 años</strong>. Resolvé primero la aritmética con los números que dé el enunciado, y después agregá una línea de actualización.</p>
+</blockquote>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — Tamaño total y eficiencia para tres tamaños de mensaje</h2>
+<p><strong>Datos.</strong> Sobre un enlace Ethernet: cabecera TCP de 20 B, cabecera IPv4 de 20 B, y trama Ethernet de 18 B de overhead (14 de cabecera + 4 de FCS). Se envían tres mensajes de aplicación de <strong>20 B</strong>, <strong>800 B</strong> y <strong>9 000 B</strong>.</p>
+<p><strong>a)</strong> ¿Cuánto viaja por el cable en cada caso?
+<strong>b)</strong> ¿Cuál es la eficiencia de cada uno?
+<strong>c)</strong> ¿Qué pasa con el mensaje de 9 000 bytes en una red con MTU de 1500?</p>
+<p><strong>Resolución.</strong></p>
+<p><strong>Paso 1 — El overhead, una vez.</strong></p>
+<div class="codehilite"><pre><span></span><code>  overhead = H_TCP + H_IP + H_ENLACE
+           =   20   +  20  +     18
+           =   58 bytes      (constante, independiente del mensaje)
+</code></pre></div>
+
+<p><strong>Paso 2 — Los totales.</strong></p>
+<div class="codehilite"><pre><span></span><code>  ┌────────────┬───────────────────┬────────────┬────────────────────┐
+  │ L_app      │ total = L + 58    │ bits       │ tramas (de 64 a    │
+  ├────────────┼───────────────────┼────────────┼────────────────────┤
+  │    20 B    │  20 + 58 =  78 B  │   624 bits │ 1 trama (con pad)  │
+  │   800 B    │ 800 + 58 = 858 B  │ 6 864 bits │ 1 trama            │
+  │ 9 000 B    │9000 + 58 =9058 B  │72 464 bits │ fragmentado        │
+  └────────────┴───────────────────┴────────────┴────────────────────┘
+</code></pre></div>
+
+<p><strong>Paso 3 — Las eficiencias.</strong></p>
+<div class="codehilite"><pre><span></span><code>  Eficiencia = L_app / total
+
+  ┌────────────┬──────────────────────┬──────────────┐
+  │ L_app      │ cuenta               │ eficiencia   │
+  ├────────────┼──────────────────────┼──────────────┤
+  │    20 B    │  20 / 78             │ = 0,2564     │
+  │            │                      │ = 25,6 %     │
+  │            │                      │              │
+  │            │                      │ OJO: la      │
+  │            │                      │ Ethernet      │
+  │            │                      │ rellena con   │
+  │            │                      │ padding hasta │
+  │            │                      │ 64 bytes:     │
+  │            │                      │ 20/64 = 31,3% │
+  │            │                      │ (el mínimo    │
+  │            │                      │  de trama)    │
+  ├────────────┼──────────────────────┼──────────────┤
+  │   800 B    │ 800 / 858            │ = 0,9324     │
+  │            │                      │ = 93,2 %     │
+  ├────────────┼──────────────────────┼──────────────┤
+  │ 9 000 B    │ 9000 / 9058          │ = 0,9936     │
+  │            │                      │ = 99,4 %     │
+  │            │                      │ (¡con los     │
+  │            │                      │  fragments!)  │
+  └────────────┴──────────────────────┴──────────────┘
+</code></pre></div>
+
+<p><strong>Paso 4 — El mensaje de 9 000 bytes, parte c.</strong></p>
+<p><strong>No pasa.</strong> El MTU de Ethernet son 1500 bytes de <strong>payload de capa 2</strong>, o sea del paquete IP completo:</p>
+<div class="codehilite"><pre><span></span><code>  MTU de Ethernet = 1500 bytes  ← esto mide el PAQUETE IP entero
+
+  Un paquete IP con 9000 B de datos TCP sería:
+      9000 + 20 (TCP) + 20 (IP) = 9040 B de paquete IP
+      9040 &gt; 1500  ✗   NO CABE
+
+  Hay tres salidas:
+
+  (1) FRAGMENTAR (IPv4, con DF=0):
+      Payload IP disponible = 1500 − 20 (IP) = 1480 B
+      Fragmento 1: 20 (IP) + 1480 (TCP+datos)          = 1500 B
+      Fragmento 2: 20 (IP) + 1480                       = 1500 B
+      Fragmento 3: 20 (IP) + 1480                       = 1500 B
+      Fragmento 4: 20 (IP) + 1480                       = 1500 B
+      Fragmento 5: 20 (IP) + 1480                       = 1500 B
+      Fragmento 6: 20 (IP) + 1480                       = 1500 B
+      Fragmento 7: 20 (IP) + 1380                       = 1400 B
+                                          TOTAL = 9020 B
+      (9000 + 20 TCP + 7×20 IP = 9000 + 20 + 140 = 9160... ojo,
+       calculemos bien abajo)
+
+  (2) DESCARTAR con ICMP (IPv4 con DF=1, o IPv6):
+      ICMPv4 tipo 3 código 4 "Fragmentation Needed and DF was Set"
+      El origen baja el MSS y vuelve a mandar. Sin DF=1, el
+      router no puede avisar: se pierde el paquete.
+
+  (3) EL ORIGEN FRAGMENTA (IPv6, RFC 8200):
+      En IPv6 el router NUNCA fragmenta. Fragmenta el origen.
+</code></pre></div>
+
+<p><strong>La cuenta correcta de la fragmentación, con la aritmética a la vista:</strong></p>
+<div class="codehilite"><pre><span></span><code>  Datos de aplicación            = 9 000 B
+  Cabecera TCP                   =    20 B   (un solo segmento)
+  ───────────────────────────────────────────
+  Paquete IP a enviar            = 9 020 B
+
+  Capacidad por fragmento (MTU 1500):
+     1500 − 20 (cabecera IP de cada fragmento) = 1480 B de payload
+
+  Payload a repartir: 9 000 + 20 = 9 020 B
+
+  Cantidad de fragmentos:
+     ⌈9 020 / 1 480⌉ = ⌈6,0946⌉ = 7 fragmentos
+
+  Reparto:
+     f1..f6 : 1480 B cada uno  = 8 880 B
+     f7     : 9020 − 8880 = 140 B
+     ────────────────────────────────
+     total payload = 9 020 B  ✓
+
+  Overhead de fragmentar:
+     7 × 20 B de cabecera IP = 140 B extra
+     (comparado con los 20 B de un solo paquete)
+
+  Total que viaja en la red:
+     7 tramas × (18 de Ethernet + payload_i)
+       = f1..f6: 1480 + 20 + 18 = 1518 B cada uno  × 6 = 9 108 B
+       = f7    :  140 + 20 + 18 =  178 B
+       ─────────────────────────────────────────────
+       TOTAL = 9 286 B
+
+  Eficiencia = 9 000 / 9 286 = 96,9 %
+</code></pre></div>
+
+<p><strong>Interpretación.</strong> Fragmentar un mensaje de 9 000 bytes <strong>agrega 140 B de overhead de IP</strong> que no estaban en el cálculo original de 58 bytes. Y tiene un costo peor que el tamaño: <strong>si se pierde UNO de los 7 fragmentos, se pierde el mensaje entero</strong> (no hay protocolo de fiabilidad en IP), y hay que retransmitir 9 020 bytes. Es la razón por la que <strong>DHCP, DNS y las respuestas HTTP grandes</strong> están CCS штатно limitados al MTU. Por eso <strong>DNS usa UDP con 512 bytes de payload</strong> y por eso existe <strong>TCP para respuestas grandes</strong>.</p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Sumar el preámbulo (8 B) y el IFG (12 B) al tamaño de la trama.</strong> El "tamaño de trama" en un problema de examen es <code>14 + payload + 4</code>. El preámbulo se cuenta aparte y el IFG va entre tramas.</li>
+<li><strong>Olvidar que cada fragmento lleva su propia cabecera IP de 20 B.</strong> La fragmentación multiplica el overhead de capa 3.</li>
+<li><strong>Dividir mal: eficiencia = L/total, no = 1 − overhead/58.</strong> El denominador es <code>L + 58</code>, que depende de <code>L</code>.</li>
+<li><strong>Confundir MTU con MSS.</strong> MTU = 1500 (medido sobre el <strong>paquete IP</strong>). MSS = 1460 = 1500 − 20 (IP) − 20 (TCP) (medido sobre los <strong>datos de aplicación</strong>).</li>
+</ul>
+<hr />
+<h2>2.2 Ejercicio 2 — El camino completo: ¿quién lee qué?</h2>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 780 560" style="max-width:780px"><rect width="780" height="560" fill="#ffffff"/><text x="390.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Equivalencia entre el modelo OSI y TCP/IP</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><text x="195.0" y="52" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="700" fill="#0b3d5c">OSI   (7 capas)</text><text x="585.0" y="52" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="700" fill="#0b3d5c">TCP/IP   (5 capas)</text><path d="M36 88 L36 236" stroke="#c8621a" stroke-width="1.8" fill="none"/><text x="28" y="162.0" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#c8621a">se</text><text x="28" y="176.0" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#c8621a">fusionan</text><rect x="50" y="88" width="290" height="44" rx="4" fill="#fbe9dd" stroke="#7aa7c4" stroke-width="1.2"/><text x="195.0" y="114.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#1a1a1a">7  Aplicación</text><rect x="50" y="140" width="290" height="44" rx="4" fill="#fbe9dd" stroke="#7aa7c4" stroke-width="1.2"/><text x="195.0" y="166.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="400" fill="#1a1a1a">6  Presentación</text><rect x="50" y="192" width="290" height="44" rx="4" fill="#fbe9dd" stroke="#7aa7c4" stroke-width="1.2"/><text x="195.0" y="218.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="400" fill="#1a1a1a">5  Sesión</text><rect x="50" y="244" width="290" height="44" rx="4" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="195.0" y="270.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="400" fill="#1a1a1a">4  Transporte</text><rect x="50" y="296" width="290" height="44" rx="4" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="195.0" y="322.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="400" fill="#1a1a1a">3  Red</text><rect x="50" y="348" width="290" height="44" rx="4" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="195.0" y="374.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="400" fill="#1a1a1a">2  Enlace de datos</text><rect x="50" y="400" width="290" height="44" rx="4" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="195.0" y="426.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="400" fill="#1a1a1a">1  Física</text><rect x="440" y="140.0" width="290" height="44" rx="4" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="585.0" y="166.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#1a1a1a">5  Aplicación</text><line x1="346" y1="162.0" x2="434" y2="162.0" stroke="#c8621a" stroke-width="1.8" marker-end="url(#po)"/><rect x="440" y="244.0" width="290" height="44" rx="4" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="585.0" y="270.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="400" fill="#1a1a1a">4  Transporte</text><line x1="346" y1="266.0" x2="434" y2="266.0" stroke="#c8621a" stroke-width="1.8" marker-end="url(#po)"/><rect x="440" y="296.0" width="290" height="44" rx="4" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="585.0" y="322.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="400" fill="#1a1a1a">3  Internet</text><line x1="346" y1="318.0" x2="434" y2="318.0" stroke="#c8621a" stroke-width="1.8" marker-end="url(#po)"/><rect x="440" y="362.0" width="290" height="44" rx="4" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="585.0" y="388.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="400" fill="#1a1a1a">2  Acceso a red</text><line x1="346" y1="384.0" x2="434" y2="384.0" stroke="#c8621a" stroke-width="1.8" marker-end="url(#po)"/><text x="390.0" y="478" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="400" fill="#666">En TCP/IP no existen Presentación ni Sesión:</text><text x="390.0" y="498" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="400" fill="#666">el cifrado vive en la capa de Aplicación (TLS) y en la biblioteca.</text><text x="390.0" y="524" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#c8621a">Ojo: hay dos criterios de conteo. Tanenbaum cuenta 5 capas porque</text><text x="390.0" y="540" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#c8621a">separa enlace y física; Kurose cuenta 4. La capa 3 es la misma.</text></svg></p>
+<p><strong>Enunciado.</strong> Un cliente <code>192.168.1.25</code> (MAC <code>00:0C:29:AA:BB:CC</code>) quiere descargar una página de <code>203.0.113.9</code> (MAC del router de salida: <code>00:1A:2B:CC:DD:01</code>; MAC del switch: <code>00:AA:BB:00:00:01</code>). Hay un router <code>R1</code> en <code>192.168.1.1</code> (MAC <code>00:0C:29:FF:EE:01</code>) y un router <code>R2</code> en el otro lado. <strong>Describí qué encapsula y qué desencapsula cada capa, y en qué momento exacto se invierte el proceso.</strong></p>
+<p><strong>Resolución — el camino, paso a paso.</strong></p>
+<div class="codehilite"><pre><span></span><code>  ════ EN H1 (192.168.1.25) ══════════════════════════════════════
+
+  Cap 7  El navegador escribe:
+          GET /index.html HTTP/1.1     Host: www.udelar.edu.uy
+          (430 bytes)
+          ══ write(socket_fd, buf, 430) ══
+             ↓
+  Cap 4  TCP:
+          · busca la conexión (4-tupla) o la crea (handshake)
+          · segmenta: 430 B caben en un MSS → un segmento
+          · NUMERA: este es el byte N del flujo
+          · ANTECABE 20 B de cabecera TCP
+            ┌──────────────────────────────┐
+            │TCP hdr (20)│ datos (430)      │ = 450 B  ← SEGMENTO
+            └──────────────────────────────┘
+          ══ sendto() hacia 203.0.113.9:80 ══
+             ↓
+  Cap 3  IP:
+          · ¿203.0.113.9 está en mi subred (192.168.1.0/24)? NO
+          · consulto la tabla: default gateway = 192.168.1.1
+          · pongo IP origen = 192.168.1.25, IP destino = 203.0.113.9
+          · TTL = 64, protocolo = 6 (TCP)
+          · ANTECABE 20 B de cabecera IP
+            ┌────────────────────────────────────┐
+            │IP hdr (20)│TCP hdr(20)│datos(430) │ = 470 B ← PAQUETE
+            └────────────────────────────────────┘
+          ══ pasa a la capa 2 ══
+             ↓
+  Cap 2  Ethernet:
+          · ¿debo resolver una MAC? SÍ (el próximo salto es R1)
+            → ARP request 192.168.1.25 → "¿192.168.1.1?"
+            → ARP reply   R1 → "soy 00:0C:29:FF:EE:01"
+          · armo la trama
+            ┌──────────────────────────────────────────────┐
+            │ETH hdr(18)│IP hdr(20)│TCP hdr(20)│datos(430)│ = 468 B
+            │MAC:FF:EE:01 ← 00:0C:29:AA:BB:CC               │ ← TRAMA
+            └──────────────────────────────────────────────┘
+            (EtherType 0x0800 = IPv4)
+          ══ transmito por el cable ══
+             ↓
+  Cap 1  Codifico: 3744 bits de 0 y 1 en voltajes a 1 Gbps
+          ══ (van por el cable) ══
+
+  ══════════════ EN R1 ══════════════════════════════════════════
+
+  Cap 1  La NIC recibe voltajes → bits
+          ↓
+  Cap 2  · verifico el FCS → coincide
+          · MAC destino = 00:0C:29:FF:EE:01 = ¿la mía? SÍ
+          · ENTREGO los 450 bytes a la capa 3
+          · ⚠️ La capa 2 de R1 NO miró la IP. No sabe a dónde va.
+             Solo sabe que la trama era para él.
+          ↓
+  Cap 3  · leo la IP destino: 203.0.113.9
+          · ¿es mía? NO
+          · TTL = 64 − 1 = 63 → no es 0, sigue
+          · recalculo el checksum de la cabecera IP
+          · consulto la tabla de reenvío: 203.0.113.0/24 → eth1
+          · entrego a la capa 2: "mandalo por eth1"
+          ↓
+  Cap 2  · resuelvo (o tengo cacheada) la MAC de eth1
+          · ARMO UNA TRAMA NUEVA: la vieja se descarta
+            ┌──────────────────────────────────────────────┐
+            │ETH hdr(18)│IP hdr(20)│TCP hdr(20)│datos(430)│ = 468 B
+            │MAC:AA:00:01 ← 00:0C:29:FF:EE:01               │
+            └──────────────────────────────────────────────┘
+             ↑ MAC origen y destino CAMBIARON
+             ↑ La cabecera IP es la MISMA, con TTL 63
+
+  ══════════════ EN EL SERVIDOR (203.0.113.9) ═══════════════════
+
+  Cap 1  bits → Cap 2: FCS ok, MAC destino = el mío → quito 18 B
+          ↓
+  Cap 3  IP destino = 203.0.113.9 = MÍO → TTL −1 → quito 20 B
+          ↓
+  Cap 4  TCP: checksum ok, seq esperado → anoto el byte,
+          · quito 20 B → entrego 430 B a la aplicación
+          ↓
+  Cap 7  El servidor web (puerto 80) lee 430 B y ve "GET /"
+
+  ══════ Y AHORA SE INVIERTE: la respuesta vuelve por el mismo camino ══════
+
+  Cap 7  El servidor escribe la respuesta (5 200 B)
+          ↓ ↓ ↓ (misma secuencia, sentido inverso)
+  Cap 4  TCP segmenta (4 segmentos), numera al revés
+  Cap 3  IP: 203.0.113.9 → 192.168.1.25
+  Cap 2  Eth:  → 00:0C:29:FF:EE:01   (¡ahora el origen es el servidor!)
+  Cap 1  bits
+</code></pre></div>
+
+<h3>La respuesta a "¿en qué momento se invierte?"</h3>
+<p><strong>Se invierte en el punto donde el paquete alcanza su destino</strong>, que es un <strong>evento</strong> y no un lugar:</p>
+<div class="codehilite"><pre><span></span><code>  El ÚNICO evento que marca el punto de inversión es:
+  la capa 3 del destino que RECONOCE su propia IP destino
+  en la cabecera del paquete.
+
+  Todo lo que está por debajo de ese punto va subiendo
+  (desencapsulando). Todo lo que está por arriba va bajando
+  (encapsulando).
+</code></pre></div>
+
+<p><strong>Y hay un segundo punto de inversión, independiente del primero:</strong> cuando el paquete <strong>sale de la capa 2 de H1 y entra en la capa 1</strong>, se invierte la dirección <strong>dentro del emisor</strong>. Cada vez que un paquete entra a una capa, baja; cada vez que sale, sube. Un router hace subir a capa 3 y bajar a capa 3 por cada paquete.</p>
+<p><strong>La respuesta completa a la pregunta del enunciado:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Momento</th>
+<th>Capa</th>
+<th>Acción</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>El navegador llama <code>write()</code></td>
+<td>7→4</td>
+<td><strong>Baja</strong>: la 7 le pasa los datos a la 4</td>
+</tr>
+<tr>
+<td>TCP encapsula</td>
+<td>4→3</td>
+<td><strong>Baja</strong>: la 4 le pasa el segmento a la 3</td>
+</tr>
+<tr>
+<td>IP encapsula</td>
+<td>3→2</td>
+<td><strong>Baja</strong>: la 3 le pasa el paquete a la 2</td>
+</tr>
+<tr>
+<td>ARP resuelve la MAC</td>
+<td>2</td>
+<td><strong>Consulta</strong>: la 2 le pide a la 3 la dirección lógica de destino</td>
+</tr>
+<tr>
+<td>Se arma y se manda la trama</td>
+<td>2→1</td>
+<td><strong>Baja</strong>: la 2 le pasa los bits a la 1</td>
+</tr>
+<tr>
+<td><strong>La trama llega a H2</strong></td>
+<td>1→2</td>
+<td><strong>¡SUBE!</strong> La 1 le pasa los bits a la 2</td>
+</tr>
+<tr>
+<td>El FCS da bien</td>
+<td>2</td>
+<td>Quita 18 B, entrega a la 3</td>
+</tr>
+<tr>
+<td>La IP destino es la mía</td>
+<td>3→4</td>
+<td><strong>¡SUBE!</strong> Quita 20 B, entrega a la 4</td>
+</tr>
+<tr>
+<td>El segmento es de mi puerto</td>
+<td>4→7</td>
+<td><strong>¡SUBE!</strong> Quita 20 B, entrega a la 7</td>
+</tr>
+</tbody>
+</table>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Creer que la capa 3 del router "manda" el paquete.</strong> El router <strong>recibe la trama completa</strong>, la entrega a la capa 3, la capa 3 lee la IP, decide, y <strong>le dice a la capa 2 qué puerto usar</strong>. La capa 2 arma la trama nueva. <strong>El router no reescribe el paquete IP; la reescribe la capa 2.</strong></li>
+<li><strong>Creer que la IP cambia en tránsito.</strong> No cambia, salvo por TTL, checksum y (fuera de NAT) los campos que NAT reescribe.</li>
+<li><strong>Pensar que ARP es un mensaje de capa 3 "normal".</strong> ARP <strong>no</strong> es IP: no tiene cabecera IP, no tiene TTL, no se enruta. Va directo de capa 3 a capa 2 en un broadcast de enlace. Por eso <strong>un router nunca reenvía ARP</strong>.</li>
+</ul>
+<hr />
+<h2>2.3 Ejercicio 3 — ¿Qué pasa si el mensaje es de 40 bytes?</h2>
+<p><strong>Datos.</strong> Un mensaje de aplicación de <strong>40 bytes</strong>. Cabeceras: TCP 20 B, IP 20 B, Ethernet 18 B.</p>
+<p><strong>a)</strong> ¿Cuánto viaja por el cable y cuál es la eficiencia?
+<strong>b)</strong> Con el mínimo de trama de 64 bytes de Ethernet, ¿cuál es la eficiencia real?
+<strong>c)</strong> ¿Cuántos bytes "útiles" quedan si además el protocolo de transporte es UDP (8 B de cabecera)?</p>
+<p><strong>Resolución.</strong></p>
+<p><strong>a) Sobre el papel.</strong></p>
+<div class="codehilite"><pre><span></span><code>  L_app   = 40 B
+  overhead = 20 (TCP) + 20 (IP) + 18 (Eth) = 58 B
+  ──────────────────────────────────────────────────────
+  total   = 40 + 58 = 98 B
+
+  eficiencia = 40 / 98 = 0,4082 = 40,8 %
+  overhead   = 58 / 98 = 0,5918 = 59,2 %   ← MÁS DE LA MITAD
+</code></pre></div>
+
+<p><strong>Interpretación:</strong> <strong>el 59 % del tráfico es andamiaje.</strong> Cada byte de dato útil arrastra 1,45 bytes de cabecera. Mandar 40 bytes de información cuesta 98 bytes de cable.</p>
+<p><strong>b) El mínimo de trama de 64 bytes.</strong></p>
+<p>La especificación IEEE 802.3 exige un mínimo de <strong>64 bytes</strong> (de preámbulo a FCS) para que el <em>slot time</em> de 512 bits permita detectar una colisión. Una trama más chica se rellena con <em>padding</em> después de los datos. <strong>Cuidado con la cuenta</strong>, porque es el error clásico de este ejercicio:</p>
+<div class="codehilite"><pre><span></span><code>  payload de la trama = 20 (IP) + 20 (TCP) + 40 (datos) = 80 bytes
+  longitud de la trama = 14 (cabecera) + 80 (payload) + 4 (FCS) = 98 bytes
+
+  98 &gt; 64  →  NO hace falta padding.
+</code></pre></div>
+
+<p><strong>El umbral exacto del padding, entonces:</strong></p>
+<div class="codehilite"><pre><span></span><code>  Para que NO haya padding en Ethernet:
+      payload de la trama ≥ 46 bytes
+      46 = 64 (mínimo) − 14 (cabecera) − 4 (FCS)
+
+  Payload = cabeceras IP+TCP + datos = 40 + L
+      → 40 + L ≥ 46  →  L ≥ 6 bytes de aplicación
+
+  Payload = cabeceras IP+UDP + datos = 28 + L
+      → 28 + L ≥ 46  →  L ≥ 18 bytes de aplicación
+</code></pre></div>
+
+<p><strong>Con 40 bytes de datos de aplicación no hay padding</strong>, y la eficiencia es la del apartado a): <strong>40,8 %</strong>. El padding es un problema <strong>solo</strong> de los mensajes de aplicación muy chicos, típicamente los paquetes de control (un <code>ACK</code> puro de TCP son 0 bytes de datos: <code>20 + 20 + 0 = 40</code> de payload, <code>14 + 40 + 4 = 58</code> de trama, y se rellenan 6 bytes de padding hasta 64). <strong>Ahí la eficiencia es 0/64 = 0 %:</strong> un Ethernet lleno de ACKs puros transmite bits que no son datos. Por eso las redes con mucho tráfico de ACK puro (redes de control) son especialmente ineficientes.</p>
+<p><strong>c) Con UDP en vez de TCP.</strong></p>
+<div class="codehilite"><pre><span></span><code>  L_app   = 40 B
+  overhead = 8 (UDP) + 20 (IP) + 18 (Eth) = 46 B
+  ──────────────────────────────────────────────────────
+  total   = 40 + 46 = 86 B
+
+  eficiencia = 40 / 86 = 0,4651 = 46,5 %
+  overhead   = 46 / 86 = 0,5349 = 53,5 %
+</code></pre></div>
+
+<p><strong>La comparación, que es el punto del ejercicio:</strong></p>
+<div class="codehilite"><pre><span></span><code>  ┌────────────────┬──────────┬────────────┬────────────┐
+  │                │ overhead │  total     │ eficiencia │
+  ├────────────────┼──────────┼────────────┼────────────┤
+  │ TCP + IP + Eth │   58 B   │  98 B      │  40,8 %    │
+  │ UDP + IP + Eth │   46 B   │  86 B      │  46,5 %    │
+  ├────────────────┼──────────┼────────────┼────────────┤
+  │ DIFERENCIA     │  −12 B   │  −12 B     │ +5,7 p.p.  │
+  └────────────────┴──────────┴────────────┴────────────┘
+</code></pre></div>
+
+<p><strong>Interpretación y por qué importa.</strong> Cambiar TCP por UDP <strong>no cambia ni un byte</strong> de los 40 de datos de aplicación, pero <strong>reduce el tráfico total un 12,2 %</strong> (<code>12/98</code>). Para una aplicación que manda 40 bytes por paquete (un paquete de voz de 20 ms en un códec de G.711 con 8 bytes... o un mensaje de aplicación pequeño), ese 12 % es la diferencia entre que el enlace aguante o no.</p>
+<p><strong>Y ese es el argumento de VoIP</strong> (Clase 44): el códec de G.711 hace 8000 muestras de 8 bits por segundo = 64 000 bits/s = 8000 bytes/s. Si se pone en un paquete TCP de 160 bytes cada 20 ms:</p>
+<div class="codehilite"><pre><span></span><code>  160 bytes de audio → 178 con TCP → 186 con Eth  → eficiencia 86 %
+  overhead = 26 / 186 = 14 %
+</code></pre></div>
+
+<p>Con UDP de 160 bytes:</p>
+<div class="codehilite"><pre><span></span><code>  160 + 8 (UDP) + 20 (IP) + 18 (Eth) = 206 bytes
+  eficiencia = 160/206 = 77,7 %
+  overhead = 22,3 %
+</code></pre></div>
+
+<p>Y más importante que la eficiencia: <strong>TCP retransmite</strong>, y una retransmisión de voz a 20 ms de delay <strong>no sirve para nada</strong> (el destinatario ya pasó a la siguiente muestra). Y <strong>TCP no puede porque quiere</strong>: si el paquete se perdió, el destino ya tiene el hueco lleno de un paquete viejo. UDP manda y sigue. <strong>Eso es lo que "no confiable" significa en la práctica: sin reintentos inútiles.</strong> (Clase 44 lo desarrolla.)</p>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2009-02, Pregunta 2 (10 puntos) — forwarding vs. routing y flooding</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc0902</code> — 2 de febrero de 2009, Pregunta 2 (10 puntos).
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0902.pdf</p>
+</blockquote>
+<h3>Enunciado (texto del examen)</h3>
+<blockquote>
+<p><strong>a)</strong> En un contexto unicast, describa los procesos de forwarding y enrutamiento, y explique cómo se relacionan.
+<strong>b)</strong> En un contexto broadcast, describa un proceso de flooding, y explique cómo se puede transformar en flooding controlado.</p>
+</blockquote>
+<h3>Solución oficial (apartado a)</h3>
+<blockquote>
+<p>El proceso de enrutamiento permite determinar el camino entre nodos de la red, típicamente mediante intercambio de información de topología y ejecución de un algoritmo en cada nodo para determinar el camino al resto de los nodos.</p>
+<p>El proceso de forwarding consiste en copiar cada paquete entrante a un nodo al puerto de salida adecuado para que siga su camino en la red (o entregarlo a un proceso local si el destinatario es el propio nodo). La tabla de forwarding, que asocia destinos con puertos (o interfaces) del nodo/router, se construye en base a la información de enrutamiento.</p>
+</blockquote>
+<h3>Solución oficial (apartado b)</h3>
+<blockquote>
+<p>En un contexto broadcast, describa un proceso de flooding, y explique cómo se puede transformar en flooding controlado.</p>
+<p>⚠️ <strong>Nota sobre la solución oficial:</strong> el apartado <strong>b)</strong> de la solución publicada <strong>no tiene texto</strong>. Solo está el enunciado. Hay que desarrollarlo. Lo marco como <em>(solución propia)</em> más abajo. También hay que notar que el enunciado del apartado <strong>a)</strong> de la solución oficial aparece con la letra "c)" en el PDF: es un error de maquetación de la cátedra.</p>
+</blockquote>
+<h3>Análisis de la solución oficial (apartado a)</h3>
+<p><strong>Lo que está bien:</strong></p>
+<ol>
+<li>
+<p><strong>La distinción de funciones es exacta</strong>: "enrutamiento determina el camino", "forwarding copia al puerto de salida". Es la definición canónica.</p>
+</li>
+<li>
+<p><strong>Dice que el forwarding puede entregar a un proceso local</strong>: <em>"o entregarlo a un proceso local si el destinatario es el propio nodo"</em>. Es un detalle que muchos alumnos olvidan y que muestra que el forwarding también tiene un caso "se queda acá".</p>
+</li>
+<li>
+<p><strong>Dice que la tabla de forwarding SE CONSTRUYE a partir de la información de enrutamiento</strong>: eso es <strong>la relación entre los dos procesos</strong>, que es lo que la pregunta pide explícitamente.</p>
+</li>
+</ol>
+<p><strong>Lo que falta:</strong></p>
+<ol>
+<li>
+<p><strong>No dice quién hace qué y cuándo.</strong> Falta la clave temporal: el enrutamiento es <strong>por período y por red</strong> (o por topología); el forwarding es <strong>por paquete y por interfaz</strong>. Esa es la distinción operacional.</p>
+</li>
+<li>
+<p><strong>No menciona el mecanismo de decisión</strong>: el <strong>longest prefix match</strong> (<em>prefijo más largo que coincide</em>). Es lo que permite que las rutas se desambiguen y es el contenido de la Pregunta 1 del Examen 2011-03 (8 puntos).</p>
+</li>
+<li>
+<p><strong>No habla del "next hop"</strong>: la tabla de forwarding asocia destino con <strong>interfaz</strong>, pero en general también con <strong>próximo salto</strong> (<em>next hop</em>), que es lo que permite poner ARP para resolver la MAC del siguiente, no la del destino final. Ese detalle es lo que se pide en el Problema 2 del Examen 2011-03 y en el Problema 1 del Examen 2009-12.</p>
+</li>
+<li>
+<p><strong>No menciona el plano de datos y el plano de control</strong>, que es la forma moderna y más precisa de separar los dos procesos. La cátedra lo llama "plano de datos / plano de control" (Pregunta 4 del Examen 2008-07).</p>
+</li>
+<li>
+<p><strong>No menciona IPv6 ni el <em>next header</em></strong>, que es el mecanismo de extensión de IPv4 en IPv6 (RFC 8200): el <em>next header</em> va en la cabecera fija de IPv6, y el <em>protocol</em> en IPv4.</p>
+</li>
+</ol>
+<h3>Mi respuesta completa (apartado a)</h3>
+<div class="codehilite"><pre><span></span><code>  FORWARDING (reenvío) — plano de DATOS
+    - Qué: para CADA PAQUETE que llega a una interfaz, decidir por
+      qué puerto de salida sale, y copiarlo.
+    - Granularidad: POR PAQUETE, POR INTERFAZ.
+    - Información que usa: la TABLA DE REENVÍO (FIB), que es una
+      estructura ACCELERADA en hardware (TCAM / Ternary CAM) dentro
+      del chip de línea de tarjetas, y que se deriva de la RIB.
+    - Decisión: LONGEST PREFIX MATCH sobre la IP DESTINO.
+        "Busco en la tabla todos los prefijos que sean prefijo de la
+         IP destino, y gana el MÁS LARGO."
+    - Casos:
+        · Si el destino es la propia dirección del router → entregar
+          el payload a la capa de arriba (proceso local).
+        · Si no hay ninguna entrada que coincida → descartar y, si
+          corresponde, mandar ICMP Destination Unreachable.
+        · Si hay coincidencia → reenviar por la interfaz indicada.
+    - Determina también el NEXT HOP (dirección de capa 3 del
+      siguiente router), que es a quien hay que resolver la MAC con
+      ARP para armar la trama de salida.
+
+  ROUTING (enrutamiento) — plano de CONTROL
+    - Qué: determinar el CAMINO (la tabla de reenvío) entre los
+      nodos de la red.
+    - Granularidad: POR PERÍODO y POR RED, no por paquete. Un
+      router de borde recalcula BGP cada 30 s o cada 5 minutos; uno
+      de OSPF recalcula cuando cambia la topología.
+    - Mecanismo: intercambio de información de control con los
+      vecinos (distance-vector, link-state, path-vector) y ejecución
+      de un algoritmo (Bellman-Ford, Dijkstra, o el policy engine
+      de BGP con sus atributos y sus políticas locales).
+    - Produce: entradas en la RIB, que se seleccionan por preferencia
+      (una tabla puede tener 10 rutas al mismo destino) y se
+      traducen a la FIB.
+
+  ─────────────────────────────────────────────────────────────────
+
+  CÓMO SE RELACIONAN
+
+       VECINOS ──(protocolo de enrutamiento)──▶ INFORMACIÓN
+                                                     │
+                                          ┌────────▼────────┐
+                                          │  ALGORITMO       │
+                                          │ (Bellman-Ford /  │
+                                          │  Dijkstra / BGP) │
+                                          └────────┬────────┘
+                                                   ▼
+                                              RIB (candidatas)
+                                                   │ selección
+                                                   ▼
+  PAQUETE ──▶ FIB ──▶ consulta al NEXT HOP ──▶ AR
+  (de entrada)   (tabla de reenvío)     (si no está cacheado)
+        ▲              │
+        └──────────────┘
+     el forwarding USA la tabla que el routing CONSTRUYÓ
+
+  - El routing NO mira paquetes. El forwarding NO habla con vecinos.
+  - El forwarding es RÁPIDO (decisión por hardware, ~100 ns) y por
+    paquete. El routing es LENTO (CPU, segundos) y por topología.
+  - Si el forwarding no puede decidir (sin entrada), se puede pedir
+    un reenvío a la capa de control (un "route request"), pero es
+    el caso excepcional, no el normal.
+
+  - En IPv6 el mecanismo es el mismo, pero el campo se llama
+    NEXT HEADER (RFC 8200), no "protocolo", y permite encadenar
+    cabeceras de extensión en lugar de indicar un protocolo nuevo.
+
+  - La distinción unicast vs. broadcast no cambia las funciones:
+    cambia la ENTRADA de la tabla que se busca. En unicast es una
+    IP destino concreta; en broadcast es la dirección de broadcast
+    del dominio, y el comportamiento de reenvío cambia (ver b).
+</code></pre></div>
+
+<p><strong>Los tres puntos extra que agregué y por qué:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Agregado</th>
+<th>Por qué suma</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Plano de datos vs. plano de control</strong></td>
+<td>Es la formulación moderna de la misma distinción, y es la Pregunta 4 del Examen 2008-07 (10 pts).</td>
+</tr>
+<tr>
+<td><strong>Longest prefix match</strong></td>
+<td>Es <strong>el mecanismo concreto</strong> de la decisión, y aparece en todos los problemas de tablas de ruteo.</td>
+</tr>
+<tr>
+<td><strong>Next hop ≠ destino final</strong></td>
+<td>Es lo que explica por qué en la tabla ARP del host está la MAC del <strong>gateway</strong>, no la del servidor.</td>
+</tr>
+<tr>
+<td><strong>Grano temporal (por paquete vs. por topología)</strong></td>
+<td>Da la idea de la distinción de una línea: "uno es instantáneo, el otro es una decisión lenta".</td>
+</tr>
+<tr>
+<td><strong>IPv6: next header</strong></td>
+<td>Actualización.</td>
+</tr>
+</tbody>
+</table>
+<h3>Apartado b) — flooding y flooding controlado <em>(solución propia)</em></h3>
+<blockquote>
+<p>El apartado b) no tiene solución publicada en el PDF oficial. Lo desarrollo completo.</p>
+</blockquote>
+<p><strong>Qué es flooding.</strong> Es el reenvío de un paquete <strong>a todos los puertos de salida excepto aquel por el que entró</strong>. Es lo que hace un switch cuando no sabe la MAC destino, y lo que hace un router con la dirección de broadcast de la LAN.</p>
+<div class="codehilite"><pre><span></span><code>  FLOODING en un switch de capa 2
+
+  H1 envía una trama a una MAC destino que el switch NO tiene en su
+  tabla (recién encendido, o la MAC cambió de puerto):
+
+      puerto 1        puerto 2        puerto 3        puerto 4
+    ┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐
+    │ H1 ─────┼─────┼──── SW ─┼─────┼──── H4 ─┼─────┼──── H5 │
+    └─────────┘  ▲  └─────────┘     └─────────┘     └─────────┘
+                │
+          ENTRA por el puerto 1
+          MAC destino desconocida
+
+    El switch FLOODEA: copia la trama a los puertos 2, 3 y 4.
+    NO la copia al puerto 1 (por ahí entró; si la copiara, rebotaría).
+
+    ┌───────────────────────────────────────────────────────────┐
+    │  Tabla de reenvío del switch:                            │
+    │     puerto 1 → H1 (00:0C:29:AA:BB:CC)                    │
+    │     puerto 3 → H4 (00:0C:29:DD:EE:FF)                    │
+    │     puerto 4 → H5 (00:0C:29:11:22:33)                    │
+    │     "buscar 00:0C:29:99:88:77" → NO ESTÁ                 │
+    │     → FLOODING a todos los puertos menos el de entrada     │
+    └───────────────────────────────────────────────────────────┘
+
+  Nota: el switch APRENDE en el sentido INVERSO. Al recibir la trama
+  de H1, anota "00:0C:29:AA:BB:CC está en el puerto 1". Por eso el
+  flooding de la dirección origen nunca hace falta.
+</code></pre></div>
+
+<p><strong>Por qué existe el flooding y por qué es necesario.</strong> Porque <strong>no podés mantener una tabla de destinos completa si hay más destinos que puertos</strong>. Un switch de 48 puertos puede tener learned miles de MACs; los destinos posibles son 2⁴⁸. La decisión es: <strong>¿mantengo la tabla completa (memoria infinita) o flooding cuando no sé?</strong> Se eligió flooding + aprendizaje. Y para <strong>broadcast</strong>, <strong>no hay tabla posible</strong>: el broadcast es por definición "todos", así que reenviar a todos los puertos <strong>es</strong> la semántica.</p>
+<p><strong>Cómo se transforma en flooding controlado.</strong> El flooding controlado es <strong>flooding + restricciones</strong>, y hay cinco restricciones distintas:</p>
+<p><strong>(1) No reenviar por el puerto de entrada.</strong> Es el caso base, y sin esto hay un <strong>loop</strong>. Es exactamente el problema de la Pregunta 2 del Examen 2007-03 (10 puntos): si un puente hace flooding a <strong>todos</strong> los puertos incluido el de entrada, cada trama vuelve, y los dos puentes se la copian el uno al otro <strong>para siempre</strong>. La solución oficial de ese examen es el <strong>árbol de cubrimiento (spanning tree)</strong>: los puentes se comunican, descubren la topología y <strong>desactivan los puertos que crearían un bucle</strong>, de modo que en la topología activa <strong>solo hay un camino</strong> entre cada par de LANs.</p>
+<p><strong>(2) Controlar el alcance con el TTL.</strong> Es lo que hace un router: si reenvía un broadcast, <strong>decrementa el TTL</strong>, y cuando llega a 0 lo descarta. Eso acota el flooding a un número de saltos y evita que un router que no pertenece al dominio reenvíe. El comportamiento por defecto de los routers es <strong>NO reenviar broadcasts</strong> (se llama <em>split horizon</em> en el contexto de VLSM... no: se llama <strong>no forwarding de broadcasts</strong>, o "límite de TTL"). La RFC 1812 lo define: un router <strong>no debe</strong> reenviar datagramas con dirección de broadcast o multicast, salvo casos explícitos.</p>
+<p><strong>(3) Limitar por dominio: separar los dominios de broadcast.</strong> Cada VLAN es un dominio de broadcast independiente, y los routers <strong>no reenvían</strong> broadcasts entre VLANs. Con un router-on-a-stick o con un switch L3, el flooding queda contenido dentro de cada VLAN. Esta es la razón de ser de las <strong>VLAN</strong> (Pregunta 3 del Examen 2009-03, 6 puntos).</p>
+<p><strong>(4) Filtrar por fuente conocida.</strong> Un switch <strong>no reenvía un paquete de una MAC que acaba de aprender por el mismo puerto del que llegó</strong>: eso es <em>ingress filtering</em> y corta el primer tipo de loop. Y un router con <em>uRPF</em> (<em>unicast reverse path forwarding</em>, RFC 3704) descarta cualquier paquete cuya dirección <strong>origen</strong> no sea alcanzable por el mismo puerto por el que llegó, lo que corta el <strong>spoofing</strong> y muchos loops de reenvío.</p>
+<p><strong>(5) Limitar el ritmo.</strong> Cuando el flooding es deliberado (link-state de OSPF, ARP en un dominio grande), hay que acotar el daño de una tormenta de broadcast con <em>rate limiting</em> por puerto, o descartando tramas duplicadas dentro de un intervalo corto.</p>
+<p><strong>El diagrama del flooding controlado por TTL:</strong></p>
+<div class="codehilite"><pre><span></span><code>  H1 ─── S1 ─── R1 ─── R2 ─── R3 ─── S2 ─── H2
+        │        │      │      │      │        │
+        └────────┴──────┴──────┴──────┘
+        dominio de broadcast de H1 (TTL = 64)
+        ────────────────────────────────
+        R1 reenvía: TTL 64 → 63
+        R2 reenvía: TTL 63 → 62
+        R3 reenvía: TTL 62 → 61
+        ────────────────────────────────────────
+        H2, que está a 4 saltos, NO lo recibe:
+        su dominio de broadcast es otro (el de S2).
+
+  → El flooding queda acotado por SALTOS (TTL) y por
+    SEGMENTACIÓN en dominios de broadcast (routers y VLANs).
+</code></pre></div>
+
+<p><strong>Las dos comparaciones que hay que saber para el examen:</strong></p>
+<div class="codehilite"><pre><span></span><code>  ┌────────────────────┬───────────────────────────────────────────┐
+  │ UNICAST             │ BROADCAST                                │
+  ├────────────────────┼───────────────────────────────────────────┤
+  │ 1 destino           │ todos los destinos del dominio            │
+  │ Tabla: sí, se       │ Tabla: NO PUEDE existir (2⁴⁸ destinos)   │
+  │ puede mantener      │ → flooding por definición                 │
+  │ Unknown unicast:    │ Unknown es el caso NORMAL:               │
+  │ ARP en el host, o   │ toda trama de ARP request es broadcast;    │
+  │ flooding si no hay  │ la primera respuesta gana (el host        │
+  │ entrada             │ descarta la segunda) → "first answer wins"│
+  │ Se controla con     │ Se controla con: TTL, routers que no      │
+  │ tabla + ARP         │ reenvían, VLANs, spanning tree            │
+  └────────────────────┴───────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>El caso especial de ARP que demuestra por qué el flooding es necesario y cómo se controla:</strong></p>
+<div class="codehilite"><pre><span></span><code>  ARP request  "¿192.168.1.50 está?"
+      → BROADCAST obligatorio (no sabemos a quién preguntarle)
+      → llega a TODOS los hosts del dominio  (esto es flooding)
+
+  ARP reply  "sí, soy yo: 00:0C:29:AA:BB:50"
+      → UNICAST al que preguntó
+      → Y además: se cachea en todos los que escucharon
+        (por eso el gratuitous ARP es una fuente clásica de
+         ARP spoofing / cache poisoning)
+
+  CONTROL DEL ALCANCE:
+      · si la pregunta es de OTRA subred (target fuera del /24),
+        el host NO hace ARP: manda el paquete al gateway, porque
+        la MAC no tiene sentido fuera del enlace.
+      · un router NUNCA reenvía un ARP request de otro dominio.
+      · un bridge solo reenvía dentro de su dominio de broadcast.
+</code></pre></div>
+
+<h3>⚠️ Errores típicos del apartado b)</h3>
+<ul>
+<li><strong>Confundir flooding con "reenviar a todos los puertos incluido el de entrada".</strong> Eso es lo que genera la tormenta de broadcast. El flooding <strong>excluye</strong> el puerto de entrada.</li>
+<li><strong>Decir que el flooding se controla "con la tabla".</strong> No: la tabla <strong>no</strong> sirve para broadcast, porque el broadcast es todos los destinos. Se controla con TTL, con routers, con VLANs y con spanning tree.</li>
+<li><strong>Olvidar que el switch aprende del sentido inverso.</strong> El flooding nunca es necesario para una dirección origen recién aprendida.</li>
+<li><strong>Confundir "dominio de broadcast" con "dominio de colisión".</strong> En una red conmutada hay <strong>muchos dominios de colisión (uno por puerto) y UNO de broadcast</strong>. En una red con hubs, hay <strong>uno de cada uno</strong>. Es la Pregunta 3 del Examen 2010-12.</li>
+</ul>
+<h2>3.2 Referencia cruzada — la misma pregunta, en otro examen</h2>
+<blockquote>
+<p><strong>Examen <code>sirc1103</code> — 21 de febrero de 2011, Pregunta 1 (8 puntos):</strong> <em>"Describa claramente las dos funciones clave de la capa de red y explique cómo interactúan entre ellas."</em></p>
+</blockquote>
+<p><strong>Es la misma pregunta del apartado a), pero más detallada y con 8 puntos.</strong> La solución oficial de 2011-03 es la mejor que hay del tema, y vale la pena citarla entera porque muestra <strong>cómo responde la cátedra</strong>:</p>
+<blockquote>
+<p>Reenvío (forwarding): mover paquetes entre puertos de entrada y salida del router.</p>
+<p>Enrutamiento (routing): determinar la ruta de los paquetes desde origen a destino. Para ello existen los algoritmos de enrutamiento.</p>
+<p>Interacción: Cada router intercambia con sus pares, mediante al menos un protocolo de enrutamiento, información que se utiliza, en al menos un algoritmo de enrutamiento, para poblar sus tablas de forwarding. Dichas tablas, en su formato más básico, contienen, para un valor de dirección contenido en la cabecera de los paquetes que llegan al router, el enlace de salida. De esta forma, para cada paquete que arriba a un router por cualquiera de sus interfaces, el router examina la tabla de forwarding (en el caso de IP a partir de la dirección IP destino contenida en el encabezado IP) y a partir del <strong>"longest match"</strong> determina por qué interfaz debe ser enviado (además de determinar cuál es el <strong>"next hop"</strong>, lo que determina en el caso más genérico, la dirección destino de capa de enlace que deberá contener la trama que lo lleve a su próximo salto).</p>
+</blockquote>
+<p><strong>Por qué esta solución es excelente y qué copiar de ella:</strong></p>
+<ol>
+<li><strong>Separa los dos procesos con una frase cada uno</strong> y sigue.</li>
+<li><strong>Nombra el mecanismo de la interacción</strong>: protocolo de enrutamiento → algoritmo → tabla de forwarding.</li>
+<li><strong>Dice que la tabla, "en su formato más básico", contiene el enlace de salida</strong> — y <strong>agrega que además contiene el next hop</strong>, que es el refinamiento que hace que la tabla sirva para armar la trama correcta.</li>
+<li><strong>Nombra el "longest match"</strong> explícitamente.</li>
+<li><strong>Dice "por cualquiera de sus interfaces"</strong>, que es el detalle de que la tabla es <strong>una sola</strong>, no una por interfaz.</li>
+</ol>
+<p><strong>Lo que yo agregaría</strong> (ya está en mi respuesta del apartado a): <strong>plano de datos vs. plano de control</strong>, <strong>granularidad temporal</strong>, <strong>RIB → FIB</strong>, y el <strong>next header de IPv6</strong>.</p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen</h2>
+<ol>
+<li><strong>Encapsular</strong> es anteponer la cabecera de la capa al bajar por la pila. <strong>Desencapsular</strong> es quitarla al subir. <strong>Cada capa quita exactamente los bytes que antepuso.</strong></li>
+<li><strong>El byte viajando:</strong> 500 B de aplicación → <strong>520</strong> (con TCP) → <strong>540</strong> (con IP) → <strong>558</strong> en el medio. Overhead: <code>20 + 20 + 18 = 58 B</code>.</li>
+<li><strong>Eficiencia = <code>L / (L + 58)</code></strong>. A 500 B es 89,6 %; a 50 B es <strong>46,3 %</strong>; a 40 B es <strong>40,8 %</strong>. El overhead es constante y el mensaje no, así que <strong>el overhead relativo se dispara con mensajes chicos</strong>.</li>
+<li><strong>Encapsular por cuatro razones:</strong> control local, <strong>multiplexación</strong> (el router lee el destino sin abrir el sobre), que cada capa hable su idioma, e <strong>independencia</strong> (cambiar una capa sin arrastrar a las demás).</li>
+<li><strong>Lo que además cambia:</strong> el <strong>direccionamiento</strong> (IP es global y jerárquica, MAC es local y plana; la IP no cambia en tránsito, la MAC cambia en cada router) y el <strong>objetivo</strong> (capa 3 lleva al <strong>host</strong>, capa 4 lleva al <strong>proceso</strong>).</li>
+<li><strong>Servicio</strong> = el contrato entre capas (qué promete la de abajo); <strong>interfaz</strong> = dónde se llama. Gracias a eso se puede cambiar una capa sin tocar las demás.</li>
+<li><strong>La aplicación NUNCA ve la red.</strong> Le pasa bytes a la capa 4 y recibe bytes. Todo lo demás lo decide la pila.</li>
+<li><strong>Presentación</strong> resuelve la heterogeneidad de representación: <em>endianness</em> (big-endian en red), codificación (UTF-8), formato, compresión y cifrado (TLS). En TCP/IP no existe como capa.</li>
+<li><strong>Forwarding</strong> = por paquete, por interfaz, con <em>longest prefix match</em>. <strong>Routing</strong> = por topología, con un algoritmo. El segundo construye la tabla del primero.</li>
+<li><strong>Broadcast</strong>: no hay tabla posible, así que <strong>flooding</strong> por definición. <strong>Flooding controlado</strong> = excluir el puerto de entrada (spanning tree), acotar con <strong>TTL</strong>, separar con <strong>routers y VLANs</strong>, y filtrar por origen (<em>ingress filtering</em>).</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p><strong>1.</strong> Un mensaje de 1200 bytes de aplicación. ¿Cuánto viaja por el cable y cuál es la eficiencia?</p>
+<details><summary>Respuesta</summary>
+
+
+<div class="codehilite"><pre><span></span><code>  overhead = 20 (TCP) + 20 (IP) + 18 (Eth) = 58 B
+
+  total = 1200 + 58 = 1258 bytes
+
+  eficiencia = 1200/1258 = 0,9540 = 95,4 %
+  overhead   =   58/1258 = 0,0461 =  4,6 %
+</code></pre></div>
+
+
+
+En bits: `1258 × 8 = 10 064 bits`. Y el paquete IP mide `1200 + 40 = 1240 bytes`, que cabe en el MTU de 1500 (no fragmenta).
+
+</details>
+
+<p><strong>2.</strong> ¿Por qué la cabecera va al principio y no al final del mensaje?</p>
+<details><summary>Respuesta</summary>
+
+Por **dos razones, y las dos son de performance**:
+
+1. **Multiplexación (la importante).** El router lee **los primeros 20 bytes** y ya sabe a dónde va el paquete. No tiene que recorrer los 1258 bytes para enterarse. Si la IP destino estuviera al final, **cada router tendría que leer la trama completa** antes de decidir: eso multiplica por el número de routers el trabajo de la red.
+
+2. **Control local en tiempo constante.** Cada capa puede **encontrar y quitar la suya** sin recorrer lo de abajo. La de transporte está en el byte 0, la de red en el byte que indica el *payload offset*, la de enlace en el byte 12. Todas en posiciones conocidas, sin búsqueda.
+
+El único que va al final es el **FCS** de Ethernet (4 bytes), y la razón es técnica: **se calcula sobre todo lo anterior**, así que tiene que estar después. Es el trailer, no la cabecera.
+
+</details>
+
+<p><strong>3.</strong> Un router reenvía un paquete. ¿Cambia la cabecera IP? ¿Por qué?</p>
+<details><summary>Respuesta</summary>
+
+**El contenido de la IP casi no cambia.** Se modifica **el TTL y el checksum de la cabecera**:
+
+- **TTL**: se decrementa en 1 en **cada** router, porque su función es evitar que un paquete circule para siempre en caso de bucle de enrutamiento. Cuando llega a 0 y no es el destino, el router lo descarta y manda ICMP "Time Exceeded" al origen.
+- **Checksum**: hay que recalcularlo, porque el TTL cambió y el checksum cubre la cabecera.
+
+**Lo que no cambia:** las direcciones IP origen y destino. Son **globales** y viajan de extremo a extremo. Por eso un servidor puede loguear la IP real del cliente aunque el paquete haya pasado por 15 routers.
+
+**Lo que sí cambia, y en cambio radical:** la **dirección MAC** de origen y destino, porque la trama **se arma de nuevo** en cada router. Y **cambian los campos que NAT modifica** (IP y puerto) si hay CGN en el camino.
+
+La respuesta corta: **la IP identifica extremos (no cambia); la MAC identifica saltos (cambia siempre)**.
+
+</details>
+
+<p><strong>4.</strong> En el modelo TCP/IP, ¿cuántas PDU hay? ¿Son las mismas que en OSI?</p>
+<details><summary>Respuesta</summary>
+
+**No.** El mecanismo es el mismo, pero hay **menos** PDU porque hay menos capas.
+
+
+<div class="codehilite"><pre><span></span><code>  TCP/IP (4 capas de Kurose):
+     Aplicación    → mensaje
+     Transporte    → segmento (TCP) / datagrama de usuario (UDP)
+     Internet      → paquete / datagrama IP
+     Acceso a red  → trama (Ethernet) y bit (físico, fundidos)
+
+  TCP/IP (5 capas de Tanenbaum): los mismos, con la trama y el bit
+  en capas separadas.
+
+  OSI (7 capas): los mismos más "datos de presentación" y
+  "datos de sesión".
+</code></pre></div>
+
+
+
+**Lo que SÍ es igual:** el **contenido** de las PDU de abajo es el mismo (el paquete IP de TCP/IP es exactamente el paquete IP de OSI; la trama de acceso a red es la trama de enlace de OSI). Solo cambian los nombres y cuántos hay.
+
+**El nombre "segmento"** es la ambigüedad clásica: en OSI el segmento es la PDU de transporte (capa 4); en Kurose el segmento es la PDU de transporte de TCP. Pero en la práctica, "segmento" a secas casi siempre significa **segmento TCP**.
+
+</details>
+
+<p><strong>5.</strong> ¿Por qué un firewall stateful necesita las capas 3 y 4?</p>
+<details><summary>Respuesta</summary>
+
+Porque un firewall **no** es solo un filtro de direcciones: es un **filtro de conexiones**.
+
+- **Capa 3** le da la **dirección IP**: de qué red viene el paquete y a qué red va. Con eso hace el **filtrado de estado**: si no hay una conexión abierta de esa IP de origen, descarta. Sin capa 3 no puede saber "de qué máquina" viene.
+- **Capa 4** le da el **puerto**: qué proceso del otro lado. Con eso puede **desmultiplexar** y aplicar reglas distintas por servicio: permitir (:443) pero no (:22), por ejemplo.
+
+**La NAT lo demuestra de forma automática:** para hacer *PAT* (*Port Address Translation*) hay que **reescribir el puerto de destino**, y el puerto es un campo de **capa 4**. Un router que solo entendiera capa 3 no podría multiplexar 500 conexiones internas detrás de una sola IP pública.
+
+Y por eso los cortafuegos "de aplicación" (los WAF y los proxies inversos) están **por encima de las capas de red y transporte**: leen el contenido HTTP. Son, en la taxonomía OSI, cosas de capa 7.
+
+</details>
+
+<p><strong>6.</strong> Explicame por qué la capa de aplicación "no ve la red" con un ejemplo concreto.</p>
+<details><summary>Respuesta</summary>
+
+**Ejemplo: un `ping`.** `ping` es una aplicación que escribe en un socket. El socket que abre es de **protocolo ICMP**, y su código C es:
+
+
+<div class="codehilite"><pre><span></span><code>   socket(AF_INET, SOCK_DGRAM, IPPROTO_ICMP);
+</code></pre></div>
+
+
+
+**El código no contiene:**
+- ninguna dirección IP de destino que se haya elegido por "cómo está la red";
+- ningún puerto;
+- ninguna decisión sobre Ethernet, Wi-Fi o fibra;
+- ninguna idea de si el paquete va a cruzar 2 o 20 routers.
+
+**El código solo dice:** "mandá 32 bytes de payload ICMP a esta dirección".
+
+**Quién decide el resto:**
+- El **kernel** decide usar Ethernet o Wi-Fi (el *binding* de la dirección IP a una interfaz).
+- **IP** decide el camino (la tabla de ruteo).
+- **Ethernet** decide el cable.
+- La **NIC** pone los voltajes.
+
+Y el ejemplo inverso: **un navegador no cambia una línea de código** si te conectás por fibra o por un tethering USB. Eso es exactamente porque la capa 7 no ve la red: le da bytes a la capa 4 y recibe bytes.
+
+La frase para el examen: **la capa de aplicación ve un servicio (mandar bytes y recibirlos), no una red**. La red es un detalle de implementación de la máquina donde corre el programa.
+
+</details>
+
+<p><strong>7.</strong> ¿Qué cambia entre un mensaje de 46 bytes y uno de 60 bytes, ambos con TCP sobre IPv4?</p>
+<details><summary>Respuesta</summary>
+
+Los dos **superan** el mínimo de trama de Ethernet (64 bytes de payload... no, de trama completa). Veamos:
+
+
+<div class="codehilite"><pre><span></span><code>  Para un mensaje de L bytes:
+     payload de la trama = 20 (IP) + 20 (TCP) + L = 40 + L
+     longitud de la trama = 14 + (40 + L) + 4 = 58 + L
+
+  L = 46:  trama = 58 + 46 = 104 bytes   (&gt; 64, sin padding)
+  L = 60:  trama = 58 + 60 = 118 bytes   (&gt; 64, sin padding)
+</code></pre></div>
+
+
+
+**Los dos van sin padding**, porque para que haga falta padding el payload tiene que ser menor de 46 bytes, o sea `40 + L < 46`, o sea **`L < 6`**.
+
+**Lo que cambia entre 46 y 60 es solo la eficiencia:**
+
+
+<div class="codehilite"><pre><span></span><code>  L = 46:  46/104 = 44,2 %
+  L = 60:  60/118 = 50,8 %
+</code></pre></div>
+
+
+
+Y **cambia el MSS si el mensaje es más grande que el MSS**: con MSS = 1460, ambos mensajes entran en un solo segmento. Pero un mensaje de 60 bytes y uno de 1460 usan el **mismo** overhead, así que el segundo es 24 veces más eficiente:
+
+
+<div class="codehilite"><pre><span></span><code>  L = 1460: 1460/1518 = 96,2 %
+</code></pre></div>
+
+
+
+**La conclusión general:** la eficiencia crece de forma **monótona** con `L`, y **se acerca asintóticamente a 1**. Cada byte de mensaje que agregás acerca la eficiencia al 100 %, con rendimientos decrecientes. Cuando `L` es 10 veces el overhead (580 bytes), ya estás en 90,9 % de eficiencia.
+
+</details>
+
+<p><strong>8.</strong> ¿Qué es flooding controlado? Enumerá las cinco restricciones.</p>
+<details><summary>Respuesta</summary>
+
+**Flooding** es reenviar un paquete a todos los puertos **salvo el de entrada**. Existe porque para broadcast no se puede mantener una tabla (hay 2⁴⁸ destinos posibles).
+
+**Las cinco restricciones del flooding controlado:**
+
+1. **No reenviar por el puerto de entrada.** Es el caso base; sin esto hay loop. Lo resuelve el **spanning tree** (Pregunta 2 del Examen 2007-03): los puentes descubren la topología y desactivan los puertos que crearían un bucle, dejando **un único camino** entre cada par de LANs.
+
+2. **Acotar por TTL.** Cada reenvío decrementa el TTL; al llegar a 0 el paquete se descarta. Esto acota el alcance a un número de saltos. Y por defecto **un router no reenvía broadcasts** en absoluto (definido en RFC 1812).
+
+3. **Separar dominios de broadcast.** Cada VLAN es un dominio independiente; los routers no reenvían broadcasts entre VLANs. Es la razón de ser de las VLAN (Pregunta 3 del Examen 2009-03).
+
+4. **Filtrar por dirección origen conocida.** *Ingress filtering* en el switch (no reenviar desde un puerto una MAC que se acaba de aprender por ese mismo puerto) y **uRPF** (*unicast reverse path forwarding*, RFC 3704) en el router: descartar si la IP origen no es alcanzable por el mismo puerto.
+
+5. **Limitar el ritmo.** Cuando el flooding es deliberado (link-state, ARP en un dominio grande), *rate limiting* por puerto para que una tormenta de broadcast no tumbe el switch.
+
+**La frase resumen:** flooding es necesario, pero **desbordado**. Las cinco restricciones lo acotan sin eliminarlo.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<p><strong>Exámenes</strong>
+- Examen <code>sirc0902</code> (2-feb-2009) — P2 (10 pts): forwarding vs. routing y flooding controlado · P4 (9 pts): datagramas vs. circuitos virtuales → <strong>Clase 4</strong>
+- Examen <code>sirc1103</code> (21-feb-2011) — P1 (8 pts): las dos funciones de la capa de red (la mejor solución oficial del tema) · Problema 2 (30 pts): intercambio de tramas con ARP
+- Examen <code>sirc0612</code> (26-dic-2006) — P1 (5 pts): modelo OSI y Presentación
+- Examen <code>sirc0703</code> (26-feb-2007) — P2 (10 pts): puente con flooding y spanning tree · P3 (10 pts): RARP
+- Examen <code>sirc0707</code> (31-jul-2007) — Problema 2b (25 pts): dos hosts que comparten una IP y responden ARP
+- Examen <code>sirc0912</code> (18-dic-2009) — Problema 1 (30 pts): tablas de ruteo y secuencia de tramas con ARP vacío
+- Examen <code>sirc1003</code> (20-mar-2010) — P1 (8 pts): ARP entre dos hosts con MAC e IP</p>
+<p><strong>Bibliografía</strong>
+- Tanenbaum &amp; Wetherall, <em>Redes de computadoras</em>, 5ª ed., <strong>cap. 1 §1.4</strong> "El modelo de capas" (pág. ~20 a ~26): encapsulación, PDU y servicios entre capas
+- Tanenbaum &amp; Wetherall, <strong>cap. 1 §1.6</strong> "El modelo TCP/IP" — la comparación de las dos columnas
+- Tanenbaum &amp; Wetherall, <strong>cap. 2</strong> — tramas de Ethernet, MTU 1500 y tamaño mínimo de 64 bytes (pág. ~45 a ~60)
+- Kurose &amp; Ross, <em>Computer Networking: A Top-Down Approach</em>, cap. 1 §1.7-1.8 — el modelo de 4 capas y la encapsulación con el diagrama de "un byte en la red"</p>
+<p><strong>RFCs</strong>
+- <code>RFC 8200</code> — <em>Internet Protocol, Version 6</em> (2017, <em>Internet Standard</em>): el campo <strong>Next Header</strong> en vez de "protocolo"
+- <code>RFC 9293</code> — <em>TCP</em> (2022, <em>Internet Standard</em>): los 20 bytes de cabecera y el campo <em>payload offset</em> que permite encontrar la cabecera IP sin recorrer la trama
+- <code>RFC 768</code> — <em>UDP</em> (1980): <strong>8</strong> bytes de cabecera, la mitad de TCP
+- <code>RFC 826</code> — <em>ARP</em> (1982): por qué no tiene cabecera IP y por eso no se enruta
+- <code>RFC 1812</code> — <em>Requirements for IP Routers</em> (1995): el comportamiento por defecto de <strong>no reenviar broadcasts</strong>, y el conjunto de restricciones de <em>ingress filtering</em> que acota el flooding
+- <code>RFC 3704</code> — <em>Unicast Reverse Path Forwarding</em> (2002): el filtro por dirección origen que corta loops y spoofing
+- <code>RFC 7541</code> — <em>HPACK: Header Compression for HTTP/2</em> (2015): cómo la capa de presentación (compresión de cabeceras) sigue teniendo su función en TCP/IP</p>
+<p><strong>Clase siguiente:</strong> 4 — Conmutación: circuitos, paquetes y mensajes</p></body></html>

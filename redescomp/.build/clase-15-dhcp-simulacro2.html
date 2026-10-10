@@ -1,0 +1,1277 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 15 — DHCP, configuración de un host y Simulacro 2</h1>
+<p><strong>Bloque:</strong> B (Aplicación) · <strong>Semana:</strong> 5 · <strong>Duración estimada:</strong> 130 min
+<strong>Correlativa:</strong> Clase 14 (sockets) · <strong>Sigue con:</strong> Clase 16 (UDP y multiplexión)
+<strong>Material de referencia:</strong> Tanenbaum cap. 5 (DHCP) y cap. 7 · <code>ACTUALIZACIONES.md</code> §5</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Explicar por qué un host necesita <strong>DHCP</strong> y qué problema resuelve frente a
+   tener la dirección configurada a mano.</li>
+<li>Describir el proceso <strong>DORA</strong> mensaje por mensaje, con los cuatro nombres, quién
+   los manda, por qué son broadcast y qué lleva cada uno.</li>
+<li>Justificar por qué DHCP usa <strong>UDP</strong> y por qué sus puertos son <strong>67 y 68</strong>.</li>
+<li>Explicar qué es un <strong>lease</strong>, por qué existe y qué pasa cuando expira.</li>
+<li>Explicar qué pasa cuando el DHCP <strong>falla</strong> y por qué existe el rango <code>169.254.0.0/16</code>.</li>
+<li>Resolver un examen completo de 3 horas con cronómetro.</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2011-02 Pregunta 2</code> (10 pts — DHCP con el
+intercambio de mensajes), <code>2010-03 Pregunta 4</code> (8 pts — agente y gestor),
+<code>2007-03 Pregunta 3</code> (10 pts — RARP, el antecedente de DHCP).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 El problema</h2>
+<p>Un host recién enchufado tiene <strong>cero configuración de red</strong>. No tiene:</p>
+<ul>
+<li>dirección IP</li>
+<li>máscara de subred</li>
+<li>puerta de enlace (gateway)</li>
+<li>servidor DNS</li>
+<li>nombre de dominio</li>
+</ul>
+<p>Y sin esas cinco cosas <strong>no puede hablar con nadie</strong>. Ni siquiera puede pedir
+ayuda, porque pedir ayuda requiere una dirección de la que hacerlo. <strong>Ese es el
+problema de arranque</strong>, y es la razón de que DHCP exista.</p>
+<p>Las dos salidas posibles:</p>
+<table>
+<thead>
+<tr>
+<th>Salida</th>
+<th>Cómo</th>
+<th>Consecuencia</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Configurar a mano</strong></td>
+<td>un técnico va y escribe los valores</td>
+<td>escala a <strong>nADA</strong>: con 500 laptops no escala</td>
+</tr>
+<tr>
+<td><strong>Preguntar por red</strong></td>
+<td>el host <strong>pregunta</strong> y alguien le responde</td>
+<td>escala a toda la organización</td>
+</tr>
+</tbody>
+</table>
+<p>DHCP es la segunda. La idea central es simple y es la que hay que saber:</p>
+<blockquote>
+<p><strong>Un host puede usar el Limited Broadcast para descobrir, porque el Limited
+Broadcast no requiere conocer la red en la que estás.</strong></p>
+</blockquote>
+<p><code>255.255.255.255</code> es una dirección de broadcast <strong>válida en cualquier red</strong>. Un host
+que no sabe nada de su subred puede mandar ahí y todos la reciben.</p>
+<h2>1.2 BOOTP, el antecedente</h2>
+<p>Antes de DHCP (RFC 951, 1984) estaba <strong>BOOTP</strong> (<em>Bootstrap Protocol</em>). La idea
+era la misma pero con una diferenciaFatal: <strong>el servidor tenía una tabla fija</strong> de
+direcciones por MAC.</p>
+<div class="codehilite"><pre><span></span><code>   BOOTP:  tabla en el servidor
+        MAC_A → 192.168.1.25
+        MAC_B → 192.168.1.26        ← estático, para siempre
+
+   DHCP:   el servidor no sabe nada
+        MAC_C pide → recibe 192.168.1.27 con un lease de 24 h  ← dinámico
+</code></pre></div>
+
+<p>El problema de BOOTP era que <strong>no escalaba</strong>: un servidor tenía que tener una
+entrada por cada máquina, para siempre. Si una notebook se iba a casa, su
+dirección quedaba reservada inútilmente.</p>
+<p>DHCP (RFC 2131, 1997) cambió dos cosas:</p>
+<ol>
+<li><strong>El lease</strong>: la dirección se presta por un tiempo y se renueva.</li>
+<li><strong>El servidor no necesita tabla</strong>: cualquier servidor DHCP puede atender
+   cualquier cliente. La asignación se guarda en el cliente.</li>
+</ol>
+<h2>1.3 Por qué UDP y por qué los puertos 67 y 68</h2>
+<p><strong>DHCP usa UDP.</strong> Es la primera pregunta que se hace, y la respuesta tiene tres
+partes:</p>
+<p><strong>1. El cliente no tiene dirección IP.</strong> No puede abrir una conexión TCP, porque
+abrir una conexión TCP requiere mandar un SYN <strong>desde</strong> alguna dirección origen.
+El <code>bind()</code> de un socket TCP necesita una IP local. <strong>No la tiene.</strong> UDP no
+necesita ninguna dirección previa para mandar el primer datagrama.</p>
+<p><strong>2. El servidor también habla desde una dirección desconocida.</strong> El cliente no
+sabe la IP del servidor DHCP. Y el cliente <strong>no puede descubrir</strong> la dirección del
+servidor sin ya tener una. De ahí el Limited Broadcast como destino.</p>
+<p><strong>3. La transacción es de un solo mensaje en cada sentido.</strong> No hay un diálogo
+largo que justifique el control de conexión de TCP. Y si se pierde un datagrama,
+el cliente simplemente <strong>reintenta</strong>: el protocolo tiene sus propios temporizadores
+y su propia lógica de reintento.</p>
+<h3>Los puertos</h3>
+<div class="codehilite"><pre><span></span><code>   ┌─────────────────┐                        ┌─────────────────┐
+   │   CLIENTE       │                        │   SERVIDOR      │
+   │                 │                        │                 │
+   │  0.0.0.0 : 68   │ ──── DISCOVER ──────▶  │                 │
+   │  (no sabe su IP)│  destino 255.255.255.255│                 │
+   │                 │  origen  68            │                 │
+   │                 │ ◀─── OFFER ─────────   │ 67 : 67         │
+   │                 │  destino 68            │                 │
+   │                 │ ──── REQUEST ────────▶  │                 │
+   │                 │  destino 255.255.255.255│                 │
+   │                 │ ◀─── ACK ────────────   │                 │
+   └─────────────────┘                        └─────────────────┘
+</code></pre></div>
+
+<ul>
+<li><strong>68</strong> (<code>bootpc</code>) es el puerto del <strong>cliente</strong>. Lo elige porque el cliente
+  <strong>no tiene IP asignada</strong>: el puerto 68 es una convención que funciona sin
+  necesidad de conocer la red. Es el puerto equivalente al 1024 mínimo en TCP.</li>
+<li><strong>67</strong> (<code>bootps</code>) es el del <strong>servidor</strong>, un puerto <strong>reservado y conocido</strong>.</li>
+</ul>
+<blockquote>
+<p><strong>El detalle fino que se pregunta:</strong> en el <code>DISCOVER</code>, el campo <em>dirección origen
+IP</em> del datagrama IP es <strong><code>0.0.0.0</code></strong>, no la IP del cliente. Porque todavía no la
+tiene. Y el campo <em>dirección destino</em> del datagrama IP es
+<strong><code>255.255.255.255</code></strong> (Limited Broadcast), y en el datagrama UDP el puerto origen
+es <strong>68</strong>. Los tres campos juntos son la definición del "origen desconocido".</p>
+</blockquote>
+<h2>1.4 El proceso DORA, mensaje por mensaje</h2>
+<p>Las cuatro letras son <strong>D</strong>ISCOVER, <strong>O</strong>FFER, <strong>REQUEST</strong> y <strong>ACK</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   TIEMPO ─────────────────────────────────────────────────────▶
+
+   CLIENTE (0.0.0.0 : 68)              SERVIDOR
+   ─────────────────────────────       ─────────────────────────
+                                         (escucha en : 67)
+
+   1) DISCOVER ─────────────────────▶   "hay alguien que necesita
+        dst 255.255.255.255 : 67           una dirección. Tengo una libre."
+        src 0.0.0.0 : 68
+        mi MAC, mi nombre de dominio
+
+                                        decide su plan de numeración
+                                        y elige la dirección
+
+   2)              ◀──────────────── OFFER
+                        dst 255.255.255.255 : 68
+                        src &lt;ip_server&gt; : 67
+                        IP ofrecida, máscara, gateway,
+                        DNS, nombre de dominio,
+                        duración del lease, opciones
+
+   3) RECORDATORIO: el cliente guarda la oferta
+      y se queda con la de MENOR duración de lease
+      (evita que dos servidores distintos Denial)  ← punto clave
+
+   3) REQUEST ──────────────────────▶   "acepto la oferta de &lt;ip_server&gt;".
+        dst 255.255.255.255 : 67          Decir cuál ACEPTAS es lo que
+        src 0.0.0.0 : 68                  permite al ganador saber
+        mi MAC, la IP que elijo           que ganó. Por eso es BROADCAST.
+                                           Los demásven el "REQUEST" y
+                                          /libran la dirección.
+
+   4)              ◀──────────────── ACK
+                        src &lt;ip_server&gt; : 67
+                        "confirmado, esa IP es tuya por N horas"
+
+   AHORA SÍ: el cliente puede hacer bind() a esa IP y usar TCP.
+</code></pre></div>
+
+<h3>Por qué el <code>REQUEST</code> es broadcast y el <code>OFFER</code> casi siempre también</h3>
+<p>Este es <strong>el punto más importante del protocolo</strong> y el que más se confunde:</p>
+<p><strong>El <code>REQUEST</code> va por broadcast obligatoriamente</strong>, aunque el cliente ya sepa la
+IP del servidor. ¿Por qué? Porque si fuera unicast, cada servidor sabría "me
+eligieron a mí" o "no me eligieron", y el que <strong>no</strong> fue elegido sabría que otro
+servidor le ganó. Eso es exactamente lo que se quiere evitar: que un cliente que
+eligió el precio más bajo (como en el problema de <code>connectCheaper()</code> de la clase 14)
+no se lo anuncie a los demás. El broadcast mantiene el secreto delWinner.</p>
+<p>El <code>OFFER</code>, en cambio, se puede mandar por unicast si el servidor ya tiene la MAC
+del cliente (y a veces la tiene, de un <code>REQUEST</code> anterior). <strong>Many DHCP
+implementations mandan OFFER por broadcast</strong>, porque el cliente recién arrancando
+puede no tener todavía su ARP resuelto. Es una decisión de implementación.</p>
+<h3>Los 4 mensajes en detalle</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Mensaje</th>
+<th>De → a</th>
+<th>IP origen → destino</th>
+<th>Puerto UDP</th>
+<th>Contenido clave</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>DISCOVER</strong></td>
+<td>cliente → todos</td>
+<td><code>0.0.0.0</code> → <code>255.255.255.255</code></td>
+<td>68 → 67</td>
+<td>MAC del cliente, nombre de dominio</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>OFFER</strong></td>
+<td>servidor → cliente</td>
+<td>ip_server → <code>255.255.255.255</code></td>
+<td>67 → 68</td>
+<td>IP, máscara, gateway, DNS, lease</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>REQUEST</strong></td>
+<td>cliente → todos</td>
+<td><code>0.0.0.0</code> → <code>255.255.255.255</code></td>
+<td>68 → 67</td>
+<td>qué servidor eligió</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>ACK</strong></td>
+<td>servidor → cliente</td>
+<td>ip_server → <code>255.255.255.255</code></td>
+<td>67 → 68</td>
+<td>confirmación final</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Todos van por <code>255.255.255.255</code></strong> (Limited Broadcast) menos el <code>OFFER</code>, que
+puede ir por unicast. Es la única manera de que funcione sin conocer la red.</p>
+<h2>1.5 El lease: qué es y por qué existe</h2>
+<p>El <strong>lease</strong> es el <strong>período de tiempo</strong> durante el cual la asignación es válida.</p>
+<div class="codehilite"><pre><span></span><code>   t=0              t=T1                t=T2                    t=0'
+   │                 │                  │                        │
+   ├─ 50% del lease ─┼─ 87,5% del lease ┼─ lease vencido        │
+   │  RENEW (al      │  RENEW (el       │  el cliente deja de    │
+   │  mismo server)  │  MISMO server)   │  usar la IP y la       │
+   │                 │                  │  devuelve              │
+   │  opción 1       │  opción 2        │                        │
+</code></pre></div>
+
+<p>El cliente tiene <strong>dos mecanismos de renovación</strong>:</p>
+<ul>
+<li><strong>T1 = 50 %</strong> del lease: manda <code>REQUEST</code> <strong>al mismo servidor</strong> que le dio la IP.
+  Es una Optimization: si funciona, no hay nada que cambiar.</li>
+<li><strong>T2 = 87,5 %</strong> del lease: si el primero falló, manda <code>REQUEST</code> a <strong>cualquier
+  servidor</strong> (por broadcast), pidiendo cualquiera.</li>
+<li><strong>Al vencer</strong>: el cliente deja de usar la IP. <strong>Y no la devuelve</strong>: simplemente
+  deja de renovar. El servidor la vuelve a poner en el pool cuando expire su
+  registro interno.</li>
+</ul>
+<p><strong>¿Por qué existe el lease?</strong> Porque un host puede <strong>desaparecer sin avisar</strong>: se
+apaga, se rompe, se va de viaje. Si la asignación fuera fija (BOOTP), esa dirección
+quedaría <strong>reservada para siempre</strong> para un equipo que no existe. Con lease, el
+problema se resuelve solo.</p>
+<h2>1.6 Opciones DHCP que hay que saber</h2>
+<p>El <code>OFFER</code> y el <code>ACK</code> llevan un campo <strong>options</strong> con pares (código, longitud,
+valor). Los que se preguntan:</p>
+<table>
+<thead>
+<tr>
+<th>Opción</th>
+<th>Código</th>
+<th>Qué le dice al cliente</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Subnet Mask</strong></td>
+<td>1</td>
+<td>la máscara, para que sepa qué es su red local</td>
+</tr>
+<tr>
+<td><strong>Router</strong> (gateway)</td>
+<td>3</td>
+<td>a quién le pregunta por destinos fuera de su red</td>
+</tr>
+<tr>
+<td><strong>Domain Name Server</strong></td>
+<td>6</td>
+<td>la IP del resolver DNS</td>
+</tr>
+<tr>
+<td><strong>Hostname</strong></td>
+<td>12</td>
+<td>el nombre que el cliente quiere tener</td>
+</tr>
+<tr>
+<td><strong>Domain Name</strong></td>
+<td>15</td>
+<td>el dominio local</td>
+</tr>
+<tr>
+<td><strong>Requested IP Address</strong></td>
+<td>50</td>
+<td>el cliente pide una IP concreta (arranque de un equipo específico)</td>
+</tr>
+<tr>
+<td><strong>IP Address Lease Time</strong></td>
+<td>51</td>
+<td>la duración del lease, en <strong>segundos</strong></td>
+</tr>
+<tr>
+<td><strong>Message Type</strong></td>
+<td>53</td>
+<td>1=DISCOVER, 2=OFFER, 3=REQUEST, 5=ACK</td>
+</tr>
+<tr>
+<td><strong>Server Identifier</strong></td>
+<td>54</td>
+<td><strong>qué servidor</strong> hizo la OFFER (clave para el REQUEST)</td>
+</tr>
+<tr>
+<td><strong>Parameter Request List</strong></td>
+<td>55</td>
+<td>qué opciones quiere el cliente</td>
+</tr>
+<tr>
+<td><strong>Renewal (T1)</strong></td>
+<td>58</td>
+<td>el 50 % del lease</td>
+</tr>
+<tr>
+<td><strong>Rebinding (T2)</strong></td>
+<td>59</td>
+<td>el 87,5 % del lease</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>El par (53, 54) es el corazón del protocolo.</strong> El campo <em>Message Type</em> dice
+<strong>qué</strong> mensaje es. Y el <em>Server Identifier</em> dice <strong>quién</strong> lo mandó, que es lo
+que permite que el <code>REQUEST</code> del cliente diga "acepto la de <strong>ese</strong> servidor".</p>
+</blockquote>
+<h3>Los tres pasos del TFTP</h3>
+<p>DHCP no es un protocolo de sesión. <strong>Cada mensaje es un mensaje TFTP</strong> (<em>Trivial
+File Transfer Protocol</em>), que funciona sobre UDP. Los pasos:</p>
+<div class="codehilite"><pre><span></span><code>   1. REQUEST   el cliente pide su configuración
+   2. OFFER     el servidor ofrece una dirección
+   3. ACK       el servidor confirma
+
+   (y el DISCOVER es un REQUEST con Message Type = DISCOVER)
+</code></pre></div>
+
+<p>TFTP existe porque se necesitaba <strong>algo muy simple</strong> para que un cliente que no
+tiene IP pudiera hablar con un servidor. No tiene ni número de secuencia ni
+confirmaciones: <strong>DHCP se encarga de reintentar</strong> si algo se pierde, con sus
+propios temporizadores.</p>
+<h2>1.7 Qué pasa si el DHCP falla</h2>
+<p>Si el cliente no recibe ninguna <code>OFFER</code> (no hay servidor DHCP en la red), hace lo
+que hace <strong>todo</strong> protocolo: <strong>reintenta</strong>. Periódicamente manda un nuevo
+<code>DISCOVER</code>.</p>
+<p>Pero si la red <strong>no tiene ningún DHCP</strong>, el host queda sin dirección. Y como no
+puede pedir nada, se autoconfigura:</p>
+<div class="codehilite"><pre><span></span><code>   ┌─────────────────────────────────────────────────────────────┐
+   │  APIPA  (Automatic Private IP Addressing)                   │
+   │  Microsoft inventó el nombre; el nombre real es             │
+   │  "link-local" y el rango es 169.254.0.0/16                  │
+   └─────────────────────────────────────────────────────────────┘
+
+   El cliente:
+     1. se elige una IP al azar dentro de 169.254.1.0 – 169.254.254.255
+        (o prueba una y hace ARP para ver si nadie responde)
+     2. pone su máscara como /16
+     3. NO tiene gateway  →  no puede salir de la red local
+     4. no tiene DNS      →  no resuelve nombres
+</code></pre></div>
+
+<p><strong>¿Por qué <code>169.254.0.0/16</code> y no otra cosa?</strong> Porque la IANA lo reservó
+específicamente para esto. Y hay una razón de diseño más profunda:</p>
+<blockquote>
+<p><strong>Es un rango que nunca se va a rutear en Internet.</strong> Aunque por un error de
+configuración un paquete con destino <code>169.254.x.x</code> llegara a Internet, ningún
+router lo va a reenviar. O sea: <strong>si la autoconfiguración falla, el host no
+puede molestar a nadie.</strong> Es un rango "atrapado" por diseño.</p>
+</blockquote>
+<p>Es un detalle de diseño elegante que vale la pena conocer: <strong>el rango de
+autoconfiguración es elegido para que sea inofensivo.</strong></p>
+<h2>1.8 ⚠️ Actualización a 2026</h2>
+<p><strong>Sigue igual — de memoria:</strong>
+- El proceso <strong>DORA</strong> completo, los 4 mensajes, en ese orden.
+- <strong>UDP</strong>, puertos <strong>67</strong> y <strong>68</strong>, y el Limited Broadcast <code>255.255.255.255</code>.
+- El <code>DISCOVER</code> con IP origen <code>0.0.0.0</code>.
+- El <strong><code>REQUEST</code> por broadcast</strong> y la razón de ser (el secreto de qué servidor
+  ganó).
+- El lease con <strong>T1 = 50 %</strong> y <strong>T2 = 87,5 %</strong>, y los dos mecanismos de renovación.
+- <strong><code>169.254.0.0/16</code></strong> como rango link-local de autoconfiguración, no ruteable.
+- Los campos <strong>Message Type</strong> y <strong>Server Identifier</strong> como el corazón del protocolo.</p>
+<p><strong>Cambió:</strong>
+- <strong>DHCPv6</strong> existe y usa <strong>UDP 546 (cliente) y 547 (servidor)</strong>, con
+  <strong>multicast</strong> en vez de broadcast. No es "el DHCP de IPv6": es un protocolo
+  distinto, porque en IPv6 el cliente <strong>ya tiene una dirección link-local
+  derivable del MAC</strong> y no necesita el Limited Broadcast para nada.
+- <strong>IPv6 privacy extensions y SLAAC</strong>: en IPv6 la autoconfiguración es <strong>nativa</strong>
+  (<code>RFC 4862</code>) y no depende de ningún servidor DHCPv6. El "SLAAC" genera la
+  dirección a partir del prefijo que anuncia el router en los RA.
+- <strong>La era del CGNAT</strong> (Carrier-Grade NAT, que grew con el agotamiento de IPv4 en
+  RIPE en noviembre de 2019) cambió el contexto: los ISP dan a los usuarios
+  direcciones <strong>compartidas</strong>, lo cual hace que algunos servicios de TV por IP y
+ VoIP necesiten otras soluciones. No afecta al DHCP del cliente final, pero explica
+  por qué la capa de acceso a Internet se ve distinta hoy.</p>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — La traza DORA completa con direcciones concretas</h2>
+<p><strong>Datos.</strong> Red <code>192.168.1.0/24</code>. Gateway <code>192.168.1.1</code>. DNS <code>132.42.120.5</code>.
+Servidor DHCP <code>192.168.1.10</code>. Lease de 24 horas. El cliente es <code>PC</code> con MAC
+<code>00:1A:2B:3C:4D:5E</code>.</p>
+<p><strong>Resolución, mensaje por mensaje, con la tabla completa:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Mensaje</th>
+<th>IP orig → dest</th>
+<th>UDP orig → dest</th>
+<th>MAC orig → dest</th>
+<th>Contenido</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>DISCOVER</strong></td>
+<td><code>0.0.0.0</code> → <code>255.255.255.255</code></td>
+<td>68 → 67</td>
+<td>PC → <code>FF:FF:FF:FF:FF:FF</code></td>
+<td>MAC, hostname</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>OFFER</strong></td>
+<td><code>192.168.1.10</code> → <code>255.255.255.255</code></td>
+<td>67 → 68</td>
+<td>srv → broadcast</td>
+<td>IP <code>192.168.1.50</code>, /24, GW <code>.1</code>, DNS <code>132.42.120.5</code>, lease 86400 s</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>REQUEST</strong></td>
+<td><code>0.0.0.0</code> → <code>255.255.255.255</code></td>
+<td>68 → 67</td>
+<td>PC → broadcast</td>
+<td>Server ID = <code>192.168.1.10</code>, pide <code>192.168.1.50</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>ACK</strong></td>
+<td><code>192.168.1.10</code> → <code>255.255.255.255</code></td>
+<td>67 → 68</td>
+<td>srv → broadcast</td>
+<td>confirma <code>192.168.1.50</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Verificación:</strong> ¿qué haría PC si el <code>ACK</code> no llegara? Lost el lease no está
+confirmado, así que <strong>no puede usar la dirección</strong>. Reintenta el <code>REQUEST</code>. Si no
+hay respuesta tras N intentos, vuelve al paso 1 (<code>DISCOVER</code>).</p>
+<p><strong>Verificación 2:</strong> ¿qué pasa si el <code>OFFER</code> del servidor se pierde? PC no lo sabe.
+Reintenta el <code>DISCOVER</code>. El servidor ve un <code>DISCOVER</code> nuevo y hace una <code>OFFER</code>
+nueva. <strong>No hay conflicto</strong>, porque el servidor todavía no registró nada: el
+registro se hace recién cuando recibe el <code>REQUEST</code>.</p>
+<h2>2.2 Ejercicio 2 — Los temporizadores del lease</h2>
+<p><strong>Datos.</strong> El lease es de <strong>24 horas</strong> = 86 400 segundos.</p>
+<p><strong>Resolución:</strong></p>
+<div class="codehilite"><pre><span></span><code>   T1 = 0,50  × 86 400 =  43 200 s = 12 h
+   T2 = 0,875 × 86 400 =  75 600 s = 21 h
+   vencimiento =          86 400 s = 24 h
+</code></pre></div>
+
+<p><strong>Interpretación:</strong> el cliente intenta renovar con el mismo servidor a las 12 h.
+Si en los próximos 9,6 h no obtiene respuesta, a las 21 h pregunta a <strong>cualquier</strong>
+servidor. Si a las 24 h no tiene nada, deja de usar la dirección.</p>
+<p><strong>¿Por qué T2 es 87,5 % y no 90 % o 95 %?</strong> Es un compromiso: si el umbral fuera
+muy tardío, no quedaría tiempo para conseguir una dirección nueva antes de que
+venza la actual. El 12,5 % restante (3 horas en este caso) es el margen para que
+el <code>REQUEST</code> de rebinding llegue, el servidor responda y el cliente configure la
+dirección nueva.</p>
+<h2>2.3 Ejercicio 3 — Cuántas direcciones necesita la red</h2>
+<p><strong>Datos.</strong> Una empresa quiere 300 empleados, 20 servidores y 5 impresoras en una
+sola LAN con DHCP.</p>
+<p><strong>Resolución — el cálculo del pool:</strong></p>
+<div class="codehilite"><pre><span></span><code>   Total de dispositivos que piden IP:  300 + 20 + 5 = 325
+   + 1 para el gateway                     = 326
+   + 1 para el servidor DHCP                = 327
+   + 1 para la red y 1 para el broadcast    = 329
+
+   2^9 − 2 = 512 − 2 = 510  &gt;= 327   ✓    →  necesitan un /23
+</code></pre></div>
+
+<p><strong>Ahora la pregunta de diseño, que es la que seReward en el examen:</strong> ¿cuántas
+direcciones <strong>quedan libres</strong>?</p>
+<div class="codehilite"><pre><span></span><code>   Con un /23 (512 direcciones):     512 − 329 = 183 libres
+   Con un /22 (1024 direcciones):   1024 − 329 = 695 libres
+</code></pre></div>
+
+<p><strong>El criterio correcto es el /23</strong>, y la razón de por qué es la que hay que saber
+decir: <strong>un plan de numeración se dimensiona para crecer, no para el tamaño de hoy.</strong>
+Con un /23 tenés 183 direcciones de margen, que es un 56 % de crecimiento sobre la
+necesidad actual. Con un /22 tendrías el doble de freedom y no lo usás.</p>
+<blockquote>
+<p><strong>Y esa es exactamente la lógica del apartado d del Problema 2 del Examen
+2011-03</strong> (resuelto en la Clase 27 y la 29): <em>"dejar la mayor cantidad posible de
+direcciones IP para uso futuro"</em> <strong>no</strong> significa usar el bloque entero, sino
+usar el <strong>menor bloque que cubra la necesidad</strong> y reservar el resto.</p>
+</blockquote>
+<h2>2.4 Ejercicio 4 — Dos servidores DHCP</h2>
+<p><strong>Datos.</strong> En la red hay dos servidores DHCP, <code>A</code> (192.168.1.10) y <code>B</code>
+(192.168.1.11). Llegan dos clientes.</p>
+<p><strong>Resolución — el paso que casi nadie explica, el paso 3:</strong></p>
+<div class="codehilite"><pre><span></span><code>   t=0  PC1 ──DISCOVER (broadcast)──▶  A y B lo reciben
+
+   t=1  A ──OFFER: 192.168.1.50, lease 24 h ──▶  PC1
+       B ──OFFER: 192.168.1.60, lease 48 h ──▶  PC1
+
+   PC1 aplica el DESEMPATE DE TIE-BREAK:
+       "el que ofrezca el lease MÁS CORTO"
+
+       A ofrece 24 h  →  gana A  ✗ descartada la de B
+       B ofrece 48 h  →  pierde
+
+   t=2  PC1 ──REQUEST (broadcast)──▶  "el Server Identifier va en 192.168.1.10,
+                                         y elijo la 192.168.1.50"
+                              ──▶  A  lee:  soy yo  →  registro la asignación
+                              ──▶  B  lee:  no soy yo  →  LIBERO 192.168.1.60
+
+   t=3  A ──ACK: 192.168.1.50 es tuya por 24 h ──▶  PC1
+</code></pre></div>
+
+<p><strong>El punto clave:</strong> el <code>REQUEST</code> <strong>no es unicast</strong>, y por eso B puede saber que
+perdió y liberar la dirección que había reservado. <strong>Si fuera unicast</strong>, B
+seguiría creyendo que tiene la dirección asignada hasta que venciera el lease.</p>
+<p>Y el <strong>tie-break de lease más corto</strong> parece contraintuitivo (¿por qué esperar
+<em>menos</em>?) pero tiene una razón clara: <strong>minimiza el tiempo en que un cliente
+queda "atrapado" con una dirección de un servidor caído</strong>. Si un cliente aceptara
+la oferta del servidor que no está disponible, tardaría 48 h en poder usar otra.
+Con el desempate por lease corto, y el T2 al 87,5 %, recupera la conectividad en
+unas horas.</p>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2011-02, Pregunta 2 (10 puntos) — DHCP</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc1102</code> / <code>sirc1102</code>, 3 de febrero de 2011.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1102.pdf</p>
+</blockquote>
+<h3>Enunciado (texto del examen)</h3>
+<blockquote>
+<p>Explique el funcionamiento del protocolo DHCP detallando el intercambio de
+mensajes entre cliente y servidor.</p>
+</blockquote>
+<h3>La solución que hay que escribir</h3>
+<p><strong>Punto 1 — Qué resuelve (2 pts).</strong> DHCP es un protocolo de <strong>arranque</strong>
+(<em>bootstrap</em>) que permite a un host <strong>sin configuración</strong> obtener su dirección IP,
+máscara, gateway y DNS automáticamente. Sin él, cada equipo nuevo requeriría que un
+técnico lo configurara a mano.</p>
+<p><strong>Punto 2 — Por qué UDP (2 pts).</strong> Porque el cliente <strong>no tiene todavía dirección
+IP</strong>, y no puede abrir una conexión TCP (el <code>SYN</code> necesita una dirección origen
+válida). La transacción son mensajes sueltos de un solo envío, sin necesidad de
+estado de conexión.</p>
+<p><strong>Punto 3 — DORA (4 pts).</strong> Los cuatro mensajes, con quién los manda y qué
+contienen:</p>
+<table>
+<thead>
+<tr>
+<th>Paso</th>
+<th>Mensaje</th>
+<th>Remitente</th>
+<th>Destinatario</th>
+<th>Contenido</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>DISCOVER</strong></td>
+<td>cliente</td>
+<td>broadcast <code>255.255.255.255</code></td>
+<td>identifica al cliente (MAC, hostname) y pide dirección</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>OFFER</strong></td>
+<td>servidor</td>
+<td>cliente (broadcast o unicast)</td>
+<td>propone una dirección libre, con máscara, gateway, DNS, duración del lease y demás opciones</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>REQUEST</strong></td>
+<td>cliente</td>
+<td>broadcast</td>
+<td><strong>confirma cuál de las ofertas acepta</strong>, identificando al servidor elegido</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>ACK</strong></td>
+<td>servidor</td>
+<td>cliente</td>
+<td>confirma la asignación y fija la duración del lease</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Punto 4 — El detalle que suma (2 pts).</strong> El <strong>REQUEST va por broadcast</strong> aunque
+el cliente ya sepa la dirección del servidor, y <strong>por eso el paso 3 es
+obligatorio</strong>: es lo que le permite a los servidores que hicieron OFFER y <strong>no</strong>
+fueron elegidos saber que perdieron y liberar la dirección que habían reservado.
+Si fuera unicast, cada uno creería que ganó.</p>
+<p><strong>Los tres pasos de TFTP.</strong> Los DHCP se apoya en TFTP (<em>Trivial File Transfer
+Protocol</em>) sobre UDP, por la misma razón: tiene que funcionar desde un host sin
+dirección. TFTP es trivial justamente porque <strong>DHCP se encarga de manejar los
+tiempos y los reintentos</strong> que TFTP no tiene.</p>
+<p><strong>El lease y los temporizadores.</strong> La asignación <strong>no es permanente</strong> sino que
+tiene una duración. El cliente intenta renovarla cuando se ha consumido el 50 % del
+lease (T1), contra el mismo servidor. Si no logra respuesta, al 87,5 % (T2)
+reintenta contra cualquier servidor. Si el lease se vence sin renovación, el
+cliente libera la dirección y vuelve a solicitar una.</p>
+<h3>Complemento — RARP, el antecedente que se pregunta en otro examen</h3>
+<blockquote>
+<p><strong>Examen 2007-03, Pregunta 3 (10 pts)</strong>: <em>Describa en qué escenario se utiliza el
+protocolo RARP y su funcionamiento.</em></p>
+</blockquote>
+<p><strong>La respuesta corta:</strong> RARP (<code>RFC 826</code>) es <strong>el antecesor de DHCP</strong>. Antes de que
+existiera el boot de un host sin disco duro, un host que encendía sin sistema
+operativo instalado necesitaba <strong>descubrir su propia dirección IP</strong>. No sabía
+cuál era, y sin ella no podía hablar con nadie.</p>
+<p>ARP responde: <em>"¿qué MAC tiene esta IP?"</em>. <strong>RARP invierte la pregunta</strong>: <em>"¿qué
+IP tiene este MAC?"</em>. El host manda un broadcast <code>¿quién es 00:1A:2B:3C:4D:5E?</code> y
+el servidor de red le responde con una dirección.</p>
+<div class="codehilite"><pre><span></span><code>   ARP   :  "¿qué MAC corresponde a la IP 192.168.1.50?"     → el router responde
+   RARP  :  "¿qué IP corresponde al MAC 00:1A:2B:3C:4D:5E?"  → el host pregunta
+</code></pre></div>
+
+<p><strong>Por qué ya no se usa:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Problema de RARP</th>
+<th>Lo resuelve DHCP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Solo devuelve <strong>una</strong> dirección IP. Nada de máscara, ni gateway, ni DNS</td>
+<td>devuelve <strong>toda</strong> la configuración</td>
+</tr>
+<tr>
+<td><strong>No</strong> hay lease: la asignación es fija para siempre</td>
+<td>hay lease y renovación</td>
+</tr>
+<tr>
+<td>Necesita un <strong>servidor RARP</strong> en cada red</td>
+<td>un solo servidor DHCP para toda la organización</td>
+</tr>
+<tr>
+<td>No existe para IPv6</td>
+<td>DHCPv6, y además SLAAC</td>
+</tr>
+</tbody>
+</table>
+<p><strong>La respuesta completa al examen 2007-03</strong> (10 pts): escenario, formato de los
+mensajes (idéntico a ARP pero con tipo de operación distinto: RARP usa los tipos
+3 y 4 donde ARP usa 1 y 2), la tabla del servidor, y <strong>las tres limitaciones</strong> de
+la tabla de arriba. Mencionar que DHCP <strong>supera</strong> a RARP en todo menos en
+complexidad.</p>
+<hr />
+<h1>PARTE 4 — PARTE B DEL SIMULACRO 2</h1>
+<h2>4.1 Repaso del bloque B (clases 8 a 15)</h2>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 760 330" style="max-width:760px"><rect width="760" height="330" fill="#ffffff"/><text x="380.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Los 6 bloques del curso</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><rect x="34" y="48" width="190" height="38" rx="4" fill="#14507a" stroke="#14507a" stroke-width="1.2"/><text x="129.0" y="70.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#ffffff">A · Fundamentos</text><text x="244" y="72" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#1a1a1a">1-7</text><text x="300" y="72" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">redes, capas, retardo, Nyquist/Shannon</text><rect x="34" y="93" width="190" height="38" rx="4" fill="#2e7d4f" stroke="#2e7d4f" stroke-width="1.2"/><text x="129.0" y="115.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#ffffff">B · Aplicacion</text><text x="244" y="117" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#1a1a1a">8-15</text><text x="300" y="117" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">HTTP, DNS, correo, sockets, DHCP</text><rect x="34" y="138" width="190" height="38" rx="4" fill="#c8621a" stroke="#c8621a" stroke-width="1.2"/><text x="129.0" y="160.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#ffffff">C · Transporte</text><text x="244" y="162" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#1a1a1a">16-23</text><text x="300" y="162" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">UDP, TCP, control de congestion</text><rect x="34" y="183" width="190" height="38" rx="4" fill="#b3261e" stroke="#b3261e" stroke-width="1.2"/><text x="129.0" y="205.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#ffffff">D · Red</text><text x="244" y="207" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#1a1a1a">24-37</text><text x="300" y="207" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">IPv4, subnetting, ruteo, BGP, IPv6</text><rect x="34" y="228" width="190" height="38" rx="4" fill="#7aa7c4" stroke="#7aa7c4" stroke-width="1.2"/><text x="129.0" y="250.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#ffffff">E · Enlace</text><text x="244" y="252" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#1a1a1a">38-43</text><text x="300" y="252" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">framing, CRC, ARQ, acceso, 802.11</text><rect x="34" y="273" width="190" height="38" rx="4" fill="#2e7d4f" stroke="#2e7d4f" stroke-width="1.2"/><text x="129.0" y="295.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#ffffff">F · Servicios</text><text x="244" y="297" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#1a1a1a">44-48</text><text x="300" y="297" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">multimedia, QoS, SNMP, seguridad</text></svg></p>
+<p><strong>El mapa en una línea por clase:</strong></p>
+<div class="codehilite"><pre><span></span><code>   8  HTTP/1.1: petición/respuesta, persistente vs. no persistente
+   9  HTTP: cabeceras, caché con ETag, cookies, HTTP/2 y HTTP/3
+   10 DNS: espacio jerárquico + base distribuida, RR de 5 campos, tipos de registro
+   11 DNS: iterativo vs. recursivo, caché y TTL, DoH y DNSSEC
+   12 Taller: resolución completa paso a paso, RTT de una página
+   13 Correo: MUA/MTA/MDA, SMTP push, POP3 e IMAP pull, MIME, dot-stuffing
+   14 Sockets: API de Berkeley, orden de llamadas, htons, errores del código oficial
+   15 DHCP: DORA, lease, 169.254/16, Simulacro
+</code></pre></div>
+
+<p><strong>Las tablas que hay que saber de memoria:</strong></p>
+<p><strong>Resource Record, 5 campos:</strong></p>
+<div class="codehilite"><pre><span></span><code>   nombre  │ clase │ tipo │ TTL │ datos
+   2 bytes │ 2 B   │ 2 B  │ 4 B │ variable
+</code></pre></div>
+
+<p><strong>Tipos de RR que hay que saber:</strong> A, AAAA, NS, CNAME, MX, SOA, PTR, TXT, SRV, CAA.</p>
+<p><strong>DORA:</strong></p>
+<div class="codehilite"><pre><span></span><code>   D  DISCOVER  cliente → broadcast   0.0.0.0:68 → 255.255.255.255:67
+   O  OFFER     servidor → cliente    67 → 68    (propone IP, máscara, GW, DNS, lease)
+   R  REQUEST   cliente → broadcast   "acepto la oferta del servidor X"
+   A  ACK       servidor → cliente    confirma
+</code></pre></div>
+
+<p><strong>Puertos que hay que saber:</strong></p>
+<div class="codehilite"><pre><span></span><code>   20/21 FTP      22 SSH       25 SMTP      53 DNS       67/68 DHCP
+   80 HTTP        110 POP3     143 IMAP     443 HTTPS    546/547 DHCPv6
+   179 BGP        853 DoT      161/162 SNMP
+</code></pre></div>
+
+<p><strong>Petición/respuesta vs. push/pull:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Protocolo</th>
+<th>Modelo</th>
+<th>Quién inicia</th>
+<th>Ejemplo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HTTP</td>
+<td><strong>petición/respuesta</strong></td>
+<td>el cliente</td>
+<td>8, 9</td>
+</tr>
+<tr>
+<td>DNS</td>
+<td><strong>petición/respuesta</strong></td>
+<td>el cliente</td>
+<td>10, 11</td>
+</tr>
+<tr>
+<td>SMTP</td>
+<td><strong>push</strong></td>
+<td>el emisor</td>
+<td>13</td>
+</tr>
+<tr>
+<td>POP3 / IMAP</td>
+<td><strong>pull</strong></td>
+<td>el receptor</td>
+<td>13</td>
+</tr>
+<tr>
+<td>DHCP</td>
+<td><strong>petición/respuesta</strong> (pero por broadcast)</td>
+<td>el cliente</td>
+<td>15</td>
+</tr>
+</tbody>
+</table>
+<h2>4.2 Los 8 errores más frecuentes del bloque</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>El error</th>
+<th>Lo correcto</th>
+<th>Por qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>"DNS usa UDP y si es grande pasa a <strong>otro puerto</strong>"</td>
+<td>pasa a <strong>TCP en el 53</strong></td>
+<td>es el mismo puerto, distinto protocolo</td>
+</tr>
+<tr>
+<td>2</td>
+<td>"El <strong>TLD</strong> devuelve la IP del dominio"</td>
+<td>devuelve el <strong>NS autoritativo</strong></td>
+<td>el TLD no conoce los dominios que cuelgan de él</td>
+</tr>
+<tr>
+<td>3</td>
+<td>"El <strong>REQUEST</strong> de DHCP va por unicast porque ya conoce al servidor"</td>
+<td>va por <strong>broadcast</strong></td>
+<td>para que los perdedores liberen la dirección reservada</td>
+</tr>
+<tr>
+<td>4</td>
+<td>"El <strong>DISCOVER</strong> de DHCP tiene como origen la MAC del cliente"</td>
+<td>origen IP es <strong><code>0.0.0.0</code></strong></td>
+<td>no tiene IP todavía; la MAC va en un campo de opción</td>
+</tr>
+<tr>
+<td>5</td>
+<td>"El <strong>ACK</strong> de TCP es un paquete"</td>
+<td>es un <strong>segmento con el flag ACK</strong></td>
+<td>el ACK va piggybacked en el segmento de datos del otro sentido</td>
+</tr>
+<tr>
+<td>6</td>
+<td>"POP3 borra los mensajes al hacer <code>DELE</code>"</td>
+<td><code>DELE</code> <strong>solo marca</strong>, borra en <code>QUIT</code></td>
+<td>para poder deshacer si algo sale mal</td>
+</tr>
+<tr>
+<td>7</td>
+<td>"Para que haya confidencialidad hace falta <strong>cifrar</strong>"</td>
+<td>para <strong>integridad</strong> alcanza un <strong>hash</strong></td>
+<td>el hash detecta el cambio; el cifrado lo esconde</td>
+</tr>
+<tr>
+<td>8</td>
+<td>"El cliente hace <code>bind()</code> antes de <code>connect()</code>"</td>
+<td>el cliente <strong>no hace bind</strong></td>
+<td>el servidor reserva un puerto conocido; el cliente usa uno efímero</td>
+</tr>
+</tbody>
+</table>
+<h2>4.3 📝 Simulacro 2 — Examen completo</h2>
+<blockquote>
+<p><strong>Instrucciones del examen real:</strong> 3 horas · sin material · individual ·
+<strong>aprobación con 60/100</strong> · <strong>obligatorio responder correctamente al menos
+15 puntos en las preguntas teóricas</strong>.</p>
+</blockquote>
+<h3>Enunciado — Preguntas teóricas</h3>
+<p><strong>Teórica 1 (10 puntos).</strong> Un usuario abre su navegador y escribe
+<code>https://www.ejemplo.com/index.html</code>. Describa, en orden cronológico, <strong>todos</strong> los
+pasos que ocurren desde que aprieta Enter hasta que ve la página en pantalla. Sea
+específico sobre: qué protocolos participan, cuántos <em>round trips</em> aproximados
+implica cada uno, y qué pasa si alguno de ellos falla.</p>
+<p><strong>Teórica 2 (10 puntos).</strong> Describa el funcionamiento del protocolo <strong>DNS</strong>,
+explicando el papel de cada tipo de servidor y la diferencia entre los dos
+algoritmos de resolución (iterativo y recursivo). Explique además el
+funcionamiento del mecanismo de <strong>caché</strong>, incluyendo qué campo controla el tiempo
+que un registro permanece en caché y quién lo define.</p>
+<p><strong>Teórica 3 (8 puntos).</strong> Describa el proceso de <strong>arranque de un host</strong> en una red
+con DHCP, detallando los mensajes involved. Explique por qué el protocolo usa UDP
+y no TCP, y qué ocurre si el servidor DHCP no está disponible.</p>
+<p><strong>Teórica 4 (8 puntos).</strong> Compare los protocolos <strong>POP3</strong> e <strong>IMAP</strong>, y explique el
+problema que surge cuando un mismo canal transmite información de control y datos
+simultáneamente, y cómo lo resuelve el protocolo.</p>
+<p><strong>Teórica 5 (4 puntos).</strong> Mencione tres condiciones que deben cumplirse para que una
+conexión <strong>TCP</strong> pueda establecerse entre dos procesos, e indique qué función de la
+API de sockets debe usar cada extremo para empezar el proceso.</p>
+<h3>Enunciado — Problemas prácticos</h3>
+<p><strong>Problema 1 (30 puntos).</strong> Una organización tiene un único servidor DHCP que
+atiende dos redes separadas por un router:</p>
+<ul>
+<li><strong>Red A</strong> (<code>192.168.10.0/24</code>): 120 puestos de trabajo y 2 servidores.</li>
+<li><strong>Red B</strong> (<code>10.20.30.0/24</code>): 40 puestos de trabajo y 1 servidor con
+  direccionamiento estático (no usa DHCP).</li>
+</ul>
+<p>Se pide:</p>
+<p>a) Especifique los <strong>parámetros que debe entregar el servidor DHCP</strong> a cada tipo de
+   cliente de la red A y de la red B. Para cada parámetro indique el <strong>valor</strong> que
+   corresponde según los datos del problema.</p>
+<p>b) Realice la <strong>traza completa del proceso de arranque</strong> de un puesto de trabajo de
+   la red A, indicando para cada uno de los cuatro mensajes: emisor, receptor,
+  direcciones IP de origen y destino (de nivel IP y de nivel UDP), y qué
+   información transporta.</p>
+<p>c) El router entre las dos redes <strong>no permite tráfico de la red B hacia la red A</strong>
+  salvo las respuestas a soliciting DHCP. Explique qué problema genera esto para los
+  clientes de la red B que attempting renueva su lease, y proponga una solución.</p>
+<p><strong>Problema 2 (30 puntos).</strong> Se desea implementar un servicio de resolución de
+nombres simplified para uso interno. El servicio expone la función:</p>
+<div class="codehilite"><pre><span></span><code>  string consultar(string nombreHost, int tipoConsulta, int clase)
+</code></pre></div>
+
+<p>que devuelve, si el nombre existe y hay registros del tipo pedido, la <strong>cadena de
+valores</strong> separada por comas; y devuelve <code>""</code> si el nombre no existe.</p>
+<p>Se cuenta con las siguientes primitivas:</p>
+<ul>
+<li><code>enviar_consulta(servidorDNS, nombreHost, tipoConsulta, clase)</code> — envía una
+  consulta DNS al servidor indicado.</li>
+<li><code>esperar_respuesta()</code> — bloquea hasta recibir una respuesta. Devuelve un registro
+  con los campos: <code>nombre</code>, <code>tipo</code>, <code>clase</code>, <code>ttl</code>, <code>datos</code>, y <code>codigoError</code>.
+  Devuelve <code>null</code> si no hay respuesta (timeout).</li>
+<li><code>hayMasRegistros()</code> / <code>obtenerSiguienteRegistro()</code> — permiten recorrer los
+  registros de la respuesta.</li>
+</ul>
+<p><strong>a)</strong> Explique qué información debe contener el mensaje de consulta DNS que la
+función debe construir, y por qué.</p>
+<p><strong>b)</strong> Implemente la función <code>consultar</code> en un lenguaje de alto nivel, teniendo en
+cuenta que: (i) el nombre puede no existir, (ii) un nombre puede tener <strong>varios</strong>
+registros del mismo tipo, (iii) el servidor puede <strong>no responder</strong>, y (iv) el
+servidor puede responder con un <strong>código de error</strong> que no sea "no existe".</p>
+<p><strong>c)</strong> Explique qué consecuencia tiene, en la resolución real, el hecho de que su
+implementación <strong>no pueda</strong> distinguir entre "el nombre no existe" y "el servidor no
+respondió", y cómo resolvería ese defecto.</p>
+<h3>Cronómetro sugerido</h3>
+<table>
+<thead>
+<tr>
+<th>Momento</th>
+<th>Minutos</th>
+<th>Qué hacer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0:00 – 0:08</td>
+<td>8</td>
+<td>leer todo, elegir qué problemas hacer</td>
+</tr>
+<tr>
+<td>0:08 – 0:53</td>
+<td>45</td>
+<td><strong>las 5 teóricas</strong> (8 a 10 min cada una)</td>
+</tr>
+<tr>
+<td>0:53 – 1:53</td>
+<td>60</td>
+<td><strong>Problema 1</strong></td>
+</tr>
+<tr>
+<td>1:53 – 2:53</td>
+<td>60</td>
+<td><strong>Problema 2</strong></td>
+</tr>
+<tr>
+<td>2:53 – 3:00</td>
+<td>7</td>
+<td>releer, corregir, completar las cotas</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Recordá el mínimo de 15 puntos en las teóricas.</strong> Si te quedás sin tiempo para
+los problemas, todavía podés aprobar: <strong>no abandones las teóricas</strong>.</p>
+</blockquote>
+<details>
+<summary><b>✅ RESPUESTAS DEL SIMULACRO 2</b></summary>
+
+#### Teórica 1 (10 pts) — del Enter a la pantalla
+
+| # | Paso | Detalle | RTT |
+|---|---|---|---|
+| 1 | **DNS** | el resolver del SO pregunta por `www.ejemplo.com`, tipo A | ~0 a 1 |
+| 2 | **TCP** | three-way handshake con el servidor en el **puerto 80** | 1 |
+| 3 | **TLS** | handshake: certificado del servidor, verificación, claves de sesión | 1–2 |
+| 4 | **HTTP GET** | `GET /index.html HTTP/1.1` + cabeceras | 1 |
+| 5 | **HTTP 200** | el servidor devuelve el HTML | — |
+| 6 | **parseo** | el navegador pide CSS, JS, imágenes: **cada objeto** puede abrir conexión | ~0,5 c/u en HTTP/1.1 persistente |
+| 7 | **render** | se pinta la pantalla | — |
+
+**Si algo falla:**
+
+- **DNS falla** → error de navegación; el navegador muestra el código de error del
+  resolver.
+- **TCP falla** → timeout o conexión rechazada (si el puerto está cerrado).
+- **TLS falla** → si el certificado está vencido o el nombre no coincide, el
+  navegador **aborta**: es la defensa contra el man-in-the-middle.
+- **404** → el servidor respondió, pero no tiene el objeto: se ve la página de
+  error. **No es un fallo de red.**
+- **timeout en un objeto** → el navegador reintenta y a los 30 s cancela solo.
+
+> **Tope:** los 7 pasos en orden, la diferencia entre "falló la red" y "no existe el
+> objeto", y que el certificado TLS es lo que evita el MITM.
+
+#### Teórica 2 (10 pts) — DNS
+
+**Los tipos de servidor:** **root** (13 lógicos a–m, por anycast) sabe **quién** es
+el TLD de cada dominio; **TLD** (`.uy`, `.com`) sabe **quién** es el autoritativo de
+cada dominio; **autoritativo** sí conoce los mapeos reales. La jerarquía se
+delega con registros **NS** y los **glue records** (que resuelven la paradoja de
+bootstrap: los nombres de los servidores de nombre están en registros A de la zona
+del TLD).
+
+**Iterativo vs. recursivo:**
+
+- **Iterativo**: el que pregunta devuelve **la mejor respuesta que tiene**, que
+  puede ser una **referencia** ("preguntale a este"), no la respuesta final. Quien
+  pregunta sigue preguntando.
+- **Recursivo**: el que pregunta **se hace cargo de todo** y devuelve la respuesta
+  final o un error.
+
+**En la práctica:** el **stub resolver** del SO (el que atiende a las
+aplicaciones) consulta **iterativamente** al **resolver recursivo** del ISP; el
+recursivo hace consultas **iterativas** a root, TLD y autoritativo.
+
+**Caché:** cada servidor **cachea** los registros que aprende. El control lo da el
+campo **TTL**, un entero de **4 bytes en segundos**, que define el **servidor
+autoritativo** de ese registro. El que cachea lo va descontando; cuando llega a
+cero, el registro se descarta y hay que volver a preguntar. Es un compromiso: TTL
+corto = muchas consultas pero los cambios se propagan rápido; TTL largo = pocas
+consultas pero los cambios tardan.
+
+> **El detalle que suma:** la caché **negativa** (NXDOMAIN) existe porque si no,
+  cada consulta a un nombre inexistente llegaría hasta la raíz.
+
+#### Teórica 3 (8 pts) — arranque DHCP
+
+Ver Parte 1 de esta clase. Los 4 mensajes, por qué UDP, y el 169.254.0.0/16.
+
+**Tope:** DORA con quién manda y quién recibe, la razón de UDP (no tiene IP), y
+qué hace el host si no hay servidor (reintenta y se autoconfigura en el rango
+link-local, que **no se rutea** justamente para que sea inofensivo).
+
+#### Teórica 4 (8 pts) — POP3 vs. IMAP y el problema del CRLF.CRLF
+
+| | **POP3** | **IMAP** |
+|---|---|---|
+| Modelo | **pull** | **pull** |
+| Dónde vive el correo | se **descarga** al cliente | **queda en el servidor** |
+| Estado | local, en archivos | remoto, en la carpeta del servidor |
+| Carpetas | no soporta | sí, múltiples |
+| Lectura en otro dispositivo | hay que volver a bajar | ya está, sincronizado |
+| Puerto | 110 (995 TLS) | 143 (993 TLS) |
+
+**El problema:** ambos mandan **control y datos por el mismo canal**. POP3 marca el
+fin de un mensaje de control con la secuencia **`CRLF.CRLF`** (línea en blanco). Si
+un mensaje de correo **contiene** esa secuencia, el cliente cree que el mensaje
+terminó ahí y **lee el resto como si fueran comandos** — que es exactamente la
+puerta para ejecutar comandos Remote.
+
+**La solución: el *dot-stuffing*.** El cliente **duplica** cualquier punto que
+aparezca al principio de una línea dentro del mensaje. El servidor, al recibirlo,
+elimina uno de los dos. Por eso el **punto** es el carácter de relleno natural:
+es el único que puede empezar "soy un nuevo comando" y duplicarlo es trivial.
+
+> **Tope:** la tabla de 5 filas, el problema con su ejemplo concreto, y el
+> dot-stuffing con la razón de por qué el punto.
+
+#### Teórica 5 (4 pts) — condiciones para una conexión TCP
+
+1. Que el **servidor** esté escuchando: haya hecho `socket` → `setsockopt` →
+   `bind` → **`listen`**. Sin `listen` no hay cola y el SYN se descarta.
+2. Que haya **recursos**: un fd libre, memoria para el buffer. Si no, el SYN se
+   descarta (y de ahí el **SYN flood**, que existe para agotarlos).
+3. Que el **cliente** pueda llamar `connect()` a la dirección destino (tener ruta,
+   tener IP propia).
+
+**La API en cada extremo:** el **servidor** usa **`listen()`** y luego
+**`accept()`**; el **cliente** usa **`connect()`**. Ese es el resumen de la clase 14
+y suele ser lo que se pregunta.
+
+#### Problema 1 (30 pts)
+
+**a) Parámetros del DHCP.**
+
+Red A (`192.168.10.0/24`, 122 dispositivos):
+
+| Parámetro | Valor red A |
+|---|---|
+| Subnet Mask | `255.255.255.0` (`/24`) |
+| Router (gateway) | la IP de la interfaz del router en esa red |
+| Domain Name Server | la IP del resolver de la organización |
+| Lease Time | a definir por política (típico 24 h = 86400 s) |
+| Server Identifier | IP del servidor DHCP |
+| Domain Name | el dominio corporativo |
+
+Red B (`10.20.30.0/24`, 40 clientes): **los mismos parámetros pero con la máscara de
+esa red** y **su** gateway. El servidor de `10.20.30.5` tiene dirección **estática**
+y por eso **no pide nada por DHCP**: su plan de numeración lo tiene fijo. Si el
+problema dijera que hay que entregarle parámetros, se le daría solo el resto
+(si se cambia el router, conviene que lo sepa).
+
+**b) La traza completa** (misma tabla de la Parte 2, ejercicio 1, con los valores
+de este problema):
+
+| # | Mensaje | IP orig → dest | UDP orig → dest | Contenido |
+|---|---|---|---|---|
+| 1 | DISCOVER | `0.0.0.0` → `255.255.255.255` | 68 → 67 | MAC, hostname, opciones pedidas |
+| 2 | OFFER | ip_server → `255.255.255.255` | 67 → 68 | IP `192.168.10.50`, `255.255.255.0`, GW, DNS, lease |
+| 3 | REQUEST | `0.0.0.0` → `255.255.255.255` | 68 → 67 | Server ID = ip_server; pide `192.168.10.50` |
+| 4 | ACK | ip_server → `255.255.255.255` | 67 → 68 | confirma `192.168.10.50` por 24 h |
+
+**c) El problema de la renovación.** El cliente de la red B, al llegar a T2 (87,5 %
+del lease), manda un **REQUEST por broadcast** para renovar con cualquier servidor.
+Ese broadcast **no sale de la red B** si el router filtra, y entonces:
+
+- el cliente no obtiene respuesta,
+- no renueva,
+- cuando el lease vence **pierde la dirección**,
+- y el proceso de arranque se repite, lo que en una red grande es una **tormenta de
+  DHCP**: todos los leases vencen a la vez y todos RenoDiscovery a la vez.
+
+**La solución** depende de qué seallows:
+
+- **Permitir el tráfico DHCP de la red B hacia el servidor** (es decir, el router
+  debe dejar pasar los paquetes con **puerto destino 67**).
+- O bien: **reducir el lease time** de la red B para que la pérdida sea más rápida
+  de recuperar, aceptando más tráfico de renovaciones.
+- O bien: **instalar un segundo servidor DHCP en la red B** (es la solución que
+  escalaría de verdad), de modo que la renovación sea local.
+
+> **Tope para 30:** los tres incisos completos, y en el c) **el nombre del
+> síntoma**: la tormenta de renovaciones por expiración masiva de leases.
+
+#### Problema 2 (30 pts)
+
+**a) El mensaje de consulta DNS** lleva:
+
+- **ID de transacción** (2 bytes): número arbitrario que el servidor debe copiar en
+  la respuesta, para que el cliente pueda **distinguir su respuesta** de una
+  atascada de otra consulta.
+- **Flags** (2 bytes): `QR = 0` (es una consulta), `RD = 1` (pedir recursión).
+- **QDCOUNT = 1**, los demás contadores en 0.
+- El **nombre** en formato de etiquetas: `www ejemplo com` con un byte por
+  largo y el `0` final.
+- **QTYPE** (2 bytes): `1` para A, `28` para AAAA, `15` para MX.
+- **QCLASS** (2 bytes): `1` para IN.
+
+**b) La implementación:**
+
+
+<div class="codehilite"><pre><span></span><code>string consultar(nombreHost, tipoConsulta, clase)
+{
+    idTransaccion = generar_id_aleatorio()
+    cantidadRegistros = 0
+    resultado = ""
+
+    enviar_consulta(idTransaccion, nombreHost, tipoConsulta, clase)
+
+    reg = esperar_respuesta()
+    if reg == null:
+        /* (iii) timeout: NO sabemos si el nombre existe o no.
+           Devolvemos "" pero marcamos que fue un fallo, no un NXDOMAIN. */
+        return ""                  /* o un valor centinela distinto de "" */
+
+    if reg.codigoError != 0:        /* (iv) NXDOMAIN = 3, SERVFAIL = 2, etc. */
+        return ""                  /* el nombre no existe o hay un problema del servidor */
+
+    /* el primer registro */
+    procesar(reg)
+    cantidadRegistros = 1
+
+    /* (ii) puede haber VARIOS registros del mismo tipo: A, AAAA, MX... */
+    while hayMasRegistros():
+        reg = obtenerSiguienteRegistro()
+        if reg.codigoError != 0:
+            break
+        procesar(reg)
+        cantidadRegistros = cantidadRegistros + 1
+
+    return resultado
+
+  /* procedimiento auxiliar */
+  procedimiento procesar(reg)
+  {
+      if reg.tipo == tipoConsulta and reg.clase == clase:
+          if cantidadRegistros &gt; 0:
+              resultado = resultado + ", "
+          resultado = resultado + reg.datos
+  }
+}
+</code></pre></div>
+
+
+
+**Lo que hay que justificar:**
+
+1. **El ID de transacción** es obligatorio: sin él, si hay dos consultas en vuelo,
+   no se sabe cuál respuesta es de cuál.
+2. **El timeout se maneja con un return temprano**: es el caso (iii). Y se
+   devuelve `""` **por necesidad de la firma**, pero eso **confunde** el timeout con
+   el NXDOMAIN — que es exactamente lo que el apartado (c) pide atacar.
+3. **El `while hayMasRegistros()`** es lo que resuelve el caso (ii): un nombre
+   puede tener **varias** direcciones A (servidor con varias interfaces, o
+   *round-robin* para balancear carga). Y un **MX** puede tener varias entradas con
+   **distinta preferencia**: ahí el orden lo manda el campo de preferencia, no el
+   servidor.
+4. **El filtro por `tipo` y `clase`** dentro de `procesar`: la respuesta puede
+   traer registros de otros tipos (por ejemplo los registros **NS** que aparecen en
+   la sección de autoridad). Sin el filtro, concatenaríamos cosas que no son del
+   tipo pedido.
+5. **`codigoError != 0` corta el recorrido**: si hay error en un registro, los
+   siguientes no son válidos.
+
+**c) La consecuencia y la solución.** Con la implementación anterior, un **timeout**
+de red y un **NXDOMAIN** devuelven **exactamente lo mismo** (`""`). La aplicación
+que llama a `consultar()` **no puede distinguir**:
+
+- el nombre **no existe** (respuesta definitiva, no hay que volver a preguntar), de
+- el servidor **no respondió** (respuesta indefinida, hay que reintentar).
+
+Consecuencias reales: **se cachea un nombre inexistente que quizá sí existe** (y el
+usuario no puede entrar a un sitio que está arriba), y **no se reintenta** una
+consulta que podía funcionar.
+
+**La solución correcta** es devolver un valor **distinguible**, no usar `""` para
+las dos cosas:
+
+
+<div class="codehilite"><pre><span></span><code>enum Resultado { OK, NO_EXISTE, ERROR_DE_RED }
+Resultado consultar(datos, nombreHost, tipoConsulta, clase)
+{
+    ...
+    reg = esperar_respuesta()
+    if reg == null:
+        return ERROR_DE_RED       /* "no sé, reintentá" */
+    if reg.codigoError == 3:
+        return NO_EXISTE          /* NXDOMAIN: "no existe, no preguntes más" */
+    if reg.codigoError != 0:
+        return ERROR_DE_RED
+    ...
+    return OK
+}
+</code></pre></div>
+
+
+
+Y del lado del **resolver que cachea**, la distinción importa **más** todavía: un
+`NO_EXISTE` se cachea con el **TTL negativo** de `SOA.MINIMUM` (bajo, porque los
+nombres pueden aparecer), y un `ERROR_DE_RED` **no se cachea nunca**, porque es un
+fallo de la consulta, no una afirmación sobre el nombre.
+
+> **Tope para 30:** (a) los 6 campos del mensaje con su razón, (b) la
+> implementación con los 5 puntos justificados, (c) la distinción entre los tres
+> resultados y por qué el caché negativo existe.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>eirc1102</code> / <code>sirc1102</code></strong> — Pregunta 2 completa (10 pts, DHCP)</li>
+<li><strong>Examen <code>eirc0703</code> / <code>sirc0703</code></strong> — Pregunta 3 (10 pts, RARP y su relación con DHCP)</li>
+<li><strong>Examen <code>eirc1012</code> / <code>sirc1012</code></strong> — Problema 1 (30 pts, sockets UDP)</li>
+<li><strong>Examen <code>eirc1003</code> / <code>sirc1003</code></strong> — Pregunta 2 (8 pts, arquitectura de correo), P4 (8 pts, SNMP)</li>
+<li><strong>Examen <code>eirc0812</code> / <code>sirc0812</code></strong> — Pregunta 4 (7 pts, POP3 y CRLF.CRLF)</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 5 (DHCP) y cap. 7</li>
+<li><strong>RFC 2131</strong> (DHCP) · <strong>RFC 2132</strong> (opciones DHCP) · <strong>RFC 826</strong> (RARP)</li>
+<li><strong><code>ACTUALIZACIONES.md</code> §5</strong> — DHCPv6, SLAAC, CGNAT</li>
+<li><strong>Clase siguiente:</strong> 16 — Multiplexación, demultiplexación y UDP</li>
+</ul></body></html>

@@ -1,0 +1,1410 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 46 — Gestión de redes: SNMP, NETCONF y YANG</h1>
+<p><strong>Bloque:</strong> F (Servicios y gestión) · <strong>Semana:</strong> 16 · <strong>Duración estimada:</strong> 120 min
+<strong>Correlativa:</strong> Clase 45 (QoS, shaping, MPLS) · <strong>Sigue con:</strong> Clase 47 (Seguridad)
+<strong>Material de referencia:</strong> Tanenbaum cap. 5 §5.5 (gestión de redes) · <code>ACTUALIZACIONES.md</code> §11</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Explicar por qué una red grande <strong>no se puede administrar con <code>ping</code></strong>.</li>
+<li>Distinguir <strong>agente</strong> de <strong>gestor</strong> y describir qué hace cada uno, con la
+   asimetría entre "coleccionar" y "decidir".</li>
+<li>Describir el modelo <strong>MIB</strong>: qué es un OID, por qué es un <strong>árbol</strong>, y por qué
+   los OIDs no son nombres legibles.</li>
+<li>Explicar <strong>polling</strong> y <strong>traps</strong>, con la comparación de coste que se pregunta en
+   todos los exámenes.</li>
+<li>Enumerar las <strong>5 operaciones del SNMP</strong> y decir para qué sirve cada una.</li>
+<li>Explicar por qué <strong>SNMPv1/v2c</strong> con <em>community strings</em> es inaceptable y qué
+   arregla <strong>SNMPv3</strong> (USM + VACM).</li>
+<li>Describir <strong>NETCONF</strong> y <strong>YANG</strong> y decir <strong>en qué se diferencian de SNMP</strong> — la
+   comparación que es el centro de la clase.</li>
+</ol>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 780 350" style="max-width:780px"><rect width="780" height="350" fill="#ffffff"/><text x="390.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Modelo de gestion: gestor, agentes y MIB</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><rect x="290" y="46" width="200" height="48" rx="6" fill="#f7d9c8" stroke="#c8621a" stroke-width="1.2"/><text x="390.0" y="74.55" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#1a1a1a">Gestor / NMS</text><rect x="50" y="200" width="160" height="44" rx="5" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="130.0" y="225.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">Router 1</text><rect x="50" y="248" width="160" height="30" rx="4" fill="#dceaf3" stroke="#7aa7c4" stroke-width="1.2"/><text x="130.0" y="266.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">agente</text><rect x="310" y="200" width="160" height="44" rx="5" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="390.0" y="225.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">Switch 2</text><rect x="310" y="248" width="160" height="30" rx="4" fill="#dceaf3" stroke="#7aa7c4" stroke-width="1.2"/><text x="390.0" y="266.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">agente</text><rect x="570" y="200" width="160" height="44" rx="5" fill="#eaf2f7" stroke="#7aa7c4" stroke-width="1.2"/><text x="650.0" y="225.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">Servidor 3</text><rect x="570" y="248" width="160" height="30" rx="4" fill="#dceaf3" stroke="#7aa7c4" stroke-width="1.2"/><text x="650.0" y="266.5" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">agente</text><line x1="130" y1="104" x2="130" y2="146" stroke="#2e7d4f" stroke-width="1.8"/><line x1="650" y1="104" x2="650" y2="146" stroke="#2e7d4f" stroke-width="1.8"/><line x1="130" y1="146" x2="650" y2="146" stroke="#2e7d4f" stroke-width="1.8"/><line x1="130" y1="146" x2="390" y2="96" stroke="#c8621a" stroke-width="1.8" marker-end="url(#po)"/><text x="30" y="168" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#2e7d4f">traps (push):  no solicitadas. El agente avisa cuando quiere.</text><text x="30" y="184" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#2e7d4f">Problema: no podes confiar en que lleguen, y no sabes quien esta caido.</text><line x1="130" y1="278" x2="130" y2="296" stroke="#14507a" stroke-width="1.8"/><line x1="390" y1="278" x2="390" y2="296" stroke="#14507a" stroke-width="1.8"/><line x1="650" y1="278" x2="650" y2="296" stroke="#14507a" stroke-width="1.8"/><line x1="650" y1="296" x2="130" y2="278" stroke="#c8621a" stroke-width="1.8" marker-end="url(#po)"/><text x="30" y="310" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#14507a">polling (pull):  GET / GETNEXT / GETBULK.</text><text x="30" y="326" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#14507a">El gestor pregunta dispositivo por dispositivo: con muchos, se demora.</text><text x="390" y="24" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">El agente vive en el dispositivo gestionado y la MIB es el esquema de los datos (OIDs jerarquicos).</text></svg></p>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2010-03 P4</code> (8 pts — agente, gestor y modelo MIB),
+<code>2008-07 P4</code> (4 pts — plano de datos vs. plano de control; en banda vs. fuera de
+banda), <code>2011-02 P1</code> (la gestión aparece como parte del escenario de TLS).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 El problema: por qué <code>ping</code> no es gestión</h2>
+<p>Imaginate la red de una universidad: 300 switches, 80 routers, 2 000 PCs, 40 APs.
+Son <strong>~2 400 dispositivos</strong>. ¿Cómo sabés si alguno está caído?</p>
+<p>La respuesta ingenua —"hago <code>ping</code> a todos"— falla por tres razones que conviene
+saber enunciar:</p>
+<table>
+<thead>
+<tr>
+<th>Problema</th>
+<th>Detalle</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Escala</strong></td>
+<td>2 400 pings por minuto es 1 línea de terminal por dispositivo. No escala a nada.</td>
+</tr>
+<tr>
+<td><strong>No dice nada útil</strong></td>
+<td><code>ping</code> dice "responde" o "no responde". No dice <em>cuánta</em> CPU usa, <em>cuánta</em> memoria, <em>qué interfaces están arriba</em>, <em>cuánto tráfico pasó por el puerto 7</em>.</td>
+</tr>
+<tr>
+<td><strong>No hay histórico</strong></td>
+<td><code>ping</code> es instantáneo. Si el puerto 7 se congestionó <strong>a las 3:14 y volvió a la normalidad a las 3:16</strong>, nadie se entera salvo que alguien estuviera mirando.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>La gestión de redes</strong> es la disciplina de responder tres preguntas sobre una red
+con cientos de dispositivos:</p>
+<div class="codehilite"><pre><span></span><code>   ESTADO      ¿qué está pasando AHORA?
+   HISTORIA    ¿qué pasó AYER a las 3:14?
+   CONTROL     ¿qué le MANDO que haga?
+</code></pre></div>
+
+<p>Y para eso hacen falta <strong>cinco funciones</strong> (RFC 1597, el modelo clásico):</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────────────────────────────────────────────┐
+   │  1. FAILURE            detectar que algo falló                 │
+   │  2. CONFIGURATION      cambiar la configuración a distancia     │
+   │  3. ACCOUNTING          medir quién usó qué                      │
+   │  4. PERFORMANCE         medir eficiencia y recursos              │
+   │  5. SECURITY            controlar quién puede hacer todo lo      │
+   │                          anterior                                │
+   └──────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<blockquote>
+<p><strong>La definición que hay que saber de memoria:</strong> <em>la gestión de redes es el
+conjunto de protocolos y procedimientos que permiten </em><em>observar, controlar y
+modificar</em><em> una red de forma </em><em>centralizada y estandarizada</em><em>, con independencia
+del fabricante del equipo.</em></p>
+</blockquote>
+<h2>1.2 El modelo SNMP: dos entidades y un idioma común</h2>
+<p>SNMP (<em>Simple Network Management Protocol</em>) es la respuesta. Y es una respuesta
+<strong>deliberadamente simple</strong>: un solo protocolo de aplicación que corre sobre <strong>UDP</strong>,
+normalmente en los puertos <strong>161</strong> (agente) y <strong>162</strong> (traps).</p>
+<div class="codehilite"><pre><span></span><code>            ┌──────────────────────────────────────────┐
+            │             GESTOR  (NMS)               │
+            │  "Network Management Station"           │
+            │                                          │
+            │  · Interfaz gráfica con todos los        │
+            │    dispositivos de la red                │
+            │  · Motor de reglas: "si el 70 % de uso   │
+            │    durante 5 min → alarmar"              │
+            │  · Base de datos histórica                │
+            │  · LA INTELIGENCIA ESTÁ ACÁ             │
+            └────┬───────────────┬───────────────┬─────┘
+                 │               │               │
+        UDP 161  │        UDP 161│        UDP 161│        (polling: el gestor pregunta)
+                 │               │               │
+            ┌────▼────┐     ┌────▼────┐     ┌────▼────┐
+            │ AGENTE  │     │ AGENTE  │     │ AGENTE  │
+            │  switch │     │  router │     │   AP    │
+            │         │     │         │     │         │
+            │ · Colec-│     │ · Colec-│     │ · Colec-│
+            │   ciona │     │   ciona │     │   ciona │
+            │ · No de-│     │ · No de-│     │ · No de-│
+            │   cide  │     │   cide  │     │   cide  │
+            │ ◀──────┼── UDP 162 (traps: el agente avisa, sin preguntar)
+            └─────────┘     └─────────┘     └─────────┘
+</code></pre></div>
+
+<h3>La asimetría fundamental (esto es lo que se pregunta)</h3>
+<p>El <strong>agente</strong> es un programa <strong>pequeño</strong> que vive <strong>dentro</strong> del equipo. Y esa es
+toda la historia:</p>
+<p><strong>El agente tiene recursos mínimos.</strong> Un switch de acceso de 24 puertos tiene
+procesador lento, memoria contada y flash de 8 MB. No puede correr una base de
+datos ni un motor de reglas. Solo puede:</p>
+<ol>
+<li><strong>Recoger</strong> valores de sus variables internas (contadores de tráfico, estado
+   de puertos, temperatura, uso de CPU).</li>
+<li><strong>Responder</strong> lo que le pregunten por puerto.</li>
+<li><strong>Generar notificaciones</strong> (<code>traps</code>) cuando un umbral se supera.</li>
+</ol>
+<p><strong>El agente NO decide.</strong> No dice "la memoria está al 80 %, voy a bajar las
+peticiones de log". <strong>Decide el gestor.</strong> Y hay una excepción clásica que la
+cátedra menciona y vale la pena conocer: <strong>RMON</strong> (<em>Remote Network Monitoring</em>),
+donde el agente sí tiene lógica: guarda estadísticas históricas <strong>en el propio
+dispositivo</strong> para que no haya que traerlas. Es la excepción, y por eso la
+mencionan los exámenes.</p>
+<p><strong>El gestor es un monstruo de recursos.</strong> Corre en un servidor con CPU, disco y
+memoria de sobra. Ahí van <strong>todos</strong> los datos, <strong>todos</strong> los históricos y <strong>toda</strong> la
+lógica.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Agente</strong></th>
+<th><strong>Gestor (NMS)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Dónde corre</td>
+<td><strong>dentro</strong> del dispositivo</td>
+<td>en un servidor central</td>
+</tr>
+<tr>
+<td>Recursos</td>
+<td>mínimos (CPU, RAM y disco chicos)</td>
+<td>abundancia</td>
+</tr>
+<tr>
+<td>Qué hace</td>
+<td><strong>coleciona</strong> y <strong>responde</strong></td>
+<td><strong>interpreta</strong>, <strong>decide</strong>, <strong>actúa</strong></td>
+</tr>
+<tr>
+<td>Cuántos</td>
+<td><strong>uno por dispositivo</strong> (~2 400)</td>
+<td><strong>uno para toda la red</strong></td>
+</tr>
+<tr>
+<td>Almacena histórico</td>
+<td>no (salvo RMON)</td>
+<td><strong>sí</strong>, es su razón de ser</td>
+</tr>
+<tr>
+<td>Intelligencia</td>
+<td>nula</td>
+<td><strong>toda</strong></td>
+</tr>
+<tr>
+<td>Fábrica</td>
+<td>del fabricante del equipo (o del SO)</td>
+<td>de terceros (Nagios, Zabbix, LibreNMS, SolarWinds, CiscoWorks)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>La frase para el examen:</strong> <em>"el agente está limitado por los recursos del
+dispositivo que administra; por eso su papel es mecánicamente el de collectar, y
+toda la inteligencia está en el gestor, que es quien centraliza, correlaciona y
+decide sobre miles de agentes a la vez."</em></p>
+</blockquote>
+<h3>El problema de la interoperabilidad</h3>
+<p>Los agentes los pone <strong>cada fabricante</strong>, y cada uno con su versión de firmware.
+Si el gestor no entiende el idioma de cada uno, no hay gestión. De ahí la
+necesidad de un <strong>modelo de información estándar</strong>: la <strong>MIB</strong>.</p>
+<h2>1.3 La MIB: un árbol con nombres numéricos</h2>
+<p><strong>MIB</strong> = <em>Management Information Base</em>. Es <strong>la base de datos</strong> de lo que un
+dispositivo sabe de sí mismo.</p>
+<div class="codehilite"><pre><span></span><code>   AGENTE
+     │
+     │  "no sé lo que es 'ifInOctets', pero sí sé que
+     │   tengo la variable número 1.3.6.1.2.1.2.2.1.10"
+     ▼
+   MIB  ──── un archivo de texto, tipo ASN.1, que DEFINE
+              la estructura del árbol
+</code></pre></div>
+
+<p><strong>El punto clave y contraintuitivo: SNMP no manda el nombre, manda el número.</strong></p>
+<p>Cada variable de la MIB tiene un <strong>OID</strong> (<em>Object Identifier</em>): una <strong>dirección
+jerárquica</strong> en un árbol universal. El OID es una secuencia de enteros, y cada
+nivel es un <em>nodo</em> del árbol.</p>
+<div class="codehilite"><pre><span></span><code>                    iso (1)                        ← la raíz
+                     │
+                 org (1.3)                       ← todos los-fire
+                     │
+                dod (1.3.6)                      ← Departamento de Defensa (USA)
+                     │
+                internet (1.3.6.1)                ← ¡el mundo real empieza acá!
+                     │
+                 mgmt (1.3.6.1.2)                ← administración
+                     │
+             mib-2 (1.3.6.1.2.1)                 ← ★ MIB-II: todo IPv4
+                     │
+                     ├── 1  system ............... info del dispositivo
+                     │         ├── 1  sysDescr        "Cisco WS-C2960..."
+                     │         ├── 2  sysObjectID     el modelo
+                     │         ├── 3  sysUpTime       segundos desde el boot
+                     │         ├── 4  sysContact      quién lo administra
+                     │         └── 5  sysName         "r1.miuy.edu.uy"
+                     │
+                     ├── 2  interfaces ........... todas las interfaces
+                     │         └── 2.2.1 ifTable
+                     │               └── 10  ifInOctets   ← bytes que entraron
+                     │               └── 16  ifOutOctets  ← bytes que salieron
+                     │
+                     ├── 4  ip .................... todo IPv4
+                     │         ├── 9  ipRouteTable     ← la tabla de ruteo
+                     │         └── 26 ipNetToMediaTable ← la tabla ARP
+                     │
+                     └── 8  snmp .................. sobre SNMP mismo
+</code></pre></div>
+
+<p><strong>El OID <code>1.3.6.1.2.1.2.2.1.10</code></strong> significa: en el nodo raíz <code>iso</code>, bajá al
+hijo <code>org</code>, después a <code>dod</code>, después a <code>internet</code>, después a <code>mgmt</code>, después a
+<code>mib-2</code>, después a <code>interfaces</code>, después a <code>ifTable</code>, después al índice <code>10</code>, y
+tomá la variable <code>ifInOctets</code>.</p>
+<p><strong>El <code>1.3.6.1</code> de <code>internet</code> es el "cuello de botella"</strong> y hay que saberlo: es
+literalmente el prefijo de <strong>todas</strong> las MIB de Internet. Si tenés un OID que
+empieza por <code>1.3.6.1</code>, es estándar. Los DHCP (<code>1.3.6.1.2.1.58.4</code>) y los bridges
+(<code>1.3.6.1.2.1.17</code>) están colgando de ahí.</p>
+<p><strong>Y las empresas cuelgan de <code>1.3</code>:</strong></p>
+<div class="codehilite"><pre><span></span><code>   1.3.6.1.4.1.&lt;N&gt;.&lt;sub&gt;       ← "empresa" (private enterprise)
+       │   │   │
+       │   │   └── sub-objeto definido por el fabricante
+       │   └────── número de la empresa ( Cisco = 9,
+       │           Juniper = 2636, HP = 11 )
+       └────────── "private enterprise": todo lo no-estándar
+</code></pre></div>
+
+<blockquote>
+<p><strong>El detalle fino:</strong> las MIB de los fabricantes cuelgan de <code>private enterprise</code>
+porque <strong>IANA reserva ese espacio</strong>. Es lo que permite que un fabricante extienda
+el modelo sin romper el estándar. Y por eso las MIB de fabricante <strong>no son
+portables</strong>: el gestor necesita la MIB del fabricante instalada para poder
+traducir los OIDs a nombres.</p>
+</blockquote>
+<p><strong>El <code>ifIndex</code>, el detalle que se pregunta:</strong> el OID <code>...ifTable.10</code> termina en
+<code>.10</code> pero ese <code>10</code> es <strong>la variable</strong> (<code>ifInOctets</code>), no un índice. La tabla
+tiene <strong>una fila por interfaz</strong>, y cada fila se direcciona <strong>agrego un número al
+final</strong>: <code>...ifInOctets.1</code>, <code>...ifInOctets.2</code>, <code>...ifInOctets.3</code>. Ese número final
+es el <strong>ifIndex</strong>, y <strong>cambia</strong> si el SO renumera las interfaces. Es una fuente
+clásica de dolor de cabeza en el monitoreo.</p>
+<h2>1.4 Pull y push: polling vs. traps</h2>
+<p>Acá está <strong>el concepto central</strong> de toda la clase, y es la pregunta clásica:</p>
+<div class="codehilite"><pre><span></span><code>   POLLING  (pull, "tirón")          TRAPS  (push, "empujón")
+   ──────────────────────────        ─────────────────────────────
+   El GESTOR pregunta                El AGENTE avisa
+
+   GET / GETNEXT  ──▶ agente         ◀── TRAP   agente
+
+   · El gestor decide QUÉ y CUÁNDO   · El agente decide CUÁNDO avisar
+   · Simple, pero genera tráfico     · Reactivo: llega justo cuando pasa
+     constante incluso sin cambios      algo
+   · Si el gestor está caído,          · Se pierde si el gestor está caído
+     NO HAY NADA                       (no hay reintento)
+   · Retardo: hasta un período        · Retardo: casi cero
+     completo
+</code></pre></div>
+
+<h3>El coste del polling, que es el argumento que hay que dar</h3>
+<p>Si tenés <strong>2 400 dispositivos</strong> y hacés polling cada <strong>60 segundos</strong>,eso son:</p>
+<div class="codehilite"><pre><span></span><code>   2 400 dispositivos / 60 s = 40 consultas POR SEGUNDO
+   40 × 3600 = 144 000 consultas POR HORA
+   × 24 horas = 3 456 000 consultas POR DÍA
+</code></pre></div>
+
+<p><strong>Tres millones y medio de paquetes al día, para preguntar "¿seguís vivo?"</strong>
+cuando nada cambió. Y encima: <strong>si el gestor se cae, nadie se entera</strong>, porque
+nadie pregunta. El fallo del monitoreo es silencioso.</p>
+<h3>El coste del trap</h3>
+<p>El trap es <strong>una sola cosa</strong>: como máximo <strong>2 traps por segundo por agente</strong>, y
+<strong>solo si hay algo que reportar</strong>. Es infinitamente más barato.</p>
+<p><strong>El problema del trap:</strong> es un <strong>UDP</strong>, o sea un datagrama <strong>sin confirmar</strong>. Si
+el gestor estaba caído cuando ocurrió el evento, <strong>el trap se perdió para
+siempre</strong>. No hay reintento, no hay cola.</p>
+<blockquote>
+<p><strong>La respuesta completa al examen</strong> —<em>los traps no reemplazan al polling, lo
+complementan.</em> <strong>El polling</strong> es el que te dice cómo está la red <strong>en general</strong> y
+guarda el <strong>histórico</strong>; <strong>el trap</strong> es el que te dice <strong>qué cambió ahora</strong>, y
+como es <em>push</em>, es instantáneo y barato. La combinación clásica es: <strong>polling
+lento</strong> (cada 5 minutos, para tener la línea de base y detectar dispositivos
+muertos) <strong>+ traps</strong> (para reaccionar a los eventos). Si hacés polling cada 10
+segundos para "no perderte nada", estás pagando caro; y si hacés solo traps,
+<strong>no detectás un equipo que se apagó</strong> (no hay trap de "me apagé", porque el
+agente ya está muerto).*</p>
+</blockquote>
+<h2>1.5 Las 5 operaciones</h2>
+<p><strong>SNMPv1/v2c</strong>, que es lo que se pregunta:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Operación</th>
+<th>Tipo</th>
+<th>Qué hace</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>GET</strong></td>
+<td><strong>pull</strong></td>
+<td>leer <strong>un</strong> OID exacto</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>GETNEXT</strong></td>
+<td><strong>pull</strong></td>
+<td>leer <strong>el siguiente</strong> OID del árbol a partir de uno</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>GETBULK</strong> (v2c)</td>
+<td><strong>pull</strong></td>
+<td>leer <strong>muchos</strong> OIDs de una vez (equivale a N GETNEXT, pero en <strong>un solo</strong> datagrama)</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>SET</strong></td>
+<td><strong>push desde el gestor</strong></td>
+<td><strong>escribir</strong> un valor → es la única forma de <strong>configurar</strong> por SNMP</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>TRAP</strong></td>
+<td><strong>push desde el agente</strong></td>
+<td>el agente avisa de un evento</td>
+</tr>
+</tbody>
+</table>
+<p><strong>El detalle de <code>GETNEXT</code> que hay que entender bien</strong>, porque es la clave de cómo
+funciona el monitoreo:</p>
+<div class="codehilite"><pre><span></span><code>   GETNEXT(...ifInOctets)  →   ¿cuál es el OID siguiente en el árbol?
+
+   El gestor NO sabe de antemano qué interfaces existen.
+   Entonces va "recorriendo" el árbol:
+
+     GETNEXT(.1.3.6.1.2.1.2.2.1.10)        =  .1.3.6.1.2.1.2.2.1.10.1  ← if #1
+     GETNEXT(.1.3.6.1.2.1.2.2.1.10.1)      =  .1.3.6.1.2.1.2.2.1.10.2  ← if #2
+     GETNEXT(.1.3.6.1.2.1.2.2.1.10.2)      =  .1.3.6.1.2.1.2.2.1.10.3  ← if #3
+     GETNEXT(.1.3.6.1.2.1.2.2.1.10.3)      =  .1.3.6.1.2.1.2.2.1.16.1  ← ifOutOctets #1
+                                                 ↑ se pasó a la SIGUIENTE variable
+     ...
+     GETNEXT(último OID conocido)          =  ERROR  (finSubId)
+</code></pre></div>
+
+<p><strong>O sea: <code>GETNEXT</code> es un puntero que recorre el árbol en orden alfabético-numérico.</strong>
+Y <code>GETBULK</code> es el mismo recorrido, pero <strong>N de ellos en un solo datagrama</strong> — que
+existe justamente porque con 24 puertos y 30 variables son <strong>720 OIDs</strong> por
+dispositivo, y hacerlos de a uno sería insostenible.</p>
+<p><strong>Y la <code>community string</code>:</strong> en SNMPv1 y v2c, el "autenticado" es una cadena de
+texto plana —<code>public</code> o <code>private</code>— que viaja <strong>en claro</strong> en cada paquete. No es
+cifrado, no es autenticación real, es una contraseña de texto. Es exactamente el
+punto de entrada de la clase 47.</p>
+<h2>1.6 SNMPv3: USM y VACM</h2>
+<p>SNMPv3 no agrega una operación: <strong>rediseñó la seguridad y la autorización</strong>. Y
+tiene exactamente <strong>dos mecanismos</strong>:</p>
+<h3>USM — <em>User-based Security Model</em></h3>
+<p>Responde a <strong>"¿quién sos y podés mandar esto?"</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Pieza</th>
+<th>Qué hace</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Autenticación</strong></td>
+<td>HMAC sobre el mensaje: si alguien modifica un paquete en el camino, el HMAC no da más y el receptor lo rechaza</td>
+</tr>
+<tr>
+<td><strong>Cifrado</strong></td>
+<td>el contenido va cifrado (DES clásico, hoy AES-192/256)</td>
+</tr>
+<tr>
+<td><strong>No repudio</strong></td>
+<td>digest de clave: el emisor manda un hash de su clave para que el receptor verifique que la clave es la misma</td>
+</tr>
+</tbody>
+</table>
+<p>Los algoritmos los define una OID que <strong>el propio mensaje declara</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   msgAuthoritativeEngineID    → quién es la autoridad
+   msgUserName                 → el usuario
+   msgAuthenticationParameters → el HMAC (autenticación)
+   msgPrivacyParameters        → el vector de cifrado
+   msgSecurityParameters       → todo lo anterior, con longitudes
+</code></pre></div>
+
+<p>El detalle fino que vale la pena: <strong>el receptor tiene que responder con su propio
+parámetro de seguridad, no con el del emisor</strong>. Por eso el OID de algorithms no va
+en la respuesta: si fuera, un atacante podría hacer que el receptor use un
+algoritmo débil. Es un detalle de diseño elegante que muestra que el protocolo
+está pensado contra un atacante activo.</p>
+<h3>VACM — <em>View-based Access Control Model</em></h3>
+<p>Responde a <strong>"¿qué podés ver y hacer?"</strong>. Es un <strong>control de acceso</strong> por
+<strong>vistas</strong> sobre la MIB:</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────────────────────────────────┐
+   │  Vista "solo-interfaces"                             │
+   │   si     ifview    = 1.3.6.1.2.1.2.2.*  (ifTable)    │
+   │    permitir GET y GETNEXT                            │
+   │    NO permitir SET                                   │
+   ├──────────────────────────────────────────────────────┤
+   │  Vista "admin-completo"                              │
+   │    permitir TODO sobre 1.3.6.1.2.1.*                │
+   │    INCLUDING la community "escritura"                 │
+   └──────────────────────────────────────────────────────┘
+
+   El usuario "readonly"   →  vista "solo-interfaces"
+   El usuario "admin-red"  →  vista "admin-completo"
+   El usuario "sensor"     →  sin acceso a ipRouteTable (que
+                             es información sensible)
+</code></pre></div>
+
+<p><strong>La idea clave:</strong> es <strong>principio de mínimo privilegio aplicado a la MIB</strong>. Un
+sensor térmico no necesita ver la tabla de ruteo, y no por cortesía: la tabla de
+ruteo es <strong>información muy útil para un atacante</strong>. Separar vistas <strong>reduce la
+superficie de ataque</strong>.</p>
+<h2>1.7 ⚠️ Actualización a 2026: NETCONF y YANG</h2>
+<p>Acá viene la parte que cambia el cuadro, y es importante ser honesto con ella.</p>
+<h3>Qué es NETCONF</h3>
+<p><strong>NETCONF</strong> (<code>RFC 6241</code>, 2011) es un protocolo de <strong>configuración remota</strong> sobre:</p>
+<ul>
+<li><strong>SSH</strong> como transporte (puerto <strong>830</strong>) → <strong>autenticado y cifrado de fábrica</strong>,
+  sin <em>community strings</em> en claro.</li>
+<li><strong>XML</strong> como codificación.</li>
+<li><strong>RPCs explícitos</strong>, no GET/SET genéricos.</li>
+</ul>
+<div class="codehilite"><pre><span></span><code>   SNMP v2c                          NETCONF
+   ────────                          ────────
+   GET   / SET   (genéricos)         &lt;get&gt;  &lt;get-config&gt;  &lt;edit-config&gt;
+                                    &lt;copy-config&gt;  &lt;delete-config&gt;
+                                    &lt;lock&gt;  &lt;unlock&gt;  &lt;commit&gt;  &lt;commit-discard&gt;
+   No transaccional                  &lt;edit-config&gt; + &lt;commit&gt; = TRANSACCIONAL
+   No hay "candidato"                datastores: running / candidate / startup
+   Semántica defined por el agente   semántica DEFINIDA POR EL MODELO (YANG)
+</code></pre></div>
+
+<p><strong>Los 3 datastores</strong> son la diferencia operacional más importante:</p>
+<div class="codehilite"><pre><span></span><code>   startup  ── la config con que arrancó el equipo (de fábrica o de un respaldo)
+      │
+      ▼
+   candidate ── un BORRADOR. Podés editarlo, validarlo y rechazarlo
+      │          sin tocar nada que esté corriendo.
+      │          ★ Esto es lo que permite "aplicar" una config de a un
+      │            solo paso, y si falla, no queda nada a medias.
+      ▼
+   running ── la config REALMENTE en ejecución ahora
+
+   &lt;commit&gt;            candidate  →  running   (con validación previa)
+   &lt;commit-discard&gt;    &lt;aborta todos los cambios no commiteados&gt;
+   &lt;lock&gt; / &lt;unlock&gt;   evita que dos administradores editen a la vez
+</code></pre></div>
+
+<blockquote>
+<p><strong>El <code>lock</code> es la clave de por qué existe la semántica transaccional</strong>: en SNMP,
+un <code>SET</code> es un <code>SET</code>; si mandás 20 SET y el 15º falla, <strong>los 14 anteriores ya
+están aplicados</strong> y el dispositivo quedó en un estado intermedio que nadie pidió.
+Con NETCONF, los 20 van al <code>candidate</code>, se validan <strong>todos juntos</strong>, y recién
+después el <code>commit</code> los aplica. <strong>O se aplican todos o ninguno.</strong></p>
+</blockquote>
+<h3>Qué es YANG</h3>
+<p><strong>YANG</strong> (<code>RFC 7950</code>, 2016, <em>Internet Standard</em>) es el <strong>lenguaje de modelado</strong> de
+la configuración. Se escribe en YANG y se <strong>compila</strong> a un schema XML que dice
+exactamente qué campos existen, qué tipos tienen, cuáles son obligatorios y
+cuáles pueden repetirse.</p>
+<div class="codehilite"><pre><span></span><code>   Los módulos YANG de un fabricante:
+
+     ietf-interfaces      → interfaces, susounteres, sus estados
+     ietf-ip              → direcciones IPv4
+     ietf-routing         → tabla de rutas estáticas
+     ietf-system          → hostname,Clock, contactos
+     cisco-ios-xe-*      → las extensiones del fabricante
+</code></pre></div>
+
+<p><strong>La diferencia conceptual que hay que decir en el examen:</strong></p>
+<blockquote>
+<p>SNMP <strong>no define qué significa la información</strong>: el agente publica una MIB y el
+gestor la interpreta. El <strong>contenido semántico lo pone el fabricante</strong> (o sea,
+<strong>cada familia de equipos tiene su propio dialecto</strong>).</p>
+<p>YANG <strong>sí define la semántica</strong>: el modelo es público, está escrito en un
+lenguaje estándar y describe <strong>cómo se llama cada campo, de qué tipo es y cómo
+se relaciona con los otros</strong>. <strong>No dependés del fabricante para entender la
+configuración.</strong></p>
+</blockquote>
+<p>Esa es <strong>toda</strong> la diferencia en una frase: <strong>SNMP describe el dispositivo, YANG
+describe el modelo del mundo</strong>.</p>
+<p><strong>La comparación que resume la clase:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>SNMP</strong></th>
+<th><strong>NETCONF + YANG</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Para qué</td>
+<td><strong>monitoreo</strong> (métricas)</td>
+<td><strong>configuración</strong> y telemetría</td>
+</tr>
+<tr>
+<td>Modelo</td>
+<td>MIB: un <strong>árbol de variables</strong></td>
+<td>YANG: un <strong>lenguaje de modelado</strong></td>
+</tr>
+<tr>
+<td>Transporte</td>
+<td>UDP 161/162</td>
+<td><strong>SSH</strong> 830 (+ RESTCONF 443)</td>
+</tr>
+<tr>
+<td>Modelo de datos</td>
+<td>define <strong>el dispositivo</strong></td>
+<td>define <strong>el modelo</strong>, no el dispositivo</td>
+</tr>
+<tr>
+<td>Semántica</td>
+<td><strong>la pone el fabricante</strong></td>
+<td><strong>estándar y pública</strong></td>
+</tr>
+<tr>
+<td>Operaciones</td>
+<td>genéricas (<code>GET</code>, <code>SET</code>)</td>
+<td>RPCs con <strong>significado</strong> (<code>&lt;lock&gt;</code>)</td>
+</tr>
+<tr>
+<td>Transaccional</td>
+<td>no</td>
+<td><strong>sí</strong> (<code>&lt;commit&gt;</code>)</td>
+</tr>
+<tr>
+<td>Seguridad</td>
+<td>community strings (v2c) / USM (v3)</td>
+<td><strong>SSH</strong>: autenticado y cifrado</td>
+</tr>
+<tr>
+<td>Push</td>
+<td>traps (poco confiable)</td>
+<td><strong>telemetría</strong> (gNMI, YANG-Push)</td>
+</tr>
+<tr>
+<td>Push vs pull</td>
+<td>predomina <strong>pull</strong></td>
+<td><strong>push</strong> estructurado</td>
+</tr>
+</tbody>
+</table>
+<h3>Lo que dice la propia IETF, textual (y está muy bien que lo tengas)</h3>
+<p>El grupo de trabajo de NETCONF escribió en 2024:</p>
+<blockquote>
+<p><em>"SNMP &amp; MIBs nunca alcanzaron tracción significativa en la industria </em><em>para
+configuración</em><em>… esperamos una </em><em>disminución significativa</em><em> de despliegues de
+SNMP en los próximos 10 años."</em></p>
+</blockquote>
+<p>Y lo que pasó en la realidad:</p>
+<div class="codehilite"><pre><span></span><code>   SNMP   →  SIGUE SIENDO EL REY DEL POLLING DE MÉTRICAS
+             (Nagios, Zabbix, LibreNMS, Prometheus+SNMP Exporter, todo
+              el mundo monitorea con SNMP)
+
+   NETCONF/YANG →  EL REY DE LA CONFIGURACIÓN Y DE LA TELEMETRÍA
+             (está en Cisco IOS XE/NX-OS, Juniper Junos, Arista EOS,
+              Nokia SR OS, Huawei VRP)
+</code></pre></div>
+
+<p><strong>El reencuadre honesto que hay que poder escribir en el examen:</strong></p>
+<blockquote>
+<p><em>SNMP no está muerto: está </em><em>desplazado</em><em>. Se inventó para gestionar, y cumplió;
+pero el mundo descubrió que la parte de </em>preguntar métricas<em> era la fácil y la
+parte de </em>configurar<em> era la que siempre estuvo caída, porque el modelo no era
+suficientemente rico. NETCONF+YANG no reemplazó a SNMP: </em><em>le sacó la mitad
+difícil</em><em> y le dejó la mitad que funciona bien.</em></p>
+</blockquote>
+<h3>Los otros que hay que mencionar (para sumar puntos)</h3>
+<table>
+<thead>
+<tr>
+<th>Protocolo</th>
+<th>Para qué</th>
+<th>RFC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>gNMI</strong> (<em>gRPC Network Management Interface</em>)</td>
+<td>telemetría <strong>push</strong> estructurada, de Google, en los vendors grandes</td>
+<td>no-IETF (gRPC sobre HTTP/2)</td>
+</tr>
+<tr>
+<td><strong>BMP</strong> (<em>BGP Monitoring Protocol</em>)</td>
+<td>monitorear <strong>BGP desde afuera</strong> de un router</td>
+<td><code>RFC 7854</code></td>
+</tr>
+<tr>
+<td><strong>IPFIX</strong></td>
+<td>exportar <strong>flujos</strong> ( Flow Records)</td>
+<td><code>RFC 7011</code></td>
+</tr>
+<tr>
+<td><strong>NTSF</strong> (<em>Network Telemetry Framework</em>)</td>
+<td><strong>SPDX</strong> y modelo común de telemetría</td>
+<td><code>RFC 9232</code></td>
+</tr>
+<tr>
+<td><strong>syslog</strong></td>
+<td>eventos; sigue vivo y se usa <strong>mucho</strong></td>
+<td><code>RFC 5424</code> (transporte TLS: <code>RFC 5425</code>)</td>
+</tr>
+<tr>
+<td><strong>NETCONF SSH</strong>: transporte, <code>RFC 6242</code> · <strong>RESTCONF</strong>: HTTP, <code>RFC 8040</code></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Un detalle que suma:</strong> <strong>NETCONF solo usa SSH</strong>, pero <strong>RESTCONF</strong> (el mismo
+modelo YANG, sobre HTTP/HTTPS, puerto 443) es el que se usa para hablar con
+controladores que pasan por proxies y firewalls. Es el mismo modelo de datos,
+distinto transporte: <strong>YANG es el modelo, NETCONF y RESTCONF son dosolateral</strong>.</p>
+</blockquote>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — Leer un OID y encontrar la variable</h2>
+<p><strong>Enunciado.</strong> Un gestor consulta <code>1.3.6.1.2.1.2.2.1.16.7</code>. Decí: ¿qué variable
+es, en qué tabla está, y qué interfaz representa?</p>
+<p><strong>Resolución paso a paso.</strong></p>
+<div class="codehilite"><pre><span></span><code>   1.3 . 6 . 1 . 2 . 1 . 2 . 2 . 1 . 16 . 7
+   │           │   │   │   │   │   │  │   │  │   └── 7      = ÍNDICE
+   │           │   │   │   │   │   │   │   │  └───── 16     = VARIABLE
+   │           │   │   │   │   │   │   │   └──────── 1     = fila de la tabla
+   │           │   │   │   │   │   │   └──────────── 2.2   = ifTable
+   │           │   │   │   │   │   └──────────────── 2     = interfaces
+   │           │   │   │   │   └──────────────────── 1     = mib-2
+   │           │   │   │   └──────────────────────── 2     = mgmt
+   │           │   │   └────────────────────────────── 1     = internet
+   │           │   └────────────────────────────────── 6     = dod
+   │           └────────────────────────────────────── 3     = org
+   └────────────────────────────────────────────────────── 1 = iso
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Parte</th>
+<th>Significado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>1.3.6.1.2.1</code></td>
+<td><strong>MIB-II</strong> (toda la gestión de Internet)</td>
+</tr>
+<tr>
+<td><code>.2</code></td>
+<td>el grupo <code>interfaces</code></td>
+</tr>
+<tr>
+<td><code>.2.1</code></td>
+<td>la <code>ifTable</code></td>
+</tr>
+<tr>
+<td><code>.16</code></td>
+<td>la <strong>variable</strong>: <strong><code>ifOutOctets</code></strong> — octetos <strong>salientes</strong> en la interfaz <code>ifIndex = 7</code></td>
+</tr>
+<tr>
+<td><code>.7</code></td>
+<td><code>ifIndex = 7</code>: la <strong>séptima</strong> interfaz del dispositivo</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Interpretación:</strong> el gestor está leyendo <strong>el total de bytes que la interfaz 7
+mandó desde que arrancó</strong>. Y como <code>ifOutOctets</code> es un <strong>contador acumulativo de
+32 bits que se desborda</strong>, el valor <strong>no esbytes por segundo</strong>: es un <strong>contador
+monótono creciente</strong>.</p>
+<p><strong>Y acá está el error clásico que vale para el examen:</strong></p>
+<blockquote>
+<p>⚠️ <strong>Un contador de 32 bits se desborda a los ~4 Gbytes.</strong> Si el enlace lleva
+1 Gbps, se desborda cada <strong>32 segundos</strong>. Por eso <strong>nunca se consulta el valor
+y se lo interpola</strong>: lo correcto es tomar <strong>dos muestras separadas por un
+intervalo</strong> y hacer la resta:</p>
+<p><code>tasa (bytes/s) = (ifOutOctets₂ − ifOutOctets₁) / (t₂ − t₁)</code></p>
+<p>Y si la diferencia da <strong>negativa</strong>, <strong>no es un error de medición</strong>: es el
+desbordamiento. Hay que sumarle <code>2³² = 4 294 967 296</code> al resultado.</p>
+</blockquote>
+<h2>2.2 Ejercicio 2 —SNMPv3: el mensaje de una <code>GET</code> con USM</h2>
+<p><strong>Enunciado.</strong> Escribí los campos de seguridad de un <code>GET</code> de SNMPv3 cuando el
+<strong>receptor</strong> es la autoridad (es decir, el gestor le pregunta al agente).</p>
+<p><strong>Resolución.</strong> Con USM, el mensaje lleva estos campos <strong>en el nivel de seguridad
+de SNMP</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────────────────────────────────────┐
+   │  msgVersion                  = 3                         │
+   │  msgGlobalData                                             │
+   │     msgID                     = n (número de transacción)│
+   │     msgMaxSize                = 65507                     │
+   │     msgFlags                                              │
+   │        authFlag  = 1     → HAY autenticación             │
+   │        privFlag  = 1     → HAY cifrado                   │
+   │        reportableFlag = 1                                │
+   │     msgSecurityModel         = 3  (USM)                  │
+   │  msgSecurityParameters                                      │
+   │     msgAuthoritativeEngineID = ID del receptor  ← ★       │
+   │     msgUserName               = "admin"                    │
+   │     msgAuthenticationParameters  = HMAC-SHA-256-128(...)  │
+   │     msgPrivacyParameters         = AES-192-CFB(...)       │
+   │     msgSecurityParameters        = las longitudes de los   │
+   │                                    anteriores, codificadas  │
+   └──────────────────────────────────────────────────────────┘
+   + PDU: GetRequest con el OID pedido
+</code></pre></div>
+
+<p><strong>Lo que hay que explicar de cada campo:</strong></p>
+<ol>
+<li>
+<p><strong><code>msgAuthoritativeEngineID</code> = ID del receptor.</strong> Porque la autoridad en
+   SNMPv3 es siempre <strong>quien responde</strong>: el gestor le pregunta al agente y el
+   agente es la autoridad. Y el ID del motor lo <strong>sincroniza el descubrimiento</strong>:
+   el primer mensaje es una <strong>solicitud de descubrimiento</strong>, sin parámetros de
+   seguridad, y la respuesta trae el <code>engineID</code> y los <strong>algorithms</strong> disponibles.</p>
+</li>
+<li>
+<p><strong><code>msgFlags</code>: <code>authFlag</code> y <code>privFlag</code>.</strong> Los dos pueden ir por separado. Con
+   solo <code>authFlag</code> tenés <strong>autenticación e integridad pero no confidencialidad</strong>:
+   el contenido se ve en claro pero nadie lo puede modificar sin que se detecte.
+   Es una opción real para datos que no son secretos pero sí deben ser íntegros.</p>
+</li>
+<li>
+<p><strong>El HMAC va sobre el mensaje entero</strong>, con los parámetros de seguridad puestos
+   a cero y con una <strong>clave privada del receptor</strong> derivada de la contraseña. Por
+   eso un HMAC calculado con una <strong>clave compartida</strong> no es igual al cálculo con
+   la contraseña directa: se deriva primero (<code>password-to-key</code>), por lo mismo que
+   en WPA.</p>
+</li>
+</ol>
+<h2>2.3 Ejercicio 3 — Calcular el coste del polling vs. los traps</h2>
+<p><strong>Datos.</strong> Red con <strong>300 switches, 80 routers y 2 AP</strong> = <strong>382 dispositivos</strong>. Se
+hace polling con <strong>25 OIDs</strong> por dispositivo, cada <strong>60 segundos</strong>.</p>
+<p><strong>Resolución — el polling:</strong></p>
+<div class="codehilite"><pre><span></span><code>   Consultas por ciclo  = 382 dispositivos × 25 OIDs = 9 550 GETs
+   Por segundo          = 9 550 / 60 s = 159 GET/s
+   Por hora             = 159 × 3 600 = 573 000 GETs
+   Por día              = 573 000 × 24 = 13 752 000 GETs
+
+   Coste por paquete: un GET con un OID son ~100 bytes de payload,
+   más ~40 de UDP/IP/Ethernet = ~140 bytes.
+
+   Volumen diario = 13 752 000 × 140 B = 1,925 GB/día
+                     ≈ 1,9 GB solo de SONDEO, todos los días.
+</code></pre></div>
+
+<p><strong>Y con <code>GETBULK</code>, que es lo que se usa de verdad:</strong> <code>GETBULK</code> pide <strong>25 OIDs en
+un paquete</strong>. Entonces:</p>
+<div class="codehilite"><pre><span></span><code>   Paquetes por ciclo = 382
+   Por día            = 382 × 1 440 ciclos/día = 550 080 paquetes/día
+   Volumen            = 550 080 × ~1 800 B (25 OIDs) ≈ 990 MB/día
+
+   → 25 veces MENOS tráfico, misma información. ★
+</code></pre></div>
+
+<p><strong>Interpretación:</strong> ese es el motivo de ser de <code>GETBULK</code>, y por eso <strong>existe en
+v2c y no en v1</strong>: v1 era inmanejable y no se podía monitorear nada grande.</p>
+<p><strong>Los traps, en comparación:</strong></p>
+<div class="codehilite"><pre><span></span><code>   Coste de un trap: ~1 paquete cuando HAY evento, nada cuando no hay.
+   Límite: 2 traps/s por agente.
+
+   El peor caso teórico: 382 × 2 = 764 traps/s. Pero eso es
+   un dispositivo que está fallando masivamente, que es exactamente
+   cuando QUERÉS que el sistema grite.
+</code></pre></div>
+
+<p><strong>La conclusión del ejercicio:</strong> el polling es <strong>predecible</strong> pero <strong>caro y ciego</strong>;
+el trap es <strong>barato y reactivo</strong> pero <strong>se pierde si el gestor está caído</strong>.</p>
+<h2>2.4 Ejercicio 4 — Convertir un comando de CLI en NETCONF</h2>
+<p><strong>Enunciado.</strong> El SNMP <code>SET</code> es inútil para configurar. Comparar:
+<code>snmp-server community public RO</code> (SNMP) vs. la misma intención en NETCONF.</p>
+<p><strong>Resolución — el mismo objetivo por dos caminos:</strong></p>
+<div class="codehilite"><pre><span></span><code>   SNMP v2c                                NETCONF + YANG
+   ────────                                ────────────────
+   snmp-server community public RO        system {      ← módulo YANG "ietf-system"
+     (se ejecuta en la CLI del agente,        host-name "r1.miuy.edu.uy";
+      NO ES UN GET/SET: es una instrucción   location    "Piso 3, Sala 302";
+      de configuración del agente, escrita    contact     "noc@miuy.edu.uy";
+      a mano por el admin)                 }
+</code></pre></div>
+
+<p><strong>Resolución con el XML del <code>&lt;edit-config&gt;</code>:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nt">&lt;rpc</span><span class="w"> </span><span class="na">message-id=</span><span class="s">"101"</span><span class="w"> </span><span class="na">xmlns=</span><span class="s">"urn:ietf:params:xml:ns:netconf:base:1.0"</span><span class="nt">&gt;</span>
+<span class="w">  </span><span class="nt">&lt;edit-config&gt;</span>
+<span class="w">    </span><span class="nt">&lt;target&gt;</span>
+<span class="w">      </span><span class="nt">&lt;running/&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/target&gt;</span>
+<span class="w">    </span><span class="nt">&lt;default-operation&gt;</span>merge<span class="nt">&lt;/default-operation&gt;</span>
+<span class="w">    </span><span class="nt">&lt;config&gt;</span>
+<span class="w">      </span><span class="nt">&lt;system</span><span class="w"> </span><span class="na">xmlns=</span><span class="s">"urn:ietf:params:xml:ns:yang:ietf-system"</span><span class="nt">&gt;</span>
+<span class="w">        </span><span class="nt">&lt;host-name&gt;</span>r1.miuy.edu.uy<span class="nt">&lt;/host-name&gt;</span>
+<span class="w">        </span><span class="nt">&lt;location&gt;</span>Piso<span class="w"> </span>3,<span class="w"> </span>Sala<span class="w"> </span>302<span class="nt">&lt;/location&gt;</span>
+<span class="w">        </span><span class="nt">&lt;contact&gt;</span>noc@miuy.edu.uy<span class="nt">&lt;/contact&gt;</span>
+<span class="w">      </span><span class="nt">&lt;/system&gt;</span>
+<span class="w">    </span><span class="nt">&lt;/config&gt;</span>
+<span class="w">  </span><span class="nt">&lt;/edit-config&gt;</span>
+<span class="nt">&lt;/rpc&gt;</span>
+
+<span class="nt">&lt;rpc-reply</span><span class="w"> </span><span class="na">message-id=</span><span class="s">"101"</span><span class="nt">&gt;</span>
+<span class="w">  </span><span class="nt">&lt;ok/&gt;</span>
+<span class="nt">&lt;/rpc-reply&gt;</span>
+</code></pre></div>
+
+<p><strong>Y con datastores, que es la diferencia real:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="cm">&lt;!-- 1. editar el BORRADOR, sin tocar nada en ejecución --&gt;</span>
+<span class="nt">&lt;edit-config&gt;</span>
+<span class="w">  </span><span class="nt">&lt;target&gt;&lt;candidate/&gt;&lt;/target&gt;</span>
+<span class="w">  </span><span class="nt">&lt;config&gt;</span><span class="w"> </span>...<span class="w"> </span>las<span class="w"> </span>20<span class="w"> </span>líneas<span class="w"> </span>nuevas<span class="w"> </span>...<span class="w"> </span><span class="nt">&lt;/config&gt;</span>
+<span class="nt">&lt;/edit-config&gt;</span>
+
+<span class="cm">&lt;!-- 2. VALIDAR sin aplicar: si algo está mal, NO cambió nada --&gt;</span>
+<span class="nt">&lt;validate&gt;&lt;source&gt;&lt;candidate/&gt;&lt;/source&gt;&lt;/validate&gt;</span>
+
+<span class="cm">&lt;!-- 3. si el validate da OK, aplicar de golpe --&gt;</span>
+<span class="nt">&lt;commit/&gt;</span>
+</code></pre></div>
+
+<p><strong>Lo que gained con esto:</strong> si la línea 15 de las 20 es inválida, con <code>commit</code> <strong>no
+se aplica ninguna</strong>; con 20 <code>SET</code> de SNMP <strong>se aplicaron 14</strong> y el equipo quedó
+con una configuración <strong>mixta, a medias y no deseada</strong>.</p>
+<h2>2.5 Ejercicio 5 — Escribir una MIB mínima</h2>
+<p><strong>Enunciado.</strong> Escribí el fragmento ASN.1/SMIv2 de una MIB que defina una
+variable <code>turnosPendientes</code> que cuente los pedidos de turno en espera.</p>
+<p><strong>Resolución:</strong></p>
+<div class="codehilite"><pre><span></span><code>   -- ==================================================
+   -- MIB-MIYUY-MIB
+   -- ==================================================
+   TURNOS-MIB DEFINITIONS ::= BEGIN
+
+   IMPORTS
+       MODULE-IDENTITY, OBJECT-TYPE, Integer32, Counter32, TimeTicks
+           FROM SNMPv2-SMI
+       enterprises, MODULE-COMPLIANCE, OBJECT-GROUP
+           FROM SNMPv2-SMI;
+
+   miyuyTurnos MODULE-IDENTITY
+       LAST-UPDATED "202610010000Z"       -- formato AAAAMMDDHHMMSSZ
+       ORGANIZATION "Facultad de Ingenieria, UdelaR"
+       CONTACT-INFO "noc@miuy.edu.uy"
+       DESCRIPTION  "Gestion de la cola de turnos de la cafeteria."
+       ::= { enterprises 99999 }        -- 99999 = numero MI (declarar el propio)
+
+   miyuyTurnosMIBObjects  OBJECT IDENTIFIER ::= { miyuyTurnos 1 }
+
+   -- El objeto: un contador
+   turnosPendientes OBJECT-TYPE
+       SYNTAX      Counter32          -- se incrementa, NUNCA baja
+       UNITS       "turnos"           -- la unidad (conteo, bytes, segundos)
+       MAX-ACCESS  read-only          -- no escribible desde afuera
+       STATUS      current
+       DESCRIPTION "Cantidad de personas esperando turno en este momento.
+                     Es monotono creciente entre reinicios del agente:
+                     cuando se llega a 2^32 el agente lo vuelve a cero."
+       ::= { miyuyTurnosMIBObjects 1 }
+
+   -- El objeto: un estado
+   estadoTurnos OBJECT-TYPE
+       SYNTAX      INTEGER {
+                      normal(1),
+                     IEF(2),    -- (con un typo, a proposito, para mostrarlo)
+                      saturado(3),
+                      cerrado(4)
+                  }
+       MAX-ACCESS  read-write          -- este SÍ se puede cambiar
+       STATUS      current
+       DESCRIPTION "Estado operativo del sistema de turnos."
+       ::= { miyuyTurnosMIBObjects 2 }
+
+   miyuyTurnosCompliance MODULE-COMPLIANCE
+       STATUS current
+       MODULE  -- este módulo
+       ::= { miyuyTurnosMIBObjects 10 }
+
+   END
+</code></pre></div>
+
+<p><strong>Lo que hay que mirar en ese fragmento</strong>, porque cada detalle es una pregunta de
+examen:</p>
+<table>
+<thead>
+<tr>
+<th>Detalle</th>
+<th>Por qué importa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LAST-UPDATED "202610010000Z"</code></td>
+<td>formato <strong>obligatorio</strong> <code>AAAAMMDDHHMMMMZ</code>; si no cambia, el OID <strong>nunca</strong> se puede reutilizar</td>
+</tr>
+<tr>
+<td><code>Counter32</code> vs. <code>Integer32</code></td>
+<td><code>Counter32</code> <strong>sube y se desborda</strong>; <code>Integer32</code> <strong>sube y baja</strong>. Un contador de bytes <strong>jamás</strong> debe ser <code>Integer32</code></td>
+</tr>
+<tr>
+<td><code>MAX-ACCESS read-only</code> vs. <code>read-write</code></td>
+<td><strong><code>read-write</code> es una superficie de ataque</strong>: cualquiera que pueda escribir puede <strong>cambiar la configuración</strong> del equipo por SNMP</td>
+</tr>
+<tr>
+<td><code>STATUS current</code></td>
+<td><code>current</code> = vigente · <code>deprecated</code> = obsoleto pero se usa · <code>obsolete</code> = <strong>no usar</strong></td>
+</tr>
+<tr>
+<td><code>::= { enterprises 99999 }</code></td>
+<td>hay que <strong>registrar el número de empresa</strong> ante IANA</td>
+</tr>
+<tr>
+<td>El módulo <code>SNMPv2-SMI</code></td>
+<td><strong>SMIv2</strong>; SMIv1 (RFC 1155) no tiene <code>MODULE-IDENTITY</code> ni <code>Counter32</code></td>
+</tr>
+</tbody>
+</table>
+<h2>2.6 Ejercicio 6 — SNMPv3 con VACM: dimensionar una vista</h2>
+<p><strong>Enunciado.</strong> En una red de la facultad hay tres perfiles de usuario:
+<code>sensor</code>, <code>operador</code> y <code>admin</code>. Definir las vistas.</p>
+<p><strong>Resolución — el razonamiento por perfil:</strong></p>
+<div class="codehilite"><pre><span></span><code>   PERFIL     ¿QUÉ NECESITA VER?                 ¿QUÉ DEBE PODER HACER?
+   ──────────  ─────────────────────────────────  ────────────────────
+   sensor      temperature, estado de las          sólo GET / GETNEXT.
+               interfaces, uso de puertos.         ← NUNCA SET.
+
+   operador    todo lo de sensor + tablas de       GET, GETNEXT, GETBULK
+               ARP e interfaces; sysUpTime;        y SET **sólo sobre
+               ipAddressTable de SU subred.        la subred propia.
+
+   admin       todo (1.3.6.1.2.1.*)               GET, SET, y también
+                                                    `&lt;lock&gt;`/`&lt;unlock&gt;` para
+                                                    no pisar a otro.
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="cm">&lt;!-- Vista del sensor: SOLO lectura, y SOLO las subárboles termometricos --&gt;</span>
+<span class="nt">&lt;snmp-view</span><span class="w"> </span><span class="err">view</span><span class="w"> </span><span class="err">sensor-subtree</span><span class="w"> </span><span class="err">included</span><span class="w"> </span><span class="err">subtree</span><span class="w"> </span><span class="err">1.3.6.1.2.1.14.*</span><span class="nt">/&gt;</span>
+<span class="nt">&lt;snmp-view</span><span class="w"> </span><span class="err">view</span><span class="w"> </span><span class="err">if-subtree</span><span class="w">    </span><span class="err">included</span><span class="w"> </span><span class="err">subtree</span><span class="w"> </span><span class="err">1.3.6.1.2.1.2.2.*</span><span class="nt">/&gt;</span>
+
+<span class="nt">&lt;access-group</span><span class="w"> </span><span class="err">group</span><span class="w"> </span><span class="err">sensor-ro</span><span class="w"> </span><span class="err">version</span><span class="w"> </span><span class="err">v3</span><span class="w"> </span><span class="err">security-level</span><span class="w"> </span><span class="err">authPriv</span>
+<span class="w">               </span><span class="err">context</span><span class="w"> </span><span class="err">""</span><span class="w"> </span><span class="err">match</span><span class="w"> </span><span class="err">exact</span><span class="w"> </span><span class="err">read-view</span><span class="w"> </span><span class="err">sensor-subtree</span>
+<span class="w">               </span><span class="err">read-view</span><span class="w"> </span><span class="err">if-subtree</span>
+<span class="w">               </span><span class="err">write-view</span><span class="w"> </span><span class="err">""</span><span class="w">                          </span><span class="err">←</span><span class="w"> </span><span class="na">vacío =</span><span class="w"> </span><span class="s">no</span><span class="w"> </span><span class="err">puede</span><span class="w"> </span><span class="err">escribir</span>
+<span class="w">               </span><span class="err">notify-view</span><span class="w"> </span><span class="err">""</span><span class="w"> </span><span class="nt">/&gt;</span>
+
+<span class="cm">&lt;!-- Vista del operador: incluye la subnet de cada uno --&gt;</span>
+<span class="nt">&lt;snmp-view</span><span class="w"> </span><span class="err">view</span><span class="w"> </span><span class="err">routing-subtree</span><span class="w"> </span><span class="err">included</span><span class="w"> </span><span class="err">subtree</span><span class="w"> </span><span class="err">1.3.6.1.2.1.4.*</span><span class="nt">/&gt;</span>
+<span class="nt">&lt;snmp-view</span><span class="w"> </span><span class="err">view</span><span class="w"> </span><span class="err">own-net</span><span class="w">       </span><span class="err">included</span><span class="w"> </span><span class="err">subtree</span><span class="w"> </span><span class="err">1.3.6.1.2.1.4.20.1.&lt;SUBNET</span><span class="nt">&gt;</span>.0&gt;
+
+<span class="cm">&lt;!-- Vista del admin: todo --&gt;</span>
+<span class="nt">&lt;snmp-view</span><span class="w"> </span><span class="err">view</span><span class="w"> </span><span class="err">all</span><span class="w"> </span><span class="err">included</span><span class="w"> </span><span class="err">subtree</span><span class="w"> </span><span class="err">1.3.6.1.2.1</span><span class="nt">/&gt;</span>
+</code></pre></div>
+
+<p><strong>La justificación que hay que dar (es lo que suma puntos):</strong></p>
+<ol>
+<li><strong>El <code>write-view ""</code> (vacío) del sensor es la decisión importante.</strong> Sin eso,
+   un sensor térmico compromise puede <strong>cambiar la configuración del switch</strong> y
+   dejar la red abajo. Mínimo privilegio.</li>
+<li><strong>Quitar <code>ipRouteTable</code> al sensor no es cortesía, es seguridad.</strong> La tabla de
+   ruteo dice <strong>dónde está cada red</strong>: es exactamente lo que un atacante necesita
+   para pivotar. Lo mismo con <code>ipNetToMediaTable</code> (la tabla ARP).</li>
+<li><strong><code>authPriv</code> (autenticación + cifrado) y no solo <code>auth</code>.</strong> Los datos de
+   gestión son datos <strong>sobre tu infraestructura</strong>: si viajan en claro, cualquier
+   sniffer los lee y además puede <strong>inyectar respuestas falsas</strong> (<em>spoofing</em>) y
+   hacer que el gestor se cuelgue (el ataque más clásico: matar el SNMP y que
+   nadie crea que la red está mal).</li>
+</ol>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2010-03, Pregunta 4 (8 puntos) — agente, gestor y MIB</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc1003</code>, 24 de febrero de 2010.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1003.pdf
+<strong>Texto del examen:</strong> <em>En el contexto de la gestión de las redes de computadoras,
+a) Explique los conceptos "agente" y "gestor". b) Describa brevemente el modelo
+de información MIB (Management Information Base).</em></p>
+</blockquote>
+<h3>Resolución</h3>
+<h4>a) Agente y gestor (4 puntos)</h4>
+<p><strong>Son dos papeles del mismo modelo, y definirlos es la mitad de la pregunta.</strong></p>
+<p><strong>El agente</strong> es la entidad de software <strong>residente dentro del sistema que se
+gestiona</strong> (el switch, el router, la AP, el servidor). Su trabajo es doble:</p>
+<ol>
+<li><strong>Colectar</strong> información de gestión del dispositivo donde vive. Y como vive
+   adentro, tiene <strong>recursos mínimos</strong>: los de ese equipo. Un switch de acceso
+   tiene CPU lenta y memoria contada, así que el agente está escrito para ser
+   <strong>pequeño</strong>.</li>
+<li><strong>Generar notificaciones</strong> (<em>traps</em>, alarmas) cuando ocurre algo.</li>
+</ol>
+<p>Y lo que <strong>no</strong> hace, que es la parte que hay que decir explícitamente porque es
+lo que distingue al agente del gestor: <strong>no toma decisiones</strong>. El agente puede
+coleccionar, pero <strong>no decide</strong> en función de lo que colecta. <em>(Excepción clásica:
+</em><em>RMON</em><em>, donde el agente guarda estadísticas históricas en el propio dispositivo
+para no traerlas.)</em></p>
+<p><strong>El gestor</strong> (o <strong>NMS</strong>, <em>Network Management Station</em>) es la entidad que <strong>recoge
+la información de todos los agentes</strong> y es <strong>la interfaz de usuario</strong> del
+administrador. Sus rasgos:</p>
+<ul>
+<li><strong>Es la inteligencia de la gestión.</strong> Correlaciona, decide y dispara acciones.</li>
+<li><strong>Hay un gestor para muchos agentes.</strong> La relación es de <strong>1 a N</strong>: un gestor,
+  2 000 agentes.</li>
+<li><strong>Guarda histórico</strong>, que es lo que le permite decir "el puerto 7 estaba al
+  95 % entre las 3 y las 4 AM del martes".</li>
+</ul>
+<p>Y el rasgo que la cátedra menciona porque es lo que hace la gestión <strong>real</strong>:
+<strong>interoperabilidad entre gestores</strong>, o sea <strong>gestión integrada y distribuida</strong>.
+Cuando la red es tan grande que un solo gestor no alcanza, varios gestores se
+hablan entre sí (con SNMP y con peerings como BGP): uno queda a cargo del
+site A y otro del site B, y se contunden información. Hoy esto se llama
+<strong>FedRAMP</strong>… digo, <strong>federación</strong> y es la base de la gestión multi-tenant.</p>
+<blockquote>
+<p><strong>El paralelo con los routing protocols, que es lo que más suma:</strong> es
+<strong>exactamente</strong> la relación entre un <strong>protocolo de enrutamiento</strong> y un
+<strong>sistema autónomo</strong>. El agente es como un router que <strong>anuncia</strong> su estado, y
+el gestor es como un router que <strong>recibe anuncios y calcula</strong> una tabla global.
+Y por eso aparecen los mismos problemas: <strong>agente contra agente</strong> (hay que
+autenticar, o el <em>spoofing</em> es trivial) y <strong>gestor contra gestor</strong> (hay que
+decidir quién manda).</p>
+</blockquote>
+<h4>b) El modelo MIB (4 puntos)</h4>
+<p><strong>El problema que la MIB resuelve es la interoperabilidad</strong>, y esa es la primera
+frase de la respuesta:</p>
+<blockquote>
+<p><em>El agente y el gestor pueden ser </em><em>de diferentes proveedores y de diferentes
+versiones</em><em>. Sin un modelo de información común y estandarizado, un gestor de un
+fabricante no podría entender lo que publica el agente de otro. Por eso hace
+falta un </em><em>modelo de información de gestión estándar</em><em>: ese modelo es la MIB.</em></p>
+</blockquote>
+<p><strong>Cómo está construida:</strong></p>
+<ol>
+<li>
+<p><strong>Todo recurso de red gestionable se representa como un objeto.</strong> Y un objeto,
+   en este contexto, es simplemente <strong>una variable que contiene información del
+   recurso</strong>. El tipo de la variable depende del recurso (un contador de bytes, un
+   estado, un nombre, una dirección).</p>
+</li>
+<li>
+<p><strong>El conjunto de todas las variables conocidas por un agente es la MIB de ese
+   agente.</strong> Ojo con la frase: la MIB <strong>es del agente</strong>, no de la red. Cada agente
+   implementa un subconjunto de la MIB-II según de qué unidad tiene.</p>
+</li>
+<li>
+<p><strong>El gestor accede a los objetos presentes en la MIB de cada agente.</strong> Y — la
+   parte clave del punto (b) de la solución oficial — <strong>lo que se puede hacer con
+   cada agente depende de la MIB implementada por ese agente</strong>: si el firmware no
+   trae la MIB de BGP, el gestor <strong>no tiene forma de saber</strong> los indicadores de
+   BGP, porque <strong>no hay con qué preguntar</strong>.</p>
+</li>
+<li>
+<p><strong>Cada variable tiene un OID</strong> (<em>Object Identifier</em>), que es una <strong>dirección
+   jerárquica</strong> en un árbol. Los OIDs se asignan por la autoridad (<strong>IANA</strong>), que
+   delega a los proveedores, que a su vez delegan a los fabricantes. De ahí la
+   estructura: <code>1.3.6.1.2.1.*</code> es <strong>MIB-II</strong> (todo IPv4) y <code>1.3.6.1.4.1.*</code> es
+   <strong>empresa</strong> (cada fabricante con su número).</p>
+</li>
+<li>
+<p><strong>La MIB se escribe en ASN.1</strong>, y el SNMP usa <strong>SMIv2</strong> (ya en desuso) o
+   <strong>SMIv2</strong> (<code>SNMPv2-SMI</code>), que agrega <code>MODULE-IDENTITY</code>, <code>Counter32</code>, <code>Gauge32</code>,
+   <code>TimeTicks</code> y los <code>MAX-ACCESS</code> con los valores correctos.</p>
+</li>
+</ol>
+<p><strong>El detalle fino que suma puntos:</strong> la MIB <strong>es un archivo de texto</strong> (<code>.mib</code>, <code>.my</code>).
+<strong>No se instala en el equipo.</strong> El agente ya tiene compilados los valores de esas
+variables; la MIB es <strong>la documentación que le sirve al gestor para saber qué
+números significan qué</strong>. Por eso el mismo equipo con el mismo firmware puede
+monitorearse con cualquier gestor, siempre y cuando el gestor tenga la MIB
+cargada.</p>
+<h3>Lo que NO escribió la solución oficial y suma</h3>
+<p>La solución oficial es correcta pero se queda en "qué es". Para el examen completo
+agregá:</p>
+<ul>
+<li><strong>Que la MIB es un modelo de <em>variables<em>, no de </em>acciones</em></strong>: describe el estado
+  del dispositivo, no lo que puede hacer. Por eso configurar por SNMP es
+  deuda: el <code>SET</code> existe, pero <strong>no hay semántica de configuración</strong>, no hay
+  transacción y no hay validación. Ese es el motivo por el que existe NETCONF.</li>
+<li><strong>Que hay MIB-II (<code>1.3.6.1.2.1</code>) y las MIB propias de cada fabricante</strong>
+  (<code>1.3.6.1.4.1.&lt;empresa&gt;.*</code>), y que las de fabricante <strong>no son portables</strong>.</li>
+<li><strong>Que el OID se negocia con <code>GETNEXT</code></strong> y no se pide por nombre (ver §1.5).</li>
+</ul>
+<h2>3.2 Examen 2008-07, Pregunta 4 (4 puntos) — planos de datos y de control</h2>
+<blockquote>
+<p><strong>Texto del examen:</strong> <em>Compare el plano de datos y el plano de control, e indique
+si la comunicación de gestión se realiza en banda o fuera de banda.</em></p>
+</blockquote>
+<p><strong>Resolución.</strong> Es la pregunta que más se olvida y es la base conceptual de toda
+esta clase.</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────────────────────────────────────────────────────┐
+   │  PLANO DE DATOS                                            │
+   │  Los paquetes del usuario: IP, TCP, UDP, HTTP...            │
+   │  Es lo que el equipo hace PARA CARRear el tráfico.         │
+   │  Alta tasa, latencia baja, contenido variable.             │
+   ├──────────────────────────────────────────────────────────────┤
+   │  PLANO DE CONTROL                                           │
+   │  Los mensajes de gestión y de señalización:                 │
+   │  ARP, ICMP, OSPF, BGP, SNMP, STP, DHCP, CDP, LLDP.          │
+   │  Es lo que el equipo hace PARA CONFIGURARSE y saber del     │
+   │  estado de la red.                                           │
+   │  Baja tasa, a veces con requisitos de tiempo.                │
+   └──────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>¿En banda o fuera de banda?</strong></p>
+<div class="codehilite"><pre><span></span><code>   EN BANDA (in-band)                     FUERA DE BANDA (out-of-band)
+   ───────────────────                    ──────────────────────────
+   El tráfico de gestión viaja            El tráfico de gestión viaja
+   por la MISMA red que el tráfico        por una RED SEPARADA, dedicada
+   de los usuarios.                       (o por un enlace de consola).
+
+   Se administra por SSH/telnet          Se administra por consola
+   desde cualquier lugar.                física (RJ-45), que funciona
+                                         AUNQUE la red esté caída.
+
+   ★ Si la red está caída,               ★ Si la red está caída,
+   NO se puede administrar.              SE PUEDE administrar igual.
+
+   Ejemplo: NOC compartido, acceso        Ejemplo: consola del rack,
+   por VPN a cualquier equipo.          El cable de consola del rack.
+</code></pre></div>
+
+<p><strong>La respuesta completa:</strong> el tráfico de gestión <strong>es del plano de control</strong>, y
+<strong>en banda o fuera de banda depende de la criticidad del activo</strong>. En una red
+universitaria, el router del NOC y los switches de backbone <strong>deberían</strong> tener
+<strong>fuera de banda</strong> (consola + un puerto de gestión en una VLAN dedicada), porque
+si se cae el enlace principal y no tenés fuera de banda, <strong>perdiste el
+control de la red justo cuando más lo necesitás</strong>.</p>
+<p><strong>Por qué importa de verdad, y no es teórico:</strong> es el motivo por el que existe
+<strong>VLAN de gestión</strong>, <strong>VLAN de voz</strong>, y por qué los equipos de red tienen un
+<strong>puerto de consola RJ-45</strong> (que <strong>no es un puerto de datos</strong>: no lo conectes a un
+switch, porque no es un enlace Ethernet, es una consola asíncrona — y a veces es
+USB, no RJ-45, y el cable es <strong>rollover</strong>).</p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen en 10 líneas</h2>
+<ol>
+<li>La gestión de redes existe porque <code>ping</code> <strong>no escala</strong>, no da <strong>métricas</strong> y no
+   guarda <strong>histórico</strong>. Las cinco funciones: <em>failure, configuration,
+   accounting, performance, security</em>.</li>
+<li><strong>Agente</strong> = programa chico que <strong>dentro</strong> del equipo <strong>colecciona</strong> y
+   <strong>responde</strong>, pero <strong>no decide</strong>. <strong>Gestor</strong> = central, con recursos, <strong>decide
+   todo</strong>. La asimetría es el corazón de la pregunta.</li>
+<li><strong>MIB</strong> = la base de datos de variables del agente, con <strong>OIDs jerárquicos</strong>
+   (<code>1.3.6.1.2.1.*</code> = MIB-II; <code>1.3.6.1.4.1.*</code> = fabricante), escrita en <strong>ASN.1/SMIv2</strong>.</li>
+<li>La MIB es <strong>un archivo de texto que se instala en el gestor, no en el equipo</strong>:
+   el equipo ya tiene los valores, el gestor necesita saber qué significan.</li>
+<li><strong>Polling</strong> (pull: <code>GET</code>, <code>GETNEXT</code>, <code>GETBULK</code>) = caro, predecible, pero
+   <strong>muerto si el gestor se cae</strong>. <strong>Traps</strong> (push) = barato, instantáneo, pero
+   <strong>se pierden si el gestor se cae</strong>. <strong>Se usan los dos.</strong></li>
+<li><code>GETNEXT</code> es <strong>un puntero que recorre el árbol</strong>; <code>GETBULK</code> es lo mismo, <strong>N
+   de ellos en un paquete</strong> (reduce 25× el tráfico). Existe <strong>por eso</strong>, y es de
+   v2c.</li>
+<li>Un <code>Counter32</code> <strong>se desborda</strong>: la tasa es <code>(v₂ − v₁) / (t₂ − t₁)</code>, y si la
+   resta es <strong>negativa</strong> hay que sumarle <code>2³²</code>.</li>
+<li><strong>SNMPv3 = USM (autenticación + cifrado, quién sos) + VACM (qué podés ver,
+   mínimo privilegio por vistas)</strong>.</li>
+<li><strong>NETCONF = SSH + XML + RPCs con semántica + transacción (<code>candidate</code> →
+   <code>commit</code>)</strong>. <strong>YANG</strong> define el <strong>modelo</strong>, no el dispositivo: por eso se
+   entiende sin importar el fabricante.</li>
+<li><strong>SNMP no murió: se desplazó.</strong> Sigue siendo el rey del <strong>polling de
+    métricas</strong>; NETCONF/YANG es el rey de la <strong>configuración</strong> y de la
+    <strong>telemetría push</strong> (gNMI, YANG-Push, RESTCONF).</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> ¿Por qué un agente SNMP no puede tomar decisiones, y por qué el gestor sí?</p>
+<details><summary>Respuesta</summary>
+
+Porque el agente **vive dentro del dispositivo** y tiene **recursos mínimos**: un
+switch de acceso tiene CPU lenta, memoria contada y flash chico. No puede correr
+una base de datos histórica ni un motor de reglas: **su trabajo es mecánico**
+(leer variables internas, responder, generar traps) y **lo más grande que hace es
+un buffer de mensajes. 
+
+El gestor, en cambio, corre en un servidor con CPU, disco y RAM de sobra, y ahí
+van **todos** los datos, **todos** los históricos y **toda** la lógica: es el que
+correlaciona "este puerto está al 90 % desde hace 20 minutos en tres switches
+distintos" y decide.
+
+La excepción clásica es **RMON**, donde el agente sí guarda estadísticas
+históricas *en el dispositivo* — justamente para no tener que traerlas. Está
+justo en el borde de la regla, y por eso la cátedra la menciona.
+
+</details>
+
+<p><strong>2.</strong> Explicá por qué <code>GETNEXT</code> existe y qué problema resuelve.</p>
+<details><summary>Respuesta</summary>
+
+Porque **el gestor no sabe de antemano qué objetos tiene el agente**. No puede
+pedir "¿cuántas interfaces tenés?" porque **no hay un OID que signifique eso**:
+el OID existe **solo si la interfaz existe**.
+
+`GETNEXT` es la forma de **recorrer el árbol**: el gestor pregunta *"dame el OID
+que sigue en el orden"*, y el agente le responde con el siguiente. Así, empezando
+por `1.3.6.1.2.1.2.2.1.10`, el gestor va recorriendo y arma la lista de
+`ifInOctets` que existen: `.10.1`, `.10.2`, `.10.3`… hasta que el agente devuelve
+`endSubId` (fin del árbol) y el gestor sabe que terminó.
+
+`GETBULK` es lo mismo, pero devuelve **N OIDs en un solo datagrama**. Y existe
+**por el volumen**: con 24 puertos y 30 variables son 720 OIDs por dispositivo; a
+uno por uno son 720 paquetes por ciclo por dispositivo. `GETBULK` los baja en 30.
+Se añadió en **v2c** justamente porque v1 era inmanejable.
+
+</details>
+
+<p><strong>3.</strong> ¿Por qué un <code>Counter32</code> puede dar una resta negativa y qué hay que hacer?</p>
+<details><summary>Respuesta</summary>
+
+Porque un `Counter32` es un **entero de 32 bits sin signo**: cuenta de 0 a
+4 294 967 295 y **desborda** volviendo a cero. Es un contador **monótono
+creciente entre reinicios** que, al llegar a 2³², hace un *wrap-around*.
+
+Si tomás dos muestras separadas por un intervalo y la segunda da **menos** que la
+primera, **no es un error de medición**: es el desbordamiento. La tasa se calcula
+como
+
+`   tasa (bytes/s) = (v₂ − v₁) / (t₂ − t₁)   `
+
+y si `(v₂ − v₁) < 0`, hay que **sumarle 2³² = 4 294 967 296** antes de dividir.
+
+Por eso a un enlace de 1 Gbps (que mete ~4 Gbytes por 32 segundos) el contador se
+desborba **cada 32 segundos**: por eso el monitoreo **nunca** consulta el valor y lo
+interpola, sino que **toma dos muestras** y calcula la diferencia.
+
+Y por eso el polling de un `Counter32` **tiene que ser de a lo menos cada 34
+segundos**: si el intervalo es mayor que el período de desbordamiento, la tasa
+calculada es basura.
+
+</details>
+
+<p><strong>4.</strong> ¿Por qué <code>write-view ""</code> para el sensor térmico? Explicá el razonamiento de
+seguridad.</p>
+<details><summary>Respuesta</summary>
+
+Porque el `write-view` es lo que define **qué puede *cambiar* el usuario**, y un
+sensor térmico **no necesita cambiar nada**. Es la aplicación directa del
+**mínimo privilegio**.
+
+El riesgo concreto: si un sensor (o el proceso que corre en él) queda
+comprometido y puede escribir, un atacante puede cambiar la configuración del
+switch por SNMP — cambiar la MTU, tocar las rutas, apagar una interfaz. Y como el
+`write-view` vacío es **una decisión explícita**, no es que "no encuentra el
+permiso": es que **el permiso no existe**.
+
+Y el otro punto, que es el que más suma: **no darle acceso a `ipRouteTable` ni a
+`ipNetToMediaTable` (ARP) no es cortesía, es seguridad**. Esos objetos dicen
+**dónde está cada red y qué MAC hay detrás de cada IP**: es literalmente el mapa de
+la red, que es lo primero que necesita un atacante para pivotar.
+
+Consecuencia práctica: **SNMP con `write` habilitado es una de las vías
+clásicas de compromiso de infraestructura**, y es una de las razones por las que
+la gestión se mueve a NETCONF, que va por SSH y por eso no se puede escuchar en
+una red conmutada.
+
+</details>
+
+<p><strong>5.</strong> Diferenciá SNMP y NETCONF en una frase cada uno, y decí cuál no reemplazó al
+otro y por qué.</p>
+<details><summary>Respuesta</summary>
+
+**SNMP** describe **el dispositivo**: publica un árbol de variables (la MIB) con
+OID numéricos y permite consultar o escribir valores genéricos. **Lo define el
+agente, la semántica la pone el fabricante.**
+
+**NETCONF + YANG** describe **el modelo**: YANG define el significado de cada campo
+con un lenguaje estándar y público, y NETCONF lo transporta sobre SSH con
+operaciones que tienen semántica propia y transacción.
+
+**Y no se reemplazaron, se dividieron**, porque hacen cosas distintas y cada una
+es mejor en lo suyo:
+
+- **SNMP** es **trivial, universally soportado, barato y liviano**. Funciona
+  perfecto para **leer un número cada 60 segundos**. Y el polling de métricas es
+  exactamente eso.
+- **NETCONF/YANG** es **rico, transaccional y seguro**, y es lo que hace falta para
+  **configurar** — donde el SNMP siempre estuvo flojo.
+
+La IETF misma lo dijo en 2024: *"SNMP nunca alcanzó tracción significativa **para
+configuración**"*. No dijeron "SNMP ya no sirve". Y la realidad del 2026 es esa
+división: Nagios/Zabbix/Prometheus con SNMP para métricas, NETCONF/gNMI para
+configuración y telemetría.
+
+</details>
+
+<p><strong>6.</strong> Un switch tiene un puerto en estado <code>down</code> y no hay traps. ¿Qué se deduce?</p>
+<details><summary>Respuesta</summary>
+
+**Se deduce que el puerto NO se ha puesto down ahora.** Si un puerto se hubiera
+caído, el agente habría generado un trap `linkDown`.
+
+La explicación tiene que ser una de estas:
+
+1. **El trap se perdió.** Es un **UDP**: no hay confirmación ni reintento. Si el
+   gestor estaba caído, reiniciándose, o si había **pérdida de paquetes en un
+   enlace saturado**, el evento se perdió para siempre. Y esto es un problema
+   **silencioso**: nadie se entera.
+2. **El trap está filtrado.** Muchos firewalls y ACLs bloquean el **puerto
+   destino 162** (traps), mientras que permiten el 161 (consultas). Es un
+   classic: "los GET me funcionan, pero nunca me llega un trap".
+3. **El agente no tiene el SNMP configurado con `traps` habilitado**, o el
+   destino del trap no es el gestor.
+4. **El enlace nunca estuvo arriba.** Si el cable estuvo siempre desconectado,
+   no hubo `linkDown` porque no hubo link que bajara.
+
+**Y esto es exactamente el argumento de por qué el polling no se abandona**: el
+traps te avisa de los **cambios**, pero **el polling es lo único que te dice cómo
+está la red *en este momento***, incluido el equipo que se apagó (y que, por
+definición, no puede mandarte un trap). Los dos se complementan.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>sirc1003</code></strong> — Pregunta 4 completa (8 pts: agente, gestor y modelo MIB)</li>
+<li><strong>Examen <code>sirc0807</code></strong> — Pregunta 4 (4 pts: planos de datos/control, en banda vs. fuera de banda)</li>
+<li><strong>Examen <code>sirc0712</code></strong> — Pregunta 5 (MPLS: router de ingreso y de egreso, otra forma de separar planos)</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 5 §5.5 (gestión de redes)</li>
+<li><strong><code>RFC 1157</code></strong> — SNMPv1 · <strong><code>RFC 3411</code></strong> — SNMPv3 arquitectura · <strong><code>RFC 3414</code></strong> — USM · <strong><code>RFC 3415</code></strong> — VACM · <strong><code>RFC 3416</code></strong> — operaciones · <strong><code>RFC 7860</code></strong> — HMAC-SHA-2 en USM</li>
+<li><strong><code>RFC 6241</code></strong> — NETCONF · <strong><code>RFC 6242</code></strong> — NETCONF sobre SSH · <strong><code>RFC 7950</code></strong> — YANG 1.1 · <strong><code>RFC 8040</code></strong> — RESTCONF · <strong><code>RFC 8342</code></strong> — NMDA · <strong><code>RFC 8639</code>/<code>8640</code>/<code>8641</code></strong> — YANG-Push · <strong><code>RFC 7854</code></strong> — BMP · <strong><code>RFC 7011</code></strong> — IPFIX · <strong><code>RFC 9232</code></strong> — Network Telemetry Framework</li>
+<li><strong><code>ACTUALIZACIONES.md</code> §11</strong> — el reencuadre SNMP vs. NETCONF/YANG</li>
+<li><strong>Clase siguiente:</strong> 47 — Seguridad: servicios y criptografía</li>
+</ul></body></html>

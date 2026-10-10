@@ -1,0 +1,571 @@
+===== [pag 1] =====
+
+Examen – 27 de julio de 2010
+(ref: circ1007.odt)
+Instrucciones
+•Indique su nombre completo y número de cédula en cada hoja.
+•Numere todas las hojas e indique la cantidad total de hojas que entrega en la primera.
+•Escriba las hojas de un solo lado.
+•Utilice una caligrafía claramente legible.
+•Comience cada pregunta teórica y cada ejercicio en una hoja nueva.
+•Sólo se contestarán dudas de letra. No se aceptarán dudas de ningún tipo los últimos 30 minutos del
+examen.
+•El examen es individual y sin material. Apague su celular mientras este en el salón del examen.
+•Es obligatorio responder correctamente al menos 15 puntos en las preguntas teóricas.
+•El puntaje mínimo de aprobación es de 60 puntos.
+•Para todos los ejercicios, si es necesario, puede suponer que dispone de los tipos de datos básicos
+(p.ej. lista, cola, archivo, string, etc.) y sus funciones asociadas (ej: tail(lista),
+crear(archivo), concatenar(string, string).
+•Duración: 3 horas. Culminadas las 3 horas el alumno no podrá interactuar de ninguna forma con las
+hojas a entregar, salvo leerlas.
+Preguntas Teóricas
+Pregunta 1 (8 puntos)
+Suponga que un usuario intenta cargar en su browser una página HTML. Esta página contiene texto y diez
+imágenes.
+a)Describa la secuencia de pasos que ocurren a nivel de capa de aplicación en el cliente y el servidor a los
+efectos de desplegar la página completa, suponiendo que se utiliza HTTP no persistente.
+b)¿Cuál es la diferencia con HTTP persistente?¿Mejora la performance? Discuta.
+Respuesta 1
+a)
+Paso
+Responsable
+Acción
+1
+Cliente
+Establece la conexión con el servidor
+2
+Cliente
+Envía Request pidiendo la página
+3
+Servidor
+Envía Response con el contenido de la página
+4
+Servidor
+Cierra la conexión
+5*
+Cliente
+Establece la conexión con el servidor
+6*
+Cliente
+Envía Request pidiendo la la imagen 1
+7*
+Servidor
+Envía Response con el contenido de la imagen 1
+8*
+Servidor
+Cierra la conexión
+* Se repiten los pasos 5 al 8 para cada una de las imágenes.
+b) En el caso de HTTP persistente, se establece la conexión una sola vez, se obtiene el contenido de la
+página, y a través de la misma conexión se piden todas las imágenes.
+El uso de HTTP persistente puede resultar más performante en los casos en que se utilice una sola
+conexión por vez (por ejemplo si el servidor nos limita por IP), ya que no existe el overhead de crear nuevas
+conexiones para cada imagen.
+Si el navegador abre conexiones en paralelo para obtener varias imágenes a la vez, probablemente termine
+de obtener todos los datos más rápidamente, aprovechando mejor el ancho de banda.
+
+===== [pag 2] =====
+
+Pregunta 2 (8 puntos)
+a) ¿Es recomendable utilizar CSMA/CD en una red wireless 802.11? Justifique.
+b) En un medio Ethernet completamente switcheado, ¿es necesario utilizar CSMA/CD? Justifique su
+respuesta.
+Respuesta 2
+a) No, pues CSMA/CD está especificado tal que aun en el peor caso, o sea, una estación transmitiendo la
+trma más corta permitida y destinada a la estación más alejada “en el cable” y ésta comenzando a transmitir
+un tiempo epsilon arbitrariamente pequeño y positivo antes que llegue el primer bit de la trama, comience
+también a transmitir, todaas las estaciones se enteran de la colisión. En el caso de redes wireless 802.11
+existen varios casos, y no necesariamente “extremos” en los que no podemos asegurar que todas las
+estaciones se escuchen entre sí, detectando así las colisiones que pudiesen ocurrir al transmitir dos o más
+estaciones pertenencientes a la misma BSS con un solapamiento al menos parcial en el tiempo. Un ejemplo
+“clásico” es “el problema de la estación oculta”.
+b) Si hablamos de un medio completamente switcheado (sin presencia de hubs) y por lo tanto una sola
+computadora por puerto de switch y si asumimos que todos los puertos de los switches así como las
+tarjetas de red de las computadoras conectadas a ellas están configuradas para trabajar en modo full-
+duplex, no es necesario utilizar CSMA/CD. Si alguna computadora trabaja en modo half-duplex, sí, en esa
+conexión “computadora-switch” se utilizará CSMA/CD.
+Pregunta 3 (8 puntos)
+a)Represente en un diagrama todos los pasos involucrados en la resolución de nombres iterativa donde el
+equipo necesito.laip.com.uy consulta a su servidor DNS local (dns.laip.com.uy) por la dirección IP
+asociada a www.fakaofo.tk. Suponga que no se dispone de ninguna información de caché en ningún
+servidor.
+b)Indique en el diagrama de la parte a) cuál es el servidor del TLD tk y cuál el autoritativo de fakaofo.tk.
+Respuesta 3
+Paso
+Mensaje de
+A
+Información
+1
+necesito.laip.com.uy
+dns.laip.com.uy
+Query: ¿IP asociada a www.fakaofo.tk?
+2
+dns.laip.com.uy
+“algún root server”
+Query: ¿IP asociada a www.fakaofo.tk?
+3
+“algún root server” (el
+que recibió la consulta
+del paso 2)
+dns.laip.com.uy
+Response: Consultar a TLD de tk. Su IP es X.Y.W.Z
+4
+dns.laip.com.uy
+X.Y.W.Z
+Query: ¿IP asociada a www.fakaofo.tk?
+5
+X.Y.W.Z
+dns.laip.com.uy
+Response: Consultar a dns.fakaofo.tk. Su IP es A.B.C.D
+6
+dns.laip.com.uy
+A.B.C.D
+Query: ¿IP asociada a www.fakaofo.tk?
+7
+A.B.C.D
+dns.laip.com.uy
+Response: es E.F.G.H
+8
+dns.laip.com.uy
+necesito.laip.com.uy
+Response: es E.F.G.H
+El diagrama debe ser muy similar al que figura en la diapo 9 de la clase 7 de capa de Aplicación.
+X.Y.W.Z, A.B.C.D y E.F.G.H son meramente ilustrativos, pero sí deben ser distintos.
+Pregunta 4 (8 puntos)
+a)Explique el paradigma de funcionamiento de la arquitectura Diffserv.
+b)Mencione las funciones que se encuentran en el edge y las que se realizan en el core de dicha
+arquitectura.
+
+===== [pag 3] =====
+
+Respuesta 4
+Diapos 83, 84 y 86 de Clase 2 de Multimedia
+Pregunta 5 (8 puntos)
+a)En el curso se presentaron los tres modelos de comunicación soportados por IPv6, con sus
+correspondientes tres tipos de direcciones. Mencione cada uno de los tres tipos y descríbalos en una o
+dos frases a cada uno.
+b)Los esquemas de transición pueden agruparse en tres tipos principales. Descríbalos brevemente y de un
+ejemplo de cada uno de ellos.
+c)Suponga que se transmite un segmento UDP de 1000 bytes de largo sobre IPv4 y sobre IPv6. ¿en que
+caso se transmiten más bytes? Fundamente su respuesta.
+Respuesta 5
+a)transparencias de teórico pág. 18
+b)transparencias de teórico pág. 58
+c) Sin opciones, un cabezal IPv6 tiene 40 bytes de largo y el cabezal IPv4 tiene20 bytes de largo. A mismo
+payload, IPv6 tiene mayor overhead. Por consiguiente, se transmitirán más bytes con IPv6.
+
+===== [pag 4] =====
+
+Problemas Prácticos
+Problema 1 (30 puntos)
+La compresión de video MPEG-2 utiliza tres tipos de frames: I-frames, P-frames, and B-frames. Un I-frame
+contiene una imagen completa, como una imagen estática convencional. Para transmitir menos
+información, los P-frames y B-frames solo contienen información de la parte de la imagen que cambió
+desde el último I-frame y parte de la que vendrá en el proximo i-frame. Por la misma causa, si un P-frame o
+un B-frame se pierde causa menos problemas de visualización que si se pierde un I-frame.
+Se quiere implementar un protocolo de transferencia de datos semi-confiable “stop-and-wait” para transmitir
+video MPEG-2 entre dos computadoras de forma que: (1) los I-frame no se pierdan y se eliminen sus
+duplicados y (2) los P-frames y B-frames pueden perderse o duplicarse.
+Se cuenta con las siguientes primitivas:
+•rdt_send(frame,tipo_de_frame), recibe frame desde la capa superior.
+•udt_send(pkt), le entrega el paquete pkt a la capa inferior para ser transmitido al receptor.
+•rdt_rcv(pkt), recibe los paquetes desde la capa inferior.
+•deliver_frame(frame), entrega frame a la capa superior.
+•make_pkt(tipo_de_frame, frame, checksum)
+•extract_frame(pkt, frame), extrae el frame de un paquete.
+•has_type(pkt,tipo_de_frame), verdadero sii pkt tiene un frame tipo_de_frame
+•corrupt(pkt), verdadero sii pkt fue corrompido durante su transmisión.
+•isACK(pkt,tipo_de_frame), verdadero sii pkt es un ACK de un tipo de frame tipo_de_frame.
+•start_timer
+•stop_timer
+•timeout
+Se considera:
+•que el proceso de conexión ya ha sido realizado.
+•que cada frame entra completamente en un segmento.
+•que siempre se envia un I-frame y luego 0 o más P-frames y B-frames en cualquier orden.
+•que los paquetes llegan al receptor en el orden que fueron enviados por el emisor.
+Se pide:
+Dibujar las máquinas de estados finitos que especifiquen los procesos emisor y receptor del protocolo y, de
+existir, el pseudocódigo los procesos auxiliares utilizados (sin incluir las primitivas provistas).
+
+===== [pag 5] =====
+
+Solución Problema 1
+Espera
+frame
+desde
+aplicación
+Espera
+ACK I­frame
+0
+rdt_send(frame,tipo_de_frame) &&
+tipo_de_frem == I-frame
+---------------------
+sndpkt=make_pkt(I-frame,0,datos,checksum)
+udt_send(sndpkt)
+start_timer
+rdt_rcv(rcvpkt) &&
+!corrupt(rcvpkt)
+&& isACK(rcvpkt,0)
+---------------------
+stop_timer
+rdt_rcv(rcvpkt) &&
+(corrupt(rcvpkt)||
+!isACK(rcvpkt,0))
+---------------------
+do_nothing
+Espera
+I­frame 0
+desde
+abajo
+Espera
+I­frame 1
+desde
+abajo
+rdt_rcv(rcvpkt)
+&& !corrupt(rcvpkt)
+&& is_not_ACK(rcvpkt)
+&& has_frame(rcvpkt,I-frame)
+&& has_sec(rcvpkt,0)
+---------------------
+extract_frame(rcvpkt,frame)
+deliver_frame(frame)
+sndpkt=makepkt(ACK,I-frame,0,checksum)
+udt_send(sndpkt)
+paso=1
+------
+paso=0
+rdt_rcv(rcvpkt)
+&& !corrupt(rcvpkt)
+&& is_not_ACK(rcvpkt)
+&& (has_frame(rcvpkt,B)
+|| has_frame(rcvpkt,P))
+---------------------
+extract_frame(rcvpkt,frame)
+deliver_frame(frame)
+rdt_rcv(rcvpkt)
+&& is_not_ACK(rcvpkt)
+&& (corrupt(rcvpkt) ||
+&& has_frame(rcvpkt,I-frame)
+&& has_sec(rcvpkt,1)
+---------------------
+if(paso==1)
+udt_send(sndpkt)
+Receptor
+rdt_rcv(rcvpkt)
+---------------
+do_nothing
+timeout
+---------------------
+udt_send(sndpkt)
+start_timer
+rdt_send(frame,tipo_de_frame) &&
+tipo_de_frem == P-frame
+---------------------
+sndpkt=make_pkt(P-frame,0,datos,checksum)
+udt_send(sndpkt)
+rdt_rcv(rcvpkt)
+&& is_ACK(rcvpkt)
+---------------------
+do_nothing
+rdt_rcv(rcvpkt)
+&& is_ACK(rcvpkt)
+---------------------
+do_nothing
+Emisor
+Espera
+ACK I­frame
+1
+Espera
+frame
+desde
+aplicación
+rdt_rcv(rcvpkt)
+---------------
+do_nothing
+rdt_send(frame,tipo_de_frame) &&
+tipo_de_frem == B-frame
+---------------------
+sndpkt=make_pkt(B-frame,0,datos,checksum)
+udt_send(sndpkt)
+rdt_send(frame,tipo_de_frame) &&
+tipo_de_frem == P-frame
+---------------------
+sndpkt=make_pkt(P-frame,0,datos,checksum)
+udt_send(sndpkt)
+rdt_send(frame,tipo_de_frame) &&
+tipo_de_frem == B-frame
+---------------------
+sndpkt=make_pkt(B-frame,0,datos,checksum)
+udt_send(sndpkt)
+rdt_send(frame,tipo_de_frame) &&
+tipo_de_frem == I-frame
+---------------------
+sndpkt=make_pkt(I-frame,1,datos,checksum)
+udt_send(sndpkt)
+start_timer
+rdt_rcv(rcvpkt) &&
+!corrupt(rcvpkt)
+&& isACK(rcvpkt,1)
+------------------
+stop_timer
+rdt_rcv(rcvpkt)
+&& !corrupt(rcvpkt)
+&& is_not_ACK(rcvpkt)
+&& has_frame(rcvpkt,I-frame)
+&& has_sec(rcvpkt,1)
+---------------------
+extract_frame(rcvpkt,frame)
+deliver_frame(frame)
+sndpkt=make_pkt(ACK,I-frame,1,checksum)
+udt_send(sndpkt)
+rdt_rcv(rcvpkt)
+&& is_not_ACK(rcvpkt)
+&& (corrupt(rcvpkt) ||
+&& has_frame(rcvpkt,I-frame)
+&& has_sec(rcvpkt,0)
+--------------------
+udt_send(sndpkt)
+rdt_rcv(rcvpkt)
+&& !corrupt(rcvpkt)
+&& is_not_ACK(rcvpkt)
+&& (has_frame(rcvpkt,B)
+|| has_frame(rcvpkt,P))
+---------------------
+extract_frame(rcvpkt,frame)
+deliver_frame(frame)
+
+===== [pag 6] =====
+
+Problema 2 (30 puntos)
+La figura muestra la red corporativa de una empresa con una sede central y dos sucursales
+que se están instalando. Al enlace WAN del router R1 con el ISP se les asigna la red pública
+indicada en la figura (220.10.10.28/30).
+Las subredes LAN1, LAN2 y LAN3 tienen direccionamiento privado, la subred LAN1 y los
+enlaces entre routers ya tienen redes asignadas y se dispone del prefijo 192.168.2.0/23 para
+las dos sucursales.
+Se pide:
+Parte a)
+i)Asigne las direcciones de red a las subredes LAN2 y LAN3 utilizando el prefijo de dirs. IP
+privadas mencionado anteriormente, asumiendo que se conectarán hasta 250 hosts por
+subred.
+ii)¿Para qué utilizaría NAT en esta arquitectura de red? Justifique brevemente su respuesta.
+Indicar las direcciones IP de origen/destino si se envía una petición de conexión a un
+servidor Web cuya dir. IP es 220.40.70.188, desde el Host A en LAN1, para los paquetes
+en LAN1, y para los paquetes en la red del ISP. Asuma que el enrutamiento está
+resuelto.
+Parte b)
+i)
+Para que exista conectividad completa entre todos los end systems de la empresa y de
+éstos con Internet, la red corporativa corre un protocolo de enrutamiento genérico
+de la familia “vector-distancia” (distance-vector) que considera el costo como la
+distancia en hops (saltos) y que la distancia a Internet desde R1 es dos. Indique la
+tabla de ruteo que tienen finalmente R1,R2 y R3 con el siguiente formato:
+Red destino / Máscara
+Gateway
+Distancia
+ii)
+Explique qué sucede si se cae el enlace que conecta la red corporativa con el ISP.
+Justifique con dos iteraciones de las tablas de ruteo de R1, R2 y R3, suponiendo que
+los envíos del vector distancia se dan en forma simultanea en todos los routers y
+que ante caminos de igual distancia se elige uno al azar.
+
+===== [pag 7] =====
+
+Parte a)
+•
+Se dispone del prefijo 192.168.2.0/23.
+Para cada subred se necesitan como máximo 250 (hosts) + 1 (router) = 251
+direcciones IP por LAN.
+Entonces cada subred necesita utilizar una /24:
+LAN 2 192.168.2.0/24
+LAN 3 192.168.3.0/24
+•
+Utilizaría NAT para permitir conectividad desde las LANs con numeración privada
+hacia Internet (red del ISP). El motivo de ésto es que, el ISP en particular e
+Internet en general, filtran el forwarding de paquetes que tengan direcciones IP
+origen y/o destino pertenecientes al rango de redes privadas: 10.0.0.0/8,
+172.16.0.0/12 y 192.168.0.0/16.
+Para paquetes en LAN1
+IPOrigen: 192.168.1.20
+IPDestino: 220.40.70.188
+Para paquetes en la red del ISP
+IPOrigen: 220.10.10.30
+IPDestino: 220.40.70.188
+Parte b)
+a)
+TABLA de R1:
+Red destino / Máscara
+Gateway
+Distancia
+192.168.1.0/24
+C – Directamente conectado
+1
+192.168.2.0/24
+198.168.0.13
+2
+192.168.3.0/24
+198.168.0.9
+2
+0.0.0.0/0
+220.10.10.29
+2
+TABLA de R2:
+Red destino / Máscara
+Gateway/Next Hop
+Distancia
+192.168.1.0/24
+198.168.0.14
+2
+192.168.2.0/24
+C – Directamente conectado
+1
+192.168.3.0/24
+198.168.0.5
+2
+0.0.0.0/0
+198.168.0.14
+3
+TABLA de R3:
+Red destino / Máscara
+Gateway/Next Hop
+Distancia
+192.168.1.0/24
+198.168.0.10
+2
+192.168.2.0/24
+198.168.0.6
+2
+
+===== [pag 8] =====
+
+192.168.3.0/24
+C – Directamente conectado
+1
+0.0.0.0/0
+198.168.0.10
+3
+b)Se trata del problema del conteo infinito. Cuando el enlace de conexión a Internet se cae,
+el router detecta que la ruta mas corta a Internet es inaccesible y por lo tanto elije la
+segunda mas corta que es a través de R2 con distancia total 4 (podría elegir también
+la ruta a través de R1 porque la distancia también es la misma). Luego en el siguiente
+intercambio de los vectores distancia, R2 actualiza su distancia a Internet a 4 a través
+de R3 y R3 actualiza su distancia a Internet a 4 a través de R2. El proceso se repite
+hasta infinito o la mayor distancia posible.
+Antes de la primera iteración la tabla de R1 se modificaría al tomar el segundo
+camino más corto:
+Red destino / Máscara
+Gateway/Next Hop
+Distancia
+192.168.1.0/24
+C – Directamente conectado
+1
+192.168.2.0/24
+198.168.0.13
+2
+192.168.3.0/24
+198.168.0.9
+2
+0.0.0.0/0
+198.168.0.9
+4
+En la primera iteración:
+R1:
+Red destino / Máscara
+Gateway
+Distancia
+192.168.1.0/24
+C – Directamente conectado
+1
+192.168.2.0/24
+198.168.0.13
+2
+192.168.3.0/24
+198.168.0.9
+2
+0.0.0.0/0
+198.168.0.9
+4
+R2:
+Red destino / Máscara
+Gateway
+Distancia
+192.168.1.0/24
+198.168.0.14
+2
+192.168.2.0/24
+C – Directamente conectado
+1
+192.168.3.0/24
+198.168.0.5
+2
+0.0.0.0/0
+198.168.0.5
+4
+R3
+Red destino / Máscara
+Gateway/Next Hop
+Distancia
+192.168.1.0/24
+198.168.0.10
+2
+192.168.2.0/24
+198.168.0.6
+2
+192.168.3.0/24
+C – Directamente conectado
+1
+0.0.0.0/0
+198.168.0.6
+4
+En la segunda iteración:
+R1:
+
+===== [pag 9] =====
+
+Red destino / Máscara
+Gateway/Next Hop
+Distancia
+192.168.1.0/24
+C – Directamente conectado
+1
+192.168.2.0/24
+198.168.0.13
+2
+192.168.3.0/24
+198.168.0.9
+2
+0.0.0.0/0
+198.168.0.9
+5
+R2:
+Red destino / Máscara
+Gateway/Next Hop
+Distancia
+192.168.1.0/24
+198.168.0.14
+2
+192.168.2.0/24
+C – Directamente conectado
+1
+192.168.3.0/24
+198.168.0.5
+2
+0.0.0.0/0
+198.168.0.5
+5
+R3
+Red destino / Máscara
+Gateway/Next Hop
+Distancia
+192.168.1.0/24
+198.168.0.10
+2
+192.168.2.0/24
+198.168.0.6
+2
+192.168.3.0/24
+C – Directamente conectado
+1
+0.0.0.0/0
+198.168.0.6
+5

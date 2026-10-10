@@ -1,0 +1,1296 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 35 — Fragmentación, MTU y Path MTU</h1>
+<p><strong>Bloque:</strong> D (Capa de Red) · <strong>Semana:</strong> 12 · <strong>Duración estimada:</strong> 120 min
+<strong>Correlativa:</strong> Clase 34 (BGP y el routing entre operadores) · <strong>Sigue con:</strong> Clase 36 (IPv6)
+<strong>Material de referencia:</strong> Tanenbaum cap. 5 (§5.5.2) · RFC 791, RFC 1122, RFC 1191, RFC 8200 §5, RFC 8899</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Definir <strong>MTU</strong>, <strong>fragmentación</strong> y <strong>Path MTU</strong>, y explicar por qué el Path MTU es el <strong>mínimo</strong> de los MTUs del camino.</li>
+<li>Dibujar la cabecera IPv4 señalando los <strong>tres campos</strong> de la fragmentación: <code>Identification</code>, <code>Flags</code> (con <code>DF</code>) y <code>Fragment Offset</code>.</li>
+<li><strong>Escribir el comportamiento de un router</strong> frente a un paquete que no entra, y justificar por qué <strong>descarta</strong> cuando <code>DF = 1</code>.</li>
+<li>Enumerar los <strong>problemas asociados</strong>: unidad de 8 bytes, overhead, temporizador, solapamiento, pérdida de un fragmento, evasión de filtros.</li>
+<li><strong>Implementar el algoritmo de reensamblaje</strong> con índice por offset, detección de solapamiento y temporizador.</li>
+<li><strong>Implementar el descubrimiento del Path MTU</strong> con <code>enviar_msg_ICMP</code> / <code>recibir_msg_ICMP</code>, y explicar por qué la solución oficial subestima.</li>
+<li>Explicar qué es el <strong>PMTUD black hole</strong> y diagnosticarlo con <code>ping -M do</code>.</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2010-12 Problema 2</code> (30 pts — MTU, fragmentación, Path MTU <strong>e implementación del descubrimiento</strong>), <code>2006-12 P3</code> (10 pts — <strong>algoritmo de reensamblaje</strong>), <code>2000-07 Problema 2</code>.</p>
+<p>⚠️ Es <strong>una de las clases más importantes del curso</strong>: el problema de 2010-12 vale 30 puntos y su último apartado es un algoritmo a implementar.</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 MTU: la unidad máxima de transmisión</h2>
+<p><strong>MTU</strong> (<em>Maximum Transmission Unit</em>) es <strong>la mayor PDU (unidad de datos de protocolo) de capa 3 que un enlace transmite sin fragmentar</strong>.</p>
+<p>Existe porque la física lo impone: a velocidad <code>R</code>, transmitir <code>L</code> bytes lleva <code>L/R</code> segundos, así que un datagrama de 64 KB monopolizaría el enlace medio segundo; además la memoria de la interfaz y el tamaño máximo de trama del hardware son finitos.</p>
+<p><strong>Ojo con una fuente típica de errores: la MTU cuenta solo los datos, no la cabecera de capa 2.</strong></p>
+<div class="codehilite"><pre><span></span><code>  Trama Ethernet máxima:  1518 bytes
+     ├─ MAC destino 6 + MAC origen 6 + Ethertype 2 = 14
+     ├─ DATOS IP       1500   ◄── ESTO es la MTU
+     └─ FCS              4
+  ───────────────────────────────────  14 + 1500 + 4 = 1518
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Enlace</th>
+<th>MTU</th>
+<th>Origen del número</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Ethernet</strong></td>
+<td><strong>1500</strong></td>
+<td>valor por defecto de IEEE 802.3</td>
+</tr>
+<tr>
+<td><strong>Jumbo frame</strong></td>
+<td><strong>9000</strong></td>
+<td><strong>convención, NO estándar IEEE</strong></td>
+</tr>
+<tr>
+<td>PPPoE (ADSL)</td>
+<td><strong>1492</strong></td>
+<td>1500 menos 8 de encapsulación</td>
+</tr>
+<tr>
+<td>Frame Relay / ATM</td>
+<td>Variable</td>
+<td>según VC; típico 1500</td>
+</tr>
+<tr>
+<td>Token Ring 16 Mbps</td>
+<td>17918</td>
+<td>el estándar lo fija explícitamente</td>
+</tr>
+<tr>
+<td><strong>IPv4 mínimo absoluto</strong></td>
+<td><strong>68</strong></td>
+<td><code>RFC 791</code>; en la práctica se/supporta 576</td>
+</tr>
+<tr>
+<td><strong>IPv6 mínimo absoluto</strong></td>
+<td><strong>1280</strong></td>
+<td><code>RFC 8200 §5</code>, verificado textualmente</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ El <strong>jumbo de 9000 es una convención de la industria, no un estándar
+IEEE</strong>. Se usa intra-datacenter y en almacenamiento. <strong>Nunca sobre Internet ni
+sobre túneles sin <em>clamp MSS</em></strong>: si un router del camino tiene MTU 1500 y vos
+mandás 9000, o fragmentás (IPv4) o perdés la conexión (IPv6, que no fragmenta).</p>
+</blockquote>
+<p>El <strong>68 bytes</strong> es el datagrama mínimo absoluto de <code>RFC 791</code> (60 de cabecera con opciones + 8 de datos), pero <code>RFC 1122 §3.2.1</code> pide que <strong>todo host soporte al menos 576 bytes</strong>. El 68 es un piso histórico; nadie baja de 576 en una red real. El mínimo de IPv6, en cambio, es <strong>1280 y obligatorio para toda interfaz</strong>, sin excepción por opciones.</p>
+<h2>1.2 Fragmentación: los tres campos que la habilitan</h2>
+<div class="codehilite"><pre><span></span><code>   Cabecera IPv4 — 20 bytes mínimo
+
+ 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|Version|  IHL  |    DSCP   |ECN|     Total Length             |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|            Identification        |Flags|  Fragment Offset  |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|  Time to Live |    Protocol    |      Header Checksum         |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                       Source Address                          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                    Destination Address                        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+  ── Los 3 campos que importan, ampliado ──
+
+  +---------------------------+---+----+---+---------------------------+
+  |     Identification        | R | DF | MF|     Fragment Offset      |
+  |         16 bits           |   |    |   |         13 bits           |
+  +---------------------------+---+----+---+---------------------------+
+                                 ▲   ▲    ▲
+                                 │   │    └── MF = More Fragments
+                                 │   └─────── DF = Don't Fragment
+                                 └─────────── R = reservado, siempre 0
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Bits</th>
+<th>Función</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Identification</strong></td>
+<td>16</td>
+<td>El <strong>"número de pedido"</strong> del datagrama. <strong>Todos los fragmentos llevan el mismo ID.</strong> El destino agrupa por <code>(IP destino, ID)</code>.</td>
+</tr>
+<tr>
+<td><strong>Flags: DF</strong></td>
+<td>1</td>
+<td><strong>Decide si se puede fragmentar.</strong> <code>0</code> = se puede; <code>1</code> = prohibido: si no entra, se descarta y se avisa.</td>
+</tr>
+<tr>
+<td><strong>Flags: MF</strong></td>
+<td>1</td>
+<td><code>1</code> = hay más fragmentos; <code>0</code> = <strong>este es el último</strong>.</td>
+</tr>
+<tr>
+<td><strong>Fragment Offset</strong></td>
+<td>13</td>
+<td>Posición del payload de este fragmento dentro del payload original, <strong>en unidades de 8 bytes</strong>.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Por qué 8 bytes y no 1: economía de bits.</strong> 13 bits en unidades de bytes darían solo 8192 bytes de payload máximo. En unidades de 8 dan 8191 × 8 = <strong>65528 bytes</strong>, que cubre cualquier datagrama IPv4 válido. La consecuencia es dura: <strong>el payload de todo fragmento salvo el último debe ser múltiplo de 8</strong>, así que si el router tiene 556 bytes disponibles, recorta a 552 y deja 4 para el siguiente.</p>
+<p><strong>Ejemplo.</strong> Datagrama de 1500 bytes (<code>IHL = 5</code>, payload 1480) por un enlace de MTU 576:</p>
+<div class="codehilite"><pre><span></span><code>  Original:  [cabecera 20 | payload 1480]                     longitud = 1500
+
+  F1: cabecera 20 | payload 552                              longitud =  572
+      offset = 0/8 = 0          MF = 1
+  F2: cabecera 20 | payload 552                              longitud =  572
+      offset = 552/8 = 69       MF = 1
+  F3: cabecera 20 | payload 1480-1104 = 376                  longitud =  396
+      offset = 1104/8 = 138     MF = 0
+  ────────────────────────────────────────────────────────────────────
+  Sobre el enlace: 572 + 572 + 396 = 1540   →  overhead 40 bytes (2,7 %)
+  Todos con el MISMO Identification, mismo src y mismo dst.
+</code></pre></div>
+
+<p><strong>Reglas de memoria:</strong> el <code>Fragment Offset</code> va en unidades de 8; el <code>ID</code> se copia tal cual; el <strong>TTL se restaura al valor original</strong> (los fragmentos viajan de a uno, no en paralelo); el <strong>checksum de cabecera se recalcula</strong> porque la cabecera cambió; el <strong>checksum de capa 4 no cambia</strong> (se verifica recién al reensamblar); y <strong>cada fragmento es un datagrama IP independiente</strong>, así que puede tomar otro camino si hay ECMP.</p>
+<h2>1.3 El comportamiento del router — lo que pide el Examen 2010-12</h2>
+<p>Este pseudocode es <strong>literalmente</strong> el apartado (b) del problema de 30 puntos:</p>
+<div class="codehilite"><pre><span></span><code>  // ---- Comportamiento de un router al reenviar por un enlace de MTU MTUo ----
+  //   Pi    = paquete entrante
+  //   L     = longitud total de Pi (campo Total Length)
+  //   MTUo  = MTU del enlace saliente
+
+  Pi = paquete entrante ;  L = Pi.Total_Length
+
+  if (L &lt;= MTUo)                      →  // CASO 1: cabe entero
+      transmitir Pi normalmente                       // sin importar DF
+
+  else if (L &gt; MTUo and Pi.DF == 1)   →  // CASO 2: no cabe y NO se puede partir
+      DESCARTA Pi
+      envía ICMP (destino = Pi.origen, tipo = 3, código = 4)
+      //   tipo 3 = Destination Unreachable
+      //   código 4 = "Fragmentation Needed and Don't Fragment was Set"
+
+  else if (L &gt; MTUo and Pi.DF == 0)   →  // CASO 3: no cabe y se PUEDE partir
+      FRAGMENTAR Pi
+      transmitir cada fragmento
+</code></pre></div>
+
+<p><strong>Por qué el orden importa:</strong> se chequea primero si cabe, porque es el caso más frecuente y el más barato (ni hace falta mirar los flags).</p>
+<p><strong>¿Por qué descarta con <code>DF = 1</code> en vez de fragmentar igual?</strong> Porque <code>DF</code> significa "no me fragmentes": el emisor <strong>declaró un límite que hay que respetar</strong>, y un router que lo fragmentara produciría algo que el receptor final <strong>no sabe tratar</strong> (una aplicación entrega datos a un socket, no a una bolsa de fragmentos).</p>
+<p><strong>¿Por qué manda el ICMP?</strong> Tres razones, y las dos primeras son los puntos:</p>
+<ul>
+<li><strong>Para que el emisor no repita el error.</strong> IP es <em>best effort</em>: si nadie avisa, el emisor solo ve pérdida y <strong>retransmite el mismo datagrama idéntico</strong>, que vuelve a ser descartado. Bucle infinito.</li>
+<li><strong>Para que el emisor se adapte.</strong> El tipo 3 código 4 <strong>lleva la MTU exacta</strong> del enlace bloqueante en los <strong>bytes 6-7</strong> (<code>RFC 1191</code>), así que puede bajar su MSS o su caché de PMTU.</li>
+<li><strong>Para que la red sea observable.</strong> Sin reportes, el operador nunca se enteraría de que su MTU está mal.</li>
+</ul>
+<p>⚠️ <strong>Riesgo:</strong> un atacante que inyecte ICMP tipo 3 código 4 falsos puede degradar el servicio. Por eso los routers hoy <strong>no emiten ICMP hacia multicast</strong> y muchos limitan la tasa de errores que generan.</p>
+<h2>1.4 El problema de la fragmentación</h2>
+<p>Este es el corazón conceptual del <code>2006-12 P3</code>. La fragmentación se paga cara:</p>
+<p><strong>(a) Unidad mínima de 8 bytes.</strong> Implica el recorte descrito en §1.2. Si un enlace deja pasar solo 8 bytes de payload por fragmento, se generan muchísimos fragmentos.</p>
+<p><strong>(b) Overhead de cada cabecera.</strong> Cada fragmento repite los 20 bytes de cabecera IP:</p>
+<div class="codehilite"><pre><span></span><code>  Payload real = 1500 − 20 = 1480 bytes.  Si entran 8 bytes de payload:
+      n = 1480 / 8 = 185 fragmentos
+      Sobre el enlace: 185 × 28 = 5180 bytes
+      Overhead: 5180 − 1500 = 3680 bytes  →  el datagrama CRECIÓ un 245 %
+</code></pre></div>
+
+<blockquote>
+<p>⚠️ La cifra de <strong>"188 fragmentos"</strong> que circula en los apuntes sale de <code>1500/8 = 187,5</code>. <strong>El cálculo correcto es sobre el payload (1480), no sobre la longitud total</strong>, porque la cabecera se reescribe en cada fragmento. Si el examen te da la longitud total, <strong>descontá <code>IHL × 4</code> primero</strong>.</p>
+</blockquote>
+<p><strong>(c) Reensamblaje con temporizador.</strong> Un fragmento que llega solo no se puede entregar, así que el destino <strong>guarda estado</strong> y arranca un temporizador (típicamente 60–120 s) al recibir el primero. Si vence sin completarse, <strong>descarta todos los fragmentos y libera la memoria</strong> — y el datagrama <strong>se pierde entero</strong>.</p>
+<p><strong>(d) Solapamiento de fragmentos — el agujero de seguridad.</strong> Dos fragmentos se solapan si cubren bytes del payload original en común. <code>RFC 791</code> dice que ante solapamiento se descarte el datagrama, pero <strong>la implementación real, históricamente, no siempre lo hizo</strong>. El problema es que <strong>el segundo fragmento sobrescribe al primero</strong>: un atacante que inyecte un fragmento con el mismo <code>(IP destino, ID, offset)</code> pero datos distintos puede <strong>cambiar el contenido del datagrama</strong>. Es la base de los ataques clásicos de fragmentación (<em>fragment overlap</em>, <em>teardrop</em>). IPv6 lo cierra: <strong><code>RFC 5722</code></strong> prohíbe explícitamente el solapamiento y <strong><code>RFC 6946</code></strong> recomienda tratar los <strong>fragmentos atómicos</strong> como no fragmentados.</p>
+<p><strong>(e) La pérdida de un fragmento descarta el datagrama entero.</strong> Y es multiplicativo:</p>
+<div class="codehilite"><pre><span></span><code>  Si el enlace pierde con probabilidad p, y el datagrama se partió en n:
+      P(que el datagrama ENTERO llegue) = (1 − p)^n
+
+  p = 0,01:   n = 3 → 0,99³  = 0,9703  →  97,0 % de éxito
+              n = 185 → 0,99^185 = 0,157  →  15,7 % de éxito
+</code></pre></div>
+
+<p><strong>Interpretación:</strong> fragmentar 185 veces multiplicó por 6 la probabilidad de pérdida del datagrama completo. <strong>El datagrama fragmentado tiene una probabilidad de pérdida mucho mayor que uno que no lo está</strong>, aunque el enlace individual sea idéntico.</p>
+<p><strong>(f) El ataque de fragmentación en capas — el punto de seguridad.</strong></p>
+<blockquote>
+<p><strong>Cada fragmento es un paquete IP independiente para cada firewall o filtro
+que atraviesa.</strong> Un filtro que aplica reglas sobre campos del datagrama <strong>solo
+ve cada fragmento por separado</strong>.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code>  ┌───────────────┬──────────────┬──────────────────────────────┐
+  │ F1: hdr IP    │ hdr TCP      │ datos ...                    │
+  │ offset 0      │ puerto 23    │                              │
+  ├───────────────┼──────────────┼──────────────────────────────┤
+  │ F2: hdr IP    │ datos ...    │ (el filtro NO ve el puerto)   │
+  │ offset 69     │              │                              │
+  └───────────────┴──────────────┴──────────────────────────────┘
+</code></pre></div>
+
+<p>Un atacante <strong>fragmenta el datagrama para esconder un puerto prohibido en un
+fragmento que el filtro no inspecciona</strong>. Y hay una capa más: fragmentando, el
+primer fragmento lleva solo los 8 bytes obligatorios de payload, y <strong>los datos
+del protocolo quedan en los fragmentos posteriores</strong>, donde un filtro <em>stateful</em>
+que hace tracking de conexiones no los asoció. <strong>Por eso los firewalls
+modernos reensamblan antes de decidir</strong>, y por eso en IPv6 — donde el router
+nunca fragmenta — este ataque es estructuralmente mucho más difícil.</p>
+<h2>1.5 El algoritmo de reensamblaje</h2>
+<p>La solución oficial de <code>2006-12</code> es un esqueleto; esta es la versión completa.
+<strong>Suposiciones que hago, justificadas</strong> (el enunciado pide justificarlas):</p>
+<ol>
+<li><strong>Los fragmentos pueden llegar en cualquier orden y más de una vez.</strong> IP es <em>best effort</em> y no reordena.</li>
+<li><strong>Se agrupan por el triple <code>(IP destino, Identification, Protocolo)</code>.</strong> Es lo único que el destino tiene para saber a qué datagrama pertenece un fragmento.</li>
+<li><strong>Hay que detectar solapamiento</strong>, porque si no un fragmento puede sobrescribir bytes ya entregados.</li>
+</ol>
+<div class="codehilite"><pre><span></span><code>  // ======== ESTADO POR DATAGRAMA EN CURSO ========
+  TablaEnsamblaje[ (IP_destino, ID, protocolo) ] = {
+      buffer[ fragment_offset ] , ocupado[ fragment_offset ] ,
+      cabecera_original , longitud_total = −1 , TTL_assembly
+  }
+
+  AL_RECIBIR_DATAGRAMA( Pi ):
+      E = TablaEnsamblaje[ (Pi.destino, Pi.Identification, Pi.protocolo) ]
+      if (E no existe): crear E vacía ; E.TTL = ahora() + 120 s
+
+      // (0) el fragmento de offset 0 lleva la CABECERA ORIGINAL (con sus
+      //     opciones). Hay que guardarla aparte: el Total_Length de P no es
+      //     el del datagrama original.
+      if (Pi.Fragment_Offset == 0): E.cabecera_original = Pi
+
+      // (1) longitud mínima del payload
+      if (payload(Pi) &lt; 8 and Pi.MF == 1): descartar Pi ; return
+
+      // (2) SOLAPAMIENTO  →  política conservadora: se descarta todo
+      inicio = Pi.Fragment_Offset × 8 ;  fin = inicio + payload(Pi)
+      for cada offset o en E.ocupado:
+          if (o ≠ Pi.Fragment_Offset) and los intervalos se cruzan:
+              descartar Pi ; liberar E ; return
+
+      // (3) almacenar EN SU POSICIÓN
+      E.buffer[ Pi.Fragment_Offset ] = Pi ;  E.ocupado[ Pi.Fragment_Offset ] = true
+      E.TTL = ahora() + 120 s
+
+      // (4) si es el ÚLTIMO, ya sabemos el largo total del payload
+      if (Pi.MF == 0):
+          E.longitud_total = (Pi.Fragment_Offset × 8) + payload(Pi)
+
+      // (5) ¿COMPLETO?  No por MF, por COBERTURA TOTAL
+      if (E.longitud_total ≠ −1) and todos_los_bytes_cubiertos(E, E.longitud_total):
+          Ptot = reensamblar(E)          // arma el datagrama original
+          Ptot.TTL = Pi.TTL              // el menor TTL de los fragmentos
+          entregar Ptot a la capa 3 ;  liberar E ;  return
+
+  // ======== BARRIDO PERIÓDICO (no corre por fragmento recibido) ========
+  for cada E en TablaEnsamblaje:
+      if (ahora() &gt; E.TTL):
+          descartar todos los fragmentos de E      // el datagrama se pierde entero
+          liberar E
+</code></pre></div>
+
+<p><strong>El concepto del paso 5, que es lo que separa "andar" de "entender":</strong> el
+datagrama <strong>no está completo cuando llegó el último fragmento</strong>, sino cuando
+<strong>todos los bytes del intervalo <code>[0, longitud_total)</code> están cubiertos sin
+huecos</strong>. Con 3 fragmentos que llegan en orden los dos hechos coinciden; con 5
+que llegan desordenados <strong>no</strong>:</p>
+<div class="codehilite"><pre><span></span><code>  CASO en que "el último" NO implica "completo":
+     llega F5 (el último, MF = 0, offset 2208, payload 424)
+     estado real: hay un solo fragmento de 5 → falta el 80 % del datagrama
+     Un algoritmo "reensamblo al ver MF = 0" entrega BASURA.
+
+  CASO en que sí coincide (por casualidad):
+     F1 ✔  F3 ✔  F4 ✔  F2 ✔  F5 ✔  → llega F5 y en ese instante todo está
+     cubierto. Funciona, pero solo por casualidad del orden.
+</code></pre></div>
+
+<h2>1.6 Path MTU: el mínimo del camino</h2>
+<p><strong>Path MTU</strong> es <strong>la MTU del camino completo entre dos extremos: el mínimo de las MTUs de todos los enlaces del camino.</strong></p>
+<div class="codehilite"><pre><span></span><code>   ┌─────────┐  MTU 1500   ┌─────────┐  MTU 576   ┌─────────┐  MTU 1500  ┌─────────┐
+   │    A    ├─────────────►│   R1    ├────────────►│   R2    ├────────────►│    B    │
+   └─────────┘  (Ethernet)  └─────────┘  (PPP/ADSL)└─────────┘ (Ethernet) └─────────┘
+
+   Path MTU de A hacia B = min(1500, 576, 1500) = 576
+   ⇐ El cuello de botella es el enlace del medio, NO los extremos.
+</code></pre></div>
+
+<p><strong>Tres propiedades que hay que decir siempre</strong>, porque el enunciado de 2010-12
+las pide explícitamente:</p>
+<ol>
+<li><strong>Puede variar con el tiempo</strong> si <strong>los caminos cambian</strong>: con recálculo de rutas (OSPF, IS-IS) o con <strong>ECMP</strong> repartiendo carga. Un PMTU cacheado puede quedarse viejo.</li>
+<li><strong>Puede ser distinto en cada sentido</strong> si el <strong>ruteo es asimétrico</strong>. Hay dos caminos y dos PMTUs; es el caso normal en Internet.</li>
+<li><strong>Es una propiedad del camino, no del prefijo destino.</strong> Dos flujos al mismo destino pueden tener PMTU distinto si ECMP los manda por enlaces distintos.</li>
+</ol>
+<p><strong>La diferencia entre fragmentar y descubrir el PMTU, en una frase:</strong> la
+fragmentación <strong>hace que el paquete llegue</strong>; el descubrimiento <strong>hace que el
+paquete nunca sea demasiado grande</strong>. La primera gasta ancho de banda y
+probabilidad de éxito; el segundo no gasta nada.</p>
+<h2>1.7 Path MTU Discovery (<code>RFC 1191</code>)</h2>
+<p>Tres pasos, y el tercero es el esencial:</p>
+<div class="codehilite"><pre><span></span><code>  1. El emisor pone DF = 1 en todos sus datagramas (TCP lo hace por omisión).
+  2. El router que no puede pasarlo:
+         descarta el datagrama
+         envía ICMP tipo 3 código 4 con la MTU del enlace en los bytes 6-7
+  3. El emisor recibe el ICMP, BAJA SU CACHÉ de PMTU para ese destino y
+     vuelve a mandar con un tamaño que sí entra.
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>   A                                                        B
+   │                                         ┌──────────────────────┐
+   │  ICMP 3/4 "necesito 1492"               │  enlace de 1500      │
+   │◀────────────────────────────────────────┤  ← el cuello de botella│
+   │  (lo manda el router del camino, NO B)   │     real              │
+   │                                         └──────────────────────┘
+   │  cache[destino] = 1492   ← SE GUARDA, con timestamp
+</code></pre></div>
+
+<p><strong>El campo de la MTU dentro del ICMP</strong> (cabecera de 8 bytes):</p>
+<div class="codehilite"><pre><span></span><code>  ┌──────┬──────┬──────────────┬──────────────┬───────────────┐
+  │ Type │ Code │  Checksum    │   "unused"   │   Resto…      │
+  │  8   │  8   │     16       │     16       │               │
+  └──────┴──────┴──────────────┴──────────────┴───────────────┘
+    byte 0  byte 1  bytes 2-3    bytes 4-5     bytes 6-7
+                                          ◄── AQUÍ va la MTU del enlace
+                                              siguiente, en "Fragmentation
+                                              Needed and DF set"
+</code></pre></div>
+
+<blockquote>
+<p><code>RFC 1191 §3</code> usa ese campo "unused" para llevar <strong>la MTU del enlace
+siguiente</strong> en el mensaje <em>Fragmentation Needed and DF Set</em>. <strong>Es la respuesta
+directa al problema:</strong> el router no dice solamente "no entra", dice <strong>"entra
+hasta acá"</strong>. En la práctica muchos routers no lo llenan, y por eso la
+solución oficial multiplica por 0.85 (§3.1c).</p>
+</blockquote>
+<p><strong>La degradación elegante — y su falla silenciosa:</strong> si el ICMP tipo 3 código 4
+<strong>no llega nunca</strong> (un firewall lo filtró, o el router que debía emitirlo está
+roto), el emisor <strong>no se entera de nada</strong>. El paquete se pierde, se
+retransmite, se pierde otra vez, y la conexión se cuelga sin explicación. Ese
+es el <strong>black hole</strong>.</p>
+<h2>1.8 MTU y MSS: la defensa de TCP</h2>
+<p>La capa de transporte evita la fragmentación <strong>por su cuenta</strong>, anunciando su
+<strong>MSS</strong> (<em>Maximum Segment Size</em>) en el SYN:</p>
+<div class="codehilite"><pre><span></span><code>   MSS = MTU del enlace de SALIDA del emisor − cabeceras de IP y TCP
+
+   IPv4:  MSS = MTU − 20 (IP) − 20 (TCP) = MTU − 40   →  1460 en Ethernet
+   IPv6:  MSS = MTU − 40 (IP) − 20 (TCP) = MTU − 60   →  1420 en Ethernet
+</code></pre></div>
+
+<p>Dos extremos que conectan por caminos distintos usan <strong><code>min(MSS_A, MSS_B)</code></strong>, y
+con eso ningún segmento puede superar el PMTU. <strong>Los segmentos TCP nunca se
+fragmentan</strong>: si uno no entra en un enlace intermedio, <strong>se descarta y se
+retransmite más chico</strong>.</p>
+<p><strong>El clamp MSS.</strong> Con un jumbo frame (9000) en un borde y un lado que no lo
+soporta, alguien tiene que <strong>recortar el MSS</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   Servidor en red de jumbo:  MSS anunciado = 8960
+   Cliente detrás de un enlace de 1500:  no puede recibir segmentos de 8960
+   ⇐ El firewall / router de borde hace CLAMP:  MSS = min(8960, 1500−40) = 1460
+   ⇐ Por eso "jumbo frames nunca sin clamp MSS": sin clamp, se rompe.
+</code></pre></div>
+
+<h2>1.9 El PMTUD black hole</h2>
+<p><strong>Qué es:</strong> un router que no puede pasar el datagrama <strong>no genera el ICMP</strong>
+(porque un firewall lo filtró, porque un ACL no lo contempla, o porque el router
+está roto). El emisor nunca se entera de que su PMTU cacheado está mal, sigue
+mandando datagramas de tamaño fijo, y <strong>todos se pierden en silencio</strong>.</p>
+<p><strong>El síntoma clásico, de memoria:</strong></p>
+<blockquote>
+<p><strong>"SSH funciona y HTTPS se queda colgado"</strong> (o al revés, según qué protocolo
+sobreviva).</p>
+</blockquote>
+<p><strong>¿Por qué un protocolo funciona y el otro no?</strong> Porque <strong>no todos los datagramas
+tienen el mismo tamaño</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   SSH interactivo: paquetes chicos (prompt, teclas), ~100 bytes.
+                    100 &lt; 1280  ⇐  pasan por el cuello de botella.
+                    ⇐ SSH FUNCIONA
+
+   HTTPS: el servidor manda respuestas del tamaño del MSS negociado (1460).
+          1460 &gt; 1280  ⇐  el router del cuello lo descarta, sin avisar.
+          ⇐ HTTPS SE CUELGA
+</code></pre></div>
+
+<p><strong>Diagnóstico:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Linux: -M do = forzar DF=1 (don't fragment); -s = tamaño del payload</span>
+ping<span class="w"> </span>-M<span class="w"> </span><span class="k">do</span><span class="w"> </span>-s<span class="w"> </span><span class="m">1400</span><span class="w"> </span>ejemplo.com<span class="w">      </span><span class="c1"># falla  → hay un cuello por debajo de 1400</span>
+ping<span class="w"> </span>-M<span class="w"> </span><span class="k">do</span><span class="w"> </span>-s<span class="w"> </span><span class="m">1000</span><span class="w"> </span>ejemplo.com<span class="w">      </span><span class="c1"># funciona → el cuello está entre 1000 y 1400</span>
+tracepath<span class="w"> </span>ejemplo.com<span class="w">               </span><span class="c1"># muestra el PMTU de cada salto</span>
+<span class="c1"># Windows:  ping -f -l 1400 ejemplo.com      (-f = DF, -l = payload)</span>
+</code></pre></div>
+
+<p><strong>Soluciones, de mejor a peor:</strong> (1) <strong>dejar pasar el ICMP tipo 3 código 4</strong> en los
+firewalls — es lo correcto; (2) <strong>DPLPMTUD</strong> (<code>RFC 8899</code>), que <strong>no depende de
+ICMP</strong>; (3) <strong>MSS clamping</strong> en el borde — muy desplegado; (4) <strong>caché con TTL
+corto y revalidación</strong>; (5) bajar el MSS del socket a mano — último recurso.</p>
+<h2>1.10 Actualización a 2026</h2>
+<p><strong>Sigue igual, de memoria:</strong></p>
+<ul>
+<li><strong>MTU</strong> = la mayor PDU de capa 3 que el enlace transmite sin fragmentar.</li>
+<li><strong>Ethernet 1500.</strong> Jumbo 9000.</li>
+<li><strong>IPv4 fragmenta en los routers (DF = 0); IPv6 fragmenta solo en el origen.</strong></li>
+<li><strong>ICMPv4 tipo 3 código 4</strong> vs. <strong>ICMPv6 tipo 2</strong> (<em>Packet Too Big</em>).</li>
+<li><strong>El PMTU se cachea en el origen</strong>, es <strong>por ruta</strong>, y es <strong>≤ al MTU del salto
+  más estrecho</strong>.</li>
+<li>El <strong>"576 mínimo"</strong> en IPv4 viene de <code>RFC 791</code> y <code>RFC 1122 §3.2.1</code>.</li>
+<li><strong>IPv6 mínimo absoluto = 1280</strong> (<code>RFC 8200 §5</code>).</li>
+</ul>
+<p><strong>Cambió:</strong></p>
+<ul>
+<li><strong><code>RFC 4821</code> (2007, <em>Experimental<em>) → <code>RFC 8899</code> (sep-2020, </em>Standards Track<em>): DPLPMTUD</em><em> (</em>Datagram PLPMTUD<em>). La PMTUD dejó de </em><em>depender de ICMP</em><em>: el transporte sondea con su propio paquete de datos. Es la respuesta canónica al </em><em>black hole</em><em> y es </em><em>lo que QUIC usa por defecto</em><em> (<code>RFC 9002 §6</code>). ⚠️ </em><em>DPLPMTUD es </em>loss-based</em></strong>, lo que introduce ambigüedad entre pérdida por MTU y pérdida por congestión; pocas implementaciones lo soportan (en Linux es una opción, no el default del stack TCP).</li>
+<li><strong>El "9000 → 1500 cliff"</strong> es hoy un problema real: con <strong>ECMP</strong>, el PMTU es <strong>propiedad del camino, no del prefijo</strong>, así que flujos distintos al mismo destino pueden tener PMTU distinto.</li>
+<li><strong>Cada overlay consume MTU</strong>: MPLS, VXLAN, IPsec, GRE y WireGuard. Un VXLAN sobre 1500 tiene MTU efectiva <strong>1450</strong>; con WireGuard sobre 1500, <strong>1420</strong>. Por eso el desajuste de MTU es <strong>omnipresente</strong> en redes cloud/bare-metal híbridas.</li>
+<li><strong>Hardening de fragmentos IPv6</strong>: <code>RFC 5722</code> prohíbe solapamientos; <code>RFC 6946</code> trata los fragmentos atómicos como no fragmentados; <code>RFC 5095</code> deprecó el Routing Header tipo 0.</li>
+<li><strong>Síntoma clásico del black hole</strong>: "SSH funciona, algunos sitios HTTPS quedan colgados". Diagnóstico: <code>ping -M do -s &lt;size&gt;</code>, <code>tracepath</code>.</li>
+</ul>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — ¿Cuántos fragmentos genera un datagrama de 1500 bytes por un enlace de MTU 500?</h2>
+<p><strong>Datos.</strong> Datagrama IP de <strong>1500 bytes</strong>, <code>IHL = 5</code> (cabecera de 20, sin opciones), <code>ID = 0xABCD</code>, <code>DF = 0</code>. Enlace de salida con <strong>MTU = 500</strong>.</p>
+<p><strong>Paso 1 — Descontar la cabecera del original.</strong></p>
+<div class="codehilite"><pre><span></span><code>Longitud total = 1500 ;  cabecera = IHL × 4 = 5 × 4 = 20
+PAYLOAD REAL = 1500 − 20 = 1480 bytes      ⚠️ 1480, NO 1500
+</code></pre></div>
+
+<p><strong>Paso 2 — Payload por fragmento.</strong> Cada fragmento tiene su propia cabecera de 20:</p>
+<div class="codehilite"><pre><span></span><code>payload por fragmento = 500 − 20 = 480 ;  chequeo de 8 bytes: 480/8 = 60  ✓
+</code></pre></div>
+
+<p><strong>Paso 3 — Cantidad de fragmentos.</strong></p>
+<div class="codehilite"><pre><span></span><code>n = ceil(1480 / 480) = ceil(3,083) = 4 fragmentos
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Offset (bytes)</th>
+<th>Offset en unidades de 8</th>
+<th>Payload</th>
+<th><code>Total Length</code></th>
+<th><code>MF</code></th>
+<th><code>ID</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F1</td>
+<td>0</td>
+<td>0/8 = 0</td>
+<td>480</td>
+<td>500</td>
+<td>1</td>
+<td>0xABCD</td>
+</tr>
+<tr>
+<td>F2</td>
+<td>480</td>
+<td>480/8 = 60</td>
+<td>480</td>
+<td>500</td>
+<td>1</td>
+<td>0xABCD</td>
+</tr>
+<tr>
+<td>F3</td>
+<td>960</td>
+<td>960/8 = 120</td>
+<td>480</td>
+<td>500</td>
+<td>1</td>
+<td>0xABCD</td>
+</tr>
+<tr>
+<td>F4</td>
+<td>1440</td>
+<td>1440/8 = 180</td>
+<td>40</td>
+<td>60</td>
+<td>0</td>
+<td>0xABCD</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Verificación:</strong> <code>480+480+480+40 = 1480</code> ✓ igual al payload original. F4 tiene
+<code>1480 − 1440 = 40</code> bytes.</p>
+<p><strong>¿Cuántos bytes viajan?</strong></p>
+<div class="codehilite"><pre><span></span><code>500 + 500 + 500 + 60 = 1560 bytes
+Overhead = 1560 − 1500 = 60 bytes  =  60/1500 = 4,0 %
+</code></pre></div>
+
+<p><strong>Interpretación.</strong> Pagamos <strong>60 bytes de overhead</strong> (tres cabeceras repetidas)
+para que el datagrama pase de 1500 a 1560 bytes en el cable. Y el costo real es
+otro: <strong>el receptor tiene que recibir 4 datagramas para entregar uno</strong>, y si se
+pierde cualquiera de los cuatro se perdió el datagrama entero.</p>
+<p><strong>¿Y si viniera con <code>DF = 1</code>?</strong> <code>L = 1500 &gt; 500</code> y <code>DF = 1</code> → <strong>descarta</strong> y
+manda <strong>ICMP tipo 3 código 4</strong> a <code>Pi.origen</code>. Cero bytes salen por ese enlace.</p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Usar 1500 como si fuera el payload.</strong> Siempre <code>payload = longitud total − IHL × 4</code>.</li>
+<li><strong>Contar los offsets en bytes</strong> en vez de unidades de 8.</li>
+<li><strong>Poner <code>MF = 1</code> en el último fragmento.</strong> <code>MF = 0</code> es lo que le dice al receptor "acá termina, y con esto sé el largo total".</li>
+</ul>
+<h2>2.2 Ejercicio 2 — Reensamblar 4 fragmentos que llegan desordenados</h2>
+<p><strong>Datos.</strong> Los 4 fragmentos de 2.1, pero llegan en el orden <strong>F3, F1, F4, F2</strong>. Todos con <code>ID = 0xABCD</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Llegada</th>
+<th>Offset</th>
+<th>Payload</th>
+<th><code>MF</code></th>
+<th>Bytes cubiertos</th>
+<th><strong>Falta</strong></th>
+<th>¿Completo?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F3</td>
+<td>960</td>
+<td>480</td>
+<td>1</td>
+<td>960..1439</td>
+<td>0..959 y 1440..1479</td>
+<td>no</td>
+</tr>
+<tr>
+<td>F1</td>
+<td>0</td>
+<td>480</td>
+<td>1</td>
+<td>0..479, 960..1439</td>
+<td>480..959 y 1440..1479</td>
+<td>no</td>
+</tr>
+<tr>
+<td>F4</td>
+<td>1440</td>
+<td>40</td>
+<td><strong>0</strong></td>
+<td>0..479, 960..1479</td>
+<td><strong>480..959</strong></td>
+<td><strong>no</strong></td>
+</tr>
+<tr>
+<td>F2</td>
+<td>480</td>
+<td>480</td>
+<td>1</td>
+<td><strong>0..1479</strong></td>
+<td>—</td>
+<td><strong>¡sí!</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Paso a paso, con la aritmética:</strong></p>
+<div class="codehilite"><pre><span></span><code>── Llega F3 (offset 960, 480 bytes) ──────────────────────────────────
+   Cubre 960 .. 960+480−1 = 960..1439
+   MF = 1  →  NO sabemos todavía el largo total
+   Tabla: [0]=libre  [60]=libre  [120]=F3  [180]=libre
+
+── Llega F1 (offset 0, 480 bytes) ───────────────────────────────────
+   Cubre 0 .. 479
+   MF = 1  →  todavía no
+   ⚠️ F1 tiene offset 0 ⇒ es el que CONTIENE LA CABECERA ORIGINAL
+      (con sus opciones). Su Total_Length NO es el del datagrama original.
+   Tabla: [0]=F1  [60]=libre  [120]=F3  [180]=libre
+
+── Llega F4 (offset 1440, 40 bytes) ─────────────────────────────────
+   Cubre 1440 .. 1479
+   MF = 0  →  ¡ES EL ÚLTIMO!  Ahora sí sé el largo del payload:
+        longitud_total = 1440 + 40 = 1480
+   Tabla: [0]=F1  [60]=libre  [120]=F3  [180]=F4
+
+   ⇐ ¿Completo?  Ocupados: 0, 120, 180.  Falta el 60 (bytes 480..959).
+      Faltan 480 bytes de 1480  ⇐  NO ESTÁ COMPLETO  ⇐  no se entrega nada.
+
+── Llega F2 (offset 480, 480 bytes) ─────────────────────────────────
+   Cubre 480 .. 959
+   Tabla: [0]=F1  [60]=F2  [120]=F3  [180]=F4
+
+   Verificación: cubiertos = 480+480+480+40 = 1480 ;  largo conocido = 1480
+                 y los intervalos son contiguos y sin huecos  ⇐  ¡COMPLETO!
+   ⇐ REENSAMBLO y entrega a la capa 3.
+</code></pre></div>
+
+<p><strong>El datagrama reensamblado:</strong> cabecera tomada de <strong>F1</strong> (offset 0), con
+<code>IHL = 5</code> y <code>Total_Length = 20 + 1480 = 1500</code>; <code>Identification = 0xABCD</code>;
+<code>Flags</code>: <code>MF = 0</code>, <code>Fragment Offset = 0</code>; <code>TTL</code> = el menor de los fragmentos;
+checksum de cabecera recalculado. Payload = F1 (0..479) + F2 (480..959) + F3
+(960..1439) + F4 (1440..1479). Recién <strong>entonces</strong> se verifica el checksum de
+TCP. <strong>1500 bytes exactos, idéntico al original.</strong></p>
+<p><strong>¿Qué hubiera pasado con el algoritmo ingenuo?</strong> Uno que reensambla al ver
+<code>MF = 0</code> habría entregado un datagrama de <strong>520 bytes</strong> (F1 + F4, con un hueco
+de 480 bytes en el medio) cuando llegó F4. La capa de transporte habría
+encontrado el checksum de TCP incorrecto y lo habría descartado. <strong>Ese es
+justo el error que la solución oficial de <code>2006-12</code> evita con la suposición
+"los fragmentos llegaron en orden"</strong>: es válida solo en ese caso.</p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Confundir <code>MF = 0</code> con "llegó todo".</strong> Hay que contar los bytes cubiertos.</li>
+<li><strong>Olvidar que la cabecera original la tiene el fragmento de offset 0</strong> (y solo él).</li>
+<li><strong>No reiniciar el temporizador</strong> con cada fragmento: si el reensamblaje tarda 70 s y el temporizador es de 60, se descarta un datagrama que iba a completarse.</li>
+</ul>
+<h2>2.3 Ejercicio 3 — PMTUD con búsqueda binaria</h2>
+<p><strong>Datos.</strong> MTU de la interfaz de A hacia B = <strong>1500</strong>. PMTU real = <strong>1492</strong> (hay un enlace PPPoE en el medio).</p>
+<p>La versión oficial multiplica por 0.85. Ejecución con estos datos:</p>
+<div class="codehilite"><pre><span></span><code>Pmtu = 1500 ; envío Echo Request de 1500 con DF = 1
+  ⇐ el router del PPPoE lo descarta y manda ICMP 3/4
+  ⇐ 1500 × 0,85 = 1275
+envío de 1275 → llega entero → Echo Reply → return 1275
+</code></pre></div>
+
+<p><strong>Devolvió 1275 en vez de 1492: 217 bytes por debajo = 14,5 % del ancho de banda
+desperdiciado.</strong> Y no es casualidad: los valores que genera son <code>1500 · 0,85ᵏ</code>,
+y <strong>ninguno de esos es 1492</strong>. La solución oficial <strong>subestima siempre</strong>, como
+su propio comentario admite. El <strong>pseudocode de mi versión y su desarrollo
+punto por punto están en §3.1c</strong>; acá va la ejecución, que es lo que hay que
+saber hacer:</p>
+<div class="codehilite"><pre><span></span><code>  Estado inicial:  lo = 68,  hi = 1500     (lo = mínimo legal, hi = MTU local)
+
+  Probe 1:  mid = (68+1500)/2   =  784   → llega entero → lo =  784
+  Probe 2:  mid = (784+1500)/2  = 1142   → llega entero → lo = 1142
+  Probe 3:  mid = (1142+1500)/2 = 1321   → llega entero → lo = 1321
+  Probe 4:  mid = (1321+1500)/2 = 1410   → llega entero → lo = 1410
+  Probe 5:  mid = (1410+1500)/2 = 1455   → llega entero → lo = 1455
+  Probe 6:  mid = (1455+1500)/2 = 1477   → llega entero → lo = 1477
+  Probe 7:  mid = (1477+1500)/2 = 1488   → llega entero → lo = 1488
+  Probe 8:  mid = (1488+1500)/2 = 1494   → 1494 &gt; 1492  ⇐  ICMP 3/4 con
+          MTU = 1492 en los bytes 6-7  ⇐  lo = hi = 1492  ⇐  termina
+  ═══════════════════════════════════════════════════
+   RESULTADO:  PMTU = 1492      ✓ EXACTO     (8 probes)
+  ═══════════════════════════════════════════════════
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Oficial (<code>× 0.85</code>)</th>
+<th>Mía (binaria + lee la MTU)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Resultado con estos datos</td>
+<td><strong>1275</strong></td>
+<td><strong>1492</strong></td>
+</tr>
+<tr>
+<td>¿Exacto?</td>
+<td>No, <strong>siempre subestima</strong></td>
+<td><strong>Sí</strong></td>
+</tr>
+<tr>
+<td>Ancho de banda desperdiciado</td>
+<td>217 B = <strong>14,5 %</strong></td>
+<td><strong>0</strong></td>
+</tr>
+<tr>
+<td>Peor caso</td>
+<td>~21 probes, y sigue mal</td>
+<td><code>log₂(1432)</code> = <strong>11 probes</strong>, exacto</td>
+</tr>
+<tr>
+<td>¿Usa la MTU del ICMP?</td>
+<td><strong>No</strong></td>
+<td><strong>Sí</strong> (bytes 6-7)</td>
+</tr>
+<tr>
+<td>¿Cachea el resultado?</td>
+<td>No</td>
+<td><strong>Sí, por destino</strong></td>
+</tr>
+<tr>
+<td>¿Distingue ruta rota de MTU chico?</td>
+<td>No</td>
+<td><strong>Sí</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Lo que le falta a mi versión también, y hay que decirlo en el examen:</strong> la
+tabla de ruteo debe poder <strong>incrementar</strong> el PMTU, no solo bajarlo. Si el cuello
+de botella desaparece, el caché queda viejo para siempre. La forma correcta es
+un <strong>re-sondeo periódico</strong>: cuando vence el <code>timestamp</code> del caché, sondear con
+un tamaño apenas mayor que el valor cacheado; si llega, subirlo.</p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Confundir <code>pkt.code == 0</code> con éxito sin mirar <code>pkt.tipo</code>.</strong> El tipo 3 <strong>también</strong> tiene código 0 (net unreachable): el algoritmo diría que funcionó cuando no.</li>
+<li><strong>Devolver sin cachear.</strong> El descubrimiento es caro; sin caché, cada conexión lo repite.</li>
+<li><strong>Redondear mal.</strong> <code>mid = (lo+hi)/2</code> con enteros y el invariante <code>hi − lo &gt; 1</code> son lo que garantiza la terminación.</li>
+</ul>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2010-12, Problema 2 (30 puntos) — MTU, fragmentación y Path MTU</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc1012</code> / <code>sirc1012</code> — 17 de diciembre de 2010.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1012.pdf</p>
+</blockquote>
+<h3>Enunciado</h3>
+<blockquote>
+<p>El MTU (maximum transmission unit) es el tamaño máximo de paquete que puede
+pasar por determinado enlace. En base a esta definición y a lo visto en clase
+se pide:</p>
+<p><strong>a)</strong> En una red de varios routers y enlaces, defina los conceptos de MTU,
+fragmentación y "Path MTU" (la MTU de un camino)</p>
+<p><strong>b)</strong> Describa el comportamiento de un router al reenviar paquetes por un
+enlace con una MTU de "M" bytes. Describa los diferentes casos de acuerdo al
+valor del bit DF del encabezado IP, haciendo particular hincapié en los
+eventuales mensajes de control que se generen.</p>
+<p><strong>c)</strong> Se desea implementar un algoritmo que permita determinar el "path MTU"
+entre dos nodos, A y B, conectados a la misma red IP. El algoritmo deberá
+estar basado en los mensajes ICMP que se pueden escuchar en la red y podrá
+enviar paquetes de prueba. El mismo deberá depender unicamente de uno de los
+extremos (es decir "A" no deberá requerir colaboración activa de "B", salvo
+el comportamiento por defecto del stack de protocolos).
+Se cuenta con las primitivas: <code>enviar_msg_ICMP(destino, tipo, código,
+largo_payload)</code> y <code>recibir_msg_ICMP(fuente)</code>. Esta última devuelve un mensaje
+ICMP recibido de la fuente o null en caso de que pase un cierto tiempo sin
+recibir nada (implementa un timeout).</p>
+<p>Se ofrece la siguiente tabla como referencia (tipos: <strong>0</strong> Echo Reply · <strong>3</strong>
+Destination Unreachable · <strong>4</strong> Source Quench · <strong>5</strong> Redirect · <strong>8</strong> Echo
+Request · <strong>9</strong> Router Advertisement · <strong>10</strong> Router Solicitation · <strong>11</strong>
+Time Exceeded · <strong>12</strong> Parameter Problem; códigos del tipo 3: <strong>0</strong> Net
+Unreachable · <strong>1</strong> Host Unreachable · <strong>2</strong> Protocol Unreachable · <strong>3</strong> Port
+Unreachable · <strong>4</strong> Fragmentation Needed and DF set · <strong>5</strong> Source Route
+Failed · <strong>6</strong> Destination Network Unknown · <strong>7</strong> Destination Host Unknown ·
+<strong>9</strong>/10** comunicativamente prohibido).</p>
+<p><strong>Sobre la tabla:</strong> el PDF la imprime en <strong>dos columnas desalineadas</strong> (la de
+nombres de tipos y la de códigos del tipo 3 quedaron desfasadas una posición).
+Leída correctamente es la tabla canónica de <code>RFC 792</code>. Los códigos que
+importan acá son el <strong>3/4</strong> ("fragmentation needed and DF set") y el <strong>3/0</strong>
+("net unreachable", que <strong>no</strong> es un Echo Reply: es el bug de la solución
+oficial).</p>
+</blockquote>
+<h3>Parte a) — Las tres definiciones</h3>
+<p><strong>MTU.</strong> Tamaño máximo de trama que una tecnología de capa 2 es capaz de
+transmitir; en la práctica, la mayor PDU de capa 3 que pasa sin fragmentarse. En
+Ethernet, 1500 bytes.</p>
+<p><strong>Fragmentación.</strong> Cuando un router debe enviar un paquete más largo que la MTU
+del enlace de salida, puede fragmentarlo y reenviarlo en partes. <strong>Es una tarea
+pesada para un router, ya que le implica mantener estado de ciertos paquetes y
+sus fragmentos.</strong></p>
+<p><strong>Path MTU.</strong> Cuando dos hosts están separados por más de un hop, las MTUs de
+los distintos enlaces pueden diferir. Se define el <strong>Path MTU como el mínimo de
+todos los MTUs involucrados en el camino</strong> de un nodo a otro.</p>
+<div class="codehilite"><pre><span></span><code>   ┌───────┐  1500  ┌────┐  576  ┌────┐  1500  ┌───────┐
+   │   A   ├────────►│ R1 ├───────►│ R2 ├────────►│   B   │
+   └───────┘         └────┘       └────┘         └───────┘
+                   ─────────────────────────────────────────
+                   Path MTU = min(1500, 576, 1500) = 576
+</code></pre></div>
+
+<p>Y <strong>las dos propiedades que la solución oficial exige mencionar</strong>, porque están
+en el texto de la resolución y son parte de los puntos:</p>
+<ul>
+<li><strong>Puede variar con el tiempo</strong> si los caminos cambian (ECMP o recálculo de rutas).</li>
+<li><strong>Puede ser diferente según el sentido del tráfico</strong>: un mínimo para la ida y otro para la vuelta, <strong>en el caso de que el ruteo sea asimétrico</strong>.</li>
+</ul>
+<h3>Parte b) — El comportamiento del router</h3>
+<p><strong>Solución oficial, literal:</strong></p>
+<div class="codehilite"><pre><span></span><code>  DF: "Do not Fragment"
+
+  Paquete entrante Pi de largo L
+  MTU del enlace saliente MTUo
+
+  if L &lt;= MTUo then
+      transmitir normalmente Pi
+  else if L &gt; MTUo and Pi.DF == 1 then
+      descartar paquete Pi
+      enviar msg ICMP (destino=Pi.source, tipo=3, codigo=4)
+  else if L &gt; MTUo and Pi.DF == 0 then
+      fragmentar paquete Pi
+      transmitir fragmentos de Pi
+
+  Mensaje tipo 3: Destination unreachable
+  Codigo 4: "fragmentación necesaria pero DF encendido"
+</code></pre></div>
+
+<p><strong>✅ Lo que está bien:</strong> el <strong>orden de las condiciones</strong> (primero "cabe", que es
+el caso frecuente y barato); la <strong>distinción <code>DF=1</code> descarta vs. <code>DF=0</code>
+fragmenta</strong>, que es el corazón de la pregunta; y <strong>nombrar el tipo y el código</strong>
+del ICMP.</p>
+<p><strong>🔶 Lo que agregaría para completar los puntos:</strong></p>
+<ol>
+<li><strong>Qué campos cambian al fragmentar</strong>: <code>Total Length</code> se ajusta, <code>Fragment Offset</code> se setea, <code>MF = 1</code> en todos menos el último, y <strong>el <code>Identification</code> se mantiene igual</strong>. La pregunta pide "describa los diferentes casos", y describir <em>cómo</em> fragmenta es parte de la respuesta.</li>
+<li><strong>La justificación del ICMP</strong>, que la oficial da pero no explica: para que <strong>el emisor no repita el error</strong> (si no, retransmite el mismo datagrama idéntico en un bucle infinito) y para que <strong>pueda reducir su tamaño</strong> (el 3/4 trae la MTU del enlace bloqueante en los bytes 6-7).</li>
+<li><strong>Que el último fragmento lleva <code>MF = 0</code>.</strong></li>
+</ol>
+<p><strong>Mi respuesta al apartado b), que es la que escribiría:</strong></p>
+<div class="codehilite"><pre><span></span><code>  // ---- Router R, paquete entrante Pi, longitud L, MTU de salida MTUo ----
+  Pi.TTL = Pi.TTL − 1
+  if (Pi.TTL == 0):
+      descartar Pi
+      enviar ICMP (destino = Pi.origen, tipo = 11, código = 0)   // Time Exceeded
+      return
+
+  if (L &lt;= MTUo):                             // CASO 1: cabe entero
+      recalcular Header_Checksum(Pi)
+      transmitir Pi                            // sin importar DF
+      return
+
+  if (Pi.DF == 1):                            // CASO 2: prohibido partir
+      // El emisor declaró "Don't Fragment": el receptor final no sabe
+      // tratar datos partidos y el paquete afirma un límite a respetar.
+      descartar Pi
+      enviar ICMP (destino = Pi.origen, tipo = 3, código = 4)
+      //   tipo 3 = Destination Unreachable
+      //   código 4 = "Fragmentation Needed and Don't Fragment was Set"
+      //   los bytes 6-7 llevan la MTU del enlace bloqueante (RFC 1191),
+      //   para que el emisor ajuste su MSS o su caché de PMTU.
+      return
+
+  // CASO 3: no cabe y DF = 0  →  fragmentar
+  payload      = L − (Pi.IHL × 4)
+  max_payload  = ((MTUo − Pi.IHL × 4) / 8) × 8      // múltiplo de 8
+  offset = 0 ;  resto = payload
+  while (resto &gt; 0):
+      largo = min(max_payload, resto)
+      F = copia de Pi
+      F.Total_Length    = Pi.IHL × 4 + largo
+      F.Identification  = Pi.Identification          // ← el MISMO en todos
+      F.Fragment_Offset = offset / 8                 // ← en UNIDADES DE 8
+      F.MF = (largo &lt; resto) ? 1 : 0                 // 0 solo en el último
+      recalcular Header_Checksum(F)
+      transmitir F
+      offset += largo ;  resto -= largo
+</code></pre></div>
+
+<blockquote>
+<p><strong>Tope para los 10 puntos de b):</strong> los tres casos con la condición exacta, el
+<strong>descarte con <code>DF = 1</code></strong>, el <strong>ICMP tipo 3 código 4 con su justificación</strong>, y los
+campos que cambian al fragmentar.</p>
+</blockquote>
+<h3>Parte c) — El algoritmo de descubrimiento del Path MTU</h3>
+<p><strong>Solución oficial, literal:</strong></p>
+<div class="codehilite"><pre><span></span><code>  La estrategia básica es transmitir paquetes de prueba y escuchar los
+  mensajes ICMP de error que regresan. El algoritmo similar a una bipartición
+  pero simplificada.
+
+  Partimos de una resultado tentativo: sabemos que el path MTU no va a ser más
+  grande que el MTU del enlace por donde los paquetes destinados a B son
+  encaminados.
+
+  Pmtu = MTU(enlace hacia B)
+  tries = 0
+  while true
+      // envio un ping hacia el destino de largo el maximo tentativo
+      enviar_msg_ICMP (destino=B, tipo = 8, largo = Pmtu)
+      pkt = recibir_msg_ICMP(fuente=B)
+      if pkt != Null then
+          if pkt.code == 0 then
+              // es un echo reply, llego al destino bien
+              return Pmtu
+          else
+              // calculo nueva aproximación
+              // esta aproximación es bastante agresiva, se podría hacer mejor
+              // tiende a sub-estimar el pmtu
+              Pmtu = Pmtu * 0.85
+      else
+          // posiblemente timeout u otro error de red
+          Pmtu = Pmtu * 0.85
+          tries++
+          if tries &gt;= 5 then
+              return False
+</code></pre></div>
+
+<p><strong>✅ Lo que está bien:</strong> la estrategia (sondar con paquetes de prueba y escuchar
+los ICMP de error) es exactamente el PMTUD; <strong>depende de un solo extremo</strong> (A
+manda y espera, B no hace nada especial), cumpliendo la restricción del
+enunciado; usa <strong>tipo 8</strong> (Echo Request), que es lo que hace <code>ping</code>; <strong>distingue
+el <code>null</code></strong> (timeout) de un mensaje recibido y cuenta reintentos; y <strong>se
+autoevalúa</strong>, reconociendo que la aproximación es agresiva.</p>
+<p><strong>⚠️ Lo que está mal o es discutible — y esto también se pregunta:</strong></p>
+<ol>
+<li><strong>🔴 <code>if pkt.code == 0</code> sin mirar <code>pkt.tipo</code>.</strong> El bug más grave: el <strong>tipo 3 también tiene código 0</strong> ("Net Unreachable"), como se ve en la propia tabla del examen. Si el router responde tipo 3 código 0, el algoritmo <strong>devuelve un PMTU que nunca funcionó</strong>. La condición correcta es <code>pkt.tipo == 0 AND pkt.codigo == 0</code>.</li>
+<li><strong>🔴 No usa la MTU que viene en el ICMP.</strong> El <code>RFC 1191</code> la pone en los <strong>bytes 6-7</strong> del tipo 3 código 4. El enunciado da la tabla <strong>justo para que uses ese mensaje</strong>, y la respuesta <strong>ya está dentro del ICMP</strong>.</li>
+<li><strong>🟡 Nunca da el PMTU exacto.</strong> Los valores son <code>1500 · 0,85ᵏ</code>; ninguno es 1492. Con PMTU real 1492 devuelve 1275 (<strong>14,5 % bajo</strong>).</li>
+<li><strong>🟡 El comentario no describe lo que hace el código.</strong> Una bipartición es <code>(lo+hi)/2</code>; multiplicar por 0.85 es una búsqueda <strong>exponencial hacia abajo</strong>.</li>
+<li><strong>🟡 No cachea el resultado.</strong> El <em>almacenamiento en caché</em> es parte del mecanismo: sin él, cada datagrama grande genera un ICMP y la red se llena de errores.</li>
+<li><strong>🟡 No hay cota inferior.</strong> Puede bajar de 68 (el mínimo legal de IPv4) y seguir mandando sondas imposibles.</li>
+<li><strong>🟡 No distingue "MTU chico" de "ruta rota".</strong> Un tipo 3 código 1 (host unreachable) o 9/10 (prohibido) no se arreglan bajando el tamaño.</li>
+<li><strong>🟡 Solo decrementa, nunca incrementa.</strong> Si el camino mejora, el caché queda viejo para siempre.</li>
+<li><strong>🟠 <code>tries</code> solo cuenta en el timeout.</strong> Si el router siempre responde tipo 3 código 4, el <code>while true</code> <strong>no termina nunca</strong>.</li>
+</ol>
+<p><strong>Mi solución: búsqueda binaria + lectura de la MTU del ICMP + caché.</strong></p>
+<div class="codehilite"><pre><span></span><code>  // ======== ESTADO PERSISTENTE EN A ========
+  pm[B] = { valor, valido, timestamp }        // caché de PMTU por destino
+  MAX_REINTENTOS = 5 ;  MTU_MIN_ABSOLUTO = 68
+
+  int descubrir_PMTU(A, B):
+      // ---- Invariantes ----
+      //   lo : tamaño que YA sabemos que pasa entero  (cota inferior)
+      //   hi : tamaño que YA sabemos que NO pasa      (cota superior)
+      //   Al salir, lo es el mayor tamaño conocido como transmisible.
+      if (pm[B].valido): lo = pm[B].valor      // arrancamos del caché
+      else:              lo = MTU_MIN_ABSOLUTO // 68: seguro por definición
+      hi = MTU(interfaz de A hacia B)           // 1500: no puede pasar más
+      reintentos = 0
+
+      while (hi − lo &gt; 1):
+          mid = (lo + hi) / 2                   // ← búsqueda BINARIA
+          enviar_msg_ICMP(B, 8, 0, mid)         // Echo Request con DF = 1
+          pkt = recibir_msg_ICMP(B)
+
+          if (pkt == null):                      // timeout
+              // Degradación elegante: asumimos el PEOR caso (que mid era
+              // demasiado grande) y seguimos binary-searching.
+              reintentos++
+              if (reintentos &gt; MAX_REINTENTOS): cachear(B, lo); return lo
+              hi = mid
+
+          else if (pkt.tipo == 0 and pkt.codigo == 0):
+              lo = mid                          // llegó entero a B: ES válido
+
+          else if (pkt.tipo == 3 and pkt.codigo == 4):
+              // ★ AQUÍ ESTÁ LA MEJORA PRINCIPAL ★
+              m = leer_uint16(pkt, offset = 6)  // Next-Hop MTU (RFC 1191)
+              if (m &gt;= lo and m &lt; mid): lo = m; hi = m   // m ES transmisible
+              else:                  hi = mid   // mensaje inconsistente
+
+          else if (pkt.tipo == 3):
+              // Otro inalcanzable (net, host, port, prohibido):
+              // NO es un problema de tamaño, es un problema de ruta.
+              cachear(B, lo); return ERROR_NO_EXISTE_RUTA
+
+          else:                                  // tipo 11, 12, etc.
+              reintentos++
+              if (reintentos &gt; MAX_REINTENTOS): cachear(B, lo); return lo
+              hi = mid
+
+      cachear(B, lo)
+      return lo
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Mejora</th>
+<th>Por qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>pkt.tipo == 0 &amp;&amp; pkt.codigo == 0</code></strong></td>
+<td>El tipo 3 tiene un código 0. Chequear solo el código hace que el algoritmo <strong>diga que funcionó cuando no</strong>. Bug real de la oficial.</td>
+</tr>
+<tr>
+<td><strong>Leo la MTU de los bytes 6-7</strong></td>
+<td>El mensaje <strong>ya trae la respuesta exacta</strong>. <strong>1 solo probe</strong> reemplaza a los 8 de la búsqueda binaria, y el resultado es <strong>exacto</strong> en vez de 14,5 % bajo.</td>
+</tr>
+<tr>
+<td><strong>Búsqueda binaria <code>(lo+hi)/2</code></strong></td>
+<td><code>O(log n)</code>: peor caso <code>log₂(1432)</code> = <strong>11 probes</strong>, <strong>siempre</strong>. El <code>× 0.85</code> nunca converge al valor exacto.</td>
+</tr>
+<tr>
+<td><strong>Caché por destino</strong></td>
+<td>El PMTU es <strong>propiedad de la ruta</strong>. Sin caché, cada paquete grande vuelve a generar un ICMP.</td>
+</tr>
+<tr>
+<td><strong>Cota inferior <code>lo = 68</code></strong></td>
+<td>Nunca sondea algo que <strong>no puede funcionar</strong>.</td>
+</tr>
+<tr>
+<td><strong>Distinguir los otros tipo 3</strong></td>
+<td>Un "host unreachable" no se arregla bajando el MTU.</td>
+</tr>
+<tr>
+<td><strong>Contar todos los reintentos</strong></td>
+<td>La oficial puede no terminar nunca.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Nota sobre la diferencia con la oficial:</strong> la oficial <strong>funciona</strong> como
+heurística y devuelve un valor <strong>conservador</strong>, lo cual es "correcto pero
+ineficiente". La mía devuelve el valor <strong>exacto</strong>. En el examen, <strong>presentá las
+dos</strong>: reproducí la oficial con su análisis, y después proponé la mejora con
+el argumento. Eso vale más puntos que una sola.</p>
+<p><strong>Tope para los 10 puntos de c):</strong> pseudocode completo y ejecutable, la
+<strong>inicialización del estado</strong> (el <code>Pmtu</code> tentativo desde el MTU del enlace
+local), el <strong>manejo del timeout</strong>, la <strong>lectura del tipo y el código</strong> del ICMP
+recibido, y <strong>al menos una justificación</strong> de por qué tu estrategia es mejor
+que "probar y ver qué pasa".</p>
+</blockquote>
+<h2>3.2 Examen 2006-12, Pregunta 3 (10 puntos) — fragmentación y reensamblaje</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc0612</code> — 26 de diciembre de 2006.</p>
+<p><strong>Enunciado:</strong> Explique por qué puede ser necesaria la fragmentación de
+paquetes a nivel de capa 3. Explique cómo funciona la misma en IPv4 y mencione
+los problemas asociados a la misma. Dé un algoritmo para realizar el
+reensamblaje de un paquete IP a partir de sus fragmentos.</p>
+</blockquote>
+<p><strong>La respuesta oficial, completa:</strong></p>
+<blockquote>
+<p><em>a)</em> La fragmentación supone dividir un paquete en varios más pequeños. La
+necesidad se basa en que <strong>todo medio de transmisión tiene un Maximum Transfer
+Unit</strong>. Si un paquete es mayor que el MTU, debe fragmentarse.</p>
+<p><em>b)</em> En cada fragmento: el <strong>total length</strong> se ajusta al tamaño del segmento;
+la bandera <strong>MF</strong> se coloca en uno excepto para el último; y se setea el
+<strong>fragment offset</strong> de acuerdo al offset del mismo en el segmento original.</p>
+<p><em>c) El algoritmo de reensamblaje:</em> "El algorítmico básico sería el siguiente,
+en la solución propuesta <strong>se supone que los fragmento llegaron en orden y el
+último llega con el bit MF en 0</strong>":
+<code>while (true) {
+    recibo_paquete(p);
+    if ( p.MF == 1 ){ almaceno(p); }
+    else {
+        if (p.fragment_offset &lt;&gt; 0 ){
+            almaceno(p);
+            p_tot = reensamblo(p);
+            if (p_tot &lt;&gt; NULL){ envo_paquete(p_tot); }
+        }
+    }
+}</code></p>
+</blockquote>
+<p><strong>Análisis: por qué es insuficiente, y qué corregir.</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Problema</th>
+<th>Por qué importa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Asume que los fragmentos llegan en orden</strong></td>
+<td>En una red real pueden llegar desordenados. De eso depende <strong>todo</strong> el algoritmo.</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong><code>p_tot = reensamblo(p)</code> al ver <code>MF = 0</code></strong></td>
+<td>Solo funciona con la suposición 1. Ver §2.2 para el caso donde falla.</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong><code>almaceno(p)</code> no dice dónde</strong></td>
+<td>Sin índice por <code>Fragment Offset</code> no se puede saber qué falta.</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>No hay detección de solapamiento</strong></td>
+<td>Es el agujero de seguridad (§1.4 d).</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>No hay temporizador</strong></td>
+<td>Los fragmentos se acumulan para siempre → fuga de memoria del destino.</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>No hay clave de agrupación</strong></td>
+<td>Falta <code>(IP destino, Identification, protocolo)</code>.</td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong><code>if (p.fragment_offset &lt;&gt; 0)</code> descarta mal</strong></td>
+<td>Si el último en llegar es el de offset 0, <strong>se pierde</strong>.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>El algoritmo corregido</strong> con las 7 correcciones está desarrollado en <strong>§1.5</strong>: índice
+por <code>Fragment Offset</code>, clave de agrupación, chequeo de longitud mínima,
+detección de solapamiento con liberación del reensamblaje, <code>longitud_total</code>
+derivado del <code>MF = 0</code>, <strong>completitud por cobertura total</strong> (no por <code>MF</code>),
+<code>temporizador</code> reiniciado en cada fragmento y con barrido periódico.</p>
+<p><strong>Respuesta a "los problemas asociados", que es donde están la mitad de los
+puntos:</strong> (i) <strong>overhead de cabeceras repetidas</strong> — 1500 bytes pueden terminar
+en 185 fragmentos y pasar de 1500 a 5180 bytes en el cable; (ii) <strong>unidad
+mínima de 8 bytes</strong>; (iii) <strong>la pérdida de un solo fragmento descarta el
+datagrama entero</strong>, con probabilidad de éxito <code>(1−p)^n</code> que decae
+exponencialmente; (iv) <strong>el reensamblaje exige estado y temporizador</strong> en el
+destino, y si vence se pierde todo; (v) <strong>el solapamiento es un agujero de
+seguridad</strong>, porque el segundo fragmento sobrescribe al primero (<code>RFC 5722</code> lo
+prohíbe en IPv6); (vi) <strong>cada fragmento es un paquete IP independiente para los
+filtros</strong>, lo que permite <strong>evadir firewalls</strong> que solo inspeccionan el primero.</p>
+<h2>3.3 Repaso: <code>2000-07</code> Problema 2</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc0007</code>, Problema 2 — protocolo fiable sobre 3 subredes con
+MTU distinta.</p>
+</blockquote>
+<p>Es la <strong>misma idea con transporte confiable</strong>: entre dos extremos unidos por
+subredes con MTUs distintas no se puede "confiar en que TCP fragmenta". Si la
+capa 3 no fragmenta (o si el camino es IPv6), <strong>el transporte tiene que
+fragmentar él mismo</strong>, en el emisor, y desensamblar en el receptor: el mismo
+esquema de §1.5, pero el que decide los tamaños es el emisor del segmento de
+transporte y no un router. Menciónalo si te lo preguntan como ejemplo de por qué
+el transporte tiene su propio control de tamaño.</p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen</h2>
+<ol>
+<li><strong>MTU</strong> = la mayor PDU de capa 3 que el enlace transmite sin fragmentar. En Ethernet son <strong>1500 bytes</strong>; la trama llega a 1518 con cabecera y FCS.</li>
+<li>Los <strong>3 campos</strong> de la fragmentación IPv4 son <strong>Identification</strong>, <strong>Flags (con <code>DF</code>)</strong> y <strong>Fragment Offset</strong>.</li>
+<li>El <strong><code>Fragment Offset</code> va en unidades de 8 bytes</strong>, y salvo el último el payload debe ser múltiplo de 8.</li>
+<li>El router <strong>descarta y avisa</strong> si <code>DF = 1</code> (<code>ICMP tipo 3 código 4</code>); <strong>fragmenta</strong> si <code>DF = 0</code>. Nunca fragmenta algo que entra entero.</li>
+<li>El ICMP tipo 3 código 4 existe para que el emisor <strong>no repita el error</strong> y <strong>baje su tamaño</strong>; lleva la MTU del enlace bloqueante en los <strong>bytes 6-7</strong>.</li>
+<li>Los problemas: <strong>overhead de cabeceras</strong>, <strong>unidad de 8 bytes</strong>, <strong>temporizador de reensamblaje</strong>, <strong>solapamiento (agujero de seguridad)</strong>, <strong>perder un fragmento = perder el datagrama entero</strong>, y <strong>evasión de filtros</strong>.</li>
+<li>El <strong>Path MTU</strong> es el <strong>mínimo</strong> de los MTUs del camino; <strong>varía con el tiempo</strong> y <strong>es distinto en cada sentido</strong> si el ruteo es asimétrico.</li>
+<li>El <strong>PMTUD (<code>RFC 1191</code>)</strong> = <code>DF = 1</code>, recibir el ICMP, <strong>bajar y cachear</strong> el PMTU. La MTU exacta viene en los bytes 6-7; usarla da resultado <strong>exacto</strong>, mientras que multiplicar por 0.85 <strong>siempre subestima</strong>.</li>
+<li>El <strong>reensamblaje</strong> necesita índice por offset, <strong>detección de solapamiento</strong>, <strong>temporizador</strong> y la clave <code>(IP destino, ID, protocolo)</code>. <strong>No basta con ver <code>MF = 0</code>.</strong></li>
+<li>El <strong>PMTUD black hole</strong> produce el síntoma <strong>"SSH funciona, HTTPS se cuelga"</strong>, y se diagnostica con <code>ping -M do -s &lt;tamaño&gt;</code>.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p><strong>1.</strong> Un datagrama IPv4 de 1500 bytes con <code>IHL = 5</code> pasa por un enlace de MTU 576. ¿Cuántos fragmentos y cuál es el <code>Fragment Offset</code> del último?</p>
+<details><summary>Respuesta</summary>
+
+Payload = 1500 − (5 × 4) = **1480**. Payload por fragmento = 576 − 20 = 556, redondeado a múltiplo de 8 = **552**. Fragmentos = ceil(1480/552) = **3**.
+
+- F1: offset 0, 552 B, MF=1, total 572
+- F2: offset 552/8 = **69**, 552 B, MF=1, total 572
+- F3: offset 1104/8 = **138**, 1480−1104 = 376 B, MF=0, total 396
+
+Sobre el enlace: **1540 bytes** → overhead de 40 bytes (2,7 %).
+
+</details>
+
+<p><strong>2.</strong> ¿Por qué el router <strong>descarta</strong> un datagrama con <code>DF = 1</code> que no entra, en vez de fragmentarlo igual?</p>
+<details><summary>Respuesta</summary>
+
+Porque `DF = 1` significa **"Don't Fragment"**: el emisor **declaró explícitamente que no acepta su datagrama partido**. Un router que lo fragmentara produciría algo que el receptor final **no sabe tratar**: una aplicación entrega datos a un socket, no a una bolsa de fragmentos. Además el paquete **firme un límite de tamaño que hay que respetar**.
+
+El router **igual avisa** con ICMP tipo 3 código 4 para que el emisor se entere, para que **no reintente el mismo error indefinidamente**, y para que pueda **reducir su MSS o su PMTU cacheado**.
+
+</details>
+
+<p><strong>3.</strong> ¿Qué pasa si se pierde <strong>uno solo</strong> de los fragmentos de un datagrama partido en 5? Explicá con un número.</p>
+<details><summary>Respuesta</summary>
+
+**Se pierde el datagrama entero.** No hay retransmisión parcial: TCP tiene que **retransmitir todo el flujo**, porque no sabe qué parte llegó.
+
+Cuantitativo: con probabilidad de pérdida `p` por fragmento y `n` fragmentos, la probabilidad de que el datagrama **completo** llegue es `(1−p)^n`. Con `p = 0,01`: `n = 3` → 97,0 %; `n = 5` → 95,1 %; `n = 185` → **15,7 %**. **Fragmentar multiplica la probabilidad de pérdida.**
+
+</details>
+
+<p><strong>4.</strong> ¿Por qué el <code>Fragment Offset</code> está en unidades de 8 bytes y no de 1? ¿Qué consecuencia práctica tiene?</p>
+<details><summary>Respuesta</summary>
+
+Por **economía de bits**: 13 bits en unidades de bytes darían 8192 bytes de payload máximo; en unidades de 8 dan 8191 × 8 = **65528 bytes**, que cubre todo datagrama IPv4 válido.
+
+La consecuencia práctica: **el payload de todo fragmento salvo el último debe ser múltiplo de 8**. Con 556 bytes disponibles, el router recorta a 552 y deja 4 para el siguiente.
+
+</details>
+
+<p><strong>5.</strong> Un <code>traceroute</code> muestra un salto con <code>*</code>. ¿Podés concluir que ese router está caído?</p>
+<details><summary>Respuesta</summary>
+
+**No.** El `*` significa que **no se recibió respuesta**, y hay al menos cuatro razones sin que el router esté caído: (a) **filtra o no genera** ICMP tipo 11 por política de seguridad; (b) **el ICMP de vuelta no vuelve** (filtro en el camino de regreso); (c) **el probe se perdió** en un enlace con pérdida; (d) el nodo es un **punto de salto que no reenvía** ICMP. El `*` **indica ausencia de evidencia, no evidencia de caída**. El único `*` informativo es el último, cuando además los siguientes tampoco responden.
+
+</details>
+
+<p><strong>6.</strong> ¿Por qué la solución oficial multiplica por 0.85, y por qué está mal?</p>
+<details><summary>Respuesta</summary>
+
+Porque **ignora la MTU que viene en el ICMP tipo 3 código 4**, que `RFC 1191` pone en los **bytes 6-7**. Si lee ese campo, **el problema se resuelve en un solo probe y el resultado es exacto**. Multiplicar por 0.85 genera valores `1500 · 0,85ᵏ`, **ninguno de los cuales es 1492**: con PMTU real 1492 devuelve 1275, **14,5 % por debajo**, para siempre.
+
+Lo correcto es **búsqueda binaria** (`mid = (lo+hi)/2`), que además termina en `O(log n)` y siempre en el valor exacto.
+
+</details>
+
+<p><strong>7.</strong> ¿Cuál es el MTU mínimo absoluto en IPv6 y de dónde sale? ¿Y en IPv4?</p>
+<details><summary>Respuesta</summary>
+
+**IPv6: 1280 bytes**, obligatorio para **toda** interfaz, sin excepción ni por opciones (`RFC 8200 §5`).
+
+**IPv4: 68 bytes** es el mínimo absoluto (`RFC 791`: 60 de cabecera con opciones + 8 de datos), pero `RFC 1122 §3.2.1` pide **al menos 576**. El 68 es un piso histórico; nadie baja de 576 en una red real.
+
+La diferencia es notable: **IPv6 es 10 veces más exigente**, porque en IPv6 los routers no fragmentan y los caminos pueden tener enlaces más heterogéneos.
+
+</details>
+
+<p><strong>8.</strong> ¿Por qué el jumbo frame de 9000 es "una convención y no un estándar IEEE"? ¿Y por qué no se usa en Internet?</p>
+<details><summary>Respuesta</summary>
+
+Porque **IEEE 802.3 no define un tamaño de trama de 9000 bytes**: el estándar fija 1518 bytes de trama (1500 de datos). El 9000 es un **acuerdo de la industria**, implementado por cada fabricante por separado.
+
+No se usa en Internet porque: (a) los routers y firewalls del camino están configurados con MTU 1500, así que un datagrama de 9000 se fragmentaría (IPv4) o se descartaría (IPv6, que no fragmenta en routers); (b) los **túneles** (MPLS, VXLAN, IPsec, GRE, WireGuard) consumen MTU, así que el efectivo baja todavía más; (c) la fragmentación y el PMTUD en el backbone son un problema conocido. La única forma segura de usarlo en un borde es con **clamp MSS**, que recorta el MSS anunciado para que ningún segmento supere el MTU del lado chico.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>eirc1012</code> / <code>sirc1012</code></strong> — Problema 2 completo (30 pts: MTU, fragmentación, Path MTU e <strong>implementación del descubrimiento</strong>); incluye la tabla de tipos y códigos de ICMP</li>
+<li><strong>Examen <code>eirc0612</code> / <code>sirc0612</code></strong> — P3 (10 pts: por qué fragmentar, cómo funciona, problemas asociados y <strong>algoritmo de reensamblaje</strong>)</li>
+<li><strong>Examen <code>sirc0007</code></strong> — Problema 2: protocolo fiable sobre 3 subredes con MTU distinta</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 5 §5.5.2 "Fragmentación"</li>
+<li><strong>RFC 791</strong> — Internet Protocol (campos de fragmentación, MTU mínimo 68)</li>
+<li><strong>RFC 1122 §3.2.1</strong> — MTU mínimo de 576 bytes</li>
+<li><strong>RFC 1191</strong> — Path MTU Discovery (1990): la MTU del enlace bloqueante en los bytes 6-7 del ICMP</li>
+<li><strong>RFC 8200 §5</strong> — IPv6 (2017): <strong>MTU mínimo absoluto de 1280</strong></li>
+<li><strong>RFC 8201</strong> — Path MTU Discovery for IPv6 (2017)</li>
+<li><strong>RFC 8899</strong> — DPLPMTUD (<em>Standards Track</em>, sep-2020; sucesor de RFC 4821) · <strong>RFC 4821</strong> — <em>Experimental</em>, 2007</li>
+<li><strong>RFC 5722</strong> (2009) — Prohibición de fragmentos solapados en IPv6 · <strong>RFC 6946</strong> (2013) — fragmentos atómicos</li>
+<li><strong>RFC 9002 §6</strong> — QUIC: PLPMTUD integrado, sin dependencia de ICMP</li>
+<li><strong>Clase siguiente:</strong> 36 — IPv6</li>
+</ul></body></html>

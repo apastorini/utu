@@ -1,0 +1,622 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 16 — Multiplexación, demultiplexación y UDP</h1>
+<p><strong>Bloque:</strong> C (Transporte) · <strong>Semana:</strong> 6 · <strong>Duración estimada:</strong> 110 min
+<strong>Correlativa:</strong> Clase 15 (DHCP, configuración y simulación final) · <strong>Sigue con:</strong> Clase 17 (TCP: la cabecera campo por campo)
+<strong>Material de referencia:</strong> Tanenbaum cap. 6 (§6.1, §6.5) · RFC 768, 9293, 9000, 9868</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Explicar por qué hace falta el <strong>puerto</strong> como identificador de proceso en un host.</li>
+<li>Distinguir <strong>multiplexación</strong> de <strong>demultiplexación</strong> y explicar la tabla de sockets.</li>
+<li>Responder las <strong>tres preguntas del examen 2010-12 P2</strong> y explicar la diferencia con TCP.</li>
+<li>Escribir la <strong>cabecera de UDP campo por campo</strong> y calcular un checksum de Internet a mano.</li>
+<li>Justificar por qué "un socket UDP es una 2-tupla" es correcto pero incompleto.</li>
+<li>Escribir en <strong>C</strong> un servidor UDP con <code>socket()</code>, <code>bind()</code>, <code>recvfrom()</code> y <code>sendto()</code>.</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2010-12 P2</code> (8 pts, el problema central) · <code>2009-07 P2b</code> (8 pts, cuándo usar UDP) · <code>2010-12 Problema 1</code> (30 pts, sockets UDP en C).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 El problema: cuatro programas, una sola dirección IP</h2>
+<p>Firefox, correo, Spotify y un juego salen a la red <strong>desde la misma máquina</strong>: para el mundo hay una
+sola IP, <code>203.0.113.9</code>, y una sola MAC. Y sin embargo cada datagrama tiene que terminar en el proceso
+correcto. IP ya hizo su trabajo: llevó el paquete a la máquina correcta. Falta responder <strong>¿a cuál de
+estos siete procesos?</strong> (Firefox, correo, Spotify, juego, <code>sshd</code>, <code>dnsmasq</code>, <code>cupsd</code>). La respuesta
+clásica es el <strong>número de puerto</strong> (<em>port number</em>): un entero de <strong>16 bits</strong> (0 a 65 535) que la capa
+de transporte escribe en la cabecera y que el SO usa para elegir el proceso destino.</p>
+<p>Tres propiedades del puerto que hay que tener presentes:</p>
+<ol>
+<li><strong>El puerto es local a cada host.</strong> El <code>53</code> del servidor DNS y el <code>53</code> del cliente no significan
+   nada entre sí: un puerto es "un índice en la tabla de sockets de <em>mi</em> máquina".</li>
+<li><strong>Identifica un servicio, no una persona.</strong> No es seguridad: si tiene permisos, cualquier proceso
+   puede hacer <code>bind()</code> sobre un puerto dado.</li>
+<li><strong>El rango se reparte por registro:</strong> bien conocidos (0–1023), registrados (1024–49151) y efímeros
+   (49152–65535), que son los que el SO elige para los clientes.</li>
+</ol>
+<p>Puerto y protocolo van juntos: <strong><code>53/udp</code> y <code>53/tcp</code> son dos servicios distintos</strong>, y <code>443/tcp</code> es
+HTTPS mientras que <code>443/udp</code> es HTTP/3 (QUIC). Para tener a mano: 20/21 FTP, 22 SSH, 25 SMTP,
+<strong>53 DNS (udp y tcp)</strong>, 67/68 DHCP, 80 HTTP, 161/162 SNMP, 179 BGP, 853 DoT.</p>
+<h2>1.4 Por qué UDP no tiene conexión: lo que no hay</h2>
+<p>UDP es <strong>sin conexión</strong> (<em>connectionless</em>), <strong>no confiable</strong> (<em>unreliable</em>), también <strong>best
+effort</strong> ("lo mejor que se pueda"). La definición es negativa, y esa es la mejor forma de
+recordarlo:</p>
+<div class="codehilite"><pre><span></span><code>   ┌───────────────────── UDP: lo que NO hay ──────────────────────┐
+   │ 1. NO hay handshake: ni SYN ni SYN-ACK. Sin estado ni seq inicial│
+   │ 2. NO hay ACK ni retransmisión: si se pierde, se perdió.        │
+   │ 3. NO hay control de congestión ni de flujo: sin ventana ni MSS.│
+   │ 4. NO hay orden: pueden llegar en el orden inverso.             │
+   └───────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p>Y lo que sí tiene: <strong>números de puerto</strong>, <strong>longitud</strong> y un <strong>checksum opcional</strong>. La cabecera de
+UDP son <strong>8 bytes</strong>. Con 1000 B de payload, el datagrama completo pesa 1046 B con UDP (4,4 % de
+overhead) y 1058 con TCP (5,8 %): el 60 % del overhead de TCP son 12 bytes. Nadie elige TCP o UDP
+por el tamaño de la cabecera, sino por <strong>las garantías que necesitás y el retardo que tolerás</strong>.</p>
+<h2>1.5 La cabecera de UDP, campo por campo</h2>
+<div class="codehilite"><pre><span></span><code>                        Cabecera UDP: 8 bytes, 4 campos de 16 bits
+  0                   1                   2                   3
+  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|          Source Port          |       Destination Port        |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|            Length             |           Checksum            |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                        Datos (payload)                        |
+|                         (0 .. 65507 bytes)                    |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Bits</th>
+<th>Qué es</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Source Port</strong></td>
+<td>16</td>
+<td>Puerto del proceso que emite (12 345 = <code>0x3039</code>)</td>
+</tr>
+<tr>
+<td><strong>Destination Port</strong></td>
+<td>16</td>
+<td>Puerto del proceso que recibe (53 = <code>0x0035</code>)</td>
+</tr>
+<tr>
+<td><strong>Length</strong></td>
+<td>16</td>
+<td>Longitud de <strong>cabecera + datos</strong>, en bytes. Mínimo 8 (21 = <code>0x0015</code>)</td>
+</tr>
+<tr>
+<td><strong>Checksum</strong></td>
+<td>16</td>
+<td>Detección de errores; <strong>opcional en IPv4, obligatorio en IPv6</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>El pseudo-cabecera</h3>
+<p>El checksum de UDP tiene que proteger el datagrama <strong>y también las direcciones IP</strong>: si un router se
+equivoca de dirección, el paquete llega al host equivocado y el checksum "daría bien" si solo
+mirara lo que viene después de IP. Pero <strong>UDP no ve la cabecera IP</strong> (se la pasa como un bloque
+opaco), así que el emisor <strong>agrega las direcciones otra vez</strong>, sintéticamente, al principio de lo
+que suma. A ese bloque se lo llama <strong>pseudo-cabecera</strong> (<em>pseudo-header</em>) y <strong>no se transmite</strong>:
+existe solo durante el cálculo.</p>
+<p><strong>IPv4 (12 bytes):</strong> <code>src</code> (4 B), <code>dst</code> (4 B), <strong>1 byte de cero</strong>, <strong>protocolo = 17</strong> y <strong>longitud
+del datagrama UDP</strong> (2 B). <strong>IPv6 (40 bytes):</strong> origen (16) + destino (16) + <strong>longitud de capa
+superior de 32 bits</strong> (4) + <strong>3 bytes de cero</strong> + <strong>Next Header = 17</strong>; con un túnel IPIP el Next
+Header es el de ese protocolo, y la longitud sigue siendo la del <strong>datagrama UDP</strong>.</p>
+<h3>El Internet checksum y el byte de relleno</h3>
+<p>Es el <strong>Internet checksum</strong> (RFC 1071), de <strong>complemento a uno de 16 bits</strong>: se toman los datos de
+a 2 bytes en <em>big-endian</em>, se suman, se devuelve cada acarreo al bit 0 hasta que no sobre
+(<code>suma = (suma &amp; 0xFFFF) + (suma &gt;&gt; 16)</code>, repetir) y se toma el complemento del resultado; si da
+<code>0</code> se transmite <code>0xFFFF</code>, porque <code>0</code> significa "no computado" en IPv4.</p>
+<p><strong>El detalle que casi todos olvidan:</strong> si el total de bytes a sumar es <strong>impar</strong>, se agrega un byte
+<code>0x00</code> al final (siempre con UDP, porque la longitud puede ser impar). Calculado en el ejercicio 2.1.
+<strong>Errores típicos:</strong> olvidar ese byte; creer que avisa que el paquete no llegó (se <strong>descarta en
+silencio</strong>); y confundir el pseudo-cabecera con algo que viaja.</p>
+<h2>1.6 La 2-tupla y la 5-tupla: el matiz que hay que aclarar</h2>
+<div class="codehilite"><pre><span></span><code>   Solución oficial del 2010-12:
+     "Un socket UDP queda identificado completamente utilizando la IP del host
+      y el número de puerto."                              →  2-tupla
+   Lo que realmente usa el kernel:
+     (protocolo, IP origen, puerto origen, IP destino, puerto destino)
+                                                          →  5-tupla
+</code></pre></div>
+
+<p><strong>Las dos cosas son ciertas y no se contradicen.</strong> La 5-tupla es la clave completa de un
+<strong>flujo</strong> en la red; la 2-tupla es la clave de <strong>un socket local</strong>.</p>
+<ul>
+<li>Un <strong>socket UDP no conectado</strong> (el caso normal de un servidor) está enlazado con <code>bind()</code>
+  a un par <code>(IP local, puerto local)</code> y <strong>solo uno</strong> puede estar enlazado a ese par. Como
+  todo lo que llega a ese socket es por definición "para" él, el kernel puede indexar la
+  tabla <strong>solo por (IP, puerto)</strong> y aun así desambiguar: la 2-tupla <strong>alcanza</strong> porque los
+  otros tres valores son constantes.</li>
+<li>En realidad la tabla se indexa por las cinco, y el <code>protocolo</code> está porque <code>53/udp</code> y
+  <code>53/tcp</code> conviven sin cruzarse.</li>
+<li>Un <strong>socket UDP conectado</strong> (<code>connect()</code> sobre UDP existe y es real) <strong>sí</strong> se desambigua por la
+  5-tupla: el kernel <strong>filtra</strong> lo que entra y avisa con <code>ECONNREFUSED</code>.</li>
+</ul>
+<blockquote>
+<p><strong>La solución oficial ya lo anticipa en la parte b:</strong> para elegir el socket TCP "en realidad
+alcanzaría con utilizar IP origen, Puerto origen, Puerto destino". Es el mismo razonamiento: <strong>la
+clave de la red es la 5-tupla, pero como la IP destino y el protocolo están fijos en el host, se
+pueden omitir</strong>. Si citás la 5-tupla, citá también por qué se puede reducir.</p>
+</blockquote>
+<h2>1.7 Comparación con TCP: el mecanismo equivalente</h2>
+<p>TCP demultiplexa <strong>de otra manera</strong>: usa un socket <em>escuchando</em> (<em>listening</em>) como punto de
+entrada y crea sockets nuevos por cada conexión.</p>
+<div class="codehilite"><pre><span></span><code>   navegador 1 ── socket &lt;198.51.100.7,49200&gt; ─┐
+   navegador 2 ── socket &lt;198.51.100.7,49201&gt; ─┴─ socket ESCUCHANDO &lt;0.0.0.0,80&gt;
+                                                   ▼   (el SO los crea)
+                                            proceso servidor
+</code></pre></div>
+
+<p>En tres pasos: (1) el proceso servidor hace <code>bind()</code> + <code>listen()</code> y queda <strong>un solo socket
+escuchando</strong>, con <strong>una</strong> fila en la tabla; (2) llega un SYN a ese puerto, el kernel matchea el socket
+escuchando, <strong>no le entrega el SYN al proceso</strong>, y al completarse el handshake de 3 vías crea <strong>un
+socket nuevo</strong> con la <strong>4-tupla</strong> <code>&lt;198.51.100.7, 49200, 203.0.113.9, 80&gt;</code>; (3) cada segmento con esos
+cuatro valores matchea esa fila y va al proceso con <code>accept()</code>. <strong>La diferencia de fondo:</strong> en UDP la
+demultiplexación es <em>a un proceso</em>; en TCP es <em>a una conexión</em>, y por eso TCP necesita la 4-tupla y
+el handshake.</p>
+<h2>1.8 ⚠️ Actualización a 2026</h2>
+<p><strong>Sigue igual — de memoria:</strong> cabecera de <strong>8 bytes y 4 campos de 16 bits</strong> con la longitud
+incluida; UDP <strong>sin conexión, sin ACK, sin retransmisión, sin control de congestión ni de flujo,
+sin orden</strong>; checksum <strong>con pseudo-cabecera</strong>, <strong>opcional en IPv4 y obligatorio en IPv6</strong>; y
+<strong>TCP = 4-tupla, socket UDP = 2-tupla</strong>, que es lo que se sigue enseñando y preguntando.</p>
+<p><strong>Cambió o hay que corregirlo:</strong></p>
+<ul>
+<li><strong><code>RFC 9868</code> — <em>Transport Options for UDP</em></strong> (oct-2025, <em>Standards Track</em>) <strong>actualiza la
+  <code>RFC 768</code></strong>: define la ubicación, sintaxis y semántica de <strong>opciones de transporte de UDP</strong>, que
+  van en el espacio sobrante (<em>surplus area</em>) <strong>después de los datos del usuario y antes del final
+  del datagrama IP</strong> (hoy ese espacio solo lo ocupa el <em>padding</em> de Ethernet). <em>Consecuencia:</em>
+  "UDP no tiene opciones" ya no es estructuralmente cierto, aunque en la práctica el cable siga
+  viendo 8 bytes de cabecera. La especificación original es la <strong><code>RFC 768</code></strong>, de J. Postel, 1980,
+  catalogada como <strong>STD 6 / Internet Standard</strong>.</li>
+<li><strong>La "2-tupla de UDP" es una simplificación que hay que matizar.</strong> <code>ACTUALIZACIONES.md</code> §14
+  lo dice textualmente: la clave de demux real en el kernel es la <strong>5-tupla</strong>. Presentá las
+  dos y explicá la reconciliación de §1.6.</li>
+<li><strong>QUIC rompe el modelo de la 4-tupla.</strong> <code>RFC 9000</code> §5.1: la identidad de una conexión QUIC es
+  el <strong>Connection ID</strong> (<em>CID</em>), de 0 a 20 bytes, que viaja en la cabecera de cada paquete. Da tres
+  cosas: <strong>muchas conexiones multiplexadas en el mismo 5-tupla</strong> (ver <code>RFC 8085</code>), <strong>migración de
+  conexión</strong> (cambia la IP o el NAT cambia el puerto y la conexión sobrevive) y <strong>CID de largo 0</strong>
+  si solo se usa la 5-tupla, que entonces no habilita migración.</li>
+<li><strong>HTTP/3 es UDP de verdad</strong> (<code>RFC 9114</code>, con <code>Alt-Svc</code> <code>RFC 7838</code> y <code>SVCB</code>/<code>HTTPS</code> <code>RFC 9460</code>).
+  Lo que <strong>no</strong> es cierto es que sea "TCP con otra cabecera": no hay conexión TCP, no hay handshake
+  de 3 vías y no hay retransmisión de conexión; la pérdida se resuelve por <em>stream</em>. Cifras de 2026
+  (Cloudflare Radar): HTTP/2 50 %, HTTP/1.x 29 %, <strong>HTTP/3 21 %</strong>. Y sniffear HTTP/3 es difícil: va cifrado y sus cabeceras van en QPACK.</li>
+<li><strong>MPTCP (<code>RFC 8684</code>, 2020)</strong> agrega multipath sin cambiar la demux de capa 4: cada <em>subflow</em> sigue
+  con su 4-tupla. Desplegado por Apple y operadores, con <strong>cuota marginal</strong> (~0,4 % de bytes pico).
+  Y ojo con <strong>dual-stack</strong>: <code>::ffff:a.b.c.d</code> y <code>IPV6_V6ONLY=0</code> afectan directo a la demultiplexación,
+  porque <code>::ffff:203.0.113.9:53</code> y <code>203.0.113.9:53</code> deben llegar al mismo socket.</li>
+</ul>
+<p><strong>Consecuencia para el examen:</strong> la pregunta del 2010-12 P2 <strong>sigue siendo la misma</strong> y la solución
+oficial <strong>sigue siendo válida</strong>. Si sobra tiempo, una línea final: <em>"en el kernel la clave es la
+5-tupla; la 2-tupla alcanza para un socket UDP no conectado porque el resto es constante, y QUIC ya
+multiplexa conexiones con Connection ID sobre el mismo 5-tupla."</em></p>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — El Internet checksum de UDP, calculado a mano</h2>
+<p><strong>Datos.</strong> Datagrama IPv4 de <code>203.0.113.9</code> a <code>198.51.100.7</code>, protocolo 17. Puerto origen
+<strong>12345</strong>, puerto destino <strong>53</strong>, longitud <strong>21</strong>. Datos: la cadena ASCII <code>PRUEBA-EXAMEN</code>, de
+<strong>13 bytes</strong>.</p>
+<p><strong>a)</strong> Palabras de 16 bits a sumar. <strong>b)</strong> Suma mostrando cada acarreo. <strong>c)</strong> ¿Cuál es el
+checksum? <strong>d)</strong> Verificación en el receptor. <strong>e)</strong> Se alteran dos bits: el bit 0 de la palabra
+1 y el de la palabra 3 de la pseudo-cabecera. ¿Lo detecta?</p>
+<p><strong>a) Las palabras a sumar, en orden:</strong></p>
+<div class="codehilite"><pre><span></span><code>   Pseudo-cabecera (6 palabras)   1 CB00   2 7109   3 C633   4 6407   5 0011   6 0015
+   Cabecera UDP (3; el checksum va en 0)
+                                   7 3039   8 0035   9 0015
+   Datos (7: 6 parejas + 1 con el byte de relleno)
+    10  5052
+    11  5545
+    12  4241
+    13  2D45
+    14  5841
+    15  4D45
+    16  4E00
+</code></pre></div>
+
+<p>La longitud total es 21 bytes, que es <strong>impar</strong>: por eso la última palabra es <code>4E00</code>. Ese byte
+de relleno <strong>no viaja</strong>: se inventa para poder sumar de a dos.</p>
+<p><strong>b) La suma.</strong> Si el resultado pasa de <code>FFFF</code>, se devuelve el acarreo y se sigue:</p>
+<div class="codehilite"><pre><span></span><code>    CB00 + 7109 = 13C09  → acarreo 1 →  3C0A
+    3C0A + C633 = 1023D  → acarreo 1 →  023E
+    023E + 6407 = 06645  →              6645
+    6645 + 0011 = 06656  →              6656
+    6656 + 0015 = 0666B  →              666B
+    666B + 3039 = 096A4  →              96A4
+    96A4 + 0035 = 096D9  →              96D9
+    96D9 + 0015 = 096EE  →              96EE
+    96EE + 5052 = 0E740  →              E740
+    E740 + 5545 = 13C85  → acarreo 1 →  3C86
+    3C86 + 4241 = 07EC7  →              7EC7
+    7EC7 + 2D45 = 0AC0C  →              AC0C
+    AC0C + 5841 = 1044D  → acarreo 1 →  044E
+    044E + 4D45 = 05193  →              5193
+    5193 + 4E00 = 09F93  →              9F93
+    ──────────────────────────────────────────────
+    suma final = 0x9F93
+</code></pre></div>
+
+<p><strong>c) El checksum</strong> es el complemento a uno de 16 bits:</p>
+<p>El checksum es el complemento a uno de 16 bits: <code>0xFFFF − 0x9F93 = 0x606C</code>. El datagrama queda
+<code>30 39 00 35 00 15 60 6C | 50 52 55 45 42 41 2D 45 58 41 4D 45 4E</code>.</p>
+<p><strong>d) Verificación en el receptor.</strong> El receptor suma <strong>todo, incluido el campo checksum</strong>:
+<code>9F93 + 606C = FFFF</code>, sin acarreo, y el complemento de <code>FFFF</code> es <code>0x0000</code>. <strong>Un resultado
+<code>0x0000</code> significa "el datagrama está íntegro"</strong>: ese es el criterio completo. Si el
+complemento no da cero, hay error y el datagrama se descarta en silencio.</p>
+<p>Para el ítem (e): si el bit 0 de la palabra 1 pasa a 1 y el de la palabra 3 pasa a 0, los errores se
+compensan (<code>+1 − 1</code>), la suma vuelve a dar <code>0x9F93</code>, y el receptor calcula <code>0x606C</code>, que coincide
+con el checksum recibido: <strong>no lo detecta</strong>.</p>
+<h2>2.2 Ejercicio 2 — UDP sobre IPv6: pseudo-cabecera de 40 bytes</h2>
+<p><strong>Enunciado.</strong> Un host <code>2001:db8::9</code> manda a <code>2001:db8::7</code> un datagrama UDP de <strong>13 bytes</strong> de
+datos ("PRUEBA-EXAMEN"), puerto 12345 → 53, IPv6 sin cabeceras de extensión. <strong>a)</strong> Escribí el
+pseudo-cabecera. <strong>b)</strong> Calculá el checksum. <strong>c)</strong> ¿Y si va dentro de un túnel IPIP? <strong>d)</strong> ¿Es
+opcional el checksum?</p>
+<p><strong>a) El pseudo-cabecera IPv6 (40 bytes = 20 palabras de 16 bits):</strong></p>
+<p><code>0-15</code> Source <code>2001:0db8:...:0009</code> · <code>16-31</code> Destination <code>2001:0db8:...:0007</code> · <code>32-35</code> Upper-Layer
+Packet Length <code>0x00000015</code> = 21 · <code>36-38</code> Zero = <code>0x000000</code> · <code>39</code> Next Header = 17 (UDP).</p>
+<p><strong>b) Checksum.</strong> Con las mismas palabras del ejercicio 2.1 pero reemplazando las 6 del
+pseudo-cabecera IPv4 por las 20 del IPv6: <code>suma = 0x94D0</code> y <code>checksum = ~0x94D0 = 0x6B2F</code>. La
+aritmética es <strong>exactamente la misma</strong> que en IPv4; solo cambia el pseudo-cabecera. Fijate que la
+longitud que va en el pseudo-cabecera es <strong>la del datagrama UDP (21)</strong>, no la del paquete IPv6 (que
+sería 40 + 8 + 13 = 61). <strong>Errores típicos:</strong> poner la del paquete IPv6, u olvidar los 3 bytes de
+cero (el pseudo-cabecera IPv6 tiene 40 bytes exactos).</p>
+<p><strong>c) Con IPIP</strong> el Next Header <strong>no es 17</strong> sino el del protocolo de encapsulación (IPIP = 4), y la
+longitud sigue siendo la del <strong>datagrama UDP interno</strong>. <strong>d)</strong> En IPv6 el checksum es <strong>obligatorio</strong>:
+un <code>0</code> recibido implica descartar el datagrama, mientras que en IPv4 el <code>0</code> significa "no computado"
+y es legal (muchos stacks antiguos lo dejaban en cero para ahorrar CPU).</p>
+<h2>2.3 Ejercicio 3 — Sockets en C: un servidor UDP que recibe y responde</h2>
+<p><strong>Enunciado.</strong> Escribí un servidor UDP en C que atienda el puerto 12345, responda <code>OFERTA &lt;precio&gt;</code>
+a los pedidos <code>OFERTA</code> y <code>COMMIT</code> o <code>REFUSE</code> a los <code>CONNECT</code> si se alcanzó el máximo de usuarios.</p>
+<div class="codehilite"><pre><span></span><code><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;stdio.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;unistd.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;sys/socket.h&gt;</span><span class="w">      </span><span class="cm">/* + sys/types.h, netinet/in.h */</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;netinet/in.h&gt;</span>
+
+<span class="cp">#define PUERTO 12345</span>
+<span class="cp">#define MAX_MSG 128</span>
+<span class="cp">#define MAX_USERS 20</span>
+<span class="cp">#define PRECIO 150</span>
+
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">usuarios</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">s</span><span class="p">;</span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">sockaddr_in</span><span class="w"> </span><span class="n">local</span><span class="p">,</span><span class="w"> </span><span class="n">cliente</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">socklen_t</span><span class="w"> </span><span class="n">len_cli</span><span class="p">;</span>
+<span class="w">    </span><span class="kt">char</span><span class="w"> </span><span class="n">buf</span><span class="p">[</span><span class="n">MAX_MSG</span><span class="p">];</span>
+<span class="w">    </span><span class="kt">ssize_t</span><span class="w"> </span><span class="n">n</span><span class="p">;</span>
+
+<span class="w">    </span><span class="n">s</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">socket</span><span class="p">(</span><span class="n">AF_INET</span><span class="p">,</span><span class="w"> </span><span class="n">SOCK_DGRAM</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w">          </span><span class="cm">/* SOCK_DGRAM = UDP */</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">s</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">perror</span><span class="p">(</span><span class="s">"socket"</span><span class="p">);</span><span class="w"> </span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="n">memset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">local</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="w"> </span><span class="n">local</span><span class="p">);</span>
+<span class="w">    </span><span class="n">local</span><span class="p">.</span><span class="n">sin_family</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="n">AF_INET</span><span class="p">;</span>
+<span class="w">    </span><span class="n">local</span><span class="p">.</span><span class="n">sin_port</span><span class="w">        </span><span class="o">=</span><span class="w"> </span><span class="n">htons</span><span class="p">(</span><span class="n">PUERTO</span><span class="p">);</span><span class="w">         </span><span class="cm">/* orden de red: big endian */</span>
+<span class="w">    </span><span class="n">local</span><span class="p">.</span><span class="n">sin_addr</span><span class="p">.</span><span class="n">s_addr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">htonl</span><span class="p">(</span><span class="n">INADDR_ANY</span><span class="p">);</span><span class="w">    </span><span class="cm">/* todas las interfaces */</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">bind</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">sockaddr</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">local</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="w"> </span><span class="n">local</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">perror</span><span class="p">(</span><span class="s">"bind"</span><span class="p">);</span><span class="w"> </span><span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"> </span><span class="p">}</span>
+
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(;;)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">resp</span><span class="p">;</span>
+<span class="w">        </span><span class="n">len_cli</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">sizeof</span><span class="w"> </span><span class="n">cliente</span><span class="p">;</span><span class="w">                  </span><span class="cm">/* recvfrom: datos + emisor */</span>
+<span class="w">        </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">recvfrom</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="w"> </span><span class="n">buf</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">                     </span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">sockaddr</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">cliente</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">len_cli</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">perror</span><span class="p">(</span><span class="s">"recvfrom"</span><span class="p">);</span><span class="w"> </span><span class="k">continue</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">        </span><span class="n">buf</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sc">'\0'</span><span class="p">;</span>
+
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">strcmp</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">"OFERTA"</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">snprintf</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="w"> </span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">"OFERTA %d"</span><span class="p">,</span><span class="w"> </span><span class="n">PRECIO</span><span class="p">);</span>
+<span class="w">            </span><span class="n">resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">buf</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">strcmp</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span><span class="w"> </span><span class="s">"CONNECT"</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">usuarios</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">MAX_USERS</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">usuarios</span><span class="o">++</span><span class="p">;</span><span class="w"> </span><span class="n">resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"COMMIT"</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">            </span><span class="k">else</span><span class="w">                       </span><span class="p">{</span><span class="w"> </span><span class="n">resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"REFUSE"</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"ERROR"</span><span class="p">;</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="cm">/* se responde AL QUE MANDO: por eso guardamos `cliente` */</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">sendto</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="n">resp</span><span class="p">,</span><span class="w"> </span><span class="n">strlen</span><span class="p">(</span><span class="n">resp</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">                   </span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">sockaddr</span><span class="w"> </span><span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">cliente</span><span class="p">,</span><span class="w"> </span><span class="n">len_cli</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">perror</span><span class="p">(</span><span class="s">"sendto"</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>El cliente <code>connect()</code> <strong>conecta</strong> su socket y puede usar <code>send()</code>/<code>recv()</code>: eso fija el par remoto
+por defecto, hace que el kernel <strong>descarte</strong> lo que venga de otro sitio y devuelve un ICMP 3/3.</p>
+<p><strong>Las tres ideas del ejercicio, que son las que se preguntan:</strong></p>
+<ol>
+<li><code>socket(AF_INET, SOCK_DGRAM, 0)</code> → <strong>UDP</strong>; con <code>SOCK_STREAM</code> sería TCP. Y <code>bind()</code> es casi
+   obligatorio en un servidor, porque <strong><code>recvfrom()</code> solo funciona sobre un socket enlazado</strong>.</li>
+<li><code>htons()</code>/<code>htonl()</code>: los enteros multi-byte viajan en <strong>big endian</strong> (<em>network byte order</em>) y la
+   familia <code>h</code> (<em>host to network</em>) convierte.</li>
+<li><strong>El kernel guarda la dirección de quien mandó</strong>, y por eso la respuesta puede ir al puerto efímero
+   que ese proceso chose: ese es el mecanismo de "responder sin conocer el puerto del otro".</li>
+</ol>
+<p><strong>Errores típicos (los del C de la solución oficial de 2010-12):</strong> comparar cadenas con <code>==</code> (compara
+<strong>direcciones de memoria</strong>, no contenido; usá <code>strcmp()</code>); usar una variable sin inicializar como
+argumento de entrada; y <code>strlen()</code> donde va el largo real, que devuelve <code>snprintf()</code>.</p>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2010-12, Pregunta 2 (8 puntos) — Multiplexación/demultiplexación</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc1012</code> / <code>sirc1012</code> — 17 de diciembre de 2010.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1012.pdf</p>
+</blockquote>
+<h3>Enunciado (texto del examen)</h3>
+<blockquote>
+<p>a) Describa el mecanismo de multiplexación/demultiplexación para sockets UDP, discutiendo
+los siguientes puntos:
+1. Cuando un host recibe un segmento UDP, ¿de qué manera decide a qué proceso derivárselo?
+2. Cuando el proceso recibe el segmento, ¿cómo sabe a dónde enviar la respuesta?
+3. ¿Con qué información queda completamente identificado un socket UDP en la red?</p>
+<p>b) Indique la diferencia entre el mecanismo de la parte a) y el utilizado para sockets TCP.
+¿Con qué información queda completamente identificado un socket TCP en la red?</p>
+</blockquote>
+<h3>Solución oficial (verbatim)</h3>
+<blockquote>
+<p><strong>a)</strong> Cuando un host recibe un segmento UDP, utiliza el puerto destino indicado en el
+segmento para determinar a qué proceso debe enviárselo. El proceso que lee el segmento
+utiliza los campos IP origen y puerto origen para saber cuál es el socket UDP donde debe
+enviar la respuesta. Un socket UDP queda identificado completamente utilizando la IP del
+host y el número de puerto.</p>
+<p><strong>b)</strong> El caso de TCP es un poco diferente: un proceso estará esperando conexiones en un
+puerto; cuando se establece la conexión, el sistema operativo creará un socket que enlaza
+<IP origen, Puerto origen, IP destino, Puerto destino>, y se lo devolverá al proceso para que
+lo atienda; cuando llega un segmento TCP al host, se utilizará los cuatro valores para
+determinar a cuál de los sockets hay que derivar el segmento (en realidad alcanzaría con
+utilizar IP origen, Puerto origen, Puerto destino). Un socket TCP queda identificado
+completamente utilizando los cuatro campos: IP de origen, Puerto de origen, IP de destino,
+Puerto de destino.</p>
+</blockquote>
+<h3>Análisis de la solución oficial</h3>
+<p>La respuesta oficial acierta el mecanismo de los tres puntos y el <strong>b)</strong> es impecable en lo esencial;
+lo mejor es el <strong>a)2</strong>, porque demuestra que el sistema es <strong>simétrico</strong>. Lo que <strong>falta</strong> es la frase
+que da el punto en <strong>a)1</strong> (<em>el SO mantiene una tabla de sockets y busca la entrada que coincida</em>),
+una mención al <strong>pseudo-cabecera</strong> (otro uso de la IP de origen en UDP) y el matiz de que la
+<strong>2-tupla es una simplificación</strong> (§1.6).</p>
+<h3>Mi resolución, punto por punto</h3>
+<p><strong>a)1 — ¿Cómo decide a qué proceso derivar el segmento?</strong> El SO mantiene una <strong>tabla de sockets</strong>.
+Cuando llega un datagrama con protocolo UDP: (1) toma el <strong>número de protocolo</strong> (17) y busca, <strong>en la
+tabla de sockets UDP</strong>, la fila cuyo <code>(IP local, puerto local)</code> coincida con el <code>(IP destino, puerto
+destino)</code> del datagrama — TCP tiene su propia tabla, y por eso <code>53/udp</code> y <code>53/tcp</code> no se cruzan; (2) si
+hay coincidencia, <strong>entrega los datos al proceso</strong> con <code>recvfrom()</code>, que devuelve la IP y el puerto de
+origen; (3) si no hay coincidencia, <strong>descarta</strong> y devuelve <strong>ICMP tipo 3, código 3</strong>.</p>
+<p><strong>a)2 — ¿Cómo sabe a dónde enviar la respuesta?</strong> Por <strong>simetría del protocolo</strong>: cuando el SO entrega
+el datagrama al proceso, le pasa también los dos campos de la cabecera, la <strong>IP de origen</strong> y el
+<strong>puerto de origen</strong>. Con esos dos datos más su propia IP y puerto local (que ya conoce) tiene los
+cuatro valores que alcanzan:</p>
+<div class="codehilite"><pre><span></span><code>   Respuesta = a la IP origen del datagrama, con puerto = puerto origen del datagrama
+</code></pre></div>
+
+<p><strong>a)3 — ¿Con qué información queda identificado un socket UDP?</strong> La oficial: <strong>la IP del host y el
+número de puerto</strong> (la 2-tupla). Es correcto para un socket <strong>no conectado</strong>, y hay que justificarlo:
+como está enlazado a un par <code>(IP, puerto)</code> y <strong>solo puede haber uno por par</strong>, los otros tres valores
+son constantes. La respuesta completa, la de 2026: la clave de un <strong>flujo en la red</strong> es la <strong>5-tupla</strong>
+<code>(protocolo, IP origen, puerto origen, IP destino, puerto destino)</code>, y recién con <code>connect()</code> el
+kernel pasa a filtrar por ella completa.</p>
+<p><strong>b) — Diferencia con TCP y su identificación.</strong> Tres diferencias: (1) <strong>el punto de entrada es uno
+solo y lo atiende el SO</strong>, que maneja los SYNs sin despertarse el proceso; (2) <strong>cada conexión crea
+un socket nuevo</strong> con la <strong>4-tupla</strong> <code>&lt;IP origen, puerto origen, IP destino, puerto destino&gt;</code>, que se
+le pasa al proceso con <code>accept()</code>, mientras el socket escuchando sigue ahí; (3) <strong>la clave es más
+grande porque hay más que distinguir</strong>: contra el mismo servidor 80, la IP destino y el puerto destino
+son <strong>siempre los mismos</strong>, así que lo único que distingue las conexiones es el <strong>par de puertos</strong>.
+Por eso la solución oficial notó que alcanzaría con tres valores: el protocolo y la IP destino quedan
+implícitos. La especificación vigente es <strong><code>RFC 9293</code></strong> (2022, <em>Internet Standard</em>), que sustituye a
+la <code>RFC 793</code>.</p>
+<h2>3.2 Examen 2009-07, Pregunta 2b (8 puntos) — Cuándo usar UDP en vez de TCP</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc0907</code> / <code>sirc0907</code> — 29 de julio de 2009.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0907.pdf</p>
+</blockquote>
+<h3>Enunciado (texto del examen)</h3>
+<blockquote>
+<p>b) Mencione dos casos (aplicaciones, servicios, etc.) en los que resulta más apropiado usar
+UDP que TCP. Justifique su respuesta.</p>
+</blockquote>
+<h3>Solución oficial (verbatim)</h3>
+<blockquote>
+<p>Por ejemplo: streaming de video y telefonía sobre internet. Son casos en los que el control
+de congestión de TCP o el tiempo consumido por el establecimiento de conexión es
+contraproducente por tratarse de aplicaciones de tiempo real en las que más vale perder
+algunos paquetes que atrasarlos todos.</p>
+</blockquote>
+<h3>Mi resolución, ampliada</h3>
+<p>La solución oficial acierta los dos casos y da <strong>dos justificaciones correctas</strong> (en el primero, la
+<strong>oportunidad</strong>; en el segundo, el <strong>costo del handshake</strong>). Para 8 puntos hay que dar <strong>dos casos con
+su justificación específica</strong>.</p>
+<p><strong>Caso 1 — Telefonía por Internet (VoIP) y videoconferencia.</strong> La aplicación genera un sample cada
+20 ms y tiene que reproducirlo en su momento. Si uno se pierde, con TCP el stack <strong>retransmite</strong> el
+sample y, peor, <strong>entrega los siguientes en orden</strong>: los samples 4, 5 y 6 esperan en el buffer hasta
+que llega el 3, que llega 200 ms tarde y <strong>ya no sirve para nada</strong> (se descarta igual, pero después de
+acumular <strong>jitter</strong>). Con UDP se pierde y se sigue. <strong>En una frase:</strong> en tiempo real un dato tardío es
+peor que uno ausente, y TCP garantiza orden y no pérdida, justo lo que no querás.</p>
+<p><strong>Caso 2 — Consulta de DNS (y cualquier protocolo de consulta/respuesta corto).</strong> La conexión TCP
+necesita <strong>1 RTT entero de handshake</strong> antes de que el cliente pueda mandar la consulta, y <strong>3
+paquetes</strong> de ida y vuelta para una respuesta de, digamos, 100 bytes; con UDP son <strong>2 paquetes</strong>, y el
+riesgo de perder la consulta se resuelve con un <strong>reintento temporizado</strong>. <strong>El costo del
+establecimiento no se amortiza si la transacción dura un solo mensaje.</strong></p>
+<blockquote>
+<p><strong>La contraargumentación clásica:</strong> muchas redes <strong>bloquean el tráfico UDP saliente</strong>, y por eso
+los protocolos que quieren las ventajas de UDP tunelizan UDP dentro de TCP: <strong>HTTPS</strong> lo hace con
+TLS y <strong>QUIC</strong> (<code>RFC 9001</code>) usa <strong>TLS 1.3 sobre UDP</strong>. Es la respuesta moderna a "pero UDP no es
+confiable": <em>la confiabilidad la aporta la capa de aplicación, no el transporte</em>.</p>
+</blockquote>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen en 10 líneas</h2>
+<ol>
+<li><strong>Multiplexar</strong> = muchos procesos → un flujo; <strong>demultiplexar</strong> = un datagrama → su proceso.</li>
+<li>El <strong>puerto</strong> (16 bits) identifica el proceso <strong>dentro del host</strong>, no entre hosts.</li>
+<li>Es una <strong>búsqueda en la tabla de sockets</strong> por <code>(protocolo, IP destino, puerto destino)</code>; si no
+   hay coincidencia, se descarta y se avisa con ICMP 3/3.</li>
+<li>La <strong>respuesta</strong> va a la IP y al puerto de origen: eso lo da el <code>recvfrom()</code>.</li>
+<li><strong>Socket UDP = 2-tupla</strong>; la clave real de un flujo es la <strong>5-tupla</strong> <code>(proto, srcIP, srcPort,
+   dstIP, dstPort)</code>.</li>
+<li><strong>Socket TCP = 4-tupla</strong>, porque en un servidor hay muchas conexiones al mismo <code>IP:puerto</code> y lo
+   único que las distingue es el par de puertos.</li>
+<li>UDP: <strong>8 bytes</strong> de cabecera y ni una garantía más. <em>Best effort</em>.</li>
+<li>El <strong>checksum</strong> usa un <strong>pseudo-cabecera</strong> (IP + protocolo + longitud) y, si la longitud es impar,
+   se rellena con un byte <code>0x00</code>; en <strong>IPv6</strong> es obligatorio y en IPv4 opcional.</li>
+<li><strong>QUIC</strong> (<code>RFC 9000</code> §5.1) usa el <strong>Connection ID</strong> en vez de la 4-tupla.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> Un host tiene sockets ligados a <code>203.0.113.9:53</code> y <code>203.0.113.9:631</code>. Llega un datagrama
+con <code>dport = 53</code>. ¿Qué hace el SO y por qué no hay ambigüedad?</p>
+<details><summary>Respuesta</summary>
+
+Busca en la **tabla de sockets** la fila que coincida con `(IP destino, puerto destino)`. No hay
+ambigüedad porque **dos sockets no pueden estar enlazados al mismo `(IP, puerto)`**: el `bind()` del
+segundo fallaría con `EADDRINUSE`.
+
+</details>
+
+<p><strong>2.</strong> ¿Por qué un socket UDP conectado se identifica con la 5-tupla y uno sin conectar con la 2-tupla?</p>
+<details><summary>Respuesta</summary>
+
+Porque en el socket sin conectar todo lo que llega con `(IP destino, puerto destino)` iguales a su
+`bind()` **es suyo por definición**, así que con dos alcanza. Con `connect()` el kernel **descarta** lo
+que no venga del par esperado y tiene que distinguir flujos hacia pares distintos: eso exige los
+cuatro valores más el protocolo.
+
+</details>
+
+<p><strong>3.</strong> Llega un datagrama con checksum <code>0xABCD</code> pero el receptor calcula <code>0xABCE</code>. ¿Qué hace el
+receptor y por qué no avisa al emisor?</p>
+<details><summary>Respuesta</summary>
+
+Lo **descarta en silencio**, porque **UDP no tiene mecanismo de errores** (ni ACK, ni NAK ni campo de
+error), y un aviso por cada datagrama corrupto serviría para una **tormenta de avisos**.
+
+</details>
+
+<p><strong>4.</strong> ¿Hace falta byte de relleno en un datagrama UDP de 6 bytes de datos (longitud total 14)?</p>
+<details><summary>Respuesta</summary>
+
+**No**: el relleno hace falta cuando el total de bytes a sumar es **impar**, como en el ejercicio 2.1
+(21 = 8 + 13).
+
+</details>
+
+<p><strong>5.</strong> ¿Por qué el checksum de UDP incluye las direcciones IP si la cabecera IP ya viaja en el paquete?</p>
+<details><summary>Respuesta</summary>
+
+Porque **UDP no ve la cabecera IP**. Si el checksum no cubriera las direcciones, un router que reenviara
+el datagrama a la **dirección equivocada** produciría un paquete "íntegro" para el host equivocado, y el
+receptor no podría notarlo.
+
+</details>
+
+<p><strong>6.</strong> En el ejercicio 2.2, ¿qué cambia si el datagrama viaja sobre IPv6 en lugar de IPv4?</p>
+<details><summary>Respuesta</summary>
+
+Solo el **pseudo-cabecera**, que pasa de 12 a **40 bytes** (16 + 16 + 4 + 3 + 1). La cabecera sigue
+siendo de 8 bytes, el checksum sale distinto (`0x606C` en IPv4, `0x6B2F` en IPv6) y pasa a ser
+**obligatorio**: un `0x0000` recibido se descarta.
+
+</details>
+
+<p><strong>7.</strong> ¿Por qué TCP necesita la 4-tupla y UDP no? En una frase.</p>
+<details><summary>Respuesta</summary>
+
+Porque en un servidor TCP la IP destino y el puerto destino **son siempre los mismos**, así que lo
+único que distingue una conexión de otra es el **par de puertos**; en UDP sin conexión cada socket
+tiene su propio par `(IP, puerto)`.
+
+</details>
+
+<p><strong>8.</strong> ¿Qué rompe QUIC del modelo de la 5-tupla y cómo lo resuelve?</p>
+<details><summary>Respuesta</summary>
+
+La **identidad de la conexión**. QUIC mete el **Connection ID** (`RFC 9000` §5.1) en la cabecera de
+cada paquete: permite multiplexar muchas conexiones sobre el **mismo 5-tupla** y sobrevivir a un cambio
+de IP o de puerto; con CID de largo 0 la clave vuelve a ser la 5-tupla (sin migración).
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>eirc1012</code> / <code>sirc1012</code></strong> — P2 (8 pts, mux/demux UDP vs TCP) · Problema 1 (30 pts, sockets UDP en C)</li>
+<li><strong>Examen <code>eirc0907</code> / <code>sirc0907</code></strong> — P2b (8 pts, cuándo usar UDP en vez de TCP)</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 6 — §6.1 (<em>Multiplexing</em>), §6.5 (<em>UDP</em>)</li>
+<li><strong><code>RFC 768</code></strong> — <em>User Datagram Protocol</em> (1980, <strong>STD 6 / Internet Standard*; verificado) · </strong><code>RFC 9868</code><strong> — <em>Transport Options for UDP</em> (oct-2025) · </strong><code>RFC 9293</code><strong> — <em>TCP</em> (2022; sustituye a la 793) · </strong><code>RFC 1071</code>** — Internet checksum</li>
+<li><strong>QUIC/HTTP-3:</strong> <strong><code>RFC 9000</code></strong> (transporte, §5.1 Connection ID) · <strong><code>RFC 9001</code></strong> (TLS 1.3) · <strong><code>RFC 9114</code></strong> (HTTP/3) · <strong><code>RFC 7838</code></strong> (Alt-Svc) · <strong><code>RFC 9460</code></strong> (SVCB) · <strong><code>RFC 8085</code></strong> (CID de largo 0)</li>
+<li><strong>Clase siguiente:</strong> 17 — TCP: la cabecera campo por campo</li>
+</ul></body></html>

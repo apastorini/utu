@@ -1,0 +1,1388 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 47 — Seguridad: servicios y criptografía</h1>
+<p><strong>Bloque:</strong> F (Servicios y gestión) · <strong>Semana:</strong> 16 · <strong>Duración estimada:</strong> 130 min
+<strong>Correlativa:</strong> Clase 46 (gestión de redes) · <strong>Sigue con:</strong> Clase 48 (seguridad aplicada)
+<strong>Material de referencia:</strong> Tanenbaum cap. 8 · <code>ACTUALIZACIONES.md</code> §13</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Distinguir <strong>confidencialidad</strong>, <strong>integridad</strong>, <strong>autenticidad</strong> y <strong>no
+   repudio</strong>, y decir <strong>qué técnica</strong> consigue cada una y cuál <strong>no</strong>.</li>
+<li>Explicar qué es una <strong>función de hash</strong>, enumerar sus <strong>cuatro propiedades</strong>, y
+   decir por qué <strong>el hash da integridad pero NO confidencialidad</strong>.</li>
+<li>Explicar por qué <strong>MAC no sirve para firmar</strong> y por qué <strong>el hash solo tampoco</strong>.</li>
+<li>Describir <strong>RSA</strong> y la razón matemática que lo sostiene, y sus <strong>tres
+   limitaciones</strong> (lento, tamaño, y no firma directamente).</li>
+<li>Describir la <strong>firma digital</strong> paso a paso y explicar <strong>por qué se firma el hash
+   y no el mensaje</strong>.</li>
+<li>Describir una <strong>PKI</strong>: qué es un certificado, qué es una cadena de confianza, qué
+   es el <strong>ancla</strong>, y <strong>por qué todo el modelo descansa en un supuesto</strong>.</li>
+<li>Escribir el esquema <strong>híbrido</strong> de un canal seguro real (lo que hace TLS).</li>
+</ol>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 740 260" style="max-width:740px"><rect width="740" height="260" fill="#ffffff"/><text x="370.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Handshake de TLS 1.3 en un RTT</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><rect x="34" y="46" width="150" height="42" rx="5" fill="#0b3d5c" stroke="#0b3d5c" stroke-width="1.2"/><text x="109.0" y="70.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#ffffff">1 RTT extra</text><text x="200" y="72" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">ClientHello: versiones, cipher suites, key share</text><rect x="34" y="104" width="150" height="42" rx="5" fill="#0b3d5c" stroke="#0b3d5c" stroke-width="1.2"/><text x="109.0" y="128.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#ffffff">1 RTT</text><text x="200" y="130" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">ServerHello + Certificate + Finished</text><rect x="34" y="162" width="150" height="42" rx="5" fill="#0b3d5c" stroke="#0b3d5c" stroke-width="1.2"/><text x="109.0" y="186.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#ffffff">0 RTT</text><text x="200" y="188" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">ya se pueden mandar datos de aplicacion</text><text x="34" y="244" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">TLS 1.3 cambio: solo AEAD, sin compresion, sin renegociacion, y forward secrecy obligatorio.</text><text x="34" y="262" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">El certificado sigue siendo X.509: lo que cambio fue el intercambio de claves.</text></svg></p>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 780 356" style="max-width:780px"><rect width="780" height="356" fill="#ffffff"/><text x="390.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Los tres servicios de seguridad</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><rect x="34" y="40" width="196" height="48" rx="5" fill="#14507a" stroke="#14507a" stroke-width="1.2"/><text x="132.0" y="68.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#ffffff">Confidencialidad</text><text x="248" y="59" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">solo el emisor y el receptor entienden el mensaje</text><text x="248" y="79" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">se logra con: cifrado simetrico o asimetrico</text><rect x="34" y="102" width="196" height="48" rx="5" fill="#2e7d4f" stroke="#2e7d4f" stroke-width="1.2"/><text x="132.0" y="130.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#ffffff">Integridad</text><text x="248" y="121" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">el mensaje no fue alterado en transito</text><text x="248" y="141" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">se logra con: hash / HMAC / AEAD</text><rect x="34" y="164" width="196" height="48" rx="5" fill="#c8621a" stroke="#c8621a" stroke-width="1.2"/><text x="132.0" y="192.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#ffffff">No repudio</text><text x="248" y="183" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">el emisor no puede negar haberlo enviado</text><text x="248" y="203" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">se logra con: firma digital + identidad vinculable</text><rect x="34" y="240" width="712" height="70" rx="6" fill="#fdf3ec" stroke="#c8621a"/><text x="50" y="266" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#c8621a">La diferencia fina entre integridad y no repudio NO es el algoritmo.</text><text x="50" y="288" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#c8621a">Es QUIEN controla la clave privada: si la tiene solo Alicia, Alicia no puede negar.</text><text x="34" y="332" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#0b3d5c">Y los tres se resuelven juntos en TLS, no por separado.</text><text x="34" y="352" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">Sumalos: autenticacion (soy quien digo ser) y control de acceso.</text></svg></p>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2010-02 P4</code> (8 pts — firma digital y por qué MAC no
+puede firmar), <code>2009-12 P4</code> (6 pts — funciones de hash y propiedades de
+seguridad), <code>2009-02 P1</code> (9 pts — TLS: qué clave va en el certificado, y cuál
+protege los datos), <code>2008-12 P2</code> (seguridad en switch vs. hub).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 Los cuatro servicios (y el confundón de siempre)</h2>
+<p>Antes de cualquier algoritmo hay que tener esta tabla <strong>clara</strong>, porque el 80 % de
+los errores en un examen salen de confundir los servicios.</p>
+<table>
+<thead>
+<tr>
+<th>Servicio</th>
+<th>Pregunta que responde</th>
+<th>Ejemplo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Confidencialidad</strong></td>
+<td>¿puede alguien <strong>leerlo</strong>?</td>
+<td>cifrar una carta</td>
+</tr>
+<tr>
+<td><strong>Integridad</strong></td>
+<td>¿puede alguien <strong>cambiarlo</strong>?</td>
+<td>el sello de lacre</td>
+</tr>
+<tr>
+<td><strong>Autenticidad</strong></td>
+<td>¿es <strong>realmente de vos</strong>?</td>
+<td>tu firma manuscrita</td>
+</tr>
+<tr>
+<td><strong>No repudio</strong></td>
+<td>¿podés <strong>probar</strong> que fuiste vos?</td>
+<td>firma notarial</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Y las dos relaciones que hay que tener presentes</strong> porque son las que se preguntan:</p>
+<div class="codehilite"><pre><span></span><code>   "Si NO tengo confidencialidad, ¿puedo tener integridad?"
+
+        SÍ. Ejemplo: un disco cifrado donde te avisan SÓLO si un archivo cambió
+             (hash cifrado con HMAC). Vos no podés leer el contenido, pero
+             sabés si alguien lo toco.
+        ★ Por eso "confidencialidad" NO implica "integridad", ni al revés.
+          Son servicios INDEPENDIENTES.
+
+   "Si tengo confidencialidad por cifrado SIMÉTRICO, ¿tengo autenticidad?"
+
+        Depende. El cifrado simétrico por sí solo NO autentica al emisor:
+        cualquiera que conozca la clave puede cifrar algo haciéndose pasar
+        por vos. Para autenticar hace falta un MAC o un modo AEAD.
+</code></pre></div>
+
+<h3>La taxonomía de las técnicas</h3>
+<div class="codehilite"><pre><span></span><code>   ┌───────────────────────────────────────────────────────────────────┐
+   │  CIFRADO (en claro, con clave)                                  │
+   │    simétrico   → misma clave para cifrar y descifrar             │
+   │                   (AES, ChaCha20)                                │
+   │    asimétrico  → par de claves: una pública, una privada         │
+   │                   (RSA, ECC / Ed25519)                           │
+   │                                                                   │
+   │  HASH (sin clave, una sola vía)                                  │
+   │    → NO cifra, NO tiene clave                                   │
+   │    → detecta cambios (integridad), no oculta nada                │
+   │    → SHA-256                                                     │
+   │                                                                   │
+   │  MAC (con clave simétrica, integridad + autenticación)            │
+   │    → HMAC-SHA-256                                                │
+   │    → detecta cambios Y sabe quién lo hizo, pero NO cifra         │
+   │                                                                   │
+   │  FIRMA (asimétrica, integridad + autenticidad + no repudio)       │
+   │    → firma sobre el hash, con clave privada                      │
+   │    → RSA-PSS, ECDSA, Ed25519                                    │
+   │                                                                   │
+   │  CERTIFICADOS / PKI                                              │
+   │    → vinculan una clave pública con una identidad               │
+   │    → X.509                                                        │
+   └───────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<h2>1.2 La función de hash</h2>
+<p><strong>Función de hash</strong> = una función que toma cualquier mensaje (de cualquier
+tamaño) y devuelve una cadena <strong>de tamaño fijo</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   m  ──────────►  H(m)  ──────────►  h
+   (cualquier          (la función)     (huella: siempre
+    tamaño)                              32 bytes con SHA-256)
+
+   m = "hola"          →  h = 2cf24dba...
+   m = "hola "  (con   →  h = 5891b5b...   ← ¡distinto! Un bit cambia TODO
+   un espacio)
+   m = "holb"          →  h = aa4b0c95...      el hash.
+</code></pre></div>
+
+<p><strong>Propiedades obligatorias</strong> (si una falla, la función no sirve para seguridad):</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Propiedad</th>
+<th>Qué dice</th>
+<th>Por qué importa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Determinista</strong></td>
+<td>la misma entrada da <strong>siempre</strong> la misma salida</td>
+<td>si no, no podrías verificar</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Unidireccional</strong> <em>(preimage resistance)</em></td>
+<td>dado <code>h</code>, es <strong>computacionalmente inviable</strong> encontrar <code>m</code> tal que <code>H(m) = h</code></td>
+<td>sin esto, cualquiera que vea la huella puede <strong>reconstruir el mensaje</strong></td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Sin colisiones</strong> <em>(second preimage)</em></td>
+<td>dado <code>m</code>, es inviable encontrar <strong>otro</strong> <code>m'</code> con <code>H(m') = H(m)</code></td>
+<td>sin esto, podés <strong>reemplazar</strong> el mensaje por otro con la misma huella</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Avalancha</strong></td>
+<td>cambiar <strong>1 bit</strong> de la entrada cambia <strong>~50 %</strong> de los bits de la salida</td>
+<td>hace imposible el ataque de <strong>cota incremental</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Y dos propiedades "de facto" que se piden:</strong></p>
+<ul>
+<li><strong>Longitud de salida fija y suficiente</strong>: 256 bits con SHA-256. Con 128 bits
+  (MD5, SHA-1) la probabilidad de <strong>colisión</strong> por fuerza bruta es
+  <code>2⁻⁶⁴ ≈ 5×10⁻²⁰</code>; con 256 bits es <code>2⁻¹²⁸ ≈ 3×10⁻³⁹</code>.</li>
+<li><strong>Resistencia a preimagen de segundo orden</strong>: no es lo mismo encontrar <strong>una</strong>
+  colisión (cualquier par <code>m, m'</code>) que encontrar una colisión <strong>para un <code>m</code> dado</strong>
+  (second-preimage). La segunda es más difícil, y SHA-256 resiste las dos.</li>
+</ul>
+<p><strong>El hash NO es cifrado.</strong> Es unidireccional: no hay "descifrar" un hash. Y <strong>no
+lleva clave</strong>: la misma función, para todos, siempre. Es por eso que un hash
+"público" sirve para cualquier cosa: no se puede usar para ocultar, solo para
+detectar.</p>
+<p><strong>Y ojo con el orden de la frase en un examen:</strong> <em>"un hash provee </em><em>integridad</em><em>
+pero </em><em>no confidencialidad</em><em>"</em>. Si escribís al revés, es un error conceptual, no
+de redacción.</p>
+<h3>⚠️ MD5 y SHA-1: la historia que hay que saber</h3>
+<div class="codehilite"><pre><span></span><code>   MD5      128 bits. ROTO desde 2004 (ataques de colisión hallados).
+            En 2008, el "rogue CA": una CA legitimamente firmada un
+            certificado con la MISMA huella que otro, porque MD5 ya era
+            vulnerable. El sistema de confianza entero colapsó.
+   SHA-1    160 bits. ROTO en 2017 con SHAttered (2&lt;sup&gt;63&lt;/sup&gt; intentos, 6500
+            años de un core → 110 años con 6500 GPUs y 110 $/GPU-hora).
+   SHA-256  256 bits. SEGURO.
+   SHA-3    256/512. SEGURO, y con diseño diferente a SHA-2.
+
+   RFC 9155 (2021) → depreca explícitamente MD5 y SHA-1 en TLS 1.2
+</code></pre></div>
+
+<h2>1.3 Cifrado simétrico</h2>
+<div class="codehilite"><pre><span></span><code>   MENSAJE ──[ CIFRAR con k ──▶ CIFRADO ──[ DESCIFRAR con k ──▶ MENSAJE
+                   (la MISMA clave k)
+</code></pre></div>
+
+<p><strong>Característica esencial: es rápido y hay que compartir la clave.</strong> Y compartir la
+clave es el problema: en un canal de N personas, hacen falta <strong>N−1 claves</strong>.</p>
+<p><strong>El problema de la distribución de claves</strong> es tan grave que la criptografía
+simétrica sola <strong>no resuelve</strong> nada en un canal abierto: si vos y yo queremos
+hablar y hay un tercero escuchando, tenemos que ponernos de acuerdo en la clave
+<strong>sin que el tercero se entere</strong>. Y ese es exactamente el problema que resuelve la
+criptografía asimétrica.</p>
+<h3>Los modos de operación: por qué importa</h3>
+<p>Cifrar "cada bloque por separado" con ECB es <strong>inseguro</strong>, y el motivo es
+importante para entender por qué:</p>
+<div class="codehilite"><pre><span></span><code>   ECB  (Electronic Codebook)
+   ──────────────────────────
+   Bloque1 → C1
+   Bloque2 → C2          Los bloques IGUALES producen el MISMO
+   Bloque3 → C1          cifrado. Consecuencia: se ve el PATRÓN
+   Bloque4 → C2          del texto original a través del cifrado.
+                        ★ Famous: la imagen del "dinosaurio".
+</code></pre></div>
+
+<p>Las soluciones: <strong>CBC</strong> (cifrado en cadena), <strong>CTR</strong> (contador, como un
+cifrado de flujo), y el estándar moderno: <strong>AEAD</strong> (<em>Authenticated Encryption with
+Associated Data</em>), que <strong>junta cifrado e integridad en una sola operación</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   AES-GCM          →  cifrado + integridad (y el tag de autenticación)
+   ChaCha20-Poly1305 →  lo mismo, más rápido sin acelerador de hardware
+</code></pre></div>
+
+<blockquote>
+<p><strong>El AEAD es hoy el default</strong> y la razón tiene nombre: <strong>evita los ataques de
+manipulación</strong>. Con "cifrar y después hashear por separado" (o peor, hashear por
+separado <em>antes</em> de cifrar) se abre la puerta a ataques de <strong>cambio de bits</strong> y a
+<strong>padding oracle</strong> (el famoso ataque de Vaudenay contra TLS). El AEAD calcula la
+autenticación <strong>dentro</strong> del cifrado, así que no hay forma de tocar el texto sin
+romper el tag.</p>
+</blockquote>
+<h2>1.4 Cifrado asimétrico: RSA</h2>
+<p><strong>El cambio de paradigma</strong>: en vez de una clave, un <strong>par</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────┐        ┌──────────────┐
+   │  Clave PÚBLICA│        │  Clave PRIVADA│
+   │      (kp)     │        │      (ks)     │
+   │   PÚBLICA     │        │   PRIVADA     │
+   │  la conoce    │        │  sólo la      │
+   │  TODOS        │        │  conoce vos   │
+   └───────┬──────┘        └───────┬──────┘
+           │                       │
+      cifra con kp          descifra con ks
+           │                       │
+           ▼                       ▼
+    ┌──────────────────────────────────────┐
+    │   Either  cifrado con kp  →  lo     │
+    │   descifra sólo ks                   │
+    │   Either  cifrado con ks  →  lo     │
+    │   descifra sólo kp                   │
+    └──────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Lo que faltaba</strong>: la clave privada <strong>nunca viaja</strong>. Aunque alguien intercepte
+mil millones de mensajes, no puede sacar la clave privada <strong>de los mensajes</strong>,
+porque es un problema <strong>matemático</strong>, no de ingeniería.</p>
+<h3>La base matemática (lo mínimo que hay que saber)</h3>
+<p>RSA usa el problema de <strong>factorización de enteros grandes</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   1. Se eligen DOS primos GRANDES:  p  y  q
+   2. n = p · q                                    ← el MÓDULO (es público)
+   3. φ(n) = (p−1)(q−1)                           ← función Euler
+   4. se elige e  tal que   gcd(e, φ(n)) = 1     ← EXPONENTE PÚBLICO
+   5. d  = e⁻¹ mod φ(n)                           ← EXPONENTE PRIVADO
+   6. El secreto es (p, q); el resto es público: (n, e)
+</code></pre></div>
+
+<p>Y funciona por el <strong>teorema de Euler</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   Para cualquier m:      m^(e·d) ≡ m  (mod n)
+
+   O sea:  cifro con e, descifro con d → obtengo el mensaje original.
+   Y para romperlo tendría que factorizar n (o resolver el problema de
+   RSA directamente, que es equivalente a factorizar).
+</code></pre></div>
+
+<p><strong>El problema de factorización es believed hard</strong>: hoy se han roto claves de
+<strong>829 bits</strong>, y las factorizaciones de RSA-2048 (que es lo que se usa) están fuera de alcance
+con la computación actual. <strong>Pero — y esto es lo importante — no hay prueba de que
+sea hard</strong>: nadie ha demostrado que factorizar sea difícil, solo que <strong>parece</strong>.</p>
+<p><strong>Y las tres limitaciones de RSA, que se preguntan siempre:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Limitación</th>
+<th>Detalle</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Es lento</strong></td>
+<td>Modular exponenciación: la operación cuesta <strong>O(k³)</strong> en el tamaño de la clave. <strong>AES va 100 a 1000 veces más rápido.</strong></td>
+</tr>
+<tr>
+<td><strong>Los datos son gigantes</strong></td>
+<td>Con claves de 2048 bits solo podés cifrar <strong>245 bytes</strong>. Para cifrar un archivo de 1 MB, lo dividís, cifrás cada parte y las concatenás (el esquema <strong>híbrido</strong>).</td>
+</tr>
+<tr>
+<td><strong>No cifra en bloque</strong></td>
+<td>RSA solo cifra bloques del tamaño del módulo. No es un cifrado de flujo ni de bloque utilizable para datos largos.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Y un cuarto problema, más moderno:</strong> la firma directa con RSA (<code>PKCS#1 v1.5</code>)
+es <strong>frágil</strong> a ataques de Bleichenbacher. En TLS 1.3, el <strong>transporte de clave
+con RSA fue directamente eliminado</strong>: hoy solo queda <strong>RSA-PSS</strong>, que es el modo
+de firma moderno.</p>
+</blockquote>
+<h3>ECC y Ed25519</h3>
+<p>RSA <strong>no es lo más seguro por bit</strong>. Con la seguridad de 128 bits (la de AES-128):</p>
+<div class="codehilite"><pre><span></span><code>   RSA       necesita  ~3072 bits
+   ECC       necesita  ~256  bits       ← misma seguridad, clave 12× más corta
+</code></pre></div>
+
+<p><strong>Ventajas de ECC en la práctica:</strong> claves más cortas = ** menos cómputo, menos
+bandwidth en el handshake, menos batería<strong> (crítico en móviles y en IoT).
+</strong>Ed25519<strong> es la curva más usada hoy (es el default de </strong>SSH**, <code>RFC 8709</code>).</p>
+<p><strong>La tabla de los tres servicios que hay que saber:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Algoritmo</th>
+<th>Para qué</th>
+<th>Clave pública</th>
+<th>Clave privada</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>RSA</strong></td>
+<td>cifrar, firmar</td>
+<td><code>(n, e)</code></td>
+<td><code>d</code></td>
+</tr>
+<tr>
+<td><strong>ECDSA / Ed25519</strong></td>
+<td><strong>firmar</strong> (no cifra bien)</td>
+<td>punto en la curva</td>
+<td>escalar</td>
+</tr>
+<tr>
+<td><strong>ECDH / X25519</strong></td>
+<td><strong>acuerdo de clave</strong></td>
+<td>punto en la curva</td>
+<td>escalar</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>El matiz de examen:</strong> ECDSA <strong>firma</strong>, no cifra; Diffie-Hellman <strong>acuerda</strong>, no
+cifra ni firma. Confundirlos es el error clásico.</p>
+</blockquote>
+<h2>1.5 El hash no firma solo: por qué</h2>
+<p>Este es <strong>el corazón conceptual</strong> de la clase, y da exactamente el examen
+<code>2010-02 P4</code>.</p>
+<div class="codehilite"><pre><span></span><code>   ARGUMENTO (imposible usar hash solo para firma):
+
+   1. El hash NO lleva clave. Cualquiera puede calcular H(m).
+   2. Si "la firma fuera H(m)", el atacante también puede calcular
+      H(m) y ponerlo al lado del mensaje.
+   3. Entonces CUALQUIERA podría "firmar" cualquier mensaje.
+      ★ No hayNpseudoLfirma.
+
+   ARGUMENTO (imposible usar MAC para firma):
+
+   1. El MAC usa clave SIMÉTRICA (HMAC).
+   2. Para verificar, el receptor necesita la MISMA clave.
+   3. Para poder verificar, vos tenés que darle tu clave a todos.
+   4. Si todos tienen la clave, TODOS pueden firmar como vos.
+   5. ★ No hay "solo vos" podés firmar: no hay no-repudio.
+
+   SOLUCIÓN: combines asimetría + hash.
+   ────────────────────────────────────────
+   1. El hash sigue dando INTEGRIDAD (detecta cualquier cambio).
+   2. La clave PRIVADA da AUTENTICIDAD (solo vos podés firmar).
+   3. La clave PÚBLICA da VERIFICABILIDAD sin secreto.
+   4. ★ La combinación da los 4 servicios a la vez.
+</code></pre></div>
+
+<blockquote>
+<p><strong>La frase que hay que saber de memoria:</strong> <em>"el hash detecta el cambio pero no
+dice quién lo hizo; el MAC detecta el cambio </em><em>y</em><em> sabe quién lo hizo, pero
+todos pueden hacerlo; </em><em>la firma</em><em> detecta el cambio, sabe quién lo hizo, </em><em>y es
+la única forma de probar que fue esa persona y no otro</em><em> porque solo esa
+persona tiene la clave privada que no se puede compartir."</em></p>
+</blockquote>
+<h2>1.6 La firma digital, paso a paso</h2>
+<div class="codehilite"><pre><span></span><code>   ────────── FIRMAR (emisor) ──────────
+
+   mensaje m
+      │
+      ▼
+   H(m)                       ← HASH: ahora tengo 32 bytes en vez de 10 KB
+      │
+      ▼
+   [ cifrar con clave PRIVADA ]   ← RSA:   σ = H(m)^d   mod n
+      │                              ECC:  σ = Sign(ksk, H(m))
+      ▼
+   σ  = la FIRMA (típicamente 128-256 bytes)
+
+   Lo que viaja por la red:   [ m , σ ]      (o solo σ si m es un hash
+                                               firmado — detached signature)
+
+
+   ────────── VERIFICAR (receptor) ──────────
+
+   [ m , σ ]
+      │        │
+      │        ▼
+      │    ¿σ es válida con kp?      RSA:  σ^e  ≡  H(m)  (mod n)
+      │        │                              (o: la firma SINCRÓNICA de H(m)
+      │        │                               con kp es idéntica a σ)
+      │        ▼
+      │      SÍ ──► verificar_ok, SEGUIR
+      │      NO ──► NO ES de vos  (o fue alterado)
+      │
+      ▼
+   H(m) recalculado por el receptor
+      │
+      ▼
+   ¿H(m) = el H(m) que venía dentro de σ?  →  ÍNTEGRO
+</code></pre></div>
+
+<p><strong>Por qué se firma el hash y no el mensaje — y esta es la respuesta que más puntúa:</strong></p>
+<ol>
+<li><strong>Eficiencia.</strong> RSA tarda milisegundos. Hashear un archivo de 1 GB tarda
+   microsegundos. Si tuvieras que <strong>firmar el mensaje entero</strong>, la operación
+   criptográfica costaría <strong>lo mismo</strong> que hashear + firmar. Con el hash, firmás
+   32 bytes.</li>
+<li><strong>La firma queda en tamaño fijo</strong>, sea cual sea el mensaje (32 bytes de hash →
+   firma de 256 bytes). Un certificado X.509 firma una lista de SAN: si el mensaje
+   fuese enorme, la firma sería gigante.</li>
+<li><strong>La longitud no filtra el secreto.</strong> Con el <strong>padding</strong> determinista, si
+   cifrás el mensaje directamente, el tamaño del cifrado <strong>revela el tamaño del
+   mensaje</strong>. Con un hash de longitud fija, no.</li>
+</ol>
+<p><strong>⚠️ Un matiz que hay que tener claro:</strong> en la práctica, la firma digital <strong>no
+cifra</strong> el mensaje. El mensaje viaja <strong>en claro</strong> junto a la firma. Solo se
+<strong>cifra</strong> si querés confidencialidad, y para eso se usa el <strong>esquema híbrido</strong>.</p>
+<h3>El esquema híbrido: cómo se hace en la realidad</h3>
+<p>Ninguno de los dos algoritmos sirve solo. Entonces se combinan:</p>
+<div class="codehilite"><pre><span></span><code>   ── Cifrar un archivo de 1 MB ──
+
+   1. Generar una clave de sesión ALEATORIA K          ← 256 bits, efímera
+   2. Cifrar el archivo con K          (rápido, simétrico, AES-GCM)
+   3. K se envía... ¿cifrada con RSA? NO. Con el ACUERDO de clave (KEM):
+       a. El receptor publica kp.
+       b. Vos hacés KEM(kp) = tu secreto + su secreto → K_secreto compartido
+       c. Derivás la clave de sesión con un KDF (HKDF)
+   4. Se transmite:  [archivo cifrado] + [tu secreto encapsulado]
+   5. El receptor descifra, aplica el KDF, obtiene K, descifra el archivo.
+
+   ★ Confidencialidad: SIMÉTRICA (rápida) sobre datos largos
+   ★ Autenticación: ASIMÉTRICA sobre la clave corta
+   ★ El archivo nunca sale de claro en el cable ✔
+</code></pre></div>
+
+<p><strong>Ése es el diseño de TLS, de PGP, de IPsec, de SSH, de todo.</strong> Y es la razón por
+la que <strong>RSA no se usa para cifrar datos</strong>: el costo lo pone la clave, que es
+corta.</p>
+<h2>1.7 PKI: el problema de la confianza</h2>
+<p>Hash, cifrado y firma <strong>ya funcionan</strong>. El problema que queda:</p>
+<div class="codehilite"><pre><span></span><code>   Beto le manda a Ana un mensaje firmado con ksb.
+   Ana tiene kpb "de Beto"... ¿de dónde la sacó?
+
+   Si alguien le pasa una clave PÚBLICA por Internet y dice "esta es de Beto",
+   Ana no tiene forma de saberlo. El atacante le pasa kpa y dice "esta es
+   de Beto", intercepta y firma como Beto.
+   ★ Mismo problema: falta una raíz de confianza.
+</code></pre></div>
+
+<p><strong>La solución: el certificado y la cadena de confianza.</strong></p>
+<div class="codehilite"><pre><span></span><code>                    RAÍZ  (Root CA)
+                 auto-firmada, se confía en ella "de fábrica"
+                  │        │        │
+                  │        │        └───── R3 (autoridad de nivel 3)
+                  │        └────────────── R2 (nivel 2)
+                  └─────────────────────── R1 (intermedia)
+
+                    │ firma a
+                    ▼
+                 CA INTERMEDIA
+                    │ firma a
+                    ▼
+              CERTIFICADO DE HOJA  ("el certificado del servidor")
+              ─────────────────────────────────────
+              · sujeto:  CN = www.miuy.edu.uy
+              · emisor:   la intermedia
+              · kp:       la clave pública de www.miuy.edu.uy
+              · validez:  desde / hasta
+              · Serial,    firma de la intermedia
+                algoritmo, huella,   ← el hash del certificado (firmado)
+                SAN
+              ─────────────────────────────────────
+</code></pre></div>
+
+<p><strong>La cadena de confianza</strong>: para validar el certificado de <code>www.miuy.edu.uy</code>, el
+cliente sube: hoja → intermedia → raíz. Y <strong>cada eslabón firma al siguiente</strong>. Si
+llega a una raíz que el cliente tiene en su <strong>almacén de confianza</strong>
+(<em>trust store</em>), la cadena es válida.</p>
+<blockquote>
+<p><strong>Y acá está el punto conceptual que hay que decir en el examen:</strong> <em>toda la
+seguridad de este modelo descansa en </em><em>un único supuesto</em><em>: que las raíces del
+almacén de confianza son legítimas. Si meten una raíz falsa en tu sistema,
+</em><em>todo lo demás se deriva de ella y nada te protege</em><em>. Ese supuesto es el punto
+más débil de la PKI, y es la razón por la que existe DNSSEC (ancla en la raíz
+DNS) y RPKI (ancla en la jerarquía de prefijos).</em></p>
+</blockquote>
+<p><strong>Y <code>SAN</code> (<em>Subject Alternative Name</em>)</strong> es lo que hay que saber hoy: el <strong>CN</strong>
+(<em>Common Name</em>) —que era "el nombre del sitio"— <strong>ya no se usa</strong> para validar
+identidad (Chrome y Firefox lo rechazan). Lo que se valida es el campo
+<strong>SAN</strong>, que puede contener <strong>DNS names</strong> e <strong>direcciones IP</strong>.</p>
+<h2>1.8 ⚠️ Actualización a 2026</h2>
+<p><strong>Sigue igual — de memoria:</strong>
+- <strong>Hash</strong>: SHA-256. Nunca MD5 ni SHA-1.
+- <strong>Simétrico</strong>: AES-GCM / ChaCha20-Poly1305. AEAD es el default.
+- <strong>Firma</strong>: RSA-PSS, ECDSA, Ed25519.
+- <strong>Key agreement</strong>: (EC)DHE con X25519, o híbrido ML-KEM.
+- <strong>PKI X.509</strong>: cadena AC → intermedia → hoja, validación, <code>SAN</code> (no CN).
+- <strong>Forward secrecy</strong> con (EC)DHE. <strong>HKDF</strong> para derivar claves.
+- <strong>DH estático NO da forward secrecy</strong> (Logjam) — hay que usar ephemera.</p>
+<p><strong>Cambió:</strong></p>
+<ol>
+<li><strong>RSA key transport eliminado en TLS 1.3</strong> (<code>RFC 8446</code>). Solo queda firma con
+   <strong>RSA-PSS</strong>; <code>PKCS#1 v1.5</code> es legacy.</li>
+<li><strong>ML-KEM híbrido</strong> (<code>RFC 10024</code>, ago-2026) es el nuevo key agreement de facto
+   para resistencia post-cuántica.</li>
+<li><strong>SHA-1 formalmente retracted.</strong> NIST lo retiró para firmas en 2011; SHAttered
+   (2017) halló colisiones prácticas; <code>RFC 9155</code> (2021) depreca MD5 y SHA-1 en
+   TLS 1.2.</li>
+<li><strong>Ed25519 es el default en SSH</strong> (<code>RFC 8709</code>) y creciente en X.509.</li>
+<li><strong>HTTP Message Signatures</strong> (<code>RFC 9421</code>, 2024): firma de <em>componentes</em> de un
+   mensaje HTTP, resistente a transformaciones de intermediarios.</li>
+<li><strong>OpenPGP: <code>RFC 9580</code></strong> (2024) reemplaza a RFC 4880.</li>
+</ol>
+<p><strong>Y la lección conceptual de 2026</strong>, que es lo que hay que saber decir:</p>
+<blockquote>
+<p><strong>La integridad y la autenticidad son <em>relativas a un ancla de confianza</em>, y
+hay un ancla distinta por ámbito.</strong> Un curso que solo enseña "integridad =
+HTTPS" se queda cortísimo:</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>Ámbito</th>
+<th>¿Qué es el ancla?</th>
+<th>RFC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Transporte web</strong></td>
+<td><strong>PKI / CA</strong> (X.509)</td>
+<td><code>RFC 8446</code> → <code>9846</code></td>
+</tr>
+<tr>
+<td><strong>DNS</strong></td>
+<td><strong>DNSSEC</strong> + Root KSK</td>
+<td><code>RFC 4033-4035</code>, <code>5155</code></td>
+</tr>
+<tr>
+<td><strong>Enrutamiento</strong></td>
+<td><strong>RPKI</strong> / ROA</td>
+<td><code>RFC 6811</code></td>
+</tr>
+<tr>
+<td><strong>Capa 2</strong></td>
+<td><strong>802.1X</strong> / MAB, Port Security</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>Email</strong></td>
+<td>S/MIME u <strong>OpenPGP</strong></td>
+<td><code>RFC 9580</code></td>
+</tr>
+<tr>
+<td><strong>Código / binarios</strong></td>
+<td><strong>firma de commits</strong> (GPG/Sigstore)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>El no repudio real es raro y costoso:</strong> requiere clave privada controlada por el
+firmante <strong>más</strong> identidad vinculable. <strong>DNSSEC y RPKI son no-repudio de
+<em>infraestructura</em></strong> — dicen quién originó un nombre o un prefijo, <strong>no quién
+mandó un correo</strong>.</p>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — Qué servicio consigue cada técnica</h2>
+<p><strong>Enunciado.</strong> Completar la matriz con ✓ / ✗.</p>
+<p><strong>Resolución:</strong></p>
+<div class="codehilite"><pre><span></span><code>   ┌────────────────┬───────────────────┬────────────────┬────────────────┐
+   │                │ Confidencialidad  │ Integridad     │ Autenticidad   │
+   ├────────────────┼───────────────────┼────────────────┼────────────────┤
+   │ Hash (SHA-256) │       ✗           │      ✓         │      ✗         │
+   │                │ NO oculta nada    │ detecta cambio │ cualquiera     │
+   │                │                   │                │ puede hashear   │
+   ├────────────────┼───────────────────┼────────────────┼────────────────┤
+   │ MAC (HMAC)     │       ✗           │      ✓         │      ✓         │
+   │                │                   │                │ con clave       │
+   ├────────────────┼───────────────────┼────────────────┼────────────────┤
+   │ Cifrado sim.   │       ✓           │      ✗         │      ✗         │
+   │ (AES-ECB)      │ (y nada más)      │                │ cualquiera con │
+   │                │                   │                │ la clave cifra  │
+   ├────────────────┼───────────────────┼────────────────┼────────────────┤
+   │ Cifrado sim.   │       ✓           │      ✓         │      ✓         │
+   │ en modo AEAD   │                   │                │ (con clave)     │
+   │ (AES-GCM)      │                   │                │                │
+   ├────────────────┼───────────────────┼────────────────┼────────────────┤
+   │ Cifrado asim.  │       ✓           │      ✗         │      ✓         │
+   │ (RSA)          │ (por partes)      │                │ solo el dueño  │
+   │                │                   │                │ de la priv     │
+   ├────────────────┼───────────────────┼────────────────┼────────────────┤
+   │ Firma digital  │       ✗           │      ✓         │      ✓         │
+   │ (RSA-PSS/Ed)   │ NO cifra el       │                │ con clave priv │
+   │                │ mensaje           │                │                │
+   ├────────────────┼───────────────────┼────────────────┼────────────────┤
+   │ + No repudio   │       ✗           │      ✓         │      ✓         │
+   │ (firma +       │                   │                │ Y se puede     │
+   │  identidad)    │                   │                │ PROBAR         │
+   ├────────────────┼───────────────────┼────────────────┼────────────────┤
+   │ TLS 1.3        │       ✓           │      ✓         │      ✓         │
+   │ (esquema       │                   │                │ + FS           │
+   │  híbrido)      │                   │                │                │
+   └────────────────┴───────────────────┴────────────────┴────────────────┘
+</code></pre></div>
+
+<p><strong>Las tres filas que se explican siempre:</strong></p>
+<ul>
+<li><strong>Hash</strong>: detecta <strong>que cambió</strong>, no <strong>quién</strong> cambió. Y no oculta nada.</li>
+<li><strong>Cifrado simétrico puro (ECB)</strong>: esconde el contenido, pero cualquiera con la
+  clave puede cifrar cualquier cosa y <strong>no se detecta la manipulación</strong>.</li>
+<li><strong>Firma digital</strong>: <strong>no cifra</strong>. El mensaje va en claro; lo que va es la firma.
+  Confundir esto es el error más común.</li>
+</ul>
+<h2>2.2 Ejercicio 2 — La cadena completa de verificación de un certificado</h2>
+<p><strong>Datos.</strong> El navegador abre <code>https://www.miuy.edu.uy</code>.</p>
+<p><strong>Resolución paso a paso:</strong></p>
+<div class="codehilite"><pre><span></span><code>   1. Obtener el certificado
+      El navegador hace el TLS handshake; el servidor le manda su
+      certificado de hoja (ya en claro, no cifrado).
+
+   2. Extraer la clave pública
+      Del certificado sale kp_srv = (n, e).   ← ESTE es el dato útil.
+
+   3. Validar la FIRMA del certificado
+      El certificado viene firmado por la intermedia.
+      Se verifica σ_int con kp_int:
+         σ_int^e_int  mod n_int   debe dar   H(certificado)
+      Si no coincide → el certificado fue alterado. ✗
+
+   4. Validar la CADENA
+      Extraer kp_int del certificado de la intermedia.
+      Ese certificado está firmado por la raíz.
+      Se verifica, y así sucesivamente hasta llegar a una raíz.
+
+   5. Validar el ANCLA
+      ¿La raíz está en el TRUST STORE del sistema?
+         (Windows: almacén de certificados. Mac: login keychain.
+          Firefox/Chrome: los suyos + los del SO.)
+      SÍ → la cadena es de fiar.   NO → ✗ no confío.
+
+   6. Validar la IDENTIDAD
+      Extraer el SAN del certificado de hoja.
+      ¿"www.miuy.edu.uy" está en el SAN?
+         SÍ → ✓.   NO → ✗ (aunque la cadena sea válida:
+                       el certificado es de otro sitio!)
+
+   7. Validar la VIGENCIA
+      ¿Estamos dentro del período de validez?
+      ¿La revocación no está activa?  (CRL u OCSP)
+
+   8. Solo ahora: usar la clave
+      Se cifra la clave de sesión con kp_srv  → se abre el canal.
+</code></pre></div>
+
+<blockquote>
+<p><strong>El paso 6 es el que más se olvida y el más importante conceptualmente:</strong>
+una cadena válida <strong>no garantiza identidad</strong>. Lo que garantiza es que <strong>alguien
+firmó</strong> ese certificado. Hay que comprobar <strong>que firmó del nombre correcto</strong>.
+Por eso un certificado de <code>evil.com</code> reemitido por una CA real es <strong>cadena
+válida con identidad incorrecta</strong>, y es lo que valida el SAN.</p>
+<p>Y el paso 8 es donde aparece la <strong>moderna</strong>: en TLS 1.3 <strong>no se cifra nada con
+RSA</strong>. Se usa la clave del certificado para <strong>firmar</strong> el <em>handshake</em> (autenticar
+al servidor), y la clave de sesión se acuerda con (EC)DHE.</p>
+</blockquote>
+<h2>2.3 Ejercicio 3 — Cifrado híbrido, números a la vista</h2>
+<p><strong>Datos.</strong> Un archivo de 3 MB. AES-256 a 2 GB/s. RSA-2048 cifra 245 bytes por
+operación, a <strong>300 operaciones/s</strong>.</p>
+<p><strong>Resolución — las dos cuentas:</strong></p>
+<div class="codehilite"><pre><span></span><code>   ── Con RSA solo ──
+   3 MB = 3 × 1024 × 1024 = 3 145 728 bytes
+   Bloques de 245 bytes  = 3 145 728 / 245 = 12 839 operaciones
+   Tiempo = 12 839 ops / 300 ops/s = 42,8 segundos
+
+   ★ 43 SEGUNDOS para cifrar 3 MB. Inusable.
+
+   ── Con AES solo ──
+   3 145 728 bytes / 2 × 10⁹ bytes/s = 0,0016 s = 1,6 milisegundos
+
+   ★ 26 000 veces más rápido.
+
+   ── Con el esquema híbrido ──
+   1. K = 256 bits aleatorios                            →  ~0
+   2. Cifrar el archivo con AES-GCM usando K  →  1,6 ms
+   3. KEM(kp_destinatario): encapsular K        →  ~2 ms (una operación RSA)
+   4. Total ≈ 3,6 ms   ← DOMINADO por la criptografía de clave pública,
+                          pero el dato pesado ya está cifrado.
+</code></pre></div>
+
+<p><strong>La moraleja, que es la que hay que escribir:</strong> <em>la clave pública cifra </em><em>una
+sola clave de sesión corta</em><em>; el simétrico cifra </em><em>los datos largos</em><em>. Por eso
+todo protocolo moderno es híbrido y por eso la clave pública tiene que ser
+</em><em>grande</em><em>.</em></p>
+<h2>2.4 Ejercicio 4 — Módulo RSA y cifrado/descifrado numérico</h2>
+<p><strong>Datos.</strong> <code>p = 61</code>, <code>q = 53</code>. <code>e = 17</code>. Mensaje <code>m = 65</code>.</p>
+<p><strong>Resolución paso a paso:</strong></p>
+<div class="codehilite"><pre><span></span><code>   1. n = p · q = 61 × 53 = 3233
+   2. φ(n) = (p−1)(q−1) = 60 × 52 = 3120
+   3. e = 17   ( gcd(17, 3120) = 1  ✔ )
+   4. d = e⁻¹ mod φ(n)
+
+      Buscamos d tal que   17 · d ≡ 1  (mod 3120)
+      Extendido euclidiano:
+
+         3120 = 183·17 +  9
+           17 =   1·9  +  8
+            9 =   1·8  +  1
+            8 =   8·1  +  0
+
+      De abajo hacia arriba:
+            1 = 9 − 8
+              = 9 − (17 − 9)
+              = 2·9 − 17
+              = 2·(3120 − 183·17) − 17
+              = 2·3120 − 367·17
+
+      ⇒  17⁻¹ mod 3120 = −367 ≡ 3120 − 367 = 2753
+      ⇒  d = 2753
+
+   VERIFICACIÓN:  17 × 2753 = 46 801
+                  46 801 / 3120 = 15,0 exacto   (15 × 3120 = 46 800, +1) ✔
+
+   5. Clave PÚBLICA  = (n, e) = (3233, 17)
+      Clave PRIVADA = (d)   =  2753
+</code></pre></div>
+
+<p><strong>Cifrado:</strong></p>
+<div class="codehilite"><pre><span></span><code>   c = m^e mod n = 65^17 mod 3233
+
+   65² mod 3233 = 4225 mod 3233 = 992
+   65⁴ mod 3233 = 992² = 984 064 mod 3233
+
+      984 064 / 3233 = 304, resto:
+      3233 × 304 = 982 832
+      984 064 − 982 832 = 1 232
+   ⇒  65⁴ ≡ 1232 (mod 3233)
+
+   65⁸ mod 3233 = 1232² = 1 517 824 mod 3233
+      3233 × 469 = 1 516 277
+      1 517 824 − 1 516 277 = 1 547
+   ⇒  65⁸ ≡ 1547 (mod 3233)
+
+   65¹⁶ mod 3233 = 1547² = 2 393 209 mod 3233
+      3233 × 740 = 2 392 420
+      2 393 209 − 2 392 420 =  789
+   ⇒  65¹⁶ ≡ 789 (mod 3233)
+
+   65¹⁷ = 65¹⁶ × 65 = 789 × 65 = 51 285 mod 3233
+      3233 × 15 = 48 495
+      51 285 − 48 495 = 2 790
+
+   c = 2790
+</code></pre></div>
+
+<p><strong>Descifrado:</strong></p>
+<div class="codehilite"><pre><span></span><code>   m = c^d mod n = 2790^2753 mod 3233
+
+   Por el teorema de Euler (e·d = 46 801 = 15·3120 + 1):
+        c^(e·d) ≡ c^(1 + 15·φ(n))  ≡ c · (c^φ(n))^15  ≡ c · 1
+
+   Es decir:  2790^46 801 ≡ 2790 (mod 3233)
+   Y como 46 801 = 2753 × 17 :
+        2790^2753 ≡ 65   (mod 3233)   ← ¡es el mensaje original!
+
+   m = 65  ✔
+</code></pre></div>
+
+<blockquote>
+<p><strong>⚠️ Errores típicos en este ejercicio:</strong>
+- Confundir <code>φ(n)</code> con <code>n</code>: RSA necesita <code>φ(n)</code>, no <code>n</code>.
+- Olvidar el <strong>extendido euclidiano</strong> y quedarse sin <code>d</code>. Se puede buscar por
+  fuerza bruta <code>d</code> desde 1 hasta <code>φ(n)</code>, pero eso es lentísimo.
+- Olvidar que <code>e</code> debe ser <strong>coprimo con φ(n)</strong>: si no lo es, <strong>no existe <code>d</code></strong>.
+- <strong>Ignorar el <em>padding</em>.</strong> Con <code>c = m^e</code> pelado, RSA es <strong>determinista</strong> y
+  vulnerable: si cifrás el mismo mensaje dos veces, sale el mismo <code>c</code>; y con
+ padding aleatorio (PKCS#1 v1.5 u OAEP) se evita.</p>
+</blockquote>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2010-02, Pregunta 4 (8 puntos) — firma digital</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc1002</code>, 16 de diciembre de 2010.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1002.pdf
+<strong>Texto del examen:</strong>
+<strong>a)</strong> Explique el concepto de Firma Digital y su uso en el caso de mensajes de
+correo electrónico.
+<strong>b)</strong> ¿MAC (Message Authentication Code) puede ser utilizado como técnica para
+firmar digitalmente? Justifique su respuesta.</p>
+</blockquote>
+<h3>Resolución — parte a) (5 puntos)</h3>
+<p><strong>La definición (1 punto).</strong> Una <strong>técnica criptográfica</strong> que busca lograr, en el
+mundo digital, objetivos <strong>similares</strong> a los de las firmas manuscritas
+tradicionales. Los cuatro: <strong>verificable</strong>, <strong>no falsificable</strong>, <strong>no repudiable</strong>,
+e <strong>integridad del mensaje</strong>.</p>
+<p><strong>El mecanismo, paso a paso (3 puntos) — esto es lo que hay que escribir:</strong></p>
+<p>La firma digital <strong>combina criptografía asimétrica con funciones de hash</strong>:</p>
+<ol>
+<li>Del mensaje a firmar <code>m</code> se obtiene un hash: <code>H(m)</code>.</li>
+<li>Ese hash <strong>se cifra con la clave privada del emisor</strong>: <code>σ = Kse(H(m))</code>.</li>
+<li>Se envía <strong>el mensaje <code>m</code> junto con la firma <code>σ</code></strong>. Y acá está la observación
+   clave que la solución oficial underline y que hay que repetir: <strong>no se
+  movementa servicio de confidencialidad</strong> — el mensaje va en claro.</li>
+<li>El receptor calcula <code>H(m)</code> por su cuenta, descifra la firma con la clave
+   <strong>pública</strong> del emisor, y <strong>compara</strong>.</li>
+</ol>
+<div class="codehilite"><pre><span></span><code>   EMISOR                              RECEPTOR
+   ──────                              ────────
+   m ──► H(m) ──► [Kse] ──► σ     ──►  σ ──► [Kpe] ──► H'(m)
+
+              ◄────  m  y  σ  ────►
+
+                              H'(m)  ==  H(m) ?   →  ✓ firma válida
+</code></pre></div>
+
+<p><strong>Para qué sirve en el correo (1 punto).</strong> En un correo hay <strong>cuatro</strong>
+participantes que generan problemas de confianza distintos:</p>
+<div class="codehilite"><pre><span></span><code>   ANA ──escribe──►  [MDA de ana]  ──SMTP──►  [MTA del servidor de Beto]
+                                                  │
+                                              Beto podría leer y modificar
+                                              el mensaje en el salto.
+                                              PÉRDIDA DE CONFIDENCIALIDAD.
+
+   Y ADEMÁS:
+   ANA dice "yo escribí esto"          → AUTENTICIDAD (firma)
+   El mensaje llegó entero              → INTEGRIDAD
+   ANA no puede decir después           → NO REPUDIO
+     "yo no lo escribí"
+</code></pre></div>
+
+<p><strong>Y la respuesta clave, que es la que da el punto:</strong> <em>la firma digital </em><em>no
+cifra</em><em> el correo: el mensaje viaja en claro. Lo que hace es probar </em><em>quién lo
+escribió</em><em> y que </em><em>no fue alterado</em><em>. Para confidencialidad hace falta </em><em>cifrado</em><em>
+(<code>PGP</code> o <code>S/MIME</code>), que es otra cosa.</em></p>
+<h3>Resolución — parte b) (3 puntos)</h3>
+<p><strong>La respuesta es NO</strong>, y la justificación tiene que dar los dos pasos del
+argumento:</p>
+<ol>
+<li><strong>El MAC se basa en criptografía simétrica.</strong> Para verificar, hace falta la
+   misma clave con la que se generó. Si Beto tiene que poder verificar la firma
+   de Ana, hay que darle <strong>la clave de Ana</strong>.</li>
+<li><strong>Si todos tienen la clave, todos pueden "firmar".</strong> En el momento en que le
+   das la clave a Beto para que pueda verificar, <strong>Beto puede usarla para firmar
+   mensajes haciéndose pasar por Ana</strong>. No hay forma de que la clave sirva para
+   verificar <em>y no</em> para firmar.</li>
+</ol>
+<p><strong>Y la extensión que suma puntos:</strong> la firma digital necesita que el receptor
+pueda <strong>verificar</strong> (con <code>kpe</code>, pública) pero <strong>solo el emisor pueda firmar</strong>
+(con <code>kse</code>, privada). <strong>Esa asimetría es imposible con claves simétricas.</strong> Con
+simetría, todo es simétrico: quien verifica, puede firmar.</p>
+<blockquote>
+<p><strong>Frase de cierre para sumar puntos:</strong> <em>"el MAC da integridad y autenticación,
+pero </em><em>no no-repudio</em><em>: con una clave compartida, el no-repudio es imposible,
+porque todos los que pueden verificar pueden también firmar."</em></p>
+</blockquote>
+<h2>3.2 Examen 2009-12, Pregunta 4 (6 puntos) — funciones de hash</h2>
+<blockquote>
+<p><strong>Texto del examen:</strong>
+<strong>a)</strong> Defina funciones de hash.
+<strong>b)</strong> Enumere las propiedades básicas de seguridad en la red, y especifique cuál
+o cuáles aporta la utilización de estas funciones.
+<strong>c)</strong> Mencione un ejemplo de función de hash comúnmente utilizada para
+intercambio de mensajes.</p>
+</blockquote>
+<h3>Resolución</h3>
+<p><strong>a) Definición (2 puntos).</strong> Una <strong>función de hash</strong> es una función matemática que
+<strong>transforma un mensaje de cualquier longitud</strong> en una cadena de <strong>longitud
+fija</strong>, llamada <strong>hash</strong> o <strong>resumen</strong> o <strong>huella</strong>, tal que:</p>
+<ul>
+<li>es <strong>fácil de calcular</strong>;</li>
+<li>es <strong>prácticamente imposible</strong> recuperar el mensaje original a partir del hash
+  (<strong>unidireccional</strong>);</li>
+<li>es <strong>prácticamente imposible</strong> encontrar dos mensajes distintos con el mismo
+  hash (<strong>resistente a colisiones</strong>);</li>
+<li><strong>cualquier modificación, por mínima que sea, del mensaje produce un hash
+  completamente diferente</strong> (<strong>efecto avalancha</strong>).</li>
+</ul>
+<p><strong>b) Propiedades de seguridad (3 puntos) — esta es la parte que más puntos da:</strong></p>
+<p>Las cuatro propiedades de seguridad (<strong>confidencialidad</strong>, <strong>integridad</strong>,
+<strong>autenticidad</strong>, <strong>no repudio</strong>) y el aporte del hash:</p>
+<table>
+<thead>
+<tr>
+<th>Propiedad</th>
+<th>¿El hash la aporta?</th>
+<th>Razón</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Confidencialidad</strong></td>
+<td><strong>NO</strong></td>
+<td>El hash <strong>no oculta nada</strong>: es público, unidireccional y sin clave. Se obtiene el hash <strong>exactamente igual</strong> que el mensaje: solo sealary.</td>
+</tr>
+<tr>
+<td><strong>Integridad</strong></td>
+<td><strong>SÍ</strong></td>
+<td>Si el mensaje se altera, el hash cambia. Quien recibe puede <strong>recalcular</strong> el hash y <strong>comparar</strong>. Es el aporte central.</td>
+</tr>
+<tr>
+<td><strong>Autenticidad</strong></td>
+<td><strong>NO</strong> (por sí solo)</td>
+<td><strong>Cualquiera</strong> puede calcular el hash de cualquier mensaje. No requiere clave ni identidad.</td>
+</tr>
+<tr>
+<td><strong>No repudio</strong></td>
+<td><strong>NO</strong></td>
+<td>Misma razón: cualquiera puede "firmar" (= hashear) cualquier mensaje. No hay no-repudio.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>La conclusión, que es lo que la cátedra quiere que entiendas:</strong> <em>el hash, por
+sí solo, aporta </em><em>únicamente integridad</em><em>. No aporta confidencialidad porque no
+cifra; no aporta autenticidad ni no repudio porque </em><em>no tiene clave</em><em>: cualquiera
+puede calcularlo. Para conseguir los otros tres hay que combinarlo con cifrado
+simétrico (autenticidad) o con cifrado asimétrico (autenticidad y no repudio).</em></p>
+</blockquote>
+<p><strong>c) Ejemplo (1 punto).</strong> <strong>SHA-256</strong>, actualmente el estándar de facto
+(RFC 6234), y <strong>SHA-3</strong> (Keccak, FIPS 202). Anteriormente se usaban <strong>MD5</strong> y
+<strong>SHA-1</strong>, <strong>ambos rotos</strong>: MD5 por colisiones desde 2004 (y el <em>rogue CA</em> en
+2008), SHA-1 por <strong>SHAttered</strong> en 2017. <strong>Nunca usarlos.</strong></p>
+<h3>Lo que la solución oficial no dice y suma</h3>
+<p><strong>El detalle del <em>fingerprint</em> en la práctica.</strong> Cuando hacés <code>sha256sum
+archivo</code>, lo que obtenés <strong>no es</strong> el hash del archivo entero: es el hash del
+<strong>hash</strong> (concatenado) de los archivos binarios que lo componen, más un sufijo con
+el <strong>nombre y la longitud</strong>. En Wireshark o en un certificado, el <strong>fingerprint</strong>
+del certificado es justamente <code>SHA-1</code> o <code>SHA-256</code> del DER codificado. Es un uso
+directo de la propiedad de <em>integridad</em>: si el fingerprint que vos anotaste a mano
+coincide con el que muestra el sistema, <strong>nadie te cambió el certificado en
+tránsito</strong>.</p>
+<h2>3.3 Examen 2009-02, Pregunta 1 (9 puntos) — TLS</h2>
+<blockquote>
+<p><strong>Texto del examen:</strong>
+<strong>a)</strong> Mencione el protocolo descrito durante el curso que puede cumplir con dicho
+objetivo [proteger a nivel de transporte una comunicación http, identificado como
+https].
+<strong>b)</strong> Indique <strong>qué clave</strong> contiene el certificado que el servidor le envía al
+cliente, y explique <strong>para qué se utiliza</strong> dicha clave.
+<strong>c)</strong> ¿<strong>Qué clave/s</strong> se utiliza/n para <strong>proteger los datos</strong> que viajan en el
+sentido <strong>servidor → cliente</strong>?
+<strong>d)</strong> Mencione otros componentes del certificado, y qué <strong>elemento adicional</strong> se
+necesita en el cliente para <strong>asegurar la identidad del servidor</strong>.</p>
+</blockquote>
+<h3>Resolución — la pregunta que hay que leer muy bien</h3>
+<blockquote>
+<p><strong>⚠️ Leelo dos veces antes de responder.</strong> La (c) es la pregunta <strong>tramposa</strong> del
+examen: dice <strong>"proteger los datos que viajan"</strong>, no "proteger los datos". Y la
+diferencia entre esas dos frases es <strong>toda la diferencia entre el examen de 2010
+y el de 2026</strong>.</p>
+</blockquote>
+<h4>a) El protocolo (1 punto)</h4>
+<p><strong>TLS</strong> (<em>Transport Layer Security</em>), y su antecesor <strong>SSL</strong>. Se ubica <strong>entre la
+capa de aplicación y la capa de transporte</strong> (es decir, <strong>capa 5-6</strong> de TCP/IP):
+recibe los datos de HTTP, los cifra, y los pasa a TCP como si fueran datos normales.</p>
+<div class="codehilite"><pre><span></span><code>   ┌──────────────┐
+   │   HTTP       │  ← texto en claro (la aplicación)
+   ├──────────────┤
+   │   TLS        │  ← CIFRADO + integridad + autenticación
+   ├──────────────┤
+   │   TCP        │
+   ├──────────────┤
+   │   IP         │
+   └──────────────┘
+</code></pre></div>
+
+<h4>b) Qué clave contiene el certificado (3 puntos)</h4>
+<p><strong>Contiene la clave PÚBLICA del servidor</strong>, y sirve para que el cliente <strong>pueda
+verificar que la clave privada que va a usar es realmente del servidor</strong>.</p>
+<p>Y para explicar "para qué se utiliza", hay que decir <strong>las dos cosas</strong>:</p>
+<ol>
+<li><strong>Autenticar al servidor</strong> ante el cliente: solo el servidor tiene la clave
+   privada que corresponde a esa <code>kp</code>. Si el servidor puede firmar con la privada,
+   es porque es el dueño de la pública del certificado. <strong>Eso descarta el
+   man-in-the-middle</strong>, que es el propósito de TLS en el navegador.</li>
+</ol>
+<blockquote>
+<p><strong>El ataque que esto evita:</strong> sin verificación de identidad, un atacante en
+el medio (café, wifi del aeropuerto, ISP) puede responder como si fuera el
+banco, y vos le mandás tu contraseña <strong>a él</strong>. TLS lo que hace es <strong>obligar
+al atacante a tener la clave privada</strong>, que no tiene.</p>
+</blockquote>
+<ol start="2">
+<li><strong>En las versiones antiguas, cifrar el <em>pre-master secret</em>.</strong> En TLS 1.2 y
+   anteriores, el cliente generaba el <em>pre-master secret</em> y lo cifraba con la
+   <code>kp</code> del servidor: así <strong>solo el servidor</strong> podía descifrarlo. <strong>Eso es lo que
+   ya no se hace en TLS 1.3</strong> (ver §Actualización).</li>
+</ol>
+<h4>c) Qué clave protege los DATOS (2 puntos)</h4>
+<p><strong>Acá está la clave del examen.</strong> La clave que <strong>realmente cifra los datos de
+aplicación</strong> (los paquetes HTTP) es una <strong>clave de sesión simétrica</strong>, y en TLS
+1.3 es siempre <strong>(EC)DH key agreement</strong> — es decir, <strong>una clave compartida
+negociada, nunca enviada</strong>.</p>
+<div class="codehilite"><pre><span></span><code>   La cadena completa, en TLS 1.3:
+
+   1. El servidor manda su CERTIFICADO con kp_srv.
+   2. El servidor manda su clave pública de (EC)DHE (key share).
+   3. El cliente manda su propia clave pública de (EC)DHE.
+   4. Ambos calculan el SECRETO COMPARTIDO = f(kp_srv_priv, kp_cli_pub)
+      = f(kp_cli_priv, kp_srv_pub)          ← es el MISMO, por matemática
+   5. DerivAN la clave de sesión con un KDF (HKDF).
+   6. La clave de sesión cifra TODOS los datos HTTP, en los DOS sentidos.
+
+   ★ La clave del certificado NO cifra los datos. Solo autentica al servidor.
+   ★ La clave de sesión NO se envía nunca. Se acuerda, no se transmite.
+</code></pre></div>
+
+<blockquote>
+<p><strong>La respuesta completa para el (c):</strong> <em>la clave que protege los datos es la
+</em><em>clave de sesión simétrica</em><em> (derivada del secreto compartido de (EC)DH). La
+clave pública del certificado </em><em>no cifra los datos</em><em>: se usa para </em><em>autenticar
+al servidor</em><em> (o, en TLS ≤1.2, para cifrar el </em>pre-master secret<em>). En ambos
+sentidos de la comunicación se usa </em><em>la misma clave de sesión</em><em>, pero </em><em>en
+general </em><em>claves distintas</em><em> para cada dirección</em><em> (derived keys del HKDF), de
+modo que el tráfico de ida no se puede "desenmascarar" inyectando tráfico de
+vuelta.</em></p>
+</blockquote>
+<h4>d) Otros componentes del certificado (3 puntos)</h4>
+<p><strong>Los componentes que hay que enumerar:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Componente</th>
+<th>Qué es</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Versión</strong> y <strong>Número de serie</strong></td>
+<td>único por autoridad</td>
+</tr>
+<tr>
+<td><strong>Algoritmo de firma</strong></td>
+<td>con qué se firmó (SHA-256 con RSA, p. ej.)</td>
+</tr>
+<tr>
+<td><strong>Emisor</strong> (<em>issuer</em>)</td>
+<td>quién firmó</td>
+</tr>
+<tr>
+<td><strong>Período de validez</strong></td>
+<td><em>not before</em> / <em>not after</em></td>
+</tr>
+<tr>
+<td><strong>Sujeto</strong> (<em>subject</em>)</td>
+<td>CN, O, OU, C, L…</td>
+</tr>
+<tr>
+<td><strong>Clave pública del sujeto</strong></td>
+<td>← la del punto (b)</td>
+</tr>
+<tr>
+<td><strong>Huella digital</strong> (<em>fingerprint</em>)</td>
+<td>hash del certificado</td>
+</tr>
+<tr>
+<td><strong>Extensiones</strong></td>
+<td><strong>SAN</strong>, key usage, basic constraints, CRL distribution points</td>
+</tr>
+</tbody>
+</table>
+<p><strong>El elemento adicional que se necesita en el cliente (esto es lo que el
+examen pide y es la mitad del punto):</strong></p>
+<blockquote>
+<p><strong>El almacén de certificados de confianza (el <em>trust store</em>), que contiene las
+claves públicas de las autoridades certificadoras raíz en las que el cliente
+confía.</strong></p>
+</blockquote>
+<p>Sin ese almacén, el cliente <strong>no tiene contra quién comparar</strong> la firma del
+certificado: no puede verificar que quien firmó es una CA real. <strong>Todo el modelo
+descansa en ese supuesto.</strong></p>
+<p><strong>La cadena completa, entonces:</strong> el certificado dice <em>"esta clave pública es de
+<code>www.miuy.edu.uy</code>"</em>. El trust store dice <em>"esta CA es real"</em>. Y la cadena de
+certificados <strong>intermedios</strong> une los dos extremos. Si falta cualquiera de los
+dos —o si no se valida el <strong>SAN</strong>— la conexión falla.</p>
+<blockquote>
+<p><strong>⚠️ Nota importante sobre el (c) para 2026.</strong> Si te examined en 2011, la
+respuesta esperada era "<strong>RSA</strong>" en el caso de TLS 1.2, porque la clave pública
+del certificado <strong>cifraba el pre-master secret</strong>. En TLS 1.3 eso <strong>ya no existe</strong>:
+<strong>el transporte de clave con RSA fue eliminado</strong> y todo pasa por (EC)DHE. Lo
+que <strong>no cambia</strong> es la idea: <strong>la clave del certificado autentica, la clave de
+sesión cifra</strong>. Si el examen te pide el nombre del algoritmo y estás en 2026,
+contestá <strong>"(EC)DH (Diffie-Hellman) con X25519"</strong> y aclará <strong>"en TLS 1.2 era
+RSA"</strong>.</p>
+</blockquote>
+<h2>3.4 Examen 2008-12, Pregunta 2 (6 puntos) — hub vs. switch y seguridad</h2>
+<p><strong>Resolución.</strong> El enunciado compara <strong>hub</strong> y <strong>switch</strong> en cuanto a rendimiento
+y <strong>seguridad</strong>. La parte de seguridad es la que se pregunta y tiene tres
+respuestas concretas:</p>
+<ol>
+<li>
+<p><strong>El switch es un dispositivo de filtrado.</strong> Recibe la trama completa en un
+   puerto, mira la <strong>MAC de destino</strong>, y la manda <strong>solo</strong> por el puerto
+   correspondiente. El hub, en cambio, la reenvía a <strong>todos los puertos</strong>.</p>
+</li>
+<li>
+<p><strong>Aislamiento de dominios de colisión y de tramas.</strong> Cada puerto del switch es
+   un <strong>dominio de colisión separado</strong>, y solo el dominio del destino recibe la
+   trama. El hub es <strong>un solo</strong> dominio de colisión.</p>
+</li>
+<li>
+<p><strong>Sniffing.</strong> Con el hub, cualquiera que enchufe un <strong>sniffer</strong> en cualquier
+   puerto ve <strong>todo</strong> el tráfico. Con el switch, el sniffer solo ve el tráfico
+   dirigido a su MAC (salvo <strong>ataques de inundación de MAC</strong>, que llenan la tabla
+   de ARP/CAM y fuerzan al switch a retransmitir como un hub — que es
+   precisamente por lo que existe <strong>port security</strong>).</p>
+</li>
+</ol>
+<p><strong>Y el remate que hay que decir porque es lo que se pregunta en la cátedra:</strong> <em>el
+problema real no es que el hub no filtre: es que un switch </em><em>no es una frontera de
+seguridad</em><em>. Los tres modos de un switch —</em><em>store-and-forward</em><em>, </em><em>cut-through</em><em>,
+</em><em>fragment-free</em><em>— son decisiones de </em><em>performance</em><em>, no de seguridad. La
+"seguridad" de un switch es </em><em>cero</em><em>; todo lo que hace es </em><em>optimizar el envío de
+tramas</em><em>. Quien decide seguridad es el </em><em>firewall</em><em>, o el </em><em>VLAN</em><em> + </em><em>ACL</em><em>, no
+el switch.</em></p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen en 10 líneas</h2>
+<ol>
+<li><strong>Confidencialidad</strong> = ¿puede leerlo? · <strong>Integridad</strong> = ¿puede cambiarlo? ·
+   <strong>Autenticidad</strong> = ¿es de verdad? · <strong>No repudio</strong> = ¿podés probarlo?</li>
+<li>Son <strong>servicios independientes</strong>: confidencialidad <strong>no</strong> implica integridad.</li>
+<li><strong>Hash</strong> (SHA-256): determinista, unidireccional, sin colisiones, avalancha.
+   <strong>Aporta integridad y nada más</strong> — ni confidencialidad, ni autenticidad, ni no
+   repudio, porque <strong>no lleva clave</strong>.</li>
+<li><strong>MAC</strong> (HMAC): clave simétrica. Aporta integridad + autenticación, pero <strong>no
+   confidencialidad</strong> (no cifra) <strong>ni no repudio</strong> (todos pueden firmar).</li>
+<li><strong>Firma digital</strong>: hash + clave privada. Aporta integridad + autenticidad +
+   <strong>no repudio</strong>, y <strong>no aporta confidencialidad</strong> (no cifra el mensaje).</li>
+<li><strong>RSA</strong>: <code>n = p·q</code>, <code>φ(n) = (p−1)(q−1)</code>, <code>e·d ≡ 1 mod φ(n)</code>. Lento, bloques
+   de 245 bytes con clave de 2048 bits, y <strong><code>PKCS#1 v1.5</code> frágil</strong>: hoy solo
+   <strong>RSA-PSS</strong>.</li>
+<li><strong>ECC</strong>: misma seguridad con claves 12× más cortas. <strong>ECDSA</strong> firma,
+   <strong>(EC)DH</strong> acuerda, <strong>Ed25519</strong> firma y es el default de SSH.</li>
+<li><strong>Esquema híbrido</strong>: clave de sesión aleatoria + AES-GCM para los datos,
+   KEM para la clave. Por eso todo protocolo moderno cifra datos con simétrico.</li>
+<li><strong>PKI</strong>: la clave del certificado <strong>autentica</strong>, la clave de sesión <strong>cifra</strong>,
+   y el <strong>SAN</strong> (no el CN) es lo que valida la identidad. Todo descansa en el
+   <strong>trust store</strong>.</li>
+<li><strong>2026</strong>: RSA key transport eliminado en TLS 1.3; ML-KEM híbrido post-cuántico;
+    SHA-1 <strong>formalmente retracted</strong>; y lo más importante: <strong>cada ámbito tiene su
+    ancla de confianza</strong> (PKI, DNSSEC, RPKI, 802.1X, PGP).</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> ¿Por qué no se puede usar un hash como firma digital? Y ¿por qué no se
+puede usar un MAC?</p>
+<details><summary>Respuesta</summary>
+
+**El hash** no tiene clave. `H(m)` es calculable por **cualquiera**, sin secreto.
+Si "firmar" fuera `H(m)`, el atacante también calcularía `H(m)` y lo pegaría al
+mensaje. **No habría diferencia entre el mensaje firmado por vos y el firmado por
+cualquiera.** No hay nada que pruebe quién lo hizo.
+
+**El MAC** (HMAC) usa clave **simétrica**. Para verificar, el receptor necesita la
+**misma clave**. Y para que el receptor pueda verificar, hay que darle la clave.
+En el momento en que Beto tiene la clave compartida con Ana, **Beto puede
+generar MACs** que Ana hayas generado. **Verificar y firmar son la misma
+operación.** No hay no-repudio.
+
+**La firma digital** resuelve las dos cosas: la clave **privada** firma (solo vos
+podés), la clave **pública** verifica (todos pueden, sin secreto). Eso es una
+**asimetría que la simetría no puede expresar**.
+
+</details>
+
+<p><strong>2.</strong> ¿Por qué se firma el hash y no el mensaje?</p>
+<details><summary>Respuesta</summary>
+
+Por **razones de eficiencia y de seguridad**:
+
+1. **Eficiencia.** La operación de firma (exponenciación modular RSA) tarda
+   milisegundos. Hashear un archivo de 1 GB tarda microsegundos. Firmando solo el
+   hash (32 bytes) el costo es **independiente del tamaño del mensaje**.
+2. **Longitud fija de la firma.** La firma tiene siempre el mismo tamaño (128 o
+   256 bytes), mires lo que mires. Si el mensaje fuera enorme, la firma también.
+3. **No filtra el tamaño del secreto.** Con *padding* determinista, cifrar
+   directamente revela el tamaño del mensaje a través del tamaño del texto
+   cifrado. Con un hash de longitud fija, no se puede saber.
+
+Y además una razón conceptual: **el hash aporta la integridad** con una sola
+comparación de 32 bytes, mientras que la firma aporta la **autenticidad**. Cada
+uno hace lo suyo, y componiéndolos se consigue todo.
+
+</details>
+
+<p><strong>3.</strong> En TLS 1.3, ¿qué clave protege los datos de aplicación? ¿Y para qué sirve
+la clave del certificado?</p>
+<details><summary>Respuesta</summary>
+
+**La clave de sesión simétrica**, acordada por **(EC)DH** (X25519 en la práctica),
+es la que cifra los datos de aplicación. Se deriva del **secreto compartido** con
+un **KDF (HKDF)** y **nunca se transmite**: los dos la calculan.
+
+**La clave pública del certificado se usa solo para autenticar al servidor**: el
+servidor firma con su clave privada y el cliente verifica con la `kp` del
+certificado. Solo el dueño de la privada puede hacer eso, así que se descarta el
+man-in-the-middle.
+
+**En TLS 1.2 y anteriores** el uso era doble: además de autenticar, la `kp`
+cifraba el *pre-master secret*. En **TLS 1.3 el transporte de clave con RSA fue
+eliminado**: ya no se usa RSA para nada criptográfico, solo para la firma del
+handshake (y el certificado de firma), y todo el secreto se negocia con (EC)DH.
+
+Una precisión que suma: en general hay **claves de sesión distintas para cada
+dirección** (el HKDF deriva varias claves), así que el tráfico de ida no se puede
+usar para "desenmascarar" el de vuelta.
+
+</details>
+
+<p><strong>4.</strong> Calculá <code>d</code> para <code>p = 61</code>, <code>q = 53</code>, <code>e = 17</code>, y cifrá <code>m = 65</code>.</p>
+<details><summary>Respuesta</summary>
+
+
+<div class="codehilite"><pre><span></span><code>   n     = 61 × 53                = 3233
+   φ(n)  = (61−1)(53−1)          = 3120
+   e     = 17   (gcd(17, 3120) = 1 ✔)
+   d     = e⁻¹ mod φ(n) = 2753
+           (porque 17 × 2753 = 46 801 = 15 × 3120 + 1)
+
+   Clave pública  (3233, 17)
+   Clave privada  2753
+
+   Cifrado:   c = 65^17 mod 3233 = 2790
+   Descifrado: m = 2790^2753 mod 3233 = 65 ✔
+</code></pre></div>
+
+
+
+El "truco" para verificar el descifrado es el teorema de Euler: como
+`e·d = 46 801 = 1 + 15·φ(n)`, entonces `c^(e·d) = c^(1 + 15φ(n)) ≡ c` (mod n), y
+por tanto `c^d ≡ m`.
+
+**Y el recordatorio importante:** con `m = 65` pelado, esto **NO es seguro**. Falta
+el **padding**. En serio se usa `OAEP` o `PSS`.
+
+</details>
+
+<p><strong>5.</strong> ¿Por qué el SAN reemplazó al CN en los certificados?</p>
+<details><summary>Respuesta</summary>
+
+Porque el **CN** (*Common Name*) se usaba para el **nombre del sitio**, y tenía
+dos problemas que lo hicieron inservible:
+
+1. **Ambigüedad.** El CN también podía contener el nombre de una **persona** (en
+   certificados de correo, el CN era la dirección del titular). Entonces no se
+   sabía si `"Beto Perez"` era una persona o un servidor.
+2. **Restriction de SAN.** Los navegadores modernos (Chrome desde 2017, Firefox
+   desde 2017) **rechazan** los certificados que **solo** tienen CN: exigen que
+   el nombre esté en el campo **SAN** (*Subject Alternative Name*).
+
+El **SAN** es un campo **extensible** que puede contener: **nombres DNS**
+(`www.miuy.edu.uy`), **direcciones IP**, y otros identificadores (`email`,
+`URI`). Y como es una lista, un mismo certificado puede valer para
+`www.miuy.edu.uy`, `api.miuy.edu.uy` y `miuy.edu.uy` — lo que reduce muchísimo el
+número de certificados que hay que emitir.
+
+Regla práctica: **el SAN manda**. El CN se conserva por compatibilidad, pero no
+se usa para validar identidad.
+
+</details>
+
+<p><strong>6.</strong> ¿Qué pasa si el <em>trust store</em> de tu máquina tiene una raíz falsa?</p>
+<details><summary>Respuesta</summary>
+
+**Todo el modelo de PKI se cae.** Y no hay ningún mecanismo que lo detecte por
+arriba, porque el *trust store* **es la base** de todo.
+
+El atacante que mete una raíz falsa en tu sistema puede:
+1. Firmar **cualquier** certificado con esa raíz.
+2. Tu navegador valida la cadena completa: hoja → intermedia → **raíz falsa** → y
+   **la tiene en el almacén**, así que acepta.
+3. El atacante puede hacer un **MITM** de cualquier sitio, sin que el navegador
+   muestre nada.
+
+Y esto **ya pasó**:
+- **2010/2011 — DigiNotar**: una autoridad de certificates noruegaRpudoSigner
+  الشهادات de Google, Mozilla, Skype y PayPal. Cuando se descubrió, **todos los
+  navegadores** sacaron la raíz de DigiNotar de su almacén. Fue **el fin de la
+  confianza en PKI** para algunas personas.
+- **2008 — rogue CA**: MDM MediaDriven Associates emitió un certificado con **la
+  misma huella que otro**, aprovechando que MD5 ya era vulnerable. Lo detectó
+  **Google Chrome**, no un CA.
+
+**Por qué esto importa en la clase:** la integridad/autenticación **nunca es
+absoluta**, siempre es *relativa a un ancla*. Y por eso existen **DNSSEC** (ancla
+en la raíz DNS) y **RPKI** (ancla en la jerarquía de IPv4/IPv6): son otros
+ámbitos, con otros anclas, para **no depender todos de la misma PKI**.
+
+Y en la práctica moderna, la defensa complementaria es **Certificate
+Transparency** (CT logs, `RFC 6962`): todo certificado emitido queda **publicado**
+en logs append-only, así que un certificado falso **queda registrado** y se puede
+auditar aunque la raíz esté comprometida.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>sirc1002</code></strong> — Pregunta 4 completa (8 pts: firma digital y por qué MAC no firma)</li>
+<li><strong>Examen <code>sirc0912</code></strong> — Pregunta 4 (6 pts: funciones de hash y propiedades de seguridad)</li>
+<li><strong>Examen <code>sirc0902</code></strong> — Pregunta 1 (9 pts: TLS, la clave del certificado y la clave de sesión)</li>
+<li><strong>Examen <code>sirc0812</code></strong> — Pregunta 2 (hub vs. switch: rendimiento y seguridad)</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 8 (seguridad)</li>
+<li><strong><code>RFC 2104</code></strong> — HMAC · <strong><code>RFC 8017</code></strong> — PKCS #1 v2.2 (RSA) · <strong><code>RFC 8017</code> §8</strong> — RSA-PSS · <strong><code>RFC 5756</code></strong> — política de validación X.509 · <strong><code>RFC 5280</code></strong> — PKI X.509 · <strong><code>RFC 6962</code></strong> — Certificate Transparency · <strong><code>RFC 8446</code></strong> — TLS 1.3 · <strong><code>RFC 9155</code></strong> — deprecación de MD5 y SHA-1 · <strong><code>RFC 8709</code></strong> — Ed25519 en SSH · <strong><code>RFC 9421</code></strong> — HTTP Message Signatures · <strong><code>RFC 9580</code></strong> — OpenPGP · <strong><code>RFC 10024</code></strong> — ML-KEM híbrido</li>
+<li><strong><code>ACTUALIZACIONES.md</code> §13</strong> — el cuadro de anclas de confianza por ámbito</li>
+<li><strong>Clase siguiente:</strong> 48 — Seguridad aplicada (TLS, PGP, VPN, IDS/IPS, DPI) + IP Móvil + Simulacro final</li>
+</ul></body></html>

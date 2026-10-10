@@ -1,0 +1,1776 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 5 — El retardo en las redes de paquetes</h1>
+<p><strong>Bloque:</strong> A (Fundamentos) · <strong>Semana:</strong> 2 · <strong>Duración estimada:</strong> 110 min
+<strong>Correlativa:</strong> Clase 4 (conmutación: circuitos, paquetes y mensajes) · <strong>Sigue con:</strong> Clase 6 (taller de retardos, todo resuelto)
+<strong>Material de referencia:</strong> Tanenbaum cap. 1 §1.5 y §1.2 (pág. ~10 a ~30 del PDF de tu carpeta) · RFC 9293, RFC 5681, RFC 5437, RFC 9000</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li><strong>Escribir</strong> el retardo total como <strong>suma de cuatro componentes</strong>, con la fórmula, la unidad y de qué depende cada uno.</li>
+<li><strong>Distinguir</strong> <code>d_transmisión = L/R</code> de <code>d_propagación = d/s</code>, y explicar por qué el primero <strong>no depende del medio</strong> y el segundo <strong>no depende del paquete</strong>.</li>
+<li><strong>Decir</strong> cuál es el <strong>único componente variable</strong> y <strong>el único que refleja la congestión</strong>, y explicar la cadena congestión → retardo de cola → retardo total.</li>
+<li><strong>Calcular</strong> el retardo de un paquete en un enlace y en un camino de varios enlaces, con la aritmética escrita paso a paso.</li>
+<li><strong>Calcular</strong> el <em>bandwidth-delay product</em> (<code>BDP = R · RTT</code>) y explicar por qué una conexión de larga distancia necesita una ventana grande.</li>
+<li><strong>Distinguir</strong> latencia de RTT, y <strong>calcular</strong> el jitter de un flujo.</li>
+<li><strong>Definir</strong> congestión, pérdida y retardo, y explicar el vínculo entre las tres, como lo pide el Examen 2011-03.</li>
+<li><strong>Resolver entero</strong> el Examen <code>2009-12 P1</code> (10 pts) con la solución oficial a la vista.</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2009-12 P1</code> (10 pts — componentes del retardo, ancho de banda vs. velocidad de propagación, congestión), <code>2011-03 P2</code> (6 pts — congestión, pérdidas y retardo), <code>2011-03 P5</code> (10 pts — retardo end-to-end → <strong>Clase 6</strong>), <code>2010-02 P5</code> (jitter vs. retardo), <code>2009-03 P5</code> (full/half duplex).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 El retardo total: la ecuación</h2>
+<p>Todo lo que aprendiste hasta ahora se resume en <strong>una sola suma</strong>. Cuando un paquete viaja de A a B atravesando <code>n</code> enlaces y <code>k</code> routers:</p>
+<div class="codehilite"><pre><span></span><code>  ╔═══════════════════════════════════════════════════════════════╗
+  ║                                                               ║
+  ║   d_end2end  =   Σ  ( d_proc(i)  +  d_cola(i)  +              ║
+  ║                    d_transmisión(i)  +  d_propagación(i) )     ║
+  ║                                                               ║
+  ║                i = 1 ... n                                      ║
+  ║                                                               ║
+  ╚═══════════════════════════════════════════════════════════════╝
+</code></pre></div>
+
+<p>Y <strong>el detalle que se pregunta siempre</strong>: hay <strong><code>n</code> términos de propagación y <code>n</code> de transmisión</strong> (uno por enlace), pero hay <strong><code>k</code> términos de procesamiento</strong> (uno por router, y un router <strong>no es</strong> un enlace).</p>
+<div class="codehilite"><pre><span></span><code>  n enlaces ────▶  n · d_transmisión  +  n · d_propagación
+  k routers  ────▶  k · d_proc         +  k · d_cola
+  (con k = n − 1 en una línea sin ramales)
+
+  ⚠️ EL ERROR TÍPICO ES PONER n · d_proc EN VEZ DE k · d_proc.
+     El Examen 2011-03 P5 lo pide explícitamente y es la
+     pregunta más repetida del curso.
+</code></pre></div>
+
+<p><strong>El diagrama de un solo router, que es donde se ve cada componente:</strong></p>
+<div class="codehilite"><pre><span></span><code>        Host A                                                    Host B
+     ┌────────┐                                                   ┌────────┐
+     │  App   │                                                   │  App   │
+     └────┬───┘                                                   └───┬────┘
+          │  PDU de capa 4/3 (L bits)                                 │
+          ▼                                                          ▲
+     ┌────────┐                                                       │
+     │ENLACE  │  ╔══════════════════════════════════════════════════╗  │
+     │ENTRADA │  ║  1. d_transmisión = L / R_entrada                ║  │ENLACE│
+     │  NIC   │──║     "meter los bits uno a uno en el cable"       ║──║SALIDA│
+     └────────┘  ╚══════════════════════════════════════════════════╝  │ NIC  │
+                  ║  2. d_cola = (posición en la cola) · L/R_salida ║  └────────┘
+                  ║     "esperar turno"                             ║
+                  ║  3. d_proc = L/BB_fabric + L/R_procesador        ║
+                  ║     "chequear CRC, leer la cabecera, buscar      ║
+                  ║      en la tabla de reenvío, decrementar TTL"     ║
+                  ╚══════════════════════════════════════════════════╝
+                                    │
+                                    ▼
+                  ╔══════════════════════════════════════════════════╗
+                  ║  4. d_propagación = d / s                        ║
+                  ║     "la señal viaja por el medio hasta el         ║
+                  ║      siguiente nodo. NO depende de L ni de R."   ║
+                  ╚══════════════════════════════════════════════════╝
+</code></pre></div>
+
+<hr />
+<h2>1.2 Los cuatro componentes, uno por uno</h2>
+<h2>1.2.1 Retardo de procesamiento (<code>d_proc</code>)</h2>
+<p><strong>Qué es.</strong> El tiempo que tarda el nodo en <strong>hacer el procesamiento</strong> del paquete entre que llega por una interfaz y sale por otra: leer la cabecera, verificar el CRC, decrementar el TTL, recalcular el checksum, consultar la tabla de reenvío (<em>longest prefix match</em>), y en un switch, aprender la dirección MAC origen.</p>
+<p><strong>Fórmula (en un router real).</strong> Un modelo desagregado en hardware separa el ancho de banda del <strong>fabric</strong>:</p>
+<div class="codehilite"><pre><span></span><code>  d_proc = d_cola_ingreso  +  L / B_fabric  +  d_bus  +  L / R_procesador
+             └ en la interfaz ┘   └ el "backplane" ┘  └ el bus de la CPU┘
+
+  Con un fabric de 40 Gbps, un bus de memoria de 33 MHz y un procesador
+  de 1 GHz:
+
+     L = 1500 bits
+     L / B_fabric      = 1500 / 40·10⁹ = 37,5 ns
+     L / R_procesador  = 1500 / 10⁹    = 1 500 ns = 1,5 µs
+     bus + otros                  ≈       100 ns
+
+     d_proc ≈ 1,64 µs
+</code></pre></div>
+
+<p><strong>Interpretación — y por qué se lo considera despreciable.</strong></p>
+<div class="codehilite"><pre><span></span><code>  Comparación en un enlace de 1 Gbps con un paquete de 1500 bytes
+  y 500 km de fibra:
+
+     d_transmisión = 1500 bits / 10⁹ = 1,5 µs
+     d_propagación = 500 000 m / 2·10⁸ = 2,5 ms = 2 500 µs
+     d_proc                                ≈ 1,6 µs
+     ───────────────────────────────────────────────────────────
+     PESO RELATIVO:
+        d_proc        =  1,6 µs  →   0,06 %  del total
+        d_transmisión =  1,5 µs  →   0,06 %  del total
+        d_propagación =  2 500 µs →  99,9 %   del total
+</code></pre></div>
+
+<p><strong>Tres razones por las que se lo desprecia:</strong></p>
+<ol>
+<li><strong>Es tres órdenes de magnitud menor</strong> que la propagación en cualquier enlace de backbone.</li>
+<li><strong>Es independiente del tráfico.</strong> No depende de cuántos paquetes hay ni de la carga: el router procesa un paquete por vez en la CPU. Por eso <strong>no se ve afectado por la congestión</strong>.</li>
+<li><strong>Los equipos modernos lo hacen en hardware.</strong> Un <em>lookup</em> en TCAM es determinista y de ~40 ns. Los conmutadores de 400 Gbps procesan <strong>billones de paquetes por segundo</strong>: si el procesamiento fuera de 1 µs por paquete, un solo puerto necesitaría 10 Gbps solo de CPU.</li>
+</ol>
+<p><strong>Cuándo SÍ importa.</strong> En redes pequeñas, con equipos viejos, o cuando hay <strong>procesamiento de software</strong> encima:</p>
+<ul>
+<li>Un <strong>firewall que inspecciona la carga útil</strong> (un WAF, un IDS de contenido) puede tardar <strong>decenas de microsegundos</strong> por paquete.</li>
+<li>Un <strong>router doméstico con NAT y registro de conexiones</strong> puede tardar <strong>1 a 5 µs</strong>.</li>
+<li>Una <strong>VPN con cifrado por software</strong> puede tardar <strong>5 a 20 µs</strong> (y por eso las implementaciones usan cifrado por hardware: las instrucciones AES-NI y las claves de 10 Gbps).</li>
+</ul>
+<p>En un problema de examen, salvo que el enunciado lo diga explícitamente, <strong>se desprecia</strong>. Pero <strong>decirlo</strong> suma: "desprecio <code>d_proc</code> porque es de microsegundos contra milisegundos de propagación, y porque no depende de la carga".</p>
+<h2>1.2.2 Retardo de encolamiento (<code>d_cola</code>)</h2>
+<p><strong>Qué es.</strong> El tiempo que el paquete <strong>espera en el buffer</strong> antes de que le toque ser transmitido.</p>
+<p><strong>Fórmula.</strong> Si el paquete es el <code>k</code>-ésimo de una cola de paquetes de <code>L</code> bits cada uno:</p>
+<div class="codehilite"><pre><span></span><code>  d_cola = k · L / R_salida
+</code></pre></div>
+
+<p>Donde <code>R_salida</code> es la velocidad del enlace <strong>de salida</strong> (¡no la de entrada!).</p>
+<p><strong>El diagrama de la cola, que es donde se ve por qué es el único variable:</strong></p>
+<div class="codehilite"><pre><span></span><code>  ENLACE DE SALIDA, 10 Mbps (un paquete de 1000 bits cada 0,8 ms)
+
+  tiempo ────────────────────────────────────────────────────────►
+  0        0,8      1,6      2,4      3,2      4,0        4,8 ms
+  │         │        │        │        │        │           │
+  ▼         ▼        ▼        ▼        ▼        ▼           ▼
+  ┌────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┬────┐
+  │ P1 │ P2 │ P3 │ P4 │ P5 │ P6 │ P7 │ P8 │    │    │    │    │ ← cola
+  └────┴────┴────┴────┴────┴────┴────┴────┴────┴────┴────┴────┘
+                                                   ↑
+                                            B = fin del buffer
+
+  d_cola(P1) = 0
+  d_cola(P2) = 0,8 ms
+  d_cola(P3) = 1,6 ms
+  ...
+  d_cola(Pk) = (k−1) · 0,8 ms
+
+  ⚠️ Si el paquete número 100 llega cuando hay 8 paquetes en el
+     buffer, y la cabecera del buffer es 10 paquetes: el paquete 9
+     y el 10 se DESCARTAN (tail drop).
+</code></pre></div>
+
+<h3>Las cuatro propiedades de <code>d_cola</code></h3>
+<p><strong>Propiedad 1 — Es el ÚNICO componente variable.</strong> Los otros tres se pueden calcular con los datos del problema; <code>d_cola</code> no, porque depende del estado de la cola, que es información que el enunciado normalmente <strong>no da</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Componente</th>
+<th>¿Se puede calcular con los datos del enunciado?</th>
+<th>¿Depende de la carga?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>d_proc</code></td>
+<td>Sí, si te lo dan</td>
+<td><strong>No</strong></td>
+</tr>
+<tr>
+<td><code>d_cola</code></td>
+<td><strong>No</strong></td>
+<td><strong>Sí</strong></td>
+</tr>
+<tr>
+<td><code>d_transmisión</code></td>
+<td>Sí (<code>L</code> y <code>R</code>)</td>
+<td><strong>No</strong></td>
+</tr>
+<tr>
+<td><code>d_propagación</code></td>
+<td>Sí (<code>d</code> y <code>s</code>)</td>
+<td><strong>No</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Propiedad 2 — Es el ÚNICO que refleja la congestión.</strong> Esta es la respuesta literal de la <strong>Pregunta 1b del Examen 2009-12</strong> (que se resuelve entera en el §3.2).</p>
+<div class="codehilite"><pre><span></span><code>  MÁS TRÁFICO OFRECIDO
+        │
+        ├──▶ las colas se LLENAN más
+        │          │
+        │          ├──▶  d_cola  AUMENTA  ──▶  retardo total AUMENTA
+        │          │
+        │          └──▶  si se supera la capacidad del buffer:
+        │                     se DESCARTA  ──▶  PÉRDIDAS
+        │
+        └──▶ se /&gt;}
+</code></pre></div>
+
+<p><strong>Propiedad 3 — Puede ser CERO.</strong> Si el paquete llega y el enlace de salida está libre, <code>d_cola = 0</code>. Por eso el enunciado del Examen 2011-03 P5 dice explícitamente <em>"suponiendo que no se produce retardo de cola"</em>: es una hipótesis, y es la que hace el problema resoluble.</p>
+<p><strong>Propiedad 4 — Es el único componente que NO tiene cota superior.</strong> <code>d_proc</code>, <code>d_trans</code> y <code>d_prop</code> están determinados por el hardware y por la física. <code>d_cola</code> puede valer 1 ms o 5 segundos, según lo saturado que esté el enlace. <strong>Ese es el motivo por el que el retardo en Internet no tiene garantía: porque un componente del total es inacotado.</strong></p>
+<h3>La pérdida, que es el otro extremo de <code>d_cola</code></h3>
+<p>Cuando la cola está llena y llega un paquete más, <strong>se descarta</strong> (<em>tail drop</em>). Y hay que entender por qué <strong>agrandar el buffer no es la solución</strong>:</p>
+<div class="codehilite"><pre><span></span><code>  Llega más tráfico del que sale:
+     tasa de llegada  = 10 Gbps
+     tasa de salida   = 100 Mbps
+
+  Se acumulan 9,9 Gbps = 1,2375 GB por segundo
+
+  Buffer = 4 MB  → se llena en 4·10⁶ / 1,2375·10⁹ = 0,0032 s
+  Buffer = 400 MB → se llena en 0,32 s
+  Buffer = 4 GB   → se llena en 3,2 s
+
+  ⚠️ El buffer agrandado retrasa la muerte, no la evita.
+     Y además INCREMENTA el retardo de los que sí pasan:
+     un paquete que espera 3,2 s en un buffer de 4 GB tiene un
+     retardo de 3,2 s. Eso es BUFFERBLOAT.
+</code></pre></div>
+
+<p><strong>La solución real: los AQMs</strong> (<em>Active Queue Management</em>). En vez de esperar a llenar el buffer, el router <strong>descarta (o marca) temprano</strong>. <strong>CoDel</strong> (<em>Controlled Delay</em>) descarta cuando el retardo de un paquete supera un objetivo de 5 ms durante un intervalo; <strong>FQ-CoDel</strong> es el que usa Linux por defecto desde el kernel 3.5 (2012); <strong>PIE</strong> es otro. Y <strong>ECN</strong> (<code>RFC 3168</code>) marca en vez de descartar. Todo esto es de la Clase 21.</p>
+<h2>1.2.3 Retardo de transmisión (<code>d_transmisión</code>)</h2>
+<p><strong>Qué es.</strong> El tiempo que tarda el emisor en <strong>meter el paquete entero en el cable</strong>. Es decir, desde que empieza a salir el primer bit hasta que sale el último.</p>
+<div class="codehilite"><pre><span></span><code>  ────────────────────────────────────────────────────────────────────────
+   ENLACE de 10 Mbps, paquete de 1500 bits:
+
+   bit:  0   1   2   3   4   5   6  ...  1498  1499  ← 1500 bits
+         │   │   │   │   │   │   │        │      │
+   t(s): 0   1  2  3  4  5  6      149,8   150   × 10⁻⁷ s
+                                                ↑
+                                    el último bit sale a los 150 µs
+
+   d_transmisión = 1500 bits / 10·10⁶ bit/s = 150 µs = 0,15 ms
+  ────────────────────────────────────────────────────────────────────────
+</code></pre></div>
+
+<p><strong>La fórmula:</strong></p>
+<div class="codehilite"><pre><span></span><code>  ┌─────────────────────────────────────┐
+  │        L      (en BITS)             │
+  │ d_t = ─────                          │
+  │        R   (en bps)                 │
+  └─────────────────────────────────────┘
+
+  ⚠️ L EN BITS. Si te dan el paquete en BYTES, multiplicá por 8.
+     1500 bytes = 12 000 bits.  Si hacés 1500/10⁷ da 0,15 ms, que
+     es 8 veces MENOR que la respuesta correcta: ese es el error
+     número uno de los ejercicios de retardo.
+</code></pre></div>
+
+<p><strong>Las dos propiedades que hay que decir siempre:</strong></p>
+<ol>
+<li><strong>No depende del medio.</strong> El medio (cobre, fibra, aire) tiene la misma <code>R</code>. La <code>R</code> depende del <strong>equipo</strong>: del transceptor y de la modulación.</li>
+<li><strong>No depende de la distancia.</strong> <code>d_trans</code> es el mismo para un enlace de 1 m y uno de 1000 km, si el ancho de banda es el mismo. Es un retardo <strong>local</strong>, no de la señal.</li>
+</ol>
+<p><strong>Un caso límite que hay que ver.</strong> Con un paquete de <strong>1 bit</strong> y un enlace de 1 Gbps:</p>
+<div class="codehilite"><pre><span></span><code>  d_trans = 1 / 10⁹ = 1 ns
+</code></pre></div>
+
+<p><strong>Retardo de transmisión despreciable frente a la propagación en redes largas:</strong></p>
+<div class="codehilite"><pre><span></span><code>  5000 km de fibra, 10 Gbps, paquete de 1500 bytes:
+     d_trans = 12 000 / 10¹⁰ = 1,2 µs
+     d_prop  = 5·10⁶ / 2·10⁸ = 25 ms
+     ─────────────────────────────────────────────
+     d_prop / d_trans = 25 000 / 1,2 = 20 833 veces
+</code></pre></div>
+
+<p>Es el mismo cálculo del §1.2.1, y da la misma conclusión: <strong>en redes de backbone, todo el retardo es propagación</strong>.</p>
+<h2>1.2.4 Retardo de propagación (<code>d_propagación</code>)</h2>
+<p><strong>Qué es.</strong> El tiempo que tarda <strong>la señal física</strong> en recorrer el medio, desde el momento en que sale el último bit de la interfaz del emisor hasta que llega el primero a la interfaz del receptor.</p>
+<div class="codehilite"><pre><span></span><code>  ┌───┐                                              ┌───┐
+  │ A │  ════════════════════════════════════════════  │ B │
+  └───┘                                              └───┘
+      │◄───────────── distancia d ─────────────────────►│
+
+  El último bit sale de A en t = 0.
+  Ese bit viaja por el medio y llega a B en t = d/s.
+  ⚠️ OJO: el "primer bit" ya había llegado antes, hace un
+     d_trans. Lo que se mide acá es la propagation DEL ÚLTIMO BIT.
+</code></pre></div>
+
+<p><strong>La fórmula:</strong></p>
+<div class="codehilite"><pre><span></span><code>  ┌─────────────────────────────────────┐
+  │        d      (en METROS)           │
+  │ d_p = ─────                          │
+  │        s   (en m/s)                 │
+  └─────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Los valores de <code>s</code> que hay que saber de memoria:</strong></p>
+<div class="codehilite"><pre><span></span><code>  ┌────────────────────────────┬────────────────────┬──────────────────┐
+  │ MEDIO                      │ s                  │ d para 1000 km   │
+  ├────────────────────────────┼────────────────────┼──────────────────┤
+  │ VACÍO (espacio libre)      │ 3 · 10⁸ m/s        │ 3,33 ms          │
+  │ AIRE                       │ 2,998 · 10⁸ m/s    │ 3,34 ms          │
+  │ COBRE (UTP/STP, coaxial)   │ ~2 · 10⁸ m/s       │ 5,00 ms          │
+  │ FIBRA ÓPTICA (silicio)     │ ~2 · 10⁸ m/s       │ 5,00 ms          │
+  │ POLVO / GAS (nuclear)      │ ~3 · 10⁸ m/s       │ 3,33 ms          │
+  └────────────────────────────┴────────────────────┴──────────────────┘
+
+  Para problemas de examen con cobre o fibra:  s = 2 · 10⁸ m/s
+  Para un enlace por satélite:                s = 3 · 10⁸ m/s
+</code></pre></div>
+
+<p><strong>Las dos propiedades:</strong></p>
+<ol>
+<li><strong>No depende del paquete.</strong> Un paquete de 40 bits y uno de 15 000 bits tardan <strong>lo mismo</strong> en propagarse por el mismo enlace. La señal es la misma.</li>
+<li><strong>No depende del equipo ni del ancho de banda.</strong> Cambiar de 1 Mbps a 100 Mbps <strong>no cambia</strong> <code>d_prop</code>. Cambiar de cobre a fibra tampoco (2,00 → 2,04 · 10⁸, un 2 %).</li>
+</ol>
+<p><strong>Y la diferencia con la velocidad de propagación, que es el contenido del Examen 2009-12 P1a:</strong></p>
+<div class="codehilite"><pre><span></span><code>  s  NO es un ancho de banda.  Está en m/s, no en bps.
+  s  NO es "la velocidad del enlace". La velocidad del enlace es R.
+  s  es una propiedad del MEDIO FÍSICO.
+</code></pre></div>
+
+<h2>1.2.5 Las dos tablas comparativas</h2>
+<h3>Tabla A — De qué depende cada componente</h3>
+<div class="codehilite"><pre><span></span><code>  ┌──────────────────┬──────────┬──────────┬──────────┬──────────────────┐
+  │                  │  d_proc  │  d_cola  │  d_trans │   d_propagación  │
+  ├──────────────────┼──────────┼──────────┼──────────┼──────────────────┤
+  │ ¿Depende de L?   │   NO     │   NO     │   SÍ     │       NO         │
+  │ ¿Depende de R?   │   NO     │   SÍ     │   SÍ     │       NO         │
+  │ ¿Depende de d?   │   NO     │   NO     │   NO     │       SÍ         │
+  │ ¿Depende de s?   │   NO     │   NO     │   NO     │       SÍ         │
+  │ ¿Depende del     │   NO     │   SÍ     │   NO     │       NO         │
+  │  medio?          │          │          │          │                  │
+  │ ¿Depende de la   │   NO     │   SÍ     │   NO     │       NO         │
+  │  carga/congestión│          │          │          │                  │
+  │ ¿Se puede        │  si te   │   NO     │   SÍ     │       SÍ         │
+  │  calcular con    │  lo dan  │          │          │                  │
+  │  los datos?      │          │          │          │                  │
+  │ ¿Cuota con R?    │   NO     │   NO     │   SÍ     │       NO         │
+  │ ¿Cuota con s?    │   NO     │   NO     │   NO     │       SÍ         │
+  ├──────────────────┼──────────┼──────────┼──────────┼──────────────────┤
+  │ UNIDAD            │  s, ms   │  s, ms   │  s, ms   │       s, ms      │
+  │ TAMAÑO TÍPICO    │ ~1 µs    │ 0 a ∞    │ µs a ms  │      ms a s      │
+  │ ¿Es VARIABLE?    │   NO     │  **SÍ**  │   NO     │       NO         │
+  │ ¿Refleja la      │   NO     │  **SÍ**  │   NO     │       NO         │
+  │  congestión?     │          │          │          │                  │
+  └──────────────────┴──────────┴──────────┴──────────┴──────────────────┘
+</code></pre></div>
+
+<p><strong>La última fila es la que se pregunta en el examen.</strong> Y la penúltima: "señale cuáles son los más significativos" ⇒ <strong>la propagación, porque es la única que siempre está y es la única que domina en enlaces largos</strong>.</p>
+<h3>Tabla B — Cuánto pesa cada uno</h3>
+<div class="codehilite"><pre><span></span><code>  ENLACE DE 1 Gbps, PAQUETE DE 1000 BYTES, DISTANCIA VARIABLE
+
+  L = 1000 bytes = 8000 bits
+  R = 10⁹ bit/s
+  d_trans = 8000/10⁹ = 8 µs
+  d_proc  ≈ 1 µs
+  s = 2·10⁸ m/s
+
+  ┌──────────────┬──────────────┬─────────────────┬──────────────────────┐
+  │ Distancia    │ d_prop       │ d_total         │ Cuánto pesa d_prop    │
+  ├──────────────┼──────────────┼─────────────────┼──────────────────────┤
+  │ 1 m          │ 5 ns         │ 9,005 µs        │ 0,06 %               │
+  │ 100 m        │ 0,5 µs       │ 9,5 µs          │ 5,3 %                │
+  │ 1 km         │ 5 µs         │ 14 µs           │ 35,7 %               │
+  │ 100 km       │ 500 µs       │ 509 µs          │ 98,2 %               │
+  │ 5 000 km     │ 25 ms        │ 25,009 ms       │ 99,996 %             │
+  │ 36 000 km    │ 180 ms       │ 180,008 ms      │ 99,996 %             │
+  │  (satélite)  │              │                 │                      │
+  └──────────────┴──────────────┴─────────────────┴──────────────────────┘
+</code></pre></div>
+
+<p><strong>La lectura de la tabla, que es lo que hay que decir:</strong></p>
+<ul>
+<li><strong>En una LAN</strong>, el retardo es <strong>todo de procesamiento y transmisión</strong>: a 1 metro, <code>d_prop</code> es el 0,06 %. Por eso un <code>ping</code> a un host en el mismo switch da <strong>0,05 ms</strong>, que es puramente <code>d_proc + d_trans</code>.</li>
+<li><strong>A 100 km</strong>, <code>d_prop</code> ya es el 98 %. A partir de ahí, <strong>duplicar la distancia duplica el retardo</strong>, y mejorarla red significa <strong>acortar la distancia</strong>, no mejorar el equipo.</li>
+<li><strong>A 36 000 km (satélite)</strong>, <code>d_prop</code> = <strong>180 ms</strong> de ida, <strong>360 ms de RTT</strong>. Ninguna mejora de hardware lo cambia: es geometría.</li>
+</ul>
+<p><strong>Conclusión operativa:</strong></p>
+<div class="codehilite"><pre><span></span><code>  EN UNA LAN:  mejorar el retardo = mejorar el EQUIPO
+  EN UNA WAN:  mejorar el retardo = acortar el CAMINO
+</code></pre></div>
+
+<hr />
+<h2>1.3 Ancho de banda vs. velocidad de propagación</h2>
+<p>Esta es la <strong>Pregunta 1a del Examen 2009-12</strong> y hay que tenerla respondida con las palabras exactas. Ya la vimos en la Clase 1; acá va la versión con la derivación matemática que la justifica.</p>
+<h3>La tabla</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Ancho de banda</strong> <code>B</code> o <code>R</code></th>
+<th><strong>Velocidad de propagación</strong> <code>s</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Unidad</strong></td>
+<td><strong>bits por segundo (bps)</strong></td>
+<td><strong>metros por segundo (m/s)</strong></td>
+</tr>
+<tr>
+<td><strong>Qué mide</strong></td>
+<td>Cuántos bits por segundo</td>
+<td>A qué velocidad viaja la señal</td>
+</tr>
+<tr>
+<td><strong>De qué depende</strong></td>
+<td>Del <strong>equipo</strong>: puerto, transceptor, modulación</td>
+<td>Del <strong>medio físico</strong>: la física del material</td>
+</tr>
+<tr>
+<td><strong>Depende de la distancia</strong></td>
+<td>No</td>
+<td>No</td>
+</tr>
+<tr>
+<td><strong>Aparece en</strong></td>
+<td><code>d_transmisión = L / R</code></td>
+<td><code>d_propagación = d / s</code></td>
+</tr>
+<tr>
+<td><strong>Ejemplo de enunciado</strong></td>
+<td>"el enlace tiene 1 Gbps"</td>
+<td>"en ese cable la señal va a 2·10⁸ m/s"</td>
+</tr>
+</tbody>
+</table>
+<h3>Por qué son perpendiculares: la demostración con números</h3>
+<p>Dos enlaces del mismo operador, a la misma distancia, con la misma fibra:</p>
+<div class="codehilite"><pre><span></span><code>  Enlace A: 1 Gbps    d = 1000 km
+  Enlace B: 100 Mbps  d = 1000 km
+  s = 2·10⁸ m/s en los dos (misma fibra)
+
+  d_prop(A) = 10⁶ / 2·10⁸ = 5,0 ms
+  d_prop(B) = 10⁶ / 2·10⁸ = 5,0 ms      ← IDÉNTICO
+
+  L = 12 000 bits
+  d_trans(A) = 12 000 / 10⁹  = 12 µs
+  d_trans(B) = 12 000 / 10⁸  = 120 µs
+
+  d_total(A) = 5,000012 ms
+  d_total(B) = 5,000120 ms
+
+  DIFERENCIA = 0,000108 ms = 108 ns
+
+  ⚠️ 1000 veces más ancho de banda, y el retardo es el mismo
+     salvo en 108 nanosegundos.
+</code></pre></div>
+
+<p><strong>Y el otro lado de la demostración</strong>, que es la que convence: mismo ancho de banda, distinto medio.</p>
+<div class="codehilite"><pre><span></span><code>  Enlace C: 1 Gbps por FIBRA
+  Enlace D: 1 Gbps por COBRE
+  R = 10⁹ en los dos
+
+  d_trans(C) = 12 µs
+  d_trans(D) = 12 µs          ← IDÉNTICO
+
+  d_prop(C) = 10⁶ / 2,04·10⁸ = 4,90 ms
+  d_prop(D) = 10⁶ / 2,00·10⁸ = 5,00 ms
+
+  DIFERENCIA = 0,10 ms = 100 µs
+
+  ⚠️ La fibra es 1,1 % más rápida en propagación, pero gana
+     en otro lado: atenuación mucho menor (26 dB/km contra 20),
+     por lo que alcanza 100 km sin repetidor contra los 100 m
+     del cobre.
+</code></pre></div>
+
+<p><strong>La frase de cierre para el examen:</strong></p>
+<blockquote>
+<p>El ancho de banda y la velocidad de propagación <strong>no son comparables</strong>: uno mide una cantidad de información por unidad de tiempo (<code>bps</code>) y el otro una rapidez física (<code>m/s</code>). El primero depende del <strong>equipo</strong> y aparece en el retardo de transmisión; el segundo depende del <strong>medio</strong> y aparece en el retardo de propagación. <strong>Duplicar el ancho de banda reduce el retardo de transmisión a la mitad y no cambia el de propagación.</strong> Un enlace de 1 Gbps no es "50 veces más rápido" que uno de 100 Mbps: es 50 veces más <strong>ancho</strong>.</p>
+</blockquote>
+<hr />
+<h2>1.4 El <em>bandwidth-delay product</em>: los bits que están en vuelo</h2>
+<h3>La definición</h3>
+<div class="codehilite"><pre><span></span><code>  ┌────────────────────────────────────────────────┐
+  │                                                │
+  │   BDP = R · RTT        [bits]                  │
+  │                                                │
+  │   = ancho de banda (bps) × tiempo de ida y      │
+  │     vuelta (s)                                 │
+  │                                                │
+  │   = los BITS que caben en el enlace durante un  │
+  │     viaje completo de ida y vuelta              │
+  │                                                │
+  └────────────────────────────────────────────────┘
+</code></pre></div>
+
+<h3>Por qué ese número importa</h3>
+<p>La idea es esta: <strong>mientras un paquete va de ida, el emisor puede seguir mandando</strong>. Si manda un paquete cada vez que llega un ACK, el único paquete "en vuelo" es el que está en el cable en ese instante. Si en cambio manda una <strong>ventana</strong> de <code>W</code> bytes sin esperar, el enlace lleva <code>W</code> bytes en tránsito al mismo tiempo.</p>
+<div class="codehilite"><pre><span></span><code>  El enlace es un CAÑO. El BDP es cuánta agua le entra.
+
+  ┌─────────────────────────────────────────────────────────────┐
+  │                                                             │
+  │   A ═══════════════════════════════════════════════ B        │
+  │                                                             │
+  │   ◄──────── L = 12 000 km ────────────►                    │
+  │                                                             │
+  │   s = 2·10⁸ m/s   →  d/s = 12·10⁶/2·10⁸ = 60 ms de ida     │
+  │   R = 1 Gbps      →  10⁹ bits/s                            │
+  │                                                             │
+  │   BDP = 10⁹ × (2 × 60·10⁻³) = 10⁹ × 0,12 = 1,2·10⁸ bits   │
+  │                                       = 15 MB = 15 000 000 B│
+  │                                                             │
+  │   Para LLENAR el caño de punta a punta necesito 15 MB       │
+  │   "en vuelo" al mismo tiempo.                               │
+  └─────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<h3>El cálculo, con la aritmética visible</h3>
+<p><strong>Ejemplo:</strong> enlace de 1 Mbps entre Montevideo y Buenos Aires, 1 200 km de fibra, <code>s = 2·10⁸ m/s</code>.</p>
+<div class="codehilite"><pre><span></span><code>  d (de ida) = 1 200 km = 1,2·10⁶ m
+  s          = 2·10⁸ m/s
+
+  d_prop (ida) = 1,2·10⁶ / 2·10⁸ = 6·10⁻³ s = 6 ms
+  RTT ≈ 2 × d_prop = 12 ms   (ignorando cola y procesamiento)
+
+  R = 10⁶ bit/s
+
+  BDP = R × RTT = 10⁶ bit/s × 12·10⁻³ s
+      = 12·10³ bits
+      = 12 000 bits
+      = 1 500 bytes        ← el BDP en BYTES
+</code></pre></div>
+
+<p><strong>Interpretación:</strong> en ese enlace, en cada momento hay como máximo <strong>1500 bytes</strong> en tránsito. Si tu ventana de TCP es de <strong>1024 bytes</strong>, el enlace <strong>nunca</strong> se llena: mandás 1024 bytes, esperás el ACK, y el caño queda con 1024 bytes de un máximo posible de 1500.</p>
+<div class="codehilite"><pre><span></span><code>  Throughput máximo alcanzable = ventana / RTT
+
+  con ventana = 1024 B:  1024 / 0,012 s = 85 333 B/s = 0,68 Mbps
+                                     ⚠️ contra 1 Mbps de enlace
+  con ventana = 1500 B:  1500 / 0,012 s = 125 000 B/s = 1,00 Mbps  ✓
+  con ventana = 4096 B:  4096 / 0,012 s = 341 333 B/s = 2,73 Mbps
+                       ⚠️ más que el enlace: no se puede,
+                          el enlace es el techo
+</code></pre></div>
+
+<p><strong>La regla que sale de acá, y que es el motivo de <code>Window Scale</code>:</strong></p>
+<blockquote>
+<p>Para aprovechar toda la capacidad de un enlace, la ventana de TCP tiene que ser <strong>mayor o igual al BDP</strong>. Si es menor, el throughput queda limitado por la ventana, no por el enlace.</p>
+</blockquote>
+<p><strong>Y por qué las conexiones de larga distancia necesitan ventanas enormes:</strong></p>
+<div class="codehilite"><pre><span></span><code>  Enlace                R        RTT          BDP        ¿ventana de 64 KB alcanza?
+  ──────────────────────────────────────────────────────────────────────────
+  LAN 1 Gbps            1 Gbps   0,1 ms       12,5 kB    SÍ, de sobra
+  Metro 10 Gbps         10 Gbps  1 ms         1,25 MB    NO (64× corto)
+  Continental 10 Gbps   10 Gbps  120 ms       150 MB     NO (2400× corto)
+  Satélite 1 Gbps       1 Gbps   600 ms       75 MB      NO (1200× corto)
+  Satélite 100 Mbps     100 Mbps 600 ms       7,5 MB     NO (120× corto)
+</code></pre></div>
+
+<p><strong>Y de ahí salen dos cosas concretas:</strong></p>
+<ol>
+<li><strong><code>Window Scale</code> (<code>RFC 7323</code>)</strong> multiplica la ventana por una potencia de 2 que se negocia en el SYN. Sin él, el máximo son 65 535 bytes, y <strong>con los BDP de las redes de backbone de hoy eso es inútil</strong>. Es un protocolo de 2014 que resolvió un problema de 1992, y sigue siendo obligatorio.</li>
+<li><strong>Las conexiones de larga distancia seFAULTS de throughput</strong> si no escalan la ventana: no por falta de ancho de banda, sino porque <strong>no tienen suficiente "agua" en el caño</strong>.</li>
+</ol>
+<h2>1.5 RTT, latencia y jitter</h2>
+<h3>Latencia</h3>
+<p>Es el <strong>tiempo de un viaje de ida</strong>, de un host al otro. Se mide con el primer paquete de un <code>traceroute</code> (más <code>d_trans</code>) o con <code>ping</code> y la mitad del RTT.</p>
+<div class="codehilite"><pre><span></span><code>  latencia mínima ≈ d/s  +  L/R      (sin cola, sin procesamiento)
+</code></pre></div>
+
+<h3>RTT (<em>Round Trip Time</em>)</h3>
+<p>Es el <strong>tiempo de ida y vuelta</strong>. Es la latencia multiplicada por 2, <strong>más</strong> el procesamiento de los dos extremos, <strong>más</strong> la cola si la hay.</p>
+<div class="codehilite"><pre><span></span><code>  ┌─────────────────────────────────────────────────────────────────┐
+  │  Host A                                                       │
+  │    │                                                          │
+  │    │────── Echo request  (t=0) ────────────────────────────────▶│
+  │    │                                                          │
+  │    │        ida:      d1/s + L/R + cola_A                      │
+  │    │                                                          │
+  │    │◀───── Echo reply  (t = RTT) ──────────────────────────────│
+  │    │                                                          │
+  │    │        vuelta:  d2/s + L/R + cola_B + proc                │
+  │    │                                                          │
+  │  RTT = ida + vuelta                                          │
+  │                                                               │
+  │  ⚠️ Solo si d1 = d2 el RTT es exactamente 2 × latencia.        │
+  │     En Internet, el camino de ida y el de vuelta son          │
+  │     GENERALMENTE DIFERENTES: es lo que dice la solución        │
+  │     oficial del Examen 2011-03 P3 (traceroute).                │
+  └─────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Cómo se mide:</strong> <code>ping</code> mide el RTT porque manda un Echo request (ICMP tipo 8) y espera el Echo reply (ICMP tipo 0). Cada salida del comando da <strong>un RTT</strong>.</p>
+<div class="codehilite"><pre><span></span><code>  $ ping www.udelar.edu.uy
+  64 bytes from 203.0.113.9: icmp_seq=1 ttl=54 time=28,4 ms
+  64 bytes from 203.0.113.9: icmp_seq=2 ttl=54 time=28,1 ms
+  64 bytes from 203.0.113.9: icmp_seq=3 ttl=54 time=29,0 ms
+</code></pre></div>
+
+<p>Los tres valores son RTT. <strong>La latencia de ida es ~14 ms.</strong></p>
+<p><strong>La primera diferencia de la serie es el RTT mínimo, y la siguiente es la variación</strong> (que es el jitter).</p>
+<h3>Jitter</h3>
+<p>Es <strong>la variación de la latencia entre paquetes del mismo flujo</strong>. Se mide de varias formas:</p>
+<table>
+<thead>
+<tr>
+<th>Métrica</th>
+<th>Fórmula</th>
+<th>Ventaja</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Pico a pico</strong> (la que más se usa en la práctica)</td>
+<td><code>retardo_máx − retardo_mín</code></td>
+<td>Simple, la que usa el <em>jitter buffer</em></td>
+</tr>
+<tr>
+<td><strong>Desviación estándar</strong> (RFC 3550)</td>
+<td><code>J = √( (1/n)·Σ (R_i − R_esperado)² )</code></td>
+<td>La que usa RTP</td>
+</tr>
+<tr>
+<td><strong>Media absoluta</strong></td>
+<td><code>J = (1/n)·Σ \|R_i − R_promedio\|</code></td>
+<td>Intermedia</td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code>  Tres paquetes del mismo flujo, enviados con 20 ms de separación:
+     paquete 1:  80 ms
+     paquete 2:  95 ms
+     paquete 3: 110 ms
+
+  jitter (pico a pico) = 110 − 80 = 30 ms
+  promedio             = (80+95+110)/3 = 95 ms
+  desviación estándar  = √(((80−95)²+(95−95)²+(110−95)²)/3)
+                       = √((225+0+225)/3) = √150 = 12,2 ms
+</code></pre></div>
+
+<h3>Por qué el jitter importa más que la latencia (y por qué importa para audio y video)</h3>
+<p><strong>Para un archivo</strong>, da igual: si tarda 100 ms o 400 ms, total ya esperaste.</p>
+<p><strong>Para una llamada de voz</strong>, la latencia alta se nota como un "eco del parque" (retraso de la voz), y el humano lo tolera hasta ~150 ms de ida. Lo que <strong>rompe</strong> la conversación es el jitter:</p>
+<div class="codehilite"><pre><span></span><code>  Un códec de voz reproduce una muestra cada 20 ms.
+
+  El paquete 1 tardó 80 ms → llega en t = 80
+  El paquete 2 tardó 110 ms → llega en t = 130
+      ⚠️ Pero el reproductor lo esperaba en t = 100.
+         A los 100 ms no tiene nada que reproducir.
+         → Clic (click) en el audio.
+  El paquete 3 tardó 95 ms → llega en t = 115, tarde para t = 120.
+         → se le pasó el hueco.
+
+  El PROBLEMA no es que tarde: es que lleguen en RÁFAGA.
+  El buffer de jitter (jitter buffer) lo resuelve: mete un
+  RETARDO FIJO (por ejemplo 60 ms) y entrega las muestras en
+  ritmo constante, reordenando y rellenando.
+</code></pre></div>
+
+<p><strong>La relación con el BDP y con la cola:</strong></p>
+<div class="codehilite"><pre><span></span><code>  ⇐ Si hay un paquete perdido y TCP reenvía, el hueco es de un RTO
+     (mínimo 200 ms en Linux) ⇒ jitter enorme.
+  ⇐ Si un router tiene el buffer lleno, la cola cambia de largo
+     de un momento a otro ⇒ jitter.
+  ⇐ Si hay ECMP, dos paquetes del mismo flujo pueden ir por caminos
+     de latencia diferente ⇒ jitter.
+</code></pre></div>
+
+<p><strong>Todo el jitter viene de la <code>d_cola</code>.</strong> Y por eso <strong>más jitter = más cola = más riesgo de bufferbloat</strong>, y por eso los AQMs se escribieron para el jitter tanto como para la pérdida.</p>
+<h2>1.6 Congestión, pérdidas y retardo</h2>
+<p>Esta sección resuelve la <strong>Pregunta 2 del Examen 2011-03</strong> (6 puntos). Los tres conceptos, su definición precisa y su vínculo.</p>
+<h3>Congestión</h3>
+<p><strong>Definición de la solución oficial</strong>, textual:</p>
+<blockquote>
+<p><em>"La congestión está asociada a la escasez, durante un período de tiempo, de los recursos (compartidos) necesarios para procesar adecuadamente todos los paquetes que pretenden hacer uso de los mismos. Esos recursos son básicamente: capacidad de procesamiento y buffers en los routers y, enlaces."</em></p>
+</blockquote>
+<p><strong>Los cuatro desgloses de esa definición:</strong></p>
+<ol>
+<li><strong>Es escasez de recursos COMPARTIDOS.</strong> Si el recurso es dedicado, no hay congestión: si te reservaron 1 Mbps, tenés 1 Mbps. La congestión aparece porque <strong>muchos usuarios comparten</strong> el mismo enlace y los mismos buffers.</li>
+<li><strong>Es temporal.</strong> "Durante un período de tiempo". Una ráfaga de 200 ms no es congestión; 200 ms de saturación sostenida sí. Por eso los AQMs tienen <strong>ventanas de tiempo</strong>.</li>
+<li><strong>Los recursos son de dos tipos</strong>: capacidad de procesamiento (el fabric, la CPU del router) y buffers (los búferes de las colas de salida). Los dos se llenan.</li>
+<li><strong>Se manifiesta en síntomas</strong>, no es un fenómeno observable directamente. Los síntomas son <strong>pérdidas y retardos</strong>.</li>
+</ol>
+<p><strong>Los tres tipos de congestión, con el síntoma de cada uno:</strong></p>
+<div class="codehilite"><pre><span></span><code>  ┌──────────────────────────┬──────────────────────┬─────────────────────┐
+  │ TIPO                     │ QUÉ SE LLENA         │ SÍNTOMA              │
+  ├──────────────────────────┼──────────────────────┼─────────────────────┤
+  │ Congestión de ENLACE     │ la cola de salida de  │ PÉRDIDAS (buffer    │
+  │ (la más común)           │ un puerto de un      │ lleno) + retardo de │
+  │                          │ router               │ cola grande         │
+  ├──────────────────────────┼──────────────────────┼─────────────────────┤
+  │ Congestión de FABRIC     │ la memoria interna   │ Pérdidas en la      │
+  │ (backplane)              │ del router (memoria  │ entrada del router;  │
+  │                          │ de buffers, tablas)  │ latencia de la NIC  │
+  ├──────────────────────────┼──────────────────────┼─────────────────────┤
+  │ Congestión de CPU        │ la CPU del router    │ retardo de proceso- │
+  │                          │ que corre el protocolo│ miento alto;        │
+  │                          │ de control           │ pérdida por descarte│
+  └──────────────────────────┴──────────────────────┴─────────────────────┘
+</code></pre></div>
+
+<h3>Pérdida</h3>
+<p><strong>Definición de la solución oficial</strong>, textual:</p>
+<blockquote>
+<p><em>"Los paquetes se encolan en buffers en los routers antes de ser enviados por el enlace de salida; si un paquete no encuentra espacio disponible en un buffer, será descartado (pérdida)."</em></p>
+</blockquote>
+<p><strong>Hay más causas de pérdida que el buffer lleno, y hay que conocerlas:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Causa</th>
+<th>Dónde</th>
+<th>Quién la detecta</th>
+<th>¿La recupera TCP?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Buffer lleno</strong> (<em>tail drop</em>)</td>
+<td>Cola de salida de un router</td>
+<td>El emisor, por timeout o 3 dupACK</td>
+<td>Sí</td>
+</tr>
+<tr>
+<td><strong>Checksum incorrecto</strong></td>
+<td>Cualquier enlace (error de medio)</td>
+<td>El receptor de la trama (CRC)</td>
+<td>Sí, con ARQ de capa 2</td>
+</tr>
+<tr>
+<td><strong>TTL = 0</strong></td>
+<td>Cualquier router</td>
+<td>El router, por ICMP Time Exceeded</td>
+<td>No: el paquete se descarta</td>
+</tr>
+<tr>
+<td><strong>Filtro de firewall / ACL</strong></td>
+<td>Cualquier router</td>
+<td>Puede o no generar ICMP</td>
+<td>No</td>
+</tr>
+<tr>
+<td><strong>Congestión de la CPU del router</strong></td>
+<td>Entrada del router</td>
+<td>El emisor</td>
+<td>Sí</td>
+</tr>
+<tr>
+<td><strong>Pérdida de un fragmento</strong></td>
+<td>Donde se perdió</td>
+<td>El host destino, en el reensamblaje</td>
+<td>No: se descarta <strong>todo</strong> el datagrama</td>
+</tr>
+<tr>
+<td><strong>Descarte por política de DiffServ</strong></td>
+<td>Cola de una clase de baja prioridad</td>
+<td>El emisor</td>
+<td>Sí, pero es intencional</td>
+</tr>
+</tbody>
+</table>
+<p><strong>El punto clave: una pérdida en la capa 3 es IRREVERSIBLE.</strong> IP no tiene recuperación. Si el paquete se perdió, no existe "reintentar en la red": lo único que puede hacer el emisor es <strong>mandarlo otra vez</strong> (que es lo que hace TCP, y por eso TCP necesita numerar bytes y reconocer).</p>
+<h3>Retardo</h3>
+<p><strong>Definición de la solución oficial</strong>, textual:</p>
+<blockquote>
+<p><em>"Si un paquete encuentra lugar en el buffer pero su envío por el enlace de salida se ve retrasado (por existir otros paquetes esperando poder hacerlo antes que él) sufrirá de retardo (retardo de cola). También puede sufrir retardo por el procesamiento que se le debe realizar en el nodo previo a ser colocado en el buffer de salida (chequeos de errores, modificaciones de campos de cabecera, ...). Adicionalmente habrá retardo debido a la propagación del paquete en el medio físico y también motivado en el ancho de banda disponible en el enlace de salida y su relación con el tamaño del paquete que se desea enviar (retardo de transmisión)."</em></p>
+</blockquote>
+<p><strong>La oficial identifica los CUATRO componentes del retardo en un solo párrafo.</strong> Es exactamente el §1.2 de esta clase.</p>
+<h3>El vínculo entre los tres</h3>
+<p>Este es el punto que hay que_argumentar, y es lo que la pregunta pide cuando dice "explique los conceptos":</p>
+<div class="codehilite"><pre><span></span><code>  ┌─────────────────────────────────────────────────────────────────┐
+  │                                                                 │
+  │   CONGESTIÓN                                                   │
+  │   (escasez de recursos compartidos)                            │
+  │        │                                                        │
+  │        │  se manifiesta en DOS síntomas observables:            │
+  │        │                                                        │
+  │        ├──────────────────────────┬─────────────────────────────┤ │
+  │        ▼                          ▼                             │ │
+  │   RETARDO (d_cola)             PÉRDIDAS                        │ │
+  │   "hay cola, espero más"       "el buffer estaba lleno"        │ │
+  │   las colas se agrupan         se descarta lo que sobra         │ │
+  │        │                          │                             │ │
+  │        │                          │                             │ │
+  │   más d_cola = más RETARDO   y ambos=TORPEDO                  │ │
+  │   total, más jitter          de la aplicación                  │ │
+  │                                                                 │ │
+  │   ⚠️ LA MISMA CAUSA, DOS EFECTOS. Y uno precede al otro:       │ │
+  │      primero se agranda la cola (retardo), después se desborda  │ │
+  │      (pérdida).                                                │ │
+  │                                                                 │ │
+  └─────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>La demostración numérica del vínculo</strong>, que es lo que suma puntos:</p>
+<div class="codehilite"><pre><span></span><code>  Enlace de 100 Mbps, paquetes de 1500 bytes.
+  El enlace transmite un paquete cada 1500/10⁸ = 15 µs.
+
+  Tasa de llegada λ (paquetes/s)     | d_cola (con buffer de 40 paquetes)
+  ──────────────────────────────────┼──────────────────────────────────
+     λ = 0      (sin tráfico)        |    0 µs
+     λ = 6,67·10⁶  (= 100 Mbps)     |    0 µs   ← saturado pero sin cola
+     λ = 7·10⁶                      |    1 500 × 1 = 15 µs
+     λ = 8·10⁶                      |    15 000 µs = 15 ms
+     λ = 9·10⁶                      |    30 000 µs = 30 ms
+     λ = 10·10⁶                     |    40 × 15 µs = 600 µs  ← el ÚLTIMO cabe
+     λ = 10,1·10⁶                   │    DESCARTE desde el primero
+  ──────────────────────────────────┼──────────────────────────────────
+
+  ⚠️ A λ = 10·10⁶ = 100 Mbps, que es el máximo del enlace, la cola
+     es de 600 µs. A 10,1·10⁶, que es un 0,1 % más, se pierde
+     desde el primer paquete.
+
+  ⇒ El retardo de cola EXPLOTA justo antes de la pérdida.
+  ⇒ Un aumento del 0,1 % del tráfico triplica el retardo.
+  ⇒ Por eso TCP reduce la ventana ante una pérdida: está reacting
+     al síntoma de que el buffer se llenó, es decir, a que está a
+     punto de desbordarse.
+</code></pre></div>
+
+<p><strong>Y el corolario sobre por qué TCP no distingue:</strong> TCP ve un paquete perdido. No sabe si se perdió porque (a) se llenó el buffer de un router (congestión), (b) se corrompió en un enlace, o (c) hay un error de configuración. <strong>Para TCP los tres son lo mismo: un paquete perdido es un paquete perdido.</strong> Y por eso su reacción (bajar la ventana) es <strong>conservadora en el caso (b) y correcta en el caso (a)</strong>.</p>
+<h3>⚠️ Actualización a 2026</h3>
+<p><strong>Sigue igual — de memoria, sin dudar:</strong>
+- <strong>Los cuatro componentes</strong> del retardo, sus fórmulas y sus unidades.
+- <strong><code>d_transmisión = L/R</code></strong> y <strong><code>d_propagación = d/s</code></strong>, con <code>L</code> en <strong>bits</strong> y <code>d</code> en <strong>metros</strong>.
+- <strong>La diferencia ancho de banda (bps) vs. velocidad de propagación (m/s)</strong> y de qué depende cada uno.
+- <strong>Que la congestión actúa sobre el retardo de encolamiento</strong> y se manifiesta en pérdidas y retardos.
+- <strong>Los valores de <code>s</code></strong>: ~2·10⁸ m/s en cobre y fibra, ~3·10⁸ en vacío y satélite.
+- <strong>Que el retardo de cola es el único componente variable</strong> y el único que refleja la congestión.</p>
+<p><strong>Cambió o se modificó:</strong></p>
+<ul>
+<li><strong>La latencia de los enlaces deteriorated mucho menos de lo que la gente cree, pero los BDP crecieron muchísimo.</strong> Un enlace continental a 100 Gbps con 100 ms de RTT tiene un <strong>BDP de 1,25 GB</strong>. Ningún stack de TCP con el <code>Window Scale</code> de <code>RFC 7323</code> lo llena. ⇒ <strong>El throughput de las conexiones de larga distancia está limitado por la ventana, no por el ancho de banda</strong>, y eso obliga a BDP-aware rate control (que es exactamente lo que hace <strong>BBR</strong>: no una ventana, sino un modelo de <em>bottleneck bandwidth</em> × <em>propagation delay</em>).</li>
+<li><strong><code>d_proc</code> dejó de ser despreciable en algunos casos concretos.</strong> En un backbone a 100/400 Gbps, la CPU del router corre <strong>toda la pila en el plano de datos</strong>: MPLS, ACLs, ECMP y las dos filas de QoS. El <code>d_proc</code> sube a <strong>1 a 10 µs</strong>, que ya es del orden del <code>d_transmisión</code> (1 µs a 10 Gbps con paquete de 1500 B). ⇒ <strong>Decir "el procesamiento es despreciable" es correcto en una LAN y puede ser falso en un router de última generación.</strong> Lo que sigue siendo cierto es que <strong>no depende de la carga</strong>, y por eso no es el componente de la congestión.</li>
+<li><strong>El control de congestión dejó de ser AIMD puro.</strong> <code>RFC 9438</code> (CUBIC, <em>Standards Track</em>, 2023) es el default global y <strong>no</strong> crece linealmente. <strong>BBRv3 nunca fue RFC</strong> (<code>draft-ietf-ccwg-bbr</code>, <em>Experimental</em>), y es lo que se usa en QUIC y en partes de Linux.</li>
+<li><strong>La pérdida como señal de congestión se volvió opcional.</strong> <strong>ECN</strong> (<code>RFC 3168</code>) marca en vez de descartar, y <strong><code>RFC 9768</code> (AccECN, 2026)</strong> hace el feedback más preciso. <strong>L4S (<code>RFC 9331</code>, 2023)</strong> marca con umbral muy bajo para conseguir <strong>latencia mínima sin descartes</strong>: el objetivo ya no es "evitar la pérdida" sino <strong>"evitar la cola"</strong>. ⇒ <strong>El jitter, que antes era un efecto secundario, pasó a ser el objetivo primario de la diseño de congestión.</strong> Ese es el cambio conceptual más grande desde 2011.</li>
+<li><strong>El <em>bufferbloat</em> es un problema de primera clase y tiene solución en el stack por defecto.</strong> Linux usa <strong>FQ-CoDel</strong> desde el kernel 3.5 (2012). Los AQMs descartan temprano para que el retardo no se dispare, aunque la pérdida "desperdicie" ancho de banda.</li>
+<li><strong>El multicast cambió la relación entre retardo y pérdida.</strong> Con <code>IP_MULTICAST</code> los paquetes de un mismo flujo salen por interfaces con latencias distintas, y sin control de tasa la congestión de un destino <strong>afecta a los demás</strong> (problema de <em>multicast congestion collapse</em>, que la RFC 5771 documenta). Es un caso donde "el BDP" ya no es un número por flujo.</li>
+</ul>
+<blockquote>
+<p><strong>Consecuencia para el examen:</strong> los <strong>cuatro componentes, sus fórmulas y sus unidades no cambiaron</strong> en 37 años. Lo que cambió son las <strong>cifras de capacidad</strong> y el <strong>objetivo del control de congestión</strong> (de "evitar la pérdida" a "evitar la cola"). Resolvé con los números del enunciado, y si hay lugar,Sumá una línea de actualización sobre ECN y AQM.</p>
+</blockquote>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — Los cuatro componentes de un paquete en dos enlaces</h2>
+<p><strong>Datos.</strong> Un paquete de <strong>1000 bytes</strong> va de A a B por dos enlaces: el primero de cobre de <strong>50 km</strong> a <strong>1 Mbps</strong>, el segundo de fibra de <strong>100 km</strong> a <strong>100 Mbps</strong>. Los dos conmutadores tienen <code>d_proc = 0,05 ms</code>. No hay retardo de cola.</p>
+<p><strong>a)</strong> Calculá el retardo de cada componente del primer enlace.
+<strong>b)</strong> Calculá el retardo de cada componente del segundo enlace.
+<strong>c)</strong> ¿Cuál es el retardo total? ¿Qué componente domina?</p>
+<p><strong>Resolución, con <code>s = 2·10⁸ m/s</code> en ambos medios.</strong></p>
+<p><strong>Paso 1 — Datos convertidos a las unidades correctas.</strong></p>
+<div class="codehilite"><pre><span></span><code>  L = 1000 bytes × 8 bits/byte = 8000 bits     ⚠️ EN BITS
+  e1: R = 10⁶ bit/s,  d = 50 km = 5·10⁴ m,  s = 2·10⁸ m/s
+  e2: R = 10⁸ bit/s,  d = 100 km = 10⁵ m,  s = 2·10⁸ m/s
+  d_proc = 0,05 ms = 5·10⁻⁵ s (por conmutador, hay 1 entre los dos enlaces)
+</code></pre></div>
+
+<p><strong>Paso 2 — Componentes del enlace 1 (cobre, 50 km, 1 Mbps).</strong></p>
+<div class="codehilite"><pre><span></span><code>  d_proc  = 0,05 ms                       (del switch de salida)
+
+  d_cola  = 0                             (dato del enunciado: no hay cola)
+
+  d_trans = L / R = 8000 bits / 10⁶ bit/s
+          = 8·10⁻³ s = 8 ms
+          ⚠️ OJO: 1000/10⁶ daría 1 ms. La respuesta correcta es 8 ms
+             porque L va en BITS.
+
+  d_prop  = d / s = 5·10⁴ m / 2·10⁸ m/s
+          = 2,5·10⁻⁴ s = 0,25 ms
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>  Subtotal e1 = 0,05 + 0 + 8 + 0,25 = 8,30 ms
+</code></pre></div>
+
+<p><strong>Paso 3 — Componentes del enlace 2 (fibra, 100 km, 100 Mbps).</strong></p>
+<div class="codehilite"><pre><span></span><code>  d_proc  = 0,05 ms
+
+  d_cola  = 0
+
+  d_trans = L / R = 8000 / 10⁸
+          = 8·10⁻⁵ s = 0,08 ms
+          ⚠️ 10 veces MENOS que en el enlace 1: el ancho de banda
+             es 100 veces mayor, pero el retardo de transmisión
+             es 8 ms / 0,08 ms = 100 veces menor... No: 8/0,08 = 100.
+             Sí, 100 veces. Consistente.
+
+  d_prop  = 10⁵ / 2·10⁸ = 5·10⁻⁴ s = 0,5 ms
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>  Subtotal e2 = 0,05 + 0 + 0,08 + 0,5 = 0,63 ms
+</code></pre></div>
+
+<p><strong>Paso 4 — El retardo total.</strong></p>
+<div class="codehilite"><pre><span></span><code>  d_total = Σ componentes
+
+  d_total = d_proc(e1) + d_cola(e1) + d_trans(e1) + d_prop(e1)
+          + d_proc(e2) + d_cola(e2) + d_trans(e2) + d_prop(e2)
+
+  ⚠️ d_proc APARECE 2 VECES: una por cada router. Si los dos
+     enlaces están unidos por UN switch, d_proc(e1) es el del switch
+     que recibe por el enlace 1 y manda por el 2, y d_proc(e2) es
+     el del switch que recibe por el 2 y manda por el 3.
+     Con SOLO 2 enlaces hay 1 switch intermedio: el host A
+     transmite, un switch, y el host B recibe. Por eso d_proc
+     del enlace 1 NO existe (es el host A, sin d_proc) y solo
+     hay 1 d_proc.
+
+  CORRECCIÓN DEL PASO 2 y 3:
+     d_proc del enlace 1 = 0 (A es un host)
+     d_proc del enlace 2 = 0,05 ms (un switch)
+
+  d_total = 0 + 0 + 8 + 0,25 + 0,05 + 0 + 0,08 + 0,5
+          = 8,88 ms
+</code></pre></div>
+
+<p><strong>Paso 5 — ¿Qué componente domina?</strong></p>
+<div class="codehilite"><pre><span></span><code>  ┌──────────────┬────────┬─────────┐
+  │ Componente   │ valor  │ %       │
+  ├──────────────┼────────┼─────────┤
+  │ d_trans(e1)  │ 8,00 ms│ 90,1 %  │  ◄── DOMINA
+  │ d_prop(e2)   │ 0,50 ms│  5,6 %  │
+  │ d_prop(e1)   │ 0,25 ms│  2,8 %  │
+  │ d_trans(e2)  │ 0,08 ms│  0,9 %  │
+  │ d_proc       │ 0,05 ms│  0,6 %  │
+  │ d_cola       │ 0      │  0 %    │
+  ├──────────────┼────────┼─────────┤
+  │ TOTAL        │ 8,88 ms│ 100 %   │
+  └──────────────┴────────┴─────────┘
+</code></pre></div>
+
+<p><strong>Interpretación — y es el punto del ejercicio:</strong></p>
+<blockquote>
+<p><strong>El enlace lento manda en el retardo total.</strong> El enlace de 1 Mbps tiene un <code>d_trans</code> de 8 ms; el de 100 Mbps, de 0,08 ms. El primero aporta el 90 % del retardo total <strong>pese a recorrer la mitad de distancia</strong>.</p>
+</blockquote>
+<p>Y el corolario, que es la lección de infraestructura:</p>
+<div class="codehilite"><pre><span></span><code>  Si subimos el enlace 1 de 1 Mbps a 100 Mbps:
+
+  d_trans(e1) = 8000/10⁸ = 0,08 ms
+  d_total nuevo = 0,08 + 0,25 + 0,05 + 0,08 + 0,5 = 0,96 ms
+
+  MEJORA DE 8,88 ms → 0,96 ms:  9,25 VECES más rápido.
+
+  ⚠️ PERO si además acortamos el enlace 2 de 100 km a 10 km:
+  d_prop(e2) = 10⁴/2·10⁸ = 0,05 ms
+  d_total = 0,08 + 0,25 + 0,05 + 0,08 + 0,05 = 0,51 ms
+
+  Ahí sí, el 1 Mbps pasa a ser el cuello de botella de verdad.
+</code></pre></div>
+
+<p><strong>La respuesta a la pregunta implícita:</strong> <em>en una WAN, primero hay que arreglar el enlace lento (el <code>d_trans</code> grande); en una red de backbone, primero hay que acortar las distancias (el <code>d_prop</code> grande).</em></p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Dividir bytes por bps.</strong> <code>1000/10⁶</code> en vez de <code>8000/10⁶</code>. Da un factor 8 de error. <strong>Todos los protocolos dan <code>L</code> en bytes; el retardo se calcula en bits.</strong></li>
+<li><strong>Poner <code>d_proc</code> tantas veces como enlaces.</strong> Con <code>n</code> enlaces hay <code>n − 1</code> routers. Este es el error del Examen 2011-03 P5.</li>
+<li><strong>Sumar <code>d_trans</code> una sola vez.</strong> Hay <strong>un <code>d_trans</code> por enlace</strong>, con el <code>R</code> de ese enlace.</li>
+<li><strong>Confundir 50 km con 5·10⁴ m.</strong> 1 km = 1000 m = 10³ m. 50 km = 5·10⁴ m.</li>
+<li><strong>Mezclar las unidades.</strong> Si <code>d_trans</code> sale en segundos y <code>d_prop</code> en milisegundos, hay que convertir antes de sumar.</li>
+</ul>
+<h2>2.2 Ejercicio 2 — El BDP con la aritmética completa</h2>
+<p><strong>Datos.</strong> Un enlace de <strong>50 Mbps</strong> une dos puntos separados por <strong>2 000 km</strong> de fibra (<code>s = 2·10⁸ m/s</code>). Se supone que no hay cola ni procesamiento.</p>
+<p><strong>a)</strong> ¿Cuánto tarda un paquete en llegar (latencia)?
+<strong>b)</strong> ¿Cuál es el RTT?
+<strong>c)</strong> ¿Cuál es el BDP, en bits y en bytes?
+<strong>d)</strong> Una conexión TCP tiene una ventana de <strong>128 KB</strong>. ¿Alcanza para llenar el enlace? ¿Cuál es el throughput máximo?</p>
+<p><strong>Resolución.</strong></p>
+<p><strong>Paso 1 — Latencia.</strong></p>
+<div class="codehilite"><pre><span></span><code>  d = 2 000 km = 2·10⁶ m
+  s = 2·10⁸ m/s
+
+  d_prop = 2·10⁶ / 2·10⁸ = 10⁻² s = 0,01 s = 10 ms
+
+  (ignorando d_trans y d_proc, como dice el enunciado)
+  latencia ≈ 10 ms
+</code></pre></div>
+
+<p><strong>Paso 2 — RTT.</strong></p>
+<div class="codehilite"><pre><span></span><code>  RTT = 2 × latencia = 2 × 10 ms = 20 ms = 0,02 s
+</code></pre></div>
+
+<p><strong>Paso 3 — BDP.</strong></p>
+<div class="codehilite"><pre><span></span><code>  R = 50 Mbps = 5·10⁷ bit/s
+  RTT = 0,02 s
+
+  BDP = R × RTT = 5·10⁷ bit/s × 0,02 s
+      = 10⁶ bits
+      = 1 000 000 bits
+
+  en bytes: 1 000 000 / 8 = 125 000 bytes = 125 kB = 122 kB aprox.
+</code></pre></div>
+
+<p><strong>Interpretación:</strong> en ese enlace, <strong>125 kB</strong> pueden estar en tránsito al mismo tiempo.</p>
+<p><strong>Paso 4 — ¿Alcanza una ventana de 128 kB?</strong></p>
+<div class="codehilite"><pre><span></span><code>  ventana = 128 kB = 128 × 1024 = 131 072 bytes
+  BDP     = 125 000 bytes
+
+  131 072 &gt; 125 000   →  SÍ alcanza, por poco (con 4,9 % de margen)
+</code></pre></div>
+
+<p><strong>Throughput máximo alcanzable:</strong></p>
+<div class="codehilite"><pre><span></span><code>  Throughput = ventana / RTT
+             = 131 072 bytes / 0,02 s
+             = 6 553 600 B/s
+             = 6,55 MB/s
+             = 52,4 Mbps
+</code></pre></div>
+
+<p><strong>Y el techo real del enlace:</strong></p>
+<div class="codehilite"><pre><span></span><code>  R = 50 Mbps
+  Throughput con la ventana de 128 kB = 52,4 Mbps &gt; 50 Mbps
+
+  ⚠️ 52,4 &gt; 50: la ventana SÍ alcanza. El tope es el ENLACE.
+  Throughput real = 50 Mbps = 6,25 MB/s
+
+  Para(Stream) verificar si la ventana alcanza, el criterio es:
+      ventana ≥ BDP   ⟺   throughput alcanzable ≥ R
+</code></pre></div>
+
+<p><strong>Paso 5 — Qué pasaría con ventanas más chicas.</strong></p>
+<div class="codehilite"><pre><span></span><code>  ┌──────────────┬───────────────┬──────────────────┬──────────────────┐
+  │ ventana      │ = BDP?        │ throughput       │ ¿aprovecha?      │
+  ├──────────────┼───────────────┼──────────────────┼──────────────────┤
+  │ 8 KB         │ 8192 &lt; 125000 │ 8192/0,02        │ 3,3 % ⚠️        │
+  │              │               │ = 410 kB/s       │                  │
+  │              │               │ = 3,3 Mbps       │                  │
+  ├──────────────┼───────────────┼──────────────────┼──────────────────┤
+  │ 64 KB        │ 65536 &lt; 125000│ 65536/0,02       │ 26 % ⚠️          │
+  │              │               │ = 3,28 MB/s      │                  │
+  │              │               │ = 26,2 Mbps      │                  │
+  ├──────────────┼───────────────┼──────────────────┼──────────────────┤
+  │ 125 KB       │ = 125 000     │ 125 000/0,02     │ 100 % ✓          │
+  │              │               │ = 6,25 MB/s      │                  │
+  │              │               │ = 50 Mbps        │                  │
+  ├──────────────┼───────────────┼──────────────────┼──────────────────┤
+  │ 1 MB         │ &gt; BDP         │ limitado por el  │ 100 % ✓          │
+  │              │               │ enlace: 50 Mbps  │ (sobra ventana)  │
+  └──────────────┴───────────────┴──────────────────┴──────────────────┘
+</code></pre></div>
+
+<p><strong>Interpretación y la lección:</strong></p>
+<blockquote>
+<p>Con una ventana de <strong>8 kB</strong> (el <code>rwnd</code> por defecto de Windows durante años) en este enlace, se aprovecha el <strong>3,3 %</strong> del ancho de banda. El enlace no está lento: <strong>falta ventana</strong>. Con <strong>64 kB</strong>, el 26 %. Recién con <strong>125 kB</strong> se llena.</p>
+</blockquote>
+<p><strong>Y el cálculo del tiempo que tardaría en descargar 10 MB:</strong></p>
+<div class="codehilite"><pre><span></span><code>  Con 8 kB de ventana:
+     rounds = 10 485 760 bytes / 8192 bytes = 1280 rounds
+     tiempo = 1280 × 20 ms = 25,6 s
+     throughput = 10 485 760/25,6 = 409 600 B/s = 3,3 Mbps ✓
+
+  Con 125 kB de ventana (enlazada al BDP):
+     rounds = 10 485 760 / 125 000 = 84 rounds
+     tiempo = 84 × 20 ms = 1,68 s
+     throughput = 10 485 760/1,68 = 6,24 MB/s = 50 Mbps ✓
+
+  ⇒ 15,2 VECES más rápido con solo agrandar la ventana.
+</code></pre></div>
+
+<h2>2.3 Ejercicio 3 — RTT, latencia y la diferencia entre las dos</h2>
+<p><strong>Datos.</strong> Un <code>traceroute</code> desde Montevideo a Madrid da:</p>
+<div class="codehilite"><pre><span></span><code>  1  fw.campus.udelar.edu.uy (203.0.113.1)     0,412 ms  0,389 ms  0,401 ms
+  2  bundle-ethernet.antibot.com (198.51.100.7)  8,104 ms  8,220 ms  8,051 ms
+  3  ae-3.border.bb.madrid.es (192.0.2.44)      118,7 ms 119,2 ms 118,9 ms
+  4  www.ejemplo.es (203.0.113.200)             121,3 ms 121,0 ms 121,4 ms
+</code></pre></div>
+
+<p><strong>a)</strong> ¿Cuál es el RTT a cada nodo? ¿Cuál es la latencia?
+<strong>b)</strong> ¿Cuál es el RTT mínimo de la conexión? ¿Y el jitter?
+<strong>c)</strong> ¿Cuánto del RTT es la red y cuánto es el último salto?</p>
+<p><strong>Resolución.</strong></p>
+<p><strong>a) Lo que da el <code>traceroute</code>:</strong></p>
+<div class="codehilite"><pre><span></span><code>  Cada línea muestra TRES RTT distintos, uno por cada uno de los
+  3 probes que manda traceroute.
+
+  El RTT es el tiempo de ida y vuelta.
+  La latencia (tiempo de un viaje de ida) ≈ RTT / 2
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>Salto</th>
+<th>Nodo</th>
+<th>RTT (v1)</th>
+<th>RTT (v2)</th>
+<th>RTT (v3)</th>
+<th><strong>Latencia ≈ RTT/2</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>gateway del campus</td>
+<td>0,412</td>
+<td>0,389</td>
+<td><strong>0,389</strong></td>
+<td><strong>0,21 ms</strong></td>
+</tr>
+<tr>
+<td>2</td>
+<td>borde del ISP</td>
+<td>8,104</td>
+<td>8,220</td>
+<td><strong>8,051</strong></td>
+<td><strong>4,03 ms</strong></td>
+</tr>
+<tr>
+<td>3</td>
+<td>border de Madrid</td>
+<td>118,7</td>
+<td>119,2</td>
+<td><strong>118,9</strong></td>
+<td><strong>59,5 ms</strong></td>
+</tr>
+<tr>
+<td>4</td>
+<td>servidor final</td>
+<td>121,3</td>
+<td>121,0</td>
+<td><strong>121,0</strong></td>
+<td><strong>60,5 ms</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>⚠️ La advertencia de la solución oficial del Examen 2011-03 P3, textual:</strong></p>
+<blockquote>
+<p><em>"Dado que el camino que siguen los paquetes de ida y vuelta de una comunicación sobre Internet no necesariamente son el mismo, las respuestas, tanto de los nodos intermedios como del destino pueden recorrer un camino distinto al que siguieron los paquetes que las motivaron."</em></p>
+</blockquote>
+<p>⇒ <strong>El RTT/2 no es la latencia real salvo que el camino sea simétrico.</strong> Es una <strong>estimación</strong>.</p>
+<p><strong>b) RTT mínimo y jitter.</strong></p>
+<div class="codehilite"><pre><span></span><code>  RTT mínimo de la conexión = el menor RTT del último salto
+                             = 121,0 ms
+
+  Los tres RTT del último salto: 121,3 · 121,0 · 121,4
+  promedio = (121,3 + 121,0 + 121,4)/3 = 121,23 ms
+  jitter (pico a pico) = 121,4 − 121,0 = 0,4 ms
+  desviación estándar:
+      = √(((121,3−121,23)² + (121,0−121,23)² + (121,4−121,23)²)/3)
+      = √((0,0049 + 0,0529 + 0,0289)/3)
+      = √0,0289 = 0,17 ms
+</code></pre></div>
+
+<p><strong>Interpretación:</strong> el jitter de <strong>0,4 ms</strong> en un enlace transatlántico es <strong>excelente</strong>. Significa que la red no tiene congestión: las colas están vacías. Un jitter de 30 ms en el mismo enlace indicaría colas de 30 ms, es decir, saturación.</p>
+<p><strong>c) Reparto del RTT: la red vs. el último salto.</strong></p>
+<div class="codehilite"><pre><span></span><code>  RTT al gateway del campus (salto 1):  0,389 ms
+  RTT total al destino (salto 4):      121,0 ms
+
+  RETARDO EN LA RED INTERNA (saltos 1→4):
+      121,0 − 0,389 = 120,6 ms  →  99,7 % del RTT
+
+  RETARDO DEL ÚLTIMO SALTO (salto 3→4, dentro de la red de destino):
+      121,0 − 118,9 = 2,1 ms     →  1,7 % del RTT
+</code></pre></div>
+
+<p><strong>Lo que esto significa, y es la lección de la tabla:</strong></p>
+<blockquote>
+<p><strong>El 99,7 % del retardo está en los enlaces de larga distancia, no en la red local.</strong> El último tramo, que es el que el proveedor controla y por el que el usuario pregunta, aporta el 1,7 %. Por eso mejorar la conexión de un campus a un servidor remoto <strong>rinde muchísimo menos</strong> que acortar el camino o mejorar el enlace troncal.</p>
+</blockquote>
+<p><strong>Y el cálculo del ancho de banda imposible, que es el indicador definitivo de cuello de botella:</strong></p>
+<div class="codehilite"><pre><span></span><code>  RTT accumulates:  la LATENCIA es irrecuperable.
+  Download speed:  el throughput SÍ se puede subir agrandando la ventana.
+
+  Con ventana = 65536 B (64 kB):
+      throughput = 65 536 / 0,121 s = 541 620 B/s = 4,3 Mbps
+      → Con un enlace de 100 Mbps se aprovecha el 4,3 %.
+
+  Con ventana = 8 MB (agregando Window Scale, RFC 7323):
+      throughput = 8 388 608 / 0,121 s = 69,3 MB/s = 555 Mbps
+      → Ahora sí, el enlace es el techo.
+</code></pre></div>
+
+<h2>2.4 Ejercicio 4 — Dos paquetes de distinto tamaño en el mismo enlace</h2>
+<p><strong>Datos.</strong> Un enlace de <strong>10 Mbps</strong> con fibra de <strong>50 km</strong> (<code>s = 2·10⁸ m/s</code>). Llegan dos paquetes: <strong>P1 de 100 bytes</strong> y <strong>P2 de 10 000 bytes</strong>.</p>
+<p><strong>a)</strong> Calculá los 4 componentes de cada uno.
+<strong>b)</strong> ¿Qué cambia y qué no al pasar de un paquete a otro?</p>
+<p><strong>Resolución.</strong></p>
+<div class="codehilite"><pre><span></span><code>  P1: L = 100 bytes = 800 bits
+  P2: L = 10 000 bytes = 80 000 bits
+
+  R = 10 Mbps = 10⁷ bit/s
+  d = 50 km = 5·10⁴ m
+  s = 2·10⁸ m/s
+</code></pre></div>
+
+<p><strong>Paso 1 — <code>d_trans</code> de cada uno.</strong></p>
+<div class="codehilite"><pre><span></span><code>  d_trans(P1) = L/R = 800 / 10⁷ = 8·10⁻⁵ s = 0,08 ms
+
+  d_trans(P2) = L/R = 80 000 / 10⁷ = 8·10⁻³ s = 8 ms
+
+  ⚠️ 100 veces de diferencia. El paquete grande tarda 100 veces
+     más en TRANSMITIRSE. Un paquete de 100 bytes "sale" en 80 µs;
+     uno de 10 000 bytes tarda 8 ms en salir entero.
+</code></pre></div>
+
+<p><strong>Paso 2 — <code>d_prop</code> de cada uno.</strong></p>
+<div class="codehilite"><pre><span></span><code>  d_prop(P1) = d/s = 5·10⁴ / 2·10⁸ = 2,5·10⁻⁴ s = 0,25 ms
+  d_prop(P2) = d/s = 5·10⁴ / 2·10⁸ = 2,5·10⁻⁴ s = 0,25 ms
+
+  ⚠️ IDÉNTICOS. El paquete grande no tarda más en PROPAGARSE.
+</code></pre></div>
+
+<p><strong>Paso 3 — <code>d_proc</code> y <code>d_cola</code>.</strong></p>
+<div class="codehilite"><pre><span></span><code>  d_proc: los mismos 2 µs para los dos (el router no mira L
+          para procesar la cabecera; el CRC sí cubre L, pero
+          el CRC-32 de un hardware a 10 Gbps va a ~1 bit/ciclo)
+  d_cola: Supongamos que P2 llega primero y ocupa el enlace.
+          d_cola(P1) = 8 ms  (espera a que P2 salga entero)
+          d_cola(P2) = 0
+</code></pre></div>
+
+<p><strong>Paso 4 — La tabla comparativa.</strong></p>
+<div class="codehilite"><pre><span></span><code>  ┌────────────┬──────────────────┬──────────────────┬──────────────────┐
+  │            │ P1 (100 B)       │ P2 (10 000 B)    │ ¿cambió?         │
+  ├────────────┼──────────────────┼──────────────────┼──────────────────┤
+  │ L (bits)   │ 800              │ 80 000           │ SÍ (×100)        │
+  │ d_proc     │ 2 µs             │ 2 µs             │ NO               │
+  │ d_cola     │ 8 ms             │ 0                │ SÍ               │
+  │ d_trans    │ 0,08 ms          │ 8 ms             │ SÍ (×100)        │
+  │ d_prop     │ 0,25 ms          │ 0,25 ms          │ NO  ⚠️           │
+  ├────────────┼──────────────────┼──────────────────┼──────────────────┤
+  │ TOTAL      │ 8,332 ms         │ 8,252 ms         │ ~igual           │
+  └────────────┴──────────────────┴──────────────────┴──────────────────┘
+</code></pre></div>
+
+<p><strong>Interpretación — el resultado que hay que entender:</strong></p>
+<blockquote>
+<p><strong>El paquete 100 veces más grande tarda (casi) lo mismo</strong>, y la razón es que el <code>d_trans</code> grande se <strong>compensa</strong> con una <code>d_cola</code> chica: el paquete grande ya estaba "en la cabeza" de la cola.</p>
+</blockquote>
+<p><strong>Y si los dos llegaran AL MISMO TIEMPO a una cola vacía:</strong></p>
+<div class="codehilite"><pre><span></span><code>  d_cola(P1) = d_cola(P2) = 0
+
+  TOTAL(P1) = 2 µs + 0,08 + 0,25 ms = 0,332 ms
+  TOTAL(P2) = 2 µs + 8    + 0,25 ms = 8,252 ms
+
+  ⚠️ AHORA SÍ: el grande tarda 24,8 VECES más.
+</code></pre></div>
+
+<p><strong>La conclusión, que es lo que hay que decir:</strong></p>
+<div class="codehilite"><pre><span></span><code>  ┌────────────────────────────────────────────────────────────────┐
+  │ El tamaño del paquete SÍ cambia el retardo total, pero solo    │
+  │ a través de d_transmisión (y de d_cola).                       │
+  │                                                                │
+  │ El retardo de PROPAGACIÓN es INDEPENDIENTE del tamaño.          │
+  │                                                                │
+  │ Ése es el contenido de la Pregunta 1a del Examen 2009-12:       │
+  │ los dos componentes que dependen de cosas DIFERENTES.          │
+  │                                                                │
+  │ Y por eso un enlace de 1 Gbps con paquete de 1500 bytes tiene   │
+  │ d_trans = 12 µs (despreciable) mientras que uno de 100 Mbps     │
+  │ tiene d_trans = 120 µs (comparable a la propagación).           │
+  │ El ancho de banda determina si el d_trans es o no relevante.   │
+  └────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2009-12, Pregunta 1 (10 puntos) — los componentes del retardo</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>sirc0912</code> — 18 de diciembre de 2009, Pregunta 1 (10 puntos).
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0912.pdf</p>
+</blockquote>
+<h3>Enunciado (texto del examen)</h3>
+<blockquote>
+<p>Identifique los componentes del retardo en las redes de paquetes, y señale cuáles son los más significativos. En particular:
+<strong>a)</strong> Señale las diferencias entre el ancho de banda y la velocidad de propagación en el medio.
+<strong>b)</strong> ¿En qué componente del retardo influye la congestión?</p>
+</blockquote>
+<h3>Solución oficial (completa)</h3>
+<blockquote>
+<p>Retardo de procesamiento en el nodo
+Por ejemplo chequeo de paridad (CRC), determinar enlace de salida (enrutamiento).</p>
+<p>Retardo de encolamiento (buffering)
+Espera en colas del enlace de salida para trasmisión</p>
+<p>Retardo de trasmisión
+Sea R = ancho de banda del enlace (bps) y L = longitud del paquete (bits), el tiempo de envío = L/R</p>
+<p>Retardo de propagación
+Sea d = longitud del enlace físico y s = velocidad de propagación en el medio, el retardo de propagación = d/s</p>
+<p><strong>a)</strong> B es la capacidad de los puertos del dispositivo (switch o router), por ejemplo Ethernet, STM-1, mientras que s es una característica del medio, por ejemplo s ~ 2×10⁸ m/seg en cobre.</p>
+<p><strong>b)</strong> El retardo de encolamiento depende del nivel de congestión del router.</p>
+</blockquote>
+<h3>Análisis de la solución oficial</h3>
+<p><strong>Lo que está muy bien:</strong></p>
+<ol>
+<li>
+<p><strong>Las cuatro fórmulas están exactamente correctas y con las variables definidas.</strong> <code>L/R</code> con <code>L</code> en bits y <code>R</code> en bps; <code>d/s</code> con <code>d</code> en longitud de enlace y <code>s</code> en m/s. Eso es exactamente lo que hay que saber, y está perfecto.</p>
+</li>
+<li>
+<p><strong>Nombra los ejemplos correctos del <code>d_proc</code></strong>: chequeo de paridad (CRC) y "determinar enlace de salida (enrutamiento)". Los dos son las tareas reales de un router. La oficial hasta usa la palabra <strong>"enrutamiento"</strong> para el lookup, que es la terminología de la cátedra.</p>
+</li>
+<li>
+<p><strong>La definición de <code>d_cola</code> es la buena</strong>: <em>"espera en colas del enlace de salida"</em>. Dice <strong>del enlace de SALIDA</strong>, que es el detalle correcto (es el enlace por el que va a salir, no por el que llegó).</p>
+</li>
+<li>
+<p><strong>El apartado a) es una frase precisa</strong>: <em>"B es la capacidad de los puertos del dispositivo, mientras que s es una característica del medio"</em>. Es exactamente la distinción.</p>
+</li>
+</ol>
+<p><strong>Lo que falta, y son los puntos que se ganan:</strong></p>
+<ol>
+<li>
+<p><strong>No dice cuáles son "los más significativos".</strong> El enunciado lo pide explícitamente y la oficial <strong>no lo responde</strong>. Hay que decir: <strong><code>d_propagación</code> y <code>d_transmisión</code></strong>, porque son los dos únicos que se pueden calcular con los datos del problema y los que dominan en enlaces de cualquier longitud relevante. <code>d_proc</code> es despreciable (microsegundos) y <code>d_cola</code> es variable (no se puede calcular).</p>
+</li>
+<li>
+<p><strong>No da las unidades de <code>d</code> ni de <code>L</code>.</strong> Dice "longitud del enlace físico" y "longitud del paquete (bits)". Falta: <strong><code>d</code> en METROS</strong> y <strong><code>L</code> en BITS</strong>. Es el error número uno de los alumnos.</p>
+</li>
+<li>
+<p><strong>No menciona que <code>s</code> no cambia con el enlace ni con el ancho de banda.</strong> El apartado a) lo insinúa ("característica del medio"), pero no lo dice.</p>
+</li>
+<li>
+<p><strong>El apartado b) es correcto pero escueto.</strong> Dice "el retardo de encolamiento depende del nivel de congestión del router", y <strong>eso es todo lo que hay que decir para el punto</strong>. Lo que suma es encadenar: congestión → cola más larga → <strong>retardo total</strong> ↑, y si se desborda → <strong>pérdida</strong>. La oficial no menciona las pérdidas.</p>
+</li>
+<li>
+<p><strong>No dice que los otros tres componentes NO dependen de la congestión.</strong> Es el complemento del apartado b) y es lo que demuestra que entendiste la estructura.</p>
+</li>
+</ol>
+<h3>Mi respuesta completa (para los 10 puntos)</h3>
+<p><strong>Los cuatro componentes:</strong></p>
+<div class="codehilite"><pre><span></span><code>  d_end2end = d_proc + d_cola + d_transmisión + d_propagación
+
+  1. RETARDO DE PROCESAMIENTO  (d_proc)
+     Qué: el tiempo que tarda el nodo en procesar el paquete entre
+     que entra por una interfaz y sale por otra: verificación de
+     errores (CRC o paridad), lectura de la cabecera, decremento
+     del TTL y recálculo del checksum, y la búsqueda del enlace de
+     salida (enrutamiento: longest prefix match).
+     Depende de: la velocidad del procesador y del bus, y del ancho
+     de banda del fabric.
+     Típico: ~1 µs.  DESPRECIABLE en cualquier enlace de &gt;1 km.
+
+  2. RETARDO DE ENCOLAMIENTO  (d_cola)
+     Qué: la espera en la cola del enlace de SALIDA antes de que le
+     toque ser transmitido.
+     Depende de: el tráfico que hay por delante en la cola.
+     Fórmula, para un paquete en la posición k de una cola de
+     paquetes de L bits: d_cola = k · L / R_salida.
+     Puede ser CERO (si el enlace está libre) y NO TIENE COTA
+     SUPERIOR.  Es EL ÚNICO COMPONENTE VARIABLE.
+
+  3. RETARDO DE TRANSMISIÓN  (d_transmisión)
+     Qué: el tiempo que tarda el emisor en poner el paquete entero
+     en el cable, del primer bit al último.
+     Fórmula: d_trans = L / R
+       L = longitud del paquete EN BITS
+       R = velocidad de transmisión del enlace (bps), es decir, su
+           ancho de banda.
+     Depende de: L y R.  NO del medio, NO de la distancia.
+     ⚠️ Es el componente que cambia al cambiar el tamaño del paquete.
+
+  4. RETARDO DE PROPAGACIÓN  (d_propagación)
+     Qué: el tiempo que tarda la SEÑAL en recorrer el medio físico.
+     Fórmula: d_prop = d / s
+       d = longitud del enlace físico, EN METROS
+       s = velocidad de propagación en el medio, EN m/s
+           (≈2·10⁸ m/s en cobre y fibra; ≈3·10⁸ en vacío)
+     Depende de: d y s.  NO del paquete, NO del ancho de banda.
+     ⚠️ Es el componente que NO cambia al cambiar el tamaño del
+        paquete.
+
+  ─────────────────────────────────────────────────────────────────
+  CUÁLES SON LOS MÁS SIGNIFICATIVOS
+
+  Los dos SIGNIFICATIVOS son d_transmisión y d_propagación:
+   · Son los únicos dos que se pueden CALCULAR con los datos del
+     enunciado (L, R, d, s).
+   · Son los que DOMINAN: en un enlace de 100 km a 1 Gbps con un
+     paquete de 1500 bytes, d_trans = 12 µs y d_prop = 500 µs, y
+     los otros dos son despreciables frente a eso.
+
+  d_proc es despreciable: del orden de 1 µs, contra los ms de
+  propagación de cualquier enlace interurbano.
+  d_cola es el más relevante OPERATIVAMENTE (es el que la
+  congestión mueve), pero NO es calculable a priori.
+  ```
+
+**a) Las diferencias, con las unidades:**
+</code></pre></div>
+
+<p>ANCHO DE BANDA  (B o R)
+   - Unidad: bits por SEGUNDO (bps)
+   - Qué es: la CAPACIDAD MÁXIMA de transferencia del enlace
+   - De qué depende: del EQUIPO (los puertos del switch o router,
+     el transceiver, la modulación): Ethernet de 1 Gbps, STM-1 de
+     2,048 Mbps, 100 GbE.
+   - NO depende de: el medio físico ni de la longitud del enlace
+   - Aparece en: d_transmisión = L / R</p>
+<p>VELOCIDAD DE PROPAGACIÓN  (s)
+   - Unidad: METROS por SEGUNDO (m/s)
+   - Qué es: la rapidez con que viaja la SEÑAL por el medio
+   - De qué depende: del MEDIO FÍSICO (la física del material):
+     cobre ≈2·10⁸ m/s, fibra ≈2·10⁸ m/s, vacío 3·10⁸ m/s.
+   - NO depende de: el equipo, el ancho de banda ni la longitud
+   - Aparece en: d_propagación = d / s</p>
+<p>CONCLUSIÓN: son magnitudes de UNIDADES DISTINTAS (bps frente a
+  m/s) que dependen de COSAS DISTINTAS (el equipo frente al medio).
+  Duplicar el ancho de banda reduce d_transmisión a la mitad y NO
+  cambia d_propagación. Un enlace de 1 Gbps no es 50 veces más
+  rápido que uno de 100 Mbps: es 50 veces más ANCHO.</p>
+<div class="codehilite"><pre><span></span><code>**b) En qué componente influye la congestión:**
+</code></pre></div>
+
+<p>La congestión influye SÓLO en el RETARDO DE ENCOLAMIENTO (d_cola).</p>
+<p>Porque es el único componente que depende del estado de la cola,
+  y la congestión ES el estado de la cola. Los otros tres dependen
+  solo de L, R, d, s y del procesador, que no cambian con la carga.</p>
+<p>La cadena completa:
+     más tráfico ofrecido → las colas se agrandan → d_cola AUMENTA
+        → el retardo total AUMENTA
+        → y si el buffer se DESBORDA, el paquete se descarta
+        → PÉRDIDAS</p>
+<p>Es decir: la congestión se MANIFIESTA en retardo de cola y en
+  pérdidas, que son los dos únicos síntomas observables. Nunca
+  modifica d_transmisión, d_propagación ni d_proc.</p>
+<div class="codehilite"><pre><span></span><code>## 3.2 ⭐ Examen 2011-03, Pregunta 2 (6 puntos) — congestión, pérdidas y retardo
+
+&gt; **Fuente:** Examen `sirc1103` — 21 de febrero de 2011, Pregunta 2 (6 puntos).
+&gt; **Link:** https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1103.pdf
+
+### Enunciado (texto del examen)
+
+&gt; Dada una red de conmutación de paquetes, explique los conceptos de congestión, pérdidas y retardo.
+
+### Solución oficial (completa)
+
+&gt; **Congestión:** La congestión está asociada a la escasez, durante un período de tiempo, de los recursos (compartidos) necesarios para procesar adecuadamente todos los paquetes que pretenden hacer uso de los mismos. Esos recursos son básicamente: capacidad de procesamiento y buffers en los routers y, enlaces. De ocurrir congestión en algún segmento de red (conjunto de router/s y/o enlace/s) ella se manifestará en *pérdidas* y/o *retardos* de paquetes, para lo cual algunos protocolos (por ejemplo TCP) implementan ciertas medidas proactivas y/o reactivas para evitar la congestión o minimizar su impacto buscando una mayor resiliencia de la red a la misma.
+&gt;
+&gt; **Pérdida:** Los paquetes se encolan en buffers en los routers antes de ser enviados por el enlace de salida; si un paquete no encuentra espacio disponible en un buffer, será descartado (*pérdida*).
+&gt;
+&gt; **Retardo:** Si un paquete encuentra lugar en el buffer pero su envío por el enlace de salida se ve retrasado (por existir otros paquetes esperando poder hacerlo antes que él) sufrirá de *retardo* (retardo de cola). También puede sufrir *retardo* por el procesamiento que se le debe realizar en el nodo previo a ser colocado en el buffer de salida (chequeos de errores, modificaciones de campos de cabecera, ...). Adicionalmente habrá *retardo* debido a la propagación del paquete en el medio físico y también motivado en el ancho de banda disponible en el enlace de salida y su relación con el tamaño del paquete que se desea enviar (retardo de transmisión).
+
+### Análisis de la solución oficial
+
+**Lo que está muy bien:**
+
+1. **La definición de congestión tiene los cuatro elementos correctos**: escasez, recursos compartidos, **durante un período de tiempo**, y recursos de **capacidades de procesamiento y buffers**. Es una definición precisa, no una vaga.
+
+2. **Dice explícitamente que la congestión "se manifestará en pérdidas y/o retardos"**, y que los protocolos implementan "medidas proactivas y/o reactivas". Eso ya conecta con el control de congestión (Clase 21).
+
+3. **La definición de pérdida da el mecanismo exacto**: "los paquetes se encolan en buffers antes de ser enviados por el enlace de salida; si no encuentra espacio, será descartado". Eso es *tail drop*, y está bien dicho.
+
+4. **La definición de retardo menciona los cuatro componentes en un párrafo**, con los ejemplos correctos: "chequeos de errores, modificaciones de campos de cabecera" (que es `d_proc`), "espera en cola" (`d_cola`), "propagación en el medio físico" (`d_prop`), y "ancho de banda disponible... y su relación con el tamaño del paquete" (`d_trans`).
+
+**Lo que falta o se puede mejorar:**
+
+1. **No da las fórmulas.** La oficial describe los componentes pero no escribe `L/R` ni `d/s`. La Pregunta 1 del Examen 2009-12 (10 puntos) sí las pedía, así que la cátedra las conoce; acá no eran necesarias. **Sumarlas suma puntos.**
+2. **No dice que la congestión "no existe" sin compartición.** Dice "recursos compartidos", que es la clave, pero no lo desarrolla: **si el recurso es dedicado, no hay congestión.**
+3. **La definición de retardo no distingue el retardo "de congestion" del "de física".** Podría haber dicho: *"los tres primeros componentes existen siempre; solo `d_cola` es el que produce la congestión"*.
+4. **No menciona que una pérdida en la capa 3 es irreversible.** Un paquete descartado en un router **no vuelve**: IP no reintenta. Solo el emisor puede mandarlo otra vez.
+5. **No menciona que hay pérdidas por otras causas** (checksum, TTL, filtros), que es lo que impide decir "pérdida = congestión".
+
+### Mi respuesta completa (para los 6 puntos)
+
+**Congestión.** Es la **escasez, durante un período de tiempo, de los recursos compartidos** necesarios para procesar adecuadamente todos los paquetes que quieren usarlos. Los recursos son la **capacidad de procesamiento** (el fabric y la CPU del router) y los **buffers** (las colas de los enlaces de salida), y también el **ancho de banda de los enlaces**, que es compartido por todos los usuarios.
+
+Tres precisiones que hay que hacer:
+
+- **Es un fenómeno de compartición.** Si el recurso fuera dedicado, no habría congestión. La congestión aparece porque **muchos flujos comparten** el mismo enlace, el mismo buffer y el mismo router.
+- **Es temporal.** Una ráfaga de 200 ms no es congestión; 200 ms de saturación sostenida sí. Por eso los mecanismos de control (AQM, EC marking) tienen ventanas de tiempo.
+- **No es observable directamente.** La congestión es un estado interno de la red; lo que se observa son sus **síntomas**: retardo y pérdida.
+
+**Pérdida.** Un paquete **se descarta cuando no encuentra lugar en un buffer**. Los paquetes se encolan en los buffers de los routers antes de ser enviados por el enlace de salida; si el buffer está lleno, el que llega último se descarta (*tail drop*).
+
+Hay que agregar dos precisiones:
+
+- **Una pérdida de capa 3 es irreversible.** El paquete descartado no vuelve: **IP no tiene mecanismo de reintento**. Lo único que puede hacer el emisor es mandarlo de nuevo (que es lo que hace TCP, y por eso TCP necesita numerar bytes y reconocer).
+- **No toda pérdida es por congestión.** También hay checksum incorrecto (error del medio), TTL que llega a 0, filtros de firewall y fragmentación perdida. **Por eso TCP no puede distinguir una pérdida por congestión de una pérdida por error del medio**, y por eso su reacción (bajar la ventana) es conservadora en el segundo caso.
+
+**Retardo.** Es el tiempo que tarda un paquete en ir de un nodo al siguiente, y tiene cuatro componentes: procesamiento (chequeos de errores, lectura de la cabecera, decremento del TTL, búsqueda del enlace de salida), encolamiento (espera en la cola del enlace de salida), transmisión (`L/R`, que depende del ancho de banda del enlace y del tamaño del paquete) y propagación (`d/s`, que depende de la distancia física y de la velocidad de la señal en el medio).
+
+**El vínculo entre los tres, que es lo que hay que argumentar:**
+</code></pre></div>
+
+<p>La congestión es la CAUSA; el retardo y la pérdida son los
+  SÍNTOMAS. Y los dos síntomas vienen del mismo mecanismo: la cola.</p>
+<p>┌───────────────────────────────────────────────────────────────┐
+  │ CONGESTIÓN: más paquetes offered de los que el enlace puede   │
+  │ sacar.                                                        │
+  │                                                               │
+  │   La cola del enlace de salida se agranda                      │
+  │        │                                                      │
+  │        ├──▶ RETARDO: los paquetes de atrás esperan más.       │
+  │        │    d_cola aumenta → retardo total y JITTER aumentan. │
+  │        │                                                      │
+  │        └──▶ si la cola llega al límite del buffer:            │
+  │             PÉRDIDA: los que no entran se descartan.          │
+  │                                                               │
+  │ ⚠️ El retardo es el síntoma PRECOZ y la pérdida el tardío.    │
+  │    Por eso un diseño que controla el retardo (AQM, ECN con    │
+  │    umbral bajo) controla la congestión ANTES de que pierda.   │
+  └───────────────────────────────────────────────────────────────┘</p>
+<div class="codehilite"><pre><span></span><code>**La frase de cierre:**
+
+&gt; La congestión **se manifiesta en** pérdidas y retardos. El retardo es el síntoma que aparece primero y el más difícil de medir (no hay un "número" de congestión), mientras que la pérdida es el síntoma tardío y más brusco. Por eso el control de congestión moderno (**ECN**, `RFC 3168`, y los AQMs como CoDel) actúa sobre el **retardo**: marcar o descartar cuando la cola pasa cierto umbral, en lugar de esperar a que el buffer se llene.
+
+---
+
+# PARTE 4 — CIERRE
+
+## 📌 Resumen
+
+1. **`d_end2end = d_proc + d_cola + d_transmisión + d_propagación`**, y el total se **suma por cada enlace** y por cada router.
+2. **`n` enlaces dan `n` términos de `d_trans` y `n` de `d_prop`, pero `n − 1` de `d_proc`.** Ese es el error del Examen 2011-03.
+3. **`d_trans = L/R`**: `L` en **BITS**, `R` en bps. **No depende del medio ni de la distancia.**
+4. **`d_prop = d/s`**: `d` en **METROS**, `s` en m/s (~2·10⁸ en cobre y fibra). **No depende del paquete ni del ancho de banda.**
+5. **`d_cola = k · L/R_salida`** es el **único componente variable** y el **único que refleja la congestión**.
+6. **`d_proc`** es despreciable (~1 µs) porque no depende de la carga; en un router de 100 Gbps puede llegar a 10 µs, pero sigue sin depender de la carga.
+7. **Los más significativos** son `d_trans` y `d_prop`, porque son los **calculables** y los que **dominan**; `d_proc` se desprecia; `d_cola` es el relevante **operativamente** pero no calculable.
+8. **BW (bps, del equipo) ≠ `s` (m/s, del medio).** Duplicar el BW reduce `d_trans` a la mitad y **no toca** `d_prop`.
+9. **`BDP = R · RTT`** son los bits en vuelo. Si `ventana &lt; BDP`, el throughput queda limitado por la ventana. De ahí `Window Scale` (`RFC 7323`).
+10. **Latencia** = un viaje; **RTT** = dos (≈ `2d/s`, y **solo si el camino es simétrico**); **jitter** = la variación. El jitter **rompe el audio**, y viene de la `d_cola`.
+
+## ✅ Autoevaluación
+
+**1.** Un paquete de 800 bytes cruza un enlace de 2 Mbps y 100 km de cobre. ¿Cuánto tarda en Cada componente?
+
+&lt;details&gt;&lt;summary&gt;Respuesta&lt;/summary&gt;
+</code></pre></div>
+
+<p>L = 800 bytes × 8 = 6400 bits      ⚠️ EN BITS
+  R = 2 Mbps = 2·10⁶ bit/s
+  d = 100 km = 10⁵ m
+  s = 2·10⁸ m/s (cobre)</p>
+<div class="codehilite"><pre><span></span><code>
+</code></pre></div>
+
+<p>d_transmisión = L/R = 6400 / 2·10⁶ = 3,2·10⁻³ s = 3,2 ms
+  d_propagación = d/s = 10⁵ / 2·10⁸ = 5·10⁻⁴ s = 0,5 ms
+  d_cola        = 0 (sin dato, supongo que no hay)
+  d_proc        ≈ 1 µs = 0,001 ms</p>
+<p>TOTAL = 3,2 + 0,5 + 0 + 0,001 = 3,701 ms</p>
+<div class="codehilite"><pre><span></span><code>**Interpretación y el punto del ejercicio:** acá **el `d_trans` DOMINA** (86 % del total), a diferencia de los enlaces de backbone donde domina la propagación. La razón: 2 Mbps es un ancho de banda bajo y 800 bytes es un paquete relativamente grande.
+
+El criterio: el `d_trans` importa cuando el enlace es **lento** o el paquete es **grande**. El `d_prop` importa cuando el enlace es **largo**.
+
+&lt;/details&gt;
+
+**2.** ¿Por qué la solución oficial del Examen 2009-12 no responde la parte de "señale cuáles son los más significativos"?
+
+&lt;details&gt;&lt;summary&gt;Respuesta&lt;/summary&gt;
+
+Porque es un detalle que la cátedra da por obvio, pero **la pregunta lo pide explícitamente** y por eso hay que responderlo.
+
+**La respuesta correcta: los más significativos son `d_transmisión` y `d_propagación`.**
+
+Las razones son dos:
+
+1. **Son los únicos calculables** con los datos que da el enunciado. `d_proc` depende del modelo del router (que no dan) y `d_cola` depende del estado de la cola (que no dan).
+2. **Son los que dominan en términos absolutos**: `d_prop` va de milisegundos a cientos de milisegundos; `d_trans` de microsegundos a milisegundos; `d_proc` de nanosegundos a un par de microsegundos.
+
+`d_cola` es el más relevante **operativamente** — es el que la congestión mueve y el que produce el jitter — pero **no es calculable a priori**, y por eso en un problema de aritmética se lo descarta con la hipótesis "sin retardo de cola".
+
+&lt;/details&gt;
+
+**3.** Dos paquetes del mismo tamaño viajan por el mismo enlace. Uno va por cobre y el otro por fibra. ¿Cambia algo del retardo?
+
+&lt;details&gt;&lt;summary&gt;Respuesta&lt;/summary&gt;
+
+**Solo cambia la `d_propagación`, y muy poco.**
+</code></pre></div>
+
+<p>Cobre:  s = 2,00·10⁸ m/s
+  Fibra:  s = 2,04·10⁸ m/s
+  d = 1000 km = 10⁶ m</p>
+<p>d_prop(cobre) = 10⁶/2,00·10⁸ = 5,000 ms
+  d_prop(fibra) = 10⁶/2,04·10⁸ = 4,902 ms</p>
+<p>diferencia = 0,098 ms = 98 µs   (un 2 %)</p>
+<div class="codehilite"><pre><span></span><code>**Lo que NO cambia:**
+
+- `d_transmisión = L/R`: el medio no entra en la fórmula. Si el enlace es de 1 Gbps por cobre o por fibra, `d_trans` es idéntico.
+- `d_proc`: depende del equipo, no del medio.
+- `d_cola`: depende de la carga.
+
+**La lección: la fibra no se compra por latencia.** Se compra por atenuación (26 dB/km contra 20), por alcance sin electrónica (100 km contra 100 m), por inmunidad al EMI y por ancho de banda (100 Gbps por un solo par de fibras contra 10 Gbps por 4 pares de cobre).
+
+El mismo argumento del Ejercicio 2.2 de la Clase 1, y el mismo número: **~0,1 ms de diferencia en un viaje de ida, sobre 5 ms.**
+
+&lt;/details&gt;
+
+**4.** ¿Qué es el BDP y por qué importa? ¿Es un concepto nuevo o es antiguo?
+
+&lt;details&gt;&lt;summary&gt;Respuesta&lt;/summary&gt;
+
+**BDP** = *Bandwidth-Delay Product* = `R × RTT`, en bits. Es **la cantidad de datos que pueden estar en vuelo al mismo tiempo** en un enlace.
+
+**No es nuevo.** Aparece en la literatura deinale 1980s (el modelo de "ventana de secado" de la Internet seminal de Cerf y Kahn) y Tanenbaum lo presenta en el capítulo 1. Lo que **cambió** es la **escala**: un enlace continental de 100 Gbps a 100 ms de RTT tiene un BDP de **1,25 GB**, y ninguna ventana de TCP del mundo lo llena.
+
+**Por qué importa:**
+</code></pre></div>
+
+<p>Throughput máximo alcanzable = min( R ,  ventana / RTT )</p>
+<div class="codehilite"><pre><span></span><code>Es decir: o estás limitado por el **ancho de banda del enlace**, o estás limitado por tu **ventana**. Si la ventana es menor que el BDP, el enlace queda sin llenar.
+
+**Ejemplo:** enlace de 100 Mbps, RTT de 40 ms. BDP = `10⁸ × 0,04 = 4·10⁶ bits = 500 kB`. Con una ventana de 64 kB (la máxima sin `Window Scale`) se aprovecha el 12,8 % del enlace. Con una de 512 kB, se aprovecha el 100 %.
+
+**La consecuencia de diseño:** `Window Scale` (`RFC 7323`, 2014) es lo que hace posible aprovechar los enlaces de backbone de hoy. Sin él, el máximo sigue siendo 65 535 bytes y **el throughput de las conexiones de larga distancia está limitado a ~20 Mbps**, sin importar cuánta fibra haya.
+
+**Y el ejemplo extremo del BDP:** un enlace de 10 Gbps de un operador, con 10 000 flujos TCP activos. El BDP de cada flujo es, digamos, 2 MB. El router tiene que mantener el estado de 10 000 flujos × 2 MB de ventana = **20 GB de datos "en vuelo"**, lo cual es por lo que el plano de datos tiene que ser **stateless** y por lo que las routers de borde tienen TB de memoria.
+
+&lt;/details&gt;
+
+**5.** ¿Por qué el jitter rompe el audio pero no rompe la descarga de un archivo?
+
+&lt;details&gt;&lt;summary&gt;Respuesta&lt;/summary&gt;
+
+Porque **la descarga de un archivo no tiene ritmo**, y el audio sí.
+
+**Descarga de archivo:**
+</code></pre></div>
+
+<p>Retardo 1 = 400 ms → el usuario espera 400 ms
+  Retardo 2 = 80 ms  → el usuario espera 80 ms
+  No hay diferencia perceptible. El archivo llega entero igual.
+  El retardo total importa, y 80 vs 400 ms es 1,6 % de la descarga.</p>
+<div class="codehilite"><pre><span></span><code>**Audio (un códec que reproduce cada 20 ms):**
+</code></pre></div>
+
+<p>t=0     t=20     t=40     t=60     t=80     t=100    t=120
+  │       │       │       │       │       │       │
+  │P1─────│       │       │       │       │       │  llega en t=80, perfecto
+  │       │P2─────│       │       │       │       │  llega en t=110, tarde
+  │       │       │P3─────│       │       │       │  llega en t=100, tarde
+  │       │       │       │P4─────│       │       │  llega en t=138, tardísimo
+  │       │       │       │       │       │       │
+  audio:  ▓▓▓░░░░░░░░░▓▓░░░░░▓▓▓▓░░░░░░▓▓▓░░░░
+                 ↑clic      ↑clic         ↑clic</p>
+<p>El reproductor necesita una muestra cada 20 ms.
+  A los 100 ms no tiene muestra para reproducir → SILENCIO → CLIC.</p>
+<div class="codehilite"><pre><span></span><code>**El jitter buffer** (el "buffer de jitter") es la solución: mete un retardo **fijo** de, digamos, 60 ms, y entrega las muestras en ritmo constante, reordenando lo que llegó tarde y rellenando con silencio o con repetición.
+
+**El compromiso:** un jitter buffer grande tolera más jitter, pero **agrega latencia fija**. Para una llamada de voz, 60 ms de retardo agregado es aceptable; 300 ms no lo es.
+
+**Y por qué en la red el jitter viene de la cola:** si un router tiene 40 ms de cola, el paquete que llega primero sale 40 ms antes que el que llega al final. En un enlace backbone con cola, el jitter es de decenas de ms. Por eso los AQMs (CoDel) se diseñaron **para controlar el jitter**, no solo la pérdida.
+
+&lt;/details&gt;
+
+**6.** ¿Por qué la congestión "se manifiesta en pérdidas y/o retardos"?
+
+&lt;details&gt;&lt;summary&gt;Respuesta&lt;/summary&gt;
+
+Porque la congestión **no es observable**: es un estado interno de la red (los buffers están llenándose). Lo que el emisor puede medir son dos cosas: **cuánto tardó** y **si llegó**.
+
+Y las dos tienen la **misma causa**: la cola del enlace de salida.
+</code></pre></div>
+
+<p>┌───────────────────────────────────────────────────────────────┐
+  │ más paquetes ofrecidos que los que el enlace puede sacar       │
+  │        │                                                      │
+  │   los que entran se acumulan en la cola                       │
+  │        │                                                      │
+  │        ├──▶ RETARDO de cola: el último de la cola espera     │
+  │        │         (n − 1) × L/R milisegundos.                  │
+  │        │         El emisor lo mide como latencia grande.      │
+  │        │                                                      │
+  │        └──▶ cuando la cola llena el buffer: DESCARTE.         │
+  │                  El emisor lo mide como pérdida.               │
+  │                                                               │
+  │ Son los DOS síntomas del mismo fenómeno, y el retardo es el   │
+  │ symptomático PRECOZ.                                           │
+  └───────────────────────────────────────────────────────────────┘</p>
+<div class="codehilite"><pre><span></span><code>**La demostración que hay que saber de memoria:** si el buffer tiene `n` paquetes y la tasa de llegada supera la de salida, la diferencia `d_cola` de los paquetes sucesivos es `L/R`. Con un buffer de 1 000 paquetes de 1500 bytes en un enlace de 100 Mbps:
+</code></pre></div>
+
+<p>L/R = 1500/10⁸ = 15 µs por paquete
+  diferencia entre el primero y el último = 1000 × 15 µs = 15 ms</p>
+<div class="codehilite"><pre><span></span><code>Y **el paquete que llega justo cuando el buffer se llena tiene `d_cola = 15 ms`; el que llega un paquete después se descarta.** La diferencia entre "funciona perfectamente" y "pierde el 30 %" es **un paquete**.
+
+&lt;/details&gt;
+
+**7.** En un enlace de 1 Gbps con 3000 paquetes en cola, ¿cuánto tarda en salir el último?
+
+&lt;details&gt;&lt;summary&gt;Respuesta&lt;/summary&gt;
+</code></pre></div>
+
+<p>R = 10⁹ bit/s
+  L = 1500 bytes = 12 000 bits</p>
+<p>d_cola(último) = k × L/R = 3000 × 12 000 / 10⁹
+                  = 36 000 000 / 10⁹
+                  = 0,036 s
+                  = 36 ms</p>
+<p>Y d_trans (su propia transmisión) = 12 000/10⁹ = 12 µs = 0,012 ms</p>
+<p>d_total del último = 36 + 0,012 = 36,012 ms</p>
+<div class="codehilite"><pre><span></span><code>**Interpretación:** 36 ms de cola en un enlace de 1 Gbps. Un `ping` a un host a un salto de distancia mostraría **36 ms de RTT** (72 ms de ida y vuelta), y el usuario diría "la red está lenta" cuando el problema es un buffer mal dimensionado.
+
+**Y si el buffer fuera de 3 GB:** `3000 × 1000 = 3 000 000 paquetes × 15 µs = 45 segundos`. Un buffer de 3 GB en un puerto de 1 Gbps es plausible hoy. **45 segundos de retardo para un solo paquete.** Eso es *bufferbloat* en estado puro, y es exactamente lo que previenen CoDel y FQ-CoDel.
+
+&lt;/details&gt;
+
+**8.** Explique la diferencia entre latencia y RTT, y por qué `traceroute` puede mentir sobre el camino.
+
+&lt;details&gt;&lt;summary&gt;Respuesta&lt;/summary&gt;
+
+**Latencia** = el tiempo de **un viaje de ida**. **RTT** = el tiempo de **ida y vuelta**, que es ~2 × latencia **si el camino es simétrico**.
+</code></pre></div>
+
+<p>RTT = d_ida/s  +  cola_ida  +  d_vuelta/s  +  cola_vuelta  +  proc
+  latencia ≈ RTT/2    ⚠️ SOLO si d_ida = d_vuelta</p>
+<div class="codehilite"><pre><span></span><code>**Por qué `traceroute` miente, textual de la solución oficial del Examen 2011-03 P3:**
+
+&gt; *"Dado que el camino que siguen los paquetes de ida y vuelta de una comunicación sobre Internet no necesariamente son el mismo, las respuestas, tanto de los nodos intermedios como del destino pueden recorrer un camino distinto al que siguieron los paquetes que las motivaron."*
+
+**El caso clásico:** el tráfico de ida pasa por un enlace de fibra de 2 ms y el de vuelta por uno satelital de 600 ms.
+</code></pre></div>
+
+<p>latencia real de ida   = 2 ms
+  RTT = 2 + 600 = 602 ms
+  latencia estimada = 602/2 = 301 ms  ⚠️ contra 2 ms real
+```</p>
+<p><strong>El error es de un factor 150.</strong> Y por eso <code>traceroute</code> <strong>no sirve para medir latencia</strong>: sirve para <strong>descubrir el camino de ida</strong>.</p>
+<p><strong>Y la otra trampa del <code>traceroute</code>, que la oficial también menciona:</strong></p>
+<blockquote>
+<p><em>"pueden estar filtradas (por razones de seguridad y/o performance) [...] por lo que el no obtener respuesta desde los nodos intermedios o desde el nodo final no nos permite concluir que haya algún problema en la red o en el destino."</em></p>
+</blockquote>
+<p>Un asterisco (<code>*</code>) en la salida de <code>traceroute</code> significa <strong>"no obtuve respuesta"</strong>, que puede ser: el nodo no respondió, el camino de vuelta es otro, o <strong>el router filtró el ICMP de vuelta</strong>. <strong>No significa que el nodo esté caído.</strong></p>
+</details>
+<h2>🔗 Referencias</h2>
+<p><strong>Exámenes</strong>
+- Examen <code>sirc0912</code> (18-dic-2009) — <strong>P1 (10 pts): componentes del retardo, ancho de banda vs. velocidad de propagación, congestión</strong> (esta clase)
+- Examen <code>sirc1103</code> (21-feb-2011) — <strong>P2 (6 pts): congestión, pérdidas y retardo</strong> · <strong>P5 (10 pts): retardo end-to-end con 3 enlaces y 2 conmutadores</strong> → <strong>Clase 6</strong>
+- Examen <code>sirc1103</code> — P3 (6 pts): <code>traceroute</code>, los dos sabores (UDP e ICMP) y por qué el camino de vuelta puede ser otro
+- Examen <code>sirc1002</code> (26-feb-2010) — P5 (10 pts): jitter vs. retardo
+- Examen <code>sirc0903</code> (20-feb-2009) — P5 (6 pts): full duplex vs. half duplex
+- Examen <code>sirc0612</code> (26-dic-2006) — P1 (5 pts): modelo OSI y capa física</p>
+<p><strong>Bibliografía</strong>
+- Tanenbaum &amp; Wetherall, <em>Redes de computadoras</em>, 5ª ed., <strong>cap. 1 §1.5</strong> "El retardo en las redes de paquetes" (pág. ~26 a ~34): los cuatro componentes con el diagrama del router y los números
+- Tanenbaum &amp; Wetherall, <strong>cap. 1 §1.2</strong> "Tipos de red" — la comparación LAN/WAN con los números de latencia
+- Tanenbaum &amp; Wetherall, <strong>cap. 1 §1.3</strong> — store-and-forward y conmutación de circuitos frente a paquetes
+- Kurose &amp; Ross, <em>Computer Networking</em>, cap. 1 §1.7 "The Network Core: Delay and Loss" — la derivación de <code>L/R</code> y <code>d/s</code> con los cuatro Diagramas</p>
+<p><strong>RFCs</strong>
+- <code>RFC 9293</code> — <em>TCP</em> (2022, <em>Internet Standard</em>): el campo <em>window</em> y el control de flujo que <strong>es</strong> una manera de administrar el BDP
+- <code>RFC 7323</code> — <em>TCP Extensions for High Performance</em> (2014): <strong><em>Window Scale</em></strong>, sin el cual el throughput de larga distancia está limitado a ~20 Mbps
+- <code>RFC 5681</code> — <em>TCP Congestion Control</em> (2009): los cuatro algoritmos que reaccionan a la <strong>pérdida</strong> como señal de congestión
+- <code>RFC 9438</code> — <em>CUBIC</em> (2023, <em>Standards Track</em>): el default global, que ya no es AIMD puro
+- <code>RFC 3168</code> — <em>ECN</em> (2001): marcar en vez de descartar · <strong><code>RFC 9768</code> AccECN</strong> (2026) · <code>RFC 9331</code> L4S (2023)
+- <code>RFC 5437</code> — <em>Packet Scheduling and Dropping</em> (2009): los AQMs que controlan el retardo de cola (CoDel, RED, PIE)</p>
+<p><strong>Clase siguiente:</strong> 6 — Taller de retardos (todo resuelto)</p></body></html>

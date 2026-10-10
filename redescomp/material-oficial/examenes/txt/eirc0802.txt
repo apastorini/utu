@@ -1,0 +1,130 @@
+===== [pag 1] =====
+1/4
+Examen de Introducción a las Redes de Computadoras
+y Comunicación de Datos
+(ref: eirc0802.doc)
+6 de febrero de 2008
+
+Atención:
+•
+La duración del examen de 3 horas.
+•
+El examen debe realizarse sin material.
+•
+Se debe responder al menos el equivalente a 15 puntos en las preguntas teóricas.
+•
+El puntaje mínimo de aprobación es de 60 puntos.
+•
+para todos los ejercicios, suponga que dispone de los tipos de datos básicos (p.ej. lista, cola,
+archivo, string, etc.) y sus funciones asociadas (ej: tail(lista), crear(archivo), concatenar(string,
+string).
+Preguntas Teóricas
+Pregunta 1 (5 puntos)
+Nombre diferentes tipos de topologías de red y ventajas y desventajas de cada una.
+Pregunta 2 (10 puntos)
+Nombre diferentes protocolos ARQ (Automatic Repeat reQuest), indicando ventajas de cada uno. Que
+papel juega el concepto de "ventana". Explique
+Pregunta 3 (10 puntos)
+Porque se utilizan protocolos como ALOHA O CSMA en vez de utilizar la asignación estática de canal.
+Explique
+Pregunta 4 (10 puntos)
+Cual es el propósito de la capa de transporte, que tipos hay, y que servicios provee a las capas superiores;
+cuales son las primitivas clásicas que se definen.
+Pregunta 5 (5 puntos)
+Explique cual es el concepto de clave publica y porqué es utilizado.
+
+===== [pag 2] =====
+2/4
+
+Problemas Prácticos
+Problema 1 (30 puntos)
+
+La empresa Alfa y la empresa Beta se han fusionado y como sus redes privadas utilizan la misma
+numeración IP (192.168.1.0/24), para comunicarlas se decidió implementar una solución basada en NAT
+(Network Address Translation).
+
+
+Regla de NAT para los paquetes originado en la Red Alfa y destinados a la red Beta:
+
+En el Gateway Alfa, a los paquetes que ingresan por la interfaz 2 con dirección IP de origen
+192.168.1.x se cambia por 192.168.3.x, conservándose el último octeto. Por ejemplo, la
+dirección IP 192.168.1.8 se transforma en 192.168.3.8.
+
+En el Gateway Beta, a los paquetes que ingresan por la interfaz 1 con dirección IP de destino
+192.168.2.x se cambia por 192.168.1.x, conservándose el último octeto. Por ejemplo, la
+dirección IP 192.168.2.8 se transforma en 192.168.1.8.
+
+Regla de NAT para los paquetes originado en la Red Beta y destinados a la red Alfa:
+
+En el Gateway Beta, a los paquetes que ingresan por la interfaz 2 con dirección IP de origen
+192.168.1.x se cambia por 192.168.2.x, conservándose el último octeto. Por ejemplo, la
+dirección IP 192.168.1.9 se transforma en 192.168.2.9.
+
+En el Gateway Alfa, a los paquetes que ingresan por la interfaz 1 con dirección IP de destino
+192.168.3.x se cambia por 192.168.1.x, conservándose el último octeto. Por ejemplo, la
+dirección IP 192.168.3.9 se transforma en 192.168.1.9.
+
+El ruteo de las redes está solucionado. En los hosts, el default gateway está seteado como el router
+Gateway de la respectiva red.
+
+El sistema de nombres de dominios (DNS) se plantea con la siguiente estructura:
+
+
+La empresa Alfa tiene el dominio in.alfa.com.uy y su servidor DNS tiene la IP 192.168.1.254, todos
+los hosts de la red Alfa tienen configurado como servidor dicho DNS.
+
+
+La empresa Beta tiene el dominio in.beta.com.uy y su servidor DNS se tiene la dirección IP
+192.168.1.253, todos los hosts de la red Beta tienen configurado como servidor servidor dicho DNS.
+
+===== [pag 3] =====
+3/4
+
+El servidor DNS de Alfa para poder resolver las consultas de DNS asociadas a in.beta.com.uy
+tiene configurado realizar dichas consultas a a la dirección IP 192.168.2.253.
+
+Se pide:
+a) Describa la secuencia de paquetes referentes al tráfico DNS (no considerar ARP), cuando el host PC1
+de la red Alfa consulta por el registro A (consulta de la dirección IP de un dominio) de
+web1.in.beta.com.uy. Cuál es el problema?
+
+b) Considerando que se puede programar el gateway Beta, que cambios realizaría en determinados
+paquetes que circulan por él para solucionar el problema encontrado en a)?
+
+Nota:
+•
+No se consideran las consultas de DNS realizadas por el servidor de DNS de la red Beta asociadas al
+dominio in.alfa.com.uy.
+
+Problema 2 (30 puntos)
+
+Se desea balancear carga entre los servidores de casillas de correo que utilizan para su consulta el
+protocolo POP3, de correo electrónico. Se cuenta con tres servidores que contienen cada uno las casillas
+cuyos nombres comienzan con las letras A-L, M-R y S-Z.
+
+Para ello se creara un servidor de tipo front-end que atenderá las conexiones de red, pero que no tiene
+casillas de correo propias.
+
+El ejemplo de una sesión POP3, en la fase de autenticación, donde S identifica a los strings enviados por el
+servidor POP3 y C a los enviados por el cliente, es la siguiente:
+
+ S: +OK POP3 server ready
+ C: USER usuario_pop3
+ S: +OK Password required
+ C: PASS pass_pop3
+ …………………
+Posteriormente se intercambiarán comandos que permitirán recibir los correos del usuarios.
+
+===== [pag 4] =====
+4/4
+El front-end, deberá interceptar los comandos de POP3 necesarios, y deberá redirigir la sesión POP3, al
+servidor correcto. En caso de detectar errores, cancelará la conexión. Por razones de seguridad, el servidor
+front-end no tendrá la base de usuarios y passwords.
+
+Se pide:
+a) Diseñar e implementar el servidor front-end utilizando correcta y claramente las primitivas de sockets
+vistas en el curso. Se cuenta con todas las funciones usuales de manejo de strings.
+
+b) Que modificaciones realizaría a la solución planteada, si los usuarios no se encontraran distribuidos por
+la primer letra de su usuarios usuario_pop3, sino por la información almacenada en una base que
+contiene las tuplas <usuario_pop3,servidorPOP3>.

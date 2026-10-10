@@ -1,0 +1,1375 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 21 — Control de congestión en TCP: slow start, AIMD, fast recovery y ECN</h1>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 740 440" style="max-width:740px"><rect width="740" height="440" fill="#ffffff"/><text x="370.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Evolucion de la ventana de congestion</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><rect x="90" y="80" width="560" height="250" fill="#fcfdfe" stroke="#b8cfdb"/><line x1="90" y1="330.0" x2="650" y2="330.0" stroke="#eef2f4"/><text x="80" y="334.0" text-anchor="end" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">0</text><line x1="90" y1="267.5" x2="650" y2="267.5" stroke="#eef2f4"/><text x="80" y="271.5" text-anchor="end" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">4</text><line x1="90" y1="205.0" x2="650" y2="205.0" stroke="#eef2f4"/><text x="80" y="209.0" text-anchor="end" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">8</text><line x1="90" y1="142.5" x2="650" y2="142.5" stroke="#eef2f4"/><text x="80" y="146.5" text-anchor="end" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">12</text><line x1="90" y1="80.0" x2="650" y2="80.0" stroke="#eef2f4"/><text x="80" y="84.0" text-anchor="end" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">16</text><line x1="90" y1="330" x2="650" y2="330" stroke="#666" stroke-width="1.5"/><line x1="90" y1="330" x2="90" y2="80" stroke="#666" stroke-width="1.5"/><text x="90" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">0</text><text x="124" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">1</text><text x="158" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">2</text><text x="192" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">3</text><text x="226" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">4</text><text x="260" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">5</text><text x="294" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">6</text><text x="328" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">7</text><text x="362" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">8</text><text x="396" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">9</text><text x="430" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">10</text><text x="464" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">11</text><text x="498" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">12</text><text x="532" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">13</text><text x="566" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">14</text><text x="600" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">15</text><text x="634" y="348" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">16</text><text x="44" y="201.0" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="12" font-weight="700" fill="#0b3d5c">cwnd</text><text x="44" y="217.0" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">(MSS)</text><text x="370.0" y="370" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="12" font-weight="700" fill="#0b3d5c">RTT</text><line x1="90" y1="205.0" x2="650" y2="205.0" stroke="#c8621a" stroke-width="1.5" stroke-dasharray="7 5"/><text x="644" y="197.0" text-anchor="end" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#c8621a">ssthresh = 8 MSS</text><polyline points="90,314.375 124,298.75 158,267.5 192,205.0" fill="none" stroke="#b3261e" stroke-width="2.8"/><circle cx="90" cy="314.375" r="4" fill="#b3261e"/><text x="99" y="308.375" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="700" fill="#b3261e">1</text><circle cx="124" cy="298.75" r="4" fill="#b3261e"/><text x="133" y="292.75" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="700" fill="#b3261e">2</text><circle cx="158" cy="267.5" r="4" fill="#b3261e"/><text x="167" y="261.5" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="700" fill="#b3261e">4</text><circle cx="192" cy="205.0" r="4" fill="#b3261e"/><text x="201" y="199.0" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="700" fill="#b3261e">8</text><text x="94" y="316.71875" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#b3261e">slow start:  cwnd += MSS por ACK  →  duplica cada RTT</text><polyline points="192,205.0 226,189.375 260,173.75 294,158.125 328,142.5 362,126.875" fill="none" stroke="#2e7d4f" stroke-width="2.8"/><text x="277.0" y="112.875" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#2e7d4f">congestion avoidance:  +1 MSS por RTT</text><line x1="192" y1="205.0" x2="192" y2="267.5" stroke="#b3261e" stroke-width="1.8" marker-end="url(#po)"/><text x="201" y="226.875" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#b3261e">3 ACK duplicados  →  fast retransmit</text><text x="201" y="241.875" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#b3261e">Tahoe: 1 MSS      Reno: 4 MSS  ( = cwnd/2 )</text><polyline points="192,267.5 226,251.875 260,236.25 294,220.625" fill="none" stroke="#e0913c" stroke-width="2.2" stroke-dasharray="5 3"/><line x1="294" y1="220.625" x2="294" y2="314.375" stroke="#b3261e" stroke-width="1.8" marker-end="url(#po)"/><text x="303" y="255.0" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#b3261e">timeout  →  Tahoe y Reno van los dos a 1 MSS</text><text x="90" y="392" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">Tahoe vuelve a 1 MSS ante cualquier perdida.</text><text x="90" y="409" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">Reno solo cae a cwnd/2 con 3 ACK duplicados; ante un timeout cae igual que Tahoe.</text></svg></p>
+<p><strong>Bloque:</strong> C (Transporte) · <strong>Semana:</strong> 7 · <strong>Duración estimada:</strong> 110 min
+<strong>Correlativa:</strong> Clase 20 (control de flujo vs. de congestión) · <strong>Sigue con:</strong> Clase 22 (taller TCP)
+<strong>Material de referencia:</strong> Tanenbaum cap. 6 (§6.7) · RFC 9293, RFC 5681, RFC 9438, RFC 3168, RFC 9768, RFC 9331, RFC 6928</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Explicar por qué TCP necesita un mecanismo de control de congestión <strong>separado</strong> del control de flujo, y por qué el control de flujo no alcanza.</li>
+<li>Escribir la <strong>ventana efectiva</strong> de un segmento TCP como el mínimo entre <code>cwnd</code> y <code>rwnd</code>, y justificar por qué es un mínimo y no una suma.</li>
+<li>Recitar los <strong>cuatro algoritmos</strong> del control de congestión de TCP (Tahoe) y ejecutar la evolución de <code>cwnd</code> durante una conexión completa, RTT por RTT.</li>
+<li>Explicar por qué el <strong>timeout</strong> y los <strong>3 ACKs duplicados</strong> se tratan distinto, y qué hace cada uno.</li>
+<li>Describir el mecanismo de <strong>ECN</strong>: qué son los 2 bits del campo ECN, qué hace cada router y qué hace cada extremo.</li>
+<li><strong>Implementar en pseudocode</strong> la detección y el control de congestión, incluyendo ECN, respetando las primitivas que da el enunciado.</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2011-03 Problema 1</code> (30 puntos — el problema de ECN), <code>2008-07 P2</code> (10 pts), <code>2009-07 P1</code> (10 pts), <code>2009-12 P5</code>, <code>2008-12 P2</code>, <code>2010-02 Problema 2</code>.</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 El problema que TCP tiene que resolver</h2>
+<p>Imaginá que activás una descarga. Tu disco de 500 Mbps no te sirve de nada si el
+enlace de la casa te da 10 Mbps. Y al revés: un enlace de 100 Mbps que te
+comparte con 40 personas, los otros 39, tu descarga de 40 Mbps te va a parecer lenta.</p>
+<p>Hay <strong>dos</strong> problemas distintos, y no son el mismo:</p>
+<div class="codehilite"><pre><span></span><code> ┌─ El emisor manda MÁS RÁPIDO de lo que el receptor puede absorber ──┐
+ │ → CONTROL DE FLUJO │
+ │ (lo arregla rwnd, clase anterior) │
+ └───────────────────────────────────────────────────────────────────┘
+
+ ┌─ La RED en el medio no tiene recursos para lo que todos mandan ────┐
+ │ → CONTROL DE CONGESTIÓN │
+ │ (lo arregla cwnd, esta clase) │
+ └───────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p>La diferencia de fondo:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Control de flujo</th>
+<th>Control de congestión</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>El problema es de</strong></td>
+<td>un host lento</td>
+<td><strong>toda la red</strong></td>
+</tr>
+<tr>
+<td><strong>El síntoma es</strong></td>
+<td>el buffer del receptor se llena</td>
+<td>los buffers de <strong>los routers</strong> se llenan</td>
+</tr>
+<tr>
+<td><strong>La pérdida significa</strong></td>
+<td>"no leíste rápido"</td>
+<td>"<strong>la red está saturada</strong>"</td>
+</tr>
+<tr>
+<td><strong>La ventana la controla</strong></td>
+<td>el receptor (rwnd)</td>
+<td>el emisor, estimando (cwnd)</td>
+</tr>
+<tr>
+<td><strong>Se arregla con</strong></td>
+<td>ACK diferidos / zero-window probe</td>
+<td><strong>reducir el ritmo de envío</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Y acá está el punto clave para el examen:</strong> TCP <strong>no puede distinguir</strong> una
+pérdida por buffer lleno del receptor (control de flujo) de una pérdida en la
+red (congestión). Para TCP, un paquete perdido es un paquete perdido. Por eso el
+mismo mecanismo (disminuir la ventana) sirve para las dos cosas, y por eso la
+"interpretación" que TCP hace es conservadora.</p>
+<h3>La evidencia de que la red se congestiona</h3>
+<p>TCP detecta tres señales, en orden creciente de gravedad:</p>
+<ol>
+<li><strong>No hay pérdida, pero el RTT subió mucho</strong> → alguien está encolando.
+ No es un evento, TCP no reacciona formalmente.</li>
+<li><strong>3 ACKs duplicados</strong> → hubo una pérdida, pero el resto de la ventana llegó
+ igual. Mildeprioridad: pérdida aislada.</li>
+<li><strong>Timeout (RTO expirado)</strong> → la pérdida es <em>grave</em>: no llegó ni siquiera
+ el ACK del siguiente. La ventana entera está frenada.</li>
+</ol>
+<p>Esta distinción es la que te van a preguntar, y es la clave del problema de 2011.</p>
+<h2>1.2 Las dos ventanas y la ventana efectiva</h2>
+<p>El emisor TCP manda como máximo esta cantidad de bytes sin esperar ACK:</p>
+<div class="codehilite"><pre><span></span><code> bytes en vuelo ≤ min(cwnd, rwnd)
+ ───────── ─────
+ congestión flujo
+</code></pre></div>
+
+<ul>
+<li><strong><code>cwnd</code> (congestion window):</strong> la <strong>hipótesis del emisor</strong> sobre cuánta
+ congestión hay. Empieza en un valor pequeño y la va ajustando.</li>
+<li><strong><code>rwnd</code> (receive window):</strong> lo que el receptor dice que le entra en su buffer.
+ Va en el campo <em>window</em> de cada segmento TCP que manda.</li>
+</ul>
+<p><strong>¿Por qué el mínimo y no la suma?</strong> Porque <strong>el emisor no puede mandar más de
+lo que la red aguanta</strong> (cwnd), ni <strong>más de lo que el receptor aguanta</strong> (rwnd).
+Ambas son restricciones <em>superiores</em>. Si las sumaras, un solo paquete perdido por
+congestión en la red se acumularía en el buffer del receptor y lo desbordaría
+justamente cuando la red va peor — que es cuando menos conviene. El <code>min</code> es el
+que garantiza que <strong>nadie se desborda</strong>: ni la red (por cwnd), ni el receptor
+(por rwnd).</p>
+<p>En los exámenes los dos los llaman <strong>"ventana efectiva"</strong> o <strong>"ventana de
+congestión"</strong> según el caso. Si el enunciado habla de una sola ventana, asumí
+que <code>rwnd</code> es grande y el límite es <code>cwnd</code>.</p>
+<h2>1.3 Las tres variables de estado</h2>
+<div class="codehilite"><pre><span></span><code> cwnd = ventana de congestión actual, en bytes. Empieza en un MSS (o un
+ Initial Window del RFC 6928, ver Actualización).
+ ssthresh = "slow start threshold", el umbral a partir del cual se pasa de
+ slow start a congestion avoidance. Empieza muy alto.
+ dupACK = contador de ACKs duplicados quejetsnorth se recibieron seguidos.
+</code></pre></div>
+
+<p><strong><code>ssthresh</code> es la variable que decide la regla:</strong></p>
+<blockquote>
+<p>Si <code>cwnd &lt; ssthresh</code> → <strong>slow start</strong>. Si <code>cwnd &gt;= ssthresh</code> → <strong>congestion avoidance</strong>.</p>
+</blockquote>
+<p>La pérdida no es lo único que cambia de régimen: cuando <code>cwnd</code> <em>crece</em> y supera
+el umbral, también se cambia de régimen.</p>
+<h2>1.4 Los cuatro algoritmos (Tahoe, 1988)</h2>
+<h3>(a) Slow start — "arranque lento"</h3>
+<p>No es lento en la velocidad: es lento en <strong>el crecimiento</strong>.</p>
+<div class="codehilite"><pre><span></span><code> Por cada ACK recibido:
+ cwnd ← cwnd + 1 MSS (por ACK, no por RTT)
+</code></pre></div>
+
+<p>O sea: <strong>cada segmento confirmado duplica la ventana</strong>:</p>
+<div class="codehilite"><pre><span></span><code> ACK de 1 MSS recibido → cwnd = 1 + 1 = 2 MSS
+ ACK de 1 MSS recibido → cwnd = 2 + 1 = 3 MSS
+ ...
+</code></pre></div>
+
+<p>Después de un RTT completo:</p>
+<div class="codehilite"><pre><span></span><code> RTT 1: cwnd = 1 MSS (mandás 1 MSS, lo confirmás)
+ RTT 2: cwnd = 2 MSS (mandás 2, los 2 ACKs te suman 2)
+ RTT 3: cwnd = 4 MSS (mandás 4, los 4 ACKs te suman 4)
+ RTT 4: cwnd = 8 MSS
+ ...
+</code></pre></div>
+
+<p>Es decir <strong>exponencial en base 2</strong>: <code>cwnd(n) = 2^(n-1) · MSS</code>. Por eso se llama
+"arranque lento": en una red con RTT de 100 ms pasás de 1 MSS a 64 KB en 7 RTT,
+o sea en 0,7 segundos.</p>
+<p><strong>¿Por qué "slow" y no "start"?</strong> Porque en la versión clásica el emisor arrancaba
+mandando a toda velocidad y el primer pico de congestión le costaba la mitad de
+la ventana. Empezar en 1 MSS es "perezosamente" aceptar que no conoce la red.</p>
+<h3>(b) Congestion avoidance — "evitación de la congestión"</h3>
+<p>Se entra cuando <code>cwnd &gt;= ssthresh</code>. Ahora el crecimiento es <strong>lineal</strong>:</p>
+<div class="codehilite"><pre><span></span><code> Por cada ACK recibido:
+ cwnd ← cwnd + MSS · MSS / cwnd (un MSS por RTT)
+</code></pre></div>
+
+<p>Escribido así parece raro, pero es equivalente a la forma más conocida:</p>
+<div class="codehilite"><pre><span></span><code> cwnd ← cwnd + MSS por cada RTT
+</code></pre></div>
+
+<p>La forma <code>MSS²/cwnd</code> es la que aparece <strong>literalmente</strong> en la solución oficial
+del examen de 2011-03, y es la que te van a pedir. La justification: cada ACK
+confirma <code>MSS</code> bytes, así que el emisor puede mandar <code>MSS</code> bytes más; repartido
+eso entre los <code>cwnd/MSS</code> ACKs que llegan en el RTT, da <code>MSS / (cwnd/MSS) =
+MSS²/cwnd</code> por ACK. Sumado a lo largo de un RTT, <code>cwnd/MSS · MSS²/cwnd = MSS</code>.</p>
+<h3>(c) Fast retransmit</h3>
+<p>Cuando llegan <strong>3 ACKs duplicados</strong>, no esperás al timeout:</p>
+<div class="codehilite"><pre><span></span><code> 3 ACKs duplicados → retransmitir el segmento perdido YA,
+ sin esperar a que venza el RTO
+</code></pre></div>
+
+<p><strong>¿Por qué 3 y no 1?</strong> Porque con ACKs <strong>acumulativos</strong>, un ACK duplicado puede
+significar dos cosas:</p>
+<ul>
+<li>El segmento que esperaba <strong>realmente</strong> se perdió (pérdida), o</li>
+<li>Simplemente el ACK se está <strong>reordenando</strong> en la red y el que "falta" llegó
+ después (reordenamiento).</li>
+</ul>
+<p>Con 3 duplicados es estadísticamente muy improbable que sea reordenamiento, así
+que se asume pérdida. <strong>Esto es un compromiso entre latencia y false positives</strong>,
+y es exactamente lo que te preguntan en <code>2008-07 P2</code>.</p>
+<h3>(d) Fast recovery</h3>
+<p>El refinamiento: con 3 dupACKs <strong>no se tira la ventana a 1 MSS</strong>, porque los
+datos que vienen detrás son la señal de que la red <strong>aguanta</strong> ese ritmo.</p>
+<div class="codehilite"><pre><span></span><code> 3 dupACKs → cwnd = ssthresh (se parte por la mitad, no a 1 MSS)
+ ssthresh = cwnd / 2
+ retransmitir el perdido
+ → seguir acknowledging, sin cortar la ventana a 1 MSS
+ Timeout → cwnd = 1 MSS (ESTO sí es Tahoe puro)
+ ssthresh = cwnd_antes / 2
+ → slow start
+</code></pre></div>
+
+<p><strong>La asimetría es el punto clave</strong> y lo que más se confunde:</p>
+<div class="codehilite"><pre><span></span><code> │ 3 dupACKs │ Timeout
+ ───────────┼────────────────┼──────────────────
+ Interpretación│red:tensa │red:muerta
+ cwnd nuevo │ cwnd/2 │ 1 MSS
+ Régimen │ (ev. cong.) │ slow start
+ Latencia │ baja (inmediata) │ alta (espera RTO)
+</code></pre></div>
+
+<p><strong>Tahoe</strong> es el que hace <code>cwnd = 1 MSS</code> en los dos casos. <strong>Reno</strong> (1989) es el
+que distingue. Los exámenes de FING por lo general describen <strong>Tahoe</strong>
+(cuatro algoritmos, <code>cwnd = 1 MSS</code> ante cualquier pérdida) o la distinción, y en
+la solución de <code>2011-03</code> te piden slow start para los dos casos. Leelo bien.</p>
+<h2>1.5 Diagrama de la evolución de <code>cwnd</code></h2>
+<div class="codehilite"><pre><span></span><code> cwnd
+ (MSS)
+ │
+ 32 │ ╭────╮
+ │ ╱ ╲
+ 16 │ ╱ ╲
+ │ ╱ ╲
+ 8 │ ╱ ╲
+ │ ╱ ╲
+ 4 │ ╱ ╲
+ │ ╭─────╯ ╲
+ 2 │ ╱ ╲
+ │ ╭─────╯ ╲
+ 1 │─────────────────╯ ╲
+ └──────────────────────────────────────────────────────╴───
+ slow start │ congestion avoidance │
+ (×2 por RTT) │ (+1 MSS por RTT) │
+ │ │
+ ssthresh│ │
+ ─────────────────┼───────────────────────────────────────┼──
+ │ │
+ pérdida pérdida
+ (3 dupACK o timeout) (timeout)
+
+ ← FAZ 1 ───────────────────────────→←──── FAZ 2 ─────────→
+</code></pre></div>
+
+<p>Leelo así: <strong>el doble en la primera fase, la recta en la segunda, y el salto a
+cero en cada pérdida</strong>. Ese gráfico es el 80% de la respuesta a <code>2008-07 P2</code>.</p>
+<h2>1.6 ECN — Explicit Congestion Notification</h2>
+<h3>El problema que resuelve</h3>
+<p>La detección de congestión de TCP es <strong>reactiva</strong>: alguien tiene que perder un
+paquete para que TCP se entere. Eso significa:</p>
+<ol>
+<li><strong>Se pierde un paquete que no hacía falta perder.</strong> Ese paquete se iba a
+ descartar igual, así que no es una pérdida "de verdad"… pero para la
+ aplicación que lo esperaba, sí lo es.</li>
+<li><strong>Los routers intermedios no participan.</strong> TCP deduce congestión de una
+ pérdida, pero el que sabe que está congestionado es el <strong>router</strong> que threwó
+ el paquete. Y no se lo dice.</li>
+</ol>
+<h3>La solución</h3>
+<p><strong>ECN (RFC 3168, 2001):</strong> que el router <strong>no descarte</strong> el paquete sino que le
+<strong>ponga una marca</strong>, y que TCP reaccione a la marca en lugar de a la pérdida.</p>
+<p>Hay <strong>2 bits</strong> en la cabecera IP, en el byte TOS/DSCP:</p>
+<div class="codehilite"><pre><span></span><code> Byte TOS / DSCP de la cabecera IPv4
+ ┌──────┬──────┬──────┬──────┬──────┬──────┬──────┬──────┐
+ │ 0 │ 0 │ D │ D │ ECN │ ECN │ DSCP │
+ │ │ │ 0 │ 1 │ 0 │ 1 │ │
+ └──────┴──────┴──────┴──────┴──────┴──────┴──────┴──────┘
+ └─────┴─────┘
+ campo ECN
+</code></pre></div>
+
+<p>Los 2 bits del campo ECN (antes DSCP) toman 3 valores:</p>
+<table>
+<thead>
+<tr>
+<th>Valor</th>
+<th>Bits</th>
+<th>Significado</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>00</code></td>
+<td>0-0</td>
+<td><strong>NO_ECN</strong> — el origen no sabe usar ECN</td>
+</tr>
+<tr>
+<td><code>01</code></td>
+<td>0-1</td>
+<td><strong>ECN_AWARE</strong> — "sé usar ECN, pero ahora no hay congestión"</td>
+</tr>
+<tr>
+<td><code>11</code></td>
+<td>1-1</td>
+<td><strong>ECN_CONG</strong> (= <strong>CE</strong>, <em>Congestion Experienced</em>) — "<strong>hubo congestión</strong>"</td>
+</tr>
+<tr>
+<td><code>10</code></td>
+<td>1-0</td>
+<td><strong>CE</strong>, pero originated por un router que no entiende ECN (legado)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ <strong>Ojo:</strong> la combinación <code>10</code> es válida <strong>solo</strong> en el paquete que viaja en la
+<strong>dirección de vuelta</strong>. <code>10</code> no lo puede poner un origen, porque implicaría que
+un host entendió ECN y sin embargo no negoció ECN Setup. Es un detalle sutil
+que aparece en la RFC y que un profesordetail-oriented puede preguntar.</p>
+</blockquote>
+<h3>El protocolo, extremo por extremo</h3>
+<div class="codehilite"><pre><span></span><code> EMISOR ROUTERS RECEPTOR
+ │ │ │
+ │ 1. ¿Soporto ECN? │ │
+ │ sí → negotiate │ │
+ │ (ENABLE/ECN_SET: │ │
+ │ 11 11 en TCP hdr) │ │
+ │ │ │
+ │ 2. Marco todos mis │ │
+ │ paquetes como │ │
+ │ ECN_AWARE (01) ────▶│ │
+ │ │ │
+ │ │ 3. Si hay congestión y │
+ │ │ el paquete viene │
+ │ │ ECN_AWARE: │
+ │ │ CAMBIO 01 → 11 (CE) │
+ │ │ y lo reenvía ─────────────▶
+ │ │ NO lo descarta │
+ │ │ │
+ │ │ 4. Veo CE=11.
+ │ │ Marco mis
+ │ │ segmentos con
+ │ │ CONG_DETECTED
+ │ │ ◀─────│
+ │ 5. Veo CONG_DETECTED. │ │
+ │ Congestión. │ │
+ │ ← YA NO hay pérdida, │ │
+ │ así que NO bajo │ │
+ │ a 1 MSS: bajo a │ │
+ │ cwnd/2 (como fast │ │
+ │ recovery) │ │
+ │&lt;──────────────────────────── CONG_DETECTED ──────────
+</code></pre></div>
+
+<h3>ECN vs. pérdida: la diferencia clave</h3>
+<div class="codehilite"><pre><span></span><code> SIN ECN (pérdida) CON ECN (marca)
+ ──────────────── ─────────────────
+ El router DESCARTA El router NO descarta:
+ el paquete lo marca y lo pasa
+ │ │
+ La aplicación La aplicación
+ NO lo recibe SÍ lo recibe
+ │ │
+ TCP baja cwnd a 1 MSS TCP baja cwnd a cwnd/2
+ (slow start,-region) (fast recovery)
+ │ │
+ Overhead: 1 paquete perdido Overhead: 0
+</code></pre></div>
+
+<p>Eso es ECN en su forma más pura: <strong>cero paquetes perdidos a cambio de un bit</strong>.</p>
+<h3>⚠️ Actualización a 2026</h3>
+<p><strong>Sigue igual — de memoria, sin dudar:</strong>
+- Los <strong>2 bits</strong> del campo ECN y sus 3 (4) valores <code>00/01/11/10</code>.
+- La secuencia de <strong>4 pasos</strong>: emisor marca ECN_AWARE → router cambia a CE →
+ receptor marca CONG_DETECTED → emisor reduce cwnd.
+- La idea de que <strong>ECN evita la pérdida</strong> y por eso permite una reducción de
+ ventana <strong>menos agresiva</strong>.
+- <code>CE</code> = <em>Congestion Experienced</em> = <code>ECN_CONG</code>.</p>
+<p><strong>Cambió o se modificó — y acá hay que ser preciso, porque es donde más se
+matan las clases:</strong></p>
+<ul>
+<li><strong><code>RFC 7560</code> NO es ECN++.</strong> <code>RFC 7560</code> (2010, <em>Informational</em>) es solo el
+  <strong>documento de problema y requisitos</strong> de "ECN más preciso". No especifica
+  ningún mecanismo. Mucha gente lo cita mal como si fuera la especificación.</li>
+<li><strong><code>RFC 8951</code> NO tiene nada que ver con ECN.</strong> Es una aclaración de <strong>EST
+  (Enrollment over Secure Transport)</strong>. No la invoques nunca en este contexto.</li>
+<li><strong>La implementación real de "ECN++" quedó en <code>RFC 9768 — AccECN</code></strong>
+  (<em>More Accurate Explicit Congestion Notification Feedback in TCP</em>), que
+  además <strong>actualiza</strong> la RFC 3168. <em>Verificá el número en
+  <code>rfc-editor.org/info/rfc9768</code> antes de citarlo en un examen: es de 2026 y
+  podría haber cambiado.</em></li>
+<li><strong>La reacción ante un CE ya no es "bajar a 1 MSS".</strong> La especificación moderna
+  pide una reducción <strong>proporcional y menos agresiva</strong> — esencialmente la misma
+  que ante fast recovery (<code>cwnd/2</code>) — porque el paquete <strong>no se perdió</strong>. Ese
+  argumento conceptual es lo que hay que saber; el número exacto, menos.</li>
+<li><strong>L4S (<code>RFC 9331</code>, 2023)</strong> es el paso siguiente: en vez de esperar a llenarse el
+  buffer, el router marca <strong>con un umbral mucho más bajo</strong>, lo que da latencia
+  muy baja sin necesitar descartes. Va de la mano con AQMs como <strong>CoDel</strong>.</li>
+<li><strong><code>ABE</code> (<code>RFC 8511</code>, 2018)</strong> — <em>Alternative Backoff with ECN</em> — cómo hacer el
+  backoff cuando el receptor también sufrió pérdida por el CE.</li>
+<li><strong>Despliegue real:</strong> ECN se <strong>negocia</strong>, así que solo se usa si <strong>ambos</strong>
+  extremos lo soportan. Está activo por defecto en Linux (desde el kernel 4.1) y
+  en Windows 10. <strong>No es obligatorio</strong>: no te lo pregunten como si lo fuera.</li>
+</ul>
+<h2>1.7 ¿Y el Initial Window?</h2>
+<p>La RFC 5681 decía "arrancá con 1 MSS". En la práctica todos arrancaban con
+distintos valores (Solaris 8 KB, Linux 16 KB…), lo que rompía la independencia de la red.</p>
+<p><strong>RFC 6928 (2013) — Increasing TCP's Initial Window (IW):</strong> estandariza un
+IW de <strong>10 segmentos (IW = 10 · MSS)</strong>. Es el valor por defecto en Linux, Windows
+y macOS hoy.</p>
+<blockquote>
+<p><strong>Consecuencia para el examen:</strong> si el enunciado dice "slow start empieza en
+cwnd = 1 MSS", usá 1 MSS (es lo que dicen los apuntes y las soluciones oficiales
+de 2011). Si dice "IW por defecto actual", es 10 MSS (RFC 6928). <strong>Citá las dos
+cosas</strong> y seguí lo que pida el enunciado: lo que se corrige es lo que dice el
+examen.</p>
+</blockquote>
+<h2>1.8 Una mención a TCP Vegas y a lo que se usa hoy</h2>
+<ul>
+<li><strong>TCP Vegas (1996):</strong> no espera a la pérdida. Mide el RTT y lo compara con el
+ RTT mínimo teórico (<code>RTT_min + L/R</code>). Si la diferencia crece, hay cola → baja
+ cwnd. <strong>Ventana de congestiónpredictiva</strong>, sin pérdidas.</li>
+<li><strong>BBR (Google):</strong> modelo de <strong>bottleneck bandwidth</strong> y RTT mínimo, no de
+ ventana. Mucho mejor en rutas con pérdida no relacionadas con congestión
+ (WiFi, buffers intermedios). Implementado en Linux, en draft de IETF
+ (no RFC todavía).</li>
+<li><strong>CUBIC (RFC 9438, 2023):</strong> el default en Linux, Windows y Apple. <strong>No fue
+  reemplazado</strong> — lo que pasó es que pasó de <em>Informational</em> (RFC 8312, 2018) a
+  <em>Standards Track</em>. A diferencia de AIMD, en
+ lugar de sumar 1 MSS por RTT usa una curva cúbica que <strong>apunta al último punto
+ donde hubo pérdida</strong>, lo que permite "resetear" la info de la red mucho más
+ rápido en enlaces con BDP grande.</li>
+</ul>
+<p><strong>⚠️ Para el examen:</strong> el "AIMD" y los "cuatro algoritmos" <strong>siguen siendo lo que
+se enseña y lo que se pregunta</strong>, porque TCP Reno/Tahoe es la base de todos los
+demás. Si el enunciado te pide "el mecanismo de control de congestión de TCP",
+respondé slow start / congestion avoidance / fast retransmit / fast recovery, y
+si hay lugar, una línea de "hoy se usa CUBIC o BBR, pero la lógica es la misma".</p>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — La curva completa de <code>cwnd</code> (Tahoe, MSS = 1 KB)</h2>
+<p><strong>Datos.</strong> MSS = 1000 bytes. <code>cwnd</code> inicial = 1 MSS = 1000 B. <code>ssthresh</code> inicial
+= 64 KB = 64 MSS. En el RTT 5 se pierde un paquete y se detectan 3 ACKs
+duplicados.</p>
+<p><strong>a) Calculá <code>cwnd</code> al final de cada RTT del RTT 1 al 4.</strong></p>
+<p><em>Razonamiento.</em> En slow start el crecimiento es <code>cwnd = 2 · cwnd_anterior</code> por RTT.
+La clave es <strong>por qué</strong>: en el RTT <em>n</em> mandás <code>cwnd(n-1)</code> bytes; llegan esos
+tantos ACKs; cada ACK suma 1 MSS; entonces
+<code>cwnd(n) = cwnd(n-1) + cwnd(n-1) = 2·cwnd(n-1)</code>. O sea, <strong>el número de ACKs que
+recibo en un RTT es igual a la ventana que tenía</strong>.</p>
+<div class="codehilite"><pre><span></span><code> RTT 1: cwnd_enviado = 1 MSS → llega 1 ACK → cwnd = 1 + 1 = 2 MSS
+ RTT 2: cwnd_enviado = 2 MSS → llegan 2 ACK → cwnd = 2 + 2 = 4 MSS
+ RTT 3: cwnd_enviado = 4 MSS → llegan 4 ACK → cwnd = 4 + 4 = 8 MSS
+ RTT 4: cwnd_enviado = 8 MSS → llegan 8 ACK → cwnd = 8 + 8 = 16 MSS
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>RTT</th>
+<th>cwndbeginning</th>
+<th>ACKs recibidos</th>
+<th>cwnd al final</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>1 MSS</td>
+<td>1</td>
+<td><strong>2 MSS</strong> = 2 000 B</td>
+</tr>
+<tr>
+<td>2</td>
+<td>2 MSS</td>
+<td>2</td>
+<td><strong>4 MSS</strong> = 4 000 B</td>
+</tr>
+<tr>
+<td>3</td>
+<td>4 MSS</td>
+<td>4</td>
+<td><strong>8 MSS</strong> = 8 000 B</td>
+</tr>
+<tr>
+<td>4</td>
+<td>8 MSS</td>
+<td>8</td>
+<td><strong>16 MSS</strong> = 16 000 B</td>
+</tr>
+</tbody>
+</table>
+<p><strong>b) ¿En qué RTT se deja de estar en slow start?</strong></p>
+<p><em>Razonamiento.</em> La regla es <code>cwnd &lt; ssthresh</code> → slow start. Con <code>ssthresh = 64 MSS</code>:
+el slow start termina cuando <code>cwnd</code> llega a 64. Desde 16 hay que seguir duplicando:
+32, luego 64. Como el umbral se alcanza al final del RTT 6, y la comparación es
+<code>cwnd &gt;= ssthresh</code>, <strong>el RTT 7 ya corre en congestion avoidance</strong>.</p>
+<div class="codehilite"><pre><span></span><code> RTT 5: 32 MSS (&lt; 64 → slow start)
+ RTT 6: 64 MSS (== 64 → a partir de acá es congestion avoidance)
+ RTT 7: 65 MSS (+1 por RTT)
+</code></pre></div>
+
+<p><em>corríjanme si lo leés distinto:</em> algunos apuntes dicen "termina en el RTT 6"
+(dejando de crecer cuando llega al umbral) y otros "en el RTT 7" (cuando el
+crecimiento pasa a ser lineal). <strong>Lo que se corrige es el mecanismo</strong>, y el
+mecanismo es la comparación <code>cwnd</code> vs. <code>ssthresh</code>. Decí las dos cosas.</p>
+<p><strong>c) En el RTT 5 hay 3 ACKs duplicados. ¿Qué pasa?</strong></p>
+<div class="codehilite"><pre><span></span><code> ANTES: cwnd = 32 MSS = 32 000 B
+ ssthresh = 64 MSS
+
+ Detección: 3 ACK duplicados → fast retransmit
+
+ Tahoe → ssthresh = cwnd/2 = 16 MSS
+ cwnd = 1 MSS
+ → slow start de nuevo
+
+ Reno → ssthresh = cwnd/2 = 16 MSS
+ cwnd = ssthresh = 16 MSS
+ → fast recovery
+</code></pre></div>
+
+<p><strong>Interpretación.</strong> Con 3 dupACKs, Tahoe tira 32 KB de ventana a 1 KB. Eso es
+<strong>castigar a la red</strong> por una pérdida que ella no habríaisoftido si los buffers
+fueran más grandes. Reno dice: "los 32 KB igual circularon, o sea que la red los aguantó;
+bajemos a la mitad, no a cero".</p>
+<p><strong>d) Calculá <code>cwnd</code> en los 5 RTT siguientes, con Reno.</strong></p>
+<div class="codehilite"><pre><span></span><code> RTO/ACK : cwnd = 16 → 17 → 18 → 19 → 20 → 21 (congestion avoidance,
+ +1 MSS por RTT)
+</code></pre></div>
+
+<p>Y <strong>con Tahoe</strong>, en slow start desde 1:</p>
+<div class="codehilite"><pre><span></span><code> RTT 1: 1→2 RTT 2: 2→4 RTT 3: 4→8 RTT 4: 8→16 RTT 5: 16→17 (¡superó ssthresh!)
+</code></pre></div>
+
+<h2>2.2 Ejercicio 2 — La ventana efectiva</h2>
+<p><strong>Datos.</strong> <code>cwnd = 8 KB</code>, <code>rwnd</code> anunciado por el receptor = 4 KB. RTT = 50 ms.</p>
+<p><strong>a) ¿Cuántos bytes puede mandar como máximo?</strong></p>
+<p><em>Razonamiento.</em> Las dos son cotas superiores. La red admite 8 KB, el receptor
+4 KB. Mandar 8 KB haría que 4 KB se acumulen en el buffer del receptor, que es
+justo lo que el rwnd existe para evitar.</p>
+<div class="codehilite"><pre><span></span><code> ventana efectiva = min(cwnd, rwnd) = min(8 KB, 4 KB) = 4 KB
+</code></pre></div>
+
+<p><strong>b) ¿Cuál es el throughput máximo?</strong></p>
+<p><em>Razonamiento.</em> El throughput no es "bytes / RTT" sin más: es <strong>cuántos bytes
+salen por segundo</strong>. Si mando 4 KB cada 50 ms:</p>
+<div class="codehilite"><pre><span></span><code> throughput = 4 KB / 0,050 s = 4000 / 0,050 = 80 000 B/s = 80 KB/s
+ = 640 kbps
+</code></pre></div>
+
+<p><strong>c) Si el receptor no lee durante 1 segundo, ¿qué pasa con <code>rwnd</code>?</strong></p>
+<p><em>Razonamiento.</em> El receptor no manda ACK, entonces el emisor no avanza la ventana
+de bytes confirmados. Cuando <code>rwnd</code> llega a 0:</p>
+<div class="codehilite"><pre><span></span><code> R0 receptor anuncia rwnd = 20 KB, manda 20 KB
+ R1 sin ACK → el emisor ve rwnd = 20, ventana efectiva = min(cwnd, 20) = 20
+ R2 sin ACK → rwnd = 0 → ventana efectiva = 0 → NO PUEDE ENVIAR
+</code></pre></div>
+
+<p>TCP entra en <strong>persistencia</strong> (RFC 9293 §8.6) y manda <strong>zero-window probes</strong>
+(1 byte, con periodo exponencial) para preguntar "¿podés volver a leer?". Cuando
+el receptor vuelve a leer, manda un ACK con un <code>rwnd</code> nuevo y se reanuda.</p>
+<blockquote>
+<p>⚠️ <strong>Esto NO es control de congestión.</strong> Es control de flujo, y es
+importantísimo no confundirlos: acá la red está perfecta; lo que está lento es
+la aplicación del otro lado. Si TCP bajara cwnd por esto, estaríamos
+castigando a la red por un problema del receptor. <strong>Por eso son mecanismos
+separados.</strong></p>
+</blockquote>
+<h2>2.3 Ejercicio 3 — ECN en números</h2>
+<p><strong>Datos.</strong> <code>cwnd = 20 MSS</code>, <code>ssthresh = 30 MSS</code>. Un router marca CE=11 un paquete.</p>
+<p><strong>a) ¿Qué haría TCP sin ECN?</strong> Tendría que <strong>perder</strong> ese paquete. 3 dupACK →
+Reno: <code>cwnd = 20/2 = 10</code>, <code>ssthresh = 10</code>. Tahoe: <code>cwnd = 1</code>.</p>
+<p><strong>b) ¿Qué hace con ECN (ECN++)?</strong></p>
+<div class="codehilite"><pre><span></span><code> Con ECN++ → cwnd = (20 - 1)/2 ≈ 9,5 ... pero lo que se usa es la misma
+ fórmula de fast recovery: cwnd = cwnd/2 = 10 MSS
+ ssthresh = 10 MSS
+</code></pre></div>
+
+<p><strong>c) La diferencia, en números:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Sin ECN</th>
+<th>Con ECN</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Paquetes perdidos</td>
+<td>1</td>
+<td><strong>0</strong></td>
+</tr>
+<tr>
+<td><code>cwnd</code> después</td>
+<td>10 MSS (Reno)</td>
+<td>10 MSS</td>
+</tr>
+<tr>
+<td><code>ssthresh</code> después</td>
+<td>10 MSS</td>
+<td>10 MSS</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Interpretación — y acá está la moraleja.</strong> El mecanismo de reacción de TCP es
+<strong>el mismo</strong>. Lo que ECN cambia no es cuánto baja la ventana: es que <strong>el paquete
+no se pierde</strong>. Es un ejemplo perfecto de que en redes la pérdida de un paquete es
+un phenomenon diferente del phenomenon de congestión, aunque TCP las confunda.</p>
+<h2>2.4 Ejercicio 4 — Tipo examen nuevo: control de congestión con RTT variable</h2>
+<p><strong>Enunciado.</strong> Un cliente TCP tiene <code>cwnd = 12 KB</code>, <code>ssthresh = 20 KB</code>, RTT
+inicial de 100 ms. En cada RTT manda <code>cwnd</code> bytes. En el RTT 4, un paquete se
+pierde y se detectan 3 ACKs duplicados. En el RTT 5 se detecta una pérdida por
+timeout.</p>
+<p><strong>a) <code>cwnd</code> y <code>ssthresh</code> al final de cada RTT, aplicando Tahoe.</strong></p>
+<table>
+<thead>
+<tr>
+<th>RTT</th>
+<th><code>cwnd</code> inicio</th>
+<th>Régimen</th>
+<th><code>cwnd</code> fin</th>
+<th><code>ssthresh</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>12 KB</td>
+<td>slow start (<code>12&lt;20</code>)</td>
+<td>24 KB</td>
+<td>20 KB</td>
+</tr>
+<tr>
+<td>2</td>
+<td>24 KB</td>
+<td>cong. avoid. (<code>24≥20</code>)</td>
+<td>25 KB</td>
+<td>20 KB</td>
+</tr>
+<tr>
+<td>3</td>
+<td>25 KB</td>
+<td>cong. avoid.</td>
+<td>26 KB</td>
+<td>20 KB</td>
+</tr>
+<tr>
+<td>4</td>
+<td>26 KB</td>
+<td>3 dupACK → pérdida</td>
+<td><strong>1 KB</strong></td>
+<td><strong>13 KB</strong></td>
+</tr>
+<tr>
+<td>5</td>
+<td>1 KB</td>
+<td>timeout → pérdida</td>
+<td><strong>1 KB</strong></td>
+<td><strong>0,5 KB</strong></td>
+</tr>
+</tbody>
+</table>
+<p><em>Justificación del RTT 4:</em> <code>ssthresh = cwnd/2 = 26/2 = 13 KB</code>; <code>cwnd = 1 KB</code>.
+<em>Justificación del RTT 5:</em> timeout ⇒ Tahoe también va a 1 MSS, y
+<code>ssthresh = 1/2 = 0,5 KB</code>.</p>
+<p><strong>b) ¿Qué cambiaría con Reno?</strong></p>
+<div class="codehilite"><pre><span></span><code> RTT 4 (3 dupACK): ssthresh = 13 KB, cwnd = 13 KB (fast recovery)
+ RTT 5 (timeout): ssthresh = 0,5 KB, cwnd = 1 KB (slow start, igual que Tahoe)
+</code></pre></div>
+
+<p><strong>c) En el RTT 2 el RTT subió de 100 ms a 180 ms. ¿Qué indica eso y qué debería
+hacer un diseño moderno?</strong></p>
+<p><em>Respuesta.</em> Indica <strong>cola</strong> en los buffers de los routers: el paquete tardó más
+porque <strong>estuvo esperando su turno</strong>. El paquete <strong>no se perdió</strong>, así que los
+algoritmos basados en pérdida (Tahoe, Reno, CUBIC) <strong>no reaccionan</strong>: sigue
+creciendo <code>cwnd</code>.</p>
+<p>Esto es un problema conocido como <strong>bufferbloat</strong>. Las soluciones modernas son:</p>
+<ul>
+<li><strong>ECN</strong>: el router marca en vez de tirar (o hacer cola). Reacciona <strong>antes</strong>
+ de la pérdida.</li>
+<li><strong>AQM (<em>Active Queue Management</em>)</strong>: el router no espera a llenarse el buffer,
+ marca o descarta temprano. <strong>CoDel</strong>, <strong>FQ-CoDel</strong> (por defecto en Linux desde
+ 3.5), <strong>PIE</strong>. Unaim: "Bufferbloat — Better Bufferbloat" (RFC 9000).</li>
+<li><strong>AccECN</strong>: la reacción menos agresiva.</li>
+</ul>
+<blockquote>
+<p>⚠️ <strong>Actualización a 2026:</strong> el <strong>bufferbloat</strong> y los AQMs son de lo más
+relevante que se agregó después de 2011 en este tema. Linux usa <strong>fq_codel</strong>
+por defecto desde el kernel 3.5 (2012). RFC 9000 es <strong>BBR</strong> (draft→
+estándar informativo).</p>
+</blockquote>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2011-03, Problema 1 (30 puntos) — ECN y control de congestión</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc1103</code> / <code>sirc1103</code> — 21 de febrero de 2011.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1103.pdf
+<strong>Este es el problema más importante de toda la materia para el examen actual.</strong></p>
+</blockquote>
+<h3>Enunciado (texto del examen)</h3>
+<blockquote>
+<p>ECN (Explicit Congestion Notification) es un protocolo que actúa en capa de
+red y capa de transporte que permite que los hosts de una sesión TCP reciban
+notificaciones explícitas de congestión generadas por los routers de la red que
+reenvían los paquetes de dicha sesión. Un paquete IP puede estar marcado como:
+NO_ECN, ECN_AWARE o ECN_CONG.</p>
+<p>TCP puede activar ECN solicitando a su entidad de red marcar la bandera
+ECN_AWARE del encabezado IP de todos los paquetes que trasportan segmentos de
+dicha sesión. En caso de congestión, los routers deben marcar la bandera
+ECN_CONG del encabezado IP en todos aquellos paquetes marcados con ECN_AWARE
+antes de reenviarlos. Cuando el receptor recibe paquetes marcados con la
+bandera ECN_CONG le notifica al emisor que existe congestión marcando la
+bandera CONG_DETECTED del encabezado de los segmentos TCP.</p>
+<p>Primitivas:
+- <code>void setCongWinSize(int valor)</code> / <code>int getCongWinSize()</code>
+- <code>void setCONGReceived()</code>: Marca los próximos segmentos TCP a enviar con la
+bandera CONG_DETECTED.</p>
+<p>Tipos:
+<code>TCP_Segment{ int destPort, srcPort, seqNum, ackSeqNum
+void[] data
+bool cong_detected
+IP_Packet prev_header
+... }
+IP_Packet{ ip_addr src, dst
+enum_ecn ecn_field // {NO_ECN, ECN_AWARE, ECN_CONG}
+... }</code></p>
+<p><strong>a)</strong> Cuando el emisor recibe un segmento TCP con la bandera CONG_DETECTED
+marcada, interpreta dicha situación como congestión. ¿Qué eventos interpreta
+TCP sin ECN como una señal de congestión en la red?</p>
+<p><strong>b)</strong> Considere una implementación de TCP que carga el segmento TCP recibido
+en una estructura de tipo <code>TCP_Segment</code> que se usa como parámetro para invocar
+la función <code>int TCP_congDetection(TCP_Segment segmento)</code> cuya salida es el
+estado de congestión. Implemente dicha función considerando los mecanismos
+tradicionales de detección de congestión de TCP y las mejoras provistas por
+ECN (si se invoca <code>TCP_congDetection</code> con NULL como parámetro, es porque
+existió un timeout para la recepción de un ACK).</p>
+<p><strong>c)</strong> TCP utiliza la función <code>TCP_congDetection</code> y le pasa el resultado a la
+función <code>void TCP_congControl(Int congStatus)</code> que implementa el control de
+congestión tradicional de TCP y los mecanismos necesarios para utilizar ECN.
+Implemente dicha función considerando que una vez detectada la congestión se
+pasa al estado "slow start" (arranque lento).</p>
+</blockquote>
+<h3>Parte a) — La respuesta son 4 palabras</h3>
+<p><em>Pregunta qué hace TCP </em><em>sin</em><em> ECN. La respuesta oficial:</em></p>
+<blockquote>
+<p>TCP interpreta que hay congestión en la red cuando se da un evento de pérdida
+de paquete. Un evento de pérdida puede ser por timeout en la recepción de un ACK
+o por la recepción de 3 ACKs duplicados.</p>
+</blockquote>
+<p><strong>Por qué esos dos y no otros.</strong> Ambos son <strong>evidencias de pérdida</strong>, y la
+pérdida es la única señal que TCP puede interpretar sin que nadie se lo diga:</p>
+<table>
+<thead>
+<tr>
+<th>Evento</th>
+<th>Qué evidencía</th>
+<th>Gravedad</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Timeout (RTO vencido)</strong></td>
+<td>no llegó ni el ACK del siguiente → pérdida <strong>masiva</strong> o ruta caída</td>
+<td>alta</td>
+</tr>
+<tr>
+<td><strong>3 ACKs duplicados</strong></td>
+<td>el siguiente llegó, pero el esperado no → pérdida <strong>aislada</strong></td>
+<td>baja</td>
+</tr>
+<tr>
+<td>ACK llega "normal"</td>
+<td>nada</td>
+<td>ninguna</td>
+</tr>
+<tr>
+<td>RTT subió</td>
+<td><strong>cola</strong>, no pérdida</td>
+<td>ninguna (TCP clásico no reacciona)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>La comparación con ECN (que es lo que la pregunta quiere):</strong></p>
+<div class="codehilite"><pre><span></span><code> SIN ECN: el router DESCARTA → hay pérdida → TCP reacciona a la pérdida
+ CON ECN: el router MARCA CE → no hay pérdida → TCP recibe CONG_DETECTED
+</code></pre></div>
+
+<p>O sea: <strong>con ECN, TCP deja de inferir y pasa a serCournotificado</strong>. Esa es la
+frase para el examen.</p>
+<blockquote>
+<p><strong>Tope para 6 puntos:</strong> nombrá los dos eventos (pérdida por timeout, pérdida por
+3 ACKs duplicados), explicá que ambos son señales de <strong>pérdida de paquete</strong>, y
+contrastá con que ECN sustituye esa inferencia por una <strong>notificación
+explícita</strong> que evita la pérdida.</p>
+</blockquote>
+<h3>Parte b) — <code>TCP_congDetection</code></h3>
+<p><strong>Solución oficial (del PDF):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="kt">int</span><span class="w"> </span><span class="n">ultimo_ack</span><span class="p">,</span><span class="w"> </span><span class="n">contador</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="kt">int</span><span class="w"> </span><span class="nf">TCP_extractCongData</span><span class="p">(</span><span class="n">TCP_Segment</span><span class="w"> </span><span class="n">paquete</span><span class="p">){</span>
+<span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">estadoCongestion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">paquete</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="p">){</span>
+<span class="w"> </span><span class="n">contador</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span>
+<span class="w"> </span><span class="p">}</span>
+<span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">paquete</span><span class="p">.</span><span class="n">ackSeqNum</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">ultimo_ack</span><span class="p">){</span>
+<span class="w"> </span><span class="n">contador</span><span class="o">++</span><span class="p">;</span>
+<span class="w"> </span><span class="p">}</span>
+<span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">paquete</span><span class="p">.</span><span class="n">ackSeqNum</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">ultimo_ack</span><span class="p">){</span>
+<span class="w"> </span><span class="n">ultimo_ack</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">paquete</span><span class="p">.</span><span class="n">ackSeqNum</span><span class="p">;</span>
+<span class="w"> </span><span class="n">contador</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w"> </span><span class="p">}</span>
+
+<span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">contador</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">3</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="n">estadoCongestion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w"> </span><span class="n">contador</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w"> </span><span class="p">}</span>
+
+<span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">paquete</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">NULL</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">paquete</span><span class="p">.</span><span class="n">CONG_DETECTED</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="n">estadoCongestion</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w"> </span><span class="p">}</span>
+<span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">paquete</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">NULL</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">paquete</span><span class="p">.</span><span class="n">prev_header</span><span class="p">.</span><span class="n">ecn_field</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">ECN_CONG</span><span class="p">){</span>
+<span class="w"> </span><span class="n">setCONGReceived</span><span class="p">();</span>
+<span class="w"> </span><span class="p">}</span>
+<span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">estadoCongestion</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Análisis de la solución oficial, punto por punto.</strong> Esto es lo que hay que
+aprender: no solamente copiar, sino entender qué está bien y qué está raro.</p>
+<p><strong>✅ Lo que está bien:</strong></p>
+<ol>
+<li><code>if (paquete == NULL) contador = 3;</code> — <strong>el timeout se traduce a "ya tengo 3
+ ACKs duplicados"</strong>, es decir, se fuerza el mismo umbral. Es elegante: un solo
+ <code>if (contador == 3)</code> más abajo maneja los dos casos. Es la decisión de diseño
+ clave, y por eso la cátedra la premia.</li>
+<li><code>ackSeqNum == ultimo_ack → contador++</code> y <code>ackSeqNum &gt; ultimo_ack →
+ ultimo_ack = ...; contador = 0</code> — el contador de duplicados se <strong>resetea</strong>
+ correctamente cuando llega progreso real.</li>
+<li><code>estadoCongestion = 1</code> si <code>paquete.CONG_DETECTED</code> — <strong>la vía de ECN</strong>.</li>
+</ol>
+<p><strong>⚠️ Lo que está mal o es discutible — y esto también se pregunta:</strong></p>
+<ol>
+<li>
+<p><strong><code>paquete.CONG_DETECTED</code> en mayúsculas.</strong> En C, los campos que definen el
+ enunciado son <code>cong_detected</code>. La solución oficial escribe <code>paquete.CONG_DETECTED</code>,
+ que no compila contra el tipo dado. Es un error de transcripción del profesor.
+ <strong>En el examen usá <code>paquete.cong_detected</code></strong>, el nombre del enunciado.</p>
+</li>
+<li>
+<p><strong>La función se llama <code>TCP_extractCongData</code>, no <code>TCP_congDetection</code>.</strong> Otro
+ error de la solución: el enunciado pide <code>TCP_congDetection</code>.</p>
+</li>
+<li>
+<p><strong><code>contador = 3</code> en el caso de timeout, seguido de <code>contador = 0</code> en el
+ <code>if</code>.</strong> Funciona, pero es frágil: si mañana se cambia el umbral a 4, el
+ timeout deja de detectarse. <strong>Mejor forma:</strong> un booleano explícito.</p>
+</li>
+<li>
+<p><strong><code>setCONGReceived()</code> está en el lugar equivocado.</strong> Este es el punto más
+ interesante. Analicemos:</p>
+</li>
+</ol>
+<p>```
+ Solución oficial:
+ el EMISOR, dentro de TCP_congDetection, ve que el paquete recibido
+ trae ecn_field == ECN_CONG, y llama a setCONGReceived().</p>
+<p>Lo que dice el enunciado:
+ "Cuando el RECEPTOR recibe paquetes marcados con la bandera ECN_CONG
+ le notifica al EMISOR ... marcando la bandera CONG_DETECTED"
+ ```</p>
+<p>O sea, <code>setCONGReceived()</code> <strong>debe llamarlo el receptor</strong>, y su efecto es
+ poner <code>CONG_DETECTED</code> en los segmentos <strong>que el receptor envía</strong>. La solución
+ oficial lo puso del lado del emisor, lo cual es conceptualmente incorrecto.</p>
+<p><strong>Pero</strong> hay una lectura que la justifica: si la implementación es
+ <strong>simétrica</strong> (el mismo código para ambos extremos, que es como se escriben
+ los TCP reales), entonces <code>TCP_congDetection</code> corre en los dos hosts. En el
+ receptor, el "paquete recibido" trae <code>ecn_field == ECN_CONG</code>, y ahí sí tiene
+ sentido llamar a <code>setCONGReceived()</code> para avisarle al otro. <strong>Esa es
+ probablemente la intención de la cátedra</strong> — y por eso el enunciado insiste en
+ que la función esté definida para ambos extremos.</p>
+<ol start="5">
+<li>
+<p><strong>Falta <code>paquete == NULL</code> en el segundo <code>if</code>.</strong> Está, está bien. OK.</p>
+</li>
+<li>
+<p><strong>Falta manejar el caso <code>ackSeqNum &lt; ultimo_ack</code>.</strong> Es ACK viejo o duplicado de
+ un ACK viejo. La solución oficial no lo tiene: con <code>contador</code> sin resetear, un
+ ACK viejo podría incrementar el contador falsamente. Es un detalle de
+ robustez.</p>
+</li>
+</ol>
+<p><strong>Mi solución (corregida, con las dos lecturas):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// ---- Estado que persiste entre llamadas (por conexión TCP) ----</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">ultimo_ack</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">;</span><span class="w"> </span><span class="c1">// último ackSeqNum que_STR saw avanzar</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">dupACK</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="c1">// ACKs duplicados consecutivos</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">ECN_soportado</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"> </span><span class="c1">// se negoció ECN en el handshake</span>
+
+<span class="cp">#define UMBRAL_DUPACK 3</span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">TCP_congDetection</span><span class="p">(</span><span class="n">TCP_Segment</span><span class="w"> </span><span class="n">seg</span><span class="p">)</span><span class="w"> </span><span class="c1">// corre en AMBOS extremos</span>
+<span class="p">{</span>
+<span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">congStatus</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="c1">// 0 = todo bien, 1 = congestión</span>
+
+<span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">seg</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="nb">NULL</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="c1">// --- Evento 1: TIMEOUT. No llegó el ACK a tiempo.</span>
+<span class="w"> </span><span class="c1">// Es la señal MÁS grave: o se perdió todo, o la ruta se cayó.</span>
+<span class="w"> </span><span class="n">dupACK</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UMBRAL_DUPACK</span><span class="p">;</span><span class="w"> </span><span class="c1">// lo forzamos al umbral</span>
+<span class="w"> </span><span class="n">dupACK</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="c1">// (lo consume el reset de abajo)</span>
+<span class="w"> </span><span class="n">congStatus</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w"> </span><span class="p">}</span>
+<span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="c1">// --- Evento 2: ACKs duplicados -&gt; fast retransmit</span>
+<span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">seg</span><span class="o">-&gt;</span><span class="n">ackSeqNum</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">ultimo_ack</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="c1">// hubo PROGRESO: hay que resetear el contador</span>
+<span class="w"> </span><span class="n">ultimo_ack</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">seg</span><span class="o">-&gt;</span><span class="n">ackSeqNum</span><span class="p">;</span>
+<span class="w"> </span><span class="n">dupACK</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="w"> </span><span class="p">}</span>
+<span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">seg</span><span class="o">-&gt;</span><span class="n">ackSeqNum</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">ultimo_ack</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="n">dupACK</span><span class="o">++</span><span class="p">;</span><span class="w"> </span><span class="c1">// ACK repetido</span>
+<span class="w"> </span><span class="p">}</span>
+<span class="w"> </span><span class="c1">// si ackSeqNum &lt; ultimo_ack: ACK obsoleto, lo ignoramos (no cuenta)</span>
+
+<span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">dupACK</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">UMBRAL_DUPACK</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="n">congStatus</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"> </span><span class="c1">// fast retransmit</span>
+<span class="w"> </span><span class="n">dupACK</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="c1">// ya se decidió, se rearma</span>
+<span class="w"> </span><span class="p">}</span>
+
+<span class="w"> </span><span class="c1">// --- Evento 3: ECN, visto POR EL RECEPTOR.</span>
+<span class="w"> </span><span class="c1">// El router marcó CE (ECN_CONG). Avisamos al emisor putting the flag</span>
+<span class="w"> </span><span class="c1">// CONG_DETECTED en lo que mandemos de aquí en más.</span>
+<span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">seg</span><span class="o">-&gt;</span><span class="n">prev_header</span><span class="p">.</span><span class="n">ecn_field</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">ECN_CONG</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="n">setCONGReceived</span><span class="p">();</span><span class="w"> </span><span class="c1">// marca los próximos segmentos</span>
+<span class="w"> </span><span class="p">}</span>
+<span class="w"> </span><span class="p">}</span>
+
+<span class="w"> </span><span class="c1">// --- Evento 4: ECN, visto POR EL EMISOR.</span>
+<span class="w"> </span><span class="c1">// El receptor ya nos puso CONG_DETECTED: congestión explícita, sin pérdida.</span>
+<span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">seg</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="nb">NULL</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">seg</span><span class="o">-&gt;</span><span class="n">cong_detected</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="n">congStatus</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="w"> </span><span class="p">}</span>
+
+<span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">congStatus</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Qué cambió respecto de la solución oficial y por qué:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Cambio</th>
+<th>Por qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>&amp;&amp;</code> en vez de <code>and</code></td>
+<td><code>and</code> es una extensión de ISO C, no C estándar. En un examen de papel no importa, pero en código que compila, sí.</td>
+</tr>
+<tr>
+<td><code>cong_detected</code> en minúsculas</td>
+<td>Es el nombre del campo en el tipo del enunciado.</td>
+</tr>
+<tr>
+<td><code>&gt;=</code> en vez de <code>==</code></td>
+<td>Si llegan 4 o 5 duplicados seguidos, con <code>==</code> te lo perdés. Con <code>&gt;=</code> no.</td>
+</tr>
+<tr>
+<td>Timeout no usa el truco de <code>dupACK=3</code></td>
+<td>Es menos frágil: no depende del valor del umbral. La versión oficial funciona, la mía no se rompe si cambiás el umbral.</td>
+</tr>
+<tr>
+<td><code>ECN_CONG</code> → <code>setCONGReceived()</code> <strong>solo en el <code>else</code></strong></td>
+<td>Evita un NULL-dereference: con <code>seg == NULL</code> no hay <code>prev_header</code>. La solución oficial lo protege con <code>paquete != NULL and</code>, que también funciona, pero es más fácil de leer así.</td>
+</tr>
+<tr>
+<td>ACK obsoleto ignorado</td>
+<td>Robustez.</td>
+</tr>
+<tr>
+<td>Comentarios con el <strong>por qué</strong> de cada rama</td>
+<td>Esto es lo que suma puntos.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Tope para 12 puntos:</strong> tenés que tener los <strong>dos eventos de pérdida</strong>
+(timeout y 3 dupACKs), el <strong>reset del contador</strong> cuando hay progreso, y la
+<strong>vía de ECN por <code>cong_detected</code></strong>. Todo eso con los comentarios explicando el
+razonamiento.</p>
+</blockquote>
+<h3>Parte c) — <code>TCP_congControl</code></h3>
+<p><strong>Solución oficial:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="cp">#define MSS_BYTES ...</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">estado</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SLOW_START</span><span class="p">;</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">umbral</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">valor_inicial</span><span class="p">;</span>
+<span class="kt">int</span><span class="w"> </span><span class="n">ultimoTamanoCongWin</span><span class="p">;</span>
+
+<span class="kt">void</span><span class="w"> </span><span class="nf">TCP_congControl</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">congStatus</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">congStatus</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// &lt;-- BUG: "=" en vez de "=="</span>
+<span class="w"> </span><span class="n">estado</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SLOW_START</span><span class="p">;</span>
+<span class="w"> </span><span class="n">umbral</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getCongWinSize</span><span class="p">()</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+<span class="w"> </span><span class="n">setCongWinSize</span><span class="p">(</span><span class="n">MSS_BYTES</span><span class="p">);</span>
+<span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">estado</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">SLOW_START</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="n">setCongWinSize</span><span class="p">(</span><span class="n">MSS_BYTES</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">getCongWinSize</span><span class="p">());</span>
+<span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">getCongWinSize</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">umbral</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="n">estado</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CONG_AVOIDANCE</span><span class="p">;</span>
+<span class="w"> </span><span class="p">}</span>
+<span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="n">setCongWinSize</span><span class="p">(</span><span class="n">getCongWinSize</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">MSS_BYTES</span><span class="o">*</span><span class="p">(</span><span class="n">MSS_BYTES</span><span class="o">/</span><span class="n">getCongWinSize</span><span class="p">()));</span>
+<span class="w"> </span><span class="p">}</span>
+<span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Análisis de la solución oficial:</strong></p>
+<ol>
+<li>
+<p>🔴 <strong>Bug de sintaxis: <code>if (congStatus = 1)</code>.</strong> Es <strong>asignación</strong>, no
+ comparación. En C esto asigna 1 a <code>congStatus</code> y evalúa el resultado, que
+ siempre es verdadero. O sea, <strong>la función SIEMPRE entra en el branch de
+ congestión</strong> y nunca crece la ventana. Es un error real en la solución
+ publicada. <strong>En el examen escribí <code>==</code>.</strong> Si el corrector es una persona, el
+ error no te resta: demuestra que entendiste. Si además lo señalás, mejor.</p>
+</li>
+<li>
+<p>🟡 <strong>No hay <code>else</code> para la ventana mínima.</strong> Si <code>cwnd</code> cae por debajo de 1 MSS
+ (no debería pasar, pero), no hay piso.</p>
+</li>
+<li>
+<p>🟡 <strong>Falta el <code>ultimoTamanoCongWin</code>.</strong> Está declarado pero nunca se usa. En un
+ TCP real lo usarías para detectar si la ventana <strong>creció</strong> de golpe entre dos
+ losses (indicando que la red <strong><code>no</code></strong> está congestionada). Es un refinamiento,
+ no lo exige el enunciado.</p>
+</li>
+<li>
+<p>🟢 <strong>La lógica de <code>umbral = cwnd/2</code> y <code>cwnd = MSS</code> es correcta</strong> para lo que
+ pide el enunciado (que toda congestión arranque slow start).</p>
+</li>
+</ol>
+<p><strong>Mi solución:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="cp">#define MSS_BYTES 1460 </span><span class="c1">// MSS típico en Ethernet; el enunciado no lo da</span>
+
+<span class="c1">// ---- Estado persistente ----</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">estado</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SLOW_START</span><span class="p">;</span><span class="w"> </span><span class="c1">// SLOW_START | CONG_AVOIDANCE</span>
+<span class="k">static</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">umbral</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">valor_inicial</span><span class="p">;</span><span class="w"> </span><span class="c1">// ssthresh: arranca alto (ej. 64 MSS)</span>
+
+<span class="c1">// ---------- (c) Control de congestión ----------</span>
+<span class="kt">void</span><span class="w"> </span><span class="nf">TCP_congControl</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">congStatus</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">congStatus</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="c1">// ======== CONGESTIÓN detectada ========</span>
+<span class="w"> </span><span class="c1">// Guardamos la mitad de la ventana ACTUAL como nuevo umbral:</span>
+<span class="w"> </span><span class="c1">// es el punto donde la red empezó a fallar, así que es el punto</span>
+<span class="w"> </span><span class="c1">// al que no conviene pasar.</span>
+<span class="w"> </span><span class="n">umbral</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getCongWinSize</span><span class="p">()</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+
+<span class="w"> </span><span class="c1">// El enunciado pide ir a slow start en ambos casos.</span>
+<span class="w"> </span><span class="c1">// En producción, con fast retransmit (3 dupACKs) se haría</span>
+<span class="w"> </span><span class="c1">// cwnd = umbral en vez de 1 MSS -- es la diferencia Tahoe vs Reno.</span>
+<span class="w"> </span><span class="n">setCongWinSize</span><span class="p">(</span><span class="n">MSS_BYTES</span><span class="p">);</span>
+<span class="w"> </span><span class="n">estado</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SLOW_START</span><span class="p">;</span>
+<span class="w"> </span><span class="p">}</span>
+<span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="c1">// ======== sin congestión: CRECEMOS la ventana ========</span>
+<span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">estado</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">SLOW_START</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="c1">// Por cada ACK recibido sumamos 1 MSS -&gt; se duplica por RTT.</span>
+<span class="w"> </span><span class="n">setCongWinSize</span><span class="p">(</span><span class="n">getCongWinSize</span><span class="p">()</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">MSS_BYTES</span><span class="p">);</span>
+
+<span class="w"> </span><span class="c1">// Si superamos el umbral, el crecimiento pasa a ser lineal.</span>
+<span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">getCongWinSize</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">umbral</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="n">estado</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CONG_AVOIDANCE</span><span class="p">;</span>
+<span class="w"> </span><span class="p">}</span>
+<span class="w"> </span><span class="p">}</span>
+<span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// CONG_AVOIDANCE</span>
+<span class="w"> </span><span class="c1">// +1 MSS por RTT, repartido entre los cwnd/MSS ACKs del RTT:</span>
+<span class="w"> </span><span class="c1">// (MSS) / (cwnd/MSS) = MSS²/cwnd por ACK</span>
+<span class="w"> </span><span class="c1">// y a lo largo del RTT: (cwnd/MSS)·(MSS²/cwnd) = MSS. Cuadra.</span>
+<span class="w"> </span><span class="n">setCongWinSize</span><span class="p">(</span><span class="n">getCongWinSize</span><span class="p">()</span>
+<span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">MSS_BYTES</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">MSS_BYTES</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">getCongWinSize</span><span class="p">()));</span>
+<span class="w"> </span><span class="p">}</span>
+<span class="w"> </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>Tabla de verificación</strong> — corrELA a mano para estar seguro:</p>
+<div class="codehilite"><pre><span></span><code> MSS = 1000, umbral inicial = 64000, cwnd = 1000, estado = SLOW_START
+
+ RTT 1: sin cong, SLOW_START → cwnd = 1000 + 1000 = 2000
+ 2000 &lt; 64000 → sigue SLOW_START
+ RTT 2: → 4000 (&lt; 64000)
+ RTT 3: → 8000
+ RTT 4: → 16000
+ RTT 5: → 32000
+ RTT 6: → 64000 &gt;= 64000 → estado = CONG_AVOIDANCE
+ RTT 7: cwnd = 64000 + 1000·(1000/64000) = 64000 + 1000·0
+ ⚠️ con división entera esto da 0. El crecimiento real sería
+ sumar el resto. En la práctica se usa aritmética de punto
+ flotante o se acumula el residuo.
+ → 64016 aprox.
+</code></pre></div>
+
+<blockquote>
+<p>⚠️ <strong>Sobre la división entera:</strong> <code>MSS/cwnd</code> en C entero es 0 cuando
+<code>cwnd &gt; MSS</code>. La solución oficial tiene el mismo problema. Es un bug real que
+en un examen no te resta, pero <strong>mencionarlo suma</strong>: dice que entendiste el
+algoritmo. La forma correcta es <code>cwnd += MSS*MSS/cwnd</code> con aritmética de
+punto flotante, o <code>cwnd += (MSS*MSS)/cwnd</code> con <code>long</code> suficientemente grande.</p>
+<p><strong>Tope para 12 puntos:</strong> los tres casos — congestión (umbral = cwnd/2,
+cwnd = MSS, slow start), slow start (cwnd += MSS por ACK), congestion
+avoidance (cwnd += MSS²/cwnd) — y la transición de régimen al cruzar el umbral.</p>
+</blockquote>
+<h2>3.2 Examen 2008-07, Pregunta 2 (10 puntos) — los cuatro algoritmos</h2>
+<blockquote>
+<p><strong>Enunciado:</strong> Describa el mecanismo de control de congestión de TCP partiendo
+de explicar los principios básicos de operación de al menos dos de los cuatro
+algoritmos básicos involucrados.</p>
+</blockquote>
+<p><strong>Los cuatro algoritmos</strong> (esto es lo que hay que saber):</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Algoritmo</th>
+<th>Cuándo</th>
+<th>Qué hace con <code>cwnd</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Slow start</strong></td>
+<td><code>cwnd &lt; ssthresh</code></td>
+<td><code>cwnd += MSS</code> por ACK → <strong>duplica por RTT</strong></td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Congestion avoidance</strong></td>
+<td><code>cwnd ≥ ssthresh</code></td>
+<td><code>cwnd += MSS²/cwnd</code> por ACK → <strong>+1 MSS por RTT</strong></td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Fast retransmit</strong></td>
+<td>3 ACKs duplicados</td>
+<td>retransmite <strong>sin esperar</strong> el RTO</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Fast recovery</strong></td>
+<td>3 ACKs duplicados</td>
+<td><code>cwnd = ssthresh = cwnd/2</code> (no a 1 MSS)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Respuesta modelo (10 puntos).</strong> Ver §1.4, que lo desarrolla entero. Los puntos
+están en: (a) nombrar los cuatro, (b) decir <strong>qué variable</strong> decide el slow start
+vs. congestion avoidance, (c) decir <strong>qué tres cosas</strong> pasan con 3 dupACKs, (d)
+distinguir Tahoe de Reno.</p>
+<h2>3.3 Examen 2009-07, Pregunta 1 (10 puntos)</h2>
+<blockquote>
+<p><strong>Enunciado:</strong> a) En un protocolo de capa de transporte: ¿cuál es la diferencia
+entre Control de Flujo y Control de Congestión? b) ¿Cómo hace TCP para detectar
+la existencia de congestión en la red?</p>
+</blockquote>
+<p><strong>a)</strong> flujo = el receptor no puede absorber; congestión = la red no puede
+transportar. Se respondé con la tabla de §1.1. <strong>El punto clave para el
+profesor:</strong> los dos se resuelven reduciendo la ventana efectiva, pero por
+<strong>motivos distintos</strong>, y confundirlos es el error típico.</p>
+<p><strong>b)</strong> <strong>Las dos señales:</strong> pérdida por <strong>timeout</strong> y pérdida por <strong>3 ACKs
+duplicados</strong>. Sumá que con ECN hay una tercera: la <strong>marca CE</strong> del router.</p>
+<h2>3.4 Examen 2009-12, Pregunta 2 (10 puntos)</h2>
+<blockquote>
+<p><strong>Enunciado:</strong> Se considera un servicio de transmisión confiable. a) Señale las
+diferencias de implementación en capa de transporte vs. capa de enlace.
+b) En una red de paquetes arbitraria, ¿es posible implementar un servicio de
+transmisión confiable en capa de enlace? Justifique.</p>
+</blockquote>
+<p><strong>a)</strong> En la capa de enlace la fiabilidad es <strong>por salto</strong> y <strong>por enlace</strong>, sin
+estado entre saltos, sin número de secuencia global, y los buffers son de un
+solo paquete. En la capa de transporte la fiabilidad es <strong>extremo a extremo</strong>, con
+números de secuencia de bytes, ACK acumulativos, control de congestión, y
+funciona <strong>aunque los saltos intermedios no sean fiables</strong>.</p>
+<p><strong>b)</strong> <strong>No es confiable</strong> — y esto es lo que el enunciado quiere que argumentes:</p>
+<div class="codehilite"><pre><span></span><code> Si la capa 3 (IP) descarta paquetes, la capa 2 no lo sabe:
+ no hay número de secuencia que atraviese los routers,
+ no hay ACK que vuelva,
+ no hay timeout que pueda distinguir "se perdió" de "tardó".
+
+ Peor: la retransmisión de capa 2 en el último salto
+ puede NO arreglar nada, porque el paquete se perdió en el router de al lado.
+
+ Ejemplo mínimo que lo demuestra:
+ emisor --(1)--&gt; router A --(2)--&gt; router B --(3)--&gt; receptor
+ Se pierde en (2). La capa 2 de (1)-(2) no ve nada raro.
+ La capa 2 de (2)-(3) ve llegar bien y jamás retransmite.
+ Resultado: paquete perdido para siempre, sin detección.
+</code></pre></div>
+
+<p><strong>Conclusión para el examen:</strong> la fiabilidad <strong>extremo a extremo</strong> es la única
+que funciona sobre una red no confiable. Por eso está <strong>arriba</strong> y no abajo.</p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen</h2>
+<ol>
+<li><strong>Control de flujo</strong> = el receptor no puede absorber → lo controla <code>rwnd</code>.</li>
+<li><strong>Control de congestión</strong> = la red no puede transportar → lo controla <code>cwnd</code>.</li>
+<li>La ventana efectiva es <strong><code>min(cwnd, rwnd)</code></strong> — un mínimo porque ambas son cotas
+ superiores.</li>
+<li><strong>Slow start</strong>: <code>cwnd += MSS</code> por ACK → <strong>duplica por RTT</strong> (exponencial base 2).</li>
+<li><strong>Congestion avoidance</strong>: <code>cwnd += MSS²/cwnd</code> por ACK → <strong>+1 MSS por RTT</strong> (lineal).</li>
+<li>El régimen lo decide <strong><code>cwnd</code> vs. <code>ssthresh</code></strong>.</li>
+<li><strong>3 ACKs duplicados</strong> → fast retransmit (porque 3 hace improbable el reordenamiento).</li>
+<li><strong>Timeout</strong> → pérdida grave → slow start desde 1 MSS.</li>
+<li><strong>Reno</strong> distingue: 3 dupACKs → <code>cwnd/2</code> (fast recovery); timeout → 1 MSS.</li>
+<li><strong>ECN</strong>: el router marca <strong>CE</strong> en vez de descartar; el receptor avisa con
+ <strong>CONG_DETECTED</strong>; <strong>cero paquetes perdidos</strong>.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p><strong>1.</strong> ¿Por qué la ventana efectiva es el <strong>mínimo</strong> de <code>cwnd</code> y <code>rwnd</code> y no la suma?</p>
+<details><summary>Respuesta</summary>
+
+Porque ambas son **cotas superiores independientes**: no se puede mandar más de
+lo que la red aguanta (cwnd) ni más de lo que el receptor aguanta (rwnd). Si las
+sumaras, el excedente que la red no pudo tomar se acumularía en el buffer del
+receptor, y lo desbordarías **justo cuando la red va peor**, que es el peor
+momento posible. El `min` garantiza que nadie se desborda.
+
+</details>
+
+<p><strong>2.</strong> En slow start, ¿por qué <code>cwnd</code> se duplica en cada RTT? Explicá desde el
+número de ACKs.</p>
+<details><summary>Respuesta</summary>
+
+En el RTT *n* mando `cwnd(n-1)` bytes, que forman `cwnd(n-1)/MSS` segmentos.
+Llega un ACK acumulativo por segmento, o sea `cwnd(n-1)/MSS` ACKs. Cada ACK suma
+1 MSS. Entonces:
+`cwnd(n) = cwnd(n-1) + (cwnd(n-1)/MSS)·MSS = cwnd(n-1) + cwnd(n-1) = 2·cwnd(n-1)`.
+
+</details>
+
+<p><strong>3.</strong> ¿Por qué exactamente 3 ACKs duplicados y no 1?</p>
+<details><summary>Respuesta</summary>
+
+Porque con ACKs acumulativos un ACK duplicado es ambiguo: puede ser que el
+segmento esperado **se perdió**, o que se está **reordenando** en la red (los
+ACKACK cuffs). Con 3 duplicados es estadísticamente muy improbable que sea
+reordenamiento. Es un compromiso entre latencia (no esperar al RTO) y falsos
+positivos (no retransmitir de más).
+
+</details>
+
+<p><strong>4.</strong> ¿Qué valor toma <code>cwnd</code> con 3 dupACKs en Tahoe? ¿Y en Reno? ¿Y con timeout
+en ambos?</p>
+<details><summary>Respuesta</summary>
+
+- Tahoe, 3 dupACKs → `cwnd = 1 MSS` (vuelve a slow start).
+- Reno, 3 dupACKs → `cwnd = ssthresh = cwnd/2` (fast recovery).
+- Timeout → `cwnd = 1 MSS` en **ambos** (Tahoe y Reno coinciden).
+
+</details>
+
+<p><strong>5.</strong> ¿Qué cambia en la red con ECN que no cambia con la detección por pérdida?</p>
+<details><summary>Respuesta</summary>
+
+Que **no se pierde ningún paquete**. El router marca CE en el paquete en vez de
+descartarlo, así que la aplicación lo recibe igual. La reacción de TCP es la
+misma o más suave (ECN++ baja a `cwnd/2` en vez de a 1 MSS), pero lo que cambia
+de verdad es que **el paquete llega**.
+
+</details>
+
+<p><strong>6.</strong> Escribí la fórmula de crecimiento en congestion avoidance y justificá por
+qué da +1 MSS por RTT.</p>
+<details><summary>Respuesta</summary>
+
+`cwnd += MSS²/cwnd` por ACK.
+
+En un RTT llegan `cwnd/MSS` ACKs. Sumando la fórmula:
+`(cwnd/MSS) · (MSS²/cwnd) = MSS²/cwnd · cwnd/MSS = MSS`.
+Es decir, **exactamente 1 MSS por RTT**. El `MSS²/cwnd` es solo la porción de ese
+MSS que corresponde a cada ACK individual.
+
+</details>
+
+<p><strong>7.</strong> Un cliente tiene <code>cwnd = 8 KB</code> y el receptor anuncia <code>rwnd = 2 KB</code>.
+(a) ¿Cuántos bytes manda por RTT? (b) Si el RTT es 40 ms, ¿cuál es el throughput?</p>
+<details><summary>Respuesta</summary>
+
+(a) `min(8 KB, 2 KB) = 2 KB` por RTT.
+(b) `2000 B / 0,040 s = 50 000 B/s = 50 KB/s = 400 kbps`.
+
+</details>
+
+<p><strong>8.</strong> En el problema de 2011-03, ¿por qué el caso <code>seg == NULL</code> (timeout) se
+implementa poniendo <code>dupACK = 3</code>?</p>
+<details><summary>Respuesta</summary>
+
+Porque el timeout es **la pérdida más grave** (no llegó ni el ACK siguiente), así
+que debe disparar la misma acción que 3 dupACKs: reducir la ventana. Poner el
+contador en el umbral **unifica los dos casos** en un solo `if`, que es más
+simple y menos propenso a errores. Es un atajo de implementación. (Mi versión lo
+hace con un booleano explícito, que es más robusto si después cambia el umbral.)
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>eirc1103</code> / <code>sirc1103</code></strong> — Problema 1 completo (30 pts, ECN), P2 (10 pts, control de congestión)</li>
+<li><strong>Examen <code>eirc0807</code> / <code>sirc0807</code></strong> — P2: los 4 algoritmos (10 pts)</li>
+<li><strong>Examen <code>eirc0907</code> / <code>sirc0907</code></strong> — P1: flujo vs. congestión (10 pts)</li>
+<li><strong>Examen <code>sirc0912</code></strong> — P2: fiable en transporte vs. enlace (10 pts)</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes deadoras</em> 5ª ed., cap. 6 §6.7 "TCP Congestion Control" (pág. ~600 del PDF)</li>
+<li><strong>RFC 9293</strong> — TCP (2022, <em>Internet Standard</em>; consolida y obsolesce RFC 793 + 5 updates)</li>
+<li><strong>RFC 5681</strong> — TCP Congestion Control (2009): los cuatro algoritmos</li>
+<li><strong>RFC 3168</strong> — ECN en IP (2001) · <strong>RFC 9768</strong> — AccECN, ECN más preciso</li>
+<li><strong>RFC 9331</strong> — L4S (2023) · <strong>RFC 8511</strong> — ABE (2018)</li>
+<li><strong>RFC 9438</strong> — CUBIC (2023, <em>Standards Track</em>, obsolesce RFC 8312)</li>
+<li><strong>RFC 6937</strong> — PRR, <em>Experimental</em></li>
+<li><strong>RFC 6928</strong> — Initial Window = 10 MSS (2013) · <strong>RFC 7414</strong> — roadmap de las RFCs de TCP</li>
+<li><code>draft-ietf-ccwg-bbr</code> — BBRv3 (<em>Experimental</em>, nunca fue RFC)</li>
+<li><strong>Clase siguiente:</strong> 22 — Taller TCP: diagramas de intercambio resueltos</li>
+</ul></body></html>

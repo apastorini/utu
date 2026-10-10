@@ -1,0 +1,1744 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 13 — Correo electrónico: SMTP, POP3, IMAP y MIME</h1>
+<p><strong>Bloque:</strong> B (Aplicación) · <strong>Semana:</strong> 5 · <strong>Duración estimada:</strong> 110 min
+<strong>Correlativa:</strong> Clase 12 (taller DNS + HTTP) · <strong>Sigue con:</strong> Clase 14 (seguridad en la aplicación: TLS, autenticación y correo seguro)
+<strong>Material de referencia:</strong> Tanenbaum cap. 7 (§7.1) · Exámenes  P2,  P4,  Ejercicio 2</p>
+<blockquote>
+<p>⚠️ <strong>Sobre los números de RFC de esta clase:</strong> , que es la fuente de
+verdad del curso para números de RFC, <strong>no tiene una sección de correo electrónico</strong>.
+Los RFC que se citan acá son los oficiales y están verificados contra 
+(octubre de 2026), pero <strong>verificalos vos</strong> en  antes de
+copiarlos en un examen. Los <strong>puertos</strong>, en cambio, sí están verificados contra el
+registro de IANA en  §15.</p>
+</blockquote>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Dibujar la <strong>arquitectura del correo</strong> con sus <strong>tres roles</strong> (MUA, MTA y MDA) y explicar qué protocolo usa cada par de actores.</li>
+<li>Explicar por qué SMTP es un protocolo <strong>push</strong> y por qué POP3 e IMAP son <strong>pull</strong>, y qué consecuencia de seguridad tiene eso.</li>
+<li>Escribir la <strong>transcripción literal</strong> de una sesión SMTP completa, con <code>EHLO</code>, <code>MAIL FROM</code>, <code>RCPT TO</code>, <code>DATA</code> y el punto final, incluida una respuesta de error.</li>
+<li>Explicar <strong>por qué existe MIME</strong> y aplicar los tres  (, , ) sobre <strong>el mismo texto</strong>.</li>
+<li>Describir los <strong>comandos y los dos estados</strong> de POP3, y explicar por qué sus comandos van en claro.</li>
+<li>Comparar POP3 e IMAP en una tabla de <strong>8 filas</strong>, entendiendo la diferencia de fondo: <strong>dónde vive el estado</strong>.</li>
+<li>Resolver completo el <strong>Examen 2010-03 P2</strong> (8 puntos) y el <strong>Examen 2008-12 P4</strong> (7 puntos), con las soluciones oficiales a la vista.</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong>  (8 puntos — ★ la arquitectura del correo, los roles y los protocolos),  (7 puntos — ★ el  de POP3 y el <em>dot-stuffing</em>),  Ejercicio 2 (el diálogo SMTP transcrito y el <em>dot-stuffing</em> en la práctica),  (firma digital aplicada al correo).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 La arquitectura del correo: tres roles y un camino largo</h2>
+<p>El correo electrónico es la aplicación más vieja de Internet y la única que sigue siendo
+<strong>extremo a extremo</strong>. Esa decisión de diseño explica toda la arquitectura.</p>
+<p><code>┌───────────────┐ ┌───────────────┐ ┌───────────────┐
+ │ MUA │ │ MTA │ │ MTA │
+ │ cliente de │ SMTP │ servidor de │ SMTP │ servidor de │
+ │ correo ├───────▶│ TRANSFERENCIA├───────▶│ TRANSFERENCIA│
+ │ (Outlook, │ :25 │ (el que │ :25 │ (el del │
+ │ Thunderbird) │ │ reenvía) │ │ destino) │
+ └───────┬───────┘ └───────┬───────┘ └───────┬───────┘
+ │ │ │
+ │ │ (el MDA es el mismo │
+ │ │ proceso que corre │
+ │ │ en el MTA receptor) ▼
+ │ │ ┌───────────────┐
+ │ │ │ MDA │
+ │ │ │ servidor de │
+ │ │ │ ENTREGA │
+ │ │ │ (escribe el │
+ │ │ │ archivo en │
+ │ │ │ el buzón) │
+ │ │ └───────┬───────┘
+ ▼ ▼ ▼
+ el usuario escribe buzón del emisor el usuario lee
+ (POP3 :110 / IMAP :143
+ o el webmail por HTTP)</code></p>
+<h3>Los tres roles, con su glosa y su pregunta</h3>
+<table>
+<thead>
+<tr>
+<th>Rol</th>
+<th>Nombre en inglés</th>
+<th>Glosa</th>
+<th>La pregunta que responde</th>
+<th>Protocolo hacia el siguiente</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>MUA</strong></td>
+<td><em>Mail User Agent</em></td>
+<td>agente de usuario de correo</td>
+<td>«¿qué escribo y qué leo?»</td>
+<td>SMTP (push) hacia el MTA propio</td>
+</tr>
+<tr>
+<td><strong>MTA</strong></td>
+<td><em>Mail Transfer Agent</em></td>
+<td>agente de transferencia</td>
+<td>«¿a quién se lo mando y cómo lo hago llegar?»</td>
+<td>SMTP (push) hacia otro MTA</td>
+</tr>
+<tr>
+<td><strong>MDA</strong></td>
+<td><em>Mail Delivery Agent</em></td>
+<td>agente de entrega</td>
+<td>«¿dónde lo archivo para que el destinatario lo encuentre?»</td>
+<td>POP3 o IMAP (pull), o HTTP</td>
+</tr>
+</tbody>
+</table>
+<p><strong>El nombre importa porque cada nombre dice una cosa:</strong></p>
+<ul>
+<li><strong>User</strong>: el que <strong>usa</strong> el correo. Es el único que puede escribir y leer.</li>
+<li><strong>Transfer</strong>: el que lo <strong>traslada</strong>. No lee nada, no guarda nada: reenvía.</li>
+<li><strong>Delivery</strong>: el que lo <strong>deja en su lugar</strong>. Típicamente corre <strong>dentro del mismo proceso
+ que el MTA receptor</strong>, pero conceptualmente es otro rol.</li>
+</ul>
+<h3>Por qué el camino es largo, y por qué eso es una decisión y no un accidente</h3>
+<p>`
+ El correo NO es extremo a extremo en la entrega. El emisor no habla con el receptor:
+ habla con SU servidor, y ese servidor habla con el del receptor. Hay al menos un
+ punto —un servidor que no es el emisor— que puede leer o modificar el mensaje.</p>
+<p>¿Por qué? Porque en 1982 no existía la infraestructura para que un usuario cualquiera
+ aceptara conexiones entrantes. El teléfono de la época no tenía fija: no había forma
+ de saber a qué máquina llamar. El correo se diseñó como la <strong>bandeja</strong>: el emisor
+ deja el mensaje en un buzón y el destinatario, cuando quiere, pasa a recogerlo.</p>
+<p>TODAY, con IP, esa razón ya no existe, y por eso la bandeja es un LASTRE:
+ el correo sigue siendo el único protocolo de aplicación que no es extremo a extremo.
+`</p>
+<blockquote>
+<p><strong>La frase del examen:</strong> <em>el correo electrónico es un sistema de_STORE-and-forward
+(guardar y reenviar)extremo a extremo.</em> Guardar y reenviar es lo que hace el MTA;
+extremo a extremo es lo que le falta.</p>
+</blockquote>
+<h3>El rol que falta en el diagrama y que hay que dibujar igual: el <strong>MUA del receptor</strong></h3>
+<p>`
+ MUA ──SMTP:25──▶ MTA ──SMTP:25──▶ MTA/MDA ──POP3:110──▶ MUA
+ escribir (reenvía) (deposita) leer</p>
+<p>El MUA del receptor entra por POP3, IMAP (o por HTTP si es webmail).
+ Y si usa IMAP, en realidad hay un cuarto rol en juego: el estado
+ (bandejas,Flags, carpetas) vive en el servidor, no en el cliente.
+`</p>
+<p><strong>Y un quinto rol que aparece cuando hay varios servidores de correo en el mismo dominio:</strong>
+el <strong>MTA de reenvío</strong> o <em>forwarder</em>, que recibe el mensaje y lo pasa a otro MTA sin
+depositarlo. Es el que existe cuando decís «redireccioná el correo a otra dirección».</p>
+<h2>1.2 SMTP: el protocolo push del envío</h2>
+<p><strong>SMTP</strong> (<em>Simple Mail Transfer Protocol</em>) tiene el nombre de «simple» porque lo más
+importante es que hace una sola cosa: <strong>empujar un mensaje</strong>. No pide, no busca, no
+responde preguntas de directorio. Solo empuja.</p>
+<table>
+<thead>
+<tr>
+<th>Dato</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Puerto principal</strong></td>
+<td><strong>25 TCP</strong> (registrado también en UDP, pero el uso real es TCP)</td>
+</tr>
+<tr>
+<td><strong>Puerto de envío del cliente</strong></td>
+<td><strong>587</strong> (<em>submission</em>), con autenticación</td>
+</tr>
+<tr>
+<td><strong>Puerto TLS implícito</strong></td>
+<td><strong>465</strong> (<em>submissions</em>), deprecated a favor de  en 587</td>
+</tr>
+<tr>
+<td><strong>Transporte</strong></td>
+<td>TCP, <strong>sin cifrar</strong> en el puerto 25</td>
+</tr>
+<tr>
+<td><strong>RFC</strong></td>
+<td>(2008, <em>Internet Standard</em>), que reemplaza a  (1982) · <em>verificar</em></td>
+</tr>
+<tr>
+<td><strong>Formato del mensaje</strong></td>
+<td>(2008), que reemplaza a  (1982) · <em>verificar</em></td>
+</tr>
+</tbody>
+</table>
+<h3>Los dos modos de usar SMTP, y por qué existen los dos puertos</h3>
+<p>`
+ 25 (mail server → mail server) "MTA a MTA":Relay, sin autenticación,
+ porque los dos extremos son servidores
+ conocidos entre sí.</p>
+<p>587 (cliente → su mail server) Submission: el usuario se identifica
+ con usuario y contraseña, porque si no,
+ cualquiera podría mandar correo en tu nombre.</p>
+<p>465 (submission con TLS implícito) Todo el canal va cifrado desde el
+ principio. Deprecada a favor de 587 con
+ STARTTLS, pero sigue registrada y usada.
+`</p>
+<blockquote>
+<p><strong>Por qué importa en el examen:</strong> SMTP <strong>no tiene autenticación por defecto</strong>. Por eso
+hay dos puertos: el 25 para el salto servidor a servidor y el 587 para el salto cliente a
+servidor. El 587 no existe por otra cosa.</p>
+</blockquote>
+<h3>El diálogo, comando por comando</h3>
+<p><code>El cliente (MUA) El servidor (MTA)
+ │ │
+ │◀────────── 220 &lt;dominio&gt; ESMTP Service ready ────────│ (saludo)
+ │ │
+ │─────── EHLO &lt;mi.dominio&gt; ───────────────────────────▶│ (o HELO, antiguo)
+ │◀── 250-&lt;dominio&gt; (saludo y capacidades) ────│
+ │ 250-SIZE 35882577 │
+ │ 250-8BITMIME │
+ │ 250-STARTTLS │
+ │ 250-AUTH PLAIN LOGIN │
+ │ 250 HELP │
+ │ │
+ │─────── MAIL FROM:&lt;origen@dominio.com.uy&gt; ──────────▶│ (1 solo por mensaje)
+ │◀────────── 250 2.1.0 Ok ─────────────────────────────│
+ │ │
+ │─────── RCPT TO:&lt;destino@dominio.com.uy&gt; ───────────▶│ (1 o varios)
+ │◀────────── 250 2.1.5 Ok ─────────────────────────────│
+ │ │
+ │─────── DATA ───────────────────────────────────────▶│
+ │◀────── 354 Start mail input; end with &lt;CRLF&gt;.&lt;CRLF&gt; ─│
+ │ │
+ │─────── (el mensaje, línea por línea) ───────────────▶│
+ │─────── . ───────────────────────────────────────────▶│ (punto solo)
+ │◀────────── 250 2.0.0 Ok: queued as 40AB06AF005B39F9 ──│
+ │ │
+ │─────── QUIT ────────────────────────────────────────▶│
+ │◀────────── 221 &lt;dominio&gt; closing connection ────────│</code></p>
+<p><strong>Los cinco comandos que hay que saber de memoria:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Comando</th>
+<th>Qué hace</th>
+<th>Cuántas veces</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(o )</td>
+<td>saludo e identificación;  además lista las capacidades</td>
+<td>1, al abrir</td>
+</tr>
+<tr>
+<td></td>
+<td>declara el <strong>remitente</strong> (la casilla del <em>return path</em>)</td>
+<td><strong>1 sola</strong> por mensaje</td>
+</tr>
+<tr>
+<td></td>
+<td>declara un <strong>destinatario</strong></td>
+<td><strong>1 o varias</strong></td>
+</tr>
+<tr>
+<td></td>
+<td>«ahora viene el mensaje»</td>
+<td>1, antes del cuerpo</td>
+</tr>
+<tr>
+<td></td>
+<td>cierra la sesión</td>
+<td>1, al terminar</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Y las dos reglas del punto que hacen que todo funcione:</strong></p>
+<p>`
+ 1. El mensaje se termina con una línea que contiene UN SOLO PUNTO:
+ <CRLF> . <CRLF>
+ Ese punto no es parte del mensaje: es el delimitador.</p>
+<ol start="2">
+<li>Si una línea del mensaje empieza con un punto, el emisor la "duplica":
+ .algo en el texto → ..algo en el cable
+ El receptor, al leer, saca un punto de cada línea que empiece con punto.</li>
+</ol>
+<p>Esto se llama DOT-STUFFING y lo vas a tener que explicar en el examen.
+`</p>
+<h3>La transcripción literal de un envío completo</h3>
+<p>Esta es la forma que se ve en un  o en Wireshark, con las
+líneas del servidor () y del cliente ():</p>
+<p><code>S: 220 mta4.in.adinet.com.uy ESMTP Service (7.0.027) ready
+ C: EHLO cliente.fing.edu.uy
+ S: 250-mta4.in.adinet.com.uy
+ S: 250-SIZE 35882577
+ S: 250-8BITMIME
+ S: 250-STARTTLS
+ S: 250 HELP
+ C: MAIL FROM:&lt;origen@dominio.com.uy&gt;
+ S: 250 2.1.0 Ok
+ C: RCPT TO:&lt;dest1@dominio.com.uy&gt;
+ S: 250 2.1.5 Ok
+ C: RCPT TO:&lt;dest2@dominio.com.uy&gt;
+ S: 550 5.1.1 &lt;dest2@dominio.com.uy&gt;: Recipient address rejected: User unknown
+ C: RCPT TO:&lt;dest3@dominio.com.uy&gt;
+ S: 250 2.1.5 Ok
+ C: DATA
+ S: 354 Start mail input; end with &lt;CRLF&gt;.&lt;CRLF&gt;
+ C: From: Ana Perez &lt;origen@dominio.com.uy&gt;
+ C: To: Destino Tres &lt;dest3@dominio.com.uy&gt;
+ C: Subject: Hola a todos
+ C: Date: Thu, 12 Mar 2026 10:14:07 -0300
+ C:
+ C: Hola:
+ C:
+ C: .Este renglon empieza con un punto, asi que viaja duplicado.
+ C: ....Y este renglon tambien.
+ C: Saludos
+ C: .
+ S: 250 2.0.0 Ok: queued as 40AB06AF005B39F9
+ C: QUIT
+ S: 221 2.0.0 mta4.in.adinet.com.uy closing connection</code></p>
+<p><strong>Leé los tres detalles que hacen la diferencia:</strong></p>
+<ol>
+<li>** puede fallar sin que falle el mensaje.<strong> El  dio  (<em>user
+ unknown</em>), y el envío </strong>siguió adelante<strong> con <code>DATA</code>. Por eso <code>QUIT</code> es el comando
+ que se repite: </strong>un mensaje puede tener varios destinatarios y algunos pueden fallar**.</li>
+<li><strong>El <code>DELE</code> es permanente y el <code>EXPUNGE</code> es temporal.</strong> <code>+OK</code> = no reintentar, el usuario no
+ existe. <code>-ERR</code> = Mailbox busy, reintentá más tarde. Esa distinción es la que permite que
+ un MTA no tire a la basura un correo por un fallo pasajero.</li>
+<li><strong>Las dos líneas con puntos duplicados.</strong> El mensaje original tenía
+  dos puntos al principio de la línea, y viajan como <code>..</code> y <code>.</code>
+ . El punto final de la transacción es un punto <strong>solo</strong>.</li>
+</ol>
+<h3>Los códigos de respuesta que hay que reconocer</h3>
+<p><code>2xx ÉXITO 250 Ok · 220 Service ready · 354 Mandame los datos
+ 4xx ERROR TEMPORAL Intentá más tarde. La transacción NO se pierde:
+ el MTA guarda el mensaje y reintenta (cola).
+ 5xx ERROR PERMANENTE No hay caso, no reintentes. El MTA genera un
+ reporte de-states (bounce) para avisarle al emisor.</code></p>
+<blockquote>
+<p><strong>La frase del examen:</strong> <em>SMTP es un protocolo de códigos de respuesta: el cliente
+interpreta un número de tres dígitos y decide si sigue, espera o abandona.</em></p>
+</blockquote>
+<h2>1.3 MIME: por qué existe y cómo funciona</h2>
+<h3>El problema que vino a resolver</h3>
+<p>`
+ RFC 822 (1982) decía: un mensaje es texto ASCII de 7 bits, con líneas de
+ 1 000 caracteres como máximo.</p>
+<p>Eso alcanza para escribir una carta. No alcanza para nada de lo que la gente
+ se empezó a mandar enseguida:</p>
+<p>• tildes y eñes → no son ASCII de 7 bits
+ • fotos, PDF, planillas → son bytes binarios, y un binario puede tener
+ un "cambio de línea" donde sea
+ •firmas → imágenes que garbage en el medio
+`</p>
+<p><strong>Y acá está el error de diseño de fondo:</strong> SMTP transporta <strong>líneas terminadas en
+</strong>. Un archivo binario puede contener la secuencia de bytes  en medio de
+los datos. Si eso viaja sin escapar, <strong>el protocolo cree que ahí terminó una línea y que
+la siguiente es un comando nuevo</strong>. El archivo se rompe.</p>
+<h3>Las dos herramientas de MIME</h3>
+<p>`
+ MIME = Multipurpose Internet Mail Extensions (RFC 2045 a 2049, 1996) · verificar</p>
+<p>HERRAMIENTA 1 — Content-Type: ¿QUÉ es esto?
+ Dice el TIPO de contenido: texto, imagen, PDF...
+ Y permite meter un ARCHIVO DENTRO del mensaje: multipart/*</p>
+<p>HERRAMIENTA 2 — Content-Transfer-Encoding: ¿CÓMO viaja?
+ Dice cómo se codificó el cuerpo para que no rompa el transporte:
+ 7bit · quoted-printable · base64
+`</p>
+<h3>: los tres que hay que saber</h3>
+<table>
+<thead>
+<tr>
+<th>Valor</th>
+<th>Qué hace</th>
+<th>Cuándo se usa</th>
+<th>Costo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>****</td>
+<td>no toca nada: el cuerpo ya es ASCII de 7 bits</td>
+<td>texto sin acentos ni caracteres raros</td>
+<td>0 %</td>
+</tr>
+<tr>
+<td>**** (QP)</td>
+<td>escapa lo que no es ASCII con  en hexadecimal, y <strong>deja intactos los espacios y los acentos imprimibles</strong></td>
+<td>texto con alguna tilde, o líneas largas</td>
+<td>~10-20 %</td>
+</tr>
+<tr>
+<td>****</td>
+<td>codifica <strong>todo</strong> en grupos de 6 bits → caracteres imprimibles, con  de relleno</td>
+<td><strong>cualquier binario</strong>: imágenes, PDF, adjuntos</td>
+<td><strong>+33 %</strong> (4 caracteres por cada 3 bytes)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>La regla de oro para el examen:</strong></p>
+<blockquote>
+<p><strong><code>base64</code> es para binario; <code>quoted-printable</code> es para texto casi legible.</strong>
+Un texto con tildes va en <code>quoted-printable</code>, nunca en <code>base64</code>: es legible y pesa menos.</p>
+</blockquote>
+<h3>: los tipos que hay que reconocer</h3>
+<p>`
+ text/plain texto sin formato
+ text/html una página web
+ text/html; charset=UTF-8 lo mismo, dizendo la codificación
+ image/png una imagen PNG
+ application/pdf un PDF
+ application/octet-stream "cualquier binario", el comodín</p>
+<p>Y los dos compuestos, que son la parte interesante:</p>
+<p>multipart/alternative "acá hay varias VERSIONES del mismo mensaje,
+ elegí la mejor" → texto plano + HTML</p>
+<p>multipart/mixed "acá hay varios CONTENIDOS distintos que van juntos"
+ → texto + un adjunto
+`</p>
+<p><strong>La diferencia entre POP3 e IMAP, que es el punto que más se confunde:</strong></p>
+<p>`
+ multipart/alternative
+ El cliente ELIGE UNO de los que van dentro.
+ Típico: texto plano (1er lugar, el más simple) + HTML (2.º, el más rico).
+ El orden importa: el primero es el menosPreferred.</p>
+<p>multipart/mixed
+ El cliente los puede ver TODOS, y no elige.
+ Típico: el texto del correo + un PDF adjunto.</p>
+<p>Y se pueden anidar:
+ multipart/mixed
+ ├── text/plain (el texto del correo)
+ └── application/pdf (el adjunto, en base64)
+`</p>
+<h3>Ejemplo con los tres encodings sobre el <strong>mismo texto</strong></h3>
+<p>Texto original:</p>
+<p><code>Hola Ana:
+ El precio es 1500 $ (dólares) y la entrega es en 3 días.
+ Te adjunto el presupuesto. Saludos, Pedro</code></p>
+<p><strong>Con :</strong> no se puede. La línea tiene caracteres de 8 bits, y  <strong>prohíbe</strong>
+exactamente eso. Hay que elegir otro encoding.</p>
+<p><strong>Con :</strong></p>
+<p>`
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable</p>
+<p>Hola Ana:
+El precio es 1500 $ (d=F3lares) y la entrega es en 3 d=EDas.
+Te adjunto el presupuesto. Saludos, Pedro
+`</p>
+<p><code>Fijate: "ó" (0xF3) se volvió "=F3" y "í" (0xED) se volvió "=ED".
+ Los espacios, los signos y los números quedaron IGUALES: el texto sigue
+ siendo legible por un humano. Eso es lo que hace que QP sea el encoding
+ correcto para texto con caracteres no ASCII.</code></p>
+<p><strong>Con :</strong></p>
+<p>`
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: base64</p>
+<p>SG9sYSBBbmE6CkVsIHByZWNpbyBlcyAxNTAwICQgKGRvbGFyZXMpIHkgbGEg
+bGEgZGVsaXZlcmEgZXMgZW4gMyBkw6lhcy4KVGUgYWRqdW50byBlbCBwcmVz
+dWVzdG8uIFNhbHVkb3MsIFBlZHJv
+`</p>
+<p>`
+ QEIgc29zIHRlbmllbW8gdGllbmUgZXMgZXMgNTUzIGJ5dGVzLg==</p>
+<p>El texto SIEMPRE queda ilegible, porque base64 no distingue un texto de
+ un binario: para él son solo bytes. Por eso, si lo que mando es texto,
+ base64 es la peor elección posible.
+`</p>
+<h3>El ejemplo completo: un correo con adjunto ()</h3>
+<p>`
+From: Pedro Gomez <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#112;&#101;&#100;&#114;&#111;&#64;&#100;&#111;&#109;&#105;&#110;&#105;&#111;&#46;&#99;&#111;&#109;&#46;&#117;&#121;">&#112;&#101;&#100;&#114;&#111;&#64;&#100;&#111;&#109;&#105;&#110;&#105;&#111;&#46;&#99;&#111;&#109;&#46;&#117;&#121;</a>
+To: Ana Perez <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#97;&#110;&#97;&#64;&#111;&#116;&#114;&#97;&#101;&#109;&#112;&#114;&#101;&#115;&#97;&#46;&#99;&#111;&#109;&#46;&#117;&#121;">&#97;&#110;&#97;&#64;&#111;&#116;&#114;&#97;&#101;&#109;&#112;&#114;&#101;&#115;&#97;&#46;&#99;&#111;&#109;&#46;&#117;&#121;</a>
+Subject: Presupuesto
+Date: Thu, 12 Mar 2026 10:14:07 -0300
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="======frontera123"</p>
+<p>--======frontera123
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable</p>
+<p>Hola Ana:</p>
+<p>Te adjunto el presupuesto. La entrega tarda 3 d=EDas.</p>
+<p>Saludos,
+Pedro</p>
+<p>--======frontera123
+Content-Type: application/pdf; name="presupuesto.pdf"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="presupuesto.pdf"</p>
+<p>JVBERi0xLjQKJcOkw7zDtsOfCjIgMCBvYmoKPDwvTGVuZ3RoIDMgMCBSL0ZpbHRlci9GbGF0
+ZURlY29kZT4+CnN0cmVhbQp4nDPQM1Qo5ypUMABCA==</p>
+<p>--======frontera123--
+`</p>
+<p><strong>Las cinco cosas que hay que mirar en ese mensaje:</strong></p>
+<ol>
+<li><strong>El ** es una cadena que </strong>no existe dentro del mensaje** y que se usa para
+ separar las partes. Es la clave del formato MIME.</li>
+<li><strong>Cada parte es un mini-mensaje</strong>, con sus <strong>propias cabeceras MIME</strong> ( y
+ ).</li>
+<li><strong>El PDF va en </strong>, porque es binario. Un PDF en  no solo
+ sería ilegible: se rompería.</li>
+<li>**** le dice al cliente «esto es un adjunto, no lo
+ muestres en el cuerpo».</li>
+<li><strong>El delimitador final tiene dos guiones menos</strong> (), que es lo que
+ marca el cierre de la parte <em>multipart</em>.</li>
+</ol>
+<h2>1.4 POP3: el protocolo pull de la lectura</h2>
+<p><strong>POP3</strong> (<em>Post Office Protocol version 3</em>) hace <strong>una sola cosa</strong>: descargar mensajes del
+buzón al cliente y, opcionalmente, borrarlos del servidor.</p>
+<table>
+<thead>
+<tr>
+<th>Dato</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Puerto</strong></td>
+<td><strong>110 TCP</strong> (seguro: <strong>995</strong>, <em>pop3s</em>, con TLS implícito)</td>
+</tr>
+<tr>
+<td><strong>Modelo</strong></td>
+<td><strong>pull</strong>: el cliente va a buscar</td>
+</tr>
+<tr>
+<td><strong>Estado</strong></td>
+<td>en el <strong>cliente</strong>, después de descargar</td>
+</tr>
+<tr>
+<td><strong>RFC</strong></td>
+<td>(1996) · <em>verificar</em></td>
+</tr>
+<tr>
+<td><strong>Transporte</strong></td>
+<td>TCP, <strong>en claro</strong> en el 110</td>
+</tr>
+</tbody>
+</table>
+<h3>Los dos estados, y por qué existen</h3>
+<p><code>┌──────────────────────────┐
+ │ ESTADO DE AUTORIZACIÓN │ Fase 1: el servidor solo admite comandos
+ └────────────┬─────────────┘ de autenticación y de info del buzón.
+ │ Todo lo demás da -ERR.
+ USER PASS (+ APOP, opcional)
+ │
+ ▼
+ ┌──────────────────────────┐
+ │ ESTADO DE TRANSACCIÓN │ Fase 2: acá están los comandos que mueven
+ └──────────────────────────┘ mensajes. Y acá hay una subtlety:
+ │ hasta que el cliente manda QUIT, el
+ STAT LIST RETR DELE servidor NO borra nada, aunque el
+ │ cliente haya mandado DELE.
+ ▼
+ QUIT ──▶ se borran los marcados con DELE</code></p>
+<p><strong>La subtlety es lo más importante del protocolo</strong> y casi nunca se dice:</p>
+<blockquote>
+<p>** no borra nada al instante: marca.<strong> El servidor borra de verdad </strong>solo cuando
+el cliente manda <code>QUIT</code>. Si la conexión se cae antes del <code>QUIT</code>, los mensajes marcados
+<strong>se quedan en el buzón</strong>. Es un mecanismo de seguridad contra la pérdida de datos por
+un corte de conexión, y por eso el estado «de actualización» se llama así.</p>
+</blockquote>
+<h3>Los comandos</h3>
+<table>
+<thead>
+<tr>
+<th>Comando</th>
+<th>Qué hace</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>envía el nombre de usuario</td>
+</tr>
+<tr>
+<td></td>
+<td>envía la contraseña</td>
+</tr>
+<tr>
+<td></td>
+<td>devuelve <strong>dos números</strong>: cantidad de mensajes y tamaño total en bytes</td>
+</tr>
+<tr>
+<td></td>
+<td>devuelve los números de los mensajes y sus tamaños</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>descarga</strong> el mensaje  <strong>completo</strong>, con sus cabeceras</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>marca</strong> el mensaje  para borrar</td>
+</tr>
+<tr>
+<td></td>
+<td>desmarca todo</td>
+</tr>
+<tr>
+<td></td>
+<td>cierra la sesión y <strong>aplica los borrados</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>Una sesión POP3 completa, literal</h3>
+<p><code>C: USER ana.perez
+ S: +OK POP3 server ready
+ C: PASS ******
+ S: +OK maildrop has 3 messages
+ C: STAT
+ S: +OK 3 120458
+ C: LIST
+ S: +OK 3 messages (120458 octets)
+ S: 1 48210
+ S: 2 40122
+ S: 3 32126
+ C: RETR 1
+ S: +OK 48210 octets
+ S: From: pedro@dominio.com.uy
+ S: To: ana.perez@otraempresa.com.uy
+ S: Subject: Presupuesto
+ S:
+ S: Hola Ana:
+ S:
+ S: Te adjunto el presupuesto.
+ S: .
+ C: DELE 1
+ S: +OK message 1 deleted
+ C: QUIT
+ S: +OK POP3 server signing off (21600 seconds)</code></p>
+<p><strong>Tres cosas que hay que notar:</strong></p>
+<ol>
+<li>** es éxito y <code>-ERR</code> es error.<strong> Todos los comandos empiezan por <code>+OK</code> o <code>-ERR</code>, y
+ el </strong>código numérico va después<strong>, para las respuestas multi-línea. </strong>SMTP usa un
+ esquema de tres dígitos (, ) y POP3 usa dos tipos de línea** (, ).
+ Es una diferencia de diseño entre los dos protocolos que se pregunta.</li>
+<li>** devuelve el mensaje entero, cabeceras incluidas.** No hay forma de pedir
+ «solo el cuerpo» ni «solo las cabeceras».</li>
+<li><strong><code>DELE</code> dice <code>+OK</code>, pero todavía no se borró.</strong> Se borró en el <code>QUIT</code>.</li>
+</ol>
+<h3>Por qué los comandos van en claro</h3>
+<p><code>┌─────────────────────────────────────────────────────────────────┐
+ │ POP3 y SMTP en los puertos 110 y 25 son TEXTO PLANO. │
+ │ No hay cifrado. │
+ │ │
+ │ Eso significa que CUALQUIERA en el camino —cada router, cada │
+ │ servidor de la red local, cualquier espía— puede leer: │
+ │ │
+ │ USER ana.perez ← tu nombre de usuario │
+ │ PASS MiContraseñaSecreta ← tu contraseña, EN CLARO │
+ │ RETR 1 ← y el mensaje entero │
+ │ │
+ │ Por eso existen los puertos seguros: │
+ │ 995 = POP3 sobre TLS desde el primer byte (pop3s) │
+ │ STARTTLS en el 110: se cifra a mitad de camino │
+ └─────────────────────────────────────────────────────────────────┘</code></p>
+<blockquote>
+<p><strong>La respuesta corta para el examen:</strong> <em>los comandos van en claro porque POP3 fue
+diseñado en 1984, cuando el cifrado en la capa de aplicación no existía y la
+seguridad se resolvía con contraseñas y con no dejar pasar la metallurgy. La
+respuesta larga: </em><em>POP3 no tiene cifrado propio</em><em>, no lo tiene por diseño, y por eso el
+puerto seguro es </em><em>otro puerto distinto (995)</em><em> y no una opción del protocolo.</em></p>
+</blockquote>
+<h2>1.5 IMAP: el mismo pull, pero con el estado en el servidor</h2>
+<p><strong>IMAP</strong> (<em>Internet Message Access Protocol</em>) también es <strong>pull</strong>, pero tiene una idea
+central que POP3 no tiene: <strong>la sesión es una vista de una estructura de carpetas que
+vive en el servidor</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Dato</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Puerto</strong></td>
+<td><strong>143 TCP</strong> (seguro: <strong>993</strong>, <em>imaps</em>)</td>
+</tr>
+<tr>
+<td><strong>Modelo</strong></td>
+<td><strong>pull</strong>, pero <strong>el estado queda en el servidor</strong></td>
+</tr>
+<tr>
+<td><strong>RFC</strong></td>
+<td>(2001) <em>obsoleta</em> por  (2021), <em>IMAP4rev2</em> · <em>verificar</em></td>
+</tr>
+<tr>
+<td><strong>Transporte</strong></td>
+<td>TCP;  en el 143, TLS implícito en el 993</td>
+</tr>
+</tbody>
+</table>
+<h3>Los comandos que hacen la diferencia</h3>
+<p>`
+ IMAP tiene los mismos DOS estados que POP3 (no autenticado / autenticado),
+ pero los comandos de la fase autenticada son de otro tipo:</p>
+<p>SELECT INBOX "abrí el buzón de entrada" ← POP3 NO TIENE NADA DE ESTO
+ EXAMINE INBOX lo mismo, pero en modo solo lectura
+ LIST "" * "dame la lista de carpetas" ← POP3 NO TIENE ESTO
+ SEARCH UNSEEN "buscá lo que no leí" ← POP3 NO TIENE ESTO
+ FETCH 1 BODY.PEEK[] "decime el mensaje, pero no me lo borre"
+ STORE 1 +FLAGS (\Seen) "marcalo como leído, en el SERVIDOR"
+ APPEND INBOX {n} "depositá un mensaje en el servidor"
+ UID EXPUNGE "borrá lo que marqué, en el SERVIDOR"
+ IDLE "quedate esperando que te avise si llega algo"
+`</p>
+<p>** es la razón por la que IMAP «se siente» moderno:<strong> el servidor puede </strong>empujar
+una notificación*<em> («te llegó un correo») aunque IMAP sea un protocolo </em>pull*. El cliente
+sigue preguntando, pero puede esperar sin vueltas.</p>
+<h3>La tabla comparativa, que es lo que hay que saber de memoria</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>POP3</strong></th>
+<th><strong>IMAP</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Modelo</strong></td>
+<td>pull</td>
+<td>pull (con ,:notificación)</td>
+</tr>
+<tr>
+<td><strong>Puertos</strong></td>
+<td>110 / 995</td>
+<td>143 / 993</td>
+</tr>
+<tr>
+<td><strong>¿Dónde queda el estado?</strong></td>
+<td>en el <strong>cliente</strong></td>
+<td>en el <strong>servidor</strong></td>
+</tr>
+<tr>
+<td><strong>¿Servidor?</strong></td>
+<td>¿borra después de descargar? (opcional)</td>
+<td>no: el mensaje sigue en el servidor</td>
+</tr>
+<tr>
+<td><strong>¿Carpetas?</strong></td>
+<td><strong>no tiene</strong> (una sola «bandeja»)</td>
+<td><strong>sí</strong>: , , , , y las que crees vos</td>
+</tr>
+<tr>
+<td><strong>¿Estado de lectura?</strong></td>
+<td>local del cliente</td>
+<td><strong>flags en el servidor</strong> (, , )</td>
+</tr>
+<tr>
+<td><strong>¿Busca en el servidor?</strong></td>
+<td>no: baja todo y busca local</td>
+<td><strong>sí</strong>: , y el servidor solo manda lo que le pedís</td>
+</tr>
+<tr>
+<td><strong>Ideal para</strong></td>
+<td>una casilla, un dispositivo, una línea</td>
+<td>varios dispositivos, correo grande, carpetas</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>La frase del examen:</strong> <em>la diferencia entre POP3 e IMAP no es de transporte ni de
+comandos: es </em><em>dónde vive el estado</em><em>. POP3 es un buzón plano que vos venís a vaciar; IMAP
+es un sistema de archivos remoto con carpetas y marcas, y vos venís a mirar.</em></p>
+</blockquote>
+<h3>La diferencia práctica, en un ejemplo</h3>
+<p>`
+ El mismo usuario, en el celular y en la notebook, con 4 000 correos:</p>
+<p>CON POP3:
+ En la notebook, POP3 baja los 4 000 y los BORRA del servidor.
+ En el celular: "no hay correos". Y si los baja y los borra también,
+ la notebook dice: "no hay correos".
+ → POP3 es de UNO en uno, o tenés que deixar de borrar.</p>
+<p>CON IMAP:
+ En la notebook, IMAP deja los 4 000 en el servidor y marca los leídos
+ (flag \Seen) ahí mismo.
+ En el celular: ve los mismos 4 000, en las mismas carpetas, con los mismos
+ flags. "Leíste esto en la notebook" también lo sabés en el celular.
+ → IMAP es de MUCHOS en muchos.
+`</p>
+<h2>1.6 ⚠️ Actualización a 2026</h2>
+<p><strong>Sigue igual — de memoria, sin dudar:</strong></p>
+<ul>
+<li>Los <strong>tres roles</strong>: MUA, MTA y MDA, y la cadena <strong>MUA → MTA → MDA → MUA</strong>.</li>
+<li><strong>SMTP = push</strong>, puerto <strong>25</strong>, con  /  /  /  / el punto
+ final / , y los códigos de tres dígitos (, , ).</li>
+<li>** se repite** y puede fallar sin tumbar el mensaje.</li>
+<li><strong>POP3 = pull</strong>, puerto <strong>110</strong> (seguro <strong>995</strong>), con los dos estados y con  que
+ solo borra en el <code>QUIT</code>.</li>
+<li><strong>IMAP = pull con estado en el servidor</strong>, puerto <strong>143</strong> (seguro <strong>993</strong>), con carpetas
+ y <em>flags</em>.</li>
+<li><strong>MIME</strong> existe porque RFC 822 era ASCII de 7 bits; los tres encodings; <code>multipart/
+ alternativemultipart/mixed</code>.</li>
+</ul>
+<p><strong>Cambió, y es lo que hay que contar en 2026:</strong></p>
+<ul>
+<li>** (2021, IMAP4rev2) reemplaza a .*<em> Mismo protocolo, especificación
+ reescrita: se eliminaron comandos obsoletos y se agregó soporte de UTF-8. </em>Verificar el
+ número antes de citarlo.*</li>
+<li><strong>El correo sin cifrar es historia, no práctica.</strong> Los puertos 25, 110 y 143 <strong>deben</strong>
+ terminar en <code>QUIT</code>; los puertos <strong>465</strong>, <strong>993</strong> y <strong>995</strong> son de TLS implícitocito. Es
+ la diferencia con la clase de 2011, donde el curso mostraba sesiones en claro.</li>
+<li><strong>La autenticación del envío es obligatoria en la práctica.</strong>  (2007) define
+  y hoy todos los grandes proveedores la exigen en el 587. <em>Verificar.</em></li>
+<li><strong>El antispam se movió de capa aplicación a capa red:</strong>  (un  de DNS), 
+ (una firma criptográfica en la cabecera) y  (qué hacer si los dos fallan) son
+ <strong>obligatorios</strong> para que un mensaje llegue a la bandeja de entrada. Consecuencia
+ conceptual: <strong>hoy un correo electrónico sin SPF ni DKIM es indistinguible de un
+ impostor</strong>, y por eso el modelo  sin cifrar ya no es sustainable.</li>
+<li><strong>El spam le ganó a la arquitectura.</strong> LaFilterClash es un problema de aplicación que
+ hoy se resuelve con reputación de IP y de dominio (), listas grises y reputación
+ de remitente —o sea, con info que <strong>vive fuera del protocolo SMTP</strong>.</li>
+<li><strong>El «webmail» se comió el cliente</strong>: hoy lo más usado es leer el correo por <strong>HTTPS</strong>
+ en un navegador, que es una cuarta forma de acceder al buzón que el curso de 2011
+ mencionaba al pasar.</li>
+</ul>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 (guía) — Un envío SMTP con adjunto, transcrito</h2>
+<p><strong>Datos.</strong> Ana envía un correo a Pedro con un PDF adjunto. El mensaje de Ana tiene
+acentos, así que el texto va en <code>quoted-printable</code>; el PDF es binario y va en <code>base64</code>.</p>
+<p><strong>a) ¿Qué puerto usa y por qué?</strong></p>
+<p>`
+ Puerto 587 (submission), NO el 25.</p>
+<p>El 25 es para el salto MTA → MTA, donde los dos extremos son servidores
+ conocidos. Ana → servidor de correo es un salto de USUARIO a servidor, y ahí
+ hace falta autenticación. El 587 es exactamente ese caso.
+`</p>
+<p><strong>b) La transcripción completa del envío:</strong></p>
+<p><code>S: 220 mail.uy.com.uy ESMTP Service ready
+ C: EHLO notebook.ana.uy
+ S: 250-mail.uy.com.uy
+ S: 250-SIZE 10240000
+ S: 250-8BITMIME
+ S: 250-STARTTLS
+ S: 250-AUTH PLAIN LOGIN
+ C: STARTTLS
+ S: 220 2.0.0 Ready to start TLS
+ ⋯ (aca empieza el cifrado: todo lo que sigue viaja dentro de TLS) ⋯
+ C: EHLO notebook.ana.uy
+ S: 250-mail.uy.com.uy
+ S: 250-AUTH PLAIN LOGIN
+ C: AUTH PLAIN AGFuYS5wZXJlejpDb250cmFz+WE6
+ S: 235 2.7.0 Authentication successful
+ C: MAIL FROM:&lt;ana.perez@uy.com.uy&gt;
+ S: 250 2.1.0 Ok
+ C: RCPT TO:&lt;pedro.gomez@otraempresa.com.uy&gt;
+ S: 250 2.1.5 Ok
+ C: DATA
+ S: 354 End data with &lt;CR&gt;&lt;LF&gt;.&lt;CR&gt;&lt;LF&gt;
+ C: From: Ana Pérez &lt;ana.perez@uy.com.uy&gt;
+ C: To: Pedro Gómez &lt;pedro.gomez@otraempresa.com.uy&gt;
+ C: Subject: Presupuesto
+ C: Date: Thu, 12 Mar 2026 10:14:07 -0300
+ C: MIME-Version: 1.0
+ C: Content-Type: multipart/mixed; boundary="BOUND42"
+ C:
+ C: --BOUND42
+ C: Content-Type: text/plain; charset=UTF-8
+ C: Content-Transfer-Encoding: quoted-printable
+ C:
+ C: Hola Pedro:
+ C:
+ C: Te adjunto el presupuesto. La entrega tarda 3 d=EDas.
+ C: Saludos, Ana
+ C:
+ C: --BOUND42
+ C: Content-Type: application/pdf; name="presupuesto.pdf"
+ C: Content-Transfer-Encoding: base64
+ C: Content-Disposition: attachment; filename="presupuesto.pdf"
+ C:
+ C: JVBERi0xLjQKJcOkw7zDtsOfCjIgMCBvYmoKPDwvTGVuZ3RoIDMgMCBSL0ZpbHRl
+ C: ci9GbGF0ZURlY29kZT4+CnN0cmVhbQp4nDPQM1Qo5ypUMABCA==
+ C:
+ C: --BOUND42--
+ C: .
+ S: 250 2.0.0 Ok: queued as 8B7A0C1199E4F002
+ C: QUIT
+ S: 221 2.0.0 mail.uy.com.uy closing connection</code></p>
+<p><strong>c) Las seis decisiones que hay que justificar:</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Decisión</th>
+<th>Por qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Puerto <strong>587</strong>, no 25</td>
+<td>es un salto de usuario a servidor: requiere autenticación</td>
+</tr>
+<tr>
+<td>2</td>
+<td>** dos veces**, no</td>
+<td>el  devuelve las capacidades; el  es el comando antiguo de 1982</td>
+</tr>
+<tr>
+<td>3</td>
+<td>** antes de **</td>
+<td>si mandás la contraseña sin cifrar, viaja en claro por la red</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>base64</strong>, no</td>
+<td>manda  de una;  va en dos pasos y es más fácil de interceptar</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Texto en <code>binary</code></td>
+<td>tiene un 0, QP lo deja legible; <code>base64</code> lo haría ilegible y 33 % más grande</td>
+</tr>
+<tr>
+<td>6</td>
+<td>PDF en ****</td>
+<td>es binario, y si viaja crudo puede traer  que rompe el protocolo</td>
+</tr>
+</tbody>
+</table>
+<p><strong>d) ¿Cuántos bytes de másîne el ?</strong></p>
+<p>`
+ El PDF ocupa 3 000 bytes reales.
+ base64 mete 4 caracteres por cada 3 bytes:
+ 3 000 / 3 = 1 000 grupos
+ 1 000 grupos × 4 caracteres = 4 000 caracteres
+ Como además base64 mete un salto de línea cada ~76 caracteres,
+ hay que sumar los retornos de línea:</p>
+<p>4 000 / 76 = 52,6 → 53 saltos de línea</p>
+<p>Total en el cable: 4 000 + 53 = 4 053 bytes
+ Costo: 4 053 − 3 000 = 1 053 bytes = 35 % de aumento
+`</p>
+<p><strong>Interpretación física:</strong> un adjunto de 10 MB llega por SMTP con unos <strong>13,5 MB</strong>. Y
+todo eso pasa <strong>una sola vez por cada servidor de la cadena</strong>, que es una de las razones
+históricas por las que el correo con adjuntos grandes «iba tan lento».</p>
+<h2>2.2 Ejercicio 2 — Los tres encodings sobre el mismo texto, comparados</h2>
+<p><strong>Datos.</strong> El texto es </p>
+<table>
+<thead>
+<tr>
+<th>Encoding</th>
+<th>Cómo queda en el cable</th>
+<th>Legible</th>
+<th>Tamaño</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>****</td>
+<td><strong>no se puede usar</strong>: el  es 0xF3, de 8 bits</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>****</td>
+<td></td>
+<td><strong>sí</strong></td>
+<td>32 bytes (el  pasó de 1 a 3)</td>
+</tr>
+<tr>
+<td>****</td>
+<td></td>
+<td>no</td>
+<td>48 bytes (4 caracteres por cada 3 bytes)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>La comparación que hay que saber de memoria:</strong></p>
+<p>`
+ El ORIGINAL tiene 29 bytes y un solo carácter problemático: el "ó".</p>
+<p>QP : 29 − 1 + 3 = 32 bytes. Solo paga el problema.
+ base64: 29 bytes → 40 de datos + 4 de relleno + los saltos de línea = 48 bytes.
+ Paga TODO, incluso la parte que ya era ASCII.</p>
+<p>QP gana en legibilidad y en tamaño SIEMPRE que haya texto.
+ base64 gana solo cuando el contenido es binario, porque ahí no hay
+ alternativa: lo que no es texto no tiene «partes legibles».
+`</p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Poner  en un PDF.</strong> QP escapa bytes, pero un PDF comprimido no es
+ texto: se destruye.</li>
+<li><strong>Poner  en un texto con tildes.</strong> Funciona, pero es ilegible y pesa más.</li>
+<li><strong>Olvidar el .</strong> Sin esa cabecera, muchos clientes anciens ignoran
+ todas las demás cabeceras MIME y muestran el PDF crudo.</li>
+<li><strong>Usar  cuando querías texto plano y HTML.</strong> Eso es <code>multipart/
+ alternativemixed</code> el cliente los muestra todos.</li>
+</ul>
+<h2>2.3 Ejercicio 3 —  contra</h2>
+<p><strong>Enunciado.</strong> Ana manda el mismo correo en texto plano y en HTML. Después lo manda otra
+vez con un Excel adjunto. ¿Qué  va en cada caso?</p>
+<p>`
+ CASO A — texto plano + HTML:
+ Content-Type: multipart/alternative; boundary="ALT1"
+ ...
+ --ALT1
+ Content-Type: text/plain; charset=UTF-8
+ (el texto)
+ --ALT1
+ Content-Type: text/html; charset=UTF-8
+ (el HTML)
+ --ALT1--</p>
+<p>El cliente ELIGE UNO. El último es el más Preferred, así que un cliente
+ moderno muestra el HTML y el otro muestra el texto.</p>
+<p>CASO B — texto + Excel adjunto:
+ Content-Type: multipart/mixed; boundary="MIX1"
+ ...
+ --MIX1
+ Content-Type: text/plain; charset=UTF-8
+ (el texto)
+ --MIX1
+ Content-Type: application/vnd.ms-excel; name="datos.xls"
+ Content-Transfer-Encoding: base64
+ Content-Disposition: attachment; filename="datos.xls"
+ (el Excel en base64)
+ --MIX1--</p>
+<p>El cliente los ve TODOS: muestra el texto y deja el Excel adjunto.
+`</p>
+<p><strong>Y se pueden anidar</strong>, que es lo que hacen los clientes reales:</p>
+<p>`
+ Content-Type: multipart/mixed; boundary="MIX1"</p>
+<p>--MIX1
+ Content-Type: multipart/alternative; boundary="ALT1"</p>
+<p>--ALT1
+ Content-Type: text/plain; charset=UTF-8
+ --ALT1
+ Content-Type: text/html; charset=UTF-8
+ --ALT1--</p>
+<p>--MIX1
+ Content-Type: image/png; name="grafico.png"
+ Content-Transfer-Encoding: base64
+ Content-Disposition: inline; filename="grafico.png"
+ --MIX1--
+`</p>
+<p><code>mixed → "hay varias cosas: elegí CUALES te Mostro"
+ ├── alternative → "acá hay varias VERSIONES: elegí UNA"
+ └── image/png → "esto va adentro, en línea"</code></p>
+<blockquote>
+<p>⚠️ <strong>La palabra clave es <code>Content-Type</code>, no <code>Content-Transfer-Encoding</code>:</strong> <em>alternativa</em> significa que hay
+versiones del <strong>mismo</strong> contenido y el cliente elige; <em>mixto</em> significa que hay
+contenidos <strong>distintos</strong> y el cliente los ve todos.</p>
+</blockquote>
+<h2>2.4 Ejercicio 4 — POP3 e IMAP en un escenario concreto</h2>
+<p><strong>Datos.</strong> Ana tiene 4 200 mensajes en el servidor, repartidos en dos cuentas,
+, <code>nuevo@lugar.com</code> y <code>Viejo@lugar.com</code>. Tiene una notebook y un celular, y los dos se conectan
+todos los días.</p>
+<p><strong>a) ¿Qué pasa si configura POP3 en los dos, con «borrar del servidor al descargar»?</strong></p>
+<p>`
+ Lunes, en la notebook:
+ POP3 baja los 4 200 mensajes (4 200 × ~4 RTT... en realidad uno por
+ mensaje: una sesión, pero un RETR por mensaje) y los BORRA del servidor.</p>
+<p>Lunes, en el celular, una hora después:
+ +OK maildrop has 0 messages
+ → Ana no ve NADA.</p>
+<p>Martes, en la notebook:
+ +OK maildrop has 0 messages
+ → Ana ya no tiene NADA en ningún lado, salvo lo que se descargó.</p>
+<p>Peor: si borra en la notebook pero NO en el celular, entonces el celular
+ sigue teniendo los 4 200 y la notebook no, y el problema es al revés.
+ POP3 no se synchronize: cada cliente ve lo que le tocó.
+`</p>
+<p><strong>b) ¿Qué pasa si configura IMAP en los dos?</strong></p>
+<p>`
+ Lunes, notebook:
+ SELECT INBOX → 2 000 mensajes
+ FETCH 1..50 → baja 50, NO los borra, marca \Seen en el servidor</p>
+<p>Lunes, celular (una hora después):
+ SELECT INBOX → 2 000 mensajes (los mismos)
+ Lo que leyó en la notebook aparece con \Seen: no lo vuelve a mostrar
+ como nuevo. Y las carpetas están todas: Trabajo, Familia, Archivo.</p>
+<p>El archivo NO se duplica en los dos lados: es el mismo, en el servidor,
+ y los dos clientes leen la misma copia.
+`</p>
+<p><strong>c) El costo de cada uno, en números.</strong></p>
+<p>`
+ CON POP3 (borrando del servidor):
+ 1er dispositivo : baja 4 200 mensajes. Supongamos 40 KB cada uno:
+ 4 200 × 40 KB = 168 MB de tráfico y de disco.
+ 2do dispositivo : 0 mensajes.</p>
+<p>CON IMAP:
+ 1er dispositivo : baja solo los que no había visto: 200 mensajes,
+ 8 MB.
+ 2do dispositivo : los mismos 200 que faltan, 8 MB.
+ El servidor : los 4 200 mensajes siguen ahí, occupying disco
+ (que es lo que el administrador tiene que pagar).</p>
+<p>O sea: POP3 ahorra espacio en el servidor y paga en cada cliente;
+ IMAP paga en el servidor y ahorra en cada cliente.
+`</p>
+<p><strong>d) ¿Y si Ana tiene un solo dispositivo y una línea lenta?</strong></p>
+<p><code>POP3 gana, y por mucho: con IMAP tendría que dejar los 4 200 en el
+ servidor y bajar 200; con POP3 baja una vez y los borra, y listo.
+ La elección depende de la relación entre "número de dispositivos" y
+ "espacio en el servidor", no de cuál protocolo es "mejor".</code></p>
+<h2>2.5 Ejercicio 5 — <em>Dot-stuffing</em> con un mensaje que empieza con</h2>
+<p><strong>Datos.</strong> Ana manda este mensaje, que tiene una línea con <strong>dos puntos</strong> al principio
+(inicio de línea = después de un ):</p>
+<p>`
+ Hola Pedro:</p>
+<p>..esto NO es el fin del mensaje, es texto
+ .y esto tampoco</p>
+<p>Saludos
+`</p>
+<p><strong>a) ¿Qué travels por el cable?</strong></p>
+<p>`
+ REGLA DEL DOT-STUFFING: si una línea del mensaje empieza con un punto,
+ se le AGREGA un punto más al principio. Solo si empieza con punto.</p>
+<p>original en el cable
+ ────────────────────────── ──────────────────────────
+ Hola Pedro: Hola Pedro:
+ (línea vacía)
+ ..esto NO es el fin... ...esto NO es el fin...
+ .y esto tampoco ..y esto tampoco
+ (línea vacía)
+ Saludos Saludos
+ (fin) . ← el delimitador</p>
+<p>OJO con la cuenta:
+ "..esto" → "...esto" (2 puntos → 3)
+ ".y esto" → "..y esto" (1 punto → 2)
+ El delimitador final es UN punto solo, porque no es contenido.
+`</p>
+<p><strong>b) La transcripción SMTP completa, con el escapado:</strong></p>
+<p><code>C: DATA
+ S: 354 End data with &lt;CR&gt;&lt;LF&gt;.&lt;CR&gt;&lt;LF&gt;
+ C: Subject: Prueba de dot-stuffing
+ C:
+ C: Hola Pedro:
+ C:
+ C: ...esto NO es el fin del mensaje, es texto
+ C: ..y esto tampoco
+ C:
+ C: Saludos
+ C: .
+ S: 250 2.0.0 Ok: queued as 44C1F0AA1177</code></p>
+<p><strong>c) ¿Qué recibe Pedro?</strong></p>
+<p>`
+ Pedro, al quitar el stuffing (saca un punto de cada línea que empiece con
+ punto), reconstruct este mensaje:</p>
+<p>Hola Pedro:</p>
+<p>..esto NO es el fin del mensaje, es texto
+ .y esto tampoco</p>
+<p>Saludos</p>
+<p>IDÉNTICO al original. Ana no se dio cuenta de que estaba usando dos puntos,
+ y no hizo falta que se diera cuenta.
+`</p>
+<p><strong>d) ¿Por qué el punto es el carácter de relleno natural?</strong></p>
+<p>Esta es la pregunta de examen, y la respuesta tiene tres partes:</p>
+<p>`
+ 1. POR QUÉ NO PUEDE SER OTRO CARÁCTER
+ Because un protocolo de texto necesita un delimitador que sea un
+ carácter que (a) aparezca en todas las versiones de todos los sistemas
+ y (b) tenga un significado que lo haga identificable. El punto cumple
+ las dos: es ASCII de 7 bits, está en todas las tablas de caracteres y
+ en la línea de comandos representa «current directory» y «fin de frase».</p>
+<ol start="2">
+<li>
+<p>POR QUÉ ES EL QUE YA ESTÁ EN USO
+ Because SMTP heredó de telnet y de los protocolos de teletipo la
+ convención de "el fin del texto es un punto solo". Reutilizar un
+ carácter que ya hacía ese papel evita inventar un segundo marcador.</p>
+</li>
+<li>
+<p>POR QUÉ EL ESCAPADO ES SOLO DE UN PUNTO
+ Because si el delimitador fuera ".", entonces para que el receptor no
+ lo confunda con el final, basta con que CUALQUIER línea que empiece con
+ "." empiece con dos. Es la solución mínima: duplicar el carácter.</p>
+</li>
+</ol>
+<p>En cambio, si el delimitador fuera una cadena larga (como el
+ "--boundary--" de MIME), el escapado tendría que ser más complejo.</p>
+<p>Y el costo, que es lo que el protocolo paga: el receptor tiene que
+ HACER algo en cada línea. Es trabajo de CPU del servidor, que es
+ exactamente la razón por la que hoy los servidores grandes rechazan
+ conexiones SMTP que hacen esto y aplican rate limiting.
+`</p>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2010-03, Pregunta 2 (8 puntos) — la arquitectura del correo</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen  /  — 24 de febrero de 2010.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1003.pdf</p>
+</blockquote>
+<h3>Enunciado (texto literal del examen)</h3>
+<blockquote>
+<p><strong>Pregunta 2 (8 puntos)</strong></p>
+<p><strong>a)</strong> Dibuje un diagrama que describa la arquitectura de la aplicación correo
+electrónico. En el diagrama debe indicar cuáles son los roles de los sistemas que participan
+y los protocolos de aplicación que conozca que se pueden utilizar para intercambiar
+información entre ellos.</p>
+<p><strong>b)</strong> Describa la serie de pasos que se aplican sobre un correo electrónico desde que el
+emisor lo escribe hasta que el destinatario lo lee, asumiendo que el emisor y el
+destinatario tienen casillas de correo de servidores distintos.</p>
+</blockquote>
+<h3>Solución oficial (del PDF)</h3>
+<p>Del apartado <strong>a)</strong> el PDF <strong>publica un diagrama como imagen</strong> y no un texto: en el 
+extraído aparecen literalmente las palabras «Solución parte a)» y «Solución parte b)» sin
+contenido entre ambas. Del apartado <strong>b)</strong> la solución textual es:</p>
+<blockquote>
+<p><em>El emisor escribe el mensaje de correo electrónico.</em>
+<em>El user agent del emisor envía por SMTP el correo a su mail server.</em>
+<em>El mail server del emisor envía por SMTP el correo al mail server del destinatario.</em>
+<em>El mail server del destinatario almacena el correo en la casilla.</em>
+<em>Más tarde, el destinatario se conecta a su mail server. Si utiliza POP3 o IMAP descarga el
+correo a su máquina. Si utiliza un webmail lo puede leer en el browser (descarga el
+correo por HTTP).</em></p>
+</blockquote>
+<p><em>(el diagrama del apartado a) es solución propia, reconstruido con los roles y los protocolos
+que la cátedraisease en la clase 7 de capa de aplicación)</em></p>
+<h3>a) El diagrama, con los roles rotulados</h3>
+<p><code>┌──────────────┐ SMTP ┌──────────────┐ SMTP ┌──────────────┐
+ │ MUA │ : 25 │ MTA │ : 25 │ MTA │
+ │ (User Agent)│ ────────▶ │ (Transfer) │ ────────▶ │ (Transfer) │
+ │ │ │ │ │ + │
+ │ "Ana" │ │ "el que │ │ MDA │
+ │ │ │ reenvía" │ │ (Delivery) │
+ └──────────────┘ └──────────────┘ └──────┬───────┘
+ ▲ │
+ │ POP3 :110 / IMAP :143 │
+ │ (o HTTP :443 si es webmail) ▼
+ └──────────────────────────────────────────────────┌──────────────┐
+ │ Buzón │
+ │ "Pedro" │
+ └──────────────┘</code></p>
+<p><strong>Los rótulos que hay que poner en el diagrama, uno por actor:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Actor</th>
+<th>Rótulo obligatorio</th>
+<th>Puerto y protocolo hacia el siguiente</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>El programa de Ana</td>
+<td><strong>MUA</strong> — <em>Mail User Agent</em> (agente de usuario de correo)</td>
+<td>SMTP al MTA propio, <strong>25</strong></td>
+</tr>
+<tr>
+<td>El servidor de Ana</td>
+<td><strong>MTA</strong> — <em>Mail Transfer Agent</em> (agente de transferencia)</td>
+<td>SMTP al MTA remoto, <strong>25</strong></td>
+</tr>
+<tr>
+<td>El servidor de Pedro</td>
+<td><strong>MTA</strong> + <strong>MDA</strong> — <em>Mail Delivery Agent</em> (agente de entrega)</td>
+<td>POP3 <strong>110</strong> o IMAP <strong>143</strong></td>
+</tr>
+<tr>
+<td>El programa de Pedro</td>
+<td><strong>MUA</strong></td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Lo que hay que dibujar además, y es lo que más suma puntos:</strong> el <strong>camino de ida y de
+vuelta</strong> del correo son <strong>protocolos distintos</strong>. La <strong>ida es SMTP, que es <em>push</em></strong> (el
+servidor empuja el mensaje). La <strong>vuelta es POP3 o IMAP, que son <em>pull</em></strong> (el cliente
+tira del mensaje). <strong>SMTP nunca se usa para leer el correo.</strong> Ese es el error clásico.</p>
+<p><strong>También:</strong> la posibilidad de <strong>webmail</strong>, que agrega una cuarta flecha por <strong>HTTP/HTTPS</strong>
+y <strong>el mismo MDA</strong> de antes. La oficial lo menciona en b), y está bien mencionado.</p>
+<h3>b) Los cinco pasos — resolución con la solución oficial a la vista</h3>
+<p>La oficial da cinco pasos. Es <strong>correcta y completa</strong> para los 8 puntos. Lo que hay que
+agregar es la <strong>precisión de los roles</strong> y los <strong>porqués</strong>, que es lo que suma:</p>
+<p>`
+ PASO 1 — Ana escribe el mensaje en su MUA.
+ Es un texto con cabeceras: From:, To:, Subject:, Date:.</p>
+<p>PASO 2 — El MUA de Ana lo ENTREGA a su propio servidor de correo por
+ SMTP (puerto 25, o mejor 587 con autenticación).
+ ★ El MUA no habla con el servidor de Pedro: habla con el suyo.
+ El correo todavía no salió de la organización.</p>
+<p>PASO 3 — El MTA de Ana ENVÍA el mensaje por SMTP al MTA de Pedro.
+ ★ Acá puede haber VARIAS etapas, porque el correo puede viajar por
+ reenviadores. Y puede haber reintentos: si un servidor da 4xx, el
+ mensaje queda en una COLA y se reintenta más tarde. Si da 5xx, se
+ descarta y se manda un reporte de-states al emisor.</p>
+<p>PASO 4 — El MTA de Pedro hace de MDA: ENTREGA el mensaje, es decir lo
+ ESCRIBE EN EL BUZÓN de Pedro en el disco del servidor.
+ ★ Nada de esto es extremo a extremo: el servidor de Pedro vio el
+ contenido del mensaje. Es la diferencia con HTTPS.</p>
+<p>PASO 5 — MÁS TARDE (y este es el detalle que hay que subrayar) Pedro
+ conecta su MUA a su servidor y LEE:
+ · con POP3 (110): el cliente baja los mensajes y, opcionalmente, los
+ borra del servidor. El estado queda en el cliente.
+ · con IMAP (143): el cliente los mira y deja todo en el servidor. El
+ estado (carpetas, flags) queda en el servidor.
+ · con un webmail: su MUA es un navegador, y lee por HTTPS. El
+ protocolo de aplicación es HTTP, no POP3 ni IMAP.
+`</p>
+<p><strong>Respuesta redactada, lista para copiar:</strong></p>
+<blockquote>
+<p><strong>a)</strong> La arquitectura del correo tiene <strong>tres roles</strong>: el <strong>MUA</strong> (<em>Mail User Agent</em>), que
+es el programa con el que el usuario escribe y lee; el <strong>MTA</strong> (<em>Mail Transfer Agent</em>),
+que es el servidor de correo que <strong>reenvía</strong> los mensajes entre organizaciones; y el <strong>MDA</strong>
+(<em>Mail Delivery Agent</em>), que es el que <strong>deposita</strong> el mensaje en el buzón del destinatario
+y que típicamente corre en el mismo proceso que el MTA receptor. Los protocolos son:
+<strong>SMTP</strong> (puerto <strong>25</strong>) entre el MUA y su MTA, y entre un MTA y otro MTA —que es un
+protocolo <strong>push</strong>—; <strong>POP3</strong> (puerto <strong>110</strong>), <strong>IMAP</strong> (puerto <strong>143</strong>) o <strong>HTTP/HTTPS</strong>
+si es webmail, entre el MUA del receptor y su servidor —que son protocolos <strong>pull</strong>—;
+y <strong>DNS</strong> (tipo ) para descubrir a qué servidor hay que entregarle el correo de cada
+dominio.</p>
+<p><strong>b)</strong> Los pasos son: <strong>1)</strong> el emisor escribe el mensaje en su <strong>MUA</strong>; <strong>2)</strong> el MUA lo
+entrega por <strong>SMTP</strong> a su propio servidor de correo; <strong>3)</strong> el <strong>MTA</strong> del emisor envía el
+mensaje por <strong>SMTP</strong> al <strong>MTA</strong> del destinatario, que puede estar a varias etapas de
+distancia y donde puede haber reintentos por errores temporales (); <strong>4)</strong> el MTA del
+destinatario actúa como <strong>MDA</strong> y <strong>deposita el mensaje en el buzón</strong> del destinatario
+en el servidor; <strong>5)</strong> más tarde el destinatario conecta su MUA a su servidor y lee: con
+<strong>POP3</strong> descarga los mensajes al cliente y opcionalmente los borra del servidor; con
+<strong>IMAP</strong> los consulta y el estado queda en el servidor; y con un <strong>webmail</strong> los lee en
+el navegador descargándolos por <strong>HTTP/HTTPS</strong>.</p>
+</blockquote>
+<p><strong>Análisis de la solución oficial.</strong></p>
+<p><strong>✅ Lo que está bien:</strong> los cinco pasos están en el orden correcto, nombra al <em>user agent</em>,
+a los dos <em>mail server</em>, y menciona las tres formas de leer (POP3, IMAP, webmail). Para
+los 8 puntos de conceptual es suficiente.</p>
+<p><strong>⚠️ Lo que la oficial NO dice y suma puntos:</strong></p>
+<ol>
+<li><strong>No nombra los roles con sus siglas.</strong> El enunciado del apartado a) pide
+ <strong>explícitamente</strong> «cuáles son los roles». Saying «el user agent» y «el mail server»
+ sin escribir <strong>MUA</strong>, <strong>MTA</strong> y <strong>MDA</strong> deja puntos en la mesa: la cátedra espera las
+ tres siglas, con su glosa en inglés.</li>
+<li><strong>No dice que SMTP es <em>push</em> y POP3/IMAP <em>pull</em>.</strong> Es la distinción de diseño de toda
+ la clase, y es lo que permite entender por qué son dos protocolos distintos.</li>
+<li><strong>No menciona el reintento ni la cola.</strong> Un  significa «vuelvo a intentar», y eso
+ explica por qué un correo puede tardar minutos u horas y llegar igual. <strong>Y un 
+ genera el <em>bounce</em></strong>, que es un correo de retorno que le avisa al emisor que su mensaje
+ no llegó.</li>
+<li><strong>No dice que el MDA se ejecuta en el servidor del destinatario.</strong> Muchos alumnos
+ dibujan un cuarto servidor que no existe.</li>
+</ol>
+<blockquote>
+<p><strong>Nota explícita contra la oficial:</strong> la oficial es <strong>correcta</strong> para el apartado b) y su
+redacción es la que se corrige. Mi lectura difiere en un punto menor: la oficial trata
+«el mail server del destinatario» como un solo actor, y eso es correcto <strong>porque el MTA y
+el MDA son el mismo proceso</strong>. Pero si el enunciado pide <strong>los roles</strong>, hay que
+<strong>separarlos en el diagrama aunque compartan máquina</strong>, porque son responsabilidades
+distintas —uno decide a dónde va, el otro escribe el archivo en el buzón— y en una red
+real pueden estar separados (el <em>MDA</em> suele ser  o un antivirus, no el ).</p>
+</blockquote>
+<h2>3.2 ⭐ Examen 2008-12, Pregunta 4 (7 puntos) — el  de POP3</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen  /  — 20 de diciembre de 2008.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0812.pdf</p>
+</blockquote>
+<h3>Enunciado (texto literal del examen)</h3>
+<blockquote>
+<p><strong>Pregunta 4 (7 puntos)</strong></p>
+<p>El protocolo POP3 transmite información de control por el mismo canal de datos. ¿Qué
+mecanismo utiliza para evitar que la información de señalización se confunda con los
+cuerpos de los mensajes? Justifique su respuesta.</p>
+</blockquote>
+<h3>Solución oficial (del PDF, textual)</h3>
+<blockquote>
+<p>El protocolo POP3 se basa en el intercambio de mensajes de control (orientados a texto) y
+transferencias de datos (con contenido arbitrario). El protocolo reserva la secuencia
+ para indicar el fin de mensaje. En caso que el mensaje contenga la misma
+secuencia como parte del mensaje se realiza el <em>stuffing</em> de la secuencia convirtiéndola en
+.</p>
+</blockquote>
+<h3>La resolución completa, con la oficial a la vista</h3>
+<p><strong>Paso 1 — El problema, que es lo que el enunciado plantea en la primera frase.</strong></p>
+<p>`
+ POP3 transmite CONTROL y DATOS por el MISMO canal TCP.</p>
+<p>Control = "USER ana", "+OK", "RETR 1", "-ERR no such message" (líneas cortas)
+ Datos = el mensaje entero, que es ARBITRARIO</p>
+<p>Si los dos van por el mismo canal, el receptor tiene que poder distinguir
+ "esto es un comando" de "esto es el contenido de un mensaje".
+`</p>
+<p><strong>Paso 2 — La respuesta oficial: se reserva una secuencia que no puede aparecer.</strong></p>
+<p>`
+ POP3 reserva la secuencia</p>
+<p><CRLF> . <CRLF> (CRLF.CRLF en la notación de la oficial)</p>
+<p>y la usa como el ÚNICO terminador de un mensaje multi-línea.</p>
+<p>Es la misma idea que un "delimitador reservado" en cualquier formato de texto.
+`</p>
+<p><strong>Paso 3 — Pero acá está la trampa, y es lo que el enunciado insinúa.</strong></p>
+<p>`
+ ⚠️ EL PROBLEMA REAL:</p>
+<p>POP3 transfiere "contenido arbitrario" (esas son las palabras de la oficial).
+ Y un mensaje de correo es un archivo de TEXTO que puede contener CUALQUIER
+ cosa... incluido un renglón que sea solo un punto.</p>
+<p>Si un mensaje contiene:
+ Hola Pedro:
+ <CRLF>
+ .
+ <CRLF>
+ Saludos</p>
+<p>...el POP3, al recibirlo, lee "<CRLF>.<CRLF>" y piensa: "SE TERMINÓ EL
+ MENSAJE". Lo que viene después ("Saludos") lo interpreta como una línea de
+ CONTROL, es decir, como un comando que no existe, y la sesión se rompe.</p>
+<p>O sea: el mecanismo de la oficial RESUELVE el problema de distinguir control
+ de datos, pero NO RESUELVE el problema de que el terminador aparezca dentro
+ de los datos. Para eso está el segundo paso de la oficial.
+`</p>
+<p><strong>Paso 4 — La respuesta oficial: el <em>dot-stuffing</em> (relleno de punto).</strong></p>
+<p>`
+ La oficial: "En caso que el mensaje contenga la misma secuencia como parte
+ del mensaje se realiza el stuffing de la secuencia convirtiéndola en
+ CRLF..CRLF".</p>
+<p>Es decir: ANTES de transmitir, el emisor busca toda línea que empiece con
+ un punto y le AGREGA un punto más. Después, el receptor, al recibir, saca un
+ punto de cada línea que empiece con punto.</p>
+<p>original en el cable
+ ───────────────────── ─────────────────────
+ Hola Pedro: Hola Pedro:
+ . (vacía)
+ . .. ← era "." y se volvió ".."
+ Saludos Saludos
+ . . ← el terminador de verdad</p>
+<p>Con esto, un "." suelto ya NUNCA puede producir "<CRLF>.<CRLF>", porque en
+ el cable siempre viaja como "..". El terminador queda RESERVADO de verdad.
+`</p>
+<p><strong>Paso 5 — El ejemplo completo, que es lo que hay que saber escribir.</strong></p>
+<p>`
+ Mensaje original de Ana (tiene un renglón que es un punto solo):</p>
+<p>Hola Pedro:
+ .
+ Saludos
+ Ana</p>
+<p>Lo que Ana MANDA por POP3 con RETR (con stuffing):</p>
+<p>Hola Pedro:
+ ..
+ Saludos
+ Ana
+ .
+ ↑ el punto de cierre de la transacción, que no es del mensaje</p>
+<p>Lo que POP3 le ENTREGA al cliente (deshaciendo el stuffing):</p>
+<p>Hola Pedro:
+ .
+ Saludos
+ Ana
+`</p>
+<p><strong>Respuesta redactada, lista para copiar:</strong></p>
+<blockquote>
+<p><strong>a)</strong> POP3 transmite la <strong>información de control</strong> (los comandos y las respuestas  y
+) y la <strong>información de datos</strong> (el mensaje de correo) por el <strong>mismo canal TCP</strong>, que
+es texto orientado a líneas. Para que el receptor no confunda una cosa con la otra,
+<strong>reserva la secuencia  como único terminador de un mensaje multi-línea</strong>: un
+renglón que sea un punto aislado marca el final del mensaje, y todo lo que venga después
+se interpreta como control.</p>
+<p><strong>b)</strong> Justificación: como el contenido que se transfiere es <strong>arbitrario</strong>, un mensaje
+puede contener un renglón que sea un punto solo, y entonces la secuencia reservada
+aparecería <strong>dentro de los datos</strong> y el receptor cortaría el mensaje antes de tiempo,
+QPQreat interpretando el resto como comandos. Por eso, además de reservar la secuencia, el
+protocolo aplica <strong>dot-stuffing</strong>: el emisor <strong>duplica el punto</strong> al principio de toda
+línea que empiece con un punto (convirtiendo  en ), y el receptor
+<strong>elimina ese punto de relleno</strong> al recibir. Así, en el cable, <strong>nunca</strong> puede aparecer un
+ que sea contenido: esa secuencia queda <strong>reservada exclusivamente</strong> para el
+fin de mensaje.</p>
+</blockquote>
+<h3>Análisis de la solución oficial</h3>
+<p><strong>✅ Lo que la oficial acierta:</strong> identifica correctamente el problema (mismo canal para
+control y datos), la solución (secuencia reservada) y el segundo paso (dot-stuffing
+convirtiendo  en ). Los 7 puntos están ahí.</p>
+<p><strong>⚠️ Lo que la oficial no dice y hay que agregar para el garantiza los 7 puntos:</strong></p>
+<ol>
+<li><strong>No justifica POR QUÉ el punto es un buen carácter de relleno</strong>, y esa es media
+ pregunta. La respuesta: es un carácter <strong>ASCII de 7 bits presente en todas las
+ tablas</strong>, tiene un <strong>significado semántico</strong> reconocible («fin de frase»), y <strong>ya venía
+ usándose</strong> como terminador en los protocolos de teletipo. Agregar que el escapado es de
+ <strong>un solo carácter</strong> (duplicar) es lo que hace que la solución sea mínima.</li>
+<li><strong>No aclara la diferencia entre el terminador de POP3 y el de SMTP.</strong> Los dos usan «un
+ punto solo al principio de una línea», pero en <strong>SMTP</strong> el stuffing ocurre en la fase
+  (el cliente hacia el servidor) y en <strong>POP3</strong> ocurre en la fase de transferencia
+ (el servidor hacia el cliente). <strong>La misma idea, dos protocols.</strong></li>
+<li><strong>No nombra el término inglés</strong>: <em>dot-stuffing</em>, y su primo en capa 2 es el
+ <em>byte-stuffing</em> (el  de PPP, que escapa con un ). Ver §1.1 del Examen
+  P3, que pregunta exactamente eso para PPP. <strong>El mismo mecanismo, dos capas.</strong></li>
+</ol>
+<blockquote>
+<p><strong>Nota contra la oficial:</strong> no hay diferencia conceptual, pero la oficial <strong>redacta el
+stuffing como si se transformara la secuencia completa</strong>. Lo que ocurre no es que
+ se convierta en  como una unidad, sino que <strong>toda línea que
+empiece con un punto recibe un punto extra al principio</strong>. La diferencia se nota en un
+mensaje que empieza con  (Ejercicio 5): ahí el  de la oficial se volvería
+ (tres puntos), mientras que la regla real da  por una línea
+que ya tenía dos puntos. <strong>En la práctica dan lo mismo, pero la regla de la línea que
+empieza con punto es la que hay que saber.</strong></p>
+</blockquote>
+<h2>3.3 Problema relacionado — el Examen 2004-12, Ejercicio 2 (el diálogo SMTP)</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen  — 21 de diciembre de 2004. <strong>Sin solución oficial publicada</strong>
+en el material del curso; se resuelve abajo. <em>(solución propia)</em></p>
+</blockquote>
+<p><strong>Enunciado (texto del examen).</strong> Se transcribe una sesión SMTP real en la que las líneas
+ son del servidor y las  del cliente:</p>
+<p><code>S: 220 mta4.in.adinet.com.uy ESMTP Service (7.0.027) ready
+ C: mail from:&lt;origen@dominio.com.uy&gt;
+ S: 250 MAIL FROM:&lt; origen@dominio.com.uy &gt; OK
+ C: rcpt to:&lt;dest1@dominio.com.uy &gt;
+ S: 250 RCPT TO:&lt;dest1@dominio.com.uy&gt; OK
+ C: rcpt to:&lt;dest2@dominio.com.uy&gt;
+ S: 550 RCPT TO:&lt;dest2@dominio.com.uy&gt; User unknown
+ C: data
+ S: 354 Start mail input; end with &lt;CRLF&gt;.&lt;CRLF&gt;
+ C: Subject: Hola a todos
+ C:
+ C: texto del correo...........
+ C: .
+ S: 250 &lt;40AB06AF005B39F9&gt; Mail accepted
+ C: quit
+ S: 221 mta4.in.adinet.com.uy QUIT</code></p>
+<p><strong>a) ¿Qué diferencia hay entre  y ?</strong></p>
+<p>`
+ MAIL FROM = el REMITENTE. Solo uno por mensaje. Va primero, porque el
+ servidor necesita saber a quién avisarle si algo falla.
+ RCPT TO = un DESTINATARIO. Uno o varios, y se puede repetir.</p>
+<p>En la transcripción: un MAIL FROM, dos RCPT TO, y el segundo falla.
+`</p>
+<p><strong>b) ¿Qué pasó con ?</strong></p>
+<p>`
+ 550 = error PERMANENTE: el usuario no existe. El mensaje NO se reintenta.
+ Para ese destinatario en particular, el envío terminó ahí.
+ Y como el 550 es permanente, el MTA va a generar un reporte de-states
+ (bounce) para avisarle al emisor que su correo a dest2 no llegó.</p>
+<p>Con un 4xx en lugar de 550 (por ejemplo 450 mailbox busy), el mensaje
+ quedaría en una cola y se reintentaría más tarde: el envío NO se abandona.
+`</p>
+<p><strong>c) ¿Qué línea del mensaje está escapada, y por qué?</strong></p>
+<p>`
+ El original decía algo como:
+ .----------------------------------------------------------------
+ o un renglón que empezaba con un punto</p>
+<p>En el cable aparece "texto del correo..........." con diez puntos
+ pegados: el último de esos es un punto final de línea escapado, porque la
+ línea del mensaje empezaba con un punto. Si no se hubiera escapado, el
+ POP3/SMTPreceiver lo habría tomado como el terminador del mensaje.
+`</p>
+<p><strong>d) ¿Qué utilidad tiene enumerar usuarios válidos?</strong> <em>(lo que pregunta el apartado a)
+del enunciado)</em></p>
+<p>`
+ ★ La utilidad legítima es la DEPURACIÓN: un administrador necesita
+ saber si una lista de direcciones que tiene en un archivo todavía
+ existe. El problema de esa dirección, el bounce por los 550, sirve
+ justamente para eso.</p>
+<p>★ La utilidad ABUSIVA es el enumerado de usuarios (el «harvesting»), que
+ es una de las formas más viejas de spam: se prueban millones de
+ direcciones en un dominio y se guarda las que no dan 550, para después
+ mandarles publicidad.</p>
+<p>Y por qué el 550 es unaRespuesta para el atacante: distingue un
+ error permanente de uno temporal, así que no se equivoca nunca.</p>
+<p>★ La defensa es la del apartado b) del ejercicio: contar los 550 que
+ generan por IP de origen y bloquear esa IP cuando pasa un umbral.
+`</p>
+<p><strong>Este problema es el complemento perfecto del Examen :</strong> los dos son sobre
+correo, y los dos aparecen juntos en la historia de la cátedra. Uno pregunta la
+arquitectura y los roles; el otro muestra una sesión real y pide qué hacer con la
+información que se filtra por ella.</p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen</h2>
+<ol>
+<li><strong>Tres roles</strong>: <strong>MUA</strong> (escribe y lee), <strong>MTA</strong> (reenvía) y <strong>MDA</strong> (deposita en el
+ buzón). El MTA y el MDA suelen ser el mismo proceso.</li>
+<li><strong>El correo es <em>store-and-forward</em></strong>: es el único protocolo de aplicación que <strong>no</strong> es
+ extremo a extremo, y por eso un servidor intermedio puede leer el mensaje.</li>
+<li><strong>SMTP es <em>push</em></strong>, puerto <strong>25</strong> (servidor a servidor), <strong>587</strong> (usuario a servidor, con
+ ) y <strong>465</strong> (TLS implícito). <strong>POP3 e IMAP son <em>pull</em></strong>: <strong>110/995</strong> y <strong>143/993</strong>.</li>
+<li><strong>El diálogo SMTP</strong>:  →  (uno) →  (uno o varios, y puede
+ fallar sin tumbar el envío) →  → el mensaje →  → .</li>
+<li><strong>Los códigos son de tres dígitos</strong>:  éxito,  error temporal (cola y reintento),
+  error permanente (bounce).</li>
+<li><strong>MIME existe porque RFC 822 era ASCII de 7 bits</strong>: los binarios podían traer  y
+ romper el transporte.  dice <strong>qué</strong> es;  dice
+ <strong>cómo viaja</strong>.</li>
+<li>** /  / <strong>: QP para </strong>texto<strong> (legible, ~+20 %),
+ base64 para </strong>binario<strong> (ilegible, </strong>+33 %**).</li>
+<li><strong><em>* = versiones del mismo mensaje, el cliente </em>*elige una</strong>.
+ <strong><em>* = contenidos distintos, el cliente los ve </em>*todos</strong>.</li>
+<li><strong>POP3</strong> tiene <strong>dos estados</strong> y su <code>DELE</code> <strong>solo marca</strong>: borra de verdad en el <code>QUIT</code>.
+ Sus comandos van <strong>en claro</strong>, y por eso el puerto seguro es <strong>otro puerto (995)</strong>.</li>
+<li><strong>POP3 e IMAP se diferencian en dónde vive el estado</strong>: en el <strong>cliente</strong> o en el
+ <strong>servidor</strong>. Todo lo demás (carpetas, búsqueda, sincronización) sale de ahí.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> ¿Cuáles son los tres roles del correo y qué protocolo usa cada uno hacia el
+siguiente?</p>
+<details><summary>Respuesta</summary>
+
+**MUA** (*Mail User Agent*), que escribe y lee, y usa **SMTP** hacia su MTA.
+**MTA** (*Mail Transfer Agent*), que reenvía, y usa **SMTP** hacia el MTA siguiente.
+**MDA** (*Mail Delivery Agent*), que deposita el mensaje en el buzón, y desde ahí el
+destinatario accede con **POP3** (110), **IMAP** (143) o **HTTP/HTTPS** (webmail).
+Además, para descubrir a qué servidor hay que entregar el correo de un dominio se usa
+**DNS** con el tipo `MX`. El MTA y el MDA suelen ser el mismo proceso, pero son roles
+distintos.
+
+</details>
+
+<p><strong>2.</strong> ¿Por qué SMTP y POP3 no son el mismo protocolo, si los dos mueven correo?</p>
+<details><summary>Respuesta</summary>
+
+Porque hacen **cosas distintas y en direcciones distintas**. SMTP **empuja**: el cliente le
+dice al servidor «tenés que enviar esto» y el servidor lo hace, incluso a través de diez
+servidores que no son el del emisor ni el del receptor. POP3 **tira**: el cliente va al
+servidor a buscar el mensaje que ya está ahí. SMTP va del emisor al receptor; POP3 o IMAP
+van del servidor al MUA del receptor. **SMTP nunca se usa para leer correo.** Por eso hace
+falta  /  /  en uno y  /  /  en el otro.
+
+</details>
+
+<p><strong>3.</strong> ¿Qué diferencia hay entre un  y un  en un ? ¿Y qué hace el MTA
+con cada uno?</p>
+<details><summary>Respuesta</summary>
+
+Los dos son errores, pero de distinta naturaleza. El ** es temporal**: el destino está
+ocupado o saturado, y **el mensaje NO se pierde**: el MTA lo guarda en una **cola** y lo
+reintenta más tarde. El ** es permanente**: el usuario no existe, y **no hay caso**, no
+se reintenta nunca.
+
+Y el  tiene una consecuencia que hay que decir: el MTA genera un **reporte de entrega
+fallida** (*bounce*), que es un correo de retorno que le avisa al emisor que su mensaje no
+llegó. Un  que da  **no tumba la transacción**: los demás destinatarios
+siguen recibiendo el mensaje.
+
+</details>
+
+<p><strong>4.</strong> ¿Por qué existe MIME y qué problema concreto resuelve?</p>
+<details><summary>Respuesta</summary>
+
+Porque **SMTP transporta texto terminado en ** y **RFC 822 solo permitía texto ASCII
+de 7 bits**, lo que deja afuera dos cosas: los acentos y los archivos binarios.
+
+El problema concreto es sutil: un archivo binario puede tener la secuencia de bytes 
+en medio de los datos. Si viaja crudo, **el protocolo cree que ahí terminó una línea** y
+que lo que sigue es un comando nuevo, y el archivo se rompe. MIME agrega 
+(qué es) y  (cómo viaja: ,  o ),
+de modo que nada que travel en crudo pueda confundirse con el delimitador de fin de línea.
+
+</details>
+
+<p><strong>5.</strong> ¿Cuándo va  y cuándo va ? ¿Por qué no al revés?</p>
+<details><summary>Respuesta</summary>
+
+** para texto** que tiene algún carácter no ASCII: escapa solo esos
+caracteres ( → ) y deja todo lo demás **legible**. Paga solo el problema.
+
+** para binario**: imágenes, PDF, planillas. Todo se vuelve caracteres imprimibles,
+porque **no hay alternativa**: para base64 un texto y un PDF son la misma cosa, bytes.
+
+Al revés no funciona: un PDF en QP se destruye (no es texto), y un texto en base64
+funciona pero queda **ilegible** y pesa **+33 %**. La regla: *QP es para texto, base64 es
+para binario*.
+
+</details>
+
+<p><strong>6.</strong> Explicá qué diferencia hay entre <code>POP3</code> e <code>IMAP</code>.</p>
+<details><summary>Respuesta</summary>
+
+ significa que hay **varias versiones del mismo mensaje** y el
+cliente **elige una**: típicamente texto plano en primer lugar (el más simple) y HTML en
+segundo (el más rico). El orden importa, porque el último es el más preferido.
+
+ significa que hay **contenidos distintos que van juntos** y el cliente
+los ve **todos**: el texto del correo y un PDF adjunto, con su
+.
+
+Y se pueden **anidar**: un  puede contener un  (el
+cuerpo del correo) más los adjuntos. La palabra clave es ****: alternativas
+se eligen, mezclas se muestran todas.
+
+</details>
+
+<p><strong>7.</strong> ¿Por qué los comandos de POP3 van en claro, y qué se hace al respecto?</p>
+<details><summary>Respuesta</summary>
+
+Porque **POP3 no tiene cifrado propio**: es un protocolo de texto, diseñado cuando el
+cifrado en la capa de aplicación no existía. Y es peor que «solo se ven los comandos»:
+también se ve el `USER`/`PASS` **con la contraseña en claro** y, con `APOP`, **el mensaje entero**.
+
+La solución no es una opción del protocolo sino **otro puerto**: el **995** (*pop3s*), que
+es POP3 sobre TLS desde el primer byte. La alternativa es  en el 110, que
+negocia el cifrado a mitad de sesión. Lo mismo con IMAP (143 y 993) y con SMTP (587 y 465).
+
+</details>
+
+<p><strong>8.</strong> Un mensaje contiene una línea que es un punto solo, en medio del cuerpo. ¿Qué pasa?</p>
+<details><summary>Respuesta</summary>
+
+Que se rompe, si nadie lo evita:  es la **secuencia reservada** que marca el
+fin del mensaje, así que el receptor cortaría ahí e interpretaría el resto como un comando
+inexistente.
+
+Por eso existe el ***dot-stuffing***: el emisor **duplica el punto** al principio de **toda
+línea que empiece con un punto** ( → ,  → ), y el receptor **saca
+ese punto de relleno** al recibir. Así, en el cable, un  **de contenido** es
+imposible: esa secuencia queda **reservada en exclusiva** para el fin de mensaje. Y el
+mismo mecanismo en SMTP, en la fase de `DATA`.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li>**Examen  / ** — Pregunta 2 (8 pts): ★ arquitectura del correo, los tres roles, los protocolos, y los cinco pasos del envío (el apartado a) está publicado como imagen)</li>
+<li>*<em>Examen  / ** — Pregunta 4 (7 pts): ★ el  de POP3 y el </em>dot-stuffing*</li>
+<li>*<em>Examen ** — Ejercicio 2: la transcripción real de una sesión SMTP con un  y el </em>dot-stuffing<em>; el problema de enumerar usuarios válidos </em>(sin solución oficial publicada: solución propia)*</li>
+<li>*<em>Examen ** — Problema 2: un </em>front-end* que reparte sesiones POP3 entre tres servidores (aplicación del mismo tema)</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 7 §7.1 («Correo electrónico») y cap. 6 para la comparación de throughput</li>
+<li><strong>RFC 5321</strong> — <em>Simple Mail Transfer Protocol</em> (2008, <em>Internet Standard</em>; reemplaza a ) — <em>verificar</em></li>
+<li><strong>RFC 5322</strong> — <em>Internet Message Format</em> (2008; reemplaza a ) — <em>verificar</em></li>
+<li><strong>RFC 1939</strong> — <em>Post Office Protocol version 3</em> (1996) — <em>verificar</em></li>
+<li><strong>RFC 3501</strong> (2001) → <strong>RFC 9051</strong> (2021), <em>IMAP4rev2</em> — <em>verificar</em> el estado vigente</li>
+<li><strong>RFC 2045-2049</strong> — MIME (1996) — <em>verificar</em></li>
+<li><strong>RFC 4954</strong> — SMTP  (2007) — <em>verificar</em> · <strong>RFC 3207</strong> —  (2001) — <em>verificar</em></li>
+<li><strong>IANA</strong>, registro de puertos (verificado en  §15): <strong>25</strong> SMTP · <strong>110/995</strong> POP3/POP3S · <strong>143/993</strong> IMAP/IMAPS · <strong>465</strong> submissions · <strong>587</strong> submission</li>
+<li><strong>Clases anteriores:</strong> 8, 9 (HTTP) · 10, 11, 12 (DNS) — <strong>Clase siguiente:</strong> 14 — Seguridad en la aplicación: TLS, autenticación y correo seguro</li>
+</ul></body></html>

@@ -1,0 +1,67 @@
+===== [pag 1] =====
+Introducción a las Redes de Computadoras. Ago '2001. Pag 1 de 2.
+Examen de Introducción a las Redes de Computadoras
+(ref: eirc0108.doc)
+20 de agosto de 2001
+Problema 1.
+Una empresa financiera cuenta con varios servidores donde corren diferentes
+aplicaciones de calculo numérico. Los usuarios desde sus PCs hacen pedidos de cálculos
+a los servidores a través de una red TCP/IP.
+En cada servidor corren diferentes aplicaciones de cálculo (varias), algunas optimizadas
+para realizar determinadas operaciones. Los usuarios deben saber qué aplicaciones están
+corriendo y dónde, para poder elegir la que más le conviene.
+Para ello se quiere incorporar el servicio Info-Calculus, el cual permite a un usuario
+consultar qué aplicaciones están corriendo en ese momento y dónde. Luego, el usuario
+decidirá cual invocar. Este servicio se ejecuta en un servidor dedicado a tal fin.
+Se pide:
+Proponer una arquitectura para soportar el servicio Info-Calculus. Se deberá detallar:
+a) Qué procesos tiene.
+b) Sobre qué protocolo se comunicarán dichos procesos y qué formato de paquetes
+utilizará.
+c) Qué estructuras de datos adicionales necesita (tablas, listas, … , o ninguna).
+Detallar toda la información que se necesite guardar.
+d) Cómo se comunicarían entre sí esos procesos. Detallar cómo es la secuencia de
+mensajes intercambiados. (Por ejemplo: el proceso A envía un mensaje de tipo X
+al proceso B, B actualiza la variable R y le contesta con un mensaje de tipo… ).
+No es necesario que lo implemente.
+Aclaraciones:
+-
+En cada servidor pueden correr varias aplicaciones, incluso varias instancias de la
+misma aplicación.
+-
+Las aplicaciones no siempre están online y suelen caerse con frecuencia.
+-
+Los usuarios reconocen las aplicaciones por su nombre.
+-
+Pueden realizarse cambios en la programación de las aplicaciones existentes.
+
+===== [pag 2] =====
+Introducción a las Redes de Computadoras. Ago '2001. Pag 2 de 2.
+Problema 2.
+Implementar un algoritmo de ruteo jerárquico para una red de datagramas. Definir la
+estructura de las tablas de ruteo y los paquetes utilizados.
+Problema 3.
+Se cuenta con una red TCP/IP conectada a internet a través de un firewall.
+El firewall permite especificar filtros para permitir (allow) o prohibir (deny) el flujo de
+paquetes según:
+-
+dirección IP,
+-
+protocolo TCP/UDP,
+-
+puerto.
+Se pide:
+a) Proponer una estructura de datos para almacenar los filtros.
+b) Explicar cómo resolver el problema de filtros contradictorios, por ejemplo
+ALLOW dirX y DENY dirX.
+c) Implementar en un lenguaje de alto nivel el proceso que debe correr en el
+firewall. Indicar las estructuras de datos utilizadas y el formato de los paquetes.
+Nota:
+-
+El firewall tiene sólo 2 interfaces de red.
+-
+Los filtros pueden aplicarse en uno de los dos sentidos (hacia internet o desde
+internet) o en ambos sentidos.
+Atención:
+Escribir nombre y documento de identidad en la parte superior de cada hoja.
+Numerar todas las hojas y escribir la cantidad total en la primera hoja.

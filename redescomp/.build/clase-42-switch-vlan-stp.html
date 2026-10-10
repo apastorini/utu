@@ -1,0 +1,1266 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 42 — Switch, hub, VLAN y STP</h1>
+<p><strong>Bloque:</strong> E (Capa de Enlace) · <strong>Semana:</strong> 14 · <strong>Duración estimada:</strong> 110 min
+<strong>Correlativa:</strong> Clase 41 (acceso al medio: ALOHA, CSMA/CD, CSMA/CA) · <strong>Sigue con:</strong> Clase 43 (redes inalámbricas 802.11)
+<strong>Material de referencia:</strong> Tanenbaum cap. 3 (§3.4, 3.6 y 3.7) · IEEE 802.3 · IEEE 802.1D · IEEE 802.1Q · IEEE 802.1w</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Explicar por qué el <strong>hub</strong> produce <strong>un solo dominio de colisión y un solo dominio de broadcast</strong>, y por qué el switch parte el primero pero <strong>no</strong> el segundo.</li>
+<li>Describir el mecanismo de <strong>self-learning</strong> y ejecutar el <strong>algoritmo de reenvío completo, paso a paso</strong>, llenando la tabla de reenvío después de cada trama.</li>
+<li>Justificar por qué la tabla necesita <strong>ageing</strong>, y explicar por qué los <strong>300 s son un default de fabricante y no un valor del estándar IEEE</strong>.</li>
+<li>Armar la tabla <strong>hub vs. switch</strong> completa (dominios, ancho de banda por puerto, duplex y <strong>seguridad</strong>) y sostener por qué un hub es un problema de seguridad, no solo de rendimiento.</li>
+<li>Explicar qué es una <strong>VLAN</strong> y <strong>por qué sirve</strong>: aislar dominios de broadcast, mover un usuario sin tocar el cable, separar puertos de gestión.</li>
+<li>Describir la <strong>trama 802.1Q</strong> campo por campo: <strong>tag de 4 bytes</strong>, <strong>VLAN ID de 12 bits (1–4094)</strong>, <strong>C-TAG ()</strong>, <strong>S-TAG ()</strong> y <strong>PVID</strong>; y por qué hace falta un puerto <em>tagged</em> y uno <em>untagged</em>.</li>
+<li>Explicar por qué un <strong>loop en capa 2 es una tormenta de broadcast</strong> y por qué los bridges transparentes <strong>no usan TTL</strong>, y ejecutar el algoritmo de <strong>STP</strong>: raíz, puerto raíz, puertos designados y bloqueados.</li>
+<li>Resolver completo el <strong>Examen 2010-12 P3</strong> (8 pts), el <strong>2008-12 P2</strong> (5 pts) y el <strong>2009-03 P3</strong> (6 pts).</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong>  (8 pts — hub vs. switch, dominios de colisión y de broadcast, y self-learning: <strong>el corazón de esta clase</strong>) ·  (5 pts — mejoras de performance y seguridad al pasar de hubs a switches) ·  (6 pts — concepto de VLAN 802.1Q y su utilidad).</p>
+</blockquote>
+<p>Los tres aparecen juntos en el mismo bloque del syllabus: <strong>conmutación, segmentación lógica y control de loops</strong>. Esta clase es la bisagra entre la 41 (que habla de colisiones) y la 43 (un medio donde las colisiones no se pueden detectar).</p>
+<blockquote>
+<p>Esta clase <strong>no repite</strong> ALOHA ni CSMA/CD: ya están en la 41. Acá el medio <strong>ya no es compartido</strong>, así que el problema dejó de ser "quién puede hablar" y pasó a ser "<strong>a quién le hablo</strong>".</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 El hub: la red que repite (y por eso es una sola red)</h2>
+<p>Un <strong>hub</strong> es un dispositivo de <strong>capa 1</strong>. No lee direcciones, no decide nada, no tiene memoria: toma la señal eléctrica que entra por un puerto y la <strong>regenera y copia a todos los demás puertos</strong>.</p>
+<p>`
+ Lo que hace un HUB con la trama que entra por el puerto 3</p>
+<p>┌───────────────┐
+ H3 ───────────►│ │
+ (trama de A │ HUB │──────► H1 (no le interesa)
+ para B) │ "repite a │──────► H2 (no le importa)
+ │ todos" │──────► H4 (no le importa)
+ H5 ───────────►│ │──────► H5 (¡ERA PARA EL!)
+ └───────────────┘──────► H6 (no le importa)
+`</p>
+<p>De esa definición sale <strong>todo</strong> lo que el hub es, sin ningún cálculo:</p>
+<table>
+<thead>
+<tr>
+<th>Consecuencia</th>
+<th>Por qué</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Un solo dominio de colisión</strong></td>
+<td>todas las señales comparten <strong>el mismo medio eléctrico</strong>. Si H1 y H5 transmiten a la vez, las señales se suman y se destruyen</td>
+</tr>
+<tr>
+<td><strong>Un solo dominio de broadcast</strong></td>
+<td>una trama de broadcast se copia a <strong>todos</strong> los puertos, y cada estación copiada la vuelve a copiar a todos los puertos de su hub. Nada la detiene</td>
+</tr>
+<tr>
+<td><strong>Sin ancho de banda por puerto</strong></td>
+<td>el ancho de banda es <strong>del medio compartido</strong> y se reparte:  estaciones a  Mbps tienen  Mbps cada una</td>
+</tr>
+<tr>
+<td><strong>Half-duplex obligatorio</strong></td>
+<td>un solo medio común: si el puerto escucha lo que él mismo puso, oye su propia señal</td>
+</tr>
+<tr>
+<td><strong>Cero seguridad</strong></td>
+<td>todo lo que pasa por el medio es visible en <strong>todos</strong> los puertos, siempre</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>La frase que hay que saber de memoria:</strong> el hub no es un dispositivo de red con funciones reducidas; es <strong>un pedazo de cable con corriente</strong>. Todo lo demás se deduce de eso.</p>
+</blockquote>
+<p>`
+ CON HUB -- 1 dominio de colisión, 1 dominio de broadcast
+ [H1]──┐ ┌──► H1
+ [H2]──┼──► HUB ════════╤═══ ┼──► H2 las tramas de UNICAST también
+ [H3]──┘ │ └──► H3 salen por todos: se desperdicia
+ [H4]────────────────────┘ ╲ ancho de banda
+ ╱ ╲</p>
+<p>CON SWITCH -- N dominios de colisión, 1 dominio de broadcast
+ [H1]──┐ ┌──► H1 colisión propia y sola
+ [H2]──┼──► SWITCH ════┬═══ ┼──► H2
+ [H3]──┘ │ └──► H3
+ [H4]───────────────────┘ ╲ ╱
+ (el switch REENVÍA LA TRAMA UNA SOLA VEZ, al puerto
+ donde está el destino. Solo el broadcast sale por
+ todos: no puede descartarse porque por definición
+ todos tienen que oírla)
+`</p>
+<h2>1.2 El bridge y el switch</h2>
+<p>El <strong>bridge</strong> (<em>puente</em>) nació para unir <strong>LANs</strong> (grupos de estaciones que comparten un medio), no puertos. La diferencia con el hub es conceptual: <strong>mira la trama y decide</strong>, y tiene exactamente <strong>dos verbos</strong>: reenviar a un puerto concreto (<em>unicast forwarding</em>), o reenviar a todos los puertos (<em>flooding</em>).</p>
+<p>`
+ El BRIDGE y sus dos verbos
+ ┌────────────┐
+ │ Bridge │ "Cuando llega una trama por el puerto X:
+ │ tabla de │ 1. APRENDO de dónde vino (memoria)
+ │ reenvío │ 2. DECIDO a dónde va (regla)"
+ └────────────┘
+ ┌──────────────┬───────────┐
+ │ MAC destino │ puerto │ ¿De dónde sale la tabla? De la
+ ├──────────────┼───────────┤ observación de que toda trama que
+ │ 00:1A:...:01 │ 3 │ entra por un puerto viene de la
+ │ 00:1A:...:07 │ 5 │ estación conectada a ese puerto.
+ └──────────────┴───────────┘ No es configuración: es memoria.</p>
+<p>Filtrado explícito: llega por el puerto 5 una trama de A (destino B),
+ y la tabla dice B -&gt; 3
+ caso 1: entrada (B, 3) existe -&gt; reenviar por el puerto 3 [1 copia]
+ caso 2: entrada (B, 5) existe -&gt; DESCARTAR [0 copias]
+ caso 3: no existe entrada (B) -&gt; FLOODING por 1,2,3,4,6 [5 copias]
+ El caso 2 es lo que un hub NO puede hacer, y es toda la diferencia
+ entre "repetir" y "conmutar".
+`</p>
+<p>Un <strong>switch</strong> es, estructuralmente, <strong>un bridge con muchos puertos y una matriz de conmutación (<em>switching fabric</em>) interna</strong>. La familia 802.3 no distingue: un switch <strong>es</strong> un bridge multipuerto.</p>
+<p><code>Anatomía de un switch
+ ┌──────────────────────────────────────────────┐
+ │ MATRIZ DE CONMUTACIÓN (switching fabric) │
+ │ sin cuello de botella: mucho más rápida │
+ │ que los puertos │
+ └──┬────────┬────────┬────────┬────────┬────────┘
+ │ │ │ │ │
+ ┌──┴──┐ ┌──┴──┐ ┌──┴──┐ ┌──┴──┐ ┌──┴──┐
+ │puerto│ │puerto│ │puerto│ │puerto│ │puerto│ cada uno con
+ │ 1 │ │ 2 │ │ 3 │ │ 4 │ │ 5 │ su buffer
+ └─────┘ └─────┘ └─────┘ └─────┘ └─────┘
+ │ │ │ │ │
+ H1 H2 H3 H4 H5
+ ┌────────────────────────────────────────────────────────┐
+ │ MAC address table (CAM table) — UNA por VLAN │
+ │ 00:1A:2B:3C:4D:01 -&gt; puerto 1 ageing 287 s │
+ │ 00:1A:2B:3C:4D:05 -&gt; puerto 5 ageing 12 s │
+ └────────────────────────────────────────────────────────┘</code></p>
+<p>Tres consecuencias, y las tres salen en el examen:</p>
+<ul>
+<li><strong>La matriz es mucho más rápida que los puertos.</strong> Por eso <strong>varias comunicaciones pueden ocurrir simultáneamente</strong>: mientras el puerto 1 transmite hacia el 2, el puerto 3 transmite hacia el 4. En un hub es imposible: hay un solo medio.</li>
+<li><strong>Cada puerto tiene su propio buffer</strong>, así que una ráfaga hacia un destino lento <strong>no bloquea</strong> los otros puertos.</li>
+<li><strong>Cada puerto es un dominio de colisión independiente</strong> y puede trabajar en <strong>full duplex</strong>. En full duplex <strong>la colisión es físicamente imposible</strong>: no hay medio compartido que la genere.</li>
+</ul>
+<blockquote>
+<p><strong>Ojo con el exametero.</strong> La frase "el switch no evita colisiones" es <strong>falsa</strong> y es el error conceptual más repetido del tema. Lo que el switch hace es <strong>eliminar el medio compartido</strong>; como no hay medio compartido, <strong>no hay dónde colisionar</strong>. Mismo resultado, causa distinta.</p>
+</blockquote>
+<h2>1.3 Self-learning: el algoritmo de reenvío completo</h2>
+<p>Acá está el corazón de la clase y lo que pide el <strong>Examen 2010-12 P3c</strong>.</p>
+<blockquote>
+<p>El switch aprende <strong>la dirección MAC origen</strong> de cada trama que entra, y la asocia al <strong>puerto por el que entró</strong>. Todo lo demás —qué hacer con esa trama— es <strong>inferencia</strong>.</p>
+</blockquote>
+<p><strong>¿Por qué el origen y no el destino?</strong> Porque el origen es <strong>información verificada</strong>: la estación conectada al puerto 3 es, necesariamente, la que puso esa MAC en el campo origen. El destino es lo que <strong>quien manda</strong> quiere que creamos; cualquiera puede poner una MAC cualquiera ahí. Si el switch aprendiera del destino, un solo nodo malicioso poisoning la tabla entera.</p>
+<p><strong>¿Por qué "inferencia"?</strong> Porque cuando el switch <strong>no</strong> encuentra la dirección destino no puede saber a qué puerto va. Lo único razonable es mandarla a <strong>todos menos por el que entró</strong>: devolvérsela al remitente sería entregarle una copia que ya posee. Esa es la definición operativa de <strong>flooding</strong>.</p>
+<p>`
+ Llega una trama por el PUERTO X, con MAC ORIGEN A y MAC DESTINO B.</p>
+<p>┌───────────────────────────────────────────────────────────────────┐
+ │ PASO 1 APRENDER (siempre, sin condiciones) │
+ │ tabla[A] ← X ; temporizador(A) ← ahora │
+ ├───────────────────────────────────────────────────────────────────┤
+ │ PASO 2 BUSCAR el destino B │
+ │ 2.a tabla[B] = Y y Y ≠ X -&gt; reenviar por Y [unicast] │
+ │ 2.b tabla[B] = Y y Y = X -&gt; DESCARTAR [filtrado] │
+ │ 2.c NO existe tabla[B] -&gt; FLOODING por todos menos X │
+ │ 2.d B es broadcast/multicast -&gt; es el caso 2.c: el broadcast │
+ │ (FF:FF:FF:.., 01:00:5E:..) nunca está en la tabla, así que │
+ │ SIEMPRE inunda. │
+ └───────────────────────────────────────────────────────────────────┘
+ ⚠️ El orden importa: PRIMERO se aprende el origen, DESPUÉS se decide
+ el destino.</p>
+<p>Pseudocode exacto (esto es lo que se escribe en el examen):</p>
+<p>para cada trama que llega por el puerto X:
+ A = MAC_ORIGEN(trama) B = MAC_DESTINO(trama)
+ tabla[A] = (puerto = X, temporizador = ahora)
+ si B es broadcast o multicast:
+ para cada puerto P != X: reenviar(trama, P)
+ sino si existe tabla[B] con puerto Y:
+ si Y != X: reenviar(trama, Y) // UNICAST
+ sino: descartar(trama) // era para esta misma LAN
+ sino:
+ para cada puerto P != X: reenviar(trama, P) // FLOODING</p>
+<p>Regla de implementación: cuando una trama es FILTRADA, no se refresca
+ el temporizador de la entrada destino. Solo el paso 1 mantiene viva la
+ tabla.</p>
+<p>¿Por qué el flooding va por todos menos X?
+ La trama llegó por X: su emisor ya la tiene y ya la oyó pasar.
+ Peor: si X es un hub, la trama vuelve al switch por otro puerto y el
+ switch cree que es nueva. Es el mecanismo por el que un solo hub mal
+ conectado genera un bucle de reenvíos incluso sin STP.
+`</p>
+<h2>1.4 La tabla de ageing</h2>
+<p>Una tabla que solo <strong>crece</strong> es una tabla que <strong>se rompe</strong>. El ageing es el olvido programado: sin él, una estación que se muda de puerto deja de ser alcanzable (el switch sigue mandándole al puerto viejo) hasta que <strong>ella misma</strong> mande algo por el nuevo. Eso se llama un <em>agujero negro</em> (<em>black hole</em>).</p>
+<p>`
+ Aging MUY CORTO (60 s)
+ + la tabla se mantiene chica, un nodo muerto se olvida rápido
+ - si la estación transmite cada 100 s, su entrada se borra y el
+ próximo mensaje se INUNDA a toda la red</p>
+<p>Aging MUY LARGO (1800 s)
+ + pocas entradas se borran por error -&gt; pocas inundaciones
+ - la tabla crece, y si alguien mueve máquinas en un patch panel las
+ entradas viejas siguen ahí durante 30 minutos</p>
+<p>300 s sale de estimar que una estación de trabajo normal habla al menos
+ una vez cada pocos minutos.
+`</p>
+<blockquote>
+<p><strong>Los 300 s NO son un valor del estándar IEEE.</strong> Son el <strong>default de fabricante</strong> de prácticamente todos los switches comerciales, y es <strong>configurable</strong> (típicamente entre 60 s y 1800 s, y en muchos equipos por VLAN). Decir "el estándar IEEE dice 300 s" es un error; decir "<strong>típicamente 300 s, configurable, default del fabricante</strong>" es lo que se evalúa.</p>
+</blockquote>
+<p>Además, muchos switches tienen <strong>entradas dinámicas</strong> (aprendidas, con temporizador) y <strong>entradas estáticas</strong> (configuradas a mano, que <strong>no expiran nunca</strong>). Una entrada estática mal puesta es un problema de disponibilidad: si asignás la MAC de alguien a un puerto viejo y esa persona se muda, <strong>queda sin red</strong> hasta que alguien corrija la configuración.</p>
+<h2>1.5 Hub vs. switch: la tabla que hay que saber de memoria</h2>
+<p>Cada fila tiene una causa, no una descripción suelta.</p>
+<p><code>┌───────────────────────┬──────────────────┬────────────────────────┐
+ │ Característica │ HUB │ SWITCH │
+ ├───────────────────────┼──────────────────┼────────────────────────┤
+ │ Capa OSI que opera │ 1 │ 2 │
+ │ Lee la MAC │ NO │ SÍ │
+ │ Dominio de colisión │ UNO │ UNO POR PUERTO │
+ │ Dominio de broadcast │ UNO │ UNO (salvo VLANs) │
+ │ Puertos que salen │ TODOS, siempre │ solo el del destino │
+ │ Ancho de banda │ V/N por estación│ V por puerto, a V c/u │
+ │ Full duplex │ NO │ SÍ │
+ │ Colisiones │ SÍ │ NO (en full duplex) │
+ │ Coste por byte útil │ BAJO │ ALTO (se replica) │
+ │ Latencia │ ~0 (es cable) │ del orden de µs │
+ │ Filtrado │ NO │ SÍ │
+ │ SEGURIDAD │ NINGUNA │ el tráfico NO se ve │
+ │ SNMP / gestión │ mínimo │ completa │
+ └───────────────────────┴──────────────────┴────────────────────────┘</code></p>
+<p><strong>La fila de seguridad merece un párrafo propio.</strong> En un hub la seguridad es literalmente cero: el medio es compartido, así que <strong>cualquiera puede poner un sniffer en cualquier puerto y ver todo el tráfico</strong> (contraseñas en texto claro, claves de WEP/WPA-PSK, cabeceras de las peticiones de sesión).</p>
+<p>Con un switch, en régimen, cada trama sale <strong>por un solo puerto</strong>: el del destino. Un atacante en el puerto 3 ve su propio tráfico pero <strong>no</strong> el de la estación del puerto 5. Eso es un salto real.</p>
+<p><strong>Pero — y esto es lo que dice la solución oficial del 2008-12 y hay que repetir — el switch tiene una ventana insecure:</strong></p>
+<blockquote>
+<p><strong>Durante la fase de aprendizaje el switch se comporta exactamente como un hub.</strong> Está inundando tramas para averiguar quién está en qué puerto, y durante esa ventana <strong>un atacante ve todo</strong>.</p>
+</blockquote>
+<p>Y hay un segundo límite, más sutil: si un atacante <strong>inunda la tabla con miles de MAC origen falsas</strong> (<em>MAC flooding</em>), el switch agota su memoria de reenvío y <strong>vuelve a inundar por todo</strong>, degradado a hub. ⇒ <strong>El switch no es un mecanismo de autenticación; es, como mucho, un mecanismo de contención del daño.</strong></p>
+<h2>1.6 VLAN: por qué la red conmutada todavía no alcanza</h2>
+<p>Después de poner switches queda un problema: una trama de <strong>broadcast</strong> (o de <strong>unicast a un destino desconocido</strong>) sale por <strong>todos</strong> los puertos, así que <strong>el flooding no tiene fronteras</strong>. Consecuencias: con 300 PC, cada broadcast genera 300 copias y cientos de respuestas (ARP, DHCP, mDNS); los servidores de producción reciben tramas que no son para ellos; y un problema en un puerto de un laboratorio inunda la red entera.</p>
+<p>Esas dos consecuencias son <strong>la misma causa</strong>, y es justamente lo que rompe la seguridad (§1.5). Por eso el switch no alcanza para segmentar.</p>
+<p>Una <strong>VLAN</strong> (<em>Virtual LAN</em>, LAN virtual) es <strong>una partición lógica del switch</strong>: un mismo switch físico se comporta como <strong>varios switches independientes</strong>, uno por VLAN.</p>
+<p>`
+ UN switch, TRES VLANs
+ ┌───────────────────────────────────────────────────────────────┐
+ │ SWITCH (un solo equipo) │
+ │ VLAN 10 (LAB) VLAN 20 (PROD) VLAN 99 (GESTIÓN) │
+ │ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ │
+ │ │ p1 p2 p3 p4 │ │ p5 p6 p7 │ │ p24 (trunk) │ │
+ │ └──────┬──────┘ └──────┬──────┘ └──────┬──────┘ │
+ └──────────┼───────────────────┼──────────────────┼────────────┘
+ │ │ │
+ [H1] [H2] [H3] [H4] [S1] [S2] [consola admin]</p>
+<p>El flooding de una trama de H1:
+ ✗ NO sale por p5, p6, p7 (son otra VLAN)
+ ✓ sale solo por p2, p3, p4
+ El dominio de broadcast se PARTIÓ: ahora hay 3, uno por VLAN.
+`</p>
+<h3>Las cuatro utilidades, con su porqué</h3>
+<table>
+<thead>
+<tr>
+<th>Utilidad</th>
+<th>Explicación</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1. Partir el dominio de broadcast</strong></td>
+<td>el flooding se confina a los puertos de la VLAN. Una VLAN lógica puede vivir en un switch con cableado físico</td>
+</tr>
+<tr>
+<td><strong>2. Seguridad</strong></td>
+<td>si un usuario de la VLAN 10 pone un sniffer en su puerto, <strong>no ve nada de la VLAN 20</strong>. Es el mismo argumento del switch, pero por encima del switch</td>
+</tr>
+<tr>
+<td><strong>3. Mover un usuario sin mover el cable</strong></td>
+<td>la VLAN a la que pertenece el usuario se decide <strong>en el switch</strong>. Si se muda de escritorio, el switch no cambia: cambia <strong>una línea de configuración</strong></td>
+</tr>
+<tr>
+<td><strong>4. Separar puertos de gestión</strong></td>
+<td>las VLAN de gestión (o de voz) separan el tráfico de administración del de datos, de modo que <strong>inundar la VLAN de gestión no lleva a todos los puertos</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>El punto 3 es el más olvidado y el más usado.</strong> La razón histórica de las VLAN es administrativa: antes, mover a alguien de oficina significaba repatchear cables. Con VLAN, <strong>es configuración</strong>.</p>
+<h3>802.1Q: la trama etiquetada, campo por campo</h3>
+<p>Si todas las tramas de una VLAN viajan por el mismo puerto, el switch <strong>no necesita poner nada en la trama</strong>. El problema aparece cuando la trama tiene que <strong>atravesar varios switches</strong>: el switch intermedio necesita saber a qué VLAN pertenece. Solución: <strong>un tag de 4 bytes</strong>.</p>
+<p>`
+ TRAMA NORMAL (sin VLAN) TRAMA 802.1Q (etiquetada)
+ ┌────────┬────────┬──────┬──────┬─────┐ ┌────────┬────────┬──────┐
+ │ MAC │ MAC │ Ether│ │ FCS │ │ MAC │ MAC │Ether │ T │PCP│
+ │ destino│ origen │ type │datos │ 4 B │ │ destino│ origen │type │ A │ │
+ │ 6 B │ 6 B │ 2 B │ │ │ │ 6 B │ 6 B │ 2 B │ G │ │
+ └────────┴────────┴──────┴──────┴─────┘ └────────┴────────┴──────┘
+ │ │ │
+ EtherType = 0x0800 (IPv4) │ │ └─ VID: 12 bits (1..4094)
+ EtherType = 0x86DD (IPv6) │ └─────── PCP: 3 bits, prioridad
+ EtherType = 0x0806 (ARP) └────────────── TCI = 2 bytes
+ (16 bits: 3 PCP + 12 VID + 1 CFI)
+ tag = 4 bytes (TCI + Ethertype 0x8100)</p>
+<p>┌───────────────┬──────────────────────────────────────┬─────────┐
+ │ TCI (2 B) │ │ TCI (2 B)│
+ ├───────┬───────┬───────────────┬──────────────────────┤ │
+ │ PCP │ DEI │ VID │ VID │ │
+ │ 3 bit │1 bit │ 12 bits │ 12 bits │ │
+ └───────┴───────┴───────────────┴──────────────────────┴─────────┘
+ │ │ │
+ │ │ └── 4094 valores: 1..4094 ; 0 = "sin tag"
+ │ └── DEI: indicador de "drop eligible" (usado por TSN)
+ └────────── PCP: 0 = Best Effort ... 7 = Voice
+`</p>
+<p><strong>El detalle fino que casi nadie menciona:</strong> el tag de 4 bytes es <strong>TPID (2 bytes) + TCI (2 bytes)</strong>. El <code>Ethertype</code> original (0x0800, 0x86DD…) <strong>no desaparece</strong>: pasa a ocupar el lugar que tenía el tag. Por eso el campo "Tipo" de una trama con tag es <code>0x8100</code>, no <code>0x0800</code>.</p>
+<h3>C-TAG vs. S-TAG</h3>
+<table>
+<thead>
+<tr>
+<th>Etiqueta</th>
+<th></th>
+<th>Quién la usa</th>
+<th>Dónde aparece</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>C-TAG</strong></td>
+<td>****</td>
+<td>el <strong>cliente</strong> de la VLAN (la empresa)</td>
+<td>primera etiqueta de la trama</td>
+</tr>
+<tr>
+<td><strong>S-TAG</strong></td>
+<td>****</td>
+<td>el <strong>proveedor</strong> del servicio (el carrier)</td>
+<td>etiqueta <strong>exterior</strong>, que el carrier pone <strong>encima</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>¿Por qué dos?</strong> Porque en <em>carrier Ethernet</em> hay <strong>dos operadores de VLAN en el mismo cable</strong>: el carrier (que agrupa a muchos clientes) y el cliente (que agrupa a sus VLANs). Si ambas usaran  no se sabría cuál termina primero.</p>
+<p><code>Trama con DOBLE etiquetado (carrier Ethernet)
+ ┌────────┬────────┬────────┬────────┬────────┬────────┬──────┐
+ │ MAC dst│ MAC src│ 88A8 │ VID= │ 8100 │ VID= │0800 │ datos
+ │ │ │ (S-TAG)│ 100 │ (C-TAG)│ 10 │ │
+ └────────┴────────┴────────┴────────┴────────┴────────┴──────┘
+ ▲ ▲
+ │ └── el cliente puso VLAN 10
+ └── el CARRIER puso VLAN 100
+ El carrier ve y cobra por la 100. El cliente ve y cobra por la 10.</code></p>
+<h3>PVID, tagged y untagged: por qué un puerto tiene que ser de las dos cosas</h3>
+<p>Si <strong>todo</strong> lleva tag, las máquinas que no saben de VLANs (una PC, una impresora, una cámara IP) no pueden entender la trama. Y si <strong>nada</strong> lleva tag, el switch intermedio no sabe a qué VLAN pertenece.</p>
+<p>`
+ ┌─────────────────────────────────────────────────────────────────┐
+ │ PUERTO "ACCESS" (untagged, de usuario final) │
+ │ ├─ sale SIN tag │
+ │ ├─ el switch le ASIGNA un solo VLAN ID: el PVID │
+ │ └─ el usuario nunca ve un tag: su tarjeta no lo pondría │
+ │ │
+ │ PUERTO "TRUNK" (tagged, entre switches o hacia el router) │
+ │ ├─ sale CON tag (0x8100) para todas las VLANs que lo usa │
+ │ ├─ el switch NO pone nada a mano: el VLAN ID viaja en la trama │
+ │ └─ es lo que permite "router-on-a-stick" │
+ └─────────────────────────────────────────────────────────────────┘</p>
+<p>PVID = Port VLAN ID: el VLAN ID que se ASIGNA a las tramas que
+ llegan a ese puerto SIN tag.</p>
+<p>Ejemplo: la trama de H1 (VLAN 10)
+ H1 ──► [p1, access, PVID=10] ──► [p24, trunk] ──► [router]
+ (1) H1 manda SIN tag: es una PC normal, no sabe qué es una VLAN.
+ (2) Entra por p1. El switch ve "sin tag, PVID de p1 = 10" y le
+ ADJUNTA el tag: [ .. | 8100 | VID=10 | 0800 | IP .. ]
+ (3) Sale por p24 (trunk): conserva el tag.
+ (4) El router separa por VLAN: 0.10 -&gt; 192.168.10.1/24, 0.20 -&gt;
+ 192.168.20.1/24. ACÁ termina el dominio de broadcast, porque el
+ router NO reenvía broadcast entre interfaces.
+ (5) Si el vecino del trunk no tiene esa VLAN en su tabla, se descarta.
+`</p>
+<h3>Los números del tag</h3>
+<p>`
+ Sin tag : mínimo 64 B máximo 1518 B
+ C-TAG : mínimo 68 B máximo 1522 B (+4)
+ S+C-TAG : mínimo 72 B máximo 1526 B (+8)</p>
+<p>⚠️ EL MTU NO CAMBIA: sigue siendo 1500 bytes de payload IP.
+ Los 4 bytes salen del relleno (padding) de la trama mínima.
+ Proof: 1522 − 18 (cabecera) − 4 (tag) = 1500 bytes de payload.
+`</p>
+<h2>1.7 STP y RSTP: por qué la capa 2 necesita un protocolo de control de loops</h2>
+<h3>El problema: un loop en capa 2 no se muere solo</h3>
+<p>En IP, un paquete que entra en un lazo <strong>muere</strong>: cada router descuenta el <strong>TTL</strong> y cuando llega a 0 lo descarta. Ese contador es la red de seguridad de la capa 3.</p>
+<p><strong>Los bridges transparentes no tienen nada de eso.</strong> Son <em>transparentes</em>: su trabajo es que la red se comporte como si no existieran, así que no pueden tocar nada de la trama. En particular <strong>no decrementan ningún TTL</strong>, porque la trama Ethernet <strong>ni siquiera tiene campo TTL</strong>.</p>
+<p>`
+ CON UN LOOP EN CAPA 2 (S1 y S2 unidos por DOS enlaces)</p>
+<p>H1
+ │
+ ┌─┴─┐
+ │ │
+ [S1]══════════════[S2] dos enlaces entre S1 y S2 (puede
+ │ ╲ ╱ │ ser un cable y un puerto del otro switch)
+ │ ╲════════╱ │
+ [S3]─────────────┘</p>
+<p>H1 manda UNA trama de BROADCAST.
+ t0: S1 la recibe por p1 y la reenvía por TODOS los demás puertos.
+ t1: S2 la recibe. NO tiene entrada para su origen (es la PRIMERA vez
+ que la ve) -&gt; FLOODING por todos sus puertos.
+ t2: Vuelve a S1 por OTRO puerto. S1 tampoco la descarta: es la
+ entrada de ageing del ORIGEN, y ese origen no es la dirección
+ de DESTINO (que es broadcast), así que S1 no la reconoce
+ -&gt; la reenvía por todos los puertos menos por donde entró.
+ t3: ... y así indefinidamente. La trama NUNCA muere.
+`</p>
+<p>Lo que mata a la red no es que una trama circule: es que <strong>el número de copias crece</strong> mientras los enlaces se saturan. En régimen permanente cada puerto está al 100 %, los buffers están llenos, la CPU está al 100 % procesando tramas que descarta, y <strong>el switch deja de responder a ping</strong>. Los síntomas característicos: la red entera se cae en el momento en que alguien enchufa un segundo cable entre dos switches, y las tablas MAC <strong>parpadean</strong> (cada MAC aparece en dos o más puertos a la vez, <em>MAC flapping</em>).</p>
+<blockquote>
+<p><strong>El punto conceptual que se pregunta:</strong> un router <strong>descarta</strong> el paquete porque su TTL llegó a 0. Un bridge <strong>no puede</strong>, porque <strong>no sabe si la trama es "la misma" que ya vio antes</strong>. El spanning tree no evita los loops: <strong>los calcula y les pone una puerta</strong>, de modo que la topología lógica sea un <strong>árbol</strong>, que por definición no tiene bucles.</p>
+</blockquote>
+<h3>Los estados de un puerto</h3>
+<p>`
+ ┌──────────┐
+ │ DISABLED │ (administrativamente apagado, o falla el enlace)
+ └────┬─────┘
+ v
+ ┌──────────┐
+ ┌──────────►│ BLOCKING │ Recibe BPDUs, NO envía. Es el estado "normal"
+ │ └────┬─────┘ de los puertos que NO participan en el árbol.
+ │ expira el Procesa tramas de 802.1D. ESTADO SEGURO: ni
+ │ temporizador MaxAge escucha datos ni transmite datos.
+ │ v
+ │ ┌───────────┐
+ ├───────────┤ LISTENING │ Cambió la topología. Sigue ENVIANDO BPDUs,
+ │ 15 s de └─────┬─────┘ pero YA NO procesa ni reenvía tramas de
+ │ Forward Delay datos. Sigue siendo seguro. 15 s más
+ │ v
+ │ ┌───────────┐
+ ├───────────┤ LEARNING │ YA PASA AL AGUA: empieza a llenar la tabla
+ │ 15 s └─────┬─────┘ MAC con las tramas que ve, pero AÚN NO
+ │ más │ reenvía ninguna.
+ │ v
+ │ ┌───────────┐
+ └───────────┤ FORWARDING│ Estado normal de un puerto que SÍ está en
+ └───────────┘ el árbol: envía y recibe datos.</p>
+<p>⏱️ Temporizadores del STP clásico (802.1D) en sus defaults:
+ Hello 2 s (cada cuánto se manda un BPDU)
+ Max Age 20 s (sin oír BPDUs =&gt; el vecino "murió")
+ Forward Delay 15 s (dos veces: Listening-&gt;Learning y
+ Learning-&gt;Forwarding)
+`</p>
+<p><strong>El tiempo total de convergencia del STP clásico es de ~30 a 50 segundos</strong>, y esa es la razón por la que <strong>nadie usa STP hoy</strong>: un enlace que se cae y vuelve deja la red parada medio minuto. <strong>RSTP</strong> lo comprime a <strong>sub-segundo</strong> (§1.8).</p>
+<h3>Bridge ID: cómo se decide quién manda</h3>
+<p>`
+ BRIDGE ID = 64 bits</p>
+<p>┌────────────┬────────────────────────────────────────┐
+ │ PRIORIDAD │ MAC ADDRESS │
+ │ 16 bits │ 48 bits │
+ │ (4096 c/u) │ (la MAC de una de sus interfaces) │
+ └────────────┴────────────────────────────────────────┘
+ 32768 = prioridad BASE (el default de 802.1D)
+ 24576, 16384, 8192, 4096 = los valores "nominales" que se usan para
+ forzar que un bridge sea la raíz.
+ ⚠️ Tiene que ser múltiplo de 4096. Si ponés 1000, el switch lo ajusta
+ a 0, que es el valor más bajo posible: ¡GANA!</p>
+<p>PRIORIDAD BASE = 32768 -&gt; en hexadecimal = 0x8000</p>
+<p>S1: prioridad 32768 (0x8000), MAC 00:00:00:00:00:01 -&gt; 8000.0000.0000.0001
+ S2: prioridad 32768 (0x8000), MAC 00:00:00:00:00:02 -&gt; 8000.0000.0000.0002
+ S3: prioridad 4096 (0x1000), MAC 00:00:00:00:00:03 -&gt; 1000.0000.0000.0003 &lt;-- RAÍZ
+`</p>
+<p><strong>La comparación es numérica, de izquierda a derecha</strong>: primero la prioridad, después la MAC. Por eso para cambiar la raíz <strong>no alcanza con la prioridad</strong>: si dos switches tienen la misma, gana el que tenga la MAC más chica, y eso depende de la marca de la placa, no de vos.</p>
+<h3>El algoritmo completo</h3>
+<p>`
+ 1. Cada bridge manda BPDUs (Bridge Protocol Data Units) por TODOS sus
+ puertos, cada 2 segundos, a la dirección de multicast 01:80:C2:00:00:00.
+ Un BPDU lleva: Bridge ID, costo de cada puerto, prioridad de puerto
+ y Max Age.</p>
+<ol start="2">
+<li>
+<p>ELECCIÓN DE LA RAÍZ.
+ Cada bridge escucha los BPDUs. Si oye un Bridge ID MENOR que el suyo,
+ sabe que no es la raíz.
+ -&gt; La raíz es el bridge con el Bridge ID más bajo de toda la red.
+ No hay votación: es un mínimo.</p>
+</li>
+<li>
+<p>PUERTO RAÍZ (root port) en cada bridge no-raíz.
+ Para cada puerto se calcula el camino a la raíz. Gana el de:
+ (a) menor COSTO hasta la raíz
+ (b) si hay empate, el que recibió el BPDU con menor Bridge ID
+ (c) si hay empate, el de menor ID de puerto emisor
+ Ese es el ÚNICO puerto por el que el bridge habla con el resto.</p>
+</li>
+<li>
+<p>PUERTOS DESIGNADOS en cada segmento.
+ En cada LAN (cada enlace entre dos bridges) compiten los bridges
+ conectados. Gana el de MENOR Bridge ID: su puerto queda DESIGNATED y
+ es el único autorizado a enviar datos hacia ese segmento.</p>
+</li>
+<li>
+<p>EL ÁRBOL.
+ - puertos RAÍZ y DESIGNADOS -&gt; FORWARDING
+ - todos los demás -&gt; BLOCKING</p>
+</li>
+<li>
+<p>El grafo resultante es un ÁRBOL: de cualquier LAN a cualquier otra
+ hay EXACTAMENTE UN camino. No puede haber bucle.
+`</p>
+</li>
+</ol>
+<p><code>Topología FÍSICA (con un loop) Topología LÓGICA (el árbol)
+ ┌──────┐ ┌──────┐
+ │ S1 ├═══════╤═══════╤═══════════►│ S1 │ raíz
+ └───┬──┘ │ │ └───┬──┘
+ │ ┌───┴───┐ │ │ p1 RAÍZ
+ ┌───┴──┐ │ S3 │ │ ┌───┴──┐
+ │ S2 ├───┤ ├───┤ │ S2 │
+ └───┬──┘ └───┬───┘ │ └───┬──┘
+ │ │ │ │ p1 DESIGNATED
+ ┌───┴──┐ ┌───┴──┐ │ ┌───┴──┐
+ │ S3 │ │ S4 │ │ │ S3 │
+ └──────┘ └──────┘ │ └──────┘
+ p2 -&gt; BLOCKING
+ 4 switches, 5 enlaces: el loop ya no existe lógicamente</code></p>
+<h2>1.8 ⚠️ Actualización a 2026</h2>
+<p><strong>Sigue igual — de memoria, sin dudar:</strong>
+- <strong>Formato de trama</strong>: preámbulo 7 + SFD 1, <strong>MAC destino 6 + MAC origen 6</strong>,  2, payload, <strong>FCS 4</strong>. <strong>MTU 1500</strong>.
+- <strong>ARP ()</strong>: request en <strong>broadcast</strong>, reply en <strong>unicast</strong>. El <em>gratuitous ARP</em> sigue usándose (anuncio, DHCP, failover de gateway, VRRP) y sigue siendo <strong>fuente clásica de ARP spoofing y cache poisoning</strong>.
+- <strong>MAC learning</strong>: aprende la <strong>MAC origen</strong> y asocia puerto; <strong>flooding</strong> si el destino es desconocido; <strong>unicast</strong> si se conoce; <strong>filtrado</strong> si el destino está en el mismo puerto de entrada.
+- <strong>802.1Q</strong>: tag de 4 bytes, <strong>VLAN ID de 12 bits (1–4094)</strong>,  = sin tag (PVID).
+- <strong>STP/RSTP</strong> y sus estados (Blocking, Listening, Learning, Forwarding), Bridge ID con <strong>prioridad base 32768</strong>.
+- <strong>Loops en capa 2 = tormenta de broadcast</strong>: sigue siendo la razón de ser del spanning tree.</p>
+<p><strong>Cambió o se modificó — y acá hay que ser preciso:</strong></p>
+<ol>
+<li>
+<p><strong>El half-duplex Ethernet es historia por encima de 1 Gb/s.</strong> Y hay un doble error que circula:
+ - Es una decisión de <strong>IEEE 802.3</strong>, <strong>no una RFC de IETF</strong>. <strong>No existe ninguna RFC que lo depreque.</strong> La que circula como tal, <strong>, es JSCalendar</strong>, y no tiene nada que ver con Ethernet.
+ - A 10GbE y por encima el <strong>full duplex punto a punto es obligatorio</strong> y el half-duplex no existe en la especificación de esas velocidades.
+ - <strong>PERO half-duplex no desapareció del todo:</strong> <strong>IEEE 802.3cg 10BASE-T1S</strong> (<em>single-pair Ethernet</em>, para redes PLC industriales sobre un solo par) es <strong>obligatoriamente half-duplex</strong>, con un protocolo de acceso propio, <strong>PLCA</strong>. Y en IETF, el módulo YANG <code>csma-cd</code> de <code>802.3cf</code> está marcado <code>deprecated</code>. ⇒ <strong>Saber cuándo CSMA/CD sigue existiendo es parte del tema.</strong></p>
+</li>
+<li>
+<p><strong><em>* es el estándar actual (precedido por ): la revisión </em>*2018</strong> abrió el bloque de <strong>TSN</strong> con <strong><em>* (tráfico programado), </em></strong><em> (preempción de trama, junto con ) y </em><strong><em> (filtrado y policing por stream); la revisión </em>*2022</strong> agregó <strong><em>* (Stream Reservation Protocol) y </em></strong><em> (</em>asynchronous traffic shaping<em>). </em><em>Para el examen no cambia nada del tag ni de la VLAN</em><em>: cambia </em><em>para qué</em><em> se usan, porque las VLAN pasaron de ser segmentación de oficina a ser la base de la </em><em>red determinista</em>*.</p>
+</li>
+<li>
+<p><strong>LAG:  (2000) → .</strong> La revisión vigente es <strong><em>*. Un </em>Link Aggregation Group* une varios enlaces físicos en uno lógico, para más ancho de banda y redundancia. </strong>No es lo mismo que un spanning tree*<em>: es "usá los dos cables en paralelo", y no genera loops porque el switch decide el puerto por </em>hash*.</p>
+</li>
+<li>
+<p><strong>C-TAG () vs. S-TAG ()</strong>: el doble etiquetado pasó de exótico a <strong>estándar en carrier Ethernet y en EVPN-VXLAN</strong>. Y acá va una distinción que se confunde siempre: en el datacenter, <strong>EVPN () sobre VXLAN ()</strong> es el estándar de overlay, y ahí la distribución de VLANs <strong>no la hace 802.1Q</strong>: el tenant se identifica por el <strong>VNI de 24 bits que viaja en el encabezado VXLAN sobre UDP/4789</strong>, y el  queda solo por compatibilidad. <strong>802.1Q etiqueta la trama; VXLAN encapsula y multiplica el MTU.</strong> No son lo mismo.</p>
+</li>
+<li>
+<p>** () es el default real<strong>, no el STP clásico: la convergencia va de sub-segundo a unos pocos segundos, en vez de los ~30–50 s del 802.1D.  () cuando querés </strong>compartir el árbol entre varias VLANs** y así no tener un spanning tree por VLAN.</p>
+</li>
+<li>
+<p>⚠️ <strong>El "aging de 300 s" de la tabla MAC es default de FABRICANTE, no un valor mandated por IEEE.</strong> Escribí "típicamente 300 s en switches comerciales, configurable". <strong>Nunca</strong> "el estándar IEEE dice 300 s".</p>
+</li>
+</ol>
+<p><strong>Consecuencia para el examen:</strong>
+- <em>"¿CSMA/CD es necesario hoy?"</em> → <strong>no, y ni siquiera existe por encima de 1 Gb/s</strong> (salvo 10BASE-T1S industrial).
+- <em>"¿qué protocolo evita los loops en capa 2?"</em> → <strong>spanning tree</strong>, y el <strong>default real es RSTP (802.1w)</strong>. Si el enunciado es de 2009/2010 y habla de "STP", respondé el mecanismo del árbol y <strong>agregá una línea</strong> de que hoy converge RSTP.
+- <em>VLAN</em> → el tag de 4 bytes y el VID de 12 bits <strong>no cambiaron</strong>. Lo que cambió es la <strong>revisión del estándar (802.1Q-2022)</strong> y el doble etiquetado C-TAG/S-TAG.</p>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Ejercicio 1 — Self-learning paso a paso con seis tramas</h2>
+<p><strong>Enunciado (inventado).</strong> Un switch de 6 puertos tiene los hosts <code>H1..H6</code> en los puertos 1..6, con MAC <code>00:...:01</code> a <code>00:...:06</code>. La tabla arranca vacía. Llegan seis tramas, en orden.</p>
+<p>`
+ [H1]──p1──┐
+ [H2]──p2──┤
+ [H3]──p3──┼──► SWITCH A1 = 00:1A:00:00:00:01 (H1, puerto 1)
+ [H4]──p4──┤ ... hasta A6 = ...:06 (H6, puerto 6)
+ [H5]──p5──┤
+ [H6]──p6──┘
+ tabla = { } (estado inicial)</p>
+<p>Tramas: 1) p1, de A1 a BROADCAST
+ 2) p3, de A3 a A1
+ 3) p5, de A5 a A3
+ 4) p2, de A2 a A6
+ 5) p6, de A6 a A1
+ 6) p1, de A1 a A6
+`</p>
+<p><strong>Trama 1.</strong> <em>Aprende</em> . <em>Decide</em>:  <strong>nunca</strong> está en la tabla ⇒ <strong>flooding</strong> por 2, 3, 4, 5, 6.
+→ Es el momento en que la red "se siente como un hub": la primera trama SIEMPRE se inunda, porque el switch no sabe nada todavía.</p>
+<p><strong>Trama 2.<em> </em>Aprende<em> <code>A → p1</code>. </em>Decide*: <code>B</code> está en <code>p3</code>, y <code>A ≠ p3</code> ⇒ </strong>unicast por p3<strong>.
+→ Es la </strong>primera** vez que el switch puede hacer unicast sin adivinar.</p>
+<p><strong>Trama 3.<em> </em>Aprende<em> <code>A → p1</code>. </em>Decide*: <code>C</code> está en <code>p4</code>, <code>A ≠ p4</code> ⇒ </strong>unicast por p4**.</p>
+<p><strong>Trama 4.</strong> <em>Aprende</em> . <em>Decide</em>:  <strong>NO</strong> está en la tabla ⇒ <strong>flooding</strong> por 1, 3, 4, 5, 6.</p>
+<p><code>⚠️ ERROR CLÁSICO. Muchos escriben "A6 -&gt; puerto X" al ver el flooding.
+ NO: el flooding NO aprende nada. Lo único que se aprende en esta
+ trama es que A2 está en el puerto 2. Y H6, que recibe la trama por
+ el flooding, la descarta: nadie le avisa que la estaba esperando.</code></p>
+<p><strong>Trama 5.</strong> <em>Aprende</em>  (por fin habla la estación del puerto 6). <em>Decide</em>:  está en  ⇒ <strong>unicast por p1</strong>.</p>
+<p><strong>Trama 6.</strong> <em>Aprende</em>  <strong>y refresca su temporizador de ageing</strong>. <em>Decide</em>:  está en  ⇒ <strong>unicast por p6</strong>.</p>
+<h3>Tabla de verificación</h3>
+<table>
+<thead>
+<tr>
+<th>Trama</th>
+<th>Aprende</th>
+<th>¿Destino conocido?</th>
+<th>Acción</th>
+<th>Puertos de salida</th>
+<th>Tabla resultante</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td></td>
+<td>broadcast (nunca)</td>
+<td><strong>flooding</strong></td>
+<td>2,3,4,5,6</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td></td>
+<td>sí ()</td>
+<td><strong>unicast</strong></td>
+<td>1</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td></td>
+<td>sí ()</td>
+<td><strong>unicast</strong></td>
+<td>3</td>
+<td></td>
+</tr>
+<tr>
+<td>4</td>
+<td></td>
+<td><strong>no</strong></td>
+<td><strong>flooding</strong></td>
+<td>1,3,4,5,6</td>
+<td></td>
+</tr>
+<tr>
+<td>5</td>
+<td></td>
+<td>sí ()</td>
+<td><strong>unicast</strong></td>
+<td>1</td>
+<td></td>
+</tr>
+<tr>
+<td>6</td>
+<td>(refresca)</td>
+<td>sí ()</td>
+<td><strong>unicast</strong></td>
+<td>6</td>
+<td>(igual)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Interpretación física:</strong> de 6 tramas, <strong>2 fueron flooding (10 copias)</strong> y <strong>4 unicast (4 copias)</strong>: 14 copias sobre el medio, de las cuales <strong>10 eran redundantes</strong>. La eficiencia del switch <strong>crece con el tiempo</strong>: a medida que la tabla se puebla, el costo por trama baja de  copias a <strong>una</strong>. Y obsérvese que ** NO está en la tabla**: H4 nunca habló, así que el switch no tiene idea de que existe; si H4 mandara una trama, sería un flooding.</p>
+<h3>El caso que falta en las seis tramas: el filtrado</h3>
+<p>`
+ Trama 7: entra por p2, de A4 a A2.</p>
+<p>Paso 1: tabla[A4] &lt;- p2
+ Paso 2: B = A2. tabla[A2] = p2. Y = p2 = el puerto de entrada.
+ -&gt; Y == X -&gt; DESCARTAR.</p>
+<p>Salida: NINGUN PUERTO. 0 copias.</p>
+<p>¿Qué es esto físicamente? La trama venía por el mismo cable por el que
+ el switch la enviaría. A2, que está en el mismo segmento, ya la oyó
+ directamente en el medio. Reenviársela sería duplicarla sin motivo.
+ Esto es el FILTRADO: exactamente lo que un hub no puede hacer.
+`</p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Aprender del destino.</strong> El switch aprende <strong>solo</strong> del origen. Escribir " porque hubo flooding" es el error más caro del ejercicio.</li>
+<li><strong>No mencionar el caso  → descartar.</strong> El 2010-12 lo escribe como un "y" condicional dentro de un solo inciso; si lo desplegás aparte, sumás.</li>
+<li><strong>Reenviar el flooding también por el puerto de entrada.</strong> No: por definición.</li>
+<li><strong>Tratar el broadcast como un caso aparte del "destino desconocido".</strong> Es un caso <em>particular</em>: la dirección de broadcast jamás está en la tabla, así que siempre cae en la rama de inundar.</li>
+<li><strong>Olvidar el ageing.</strong> Cada aprendizaje <strong>refresca</strong> el temporizador.</li>
+</ul>
+<h2>2.2 Ejercicio 2 — El ageing de la tabla</h2>
+<p><strong>Enunciado (inventado).</strong> Un switch tiene ageing de 300 s. La estación E habla según un <strong>proceso de Poisson</strong> de tasa λ tramas por segundo. <strong>(a)</strong> ¿En qué instante se elimina su entrada? <strong>(b)</strong> ¿Probabilidad de que siga viva a los 300 s? <strong>(c)</strong> Con λ = 0,005 tramas/s (una cada 200 s), ¿probabilidad de que expire antes de la siguiente trama?</p>
+<p><strong>(a) El instante de expiración.</strong> El temporizador se pone en  (última vez que se vio el origen) y corre; la entrada se elimina cuando llega a 300 s.</p>
+<p><code>t=0 ─────────────────────────────── t=300 s
+ │◄──────── 300 s de ageing ────────►│
+ └── se ve A5, timer(A5) = 300 └── la entrada se BORRA</code></p>
+<p><em>Interpretación:</em> el switch <strong>no hace una pasada de limpieza cada 300 s</strong>: cada entrada tiene <strong>su propio</strong> temporizador, que se reinicia cada vez que se ve esa MAC. Si llega una trama de <code>A</code> en <code>p1</code>, la entrada se refresca y el reloj vuelve a cero.</p>
+<p><strong>(b) Probabilidad de que la entrada sobreviva.</strong> Sobrevive si y solo si en esos 300 s <strong>no llega ninguna trama</strong> de <code>A</code>. Con Poisson, <code>P = e^(−λT)</code>. Es la misma fórmula de ALOHA de la clase 41: <strong>la misma matemática para dos cosas distintas</strong> — allá medía tramas que sobrevivían a una colisión, acá entradas que sobreviven a un olvido.</p>
+<p><strong>(c) Con  tramas/s.</strong></p>
+<p>`
+ λ = 0,005 tramas/s (una trama cada 1/0,005 = 200 s)
+ Exponente: λ · 300 = 0,005 · 300 = 1,5</p>
+<p>e^(1,5) = e · e^(0,5) = 2,71828 × 1,64872 = 4,48169</p>
+<p>P(sobrevive) = e^(−1,5) = 1 / 4,48169 = 0,22313
+ P(expira antes de la siguiente) = 1 − 0,22313 = 0,77687 ≈ 77,7 %
+`</p>
+<p><em>Interpretación:</em> una estación que habla <strong>una vez cada 200 s</strong> tiene casi <strong>4 de cada 5 veces</strong> su entrada <strong>borrada</strong> cuando mande la siguiente trama. Es una consecuencia directa del criterio de diseño: <strong>300 s de ageing para una estación que habla cada 200 s es un valor mal elegido</strong>.</p>
+<p><code>λ (tramas/s) intervalo medio λ·300 P(expira) veredicto
+ ───────────── ─────────────── ────── ────────── ─────────
+ 1 1 s 300 ~0 (e^-300) nunca molesta
+ 0,1 10 s 30 e^-30 ≈ 9e-14 nunca molesta
+ 0,01 100 s 3 1 − e^-3 = 0,950 molesta a veces
+ 0,005 200 s 1,5 0,777 molesta siempre
+ 0,001 1000 s 0,3 1 − e^-0,3 = 0,259 aceptable
+ 0,0002 5000 s 0,06 1 − e^-0,06=0,058 aceptable</code></p>
+<p><em>Interpretación física:</em> el umbral de "molesto" está alrededor de <code>M/2</code>, es decir, cuando la estación habla <strong>una vez cada ~300 s o menos seguido</strong>. Ahí la tabla se llena de entradas que mueren y renacen, y cada renacimiento cuesta <strong>una inundación completa</strong>.</p>
+<p><strong>(d) Qué pasa en la red cuando la entrada expiró.</strong>  manda su trama con destino <code>B</code>: la entrada de <code>B</code> ya no está, así que <code>B</code> es un <strong>destino desconocido</strong> ⇒ <strong>flooding</strong> por los puertos 1, 2, 3, 4, 6; los demás la reciben y la descartan; y el switch <strong>aprende</strong>  con 300 s de reloj. <strong>El flooding es el precio de la incertidumbre, y se paga una sola vez por cada olvido.</strong></p>
+<blockquote>
+<p><strong>Consecuencia de diseño, y es la del Examen 2009-03 P3:</strong> en una red con VLANs, ese flooding <strong>queda confinado a los puertos de la VLAN</strong>. Por eso el ageing no es una "pequeña pérdida de rendimiento", sino el detonante de la razón por la que la VLAN es una medida de <strong>seguridad</strong>: la fuga se produce, pero <strong>no sale de la VLAN</strong>.</p>
+</blockquote>
+<h2>2.3 Ejercicio 3 — Partir una VLAN y saber qué tags van por dónde</h2>
+<p><strong>Enunciado (inventado).</strong> Un switch  de 24 puertos:</p>
+<p>`
+ VLAN 10 "PRODUCCIÓN" -&gt; puertos 1 a 16 (access, untagged)
+ VLAN 20 "OFICINAS" -&gt; puertos 17 a 22 (access, untagged)
+ VLAN 99 "GESTIÓN" -&gt; puerto 23 (access, untagged)
+ puerto 24 -&gt; TRUNK, con las VLANs 10, 20 y 99
+ PVID por defecto del puerto 24 = 10.</p>
+<p>Router R: 0.10 -&gt; 192.168.10.1/24
+ 0.20 -&gt; 192.168.20.1/24
+ 0.99 -&gt; 192.168.99.1/24 (configuración "router-on-a-stick")
+`</p>
+<p><strong>(a) Trama de  (p1, VLAN 10) hacia  (p20), ambos access de la VLAN 10.</strong></p>
+<p>`
+ (1) P1 manda: [ Dst | Src | 0800 | IP ] SIN tag (una PC no sabe de VLANs)
+ (2) Entra por p1 SIN tag. El switch aplica el PVID = 10 y ADJUNTA el tag:
+ [ Dst | Src | 8100 | VID=10 | 0800 | IP ]
+ (3) Sale por p20, que es access de VLAN 10: le QUITA el tag.
+ P20 recibe una trama normal, sin saber que hubo VLAN.</p>
+<p>💡 Ambos puertos están en la MISMA VLAN, así que la comunicación
+ FUNCIONA sin tocar el router. El switch no rutea: solo reenvía
+ dentro de la VLAN.
+`</p>
+<p><strong>(b) La misma trama de  hacia un servidor en la VLAN 20.</strong></p>
+<p>`
+ P1 ─► [p1 access VLAN10] ─► [p24 trunk] ─► [R] ─► [p18 access VLAN20] ─► S1</p>
+<p>(1) P1 manda SIN tag. (2) p1 aplica PVID=10 -&gt; tag VID=10.
+ (3) p24 es trunk: el tag VIAJA intacto: la trama sale con VID=10.
+ (4) El router recibe 8100/VID=10, la mete en la subinterfaz 0.10, le
+ saca el tag y decide por IP que va a 192.168.20.x. Para eso hace
+ un ROUTE y reinyecta por 0.20.
+ (5) R emite por 0.20 CON el tag VID=20.
+ (6) Entra por p18 (access, PVID=20): coincide, el switch le saca el
+ tag y lo entrega a S1.</p>
+<p>⚠️ La trama CAMBIÓ DE VLAN en el router. Eso es posible porque el
+ ROUTER es de CAPA 3 y por lo tanto ACABA el dominio de broadcast. Sin
+ router, P1 y S1 estarían en dominios distintos y no se hablarían jamás.
+`</p>
+<p><strong>(c) Una trama de BROADCAST de  (un ARP request).</strong></p>
+<p>`
+ (1) P1 manda: [ FF:FF:FF:FF:FF:FF | ... | 0800 | ARP request ]
+ (2) p1 pone el tag VID=10.
+ (3) El switch busca en la TABLA: el destino FF:FF:FF:FF:FF:FF NO está
+ (jamás está) -&gt; FLOODING.
+ (4) Pero el flooding se hace DENTRO DE LA VLAN 10 solamente:
+ sale por p2, p3, ..., p16 (los otros access de VLAN 10)
+ sale por p24 (el trunk, con el tag)
+ ✗ NO sale por p17..p22 (VLAN 20)
+ ✗ NO sale por p23 (VLAN 99)
+ (5) En el router: entra por 0.10 con destino broadcast. Un router NO
+ reenvía broadcast entre interfaces -&gt; no sale por 0.20 ni 0.99.
+ (6) Vuelve por p24 un reply ARP unicast: se despeja el tag y sigue
+ por la tabla como cualquier unicast.</p>
+<p>💡 ESO son "varios dominios de broadcast en una misma red switcheada".
+`</p>
+<p><strong>(d) Una trama que llega por el trunk p24 SIN tag, y una con tag VLAN 30.</strong></p>
+<p>`
+ SIN tag: el switch consulta el PVID del puerto 24 = 10, y la TRATA PASA
+ A SER DE LA VLAN 10. ¿Por qué existe el PVID? Porque un trunk puede
+ tener una "VLAN nativa" untagged, usada para un único VLAN: es típico
+ del router-on-a-stick de un fabricante que tiene una IP en el trunk y
+ subinterfaz en el resto.</p>
+<p>Con tag VLAN 30 (que el switch no conoce):
+ El switch busca VLAN 30 en su tabla de VLANs. NO EXISTE.
+ -&gt; La trama se DESCARTA.
+ 💡 Es una medida de SEGURIDAD, no un accidente: un router mal
+ configurado, o un atacante en la trunk, no puede inyectar tramas
+ en VLANs que el switch no tiene configuradas.
+`</p>
+<p><strong>Los números, otra vez.</strong></p>
+<p>`
+ Sin tag : mínimo 64 B máximo 1518 B
+ C-TAG : mínimo 68 B máximo 1522 B (+4)
+ S+C-TAG : mínimo 72 B máximo 1526 B (+8)</p>
+<p>MTU de la carga IP: 1500 SIEMPRE, con tag o sin tag.
+ Proof: una trama de 1522 B con tag tiene
+ 1522 − 18 (cabecera) − 4 (tag) = 1500 bytes de payload.
+ Misma MTU: el tag se "comió" relleno, no payload.
+`</p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li>Creer que el switch <strong>rutea</strong> entre VLANs. <strong>No</strong>: sin router, la VLAN 10 y la VLAN 20 <strong>no se hablan</strong>, aunque estén en el mismo switch físico.</li>
+<li>Olvidar que el flooding <strong>sí</strong> se confina a la VLAN. Es el mecanismo real de la seguridad de VLAN, y es lo que dice la solución oficial del 2009-03.</li>
+<li>Decir "el PVID es el VLAN ID del trunk". No: el PVID es <strong>por puerto</strong>, e indica <strong>qué VLAN se asume cuando llega una trama sin tag</strong>.</li>
+<li>Confundir <strong>access</strong> con <strong>untagged</strong>: access es <em>untagged</em> <strong>y pertenece a una sola VLAN</strong>; trunk es <em>tagged</em> y puede llevar muchas.</li>
+</ul>
+<h2>2.4 Ejercicio 4 — Dibujar el árbol de STP y decidir qué puertos se bloquean</h2>
+<p><strong>Enunciado (inventado).</strong> Tres switches full-duplex en triángulo, costos de enlace <strong>iguales</strong>:</p>
+<p>`
+ ┌─────────┐
+ │ SW1 │ prioridad 32768, MAC 00:00:00:00:00:01
+ └──┬───┬──┘
+ │ │
+ e1 │ │ e2
+ ┌────┘ └────┐
+ │ │
+ ┌──┴──┐ ┌──┴──┐
+ │ SW2 │ │ SW3 │
+ └─────┘ └─────┘
+ prio 32768 prio 32768
+ MAC ...0002 MAC ...0003</p>
+<p>Enlaces: SW1-SW2 (e1), SW1-SW3 (e2), SW2-SW3 (e3). Costo: 100 c/u.
+`</p>
+<p><strong>Paso 1 — Bridge ID.</strong> Las tres prioridades son iguales (32768 = valor por defecto), así que desempata la MAC: <code>00:11:22:33:44:55</code> es el menor.</p>
+<p><strong>Paso 2 — Raíz.</strong> Raíz = el Bridge ID <strong>menor</strong> ⇒ <strong>SW1 es la raíz</strong>.
+<em>(Interpretación: como los tres tienen prioridad default, la raíz la decide la MAC del fabricante. Por eso existe el comando de cambiar la prioridad: en una red real no podés depender de qué placa quedó con la MAC más baja.)</em></p>
+<p><strong>Paso 3 — Puertos raíz.</strong></p>
+<p>`
+ En la RAÍZ (SW1): todos sus puertos con vecino son DESIGNATED.
+ No tiene puerto raíz: no necesita camino a sí misma.
+ p(e1): DESIGNATED p(e2): DESIGNATED</p>
+<p>En SW2:
+ - p(e1) hacia SW1: costo = 100 (directo), BID emisor 8000...0001
+ - p(e3) hacia SW3: costo = 100 + 100 = 200, BID emisor 8000...0003
+ Gana el de MENOR COSTO -&gt; p(e1) = PUERTO RAÍZ (no se bloquea)</p>
+<p>En SW3:
+ - p(e2) hacia SW1: costo 100
+ - p(e3) hacia SW2: costo 200
+ -&gt; p(e2) = PUERTO RAÍZ (no se bloquea)
+`</p>
+<p><strong>Paso 4 — Designados en el enlace SW2–SW3.</strong> En el segmento  compiten SW2 y SW3; gana el de <strong>menor Bridge ID</strong>:  (SW2) ⇒ su  queda <strong>DESIGNATED</strong> y el de SW3 queda en <strong>BLOCKING</strong>.</p>
+<p><strong>Paso 5 — Regla final y dibujo del árbol.</strong> Regla: un puerto se bloquea si su camino al raíz <strong>no es el de menor coste</strong>; todo lo demás → <code>forwarding</code>.</p>
+<p>`
+ ┌──────────────────────────────────────────────────────────────┐
+ │ ESTADO FINAL │
+ │ SW1 (RAÍZ) │
+ │ / \ │
+ │ p(e1) p(e2) &lt;- ambos DESIGNATED, FORWARDING │
+ │ / \ │
+ │ SW2 SW3 │
+ │ p(e1) RAÍZ p(e2) RAÍZ &lt;- ambos FORWARDING │
+ │ | | │
+ │ p(e3) p(e3) │
+ │ DESIGNATED ████████ BLOCKING &lt;&lt;&lt;&lt;&lt; AQUÍ SE CORTA │
+ │ FORWARD (recibe BPDUs, no manda datos) │
+ └──────────────────────────────────────────────────────────────┘</p>
+<p>Puertos bloqueados: SOLO SW3.p(e3) (1 de 6)</p>
+<p>VERIFICACIÓN: en una topología conexa de N bridges y M enlaces, el
+ spanning tree bloquea SIEMPRE (M − (N − 1)) puertos.
+ Acá: 3 − (3 − 1) = 1. ✔ Cuadra con lo que dibujamos.
+`</p>
+<h3>(e) La variante: ¿y si SW3 tuviera prioridad 4096?</h3>
+<p>`
+ SW3: prioridad 4096 = 0x1000 -&gt; 1000.0000.0000.0003
+ Raíz = MENOR Bridge ID: 1000.0000.0000.0003 &lt;-- AHORA EL MENOR
+ ==&gt; SW3 PASA A SER LA RAÍZ</p>
+<p>SW3 (RAÍZ)
+ / \
+ p(e2) / \ p(e3)
+ DESIGN / \ DESIGN
+ FORWARD FORWARD
+ / \
+ SW1 SW2
+ p(e2) ROOT p(e3) ROOT
+ FORWARD FORWARD
+ | |
+ p(e1) DESIGN p(e1) ██████ BLOCKING
+ FORWARD (el enlace e1 se corta del lado de SW2)
+`</p>
+<p>El árbol <strong>cambió de forma</strong>, pero el número de puertos bloqueados es el mismo (1). Ese invariante vale para cualquier red conexa.</p>
+<h3>(f) ¿Y si se cae el enlace ?</h3>
+<p>`
+ t0: e1 se cae.
+ t≈20 s: SW1 y SW2 dejan de oír BPDUs el uno del otro durante Max Age
+ (= 20 s) y se dan cuenta de que el vecino "murió".
+ t+ : SW2 recibe por e3 los BPDUs de SW3 y recalcula; el enlace e3,
+ que estaba bloqueado, se desbloquea y pasa a ser el camino.
+ t≈20-50 s con STP clásico: se elige la raíz nueva y se recalculan los
+ puertos.</p>
+<p>⏱️ Con STP clásico (802.1D): 30 a 50 segundos de red parada.
+ Con RSTP (802.1w, el default real): sub-segundo a unos segundos,
+ porque los puertos "edge" no pasan por Listening/Learning y porque
+ los puertos no-edge notifican el cambio al vecino por <em>proposal</em> en
+ vez de esperar el Max Age.
+`</p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Olvidar el desempate por MAC.</strong> Si dos switches tienen la misma prioridad (lo normal), el menor Bridge ID <strong>no</strong> es "el primero" sino el de MAC más baja.</li>
+<li><strong>Poner un puerto raíz en la raíz.</strong> La raíz <strong>no tiene puerto raíz</strong>: tiene todos designados.</li>
+<li><strong>Confundir "designado" con "más cercano a la raíz".</strong> En un segmento, el designado es el de <strong>menor Bridge ID entre los conectados a ese segmento</strong>, no el más cercano a la raíz.</li>
+<li><strong>Bloquear el enlace de los dos lados.</strong> El enlace se bloquea en <strong>un solo lado</strong>. Es el error más visible en un diagrama.</li>
+<li><strong>No verificar con la fórmula (M − (N−1)).</strong> Si el diagrama y la fórmula no dan el mismo número de puertos bloqueados, hay un error.</li>
+</ul>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 Examen 2010-12, Pregunta 3 (8 puntos) — hub, switch y self-learning</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen  — 17 de diciembre de 2010. Solución oficial: .
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1012.pdf
+<strong>Texto del examen (literal):</strong></p>
+<p><strong>a)</strong> Considere una red de varios nodos interconectados por un hub, ¿cuál es el dominio de colisión y cuál es el de broadcast? Justifique.</p>
+<p><strong>b)</strong> Si en la red anterior cambiamos el hub por un switch. ¿Se modifican los dominios de colisión y broadcast? ¿De qué manera?</p>
+<p><strong>c)</strong> Describa el mecanismo de self-learning que utilizan los switches.</p>
+</blockquote>
+<p>Este es <strong>el problema central de la clase</strong>. Los tres incisos se corrigen con el mismo par de ideas: <em>el hub es cable, el switch es memoria</em>.</p>
+<h3>Parte a) (~3 puntos)</h3>
+<p><strong>Solución oficial (texto):</strong></p>
+<blockquote>
+<p>a) El dominio de colisión y el dominio de broadcast son iguales y abarcan a todos los nodos de la red. Esto se debe a que el hub no implementa ningún protocolo de acceso al medio y simplemente reenvía todas las tramas por todas las interfaces.</p>
+</blockquote>
+<p><strong>Análisis.</strong> ✅ Está bien: nombra los dos dominios, dice que abarcan todos los nodos y da <strong>la causa</strong>. ⚠️ Lo que le falta, y son puntos: (1) no dice <strong>qué es</strong> cada dominio, solo que son "iguales"; (2) no dice <strong>por qué</strong> el de colisión es único (mismo medio eléctrico); (3) no dice <strong>por qué</strong> el de broadcast es único (la trama se replica sin filtro, y las copias también se replican).</p>
+<p><strong>Mi respuesta, desarrollada:</strong></p>
+<blockquote>
+<p><strong>a)</strong> Con un hub, el <strong>dominio de colisión y el de broadcast son ambos únicos y abarcan toda la red</strong>.</p>
+<ul>
+<li><strong>Colisión:</strong> el hub es de <strong>capa 1</strong>, repite la señal eléctrica a todos los puertos. Todas las estaciones comparten <strong>el mismo medio</strong>, así que si dos transmiten a la vez sus señales se superponen y ninguna llega bien. Es <strong>un solo dominio de colisión</strong>, y es half-duplex por definición.</li>
+<li><strong>Broadcast:</strong> una trama de broadcast se copia a <strong>todos</strong> los puertos del hub; cada estación que la recibe (si está en otro hub de la red) la reenvía a todos los suyos. <strong>Nada la detiene</strong>, así que llega a <strong>todas</strong> las estaciones: <strong>un solo dominio de broadcast</strong>.</li>
+</ul>
+</blockquote>
+<p><em>"No implementa ningún protocolo de acceso al medio" es la causa raíz:</em> si el hub hiciera algo más que repetir, o bien filtraría tramas y dejaría de ser de capa 1, o bien regularía el acceso y dejaría de ser un medio compartido. Un hub es <strong>un medio compartido con reiteración</strong>, y por eso hereda de ese medio las dos propiedades: colisión sí, frontera no.</p>
+<h3>Parte b) (~3 puntos)</h3>
+<p><strong>Solución oficial (texto):</strong></p>
+<blockquote>
+<p>b) En el caso de un switch existe un dominio de colisión por cada interfaz del switch, por lo que en este caso cada enlace con los nodos tendrá su propio dominio de colisión. El switch impediría que ocurran colisiones. El dominio de broadcast sigue abarcando a todos los nodos de la red.</p>
+</blockquote>
+<p><strong>Análisis.</strong> ✅ Lo que está bien: (1) dice explícitamente <strong>un dominio de colisión POR INTERFAZ</strong>; (2) dice que <strong>el dominio de broadcast no cambia</strong>; (3) agrega "el switch impediría que ocurran colisiones", que es lo que la mayoría no dice.</p>
+<p>⚠️ <strong>Matices que valen puntos, y acá la oficial es algo imprecisa:</strong>
+1. <strong>"El switch impediría que ocurran colisiones"</strong> es correcto <strong>solo en full duplex</strong>. En half-duplex un puerto de switch sigue siendo un dominio de colisión con CSMA/CD, y ahí sí pueden occurir colisiones (las <em>colisiones tardías</em>). Lo correcto: <em>el switch no comparte medio, así que en full duplex no hay colisión posible; en half-duplex cada puerto sigue siendo un dominio de colisión propio, con su propio CSMA/CD, </em><em>aislado</em><em> de los demás.</em>
+2. <strong>Falta decir POR QUÉ no cambia el dominio de broadcast.</strong> La razón es fuerte y sostiene todo lo de VLAN: <strong>una trama de broadcast no puede descartarse</strong>, porque por definición tiene que llegar a todos. El switch no tiene dirección destino que consultar para saber a quién entregarla.
+3. <strong>Falta la advertencia de qué pasa si hay un hub debajo.</strong> Si cuelgo un hub de un puerto del switch, <strong>dentro de ese hub hay colisiones otra vez</strong>, y ninguna VLAN lo arregla.</p>
+<p><strong>Mi respuesta (más completa que la oficial):</strong></p>
+<blockquote>
+<p><strong>b)</strong> Sí, se modifica <strong>uno de los dos</strong>:</p>
+<ul>
+<li><strong>Dominio de colisión: se PARTE en N.</strong> El switch tiene un dominio de colisión <strong>por puerto</strong>, porque cada puerto es un enlace punto a punto con su propio medio. En <strong>full duplex</strong> no hay medio compartido y por lo tanto <strong>la colisión es físicamente imposible</strong>; en <strong>half-duplex</strong> cada puerto es un dominio de colisión propio con su propio CSMA/CD, <strong>aislado</strong> de los demás. (Lo que el switch hace es <strong>eliminar el medio compartido</strong>, no "evitar colisiones".) ⚠️ Si cuelgo un hub de un puerto, <strong>dentro de ese hub vuelve a haber un único dominio de colisión</strong>.</li>
+<li><strong>Dominio de broadcast: NO se modifica.</strong> Sigue siendo <strong>toda la red</strong>. Una trama de broadcast () <strong>no puede descartarse</strong>, porque por definición todos tienen que oírla; el switch no tiene dirección de destino que consultar para saber a quién entregarla, así que <strong>la reenvía por todos los puertos</strong>. Lo único que parte el dominio de broadcast es una <strong>VLAN</strong> o un <strong>router</strong>.</li>
+</ul>
+</blockquote>
+<h3>Parte c) (~2 a 3 puntos)</h3>
+<p><strong>Solución oficial (texto):</strong></p>
+<blockquote>
+<p>c) El mecanismo de self-learning funciona de la siguiente manera:
+- Inicialmente la tabla del switch está vacía.
+- Cuando llega una trama del nodo A con destino B a través de la interfaz X:
+- Anotamos en la tabla que se puede llegar a A a través de la interfaz X.
+- Si hay un registro (B, Y) en la tabla, y X distinto de Y, reenviamos la trama por Y.
+- Si no existe el registro, reenviamos la trama por todas las interfaces excepto X.</p>
+</blockquote>
+<p><strong>Análisis.</strong> ✅ Lo que está bien y hay que applausear: (1) dice que <strong>la tabla arranca vacía</strong>, que es lo que hace que la primera trama siempre sea flooding y lo que conecta con "el switch arranca como un hub" (que dice la oficial del 2008-12); (2) la definición de la tabla es <strong>origen → puerto</strong>; (3) el <strong>"y X distinto de Y"</strong> del segundo inciso <strong>es el filtrado</strong>, aunque no lo nombre; (4) el tercer inciso dice "<strong>todas las interfaces excepto X</strong>". Exacto.</p>
+<p>⚠️ <strong>Lo que falta, y son puntos:</strong>
+1. <strong>El caso  no está escrito</strong>: está escondido en un "y". Si lo escribís aparte, decís "si la entrada dice que B está en el mismo puerto por el que entró, la trama se descarta, porque el destino ya la oyó". Ese es el <strong>filtrado</strong>.
+2. <strong>No dice que se aprende SOLO del origen.</strong> Es lo más importante: si aprendiera del destino, un atacante podría envenenar la tabla con una sola trama. Y también explica por qué el flooding <strong>no</strong> enseña nada.
+3. <strong>No dice nada del ageing / temporizador.</strong> Cada anotación va con un temporizador que expirar la entrada.
+4. <strong>No dice que el broadcast/multicast siempre se inunda</strong>, que es un subcaso del tercer inciso (jamás están en la tabla).</p>
+<p><strong>Mi respuesta, completa y ordenada:</strong></p>
+<blockquote>
+<p><strong>c)</strong> El switch mantiene una <strong>tabla de reenvío</strong> (<em>forwarding table</em>, o CAM table) que asocia <strong>dirección MAC → puerto</strong>, con un <strong>temporizador de ageing</strong> por entrada.</p>
+<ol>
+<li><strong>Inicialmente la tabla está vacía.</strong> Por eso, al arrancar, el switch se comporta como un hub: inunda todo hasta aprender.</li>
+<li><strong>Aprendizaje (siempre, en primer lugar):</strong> ante cualquier trama que llega por el puerto <strong>X</strong>, se anota <code>A → X</code>, donde <strong>A es la dirección MAC origen</strong>, y se <strong>reinicia el temporizador de ageing</strong> de esa entrada. Se aprende <strong>solo del origen</strong>, porque el origen es información verificada por el cable (quien está en el puerto X es, necesariamente, quien puso esa MAC); el destino es solo lo que el emisor <strong>quiere</strong> que creamos.</li>
+<li><strong>Decisión del destino, con B = MAC destino:</strong>
+- Si <strong>B es broadcast o multicast</strong> (jamás está en la tabla): se reenvía por <strong>todos los puertos menos X</strong> (<em>flooding</em>).
+- Si <strong>existe  y </strong>: se reenvía por el puerto <strong>Y</strong> (unicast, una sola copia).
+- Si <strong>existe  y </strong>: se <strong>descarta</strong> la trama (el destino está en el mismo segmento por el que llegó; ya la oyó) — esto es el <strong>filtrado</strong>.
+- Si <strong>no existe entrada para B</strong>: se reenvía por <strong>todos los puertos menos X</strong> (<em>flooding</em>), porque no se sabe a dónde va. El flooding <strong>no aprende nada</strong>: el switch solo aprende del paso 2.</li>
+<li><strong>Ageing:</strong> cada entrada tiene un temporizador (típicamente <strong>300 s</strong>, default de fabricante y configurable) que se reinicia cada vez que se ve esa MAC. Si expira, la entrada se borra, y la próxima trama con ese destino vuelve a ser un flooding.</li>
+</ol>
+</blockquote>
+<p><strong>Reparto orientativo de los 8 puntos</strong> (el enunciado no lo publica):</p>
+<table>
+<thead>
+<tr>
+<th>Inciso</th>
+<th>Peso</th>
+<th>Lo que no puede faltar</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a)</td>
+<td>~3</td>
+<td>los dos dominios = <strong>toda la red</strong>; la causa: el hub es capa 1 y repite todo</td>
+</tr>
+<tr>
+<td>b)</td>
+<td>~3</td>
+<td>colisión → <strong>uno por puerto</strong>; broadcast → <strong>sigue toda la red</strong>, porque el broadcast no se puede descartar; de paso, full duplex no tiene colisión</td>
+</tr>
+<tr>
+<td>c)</td>
+<td>~2</td>
+<td>tabla vacía; <strong>aprende del origen</strong>; unicast si conoce, <strong>flooding por todos menos X</strong> si no; el "<strong>y X distinto de Y</strong>" es el filtrado</td>
+</tr>
+</tbody>
+</table>
+<h2>3.2 Examen 2008-12, Pregunta 2 (5 puntos) — qué mejora reemplazo hubs por switches</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen  — 20 de diciembre de 2008.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0812.pdf
+<strong>Texto del examen (literal):</strong></p>
+<p><strong>Pregunta 2 (5 puntos)</strong> Explique que posibles mejora introduce la sustitución de hubs por switches, en cuanto a performance y seguridad en las redes LAN.</p>
+</blockquote>
+<h3>Solución oficial (extracto textual)</h3>
+<blockquote>
+<p>El principio de funcionamiento de los hubs es que todo el tráfico que ingresa por un puerto, es enviado por todos los demás puertos del dispositivo, aunque en la mayoría de los casos el tráfico estará dirigido a uno sólo de dichos puertos. Los switches, por el contrario, al "entender" de direcciones MAC redirigen las tramas que ingresan por un puerto al puerto por donde se alcanza la máquina destino de la misma. <strong>No debemos olvidar que éste es el comportamiento en régimen de un switch. En la fase de arranque y apendizaje, se comporta como un hub</strong> a los efectos de ir aprendiendo qué direcciones son alcanzables en cada puerto. Por otro lado, los switches incorporan buffers en cada puerto así como una matriz de conmutación de por lo menos un orden de velocidad mayor a la de los puertos. De esta forma, en un switch podemos tener múltiples comunicaciones simultáneas (a diferencia de un hub), ellas full-duplex y cada puerto de un switch puede ser un sólo dominio de colisión (frente al único dominio de colisión que significa un hub) todo lo que redunda en un aumento notorio de la performance de la red. Por otro lado, la mejora en cuanto a seguridad está basada en que, en un switch funcionando en régimen, el tráfico sólo es enviado al puerto donde está conectada la máquina destino del mismo, lo que permite "ocultar" el dicho tráfico al resto de las máquinas conectadas al switch. También la implementación de VLANs puede ser una medida que colabore a la seguridad en una red switcheada.</p>
+</blockquote>
+<h3>Análisis de la solución oficial</h3>
+<p>✅ <strong>Es una solución muy buena.</strong> Tres cosas que hay quer sí o sí, porque son ideas que dan puntos:</p>
+<ol>
+<li><strong>"En la fase de arranque y aprendizaje, se comporta como un hub."</strong> Es <strong>la mejor frase de la solución</strong> y casi ningún alumno la dice. Dice que <strong>la mejora de seguridad no es total ni inmediata</strong>: hay una ventana insecure al arrancar.</li>
+<li><strong>"Buffers en cada puerto" + "matriz de conmutación de por lo menos un orden de velocidad mayor".</strong> No dice solo "más rápido": da la <strong>causa</strong> (matriz más rápida que los puertos + buffers por puerto), que es lo que permite explicar <strong>por qué</strong> hay comunicaciones simultáneas.</li>
+<li><strong>"VLANs como medida de seguridad."</strong> Adelanta el tema de la VLAN (que es el 2009-03 P3, de tres meses después) y conecta las dos preguntas del mismo bloque.</li>
+</ol>
+<p>⚠️ <strong>Lo que le falta:</strong> (1) <strong>no cuantifica el ganho de ancho de banda</strong> (con  estaciones el hub da  y el switch da  a cada una): es una línea y vale puntos; (2) no precisa el caso half-duplex frente a full-duplex, aunque lo insinúa con "full-duplex"; (3) no menciona que el switch <strong>duplica el tráfico interno</strong> al procesarlo en la matriz, aunque en 5 puntos eso es detalle.</p>
+<h3>Mi respuesta, estructurada para 5 puntos</h3>
+<p><strong>a) Performance (~3 puntos)</strong></p>
+<blockquote>
+<p><strong>Con un hub</strong>, la trama que entra por un puerto sale por <strong>todos</strong> los demás, y la red es <strong>un único medio compartido</strong>:
+- <strong>Un solo dominio de colisión</strong>: todas las estaciones comparten el mismo medio; el ancho de banda se <strong>divide</strong> ( por estación), las tramas se <strong>duplican</strong> ( copias de cada trama, de las cuales  se descartan), y hay colisiones con CSMA/CD.
+- <strong>Half-duplex</strong>: no se puede transmitir y recibir a la vez.</p>
+<p><strong>Con un switch</strong>, en régimen:
+- <strong>Aprende las direcciones MAC</strong> y <strong>envía cada trama por un solo puerto</strong>, el del destino. Se elimina el desperdicio: la trama deja de multiplicarse.
+- <strong>Cada puerto es un dominio de colisión independiente</strong> y trabaja en <strong>full duplex</strong>. En full duplex <strong>no hay colisión posible</strong>, porque no hay medio compartido. Con  estaciones, el ancho de banda <strong>por estación pasa de  a </strong>.
+- <strong>Buffer por puerto y una matriz de conmutación más rápida que los puertos</strong>, lo que permite <strong>varias comunicaciones simultáneas</strong> sin que una bloquee a las otras.</p>
+<p>⚠️ <strong>El matiz que hay que decir:</strong> un switch recién arrancado tiene la tabla vacía y <strong>se comporta como un hub</strong> hasta aprender. Las tramas iniciales se inundan. La mejora es de régimen, no de arranque.</p>
+</blockquote>
+<p><strong>b) Seguridad (~2 puntos)</strong></p>
+<blockquote>
+<p><strong>Con un hub</strong>, el medio es compartido: <strong>todo el tráfico que pasa por él es visible en todos los puertos</strong>, sin excepción. Cualquier estación puede ver (con un sniffer) el tráfico de todas las demás: contraseñas, claves, cabeceras. Seguridad <strong>cero</strong>.</p>
+<p><strong>Con un switch</strong>, en régimen, <strong>cada trama sale solo por el puerto de su destino</strong>: el tráfico de una estación <strong>no es visible</strong> desde los otros puertos. Eso es una mejora real y directa.</p>
+<p><strong>Pero no alcanza como mecanismo de seguridad:</strong>
+- Durante el <strong>aprendizaje</strong> el switch inunda, y en esa ventana se ve todo.
+- Un atacante que <strong>inunda la tabla con MAC falsas</strong> (<em>MAC flooding</em>) agota la memoria de reenvío y <strong>degrada el switch a hub</strong>.
+- El switch <strong>no autentica a nadie</strong>: cualquiera que enchufe un cable entra a la red.</p>
+<p><strong>Sí hay un refuerzo estructural:</strong> las <strong>VLANs</strong>, que particionan lógicamente el switch en varios dominios de broadcast independientes y <strong>confinan el flooding</strong> dentro de cada VLAN. Con eso, lo que no es unicast se queda en su VLAN, y el tráfico de una VLAN no es visible desde los puertos de otra.</p>
+<p><strong>Nota sobre el tamaño de esta pregunta:</strong> 5 puntos y <strong>ninguna aritmética</strong>. Es una pregunta de <strong>fundamentos bien enunciados</strong>. Si te quedás pensando en cuentas, no llegás. Decí <strong>qué cambia</strong> (de "medio compartido" a "enlace punto a punto con memoria") y <strong>por qué</strong> eso mejora cada una de las dos cosas.</p>
+</blockquote>
+<h2>3.3 Examen 2009-03, Pregunta 3 (6 puntos) — el concepto de VLAN</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen  — 20 de febrero de 2009.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0903.pdf
+<strong>Texto del examen (literal):</strong></p>
+<p><strong>Pregunta 3 (6 puntos)</strong> Explique el concepto VLAN (p.e. 802.1q) y comente sobre su utilidad.</p>
+<p>⚠️ <strong>Nota sobre el puntaje:</strong> el PDF asigna <strong>6 puntos</strong> a esta pregunta (y trae su solución oficial). Algunas recopilaciones del banco la listan como 10. <strong>Se corrige 6</strong>, y eso no cambia la respuesta.</p>
+</blockquote>
+<h3>Solución oficial (texto)</h3>
+<blockquote>
+<p>Es una tecnología que nos permite tener más de un dominio de broadcast en una misma red switcheada. Se trata de una mejora que se puede incorporar a la red de manera transparente para los usuarios finales ya que la configuración corre por cuenta de los administradores de la misma. La utilidad radica en que se puede tener "varias redes" LAN soportadas por el mismo equipamiento y donde la pertenencia de cada puerto a cada VLAN se puede ajustar bajo demanda. Al poder distinguir qué puertos de un switch pertenecen a qué VLAN, indirectamente es una mejora respecto a seguridad, en particular en lo que refiere a tráfico no unicast y también en el caso de falta de determinadas entradas en las tablas que asocian dirección MAC con puerto.</p>
+</blockquote>
+<h3>Análisis de la solución oficial</h3>
+<p>✅ <strong>Lo que está muy bien:</strong>
+1. <strong>"Más de un dominio de broadcast en una misma red switcheada."</strong> Definición en una línea y <strong>exactamente correcta</strong>. Con esa frase ya tenés el punto central.
+2. <strong>"La pertenencia de cada puerto a cada VLAN se puede ajustar bajo demanda."</strong> Dice lo esencial: la VLAN es una <strong>atribución de puertos</strong>, y se cambia por configuración. Es lo que permite mover un usuario sin tocar el cable.
+3. <strong>"Tráfico no unicast"</strong> es la idea más fina de toda la solución, y casi nadie la encuentra. Significa: el problema de seguridad de un switch no es el unicast (que va dirigido a un solo puerto), sino <strong>el flooding</strong> (broadcast, multicast y unicast a destino desconocido). La VLAN <strong>no cambia el unicast</strong>: lo confina.</p>
+<p>⚠️ <strong>Lo que le falta:</strong> (1) <strong>no desarrolla 802.1Q</strong>, pese a que el enunciado dice "(p.e. 802.1q)": ni el tag de 4 bytes, ni el VID, ni el C-TAG; (2) <strong>no dice por qué</strong> el broadcast se confina (que el switch etiqueta la trama y el flooding se hace <strong>dentro</strong> de la VLAN); (3) no menciona el <strong>router-on-a-stick</strong> ni el <strong>PVID</strong>.</p>
+<h3>Mi respuesta completa (6 puntos)</h3>
+<p><strong>a) Qué es (2 puntos)</strong></p>
+<blockquote>
+<p>Una <strong>VLAN</strong> (<em>Virtual LAN</em>, LAN virtual) es una <strong>partición lógica</strong> de la red conmutada: un mismo <strong>switch físico</strong> se comporta como <strong>varios switches independientes</strong>, uno por VLAN, según a qué VLAN pertenece cada puerto. La pertenencia <strong>no la define el cable ni la estación</strong>: la define la <strong>configuración del switch</strong>.</p>
+<p>Para que la trama sobreviva a varios switches, 802.1Q <strong>agrega un tag de 4 bytes</strong> a la trama Ethernet, que lleva el <strong>VLAN ID</strong> (12 bits, valores 1 a 4094) y una prioridad de 3 bits. El <code>TPID</code> pasa a ser <code>0x8100</code> (C-TAG) en vez de <code>0x0800</code>. Un puerto <strong>access</strong> (de usuario) quita el tag; un puerto <strong>trunk</strong> lo conserva.</p>
+</blockquote>
+<p><strong>b) Para qué sirve (4 puntos)</strong></p>
+<blockquote>
+<p><strong>1. Parte el dominio de broadcast.</strong> Sin VLAN hay <strong>un solo</strong> dominio de broadcast en todo el switch, y las tramas de broadcast se replican a <strong>todos</strong> los puertos. Con VLAN hay <strong>uno por VLAN</strong>: el flooding se hace <strong>dentro de la VLAN</strong>, o sea, por los puertos <strong>de esa VLAN solamente</strong>. Eso reduce el ruido (ARP, DHCP, mDNS) y permite que una sola  lógica conviva con otras en el mismo switch.</p>
+<p><strong>2. Seguridad.</strong> El tráfico no unicast (broadcast y multicast) es el que sale por <strong>todos</strong> los puertos, y el unicast a un destino <strong>desconocido</strong> (que no está en la tabla MAC) también se inunda. Ese flooding es el que un atacante ve. La VLAN <strong>confina ese flooding dentro de la VLAN</strong>: lo que no sale de la VLAN no se ve desde los puertos de las otras, y el unicast entre dos puertos de la misma VLAN tampoco se ve desde fuera.</p>
+<p><strong>3. Mover un usuario sin mover el cable.</strong> La configuración es del switch. Si el usuario se muda de escritorio, su cable va al mismo patch panel y <strong>lo que cambia es la línea de configuración</strong> que asigna ese puerto a una VLAN. Antes de las VLAN, mover a alguien significaba repatchear el cableado.</p>
+<p><strong>4. Segmentar la gestión.</strong> Las VLANs permiten separar el tráfico de administración del de datos, de modo que <strong>inundar la red de gestión no llena de tráfico todos los puertos</strong> del switch.</p>
+</blockquote>
+<p><strong>c) El mecanismo (por qué funciona lo de la seguridad)</strong></p>
+<blockquote>
+<p>El switch etiqueta cada trama con el VLAN ID y, cuando decide inundar, <strong>solo inunda por los puertos de esa VLAN</strong>: las tramas de otra VLAN no se mezclan. Y el dominio de broadcast <strong>se cierra</strong> porque un <strong>router</strong> (o una subinterfaz de router, el <em>router-on-a-stick</em>) <strong>no reenvía tramas de broadcast entre interfaces</strong>. Es el router, y no la VLAN, el que realmente termina el dominio de broadcast entre VLANs distintas.</p>
+</blockquote>
+<h3>⚠️ Las dos frases que hay que decir de memoria</h3>
+<blockquote>
+<p><strong>"VLAN es lo que hace que un switch pueda ser varias redes."</strong></p>
+<p>Y si te sobra tiempo: <strong>"La VLAN no evita el flooding; lo confina."</strong> Esa distinción es la que separa una respuesta de 6 de una de 4.</p>
+</blockquote>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen en 10 líneas</h2>
+<ol>
+<li><strong>Hub</strong> = capa 1: repite a todos los puertos. <strong>Un</strong> dominio de colisión, <strong>un</strong> dominio de broadcast, <strong>cero</strong> seguridad.</li>
+<li><strong>Bridge</strong> = mira la trama y tiene <strong>dos verbos</strong>: reenviar a un puerto, o <strong>inundar</strong> por todos.</li>
+<li><strong>Switch</strong> = un bridge con muchos puertos, buffer por puerto y una matriz de conmutación más rápida que los puertos.</li>
+<li><strong>Self-learning</strong>: el switch aprende la <strong>MAC origen</strong> y la asocia al puerto de entrada. Todo lo demás es <strong>inferencia</strong>.</li>
+<li>El algoritmo: <strong>(1) aprender A → X</strong>; <strong>(2)</strong> si <code>B</code> está en el puerto <code>Y</code> y <code>Y ≠ X</code>, unicast por <code>Y</code>; si <code>Y == X</code>, <strong>descartar</strong> (filtrado); si no está, <strong>flooding por todos menos X</strong>.</li>
+<li><strong>Ageing</strong>: sin él, un nodo que se muda deja de ser alcanzable. <strong>300 s es default de fabricante</strong>, no un valor de IEEE.</li>
+<li><strong>Switch</strong>: cada puerto es su propio dominio de colisión (<strong>en full duplex la colisión es imposible</strong>) y el ancho de banda es <code>1 Gbps</code> por estación en vez de <code>100 Mbps</code> compartidos. Pero el dominio de broadcast <strong>sigue siendo toda la red</strong>.</li>
+<li><strong>VLAN</strong>: partición lógica del switch. El <strong>tag 802.1Q</strong> son 4 bytes (TCI + ) con <strong>VID de 12 bits (1–4094)</strong>; C-TAG vs. S-TAG (); <strong>PVID</strong> para las tramas sin tag.</li>
+<li><strong>Loop en capa 2 = tormenta de broadcast</strong>, y los bridges transparentes <strong>no usan TTL</strong>: por eso existe el <strong>spanning tree</strong> (raíz con menor Bridge ID = prioridad 32768 + MAC, puerto raíz, puertos designados, y el resto en <strong>blocking</strong>).</li>
+<li>En 2026: <strong>half-duplex muerto por encima de 1 Gb/s</strong> (decisión de <strong>IEEE</strong>, no RFC de IETF), <strong><em>*, </em></strong><em> para LAG, </em><em>RSTP (802.1w)</em><em> como default real, y </em><em>C-TAG/S-TAG</em>* en carrier Ethernet y EVPN-VXLAN.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> ¿Por qué un hub tiene <strong>un solo</strong> dominio de colisión <strong>y</strong> un solo dominio de broadcast? Dos frases, una para cada uno.</p>
+<details><summary>Respuesta</summary>
+
+**Colisión:** el hub es de capa 1 y repite la señal eléctrica a todos los puertos, así que todas las estaciones comparten **el mismo medio físico**. Si dos transmiten a la vez, las señales se superponen en ese medio y ninguna llega bien.
+
+**Broadcast:** una trama de broadcast se copia a todos los puertos **sin ningún filtro**, y las copias que llegan a otras estaciones también se reenvían. **Nada la detiene**, porque para descartarla haría falta saber quién la pidió, y eso no está en la trama.
+
+Las dos propiedades vienen de la misma causa: **un medio compartido no tiene fronteras**.
+
+</details>
+
+<p><strong>2.</strong> Llega por el puerto 5 una trama con MAC origen <code>A</code> y MAC destino <code>B</code>. La tabla dice <code>B → p4</code>. ¿Qué hace el switch?</p>
+<details><summary>Respuesta</summary>
+
+**Aprende**  (y le pone o renueva el temporizador de ageing).
+
+**Después** busca : está en la tabla, pero en el puerto 5, que es **el mismo por el que entró** (). Entonces **descarta la trama**.
+
+Ese es el caso de **filtrado**: el destino  está en el mismo segmento que el emisor, así que ya oyó la trama directamente por el medio. Reenviársela sería una copia inútil. Es exactamente lo que un hub no puede hacer.
+
+Ojo: el switch **no descarta la trama completa**, descarta el **reenvío**. El aprendizaje del paso 1 ya ocurrió.
+
+</details>
+
+<p><strong>3.</strong> ¿Por qué el switch aprende la MAC <strong>origen</strong> y no la <strong>destino</strong>?</p>
+<details><summary>Respuesta</summary>
+
+Porque **el origen es información verificada por el cable**: si una trama entra por el puerto 3, es porque la estación conectada al puerto 3 la mandó, y esa estación puso su propia MAC en el campo origen. Es una garantía física.
+
+El **destino**, en cambio, es solo lo que **quien manda quiere que creamos**. Si el switch aprendiera del destino, un solo atacante que mandara tramas con la MAC de otra estación **venenaría la tabla** y desviaría todo su tráfico. Es el mismo problema que el *ARP spoofing*, pero en la tabla del switch.
+
+De ahí una consecuencia: **el flooding no aprende nada**, porque en un flooding la dirección destino es broadcast o una MAC desconocida.
+
+</details>
+
+<p><strong>4.</strong> En el ageing de 300 s, ¿por qué una estación que transmite una vez cada 200 s "pierde" su entrada aproximadamente el 78 % de las veces? Calculá.</p>
+<details><summary>Respuesta</summary>
+
+Con un proceso de Poisson de tasa `λ`, la probabilidad de **cero** arribos en un intervalo de longitud `T` es `e^(−λT)`.
+
+`
+ λ = 1/200 = 0,005 tramas/s
+ T = 300 s
+
+ P(sobrevive) = e^(−0,005 · 300) = e^(−1,5) = 1/4,48169 = 0,2231
+ P(expira antes) = 1 − 0,2231 = 0,7769 ≈ 77,7 %
+`
+
+O sea: la estación habla cada 200 s, pero la tabla olvida a los 300 s. **El intervalo de habla es menor que el de olvido**, así que es más probable que el reloj venza antes de la próxima trama. Cuando la trama llega, es un **flooding**.
+
+La lección de diseño: el ageing tiene que ser **mayor** que el intervalo de habla esperado, o la tabla se llena de entradas que mueren y renacen.
+
+</details>
+
+<p><strong>5.</strong> Explicá por qué el dominio de broadcast <strong>no</strong> se parte al cambiar un hub por un switch, y qué sí lo parte.</p>
+<details><summary>Respuesta</summary>
+
+Porque una **trama de broadcast no puede descartarse**: por definición, tiene que llegar a **todas** las estaciones del dominio. El switch, para decidir, necesita consultar la dirección destino en su tabla, y la dirección destino de un broadcast () **nunca está en la tabla**: no identifica a ninguna estación. No hay a quién "entregarle" la trama de forma selectiva, así que la manda por todos los puertos.
+
+**Lo que sí lo parte:** una **VLAN** (el flooding se confina a los puertos de esa VLAN) y un **router** (no reenvía broadcast entre interfaces, así que es el router el que realmente termina el dominio de broadcast entre subredes).
+
+Y el error al revés: lo que **sí** se parte al cambiar el hub por un switch es el **dominio de colisión**, porque cada puerto pasa a ser un enlace punto a punto.
+
+</details>
+
+<p><strong>6.</strong> ¿Qué son el <strong>C-TAG</strong> () y el <strong>S-TAG</strong> (), y por qué hay dos?</p>
+<details><summary>Respuesta</summary>
+
+Son los dos  que 802.1Q usa para señalar una trama etiquetada, y existen porque en *carrier Ethernet* hay **dos operadores de VLAN en el mismo cable**:
+
+- **C-TAG ()**: la pone el **cliente** (la empresa que se conecta). Es la etiqueta de la **VLAN del cliente**.
+- **S-TAG ()**: la pone el **proveedor** (el carrier). Es la etiqueta de la **VLAN del carrier**, que es la unidad por la que factura.
+
+Si ambas usaran  no se sabría cuál termina primero, porque las dos etiquetas son estructuralmente idénticas. El S-TAG va **encima** (más externo) del C-TAG.
+
+El doble etiquetado es hoy **estándar en carrier Ethernet y en EVPN-VXLAN**, que es el overlay de datacenter por defecto (EVPN  + VXLAN ).
+
+</details>
+
+<p><strong>7.</strong> ¿Por qué un loop en capa 2 es mucho más grave que uno en capa 3?</p>
+<details><summary>Respuesta</summary>
+
+Porque **no hay TTL**.
+
+Un router **descarta** el paquete cuando su TTL llega a cero: el contador es la red de seguridad de la capa 3, y garantiza que un paquete perdido en un lazo **muere solo**.
+
+Un bridge transparente **no puede tocar nada de la trama** (para eso es transparente), así que **no decrementa ningún TTL** — y la trama Ethernet **ni siquiera tiene campo TTL**. Por eso una trama de broadcast que entra en un lazo **circula para siempre**, y además **se multiplica** en cada switch que la reenvía, porque cada copia es tratada como una trama nueva. El resultado es saturación de todos los puertos, buffers llenos, CPU al 100 % y **el switch deja de responder**: una tormenta de broadcast (*broadcast storm*).
+
+Por eso existe el **spanning tree**: no evita los loops, **los calcula y pone una puerta** en ellos.
+
+</details>
+
+<p><strong>8.</strong> En una red con tres switches en triángulo, todos con prioridad 32768 y costos de enlace iguales, ¿cuántos puertos quedan bloqueados y por qué número?</p>
+<details><summary>Respuesta</summary>
+
+**Uno.**
+
+En una topología conexa de  bridges y  enlaces, el spanning tree **bloquea siempre  puertos**. Con  y  (triángulo):
+
+`
+ 3 − (3 − 1) = 3 − 2 = 1 puerto bloqueado
+`
+
+Y se puede verificar **quién**: la raíz es el de **menor Bridge ID** = menor **prioridad**. Con las tres prioridades iguales (32768), gana el de **MAC más baja**. Ese switch (la raíz) tiene todos sus puertos **designated**; los otros dos tienen cada uno un **puerto raíz** (el que va hacia la raíz) y, en el enlace entre ellos, **el de menor Bridge ID queda designated y el otro se bloquea**.
+
+**Ojo:** el enlace se bloquea **en un solo lado**. Bloquearlo de los dos lados es el error más visible en un diagrama.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen ** (17-dic-2010) — </strong>Pregunta 3 (8 pts)<strong>: dominio de colisión y de broadcast con hub; qué cambia con switch; mecanismo de self-learning. Con solución oficial. </strong>Problema central de esta clase.**</li>
+<li><strong>Examen ** (20-dic-2008) — </strong>Pregunta 2 (5 pts)**: mejoras de performance y seguridad al sustituir hubs por switches. Con solución oficial.</li>
+<li><strong>Examen ** (20-feb-2009) — </strong>Pregunta 3 (6 pts)**: concepto de VLAN (802.1Q) y su utilidad. Con solución oficial.</li>
+<li><strong>Examen ** (26-feb-2007) — Pregunta 2 (10 pts): bridge, flooding y bucles; la solución oficial es el </strong>árbol de cubrimiento<strong>, o sea </strong>STP<strong>. </strong>Es el examen del banco más cercano a §1.7.**</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 3 (§3.4 "La capa de red del enlace de datos: switches", §3.6 y §3.7) y cap. 1 (repetidores, puentes y switches)</li>
+<li><strong>IEEE 802.3</strong> — Ethernet: formato de trama, tabla de reenvío, ageing, dominios de colisión. <strong>No es una RFC de IETF</strong>: es un estándar del IEEE.</li>
+<li><strong>IEEE 802.1D</strong> — Spanning Tree Protocol: Bridge ID (prioridad base 32768 + MAC), BPDUs, estados Blocking/Listening/Learning/Forwarding, temporizadores (Hello 2 s, Max Age 20 s, Forward Delay 15 s).</li>
+<li><strong>IEEE 802.1w</strong> — <strong>RSTP</strong>: Rapid Spanning Tree Protocol, hoy el default real de los switches.</li>
+<li><strong>IEEE 802.1s</strong> — <strong>MSTP</strong>: Multiple Spanning Tree, para compartir un árbol entre varias VLANs.</li>
+<li><strong>IEEE 802.1Q-2022</strong> — VLANs y el tag de 4 bytes; revisión actual (precedida por <code>802.1Q-2018</code>, que abrió TSN con <code>802.1Qbv</code> + <code>802.1Qbu</code> y <code>802.1Qci</code>; 2022 agregó <code>802.1Qcc</code> y <code>802.1Qcr</code>).</li>
+<li><strong>IEEE 802.1AX-2020</strong> — Link Aggregation (LAG), sucesión de  (2000).</li>
+<li><strong>IEEE 802.3cg</strong> — 10BASE-T1S: el único caso industrial donde el <strong>half-duplex sigue siendo obligatorio</strong> (con PLCA). La eliminación del half-duplex por encima de 1 Gb/s es una decisión de <strong>IEEE</strong>, <strong>no una RFC de IETF</strong> (⚠️  es JSCalendar, no Ethernet).</li>
+<li><strong>RFC 826</strong> — ARP: request en broadcast, reply en unicast; es quien sufre el dominio de broadcast.</li>
+<li><strong>RFC 7432</strong> — EVPN · <strong>RFC 7348</strong> — VXLAN (encapsulado sobre UDP/4789): el estándar de overlay de datacenter, donde el tenant se identifica por <strong>VNI</strong> y no por 802.1Q.</li>
+<li><strong>Clase anterior:</strong> 41 — Acceso al medio: ALOHA, CSMA/CD y CSMA/CA</li>
+<li><strong>Clase siguiente:</strong> 43 — Redes inalámbricas 802.11: CSMA/CA, estación oculta, NAV, RTS/CTS, EDCA y seguridad</li>
+</ul></body></html>

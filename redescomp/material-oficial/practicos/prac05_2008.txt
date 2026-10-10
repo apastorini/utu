@@ -1,0 +1,8 @@
+Práctico 5 - Problemas del capítulo 5 del libro
+
+Básico
+1 8 9 12 15 18 22
+Recomendado
+2 3 10 11 13 14 16
+Complementarios
+4 5 6 7 17 19 20 21

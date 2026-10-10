@@ -1,0 +1,172 @@
+===== [pag 1] =====
+
+Examen – 3 de febrero de 2011
+(ref: eirc1102.odt)
+Instrucciones
+• Indique su nombre completo y número de cédula en cada hoja.
+• Numere todas las hojas e indique la cantidad total de hojas que entrega en la primera.
+• Escriba las hojas de un solo lado y utilice una caligrafía claramente legible.
+• Comience cada pregunta teórica y cada ejercicio en una hoja nueva.
+• Sólo se contestarán dudas de letra. No se aceptarán dudas de ningún tipo los últimos 30 minutos del
+examen.
+• El examen es individual y sin material. Apague su celular mientras este en el salón del examen.
+• Es obligatorio responder correctamente al menos 15 puntos en las preguntas teóricas.
+• El puntaje mínimo de aprobación es de 60 puntos.
+• Para todos los ejercicios, si es necesario, puede suponer que dispone de los tipos de datos básicos
+(p.ej. lista, cola, archivo, string, etc.) y sus funciones asociadas (ej: tail(lista), crear(archivo),
+concatenar(string, string).
+• Duración: 3 horas. Culminadas las 3 horas el alumno no podrá modificar las hojas a entregar de ninguna
+forma.
+Preguntas Teóricas
+Pregunta 1 (10 puntos)
+a)
+Explique el significado de los conceptos confidencialidad, integridad y no repudio.
+b)
+Alicia desea enviarle un mensaje M a Roberto y pretende incorporarle los tres servicios mencionados en la
+parte anterior. Realice un diagrama completo indicando cómo podría hacerlo utilizando criptografía de
+clave pública.
+Pregunta 2 (10 puntos)
+Explique el funcionamiento del protocolo DHCP detallando el intercambio de mensajes entre cliente y servidor.
+Pregunta 3 (10 puntos)
+Describa los campos más importantes de los segmentos TCP y UDP.
+Pregunta 4 (10 puntos)
+a)
+Describa la técnica denominada NAT, explicando las modificaciones que un router NAT debe realizar
+sobre los paquetes salientes y entrantes.
+b)
+De una justificación para la siguiente frase: NAT no respeta el principio de aislación de capas.
+c)
+Describa brevemente las tres soluciones planteadas en el teórico para atravesar un router NAT por parte
+de un cliente que se encuentra en una red con direcciones públicas y quiere contactar a un servidor que
+está en una red con direcciones privadas.
+
+===== [pag 2] =====
+
+Problemas Prácticos
+Problema 1 (30 puntos)
+Sea un flujo de voz
+que genera una señal
+de 64 kbps y que se
+discretiza en muestras
+de
+
+tamaño
+
+fijo
+transmitidas
+
+sobre
+UDP. Se genera un
+datagrama con una
+muestra de voz cada
+40 ms. En el gráfico
+se
+
+muestra
+
+la
+generación
+
+y
+
+la
+llegada
+
+de
+
+los
+datagramas,
+
+por
+ejemplo el primer
+datagrama se genera
+a los 40 ms y llega a
+destino a los 260 ms.
+Los relojes de ambos
+extremos
+
+están
+sincronizados.
+a)
+Considerando un overhead de aplicación de 16 bytes en la transmisión de una muestra de sonido, ¿que
+tamaño tiene el campo de datos de cada datagrama UDP transmitido por el origen?
+b)
+Sean ti y ri los tiempos de generación y recepción del datagrama i. El receptor reproduce los datagramas en el
+tiempo ti + p, siendo p lo suficientemente grande para que la reproducción sea continua. Para los primeros 9
+datagramas presentes en la gráfica, determinar el mínimo tiempo p. En este caso suponer que no ocurren
+pérdidas de datagramas en la red.
+c)
+Implemente dos procedimientos del lado del receptor, uno que almacene las muestras recibidas en una
+estructura auxiliar, y otro que las reproduzca.
+Para el cálculo de la latencia pi de cada datagrama aplicar el mecanismo de promedio ponderado que se
+define en la nota al final del ejercicio.
+Se suponen conocidos los parámetros ti y ri para cada datagrama llegado (medidos en ms). La solución
+enviará una señal para cancelar la reproducción cuando, durante N períodos de 40ms consecutivos, pi supere
+los 400ms y/o la pérdida de datagramas supere el 10% (que se verificará por medio del estudio de los
+números de secuencia recibidos).
+Se cuenta con las siguientes primitivas:
+Para la recepción y reproducción de muestras:
+•
+getMuestra(r,t,nro_sec,muestra), si existe en el buffer de recepción un datagrama con muestra
+de sonido devuelve 0, en caso contrario devuelve -1. En t devuelve el tiempo de generación (en ms), en r
+el tiempo de recepción (en ms), en nro_sec el número de secuencia de la muestra y en muestra la
+muestra recibida.
+•
+reproduceMuestra(muestra), reproduce la muestra pasada como parámetro.
+•
+now() procedimiento que devuelve el tiempo actual.
+Para el almacenamiento temporal de muestras en el receptor:
+•
+insertMuestra(u,nroSec,muestra), inserta en una estructura auxiliar ordenada la muestra a ser
+reproducida en el tiempo u, con número de secuencia nroSec y con la muestra de sonido pasada en
+muestra. La inserción se realiza ordenada por tiempo u.
+•
+getTimeNext(), devuelve el tiempo de reproducción u de la próxima muestra disponible en la
+estructura auxiliar.
+•
+getNroSecNext(), devuelve el número de secuencia nroSec de la próxima muestra disponible en la
+estructura auxiliar.
+•
+GetMuestraNext(), devuelve y elimina de la estructura auxiliar la próxima muestra a ser reproducida.
+Nota:
+Para el cálculo del promedio ponderado de la latencia utilizar pi = 0.9 * pi-1 + 0.1 * vi , donde vi es el tiempo
+utilizado por la red para la transferencia del paquete i y p0=400ms.
+
+===== [pag 3] =====
+
+Problema 2 (30 puntos)
+En el diagrama de la figura se muestra un escenario típico de IP Móvil. Suponga que el nodo móvil (MN)
+intercambia tráfico mediante paquetes IP con el nodo corresponsal (CN).
+Notas para todo el Problema:
+•
+Los routers R1, R2 y R3 son administrados por los ISPs ISP1, ISP2 e ISP3 respectivamente.
+•
+Los routers HA y FA son administrados por los técnicos que administran HN y FN respectivamente,
+existiendo entre ellos un fuerte vínculo comercial y técnico.
+•
+Se considera el servicio IP Móvil básico (“Al visitar el MN redes IP con otros prefijos configurados, las
+conexiones TCP no se deben restablecer”).
+a)
+Suponga que el MN se encuentra en su red hogar (HN), asociado al AP1 (802.11, WiFi®) e
+intercambiando tráfico usual con otros nodos de Internet. Indique, para todos los segmentos de
+red del tipo WLAN y LAN por donde transita el tráfico de datos en el sentido MN → CN, los
+valores en los campos de direcciones MAC e IP del mismo.
+Nota: Recuerde que IEEE 802.11 considera la presencia de hasta 4 direcciones MAC en cada trama, con
+la siguiente terminología: TA (dirección MAC de quien transmite), RA (dirección MAC de quien recibe), SA
+(dirección MAC del origen de la trama), DA (dirección MAC del destino de la trama).
+b) Suponga ahora que el MN se encuentra en la red visitada (FN), asociado al AP2 (802.11,
+WiFi®), intercambiando tráfico usual con otros nodos de Internet y que el routing es “Indirecto” o
+“triangular” (o sea, en el sentido CN → MN a través del router HA y en el sentido MN → CN de la
+manera tradicional).
+Se pide:
+i.
+Indique, para todos los segmentos de red del tipo WLAN y LAN por donde transita el tráfico
+de datos en el sentido MN → CN, los valores de los campos de direcciones MAC e IP del
+mismo.
+ii.
+Mencione, describa y justifique una configuración posible y escalable a realizar entre los
+routers HA y FA de forma que el tráfico en el sentido CN → MN llegue al MN, previo pasaje
+por HA.
+c)
+Detalle para los casos de las partes a) y b) anteriores, los valores de todos los campos de
+direcciones IP para el tráfico de datos entre MN y CN (en ambos sentidos) en la red Internet.

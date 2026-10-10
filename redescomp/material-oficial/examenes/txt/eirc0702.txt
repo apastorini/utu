@@ -1,0 +1,191 @@
+===== [pag 1] =====
+Página 1 de 3
+Examen de Introducción a las Redes de Computadoras
+y Comunicación de Datos
+(ref: eirc0702.doc)
+5 de febrero de 2006
+
+Atención:
+
+La duración del examen de 3 horas.
+
+El examen debe realizarse sin material.
+
+Se debe responder al menos el equivalente a 15 puntos en las preguntas teóricas.
+
+El puntaje mínimo de aprobación es de 60 puntos.
+
+Para todos los ejercicios, suponga que dispone de los tipos de datos básicos (p.ej: lista, cola, archivo,
+string, etc.) y sus funciones asociadas (ej: tail(lista), crear(archivo), concatenar(string, string) ).
+
+Problemas
+Problema 1 (30 puntos)
+a) Se quiere implementar un protocolo de transferencia de archivos que utilice 2 conexiones TCP de
+manera simultánea, una de control (para enviar comandos) y otra de datos. El intercambio de comandos y
+datos es el siguiente:
+
+El protocolo comienza abriendo una conexión de control en el puerto 21 del Servidor, la cual permanece
+siempre abierta salvo que se ejecute un comando QUIT (se puede suponer que las conexiones TCP
+permanecen activas durante las transferencias de archivos). Una vez abierta la conexión de control, se
+ejecuta el comando PORT para establecer el puerto en el que el Cliente escucha una conexión de datos.
+Luego de establecida dicha conexión, el cliente puede ejecutar el comando GET para pedir la transferencia
+de un archivo desde el Servidor. La conexión de datos permanece abierta mientras transcurre una
+transferencia o hasta que se recibe un comando QUIT a través de la conexión de control, lo cual aborta la
+transferencia y cierra ambas conexiones.
+Se pide:
+Implemente en un lenguaje de alto nivel el módulo del Servidor de este protocolo.
+
+Cliente
+Control
+> 1023
+Datos
+>1023
+Servidor
+Control
+21
+Datos
+20
+Abre conexión de control
+Comando PORT
+Abre conexión de datos
+Transferencia de datos
+Comando GET <nombre_archivo>
+Comando QUIT
+
+===== [pag 2] =====
+Página 2 de 3
+Nota: se dispone de una función byte[] obtenerArchivo(string nombre) que dado un nombre de archivo
+devuelve su contenido.
+
+b) Se realiza una modificación al protocolo descrito en la parte a), mediante la cual es el cliente el que abre
+la conexión de datos a un puerto indicado por el servidor. Explique que ventajas puede tener esta
+modificación a la hora de de proteger el cliente con un firewall.
+
+Problema 2 (30 puntos)
+Considere el siguiente diagrama, correspondiente a la estructura inicial de la red interna de una empresa.
+
+R4
+LAN 1
+LAN 2
+R5
+LAN 3
+LAN 4
+R6
+LAN 5
+LAN 6
+R7
+LAN 7
+LAN 8
+LAN ROUTERS_1
+LAN ROUTERS_2
+LAN ROUTERS_3
+R2
+R3
+R1
+
+El detalle de la cantidad de computadoras conectadas actualmente a cada red LAN ethernet y las que se
+agregarán en los próximos 6 meses (sin quitar ninguna) es el siguiente:
+LAN
+
+ahora
+
+en 6 meses
+LAN 1
+
+23
+
+6
+LAN 2
+
+15
+
+14
+LAN 3
+
+40
+
+4
+LAN 4
+
+120
+
+4
+LAN 5
+
+64
+
+0
+LAN 6
+
+31
+
+0
+LAN 7
+
+17
+
+1
+LAN 8
+
+18
+
+0
+LAN ROUTERS_1, ROUTERS_2 y ROUTERS_3
+0
+
+0
+Con el transcurso de los años se agregarán más routers y redes LAN con computadoras, con topologías
+idénticas a las de los routers R4, R5, R6 y R7, donde cada router agregado tendrá 2 redes LAN detrás de él
+y solamente se agregarán en las redes LAN ROUTERS_2 y ROUTERS_3. En cada una de las redes LAN
+ROUTERS_2 y ROUTERS_3 se agregarán como máximo 60 routers y las redes LAN conectadas a ellos
+tendrán como máximo, 200 computadoras en cada una.
+a) El único prefijo con el que se cuenta es 172.31.0.0/16. Para cada uno de los siguientes casos:
+caso 1 - el direccionamiento es classful.
+caso 2 - el direccionamiento es CIDR y se puede “subnetear” sólo en espacios de igual tamaño.
+caso 3 - el direccionamiento es CIDR y se puede “subnetear” en espacios de tamaños distintos. Al solo
+efecto de simplificar la solución para este caso, puede considerar correcto asignar un prefijo /24 para la red
+LAN ROUTERS_1
+i) Realice, según permita cada caso, un plan de numeración de toda la red que optimice el uso de
+las direcciones IP. Exprese las máscaras en el formato “decimales separados por puntos”.
+ii) Indique el/los prefijo/s no asignado/s y por lo tanto disponible/s para futuras asignaciones.
+b) ¿Cuál de los tres casos de la parte anterior es el que recomendaría para llevar adelante en la empresa?
+Justifique su respuesta.
+
+===== [pag 3] =====
+Página 3 de 3
+c) Para el caso elegido en la parte anterior, y en función del plan de numeración realizado en la parte a),
+indique para cada red LAN:
+i) Dirección de broadcast
+ii) Dirección IP a configurar en cada computadora de cada red LAN como “default gateway” o
+“puerta de enlace”. Justifique su decisión.
+d) Escriba la tabla de enrutamiento de los routers R2 y R6
+El formato de la tabla debe ser:
+Red Destino
+
+Siguiente Salto
+Métrica (saltos)
+donde la Red Destino debe ser expresada utilizando la notación X.Y.Z.W/N
+e) Un año después de realizado el plan de numeración seleccionado, la empresa decide conectarse a
+Internet. Para ello contrata a un ISP (Internet Service Provider) un enlace punto a punto, quien además
+asigna para su numeración la red 1.2.3.4 255.255.255.252. Dicho enlace se conecta al router R1 en una
+interfaz hasta ese momento no utilizada.
+i) Realice el plan de numeración de dicho enlace punto a punto indicando direcciones IP de cada
+interfaz, dirección de red y dirección de broadcast.
+ii) ¿Qué cambio/s realizaría para que el enrutamiento hacia y desde Internet sea posible? Justifique
+su respuesta.
+iii) El enrutamiento hacia Internet se realiza utilizando “rutas por defecto”. Indique qué entrada/s
+debe agregar a cada tabla de enrutamiento de cada router.
+
+Preguntas Teóricas
+Pregunta 1 (5 puntos)
+Que diferencias tienen Pure ALOHA, Slotted ALOHA y CSMA/CD.
+Pregunta 2 (10 puntos)
+Describa el funcionamiento del protocolo “GO BACK N”
+Pregunta 3 (10 puntos)
+Describa y explique el problema de conteo a infinito, y mencione una posible solución.
+Pregunta 4 (10 puntos)
+Explique el concepto de congestión en una red y los problemas que presenta la misma para el normal
+funcionamiento de una red. Mencione posibles técnicas para mitigar este problema.
+Pregunta 5 (5 puntos)
+Explique brevemente como hace “Alice” para firmar un mensaje M (de largo variable) utilizando un algoritmo
+de Hash y un algoritmo de clave pública, y como “Bob” verifica la firma digital al recibirlo.

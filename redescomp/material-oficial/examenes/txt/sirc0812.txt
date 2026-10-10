@@ -1,0 +1,748 @@
+===== [pag 1] =====
+
+Examen - 20 de diciembre de 2008 (ref: sirc0812.doc)
+Instrucciones
+•
+Indique su nombre completo y número de cédula en cada hoja.
+•
+Numere todas las hojas e indique la cantidad total de hojas que entrega en la primera.
+•
+Escriba las hojas de un solo lado.
+•
+Comience cada ejercicio en una hoja nueva.
+•
+Sólo se contestarán dudas de letra. No se aceptarán dudas de ningún tipo los últimos 30 minutos
+del examen.
+•
+El examen es individual y sin material.
+•
+Es obligatorio responder correctamente al menos 15 puntos en las preguntas teóricas.
+•
+El puntaje mínimo de aprobación es de 60 puntos.
+•
+Para todos los ejercicios, si es necesario, puede suponer que dispone de los tipos de datos
+básicos (p.ej. lista, cola, archivo, string, etc.) y sus funciones asociadas (ej: tail(lista),
+crear(archivo), concatenar(string, string).
+•
+Duración: 3 horas.
+Preguntas Teóricas
+Pregunta 1 (10 puntos)
+Los protocolos del nivel de Transporte brindan las comunicaciones lógicas requeridas por las aplicaciones
+de los usuarios, y por lo tanto son implementados en los end systems (sistemas finales). Discuta si es
+necesario implementarlos además en los dispositivos intermedios, como por ejemplo routers y/o switches.
+Justifique su respuesta.
+Pregunta 2 (5 puntos)
+Explique que posibles mejora introduce la sustitución de hubs por switches, en cuanto a performance y
+seguridad en las redes LAN.
+Pregunta 3 (10 puntos)
+Muestre e identifique en un diagrama topológico los componentes principales de la arquitectura IP Móvil,
+indicando el rol de cada uno de ellos.
+Pregunta 4 (7 puntos)
+El protocolo POP3 transmite información de control por el mismo canal de datos. ¿Qué mecanismo utiliza
+para evitar que la información de señalización se confunda con los cuerpos de los mensajes? Justifique su
+respuesta.
+Pregunta 5 (8 puntos)
+Se conocen diferentes protocolos (por ej. RTP) para el transporte de streaming multimedia. ¿Bajo que
+hipótesis sobre el comportamiento de la red es posible implantar servicios de telefonía IP basados en
+transporte TCP en lugar de los protocolos específicos de streaming? Justifique su respuesta analizando al
+menos la pérdida de datos, retransmisión y retardo.
+Problemas Prácticos
+Problema 1 (30 puntos)
+Se desea utilizar una variante del protocolo NAT para realizar balanceo de carga entre tres servidores
+instalados en una red privada. Los servidores tienen direcciones privadas IP_1, IP_ 2, IP _3, y publican un
+servicio en el puerto PORT. El servicio es conocido en Internet a través del sistema Acceso, router de la
+red privada, cuya dirección pública es IP_SERVICIO. Se utiliza el mismo puerto PORT para accederlo.
+
+===== [pag 2] =====
+
+Al llegar una solicitud de servicio a Acceso, se debe
+redireccionar la misma al servidor que se encuentre
+atendiendo menor número de requerimientos
+(balanceo de carga).
+Acceso debe modificar los paquetes IP que pasen a
+través de él, de forma que el tráfico de aplicación
+entre los clientes y servidores sea posible. Una vez
+establecida una correspondencia entre un cliente y
+un
+
+servidor,
+
+debe
+
+mantenerse
+
+dicha
+correspondencia mientras se mantenga el flujo de
+tráfico. Se considera que el flujo ha terminado
+cuando transcurrieron TIMEOUT segundos sin
+tráfico.
+Se pide:
+a)
+Indique qué campos deben modificarse en los
+paquetes que llegan a Acceso para lograr el
+redireccionamiento especificado. ¿Es necesario
+modificar los encabezados de capa 4 o
+solamente los de capa 3? Justifique su respuesta.
+b)
+En base a la respuesta anterior, especifique las estructuras que necesita almacenar Acceso para
+realizar la traducción de direcciones y el balanceo de carga.
+c)
+Especifique, en un lenguaje de alto nivel, el procedimiento que debe ejecutar Acceso cada vez que
+recibe un paquete, para cumplir la funcionalidad descrita.
+Problema 2 (30 puntos)
+Se considera una red de cuatro nodos A,B,C y D con la topología que se muestra en la figura; los enlaces
+tienen costo unitario.
+Esta red ejecuta un protocolo de enrutamiento genérico de la familia “vector-distancia” (distance-vector). Se
+pide:
+a)
+Suponiendo la topología de la red estable en el tiempo y que los nodos son todos encendidos
+simultáneamente (es decir, se inician todos en el mismo estado con sus tablas de distancias vacías),
+deduzca las sucesivas tablas de distancias de A, B, C y D hasta llegar al estado estable de la red.
+b)
+Escriba la tabla de forwarding de cada nodo en el formato Destino, Próximo Salto, Costo.
+
+A
+B
+C
+D
+
+===== [pag 3] =====
+
+c)
+Explique que sucede con las tablas de distancias si se apaga en nodo D. Justifique incluyendo algunas
+iteraciones de la tabla de distancias de A.
+
+Pregunta 1 (10 puntos)
+La pregunta se centra en los protocolos TCP y UDP. En particular TCP, “sustenta” aplicaciones como
+navegadores y sus protocolos asociados (http, https), correo electrónico y sus protocolos más conocidos
+(smtp, pop3, imap), todos trabajando en un modelo cliente/servidor claramente identificable. Para que los
+datagramas IP que llevan los mensajes que se intercambian entre los diferentes sistemas finales lleguen a
+destino, se requiere de un conjunto de redes interconectadas compuestas fundamentalmente por routers y
+switches. Éstos equipos son gestionados por diferentes grupos de administradores (lo que podemos
+asociar a los Sistemas Autónomos) que, para realizar dicha tarea, hacen uso de los mismos protocolos
+(TCP y UDP) y otros, para “sustentar” las comunicaciones lógicas entre sus estaciones de trabajo y
+sistemas de gestión y, los equipos en cuestión. Una lista no exhaustiva de ellos son, para el caso de TCP,
+ssh, http, https, bgp y para el caso de UDP, podemos mencionar a snmp. Por lo tanto, dichos protocolos
+también son implementados en dichos dispositivos intermedios (routers y switches) para una tarea de
+gestión de los mismos.
+Por lo tanto, se puede afirmar que no es necesario para que cumplan su función primordial pero cada vez
+es más necesario que los implementen los dispositivos intermedios y en particular es casi imposible pensar
+en un router sin algún tipo de gestión.
+Pregunta 2 (5 puntos)
+El principio de funcionamiento de los hubs es que todo el tráfico que ingresa por un puerto, es enviado por
+todos los demás puertos del dispositivo, aunque en la mayoría de los casos el tráfico estará dirigido a uno
+sólo de dichos puertos (una computadora conectada a dicho puerto). Los switches, por el contrario, al
+“entender” de direcciones MAC redirigen las tramas que ingresan por un puerto al puerto por donde se
+alcanza la máquina destino de la misma. No debemos olvidar que éste es el comportamiento en régimen de
+un switch. En la fase de arranque y apendizaje, se comporta como un hub a los efectos de ir aprendiendo
+qué direcciones son alcanzables en cada puerto. Por otro lado, los switches incorporan buffers en cada
+puerto así como una matriz de conmutación de por lo menos un orden de velocidad mayor a la de los
+puertos. De esta forma, en un switch podemos tener múltiples comunicaciones simultáneas (a diferencia de
+un hub), ellas full-duplex y cada puerto de un switch puede ser un sólo dominio de colisión (frente al único
+dominio de colisión que significa un hub) todo lo que redunda en un aumento notorio de la performance de
+la red implementada con switches en lugar de hubs. Por otro lado, la mejora en cuanto a seguridad está
+basada en que, en un switch funcionando en régimen, el tráfico sólo es enviado al puerto donde está
+conectada la máquina destino del mismo, lo que permite “ocultar” el dicho tráfico al resto de las máquinas
+conectadas al switch. También la implementación de VLANs puede ser una medida que colabore a la
+seguridad en una red switcheada.
+Pregunta 3 (10 puntos)
+Se debe realizar una topología (como la vista en las clases de teórico) que contenga los siguientes
+componentes:
+•
+HA: Home Agent
+
+un extremo del túnel
+•
+FA: Foreign Agent
+
+otro extremo del túnel
+•
+MN: Mobile Node
+
+nodo móvil que soporta IP Móvil
+•
+HA: Home Address
+
+Dirección IP del MN del rango perteneciente a la HN
+•
+CN: Correspondent Node
+
+Nodo cualquiera de Internet con el que el MN intercambia información
+
+===== [pag 4] =====
+
+•
+HN: Home Network
+
+Red hogar del MN y del HA
+•
+FN: Foreign Network
+
+Red visitada por el MN
+
+El FN puede ser HA para sus MN
+•
+Túnel
+
+Permite la redirección del tráfico destinado al MN pero que actualmente se
+encuentra en la FN. El tráfico es interceptado por el HA previamente.
+•
+CoA: Care of Address
+
+Dirección que identifica al MN en la FN y que es el extremo del tunel en la FN.
+
+CCoA (Collocated CoA)
+•
+Internet
+Pregunta 4 (7 puntos)
+El protocolo POP3 se basa en el intercambio de mensajes de control (orientados a texto) y transferencias
+de datos (con contenido arbitrario). El protocolo reserva la secuencia CRLF.CRLF para indicar el fin de
+mensaje. En caso que el mensaje contenga la misma secuencia como parte del mensaje se realiza el
+stuffing de la secuencia convirtiéndola en CRLF..CRLF
+Pregunta 5 (8 puntos)
+La utilización de TCP/IP para ofrecer servicios multimedia de tiempo real va en contra de los requerimientos
+clásicos del transporte isócrono. TCP ofrece entrega ordenada y retransmisión en caso de pérdidas, cuando
+la transmisión multimedia soporta mejor la pérdida de ráfagas de tráfico que el delay introducido por la
+retransmisión. Lo que permite la transmisión de tráfico de tiempo real sobre TCP es la combinación de un
+gran ancho de banda disponible y baja latencia en los servicios de comunicación actuales (permitiendo
+retransmisiones con un delay bajo, tolerable para el audio, por ejemplo). El otro factor que incide
+positivamente son las bajas tasas de pérdidas de servicios digitales domésticos (p.e. ADSL), que reduce a
+niveles aceptables la cantidad de retransmisiones por unidad de tiempo.
+Problema 1 (30 puntos)
+a) Solamente necesitamos modificar campos de capa 3. Cuando llega un paquete IP de un host externo,
+elegimos el servidor menos cargado y pisamos la IP de destino del paquete poniendo la IP del servidor
+elegido. Cuando un paquete viene de un servidor interno y va hacia fuera sólo es necesario pisar la IP de
+origen y poner la del router.
+No es necesario modificar los puertos de origen y destino de los paquetes, pero sí es necesario guardarlos
+en la tabla de NAT para poder enviar los datos de una misma conexión TCP siempre hacia el mismo
+servidor.
+b)
+struct NATRegister {
+ int32 srcIP;
+ int32 dstIP;
+ int16 srcPort;
+ int16 dstPort;
+ long timestamp;
+}
+Map<{int32, int16}, NATRegister> NATTable;
+// usamos una tabla indizada por el par {ip, puerto} de origen
+// tenemos las operaciones habituales para obtener, insertar y eliminar de la tabla
+Map<int32, int> cantidadConexiones;
+// esta tabla nos indica cuántas conexiones tenemos por cada servidor
+// contamos con una operación que nos devuelve la IP del servidor con la menor cantidad
+// además de las operaciones habituales de inserción, consulta y borrado
+
+===== [pag 5] =====
+
+c)
+void acceso() {
+ NATTable = new Map<{int32, int16}, NATRegister>();
+ cantidadConexiones = new Map<int32, int>();
+ while (true) {
+ PacketIP p = receiveFromNetwork();
+ cleanTimeoutRegisters();
+ if (p.srcIP in [IP_1, IP_2, IP_3]) {
+ // es un mensaje enviado por mis servidores, una respuesta
+ NATRegister reg = NATTable.get(p.dstIP, p.dstPort);
+ if (reg != null) reg.timestamp = now();
+ p.srcIP = IP_SERVICIO;
+ sendToNetwork(p);
+ } else {
+ // viene de afuera
+ NATRegister reg = NATTable.get(p.srcIP, p.srcPort);
+ if (reg == null) {
+ // es un flujo que no conocía, tengo que elegir un servidor
+ int32 srvIP = cantidadConexiones.findMinimum();
+ reg = new NATRegister();
+ reg.srcIP = p.srcIP;
+ reg.srcPort = p.srcPort;
+ reg.dstIP = srvIP;
+ reg.dstPort = PORT; // en realidad no es necesario recordar el puerto
+ // lo dejamos por completitud
+ NATTable.put({p.srcIP, p.srcPort}, reg);
+ }
+ reg.timestamp = now(); // refresh de la entrada en la tabla
+ p.dstIP = reg.srcIP;
+ sendToNetwork(p);
+ }
+ }
+}
+void cleanTimeoutRegisters() {
+ long maxTime = now() + TIMEOUT;
+ for each NATRegister reg in NATTable {
+ if (maxTime > reg.timestamp) {
+ NATTable.remove(reg);
+ cantidadConexiones[reg.dstIP]--;
+ }
+ }
+}
+
+===== [pag 6] =====
+
+Problema 2 (30 puntos)
+a)
+t=0
+t=1
+A
+COSTO A
+A
+COSTO A
+
+A
+B
+C
+D
+
+A
+B
+C
+D
+A
+0
+1
+1
+INF
+A
+0
+1
+1
+2
+DESDE
+B
+
+DESDE
+B
+1
+0
+1
+INF
+C
+
+C
+1
+1
+0
+1
+D
+
+D
+
+B
+COSTO A
+B
+COSTO A
+
+A
+B
+C
+D
+
+A
+B
+C
+D
+A
+
+A
+0
+1
+1
+INF
+DESDE
+B
+1
+0
+1
+INF
+DESDE
+B
+1
+0
+1
+2
+C
+
+C
+1
+1
+0
+1
+D
+
+D
+
+C
+COSTO A
+C
+COSTO A
+
+A
+B
+C
+D
+
+A
+B
+C
+D
+A
+
+A
+0
+1
+1
+INF
+DESDE
+B
+
+DESDE
+B
+1
+0
+1
+INF
+C
+1
+1
+0
+1
+C
+1
+1
+0
+1
+D
+
+D
+INF
+INF
+1
+0
+D
+COSTO A
+D
+COSTO A
+
+A
+B
+C
+D
+
+A
+B
+C
+D
+A
+
+A
+
+DESDE
+B
+
+DESDE
+B
+
+C
+
+C
+1
+1
+0
+1
+D
+INF
+INF
+1
+0
+D
+2
+2
+1
+0
+
+===== [pag 7] =====
+
+t=2
+t=3
+A
+COSTO A
+A
+COSTO A
+
+A
+B
+C
+D
+
+A
+B
+C
+D
+A
+0
+1
+1
+2
+A
+0
+1
+1
+2
+DESDE
+B
+1
+0
+1
+2
+DESDE
+B
+1
+0
+1
+2
+C
+1
+1
+0
+1
+C
+1
+1
+0
+1
+D
+INF
+INF
+1
+0
+D
+2
+2
+1
+0
+B
+COSTO A
+B
+COSTO A
+
+A
+B
+C
+D
+
+A
+B
+C
+D
+A
+0
+1
+1
+2
+A
+0
+1
+1
+2
+DESDE
+B
+1
+0
+1
+2
+DESDE
+B
+1
+0
+1
+2
+C
+1
+1
+0
+1
+C
+1
+1
+0
+1
+D
+INF
+INF
+1
+0
+D
+2
+2
+1
+0
+C
+COSTO A
+C
+COSTO A
+
+A
+B
+C
+D
+
+A
+B
+C
+D
+A
+0
+1
+1
+2
+A
+0
+1
+1
+2
+DESDE
+B
+1
+0
+1
+2
+DESDE
+B
+1
+0
+1
+2
+C
+1
+1
+0
+1
+C
+1
+1
+0
+1
+D
+2
+2
+1
+0
+D
+2
+2
+1
+0
+D
+COSTO A
+D
+COSTO A
+
+A
+B
+C
+D
+
+A
+B
+C
+D
+A
+0
+1
+1
+INF
+A
+0
+1
+1
+2
+DESDE
+B
+1
+0
+1
+INF
+DESDE
+B
+1
+0
+1
+2
+C
+1
+1
+0
+1
+C
+1
+1
+0
+1
+D
+2
+2
+1
+0
+D
+2
+2
+1
+0
+b) Tablas de forwarding
+A
+C
+DESTINO
+PRÓX. SALTO
+COSTO
+DESTINO
+PRÓX.
+SALTO
+COSTO
+B
+B
+1
+A
+A
+1
+C
+C
+1
+B
+B
+1
+D
+C
+2
+D
+D
+1
+B
+D
+DESTINO
+PRÓX. SALTO
+COSTO
+DESTINO
+PRÓX.
+SALTO
+COSTO
+A
+A
+1
+A
+C
+2
+C
+C
+1
+B
+C
+2
+D
+C
+2
+C
+C
+1
+c) Si se apaga el nodo D se produce un fenómeno de “conteo a infinito” en los nodos A y B. Ésto se debe a
+que cada uno dice saber llegar a C con cierta distancia (inicialmente 1) y en cada intercambio de tablas se
+va incrementando en cada nodo (A y B), potencialmente a infinito.

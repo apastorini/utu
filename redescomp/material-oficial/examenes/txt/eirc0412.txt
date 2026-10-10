@@ -1,0 +1,155 @@
+===== [pag 1] =====
+1/3
+Examen de Introducción a las Redes de Computadoras
+y Comunicación de Datos
+(ref: eirc0412.doc)
+21 de diciembre de 2004
+
+Atención: para todos los ejercicios, suponga que dispone de los tipos de datos básicos (p.ej. lista,
+cola, archivo, string, etc.) y sus funciones asociadas (ej: tail(lista), crear(archivo), concatenar(string, string).
+
+Ejercicio 1
+
+Se desea implementar un programa para determinar en una red TCP/IP, que puertos TCP y UDP se
+encuentran activos en un host, entendiendo por activo, que existe una aplicación corriendo sobre ellos. La
+idea es realizar la prueba desde otro host con acceso a través de la red.
+Para esto se cuenta con la siguiente información:
+•
+Si se desea iniciar una conexión con un puerto TCP que el host no tiene activo, el mismo contesta
+con un paquete que contiene la flag RST encendida.
+•
+Si se envía un datagrama UDP a un puerto que el host no tiene activo, se devuelve un paquete
+ICMP del tipo "ICMP Port Unreachable"
+
+Se pide:
+a) ¿Explique cómo resolvería el problema de conocer si un puerto UDP se encuentra activo?
+b) ¿Explique cómo resolvería el problema de conocer si un puerto TCP se encuentra activo? Indique
+los distintos paquetes y mensajes que intercambia el protocolo
+c) Implemente en un lenguaje de alto nivel el programa port_scan solicitado. El mismo recibirá como
+entrada una dirección IP, y finalizado devolverá los puertos TCP y UDP que tiene activos el equipo.
+d) Conociendo la existencia de programas como el implementado en la parte c), cuál es la mejor
+política configurable en un FireWall, entendiendo que los host se comportan como lo indica la letra.
+Ejercicio 2
+
+El protocolo SMTP que permite el envío de correo entre servidores de correo, y que atiende en el puerto
+conocido 25 de TCP, tiene las siguientes pasos:
+•
+Inicialmente el servidor se presenta
+•
+El cliente envía un comando mail from, que determina usuario origen del correo. Se puede enviar
+un solo comando de este tipo
+•
+El servidor contesta OK, en caso de ser correcto
+•
+El cliente envía un comando rcpt to, por cada usuario de correo destino del mismo.
+•
+El servidor contesta OK, en caso de ser un usuario conocido, y user unknown en caso del usuario
+no existir en el dominio.
+•
+El cliente envía el comando data, indicando que enviará el texto del correo.
+•
+El servidor contesta indicando la forma de finalizar el envío del correo.
+•
+El cliente envía el texto del correo, duplicando el carácter “.” cuando este aparece en el texto, y al
+finalizar envía una línea que contiene un carácter “.”
+•
+El servidor contesta OK
+•
+El cliente envía un comando quit para cortar la conexión.
+
+A continuación se transcribe una sesión SMTP de correo como ejemplo, donde las líneas que comienzan
+con S: son mensajes enviados por el servidor y las que comienzan con C: las envía el cliente.
+
+===== [pag 2] =====
+2/3
+S: 220 mta4.in.adinet.com.uy ESMTP Service (7.0.027) ready
+C: mail from:<origen@dominio.com.uy>
+S: 250 MAIL FROM:< origen@dominio.com.uy > OK
+C: rcpt to:<dest1@dominio.com.uy >
+S: 250 RCPT TO:<dest1@dominio.com.uy> OK
+C: rcpt to:<dest2@dominio.com.uy>
+S: 550 RCPT TO:<dest2@dominio.com.uy> User unknown
+C: data
+S: 354 Start mail input; end with <CRLF>.<CRLF>
+C: Subject: Hola a todos
+C:
+C: texto del correo...........s
+C:.
+S: 250 <40AB06AF005B39F9> Mail accepted
+C: quit
+S: 221 mta4.in.adinet.com.uy QUIT
+
+Se pide:
+a) Defina un procedimiento para dada una lista de usuarios, determinar cuales existen en el
+dominio de correo y cuales no. ¿Que utilidad puede tener este procedimiento para una persona
+con “malas intenciones”?
+
+b) Cada vez que el servidor contesta un “user unknown” el sistema genera una excepción
+indicando el usuario solicitado, y desde que dirección IP se realizó la conexión. Suponiendo
+que se cuenta además con una primitiva que bloquea/desbloquea el acceso al servidor desde
+una IP que se le pasa como parámetro:
+bloquea_acceso(IP)
+desbloquea_acceso(IP)
+Implementar una herramienta que permita evitar el robo de direcciones de correo.
+Ejercicio 3
+
+Se considera una LAN cuya capa enlace tiene las siguientes características: los equipos se encuentran
+conectados en un anillo, con dos enlaces a los nodos adyacentes.
+
+B
+F
+D
+C
+A
+E
+0
+1
+
+===== [pag 3] =====
+3/3
+Se cuenta con un frame con el siguiente formato:
+MAC origen
+(6 bytes)
+MAC destino
+(6 bytes)
+FRAME Type
+(2 bytes)
+TTL
+(1 byte)
+PAYLOAD
+(hasta 1500 bytes)
+
+Se pide:
+a) Implemente un protocolo de descubrimiento del anillo (que deberá ejecutar en cada nodo). El
+resultado debe ser expresado en una tabla con el siguiente formato, tomando como ejemplo el
+nodo “A”:
+
+MAC
+Puerto
+Distancia
+D
+0
+3
+D
+1
+3
+B
+0
+1
+B
+1
+5
+....
+....
+....
+
+Tener en cuenta que pueden haber fallos en los enlaces y que el anillo puede estar “abierto”
+entre algún par de nodos. Observar también que cada nodo tiene solamente dos puertos y que
+para cada destino pueden haber dos caminos.
+
+b) ¿Cuánto demora su protocolo en descubrir completamente el anillo? Justifique. Suponga que
+los enlaces son todos de 1.0 Mbps y que cada nodo agrega un retardo de procesamiento
+constante de 10 mseg. Suponga que el anillo esta “cerrado” (sin fallas).
+
+c) ¿Cuánto demora su protocolo en detectar que el anillo esta abierto? Justifique. Suponga que el
+anillo esta formado por N=20 nodos.

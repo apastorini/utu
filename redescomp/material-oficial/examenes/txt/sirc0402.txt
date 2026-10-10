@@ -1,0 +1,165 @@
+===== [pag 1] =====
+1/7
+Examen de Introducción a las Redes de Computadoras
+y Comunicación de Datos
+(ref: sirc0402.doc)
+2 de febrero de 2004
+
+Atención: para todos los ejercicios, suponga que dispone de los tipos de datos básicos (p.ej. lista,
+cola, archivo, string, etc.) y sus funciones asociadas (ej: tail(lista), crear(archivo), concatenar(string, string).
+Ejercicio 1
+Se dispone de un equipo con dos tarjetas de red, que se desean conectar a la misma LAN (TCP/IP sobre
+ethernet), y se busca lograr que en todo momento se encuentre una activa (teniendo una opción de
+respaldo). En caso de falla en la tarjeta activa, se debe migrar la conectividad a la tarjeta que se encontraba
+en standby (tarjeta no activa).
+
+Se podrá suponer:
+•
+Las tarjetas pueden atender más de una dirección IP, pero se busca que el equipo atienda con
+respaldo, una única dirección IP.
+
+•
+Se deben considerar fallas que puedan ocurrir ya sea en la tarjeta de red, así como el cable que
+conecta al switch/hub, o una puerta del switch/hub.
+
+•
+Se puede suponer que existe un equipo, el cual contesta los requerimientos de ping (echo request de
+ICMP), con el fin de probar la conectividad.
+
+Se pide:
+a) Especifique las funciones requeridas para configurar las tarjetas disponibles en el equipo, y cómo
+configuraría las mismas.
+
+b) Especificar en un lenguaje de alto nivel un procedimiento que permita tener un enlace redundante,
+el que automáticamente migre en caso de fallas.
+
+a)
+Debo definir funciones para setear las direcciónes IP a las tarjetas que se están utilzando. Para esto
+utilizo las siguientes funciones:
+Function asigno(tarjeta,IP) , función que agrega a las IP’s que se encuentre atendiendo la tarjeta
+tarjeta otra más definida en IP.
+
+Function desasigno(tarjeta,IP) , función que quita a las IP’s que se encuentre atendiendo la tarjeta
+tarjeta la IPdefinida en IP.
+
+Para la solución del problema utilizaré las siguientes direcciónes IP:
+IP_eth0, dirección utilizada para el testeo de la tarjeta eth0
+IP_eth1, dirección utilizada para el testeo de la tarjeta eth1
+def_gw, dirección definida en la letra con el fin de probar conectividad.
+
+b)
+La solución planteada, supone que se realiza desde las dos tarjetas (a través de la IP para testeo de
+cada tarjeta), un ping (echo_req, con respuesta echo_resp), y si no se reciben CMAX respuestas
+
+===== [pag 2] =====
+2/7
+(CMAX configurable, pero mayor que 1) se baja el servicio de la tarjeta que se encuentra activa y se
+traslada a la otra.
+
+===== [pag 3] =====
+3/7
+
+===== [pag 4] =====
+4/7
+
+===== [pag 5] =====
+5/7
+
+Ejercicio 2
+Se considera un juego similar al fútbol, donde los jugadores son robots. Se han instalado equipos
+computadores en cada uno de los jugadores, en la pelota, y en cada una de las cuatro esquinas de la
+cancha (estos cuatro últimos son fijos, los otros son móviles). Todos los equipos tienen la capacidad de
+comunicarse entre sí, en forma inalámbrica (mediante antenas no direccionales), compartiendo un único
+canal de radio, utilizando el protocolo Aloha.
+
+Se pide:
+a) Especificar, en un lenguaje de alto nivel, un protocolo a ser cumplido por cada uno de los jugadores y
+por cada uno de los equipos ubicados en las esquinas, que permitan, a cada jugador, determinar su
+posición en la cancha. Se asume que ésta es una superficie plana, y que el tamaño de los elementos
+que intervienen es despreciable.
+
+b) Indicar si es posible ampliar el protocolo (y las entidades que lo ejecutan) para que un jugador pueda
+conocer la posición de la pelota. En caso afirmativo, indique cómo.
+
+c) Indicar si es posible que los jugadores de un bando conozcan las posiciones de los otros jugadores del
+mismo bando. ¿Ayudaría utilizar técnicas de encriptado?
+
+d) Indicar si es posible que los jugadores de un bando conozcan las posiciones de los jugadores del otro
+bando. En caso afirmativo, indique cómo.
+
+===== [pag 6] =====
+6/7
+
+Ejercicio 3
+La figura muestra cuatro redes Ethernet interconectadas a través de cinco routers. La máscara de subred
+en todas ellas es la de una clase C (255.255.255.0). Al lado de cada interfaz de red aparece la dirección IP
+que tiene asignada.
+
+Se pide:
+a) Las tablas de R1, R2, R4 y R5 plantean problemas de conectividad, independientemente de la tabla de
+R3. Explique cuáles son, y cómo resolverlos. No pueden modificarse las tablas de A, B, C ni D. Se
+valorará efectuar el menor número de cambios necesarios en las tablas restantes.
+
+b) Indicar una tabla de R3 lo más pequeña posible, que permita mantener una conexión TCP entre A y D.
+No puede modificarse ninguna otra tabla.
+
+c) Explique detalladamente si la siguiente trama puede aparecer en la red de la figura. En caso afirmativo,
+indica en qué subredes puede aparecer.
+
+Eth. Destino
+Eth. Origen
+Protocolo Dirección IP
+FF:FF:FF:FF:FF:FF Dir.Eth. de A ARP
+¿212.128.4.10?
+
+d) Explique detalladamente si la siguiente trama puede aparecer en la red de la figura. En caso afirmativo,
+indica en qué subredes puede aparecer.
+
+Eth. Destino
+Eth. Origen
+Protocolo IP Origen
+IP Destino
+Dir.Eth. de R5 Dir.Eth. de R2 IP
+212.128.4.10
+212.128.2.10
+
+===== [pag 7] =====
+7/7
+
+a) Los problemas de conectividad que se plantean son:
+o A no puede comunicarse con C, pues los paquetes que le envíe irán primero a R1 (según la
+entrada por defecto de A), luego a R4 (según la entrada para la red 212.128.3.0 de R1),
+luego otra vez a R1 (según la entrada por defecto de R4), entrando en un ciclo entre R1 y
+R4 del que no salen nunca (los paquetes terminarían siendo descartados al llegar su TTL a
+cero).
+o B no puede comunicarse con C, pues los paquetes que le envíe irán primero a R4 (según la
+entrada por defecto de B), luego a R1 (según la entrada por defecto de R4), luego otra vez
+a R4 (según la entrada para la red 212.128.3.0 de R1), entrando en un ciclo entre R1 y R4
+del que no salen nunca (los paquetes terminarían siendo descartados al llegar su TTL a
+cero).
+o C no puede comunicarse con B, pues los paquetes que le envíe irán primero a R2 (según la
+entrada por defecto de C), luego a R5 (según la entrada para la red 212.128.2.0 de R2),
+luego otra vez a R2 (según la entrada por defecto de R5), entrando en un ciclo entre R2 y
+R5 del que no salen nunca (los paquetes terminarían siendo descartados al llegar su TTL a
+cero).
+o D no puede comunicarse con B, pues los paquetes que le envíe irán primero a R5 (según la
+entrada por defecto de D), luego a R2 (según la entrada por defecto de R5), luego otra vez
+a R5 (según la entrada para la red 212.128.2.0 de R2), entrando en un ciclo entre R2 y R5
+del que no salen nunca (los paquetes terminarían siendo descartados al llegar su TTL a
+cero).
+Una posible solución (hay más) es eliminar la entrada para la red 212.128.3.0 de R1, y la entrada
+para la red 212.128.2.0 de R5. Ahora los paquetes que atraviesen esos encaminadores con destino
+esas redes seguirán la ruta por defecto, que no presenta problemas.
+b) Para que A y D puedan mantener una conexión TCP es necesario que A pueda enviar datagramas a D,
+y que D pueda enviar datagramas a A. Para que se cumplan ambas cosas, es necesario que la tabla de
+R3 tenga al menos estas dos entradas no triviales (hay otras soluciones):
+
+212.128.4.0 212.128.7.2
+212.128.1.0 212.128.5.1
+c) Este frame es una solicitud de ARP que envía la máquina A preguntado por la dirección Ethernet de D.
+Al estar D en una subred diferente a A, es imposible que se genere en la red de la figura.
+d) Dicho frame es un datagrama IP con origen en D y destino en B, contenido en una frame Ethernet con
+origen en R2 y destino R5. Según las tablas de encaminamiento de la figura, cuando D envía un
+datagrama IP a B irá primero a R5, y luego a R2, que lo pasará de nuevo a R5. En ese momento se
+generará el frame por el que se pregunta, y es en la subred 212.128.3.0 en la única en la que puede
+aparecer.

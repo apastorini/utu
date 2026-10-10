@@ -1,0 +1,1340 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 10 — DNS: la base de datos distribuida</h1>
+<p><strong>Bloque:</strong> B (Aplicación) · <strong>Semana:</strong> 4 · <strong>Duración estimada:</strong> 110 min
+<strong>Correlativa:</strong> Clase 9 (HTTP a fondo) · <strong>Sigue con:</strong> Clase 11 (DNS: iterativo vs. recursivo, caché y TTL)
+<strong>Material de referencia:</strong> Tanenbaum cap. 7 (§7.4) · RFC 1034, RFC 1035, RFC 4033-4035, RFC 5155, RFC 6891, RFC 8659, RFC 9460</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Explicar <strong>por qué existe</strong> el DNS y por qué no puede resolverse con un archivo central ni con una tabla plana en cada host.</li>
+<li>Explicar por qué el DNS es <strong>dos cosas a la vez</strong> (espacio de nombres jerárquico y base de datos distribuida) y por qué el espacio se resuelve <strong>de derecha a izquierda</strong>.</li>
+<li>Dibujar la <strong>jerarquía</strong> y decir <strong>qué sabe cada tipo de servidor</strong>: el root, el TLD, el autoritativo y el local.</li>
+<li>Explicar cómo funciona la <strong>delegación</strong> con registros <code>NS</code> y <strong><code>glue</code></strong>, y por qué existe la <strong>paradoja del bootstrap</strong>.</li>
+<li>Escribir un <strong>Resource Record</strong> completo con sus <strong>cinco campos</strong>, y decir qué tamaño tiene cada uno.</li>
+<li>Distinguir los <strong>tipos de RR</strong> que hay que saber (<code>A</code>, <code>AAAA</code>, <code>NS</code>, <code>CNAME</code>, <code>MX</code>, <code>SOA</code>, <code>PTR</code>, <code>TXT</code>, <code>SRV</code>, <code>CAA</code>) diciendo qué resuelve cada uno.</li>
+<li>Resolver completo el <strong>Examen 2010-02 Pregunta 1a</strong> (qué es DNS y su función, 8 puntos).</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2010-02 P1</code> (8 puntos — ★ qué es el DNS y su función), <code>2010-12 P1a</code> (8 puntos — el RR y sus cinco campos, que es el otro punto de esta clase), <code>2007-07 P4</code> (función del DNS y protocolo involucrado).</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 El problema que resuelve el DNS</h2>
+<p>Los humanos no memoramos direcciones IP. No es que no podamos: es que <strong>una dirección IP no significa nada para una persona</strong>. <code>132.42.120.5</code> no te dice quién es, no te dice qué organización lo administra, no te dice si el servidor está encendido, y no te sirve de nada si mañana lo mueven de datacenter. En cambio <code>www.fing.edu.uy</code> te dice todo eso de un vistazo.</p>
+<p>El DNS es la capa que hace esa traducción:</p>
+<div class="codehilite"><pre><span></span><code>   ┌─ EL HUMANO piensa ─────────────────────────────────────────────────┐
+   │  "quiero ver la página de la Facultad de Ingeniería"              │
+   │                         │                                          │
+   │                         │  ¿cómo se llama eso?  www.fing.edu.uy      │
+   └─────────────────────────┼──────────────────────────────────────────┘
+                             │
+   ┌─ LA MÁQUINA piensa ────▼──────────────────────────────────────────┐
+   │  "necesito mandar un paquete a una dirección IP"                   │
+   │                         │                                          │
+   │                         │  ¿cuál es?  132.42.120.5                  │
+   └─────────────────────────┼──────────────────────────────────────────┘
+                             │
+                             ▼
+   ┌───────────────────────────────────────────────────────────────────┐
+   │  DNS = la traducción de NOMBRES a DIRECCIONES                     │
+   └───────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>La objeción obvia</strong>: ¿no podría ser un archivo de texto con todas las correspondencias, copiado a cada máquina? No, y hay <strong>tres razones independientes</strong> que lo impiden. Cada una basta sola.</p>
+<h3>Razón 1 — La escala: la tabla no entra</h3>
+<p>Un archivo central tendría que contener <strong>una entrada por cada host de Internet</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   En 2011 (el curso):   ~2.000 millones de hosts
+   En 2026:              ~5.000 millones de hosts      (verificar en vivo)
+
+   Cada entrada necesita, mínimo:
+     nombre (promedio 15 bytes) + IP (4 bytes) + tipo (2) + TTL (4)
+     ≈ 25 bytes mínimo, y en la práctica 60-80 con las líneas completas
+
+   5.000 millones × 60 bytes = 300.000.000 bytes = 300 MB POR CADA MÁQUINA
+</code></pre></div>
+
+<p>Y encima hay que <strong>actualizarlo</strong>: si un host aparece, el archivo tiene que volver a distribuirse. Un archivo de 300 MB que se actualiza constantemente es imposible de mantener.</p>
+<h3>Razón 2 — El punto único de falla</h3>
+<div class="codehilite"><pre><span></span><code>   ┌───────────────┐
+   │  ARCHIVO      │◀── todos los hosts del mundo lo consultan
+   │  CENTRAL      │
+   └───────────────┘
+         │
+     si se cae  ──▶  TODO Internet deja de resolver nombres
+
+     si alguien lo compromete ──▶  puede REDIRIGIR cualquier nombre
+                                  a cualquier IP  (phishing perfecto)
+</code></pre></div>
+
+<p>Un archivo central es un <strong>punto único de falla</strong> (si cae, cae todo) y un <strong>punto único de compromiso</strong> (si lo hackean, controlás la resolución de todo Internet). Las dos cosas son inaceptables.</p>
+<h3>Razón 3 — El mantenimiento</h3>
+<p>Hay que responder <strong>quién</strong> autorizó a registrar cada nombre. Un archivo central no tiene forma de saber si <code>fing.edu.uy</code> le pertenece a la Universidad o a un impostor.</p>
+<p><strong>La solución del DNS ataca las tres:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Problema</th>
+<th>Solución del DNS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Escala</strong> (300 MB por host)</td>
+<td><strong>distribución</strong>: cada servidor guarda solo la porción que le toca, y los nombres están <strong>particionados</strong> por dominio</td>
+</tr>
+<tr>
+<td><strong>Punto único de falla</strong></td>
+<td><strong>replicación y jerarquía</strong>: los servidores root están replicados; cada zona tiene varios servidores autoritativos</td>
+</tr>
+<tr>
+<td><strong>Mantenimiento</strong></td>
+<td><strong>delegación</strong>: cada zona delega la zona siguiente a una autoridad identificada, y esa autoridad es la que valida</td>
+</tr>
+</tbody>
+</table>
+<h2>1.2 El DNS son dos cosas a la vez</h2>
+<p>Esta es la idea central de la clase y lo que el examen 2010-02 P1 pide exactamente:</p>
+<div class="codehilite"><pre><span></span><code>   ╔═══════════════════════════════════════════════════════════════════╗
+   ║  EL DNS ES DOS COSAS A LA VEZ:                                   ║
+   ║                                                                   ║
+   ║  (a) UN ESPACIO DE NOMBRES JERÁRQUICO                            ║
+   ║      → la estructura de los NOMBRES: cómo se nombran las cosas    ║
+   ║      y cómo se reparte la autoridad sobre ellos                   ║
+   ║                                                                   ║
+   ║  (b) UNA BASE DE DATOS DISTRIBUIDA                              ║
+   ║      → el contenido: qué nombre corresponde a qué dirección      ║
+   ║      y cómo se consulta esa correspondencia                       ║
+   ╚═══════════════════════════════════════════════════════════════════╝
+</code></pre></div>
+
+<p><strong>Y son dos cosas distintas con dos respuestas distintas.</strong> La primera es la que te dice <strong>a quién preguntarle</strong>; la segunda es la que te dice <strong>qué preguntar</strong>. El <code>2010-02 P1</code> lo dice literal en su solución oficial: <em>"protocolo de capa de aplicación que permite realizar la traducción de nombres de hosts a direcciones IP. También se denomina DNS a la base de datos jerárquica distribuida que almacena los mapeos entre nombres y direcciones IP"</em>.</p>
+<h3>(a) El espacio de nombres: jerárquico y de derecha a izquierda</h3>
+<p>El nombre completo de un host es una <strong>etiqueta jerárquica separada por puntos</strong>, con un punto implícito al final:</p>
+<div class="codehilite"><pre><span></span><code>   www  .  fing  .  edu  .  uy  .
+    │     │      │     │     │
+    │     │      │     │     └── TLD (Top-Level Domain): Uruguay
+    │     │      │     └──────── nombre de dominio de segundo nivel
+    │     │      └────────────── dominio de la institución
+    │     └───────────────────── subdominio
+    └─────────────────────────── host
+                                   ↑
+                              el punto final implícito
+                              = la RAÍZ del espacio de nombres
+</code></pre></div>
+
+<p><strong>Se resuelve de derecha a izquierda</strong>, y esto es contraintuitivo para un lector de español, donde leemos de izquierda a derecha. La razón es histórica y es la estructura de la autoridad:</p>
+<div class="codehilite"><pre><span></span><code>   Lee así:  www.fing.edu.uy  →  ¿.uy?  ¿.edu?  ¿fing.edu.uy?  ¿www.fing.edu.uy?
+
+   ┌────────────────────────────────────────────────────────────────┐
+   │ 1. ¿Quién administra el TLD .uy ?      →  root lo sabe          │
+   │ 2. ¿Quién administra el .edu de Uruguay? → el .uy lo sabe       │
+   │ 3. ¿Quién administra fing.edu.uy ?      → el .edu lo sabe        │
+   │ 4. ¿Qué IP tiene www.fing.edu.uy ?     → el autoritativo sabe   │
+   └────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>Por qué de derecha a izquierda y no al revés:</strong> la <strong>autoridad va de arriba hacia abajo</strong>. El root sabe qué TLDs existen; el TLD sabe qué dominios de segundo nivel hay debajo; el autoritativo del dominio sabe qué hosts hay. Cada nivel <strong>solo conoce un nivel hacia abajo</strong>, y por eso el árbol tiene que recorrerse desde la raíz, que es el único que sabe dónde empieza todo. Si el nombre se recorriera de izquierda a derecha, el primer nivel («qué hay bajo <code>www</code>?») no lo sabe nadie: <code>www</code> no es una zona.</p>
+<p><strong>Y <code>uy</code> a la derecha de <code>edu</code> significa que <code>edu</code> es de Uruguay, no el <code>edu</code> de Estados Unidos.</strong> Los TLD countries están estructurados así: <code>fing.edu.uy</code> (Uruguay) y <code>mit.edu</code> (Estados Unidos) son dos ramas distintas de <code>.edu</code>. Esta estructura es la que hace posible la <strong>delegación por país sin cambiar la infraestructura global</strong>.</p>
+<h2>1.3 Los tipos de servidores, con su rol exacto</h2>
+<div class="codehilite"><pre><span></span><code>                              ┌──────────────────┐
+                              │   ROOT SERVER    │  a. … m.
+                              │  "yo sé quién    │
+                              │   administra .uy"│
+                              └────────┬─────────┘
+                                       │
+                       ┌───────────────┼───────────────┐
+                       ▼               ▼               ▼
+                ┌────────────┐ ┌────────────┐ ┌────────────┐
+                │ .uy (TLD)  │ │ .com (TLD) │ │ .edu (TLD) │
+                │ "yo sé quién│ │            │ │            │
+                │ administra  │ │            │ │            │
+                │ fing.edu.uy"│ │            │ │            │
+                └──────┬─────┘ └──────┬─────┘ └──────┬─────┘
+                       │              │              │
+                       ▼              ▼              ▼
+                ┌────────────┐ ┌────────────┐ ┌────────────┐
+                │ AUTORIT.   │ │ AUTORIT.   │ │ AUTORIT.   │
+                │ fing.edu.uy │ │ google.com │ │ mit.edu    │
+                │ "SÍ sé la  │ │            │ │            │
+                │  IP de     │ │            │ │            │
+                │  www"      │ │            │ │            │
+                └──────┬─────┘ └────────────┘ └────────────┘
+                       │
+                       ▼
+              ┌──────────────────┐    ┌──────────────────┐
+              │  SERVIDOR LOCAL  │◀──▶│  TU PC (stub)    │
+              │  (el del ISP)    │    │  (el de tu SO)   │
+              └──────────────────┘    └──────────────────┘
+</code></pre></div>
+
+<h3>Root server: <strong>13 identidades lógicas, replicadas por anycast</strong></h3>
+<table>
+<thead>
+<tr>
+<th>Dato</th>
+<th>Detalle</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Cuántos hay</strong></td>
+<td><strong>13 identidades lógicas</strong>, nombradas de <code>a</code> a <code>m</code>: <code>a.root-servers.net</code> … <code>m.root-servers.net</code></td>
+</tr>
+<tr>
+<td><strong>Cuántas máquinas</strong></td>
+<td><strong>cientos</strong>: cada identidad se opera en <strong>cualquiercast</strong>, así que hay una IP pública igual en todo el mundo</td>
+</tr>
+<tr>
+<td><strong>Cuántas IPv4 por identidad</strong></td>
+<td><strong>cuatro</strong> direcciones IPv4 por identidad, por <em>anycast</em></td>
+</tr>
+<tr>
+<td><strong>Operación</strong></td>
+<td>los root servers los financian los operadores de la red (los <em>NIC</em>), con cable submarino; no hay un actor comercial detrás</td>
+</tr>
+<tr>
+<td><strong>Qué SÍ saben</strong></td>
+<td>la lista de los <strong>TLD</strong> y cuál es la dirección IP de cada servidor TLD</td>
+</tr>
+<tr>
+<td><strong>Qué NO saben</strong></td>
+<td><strong>no conocen los dominios</strong>. Jamás supieron qué es <code>fing.edu.uy</code>.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>El punto que más se confunde y más se pregunta:</strong> el root <strong>no resuelve nombres de dominio</strong>. Solo tiene una tabla plana y pequeña de unos 1500 TLDs. Si le preguntás por <code>www.fing.edu.uy</code>, te contesta «no sé, pero el <code>.uy</code> está en <code>X.Y.W.Z</code>».</p>
+</blockquote>
+<p><strong>Por qué 13.</strong> El número original (1987) fue un capricho del DARPA, y hoy está congelado porque el <em>root zone</em> está firmado digitalmente: hay que coordinarse con los operadores de los 13 para cambiar <strong>cualquier</strong> registro de la zona raíz. <strong>El número es un artefacto histórico, no una decisión de diseño</strong>, y es un buen ejemplo de <em>protocolos que no se pueden cambiar</em>.</p>
+<h3>TLD server: el <code>.uy</code>, el <code>.com</code>, el <code>.edu</code></h3>
+<table>
+<thead>
+<tr>
+<th>Dato</th>
+<th>Detalle</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Qué es</strong></td>
+<td>un dominio (<code>uy</code>, <code>com</code>, <code>edu</code>, <code>org</code>, <code>ar</code>, <code>io</code>…)</td>
+</tr>
+<tr>
+<td><strong>Qué SÍ sabe</strong></td>
+<td>los <strong>registros <code>NS</code></strong> de los dominios de segundo nivel bajo él. Del TLD <code>.uy</code> sabe quién administra <code>fing.edu.uy</code>.</td>
+</tr>
+<tr>
+<td><strong>Qué NO sabe</strong></td>
+<td><strong>tampoco conoce los dominios</strong>, ni mucho menos sus IPs. Jamás supo qué es <code>www.fing.edu.uy</code>.</td>
+</tr>
+<tr>
+<td><strong>Quién lo opera</strong></td>
+<td>los <em>registries</em>: NIC Uruguay para <code>.uy</code>, Verisign para <code>.com</code>, ICANN para <code>xxx</code>.</td>
+</tr>
+<tr>
+<td><strong>Cuántos</strong></td>
+<td>cientos por TLD, y casi todos los <strong>gTLD</strong> son «genéricos» (<code>.com</code>, <code>.org</code>, <code>.info</code>…), o sea los que no son de un país</td>
+</tr>
+</tbody>
+</table>
+<h3>Servidor autoritativo: el que sí sabe</h3>
+<p>Es el <strong>dueño de la información</strong>. Preguntale a <code>ns1.fing.edu.uy</code> y te contesta la IP de <code>www.fing.edu.uy</code> con total seguridad.</p>
+<table>
+<thead>
+<tr>
+<th>Dato</th>
+<th>Detalle</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Qué es</strong></td>
+<td>el servidor del dominio: <code>ns1.fing.edu.uy</code>, <code>ns2.fing.edu.uy</code></td>
+</tr>
+<tr>
+<td><strong>Qué sabe</strong></td>
+<td><strong>TODOS los RRs de su zona</strong>: A, AAAA, MX, TXT, CNAME, SRV…</td>
+</tr>
+<tr>
+<td><strong>Es la fuente de verdad</strong></td>
+<td>sí. Si el autoritativo dice <code>X</code>, <code>X</code> es. Todos los demás son copias.</td>
+</tr>
+<tr>
+<td><strong>Cuántos hay</strong></td>
+<td>mínimo 2 por zona, si posible en <strong>redes distintas</strong> y en <strong>ciudades distintas</strong></td>
+</tr>
+<tr>
+<td><strong>Quién lo pone</strong></td>
+<td>el administrador del dominio</td>
+</tr>
+</tbody>
+</table>
+<h3>Servidor de nombres local: recursivo, y el stub resolver del host</h3>
+<p>Acá está el punto donde la cátedra más hace líos, así que hay que separar <strong>dos cosas muy distintas</strong> que a veces se confunden:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Stub resolver</strong> (el de tu PC)</th>
+<th><strong>Servidor de nombres local / recursivo</strong> (el del ISP)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Qué es</strong></td>
+<td>una biblioteca diminuta dentro del <strong>sistema operativo</strong></td>
+<td>un programa <code>named</code> o <code>dnsmasq</code> en el servidor del ISP o del router</td>
+</tr>
+<tr>
+<td><strong>Dónde está</strong></td>
+<td>en <strong>tu PC</strong></td>
+<td>en la <strong>red</strong>: la red de tu ISP, o el router de tu casa</td>
+</tr>
+<tr>
+<td><strong>Qué sabe</strong></td>
+<td><strong>nada</strong>. No mantiene caché propia (aunque Windows sí guarda un archivo local, <code>dnsapi.dll</code>).</td>
+<td><strong>mantiene caché</strong> de todo lo que resolvió, con TTL</td>
+</tr>
+<tr>
+<td><strong>Qué hace</strong></td>
+<td>agarra el nombre y se lo <strong>manda al recursivo</strong></td>
+<td><strong>pregunta a root, TLD y autoritativo</strong> y <strong>cachea</strong></td>
+</tr>
+<tr>
+<td><strong>Consume CPU del host</strong></td>
+<td>casi nada</td>
+<td>todo el trabajo</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Mnemotecnia:</strong> <em>stub</em> significa «trozo», «pieza mínima». <em>Resolver</em> es «resolver», el que resuelve. El stub <strong>no resuelve</strong>: <strong>pregunta</strong>. El recursivo <strong>resuelve</strong>: <strong>pregunta por vos</strong>.</p>
+</blockquote>
+<h2>1.4 Delegación: <code>NS</code> y <code>glue records</code></h2>
+<p>La delegación es el mecanismo por el que <strong>el root delega <code>.uy</code>, y <code>.uy</code> delega <code>fing.edu.uy</code></strong>. No es un aviso verbal: es un <strong>registro</strong> en la base de datos del nivel superior.</p>
+<h3>El mecanismo: un registro <code>NS</code> en el nivel superior</h3>
+<div class="codehilite"><pre><span></span><code>   En la zona del TLD .uy hay:
+
+   $ORIGIN uy.
+   uy.        3600  IN  NS  a.nic.uy.
+   uy.        3600  IN  NS  b.nic.uy.
+
+   En la zona de fing.edu.uy hay:
+
+   $ORIGIN fing.edu.uy.
+   fing.edu.uy.    3600  IN  NS  ns1.fing.edu.uy.
+   fing.edu.uy.    3600  IN  NS  ns2.fing.edu.uy.
+   www       A     3600  IN  A   132.42.120.5
+</code></pre></div>
+
+<p>Cuando le preguntás al root por <code>www.fing.edu.uy</code>, el root no tiene el <code>A</code>, pero <strong>sí tiene el <code>NS</code> de <code>uy</code></strong>. Te lo pasa como <strong>referencia</strong> («buscale al <code>.uy</code>») y con eso te ahorró el trabajo de preguntar.</p>
+<h3>La paradoja del bootstrap: por qué existen los <em>glue records</em></h3>
+<p>Y acá aparece el problema elegante que hay que explicar bien:</p>
+<div class="codehilite"><pre><span></span><code>   El .uy te dice:  "el autoritativo de fing.edu.uy es ns1.fing.edu.uy"
+   ↑
+   ¡PERO para preguntarle a ns1.fing.edu.uy
+     NECESITO SU DIRECCIÓN IP!
+   Y esa IP es... ¡otro nombre que hay que resolver!
+</code></pre></div>
+
+<p><strong>Esto es un círculo</strong>: para resolver un nombre (el del servidor autoritativo) hay que resolver un nombre (el que te dijeron). La solución se llama <strong>bootstrap</strong>, y el truco es guardarse el resultado en el mismo lugar de donde lo obtuviste.</p>
+<div class="codehilite"><pre><span></span><code>   En la zona del TLD .uy, ADEMÁS del NS, están los GLUE RECORDS:
+
+   $ORIGIN uy.
+   uy.        3600  IN  NS  a.nic.uy.
+   ...
+   ns1.fing.edu.uy.  3600  IN  A   132.42.60.1    ◀── GLUE
+   ns2.fing.edu.uy.  3600  IN  A   132.42.60.2    ◀── GLUE
+</code></pre></div>
+
+<p><strong>El <code>glue record</code> es un registro <code>A</code> (o <code>AAAA</code>) con el nombre del servidor de nombres, guardado en el servidor del nivel superior.</strong> Y es <strong>redundante</strong>, y esa redundancia es intencional: el mismo registro <code>A</code> para <code>ns1.fing.edu.uy</code> existe <strong>también</strong> en la zona <code>fing.edu.uy</code>, que es donde le corresponde. El problema es que <strong>para llegar a esa zona hay que pasar por el glue</strong>, así que el glue tiene que estar en el nivel superior.</p>
+<blockquote>
+<p><strong>La regla que hay que memorizar:</strong> el <em>glue</em> es <strong>obligatorio</strong> solo para los nombres de servidor que están <strong>dentro de la zona delegada</strong>. Para un servidor de nombres <strong>fuera</strong> del dominio (<code>ns1.otroproveedor.com</code>), <strong>no hay glue</strong>, porque su nombre se resuelve por el camino normal, con otro nivel de por medio.</p>
+</blockquote>
+<p><strong>Los problemas operativos del glue, que son los que aparecen en la práctica:</strong></p>
+<ol>
+<li><strong>Desincronización.</strong> El <code>glue</code> dice <code>132.42.60.1</code>, pero el autoritativo cambió a <code>132.42.60.9</code>. El glue está <strong>desactualizado</strong> y toda resolución de <code>fing.edu.uy</code> falla hasta que el TTL del glue venza. Es la causa número uno de «mi dominio dejó de funcionar después de un cambio».</li>
+<li><strong>Servidores que se caen.</strong> Si <code>ns1.fing.edu.uy</code> baja, todo el dominio baja: los clientes prueban <code>ns2</code>, pero la resolución del <em>nombre</em> <code>ns2.fing.edu.uy</code> necesita el glue, que tiene el mismo TTL.</li>
+<li><strong>La respuesta mínima.</strong> Algunos resolvers de producción devuelven solo los registros <strong>de la zona que se consultó</strong> y <strong>no</strong> los <em>glue</em>, obligando a un segundo viaje.</li>
+</ol>
+<h2>1.5 El Resource Record: la unidad de información</h2>
+<p>Todo lo que el DNS sabe son <strong>Resource Records</strong> (<em>RR</em>, registros de recurso). Un RR es una <strong>línea</strong> de la base de datos, y tiene <strong>cinco campos</strong>:</p>
+<div class="codehilite"><pre><span></span><code>   nombre              clase   tipo    TTL      datos
+   fing.edu.uy.        IN      A       3600     132.42.120.5
+   ----------------    -----   ----    -----    ------------------
+   nombre             2 bytes  2 bytes 4 bytes  variable
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Campo</th>
+<th>Tamaño</th>
+<th>Qué es</th>
+<th>Ejemplo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Nombre</strong> (<em>name</em>)</td>
+<td>1 byte por etiqueta + 1 byte de longitud</td>
+<td>el nombre del recurso, <strong>en forma absoluta</strong>: siempre termina en punto</td>
+<td><code>fing.edu.uy.</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Clase</strong> (<em>class</em>)</td>
+<td>2 bytes</td>
+<td>casi siempre <code>IN</code> (<em>Internet</em>). Existen <code>CH</code> (CHAOS, para el <code>version.bind</code>) y <code>HS</code> (obsoleto)</td>
+<td><code>IN</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Tipo</strong> (<em>type</em>)</td>
+<td>2 bytes</td>
+<td>qué clase de dato es</td>
+<td><code>A</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>TTL</strong> (<em>time to live</em>)</td>
+<td>4 bytes</td>
+<td>segundos que el registro se puede cachear</td>
+<td><code>3600</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Datos</strong> (<em>rdata</em>)</td>
+<td><strong>variable</strong></td>
+<td>el valor, y <strong>su formato depende del tipo</strong></td>
+<td><code>132.42.120.5</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Tres cosas que hay que entender de los nombres, porque son las trampas del examen:</strong></p>
+<ol>
+<li><strong>El punto final es obligatorio</strong> en la forma canónica. <code>fing.edu.uy</code> y <code>fing.edu.uy.</code> son <strong>el mismo nombre</strong>: el último punto es implícito.</li>
+<li><strong>Las etiquetas se cuentan de derecha a izquierda.</strong> El nombre <code>fing.edu.uy</code> tiene <strong>3 etiquetas</strong>; <code>www.fing.edu.uy</code> tiene <strong>4</strong>.</li>
+<li><strong>Un nombre de longitud total mayor a 255 bytes no existe.</strong> El nombre se codifica como una secuencia de etiquetas de hasta 63 bytes cada una, precedidas por un byte de longitud: <code>7fing3edu2uy0</code> son 1+5+1+3+1+2+1 = 14 bytes. Esa codificación es la razón por la que <strong>los nombres legibles son solo una convención de presentación</strong>: en el cable viajan como longitud + caracteres.</li>
+</ol>
+<div class="codehilite"><pre><span></span><code>   La codificación real de  www.fing.edu.uy.  en el cable:
+
+   3 'w''w''w' 4 'f''i''n''g' 3 'e''d''u' 2 'u''y' 0
+   │  │  │  │   │  │  │  │  │  │  │  │  │  │  │  │  │  │  │  │
+   │  │  │  │   │  │  │  │  │  │  │  │  │  │  │  │  │  │  │  │  └── 0 = fin
+   │  │  │  │   │  │  │  │  │  │  │  │  │  │  │  │  │  └─── longitud 2 + "uy"
+   │  │  │  │   │  │  │  │  │  │  │  │  │  │  └──┼───── longitud 3 + "edu"
+   │  │  │  │   │  │  │  │  │  │  │  │  └────────┼───── longitud 4 + "fing"
+   └──┼──┼──┼───┼──┼──┼──┼──┼──┼──┼──┼───────────┼───── longitud 3 + "www"
+
+   Total: 1+3 + 1+4 + 1+3 + 1+2 + 1 = 18 bytes para un nombre de 15 caracteres
+</code></pre></div>
+
+<p><strong>Y el <code>2010-12 P1a</code> es exactamente esto</strong>, que es el otro problema central de esta clase:</p>
+<blockquote>
+<p><strong>Examen 2010-12, Pregunta 1a:</strong> <em>«Cuando un servidor de nombres aprende un mapeo, lo cachea. ¿Cuál es el campo del registro de recurso (RR) que decide si se puede cachear o no? ¿Cuál es el servidor que define ese tiempo? ¿El valor que toma ese campo, a qué refiere y en qué unidades está expresado?»</em></p>
+</blockquote>
+<p>Se resuelve <strong>entero</strong> en la Clase 11 (que desarrolla caché y TTL), pero el <strong>campo</strong> ya está definido acá: es el <strong>cuarto campo</strong>, el <strong>TTL</strong>, de <strong>4 bytes</strong>, y su unidad son <strong>segundos</strong>. Lo que se responde completo en la Parte 3 de esta clase.</p>
+<h2>1.6 Los tipos de Resource Record que hay que saber</h2>
+<table>
+<thead>
+<tr>
+<th>Tipo</th>
+<th>Qué resuelve</th>
+<th>Ejemplo</th>
+<th>Notas y trampas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>A</code></strong></td>
+<td>nombre → <strong>IPv4</strong></td>
+<td><code>www.fing.edu.uy. IN A 132.42.120.5</code></td>
+<td>4 bytes de datos. Varios <code>A</code> = <strong>balanceo por round-robin</strong> (el orden lo elige el cliente; Chrome y Safari lo aleatorizan).</td>
+</tr>
+<tr>
+<td><strong><code>AAAA</code></strong></td>
+<td>nombre → <strong>IPv6</strong></td>
+<td><code>www.fing.edu.uy. IN AAAA 2001:7fd::1</code></td>
+<td>16 bytes. El <em>happy eyeballs</em> es un cliente que consulta <code>A</code> y <code>AAAA</code> <strong>en paralelo</strong> y se queda con la que llegue primero.</td>
+</tr>
+<tr>
+<td><strong><code>NS</code></strong></td>
+<td>nombre → <strong>servidor de nombres</strong> autoritativo</td>
+<td><code>fing.edu.uy. IN NS ns1.fing.edu.uy.</code></td>
+<td>El <code>NS</code> <strong>no contiene la IP</strong>: solo el nombre del servidor. La IP viene en el glue. <strong>Es lo que hace funcionar la delegación.</strong></td>
+</tr>
+<tr>
+<td><strong><code>CNAME</code></strong></td>
+<td><strong>alias</strong>: nombre → <strong>otro nombre</strong></td>
+<td><code>www IN CNAME web-server01.uy.</code></td>
+<td>Solo puede haber <strong>uno por nombre</strong>. No puede existir en la raíz. <strong>No puede coexistir con otros tipos en el mismo nombre.</strong></td>
+</tr>
+<tr>
+<td><strong><code>MX</code></strong></td>
+<td>nombre → <strong>servidor de correo</strong>, con <strong>preferencia</strong></td>
+<td><code>fing.edu.uy. IN MX 10 mail.fing.edu.uy.</code></td>
+<td>El número (aquí <code>10</code>) es la <strong>preferencia</strong>: menor = más preferido. El que tiene menor MX es al que se le manda primero. Si cae, se prueba el siguiente.</td>
+</tr>
+<tr>
+<td><strong><code>SOA</code></strong></td>
+<td><strong>Start of Authority</strong>: datos de <strong>autoridad de la zona</strong></td>
+<td><code>fing.edu.uy. IN SOA ns1.fing.edu.uy. admin.fing.edu.uy. 2026100601 7200 3600 1209600 3600</code></td>
+<td>Lleva <strong>MNAME</strong>, <strong>RNAME</strong>, <strong>serial</strong>, <strong>refresh</strong>, <strong>retry</strong>, <strong>expire</strong> y <strong>minimum</strong>. Es el registro de <strong>control</strong>: los servidores secundarios lo usan para decidir cuándo resincronizar.</td>
+</tr>
+<tr>
+<td><strong><code>PTR</code></strong></td>
+<td><strong>IP → nombre</strong>, la inversa</td>
+<td><code>5.120.42.132.in-addr.arpa. IN PTR www.fing.edu.uy.</code></td>
+<td>Se llama resolución <strong>inversa</strong> y vive en <code>.in-addr.arpa</code> (IPv4) o <code>.ip6.arpa</code> (IPv6). <strong>El nombre es al revés.</strong></td>
+</tr>
+<tr>
+<td><strong><code>TXT</code></strong></td>
+<td>texto libre arbitrario</td>
+<td><code>fing.edu.uy. IN TXT "v=spf1 include:_spf.fing.edu.uy -all"</code></td>
+<td>Se usa para <strong>SPF</strong> (qué servidores pueden enviar correo en tu nombre) y para <strong>verificación de propiedad</strong> de dominios ante proveedores de correo.</td>
+</tr>
+<tr>
+<td><strong><code>SRV</code></strong></td>
+<td>nombre → <strong>servicio con sus parámetros de puerto y prioridad</strong></td>
+<td><code>_sip._tcp.fing.edu.uy. IN SRV 10 20 5060 sip.fing.edu.uy.</code></td>
+<td>Formato: <code>prioridad peso puerto objetivo</code>. Se inventó para <strong>SIP</strong> y hoy se usa en XMPP, Matrix, FTP. No existe en RFC 1034: es una extensión.</td>
+</tr>
+<tr>
+<td><strong><code>CAA</code></strong></td>
+<td><strong>qué Autoridades de Certificación</strong> pueden emitir para el dominio</td>
+<td><code>fing.edu.uy. IN CAA 0 issue "letsencrypt.org"</code></td>
+<td><code>RFC 8659</code> (2019), reemplaza a <code>RFC 6844</code>. Evita que una CA emita un certificado para tu dominio sin tu permiso.</td>
+</tr>
+</tbody>
+</table>
+<h3>Los tres que se confunden siempre</h3>
+<p><strong><code>CNAME</code> vs. <code>MX</code> vs. <code>SOA</code></strong> — son tres respuestas a tres preguntas distintas:</p>
+<div class="codehilite"><pre><span></span><code>   ¿A qué IP va un cliente que abre http://www.fing.edu.uy ?
+      ──► CNAME (si existe) dice:  "ese nombre es otro nombre"
+      ──► A       dice:          "esa IP es esta"
+      ──► SOA    NO se usa para esto.
+
+   ¿A qué servidor mando el correo a admin@fing.edu.uy ?
+      ──► MX  dice:  "preferencia 10, servidor mail.fing.edu.uy"
+      ──► y después, para resolver mail.fing.edu.uy → IP, se usa CNAME o A.
+
+   ¿Quién manda aquí y cada cuánto sincronizo ?
+      ──► SOA dice:  "el master es ns1, el serial es 2026100601"
+</code></pre></div>
+
+<p><strong>El <code>SOA</code> en detalle, porque tiene que saberse de memoria:</strong></p>
+<div class="codehilite"><pre><span></span><code>   fing.edu.uy.  IN  SOA  ns1.fing.edu.uy.  admin.fing.edu.uy.  (
+                                   │            │            │
+                                   │            │            └─ 1: SERIAL
+                                   │            │               (el "número de versión"
+                                   │            │                de la zona)
+                                   │            └─ 2: RNAME
+                                   │               (el email del administrador,
+                                   │                con el @ como punto)
+                                   └─ 1: MNAME
+                                      (el servidor de nombres master)
+
+                  2026100601    7200    3600    1209600    3600
+                       │          │       │         │         │
+                       │          │       │         │         └── 7: MINIMUM
+                       │          │       │         │             (TTL por defecto de los
+                       │          │       │         │              NXDOMAIN negativos)
+                       │          │       │         └── 6: EXPIRE
+                       │          │       │            (días antes de dejar de
+                       │          │       │             intentar más refreshing)
+                       │          │       └── 5: RETRY
+                       │          │          (minutos entre reintentos de refresh
+                       │          │           cuando falla)
+                       │          └── 4: REFRESH
+                       │             (minutos entre que un secundario
+                       │              pregunta "¿hay cambios?")
+                       └── SERIAL
+   ```
+
+**Y la comparación `CNAME` vs. `MX`, que es pregunta clásica:**
+
+| | `CNAME` | `MX` |
+|---|---|---|
+| **Apunta a** | otro **nombre** | un **servidor de correo**, con número de preferencia |
+| **Se usa para** | mover un host sin romper los enlaces | elegir a qué servidor va el correo |
+| **¿Puede haber dos?** | **no**: un CNAME por nombre, y no puede convivir con nada más | **sí**: varios MX, ordenados por preferencia |
+| **Ejemplo real** | ` intranet.fing.edu.uy → CNAME SharePoint.uy.` | ` fing.edu.uy MX 10 smtp1.fing.edu.uy` y ` MX 20 smtp2.fing.edu.uy` |
+
+## 1.7 ⚠️ Actualización a 2026 — qué cambió en el DNS desde 2011
+
+Esta clase describe el DNS **de 2011**. Lo de arriba —jerarquía, delegación, *glue*,
+los cinco campos del RR, la lista de tipos— **sigue exactamente igual**. Lo que
+cambió es lo que se le **agregó encima**, y son cuatro cosas.
+
+### (a) DNSSEC: la firma de la jerarquía (`RFC 4033-4035`, 2005)
+
+**El problema que resuelve.** El DNS es, por diseño, **una base de datos abierta y
+confiable**: cualquiera puede registrar un dominio, y cualquiera que diga tener la
+delegación de un nombre es creído. Eso permite el **DNS hijacking** (secuestro de
+dominio) con solo lograr que el registrador o un servidor mal configurado apunten el
+nombre a una IP ajena. **DNSSEC** agrega criptografía: cada zona firma sus RRs con
+una clave privada, y la firma se valida contra una cadena que arranca en la **raíz**.
+</code></pre></div>
+
+<p>Zona .uy          Zona fing.edu.uy        Zona de ejemplo.uy
+   ┌───────────┐      ┌────────────────┐      ┌───────────────┐
+   │ firma su │─────▶│ firma sus RRs  │─────▶│ firma sus RRs │
+   │ zona con │      │ con la clave   │      │               │
+   │ la clave │      │ de .uy         │      │               │
+   └─────┬─────┘      └────────────────┘      └───────────────┘
+         │  el PADRE firma el DS (Delegation Signer) del hijo
+         │  → así el hijo queda encadenado al padre
+         ▼
+   RAÍZ: la clave pública raíz (KSK) es el ancla de confianza</p>
+<div class="codehilite"><pre><span></span><code>**El estado de despliegue, y acá está la lección de la clase:**
+
+| Dato | Valor |
+|---|---|
+| Estandarizado | **2005** (`RFC 4033-4035`) |
+| **gTLD firmados** | **~99,6 %** |
+| **Dominios (2LD) con `DS`** | **~5-7 %** |
+| Raíz firmada | desde **2010** (`RFC 5155`) |
+
+&gt; ⚠️ **La lección, y hay que decirla con esas palabras:** DNSSEC es el ejemplo
+&gt; perfecto de **estandarizado en 2005 y con despliegue bajo casi veinte años
+&gt; después**. La cadena criptográfica está construida y operativa, pero el último
+&gt; eslabón —el dominio de segundo nivel— casi no lo adoptó. **Por eso en 2026 no se
+&gt; puede enseñar que «el DNS es seguro»**: se puede enseñar que **el DNS tiene una
+&gt; capa de autenticidad opcional, bien diseñada y masivamente subutilizada**. El
+&gt; paralelo más cercano es HTTPS, que también lleva veinte años y tardó otras dos
+&gt; décadas en desplegarse del todo.
+
+### (b) EDNS(0): el mecanismo que hace possible todo lo anterior (`RFC 6891`, 2013)
+
+**El problema que resuelve.** El mensaje DNS clásico tiene **12 bytes** de cabecera
+y cuatro contadores. Para extenderlo (DNSSEC, `CAA`, `SVCB`/`HTTPS`) no había
+dónde: cualquier campo nuevo tenía que romper la estructura. **`EDNS(0)`** agrega un
+**pseudo-registro `OPT`** en la sección *Additional* que lleva opciones de tamaño y
+de extensión, **sin romper el formato antiguo**.
+</code></pre></div>
+
+<p>Mensaje DNS clásico                    Mensaje con EDNS(0)
+   ┌───────────────────────────┐          ┌───────────────────────────┐
+   │ ID │ flags │ QD AN NS AR  │          │ ID │ flags │ QD AN NS AR  │
+   └───────────────────────────┘          └───────────────────────────┘
+                                          Question / Answer / Authority
+                                          Additional:
+                                            ┌─────────────────────────┐
+                                            │ OPT  ◀── pseudo-registro │
+                             type=41       │ udp: 4096               │
+                                           └─────────────────────────┘</p>
+<div class="codehilite"><pre><span></span><code>**Importa en el examen** porque **cambia el tamaño por defecto del datagrama**:
+sin `EDNS(0)` el máximo sigue siendo **512 bytes**, y las respuestas grandes se
+cortan y obligan a reintentar por TCP. Con `OPT` que anuncia `udp: 4096`, el
+cliente y el servidor acordan hasta 4096 bytes **sin cambiar de transporte**. Es un
+ejemplo de manual de **extensión compatible hacia atrás** (*backward compatible
+extension*), la misma técnica de los campos opcionales de IPv4.
+
+### (c) CAA: el dominio declara qué autoridad puede emitir certificados (`RFC 8659`, 2019)
+
+Un `CAA` es un RR que dice **qué entidades certificadoras** pueden emitir un
+certificado para ese dominio:
+</code></pre></div>
+
+<p>fing.edu.uy.  IN  CAA  0  issue      "letsencrypt.org"
+   fing.edu.uy.  IN  CAA  0  issuewild  "letsencrypt.org"
+   fing.edu.uy.  IN  CAA  0  iodef      "mailto:seguridad@fing.edu.uy"
+   │            │  │  │     │
+   │            │  │  │     └── a quién avisar si alguien viola la política
+   │            │  │  └──────── qué CA puede emitir para lo que sea
+   │            │  └─────────── "para este dominio y todos sus subdominios"
+   │            └────────────── 0 = "el primero de la lista manda"
+   └─────────────────────────── la autoridad</p>
+<div class="codehilite"><pre><span></span><code>⚠️ El curso de 2012 enseñaba **`RFC 6844`**, que quedó **obsoleta**: la vigente es
+la `RFC 8659`. **Por qué importa:** sin `CAA`, cualquier autoridad de certificación
+puede emitir un certificado válido para tu dominio y el navegador no tiene forma de
+rechazarlo. Es uno de los **mecanismos de seguridad que se apoyan en un ancla
+declarada en el DNS**, como `DNSSEC` y como `RPKI` para BGP.
+
+### (d) El DNS pasó a transportar **política de transporte**: SVCB/HTTPS (`RFC 9460`, 2023)
+
+Este es el cambio conceptual más grande **después** de DNSSEC, y conecta con la
+Clase 9: el DNS **ya no transporta solamente direcciones**, sino **instrucciones
+sobre cómo conectarse**.
+</code></pre></div>
+
+<p>ANTES:  www.fing.edu.uy.   A     132.42.120.5
+           "¿dónde está?"               ↓
+           el cliente decide TODO: TCP o TLS, qué versión de HTTP</p>
+<p>AHORA:  www.fing.edu.uy.   HTTPS SVCB
+           ├─ alpn="h3,h2"      ← este servidor también habla HTTP/3
+           ├─ ipv4hint=["132.42.120.5"]
+           ├─ port=443
+           └─ ech="..."
+           el cliente sabe QUÉ VERSIONES USAR ANTES de abrir el socket</p>
+<div class="codehilite"><pre><span></span><code>**Por qué importa de verdad:** es lo que permite **descubrir HTTP/3 sin haber ido
+una vez por HTTP/1.1**. Con `Alt-Svc` (Clase 9) el navegador tiene que hacer
+primero un viaje por HTTP/1.1 para enterarse de que hay HTTP/3; con el registro
+`HTTPS` del DNS, la información de por dónde ir por HTTP/3 **llega en la misma
+consulta que la dirección**. Es **el mismo cambio conceptual que `CAA`**: una
+entidad que representa al dominio declara una política sobre el dominio, y los
+respetadores la obedecen.
+
+### Lo que **no** cambió y sigue preguntándose
+
+- La **jerarquía root → TLD → autoritativo**, la **delegación** por `NS` y el
+  **bootstrap** con los *glue records*.
+- Los **cinco campos** del Resource Record, y el **TTL en segundos**.
+- Los **tipos**: `A`, `AAAA`, `NS`, `CNAME`, `MX`, `SOA`, `PTR`, `TXT`, `SRV`.
+- Los **algoritmos** iterativo y recursivo, y la cadena **stub → recursivo →
+  root → TLD → autoritativo**. *(Esto lo desarrolla la Clase 11.)*
+- Los **puertos**: **53 UDP y 53 TCP**, y **853** para DoT.
+- El **round-robin** por varios registros `A`. Sigue usándose, y Chrome y Safari
+  lo aleatorizan por privacidad.
+
+&gt; **Consecuencia para el examen:** si te preguntan *«¿qué cambió en el DNS?»*,
+&gt; la respuesta con mejor relación esfuerzo/puntos es: **nada de la arquitectura**.
+&gt; Ni la jerarquía, ni la delegación, ni los cinco campos del RR, ni los dos
+&gt; algoritmos cambiaron desde 1987. Lo que se **agregó** es DNSSEC (autenticidad,
+&gt; subdesplegada), EDNS(0) (el mecanismo de extensión), `CAA` (política de
+&gt; certificación) y `SVCB`/`HTTPS` (política de transporte). Si en cambio te
+&gt; preguntan *«¿qué es el DNS?»*, la respuesta es **exactamente la de 2010** y está
+&gt; en el §3.1.
+
+---
+
+# PARTE 2 — PRÁCTICA RESUELTA
+
+## 2.1 Ejercicio 1 — Escribir un Resource Record completo
+
+**Enunciado.** Escribí el registro de recurso completo que le corresponde a
+`www.fing.edu.uy`, que resuelve a la dirección IPv4 `132.42.120.5`, tiene clase
+`IN`, y su autoritativo quiere que se cachee **media hora**.
+
+**Resolución paso a paso.**
+
+*Paso 1 — Identificar los cinco campos.*
+</code></pre></div>
+
+<p>nombre              →  www.fing.edu.uy.
+   clase               →  IN
+   tipo                →  A        (porque el dato es una IPv4)
+   TTL                 →  media hora = 30 × 60 = 1800 segundos
+   datos               →  132.42.120.5</p>
+<div class="codehilite"><pre><span></span><code>*Paso 2 — Escribirlo en la sintaxis de la zona (lo que verías en un archivo de
+configuración de BIND):*
+</code></pre></div>
+
+<p>$ORIGIN fing.edu.uy.
+   www        1800    IN  A   132.42.120.5</p>
+<div class="codehilite"><pre><span></span><code>*Paso 3 — Escribirlo en la sintaxis canónica completa (lo que va por el cable):*
+</code></pre></div>
+
+<p>www.fing.edu.uy.        1800    IN  A   132.42.120.5
+   │                       │      │  │        └─ rdata: 4 bytes de IPv4
+   │                       │      │  └── type: 2 bytes, valor 1 (A)
+   │                       │      └───── class: 2 bytes, valor 1 (IN)
+   │                       └──────────── TTL: 4 bytes, valor 1800
+   └──────────────────────────────────── name: 18 bytes en cable (ver §1.5)</p>
+<div class="codehilite"><pre><span></span><code>*Paso 4 — Calcular cuántos bytes ocupa en la respuesta.*
+</code></pre></div>
+
+<p>nombre:       18 bytes   (3'www'4'fing'3'edu'2'uy'0)
+   tipo:          2 bytes
+   clase:         2 bytes
+   TTL:           4 bytes
+   rdlength:      2 bytes   (cuántos bytes ocupa el rdata)
+   rdata:         4 bytes   (la IPv4)
+   ──────────────────────────
+   Total RR:     32 bytes</p>
+<div class="codehilite"><pre><span></span><code>**Interpretación física:** un registro `A` ocupa **32 bytes**. Cuando hacés un
+`dig` de un dominio con 50 registros `A`, estás moviendo 1600 bytes de datos, más
+los nombres de las preguntas. **Un paquete UDP de 512 bytes (el mínimo DNS) alcanza
+para unas 12 entradas `A`.** Por eso las respuestas grandes se cortan y hay que
+usar TCP (Clase 11).
+
+*Paso 5 — Y si el autoritativo quisiera que sea un nombre en vez de una IP:*
+</code></pre></div>
+
+<p>www.fing.edu.uy.   1800   IN  A     132.42.120.5
+   www.fing.edu.uy.   1800   IN  AAAA  2001:7fd:21::5
+   ^^^^^^^^^^^^^^     ^^^^^  ^  ^^^   ^^^^^^^^^^^^^^^
+   nombre              TTL  clase tipo datos</p>
+<p>(un mismo nombre SÍ puede tener varios registros del MISMO tipo:
+    así es como se hace el balanceo)</p>
+<div class="codehilite"><pre><span></span><code>### ⚠️ Errores típicos
+- **Olvidar el punto final** en el nombre. En la forma canónica `fing.edu.uy` sin
+  punto es un **nombre relativo**, que se resuelve con el `$ORIGIN` de la zona.
+- **Confundir los bytes de `clase` y `tipo`.** Los dos son de 2 bytes, pero van en
+  orden **tipo primero, clase después** en el formato de cable, aunque en la
+  notación de los archivos de zona la convención es **clase primero**.
+- **Poner el TTL en minutos.** La unidad es **segundos**, y siempre.
+
+## 2.2 Ejercicio 2 — Distinguir `CNAME` de `MX` con ejemplos
+
+**Enunciado.** Una empresa tiene estos cuatro nombres. Decí qué registro
+corresponde a cada caso y **por qué no las otras opciones**.
+</code></pre></div>
+
+<p>a) El sitio www.fing.edu.uy se va a mudar a un servidor que se llama
+      "portal-institucional" en el data center del ISP.</p>
+<p>b) La Universidad tiene dos servidores de correo, smtp1 y smtp2. Quiere
+      que smtp1 sea el preferido y que, si se cae, se use smtp2.</p>
+<p>c) El dominio nuevo "servidor-central.uy" quiere saber a qué dirección
+      IP corresponde.</p>
+<p>d) La empresa quiere que el correo a "no-spam"@fing.edu.uy no se acepte
+      desde ningún servidor, y que lo declare públicamente con un TXT.</p>
+<div class="codehilite"><pre><span></span><code>**Resolución paso a paso.**
+
+*a) El sitio se muda de servidor → **`CNAME`**.*
+</code></pre></div>
+
+<p>www.fing.edu.uy.    1800   IN  CNAME   portal-institucional.isp.uy.</p>
+<div class="codehilite"><pre><span></span><code>*Por qué: el objetivo es que **`www.fing.edu.uy` deje de ser un nombre terminal**
+para pasar a ser **un alias** de otro. El cliente resuelve `www.fing.edu.uy`,
+obtiene un nombre, y vuelve a resolver. El beneficio es que, cuando el servidor
+se muda otra vez, **solo cambiás un registro**, en un solo lugar.
+
+⚠️ **Las dos trampas del `CNAME`:**
+</code></pre></div>
+
+<ol>
+<li>
+<p>Un nombre con CNAME NO puede tener ningún otro registro.
+      www.fing.edu.uy. CNAME x.isp.uy.
+      www.fing.edu.uy. MX    10 mail.       ← ¡PROHIBIDO!
+      → respuesta del servidor: "CNAME y otro tipo en el mismo nombre"</p>
+</li>
+<li>
+<p>Un CNAME NO puede existir en la raíz.
+      ni en un TLD, ni en la zona directa de un dominio.</p>
+</li>
+</ol>
+<div class="codehilite"><pre><span></span><code>*b) Preferencia entre servidores de correo → **`MX`**.*
+</code></pre></div>
+
+<p>fing.edu.uy.    1800   IN  MX  10 smtp1.fing.edu.uy.
+   fing.edu.uy.    1800   IN  MX  20 smtp2.fing.edu.uy.</p>
+<div class="codehilite"><pre><span></span><code>*Por qué: el `MX` no devuelve una IP, devuelve **un par (preferencia, nombre de
+servidor)**. El `10` y el `20` **no son puertos**: son prioridades, y **menor es
+mejor**. El MTA del emisor mira **todos** los MX, ordena por preferencia, y manda
+primero al más bajo.
+</code></pre></div>
+
+<p>10 smtp1  ◀── se intenta PRIMERO
+   20 smtp2  ◀── si smtp1 responde 4.x.x o 5.x.x (error temporal),
+                  se reintenta con smtp2</p>
+<div class="codehilite"><pre><span></span><code>⚠️ **La trampa clásica del ejercicio:** un `MX` **no puede contener
+`132.42.120.5`**. Si se pone un número donde va el nombre del servidor, la mayoría
+de los MTAs lo rechaza y el correo **no llega**. Hay que poner **siempre un
+nombre**, y ese nombre se resuelve aparte con un `A` o `CNAME`.
+</code></pre></div>
+
+<p>❌  fing.edu.uy. MX 10 132.42.120.5       (no: es un nombre, no una IP)
+   ✅  fing.edu.uy. MX 10 smtp1.fing.edu.uy.
+   ✅  smtp1.fing.edu.uy. A 132.42.120.5    (el nombre se resuelve aparte)</p>
+<div class="codehilite"><pre><span></span><code>*c) Un nombre nuevo → dirección IP → **`A`**.*
+</code></pre></div>
+
+<p>servidor-central.uy.    1800   IN  A     132.42.60.10</p>
+<div class="codehilite"><pre><span></span><code>*Por qué: es exactamente para eso. Y el `A` **no puede tener CNAME ni MX ni nada
+más**: `A` es un dato terminal, no un alias.
+
+*d)Declaración de política de correo → **`TXT`**.*
+</code></pre></div>
+
+<p>fing.edu.uy.    1800   IN  TXT   "v=spf1 -all"</p>
+<div class="codehilite"><pre><span></span><code>*Por qué: el `TXT` guarda **texto libre**, y la industria lo usa para **SPF**
+(*Sender Policy Framework*), que declara qué servidores tienen permiso de enviar
+correo en nombre del dominio. `-all` significa «ninguno». `v=spf1 ...` es la forma
+moderna; `TXT` también se usa para **DKIM** y para **verificación de propiedad**
+ante Google Workspace o Microsoft 365.
+
+### ⚠️ Errores típicos
+- **Poner una IP en un `MX`.** Es el error número uno de configuración de correo.
+- **Confundir el número del `MX` con un puerto.** `MX 10` es prioridad, `MX 25`
+  sería prioridad 25, no puerto 25. Y ojo: **puede haber un `MX 25`**, que no tiene
+  nada que ver con SMTP.
+- **Meter un `CNAME` en la raíz.** No existe, y muchos paneles de hosting lo
+  ofrecen igual: es un error del panel, no tuyo.
+
+## 2.3 Ejercicio 3 — ¿Por qué un `CNAME` no puede existir en la raíz?
+
+**Enunciado.** Explicá por qué la especificación prohíbe un `CNAME` en la raíz del
+espacio de nombres y en la zona directa de un TLD. No es un capricho: la razón
+está en el diseño de la **delegación**.
+
+**Resolución paso a paso.**
+
+*Paso 1 — Recordar cómo funciona la resolución.*
+
+Para resolver un nombre hay que **bajar** por la jerarquía: root → TLD → autoritativo.
+En cada paso el servidor de arriba **no tiene la respuesta**, pero tiene el `NS` del
+siguiente nivel.
+
+*Paso 2 — Ver qué haría un CNAME en la raíz.*
+</code></pre></div>
+
+<p>Si la raíz tuviera:   .   IN  CNAME   otro.nombre.</p>
+<p>Entonces el root, ante CUALQUIER consulta, tendría que:
+     1. devolver una referencia a otro.nombre
+     2. el cliente resuelve otro.nombre
+     3. para resolver otro.nombre, vuelve a preguntar a la raíz
+     4. la raíz vuelve a decir "andá a otro.nombre"
+     5. ∞ bucle infinito</p>
+<div class="codehilite"><pre><span></span><code>*Paso 3 — La razón real: la raíz es el **índice**, no un **nodo**.*
+</code></pre></div>
+
+<p>La raíz cumple el PAPEL de un índice: le dice al cliente a quién preguntarle.
+   Un CNAME significa "soy otro nombre". Si el índice fuera un alias, dejaría de
+   ser un índice: no habría ningún nodo al que ir.</p>
+<p>╔════════════════════════════════════════════════════════════════════╗
+   ║  LA RAÍZ ES EL PUNTO DE ENTRADA DEL SISTEMA.                    ║
+   ║  Si la entrada fuera un alias, el sistema no tendría entrada.      ║
+   ║  Lo mismo para un TLD: es el "punto de entrada" de su rama.      ║
+   ╚════════════════════════════════════════════════════════════════════╝</p>
+<div class="codehilite"><pre><span></span><code>*Paso 4 — Por qué el prohibition es por **nombre** y no por **zona**.*
+
+La regla es: **un nombre con `CNAME` no puede tener ningún otro registro, y el
+nombre `.` (ni el nombre de un TLD, que es de una sola etiqueta) es el nombre del
+propio servidor de la zona.** Es una regla de **coherencia**, no de seguridad: si
+`uy. IN CNAME x.` fuera legal, entonces el `NS` de `uy.` tendría que convivir con
+el `CNAME`, y la delegación quedaría indefinida.
+
+**Consecuencia práctica que se pregunta en los exámenes:** como `.uy` no puede
+tener `A`, **no existe un servidor web en la raíz de `.uy`**: `http://uy/` no
+funciona. Por eso existen los portales de TLD como `nic.uy` o `portal.uy`.
+
+### ⚠️ Errores típicos
+- **Decir que es por seguridad.** No: es por **coherencia de la delegación**. La
+  seguridad aparece cuando un atacante mete un `CNAME` en un nombre que sí puede
+  tenerlo: es el **DNS hijacking**, que es un ataque por contenido, no una
+  violación de la especificación.
+- **Olvidar que la prohibición aplica también a los TLD.** `com. IN CNAME ...` es
+  tan ilegal como `. IN CNAME ...`.
+
+---
+
+# PARTE 3 — PROBLEMAS DE EXAMEN DE FING
+
+## 3.1 ⭐ Examen 2010-02, Pregunta 1a (8 puntos) — qué es el DNS y su función
+
+&gt; **Fuente:** Examen `eirc1002` / `sirc1002` — 2 de febrero de 2010.
+&gt; **Link:** https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1002.pdf
+
+### Enunciado (texto literal del examen)
+
+&gt; **Pregunta 1 (8 puntos)**
+&gt;
+&gt; a) Defina qué es el DNS y cuál es su función.
+
+### Solución oficial (del PDF, textual)
+
+&gt; El protocolo DNS (Domain Name System) es un protocolo de capa de aplicación que
+&gt; permite realizar la traducción de nombres de hosts a direcciones IP. También se
+&gt; denomina DNS a la base de datos jerárquica distribuida que almacena los mapeos
+&gt; entre nombres y direcciones IP.
+
+### Resolución, con mi razonamiento
+
+La oficial son **dos frases**. Para los 8 puntos hay que **desarmarlas**, porque cada
+palabra de las dos frases es un punto:
+</code></pre></div>
+
+<p>"protocolo de capa de aplicación"
+        │
+        └─▶ el DNS es un protocolo como HTTP o SMTP: mensajes, peticiones y
+            respuestas, sobre UDP (puerto 53). NO es un algoritmo, no es una
+            base de datos relacional, no es "un servicio" en el sentido de un
+            proceso servidor y ya.</p>
+<p>"traducción de nombres de hosts a direcciones IP"
+        │
+        └─▶ la FUNCIÓN. Con nombre: "www.fing.edu.uy".
+            Sin nombre: 132.42.120.5.</p>
+<p>"base de datos jerárquica distribuida"
+        │
+        ├─▶ base de datos: guarda datos y los sirve a preguntas.
+        ├─▶ jerárquica:   la información se reparte en niveles
+        │                 (root → TLD → autoritativo), no está toda junta.
+        └─▶ distribuida:  los datos están repartidos en MUCHAS máquinas
+                          (los 13 root, los cientos de TLD, los 2 autoritativos
+                          de cada dominio). No hay una máquina central.</p>
+<p>"mapeos entre nombres y direcciones IP"
+        │
+        └─▶ el contenido: tablas de correspondencia. "Mapeo" = <em>mapping</em>.</p>
+<div class="codehilite"><pre><span></span><code>**Respuesta redactada, lista para copiar en el examen:**
+
+&gt; **a)** El DNS (Domain Name System) es un **protocolo de capa de aplicación** cuyo
+&gt; propósito es permitir la **traducción de nombres de host a direcciones IP**: los
+&gt; usuarios y las aplicaciones trabajan con nombres (por ejemplo `www.fing.edu.uy`),
+&gt; que son legibles y jerárquicos, y el DNS devuelve la dirección IP correspondiente
+&gt; (por ejemplo `132.42.120.5`), que es la que permite enviar paquetes.
+&gt;
+&gt; Estrictamente hablando, «DNS» designa **dos cosas a la vez**. Primero, es un
+&gt; **espacio de nombres jerárquico**: los nombres se organizan en un árbol
+&gt; (`.uy` → `edu` → `fing.edu.uy` → `www.fing.edu.uy`) resuelto de derecha a
+&gt; izquierda, lo que permite **delegar la administración** de cada rama a una
+&gt; autoridad distinta sin que ninguna autoridad tenga que conocer la rama entera.
+&gt; Segundo, es una **base de datos jerárquica distribuida**: los datos (las
+&gt; correspondencias nombre-dirección, llamadas *mapeos*) están repartidos en miles de
+&gt; servidores organizados en esa misma jerarquía. Cada servidor solo guarda los datos
+&gt; de su zona y **no conoce los de las demás**, y responde a las consultas de las
+&gt; zonas inferiores.
+&gt;
+&gt; No puede ser un archivo central porque (i) la tabla completa no entra en cada host
+&gt; y habría que redistribuirla en cada alta o baja, (ii) sería un punto único de
+&gt; falla y de compromiso, y (iii) no habría forma de validar quién autorizó cada
+&gt; nombre. La **distribución** resuelve las tres cosas: escala, tolerancia a fallas y
+&gt; mantenimiento.
+
+**Lo que agregaría yo y la oficial no dice** (y es lo que más suma, porque
+demuestra que entendiste el diseño):
+
+1. **La jerarquía es lo que hace posible la distribución.** Es un árbol en el que
+   cada nodo conoce **solo a sus hijos** y delega en ellos la autoridad: es la
+   propiedad de un padre que reparte entre cada hijo la porción que le corresponde.
+   Un árbol plano (una sola tabla con todos los nombres) no escalaría; uno con copia
+   completa en cada nodo, tampoco.
+2. **El nombre es un espacio de nombres, no solo una etiqueta.** Los nombres son
+   **únicos y jerárquicos**, y eso es lo que permite
+   que `edu.uy` y `edu` puedan coexistir sin colisión: son ramas distintas del árbol.
+3. **El DNS es bidireccional conceptualmente, pero en la práctica es unidireccional.**
+   Nombre → IP (`A`) es lo que todo el mundo usa. IP → nombre (`PTR`) existe pero
+   casi solo sirve para logística y para los servidores de correo. La resolución
+   inversa **no se puede usar para validar** nada, porque no está garantizada.
+
+&gt; **Nota contra la oficial:** la oficial es precisa pero **corta**: enumera las dos
+&gt; definiciones y no explica **por qué** tiene que ser jerárquica y distribuida. Si
+&gt; el corrector es humano, agregar la justificación del archivo central da puntos;
+&gt; si es automático, la oficial es el texto que hay que reproducir.
+
+## 3.2 Examen 2010-02, Pregunta 1b (8 puntos) — iterativa vs. recursiva
+
+&gt; **Fuente:** el mismo examen, apartado b).
+
+### Enunciado (texto literal del examen)
+
+&gt; b) Explique la diferencia entre las consultas iterativas y recursivas al DNS.
+
+### Solución oficial (del PDF, textual)
+
+&gt; En una consulta iterativa un host le hace una consulta a su DNS local. El DNS local
+&gt; en ese momento deberá encargarse de resolver la consulta reenviándola a todos los
+&gt; servidores DNS que sean necesarios. Comienza por consultar la raíz, y cada DNS que
+&gt; consulte (que no tenga la respuesta) le indicará cuál es el servidor siguiente (más
+&gt; abajo en la jerarquía) al que debe preguntarle.
+&gt;
+&gt; En una consulta recursiva el host le hace una consulta a su DNS local. El DNS local
+&gt; preguntará a un servidor raíz. Si la raíz no conoce la respuesta, él mismo le
+&gt; preguntará al servidor que corresponda que esté más abajo en la jerarquía. Si este
+&gt; servidor no conoce la respuesta, se la preguntará al siguiente que esté más abajo
+&gt; en la jerarquía. Luego de que obtienen la respuesta, se volverá hacia atrás en la
+&gt; recursión para devolver el resultado al que consultó originalmente.
+
+### Resolución, con mi razonamiento
+
+**Un solo ejemplo mental y las dos definiciones salen solas.** Alguien pregunta
+«¿dónde está la Farmacia?»:
+</code></pre></div>
+
+<p>═══ ITERATIVO ═══  (el que pregunta va y viene)</p>
+<div class="codehilite"><pre><span></span><code> YO ──"¿sabés dónde está la Farmacia?"──▶ VECINO
+ YO ◀──"no sé, preguntale a la Farmacia de Pellegrini 1230"── VECINO
+ YO ──"¿sabés...?"──▶ FARMACIA DE PELLEGRINI 1230
+ YO ◀──"sí, es acá"──
+ (yo hice 2 viajes)
+</code></pre></div>
+
+<p>═══ RECURSIVO ═══  (el que pregunta se hace cargo de todo)</p>
+<div class="codehilite"><pre><span></span><code> YO ──"¿sabés dónde está la Farmacia?"──▶ VECINO
+ VECINO ──"¿sabés...?"──▶ FARMACIA DE PELLEGRINI 1230
+ FARMACIA ──"sí, es acá"──▶ VECINO
+ VECINO ──"es acá"──▶ YO
+ (yo hice 1 viaje, pero el vecino hizo 3)
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>**La diferencia en una frase:**
+
+| | Iterativa | Recursiva |
+|---|---|---|
+| **Quién sigue preguntando** | **el que preguntó** | **el que recibió la pregunta** |
+| **Qué devuelve el que no sabe** | «no sé, **preguntale vos** a este» | **pregunta él** y vuelve con la respuesta |
+| **Quién carga con el trabajo** | el cliente (4 viajes de ida y vuelta) | el servidor (1 viaje para el cliente) |
+| **Quién la usa** | el **resolver recursivo** (el del ISP), entre servidores | el **host**, contra el **resolver local** |
+
+&gt; **El error típico de examen, y es el que la propia oficial pisea:** decir que «el
+&gt; host le hace una consulta iterativa a su DNS local». No. El **stub resolver del
+&gt; host** hace una consulta **recursiva** a su servidor de nombres local: «resolveste
+&gt; esto por mí y traeme la respuesta final». Lo que el **servidor local** hace hacia
+&gt; afuera son consultas **iterativas**: le pregunta al root, el root le dice
+&gt; «preguntale al `.uy`», y así. **Esto no cambió desde 1987.**
+
+**Respuesta redactada, lista para copiar en el examen:**
+
+&gt; **b)** Se distinguen por **quién se hace cargo de seguir consultando** cuando el
+&gt; servidor consultado **no** conoce la respuesta.
+&gt;
+&gt; En una **consulta iterativa**, el servidor que no tiene la respuesta **no hace
+&gt; nada por su cuenta**: devuelve al cliente una **referencia** («ese nombre está
+&gt; delegado a este otro servidor, andá a preguntarle») y el cliente, que es el que
+&gt; empezó, **sigue bajando por la jerarquía** hasta llegar a un servidor que sí tenga
+&gt; la respuesta. El cliente hace, entonces, **cuatro viajes**: uno a cada nivel.
+&gt;
+&gt; En una **consulta recursiva**, el servidor que no tiene la respuesta **se hace cargo
+&gt; él mismo** de consultar al nivel inferior, y así sucesivamente hasta obtener la
+&gt; respuesta final (o un error). Cuando la tiene, **vuelve hacia atrás por la
+&gt; recursión** devolviéndola a quien le consultó. El cliente hizo **un solo viaje**.
+&gt;
+&gt; En la práctica, el **cliente** (el *stub resolver* del sistema operativo) le
+&gt; hace una consulta **recursiva** a su **servidor de nombres local** (el del ISP),
+&gt; que a su vez hace consultas **iterativas** al root, al TLD y al autoritativo.
+&gt; La iterativa existe para que **un solo servidor recursivo** pueda hacer el trabajo
+&gt; pesado y cachear todo, en vez de hacer que cada cliente de Internet repita los
+&gt; mismos cuatro viajes.
+
+**Sobre el matiz de la oficial que está bien dicho y hay que repetir:** la oficial
+dice, para la recursiva, que «**luego de que obtienen la respuesta, se volverá hacia
+atrás en la recursión**». Esa frase es la clave: **recursión** significa que el
+**call stack** crece a medida que se baja y se **desarma** a medida que se sube. No es un concepto de DNS: es un concepto de **programación recursiva**, y aplicarlo al DNS es lo que hace la definición fácil de recordar.
+
+## 3.3 Examen 2007-07, Pregunta 4 (8 puntos) — función del DNS y protocolo involucrado
+
+&gt; **Fuente:** Examen `eirc0707` / `sirc0707` — julio de 2007.
+
+Este problema se desarrolla **entero en la Clase 11**, junto con la caché y el TTL
+(que es lo que aporta de nuevo). Acá se deja el planteo, que es de §1.1 y §1.2:
+
+- **Función del DNS:** traducir nombres a direcciones IP, resolviendo de derecha a
+  izquierda sobre un espacio de nombres jerárquico y distribuido.
+- **Protocolo involucrado:** el DNS es un protocolo de **capa de aplicación** que
+  viaja sobre **UDP puerto 53** en el caso normal, y sobre **TCP puerto 53** cuando
+  la respuesta no entra en un datagrama o cuando se pide una **transferencia de
+  zona** (`AXFR`).
+- **Mensaje:** 12 bytes de cabecera (ID, flags, QDCOUNT, ANCOUNT, NSCOUNT,
+  ARCOUNT) más cuatro secciones (Question, Answer, Authority, Additional).
+
+---
+
+# PARTE 4 — CIERRE
+
+## 📌 Resumen en 10 líneas
+
+1. El DNS existe porque los humanos **no memoramos IPs** y porque una IP no dice
+   quién es el dueño, ni si el servidor está vivo, ni quién lo administra.
+2. **No puede ser un archivo central** por tres razones independientes: la tabla no
+   entra en cada host, sería un punto único de falla **y** de compromiso, y no hay
+   forma de validar quién autorizó cada nombre.
+3. El DNS es **dos cosas**: un **espacio de nombres jerárquico** (cómo se nombran y
+   quién tiene autoridad) y una **base de datos distribuida** (qué corresponde a
+   qué). La primera dice a quién preguntarle, la segunda qué preguntar.
+4. El nombre se resuelve **de derecha a izquierda** porque la autoridad va de la
+   raíz hacia abajo, y solo la raíz sabe qué TLDs existen.
+5. El **root** (13 identidades `a`–`m`, IPv4 por *anycast*) **no conoce los
+   dominios**: solo sabe quién es el TLD de cada uno. El **TLD** tampoco conoce los
+   dominios: sabe quién es su autoritativo.
+6. La **delegación** se hace con registros `NS`, y los **glue records** (registros
+   `A` con el nombre de un servidor de nombres) existen para **romper el círculo**:
+   sin ellos, el nombre del servidor autoritativo no se podría resolver.
+7. Un **Resource Record** tiene **cinco campos**: nombre, clase (`IN`), tipo, TTL
+   (4 bytes) y datos. El TTL son **segundos**, y lo define el **autoritativo** de
+   ese registro.
+8. `A` y `AAAA` son IP; `NS` son servidores de nombres; `CNAME` es un alias; `MX`
+   es el servidor de **correo** con un número de **preferencia**; `SOA` es el
+   control de zona (serial, refresh, retry, expire, minimum); `PTR` es la inversa;
+   `TXT` texto libre; `SRV` servicio con puerto; `CAA` qué CA puede emitir.
+9. El **stub resolver** del SO consulta **recursivamente** al **resolver local**,
+   que a su vez consulta **iterativamente** a root, TLD y autoritativo.
+10. **Esto no cambió desde 1987**: ni la jerarquía, ni los dos algoritmos, ni los
+    puertos (53 UDP y TCP). Lo que cambió es la privacidad (DoH, Clase 11).
+
+## ✅ Autoevaluación
+
+Respondé sin mirar. Las respuestas están en `&lt;details&gt;`.
+
+**1.** ¿Por qué el DNS no puede ser un archivo central? Dá las **tres** razones.
+
+&lt;details&gt;&lt;summary&gt;Respuesta&lt;/summary&gt;
+
+1. **Escala:** la tabla completa tiene una entrada por host (hoy del orden de miles de millones). A unos 60-80 bytes por línea son cientos de MB, y hay que **redistribuirla entera** en cada alta o baja.
+2. **Punto único de falla:** si el archivo o el servidor que lo sirve se cae, **todo Internet deja de resolver nombres**. Y si alguien lo compromete, puede **redirigir cualquier nombre a cualquier IP**: phishing perfecto.
+3. **Mantenimiento:** no hay forma de validar **quién autorizó** cada nombre a registrarse, porque no hay ningún esquema de delegación.
+
+La solución del DNS es la **distribución jerárquica**: particionar los datos por zona, replicar cada zona, y delegar cada zona a una autoridad identificada.
+
+&lt;/details&gt;
+
+**2.** ¿Qué diferencia hay entre un **nombre** y un **dominio**? ¿Y entre un
+**dominio** y un **host**?
+
+&lt;details&gt;&lt;summary&gt;Respuesta&lt;/summary&gt;
+
+En la práctica se usan como sinónimos, pero técnicamente:
+
+- **Nombre** (*name*): cualquier etiqueta del espacio de nombres. `www` es un nombre, `fing.edu.uy` es un nombre.
+- **Dominio**: un nombre **delegado**, es decir del que alguien es responsable. `fing.edu.uy` es un dominio porque `.uy` delegó su administración a la Universidad. `www` **no es** un dominio: nadie tiene autoridad sobre `www`.
+- **Host** (*host*): un nombre que además tiene un registro `A` o `AAAA` y por lo tanto **designa una máquina concreta**. `www.fing.edu.uy` es un host si tiene una IP detrás; si fuera solo un `CNAME` a otro nombre, es un alias, no un host.
+
+Por eso el enunciado del `2010-02 P1a` habla de «nombres de hosts»: es el nivel más bajo y más concreto.
+
+&lt;/details&gt;
+
+**3.** ¿Qué sabe el root server y qué **no** sabe? ¿Cuántos hay?
+
+&lt;details&gt;&lt;summary&gt;Respuesta&lt;/summary&gt;
+
+Hay **13 identidades lógicas**, nombradas de `a.root-servers.net` a `m.root-servers.net`, y cada una tiene **cuatro direcciones IPv4** que se anuncian por *anycast*: la misma IP pública desde cientos de máquinas en todo el mundo, y el enrutador envía al más cercano.
+
+**Sabe:** los registros `NS` (y `A`) de todos los **TLD**, unos 1500 entradas. Sabe quién administra `.uy`.
+
+**NO sabe:** los dominios. Jamás supo qué es `fing.edu.uy`, ni cuántos hay, ni qué IP tienen. Preguntarle por un dominio y esperar una IP es el error conceptual más caro del tema.
+
+El número **13** es un artefacto histórico de 1987 (elegido por el DARPA), congelado después por la *root zone signing key*. No es una decisión de diseño.
+
+&lt;/details&gt;
+
+**4.** ¿Qué es un **glue record** y por qué existe? ¿Por qué a veces hay que
+duplicar información?
+
+&lt;details&gt;&lt;summary&gt;Respuesta&lt;/summary&gt;
+
+Un **glue record** es un registro `A` (o `AAAA`) con el **nombre de un servidor de nombres**, guardado en el servidor del **nivel superior** en vez de en la zona a la que pertenece.
+
+Existe para **romper el círculo del bootstrap**: si el `.uy` te dice «el autoritativo de `fing.edu.uy` es `ns1.fing.edu.uy`», para preguntarle a `ns1.fing.edu.uy` **necesitás su IP**, y esa IP es... otro nombre que hay que resolver. Sin glue, imposible.
+
+La información está **duplicada** (el mismo `A` existe en el glue del `.uy` y en la zona `fing.edu.uy`) porque el destino natural de ese registro está **dos saltos más abajo**, y para llegar ahí hay que pasar por el glue. Es una duplicación **a propósito**.
+
+El costo es que se puede **desincronizar**: si el autoritativo cambia de IP y nadie actualiza el glue, toda resolución del dominio falla hasta que venza el TTL del glue. Es la causa número uno de «mi dominio dejó de funcionar después de un cambio».
+
+&lt;/details&gt;
+
+**5.** Escribí un RR completo para `mail.fing.edu.uy` → `132.42.120.9`, clase `IN`,
+cacheable 1 hora. Decí además cuántos bytes ocupa.
+
+&lt;details&gt;&lt;summary&gt;Respuesta&lt;/summary&gt;
+</code></pre></div>
+
+<p>nombre              clase   tipo   TTL    datos
+   mail.fing.edu.uy.   IN      A      3600   132.42.120.9
+```</p>
+<p>La TTL es <code>1 hora = 60 × 60 = 3600 segundos</code>. En la zona se escribiría <code>$ORIGIN fing.edu.uy.</code> y <code>mail 3600 IN A 132.42.120.9</code>.</p>
+<p>Tamaño: nombre <code>4mail4fing3edu2uy0</code> = 1+4 + 1+4 + 1+3 + 1+2 + 1 = <strong>18 bytes</strong>; más tipo 2 + clase 2 + TTL 4 + rdlength 2 + rdata 4 = <strong>32 bytes</strong> en total.</p>
+</details>
+<p><strong>6.</strong> Un dominio tiene <code>MX 10 smtp1.uy</code> y <code>MX 20 smtp2.uy</code>. Si <code>smtp1</code> está caído
+y <code>smtp2</code> <strong>no acepta</strong> correo de esa persona, ¿qué pasa? ¿Dónde está el problema?</p>
+<details><summary>Respuesta</summary>
+
+La **selección del servidor** funciona: el MTA ordena por preferencia y prueba `smtp1` (10). Si da error **temporal** (4.x.x, por ejemplo `451 try later`), reintenta con `smtp2` (20). Eso funciona.
+
+El problema aparece si `smtp2` acepta el mensaje pero después **lo rebota**: eso es un **bounce**, y el mensaje vuelve al remitente. Si `smtp2` devuelve **5.x.x** (error permanente) en el primer intento, no hay más alternativas: el correo **no se entrega**.
+
+⚠️ **El error de configuración clásico:** poner una **IP en vez de un nombre** en el `MX` (`MX 10 132.42.120.9`). Muchos MTAs rechazan el mensaje entero porque **no pueden aplicar políticas** al dominio receptor, y el correo simplemente no llega. El `MX` **siempre** lleva un nombre, que se resuelve aparte con `A` o `CNAME`.
+
+</details>
+
+<p><strong>7.</strong> ¿Por qué un <code>CNAME</code> no puede existir en la raíz del espacio de nombres?</p>
+<details><summary>Respuesta</summary>
+
+Porque la **raíz es el punto de entrada del sistema**, y un `CNAME` significa «soy otro nombre». Si `.` fuera un alias de otro nombre, para resolver cualquier cosa habría que resolver ese otro nombre, que a su vez exigiría volver a la raíz: **bucle infinito**.
+
+Más formalmente, la raíz cumple el papel de un **índice** (le dice al cliente a quién preguntarle), no de un nodo. Un índice que fuera un alias dejaría de ser un índice.
+
+La misma prohibición aplica a **la zona directa de un TLD**: por eso `uy. IN CNAME ...` es tan ilegal como `. IN CNAME ...`. La regla real es de **coherencia**: un nombre con `CNAME` no puede tener ningún otro registro, y la raíz ya necesita sus `NS`.
+
+</details>
+
+<p><strong>8.</strong> ¿Por qué no se puede resolver un nombre «de derecha a izquierda» si el nombre
+se lee de izquierda a derecha?</p>
+<details><summary>Respuesta</summary>
+
+La pregunta al revés: **el nombre se recorre de derecha a izquierda** porque la **autoridad va de arriba hacia abajo**.
+
+Para resolver `www.fing.edu.uy` hay que preguntarle **primero** al root, y el root solo sabe de **TLDs**. Después al `.uy`, que solo sabe de dominios de segundo nivel. Después al autoritativo, que sí conoce los hosts.
+
+Si se recorriera de izquierda a derecha, la primera pregunta sería «¿qué hay bajo `www`?», y **nadie lo sabe**: `www` no es una zona, no tiene autoridad, no tiene servidor. `www` es una etiqueta arbitraria que cada dominio elige como le gusta.
+
+Además, esto es lo que hace que `fing.edu.uy` y `mit.edu` puedan coexistir sin colisión: son **ramas distintas** de dos TLDs distintos.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>eirc1002</code> / <code>sirc1002</code></strong> — Pregunta 1 completa (8 pts): qué es el DNS y su función (a) y diferencia entre consultas iterativas y recursivas (b)</li>
+<li><strong>Examen <code>eirc1012</code> / <code>sirc1012</code></strong> — Pregunta 1a (8 pts): el TTL del RR, quién lo define, a qué refiere y en qué unidades</li>
+<li><strong>Examen <code>eirc1007</code> / <code>sirc1007</code></strong> — Pregunta 3 (8 pts): resolución iterativa completa sin caché (desarrollada en la Clase 11)</li>
+<li><strong>Examen <code>eirc0707</code> / <code>sirc0707</code></strong> — Pregunta 4 (8 pts): función del DNS y protocolo involucrado</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 7 §7.4 («El sistema de nombres de dominio»), §7.4.2 (el espacio de nombres jerárquico)</li>
+<li><strong>RFC 1034</strong> — <em>Domain Names: Concepts and Facilities</em> (1987): el diseño completo, que <strong>no cambió</strong></li>
+<li><strong>RFC 1035</strong> — <em>Domain Names: Implementation and Specification</em> (1987): el formato del mensaje y de los RR</li>
+<li><strong>RFC 6891</strong> — EDNS(0) (2013, <em>Internet Standard</em>): añade el pseudo-registro <code>OPT</code>; base de DNSSEC, CAA y SVCB/HTTPS</li>
+<li><strong>RFC 8659</strong> — CAA, <em>Certification Authority Authorization</em> (2019; reemplaza a RFC 6844)</li>
+<li><strong>RFC 4033-4035</strong> — DNSSEC (2005) · <strong>RFC 5155</strong> — raíz firmada (2010) · <strong>RFC 8080</strong> — EdDSA · <strong>RFC 8901</strong> — <em>multi-signer</em></li>
+<li><strong>RFC 9460</strong> — SVCB/HTTPS (2023): el DNS transporta política de transporte</li>
+<li><strong>IANA</strong>, <em>Root Zone Database</em> — la lista real de los 13 root servers y los TLDs existentes</li>
+<li><strong>Clase siguiente:</strong> 11 — DNS: iterativo vs. recursivo, caché y TTL</li>
+</ul></body></html>

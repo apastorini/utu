@@ -1,0 +1,167 @@
+===== [pag 1] =====
+
+Examen – 21 de febrero de 2011
+(ref: eirc1103.odt)
+Instrucciones
+• Indique su nombre completo y número de cédula en cada hoja.
+• Numere todas las hojas e indique la cantidad total de hojas que entrega en la primera.
+• Escriba las hojas de un solo lado y utilice una caligrafía claramente legible.
+• Comience cada pregunta teórica y cada ejercicio en una hoja nueva.
+• Sólo se contestarán dudas de letra. No se aceptarán dudas de ningún tipo los últimos 30 minutos del
+examen.
+• El examen es individual y sin material. Apague su celular mientras este en el salón del examen.
+• Es obligatorio responder correctamente al menos 15 puntos en las preguntas teóricas.
+• El puntaje mínimo de aprobación es de 60 puntos.
+• Para todos los ejercicios, si es necesario, puede suponer que dispone de los tipos de datos básicos
+(p.ej. lista, cola, archivo, string, etc.) y sus funciones asociadas (ej: tail(lista), crear(archivo),
+concatenar(string, string).
+• Duración: 3 horas. Culminadas las 3 horas el alumno no podrá modificar las hojas a entregar de ninguna
+forma.
+Preguntas Teóricas
+Pregunta 1 (8 puntos)
+Describa claramente las dos funciones clave de la capa de red y explique cómo interactúan entre ellas.
+Pregunta 2 (6 puntos)
+Dada una red de conmutación de paquetes, explique los conceptos de congestión, pérdidas y retardo.
+Pregunta 3 (6 puntos)
+Explique el principio de funcionamiento del comando traceroute indicando además los diferentes tipos de
+mensajes involucrados y los nodos que colaboran con el comando.
+Pregunta 4 (10 puntos)
+Suponga una comunicación TCP entre dos procesos A (dir IP = A; puerto TCP = 1927) y B (dir IP = B; puerto TCP
+= 2222). En un momento determinado A envía a B cuatro segmentos seguidos (no hay ningún dato previo sin
+asentir), el primero con número de secuencia igual a 1100 y con 20 bytes de datos, y los tres restantes con otros
+20 bytes de datos cada uno.
+a)
+Si B no tiene datos que enviar hacia A y no hay pérdidas de segmentos: represente en un diagrama el
+intercambio de segmentos resultante hasta que ninguno de los dos lados tenga nada que enviar.
+b)
+Represente de nuevo el diagrama si B no tiene datos que enviar hacia A y se pierde el primer segmento
+enviado de A a B.
+Nota: Detalle para todos los apartados anteriores el contenido de los campos relevantes de la cabecera TCP.
+Haga las suposiciones que considere necesarias, justificándolas.
+Pregunta 5 (10 puntos)
+Considere un paquete de longitud L que tiene su origen en el sistema terminal A y que viaja a través de tres
+enlaces hasta un sistema terminal de destino B. Estos tres enlaces están conectados mediante dos dispositivos
+de conmutación de paquetes. Sean di, si y Ri la longitud, la velocidad de propagación y la velocidad de transmisión
+del enlace i, para i = 1, 2, 3. Cada dispositivo de conmutación de paquetes retarda cada paquete dproc .
+a)
+Suponiendo que no se produce retardo de cola, ¿Cuál es el retardo total terminal a terminal del paquete
+en función de dproc ,di, si, Ri , (i = 1, 2, 3) y L?
+b)
+Suponga ahora que R1 = R2 = R3 = R y dproc= 0. Suponga también que el conmutador de paquetes no
+almacena los paquetes y los reenvía, sino que transmite inmediatamente cada bit que recibe sin esperar a
+que llegue el paquete completo. ¿Cuál será el retardo terminal a terminal?
+
+===== [pag 2] =====
+
+Problemas Prácticos
+Problema 1 (30 puntos)
+ECN (Explicit Congestion
+Notification) es un protocolo
+que actúa en capa de red y
+capa de transporte que permite
+que los hosts de una sesión
+TCP reciban notificaciones
+explícitas
+
+de
+
+congestión
+generadas por los routers de la
+red que reenvian los paquetes
+de dicha sesión. Un paquete IP
+puede estar marcado como:
+NO_ECN, ECN_AWARE o
+ECN_CONG.
+TCP puede activar ECN solicitando a su entidad de red marcar la bandera ECN_AWARE del encabezado IP de
+todos los paquetes que trasportan segmentos de dicha sesión. En caso de congestión, los routers deben marcar
+la bandera ECN_CONG del encabezado IP en todos aquellos paquetes marcados con ECN_AWARE antes de
+reenviarlos. Cuando el receptor recibe paquetes marcados con la bandera ECN_CONG le notifica al emisor que
+existe congestión marcando la bandera CONG_DETECTED del encabezado de los segmentos TCP.
+En el diagrama se muestra un ejemplo de funcionamiento.
+Considere dadas las siguientes primitivas y tipos de datos:
+Primitivas:
+•
+void setCongWinSize(int valor)/ int getCongWinSize(): Establece/lee el tamaño actual de la
+ventana de congestión.
+•
+void setCONGReceived(): Marca los próximos segmentos TCP a enviar con la bandera
+CONG_DETECTED.
+Tipos:
+TCP_Segment{
+ int destPort, srcPort, seqNum, ackSeqNum
+ void[] data
+ bool cong_detected
+ IP_Packet prev_header // Header IP del
+paquete TCP
+ ...
+}
+IP_Packet{
+ ip_addr src, dst
+ enum_ecn ecn_field // Valores: {NO_ECN,
+ECN_AWARE, ECN_CONG}
+ ...
+}
+Se pide:
+a)
+Cuando el emisor recibe un segmento TCP con la bandera CONG_DETECTED marcada, interpreta dicha
+situación como congestión. ¿Qué eventos interpreta TCP sin ECN como una señal de congestión en la
+red?
+b)
+Considere una implementación de TCP que carga el segmento TCP recibido en una estructura de tipo
+TCP_Segment
+que
+
+se
+
+usa
+
+como
+
+parámetro
+
+para
+
+invocar
+
+la
+
+función
+
+int   TCP_congDetection(TCP_Segment   segmento)  cuya salida es el estado de congestión.
+Implemente dicha función considerando los mecanismos tradicionales de detección de congestión de TCP
+y las mejoras provistas por ECN (si se invoca TCP_ congDetection con NULL como parámetro, es
+porque existió un timeout para la recepción de un ACK).
+c)
+TCP utiliza la función TCP_congDetection y le pasa el resultado a la función void
+TCP_congControl(Int congStatus) que implementa el control de congestión tradicional de TCP y
+los mecanismos necesarios para utilizar ECN.
+Implemente dicha función considerando que una vez detectada la congestión se pasa al estado “slow
+start” (arranque lento).
+
+===== [pag 3] =====
+
+Problema 2 (30 puntos)
+Una empresa tiene una red A (LAN Ethernet con direccionamiento privado) con 15 servidores y 70 puestos de
+trabajo, y se desea que puedan acceder a un servidor web en Internet con dirección IP 219.41.31.21 (ver figura).
+Para ello el router R1 implementa NAT utilizando su dirección IP pública.
+Se pide:
+a)
+Especifique la tabla de enrutamiento (routing) de R1 y del Host H.
+b)
+i.
+Suponiendo que la tabla ARP del Host H está vacía, indicar los mensajes ARP (MAC de origen, MAC
+de destino y descripción del contenido) intercambiados en la Red A cuando el Host H inicia su
+comunicación con Servidor Web (asuma que Host H conoce la dirección IP de Servidor Web).
+ii.
+Indique las direcciones MAC de las tramas y las direcciones IP de los paquetes correspondientes a un
+flujo de datos entre el Host H y el Servidor Web considerando ambos sentidos (considere únicamente
+la Red A).
+c)
+Especifique las modificaciones que realizará R1 en los paquetes de datos que viajan entre Host H y
+Servidor Web. Considerar ambos sentidos.
+d)
+Se adquiere para la Red A el bloque de direcciones IP públicas 100.100.100.0/24, y los administradores
+deciden aislar la red de servidores de los puestos de trabajo. Especifique las subredes del bloque
+mencionado que cumplan con este requerimiento y permitan dejar la mayor cantidad posible de
+direcciones IP para uso futuro. Mencione las modificaciones necesarias en el router R1 y su nueva tabla
+de enrutamiento.

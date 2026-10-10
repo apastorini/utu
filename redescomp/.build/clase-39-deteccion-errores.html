@@ -1,0 +1,1426 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 39 — Detección de errores: paridad, checksum y CRC</h1>
+<p><strong>Bloque:</strong> E (Capa de Enlace) · <strong>Semana:</strong> 13 · <strong>Duración estimada:</strong> 120 min
+<strong>Correlativa:</strong> Clase 38 (servicios y entramado de la capa de enlace) · <strong>Sigue con:</strong> Clase 40 (corrección de errores y ARQ)
+<strong>Material de referencia:</strong> Tanenbaum cap. 4 · Kurose §5.5 · Práctico 5 de 2008 (ejercicios 1 a 4) · RFC 1071 · RFC 1624 · IEEE 802.3 FCS</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Explicar la diferencia entre <strong>detectar</strong> un error y <strong>corregirlo</strong>, y por qué un detector barato puede ser mejor que un corrector caro.</li>
+<li>Calcular el <strong>bit de paridad par</strong> e <strong>impar</strong> de un mensaje, y <strong>demostrar por qué la paridad detecta todos los errores de un número impar de bits y ninguno de un número par</strong>.</li>
+<li>Construir una <strong>paridad en dos dimensiones</strong> completa (matriz + paridades de fila + paridades de columna), <strong>detectar y corregir un error de un bit</strong>, y <strong>demostrar por qué no puede corregir dos</strong>.</li>
+<li>Calcular el <strong>Internet checksum</strong> de 16 bits paso a paso, y explicar por qué <strong>no detecta el intercambio de dos words</strong>.</li>
+<li>Calcular un <strong>CRC</strong> con <strong>división polinómica</strong> término a término en GF(2), y <strong>verificarlo</strong> con el método de <strong>registro de desplazamiento con XOR</strong> que usa el hardware.</li>
+<li>Enunciar la <strong>propiedad clave del CRC</strong>: qué garantiza un generador de grado <code>r</code>, y por qué <strong>el CRC detecta pero no corrige</strong>.</li>
+<li>Resolver completo el <strong>Ejamen 2010-02 Pregunta 3</strong> (8 puntos).</li>
+</ol>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 700 400" style="max-width:700px"><rect width="700" height="400" fill="#ffffff"/><text x="350.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Division polinomica para calcular el CRC</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><text x="40" y="40" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="13" font-weight="700" fill="#1a1a1a">Dividendo:  D(x)·x^r + R(x)</text><text x="40" y="66" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="13" font-weight="700" fill="#14507a">Divisor:     G(x)   =  1101</text><text x="40" y="92" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="13" font-weight="700" fill="#c8621a">Resto R(x):  lo que sobra, y es el CRC que se envia</text><text x="46" y="140" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#666">1101011 1011001</text><rect x="90" y="112" width="63.63636363636363" height="24" rx="2" fill="#ffffff" stroke="#1a1a1a" stroke-width="1.2"/><text x="121.81818181818181" y="127.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">1</text><rect x="153.63636363636363" y="112" width="63.63636363636363" height="24" rx="2" fill="#ffffff" stroke="#1a1a1a" stroke-width="1.2"/><text x="185.45454545454544" y="127.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">1</text><rect x="217.27272727272725" y="112" width="63.63636363636363" height="24" rx="2" fill="#ffffff" stroke="#b8cfdb" stroke-width="1.2"/><text x="249.09090909090907" y="127.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#bbb">0</text><rect x="280.9090909090909" y="112" width="63.63636363636363" height="24" rx="2" fill="#ffffff" stroke="#1a1a1a" stroke-width="1.2"/><text x="312.7272727272727" y="127.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">1</text><rect x="344.5454545454545" y="112" width="63.63636363636363" height="24" rx="2" fill="#ffffff" stroke="#b8cfdb" stroke-width="1.2"/><text x="376.3636363636363" y="127.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#bbb">0</text><rect x="408.18181818181813" y="112" width="63.63636363636363" height="24" rx="2" fill="#ffffff" stroke="#1a1a1a" stroke-width="1.2"/><text x="439.99999999999994" y="127.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">1</text><rect x="471.81818181818176" y="112" width="63.63636363636363" height="24" rx="2" fill="#ffffff" stroke="#1a1a1a" stroke-width="1.2"/><text x="503.63636363636357" y="127.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">1</text><rect x="535.4545454545454" y="112" width="63.63636363636363" height="24" rx="2" fill="#ffffff" stroke="#1a1a1a" stroke-width="1.2"/><text x="567.2727272727273" y="127.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">1</text><rect x="599.090909090909" y="112" width="63.63636363636363" height="24" rx="2" fill="#ffffff" stroke="#b8cfdb" stroke-width="1.2"/><text x="630.9090909090909" y="127.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#bbb">0</text><rect x="662.7272727272726" y="112" width="63.63636363636363" height="24" rx="2" fill="#ffffff" stroke="#1a1a1a" stroke-width="1.2"/><text x="694.5454545454545" y="127.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">1</text><rect x="726.3636363636363" y="112" width="63.63636363636363" height="24" rx="2" fill="#ffffff" stroke="#1a1a1a" stroke-width="1.2"/><text x="758.1818181818181" y="127.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#1a1a1a">1</text><line x1="88" y1="140" x2="372" y2="140" stroke="#1a1a1a" stroke-width="1.6"/><rect x="90" y="150" width="175.0" height="24" rx="2" fill="#ffffff" stroke="#14507a" stroke-width="1.2"/><text x="177.5" y="165.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#14507a">1</text><rect x="265.0" y="150" width="175.0" height="24" rx="2" fill="#ffffff" stroke="#14507a" stroke-width="1.2"/><text x="352.5" y="165.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#14507a">1</text><rect x="440.0" y="150" width="175.0" height="24" rx="2" fill="#ffffff" stroke="#b8cfdb" stroke-width="1.2"/><text x="527.5" y="165.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#bbb">0</text><rect x="615.0" y="150" width="175.0" height="24" rx="2" fill="#ffffff" stroke="#14507a" stroke-width="1.2"/><text x="702.5" y="165.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#14507a">1</text><text x="660" y="165" text-anchor="end" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#14507a">G(x) = x^3 + x^2 + 1</text><text x="46" y="202" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#b3261e">0100</text><rect x="90" y="178" width="175.0" height="24" rx="2" fill="#ffffff" stroke="#b8cfdb" stroke-width="1.2"/><text x="177.5" y="193.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#bbb">0</text><rect x="265.0" y="178" width="175.0" height="24" rx="2" fill="#ffffff" stroke="#b3261e" stroke-width="1.2"/><text x="352.5" y="193.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#b3261e">1</text><rect x="440.0" y="178" width="175.0" height="24" rx="2" fill="#ffffff" stroke="#b8cfdb" stroke-width="1.2"/><text x="527.5" y="193.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#bbb">0</text><rect x="615.0" y="178" width="175.0" height="24" rx="2" fill="#ffffff" stroke="#b8cfdb" stroke-width="1.2"/><text x="702.5" y="193.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#bbb">0</text><line x1="88" y1="206" x2="222" y2="206" stroke="#b3261e" stroke-width="1.6"/><text x="46" y="246" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#b3261e">0011</text><rect x="90" y="222" width="175.0" height="24" rx="2" fill="#ffffff" stroke="#b8cfdb" stroke-width="1.2"/><text x="177.5" y="237.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#bbb">0</text><rect x="265.0" y="222" width="175.0" height="24" rx="2" fill="#ffffff" stroke="#b8cfdb" stroke-width="1.2"/><text x="352.5" y="237.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#bbb">0</text><rect x="440.0" y="222" width="175.0" height="24" rx="2" fill="#ffffff" stroke="#b3261e" stroke-width="1.2"/><text x="527.5" y="237.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#b3261e">1</text><rect x="615.0" y="222" width="175.0" height="24" rx="2" fill="#ffffff" stroke="#b3261e" stroke-width="1.2"/><text x="702.5" y="237.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#b3261e">1</text><line x1="88" y1="250" x2="158" y2="250" stroke="#b3261e" stroke-width="1.6"/><text x="46" y="292" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#c8621a">0011</text><rect x="90" y="268" width="175.0" height="24" rx="2" fill="#ffffff" stroke="#b8cfdb" stroke-width="1.2"/><text x="177.5" y="283.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#bbb">0</text><rect x="265.0" y="268" width="175.0" height="24" rx="2" fill="#ffffff" stroke="#b8cfdb" stroke-width="1.2"/><text x="352.5" y="283.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#bbb">0</text><rect x="440.0" y="268" width="175.0" height="24" rx="2" fill="#ffffff" stroke="#c8621a" stroke-width="1.2"/><text x="527.5" y="283.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#c8621a">1</text><rect x="615.0" y="268" width="175.0" height="24" rx="2" fill="#ffffff" stroke="#c8621a" stroke-width="1.2"/><text x="702.5" y="283.85" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#c8621a">1</text><line x1="88" y1="298" x2="214" y2="298" stroke="#c8621a" stroke-width="1.8"/><rect x="214" y="300" width="62" height="26" rx="3" fill="#fbe0d0" stroke="#c8621a" stroke-width="1.2"/><text x="245.0" y="317.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#c8621a">0011</text><text x="286" y="319" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#c8621a">= el CRC (4 bits)</text><text x="40" y="352" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">En GF(2) sumar es XOR y multiplicar es AND. Por eso la resta de la division es un XOR.</text><text x="40" y="372" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">Se divide D(x)·x^r entre G(x) y se manda el resto pegado al mensaje original.</text></svg></p>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2010-02 P3</code> (8 pts — paridad en dos dimensiones: funcionamiento y cuántos bits corrige) · <code>2007-07 P2</code> (5 pts — nombre los mecanismos de detección y corrección de la capa de enlace y describa uno) · <code>2008-12 P4</code> (mismo tipo de comprobación, aplicado a POP3).</p>
+<p>⚠️ Esta es <strong>una clase de cálculo</strong>. No hay nada que memorizar y sí mucho que
+ejecutar. Hacé los ejercicios con lápiz y papel antes de mirar la resolución.</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 El modelo de error</h2>
+<p>El medio físico es <strong>inexacto</strong>: ruido, interferencia o crosstalk pueden hacer que
+un bit que salió como <code>1</code> llegue como <code>0</code>. Eso es un <strong>error de bit</strong> (<em>bit flip</em>).</p>
+<div class="codehilite"><pre><span></span><code>  Lo que se mandó:      1 0 1 1 0 0 1 0
+  Lo que llegó:        1 0 1 0 0 0 1 0
+                            ↑ volteado
+</code></pre></div>
+
+<p>Sin protección, esa diferencia llega hasta la aplicación. <strong>Detectar</strong> errores es
+que el receptor <strong>se dé cuenta</strong> y descarte la trama. <strong>Corregir</strong> es que sepa
+<strong>cuál era el bit original</strong> y lo repare.</p>
+<p>La diferencia es enorme en costo: un detector es barato (un registro, unos XOR y
+una división por un polinomio fijo); un corrector necesita <strong>mucha</strong> más
+redundancia, porque tiene que distinguir entre muchos patrones de error posibles.</p>
+<p><strong>La definición que ordena toda la tabla de §1.6:</strong></p>
+<blockquote>
+<p>Un mecanismo detecta todos los errores de <strong>hasta <code>d − 1</code> bits</strong> y corrige todos
+los de <strong>hasta <code>⌊(d − 1)/2⌋</code> bits</strong>, donde <code>d</code> es la <strong>distancia de Hamming
+mínima</strong> del código: el mínimo número de bits en los que hay que cambiar
+cualquier par de mensajes válidos para que uno se convierta en el otro.</p>
+</blockquote>
+<h2>1.2 Chequeo de paridad de una dimensión (<em>parity bit</em>)</h2>
+<p><strong>Un solo bit</strong> calculado sobre el mensaje, para que el número total de unos sea
+siempre el mismo.</p>
+<div class="codehilite"><pre><span></span><code>  Mensaje  D = 1 0 1 1 0 1 0        (7 bits, 4 unos)
+
+  Paridad PAR:   el total debe quedar PAR    → bit = 0   (4+0 = 4, par)
+  Paridad IMPAR: el total debe quedar IMPAR  → bit = 1   (4+1 = 5, impar)
+
+  Recepción: sumo los 8 bits (incluido el de paridad) y verifico que el total
+             tenga la paridad esperada. Si no coincide → hubo error, descarto.
+</code></pre></div>
+
+<h3>La limitación fundamental — y la demostración que hay que saber</h3>
+<blockquote>
+<p><strong>La paridad detecta TODOS los errores de un número IMPAR de bits y NINGUNO de
+un número PAR de bits.</strong></p>
+</blockquote>
+<p><strong>Errores de número impar.</strong> Voltear <code>k</code> bits con <code>k</code> impar cambia el número de
+unos en <code>+k</code>, <code>+k−2</code>, …, <code>−k</code>: todos valores <strong>impares</strong>. La paridad del total se
+invierte, así que <strong>no puede coincidir</strong> con la guardada. Se detecta. ✓</p>
+<p><strong>Errores de número par.</strong> Voltear dos bits <code>i</code> y <code>j</code>:</p>
+<div class="codehilite"><pre><span></span><code>  los dos 1 → 0   :  los unos BAJAN en 2   → el total sigue siendo PAR
+  los dos 0 → 1   :  los unos SUBEN en 2   → el total sigue siendo PAR
+  uno a 1, otro a 0 : los unos NO cambian → el total no cambia
+</code></pre></div>
+
+<p>En los tres casos <strong>la paridad del total no cambia</strong>, así que el bit de paridad
+sigue cuadrando. El receptor <strong>no se entera de nada</strong>. ✗</p>
+<div class="codehilite"><pre><span></span><code>  Ejemplo:  D = 1 0 1 1 0 1 0 , paridad par = 0
+  Se voltean los bits 1 y 5 (ambos 1 → 0):
+  Se envió:  1 0 1 1 0 1 0 0        (6 unos = par ✓)
+  Se recibe: 0 0 1 1 0 1 0 0        (4 unos = par ✓)
+  → NO DETECTADO. El receptor entrega un mensaje que nunca se mandó.
+</code></pre></div>
+
+<p><strong>El costo.</strong> Un solo bit de paridad protege <strong>una palabra</strong> y agrega 1 bit:
+12,5 % de overhead en un byte, 1 % en una trama de 100 bytes. Por eso <strong>nadie
+usa un solo bit de paridad en un protocolo real</strong>: el riesgo de que un error de
+dos bits pase inadvertido es demasiado alto. La solución es <strong>múltiples bits de
+paridad</strong>, y de ahí salen la paridad 2D y el código de Hamming (clase 40).</p>
+<h2>1.3 Paridad en dos dimensiones (<em>two-dimensional parity</em>)</h2>
+<p>La idea es repetir la paridad <strong>en dos direcciones</strong>.</p>
+<div class="codehilite"><pre><span></span><code>  Se ve el flujo como una MATRIZ:
+   - cada palabra va en una FILA,
+   - palabras consecutivas en filas consecutivas,
+   - el bit j-ésimo de cada palabra forma la COLUMNA j-ésima.
+
+  Se agrega:  un bit de paridad al final de CADA FILA,
+              un bit de paridad al final de CADA COLUMNA.
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>        c1 c2 c3 c4 │ ... cn │ Rp
+   ┌──┬─────────────┬────────┬────┐
+   │f1│  n bits     │  ...   │    │  ← 1 bit de paridad por fila
+   ├──┼─────────────┼────────┼────┤
+   │fm│  m × n      │        │    │
+   ├──┼─────────────┼────────┼────┤
+   │Cp│  n bits     │        │    │  Cp = paridades de columna (última fila)
+   └──┴─────────────┴────────┴────┘
+
+  Campo de comprobación = (Rp(1)..Rp(m)) ‖ (Cp(1)..Cp(n))  =  m + n bits
+</code></pre></div>
+
+<p><strong>Las dos propiedades que hacen que funcione:</strong></p>
+<ol>
+<li><strong>Detecta y corrige 1 error de bit.</strong> Si falla la paridad de la fila <code>i</code> <strong>y</strong>
+   la de la columna <code>j</code>, el error está <strong>exactamente en <code>(i, j)</code></strong> — y se corrige,
+   porque ya se sabe cuál es.</li>
+<li><strong>Detecta los errores de 2 bits</strong>, pero <strong>no los puede corregir</strong> (ver §2.2).</li>
+</ol>
+<p><strong>El detalle elegante de la esquina:</strong> no hace falta un bit de esquina, porque
+por construcción la paridad de la suma de las Rp y la de la suma de las Cp son
+<strong>iguales</strong> (las dos son la paridad del número total de unos de la matriz). El
+campo mide <code>m + n</code> bits, no <code>m + n + 1</code>.</p>
+<h2>1.4 Internet checksum (suma de verificación de Internet)</h2>
+<p>Es el mecanismo de <strong>IP, UDP y TCP</strong>: un checksum de <strong>16 bits</strong> con
+<strong>aritmética de complemento a uno</strong> (<em>one's complement</em>) y acarreo circular.</p>
+<p><strong>Procedimiento, paso a paso (el que hay que saber de memoria):</strong></p>
+<div class="codehilite"><pre><span></span><code>  1. PARTIR el mensaje en WORDS DE 16 BITS.
+     Si el número de bytes es impar, se agrega un byte de relleno con 0.
+
+  2. SUMAR todas las words como enteros de 16 bits, en complemento a uno:
+     suma normal, y cada vez que el resultado pasa de 65535 se le vuelve
+     a sumar 1   →  "acarreo circular" o "end-around carry".
+
+  3. COMPLEMENTAR el resultado de 16 bits (invertir cada bit).
+
+  4. TRANSMITIR el mensaje seguido del checksum.
+
+  VERIFICACIÓN en el receptor: se suma todo (incluido el checksum) con la misma
+  aritmética. Si no hubo error, el resultado debe ser  0xFFFF.
+</code></pre></div>
+
+<p><strong>Por qué detecta los errores — y el punto fino que suma puntos.</strong> El checksum es
+un <strong>código lineal</strong> sobre <code>GF(2)</code>. De ahí salen tres propiedades:</p>
+<ol>
+<li><strong>Detecta el 100 % de los errores que están dentro de una sola word de 16
+   bits</strong>, sea cual sea el patrón. Porque el valor de una word módulo <code>2¹⁶ − 1</code>
+   es <strong>inyectivo</strong>: dos words distintas nunca dan el mismo residuo. Si una word
+   cambia, la suma cambia.</li>
+<li><strong>Detecta todos los errores de un bit</strong> (caso particular de lo anterior).</li>
+<li><strong>NO detecta el intercambio de dos words de 16 bits</strong>, porque <strong>sumar es
+   conmutativo</strong>: <code>w₁ + w₂ = w₂ + w₁</code>. Si dos words se intercambian entre sí, la
+   suma es <strong>exactamente la misma</strong>, el checksum es el mismo y el receptor acepta
+   la trama.</li>
+</ol>
+<p><strong>Y el mismo argumento de la paridad, generalizado:</strong></p>
+<div class="codehilite"><pre><span></span><code>  1 bit alterado, en una word   : la suma cambia ±2^k        (k=0..15) → ≠ 0 → DETECTADO
+  2 bits en la MISMA word       : cambia ±2^i ± 2^j (i≠j)               → ≠ 0 → DETECTADO
+  bit k en una word y bit k en otra, en sentidos opuestos:
+                                  +2^k y −2^k  → suma 0                 → NO DETECTADO
+  intercambio de 2 words        : la suma es idéntica                  → NO DETECTADO
+</code></pre></div>
+
+<p><strong>Dónde vive esto.</strong> IP <strong>no</strong> tiene checksum (era demasiado caro recalcularlo en
+cada router); lo tienen <strong>UDP y TCP</strong>, porque corren en los extremos, donde unos
+pocos ciclos de CPU no importan y donde el datagrama puede haber pasado por veinte
+saltos. <code>RFC 1071</code> es la especificación del algoritmo y <code>RFC 1624</code> documenta por
+qué <strong>cambiarlo rompe la compatibilidad</strong> — un detalle que se pregunta.</p>
+<h2>1.5 CRC — Cyclic Redundancy Check</h2>
+<p><strong>Esto es lo más importante de la clase.</strong> Todo lo anterior sirve para entender
+el problema; el CRC es la solución que se usa en todas partes.</p>
+<h3>1.5.1 La idea: polinomios y el campo GF(2)</h3>
+<p>La idea es representar el bloque de bits como un <strong>polinomio con coeficientes
+binarios</strong>. Si el bloque es <code>1 0 1 1 0</code>, el polinomio es:</p>
+<div class="codehilite"><pre><span></span><code> 1 0 1 1 0 → x⁴ + x² + x + x⁰
+</code></pre></div>
+
+<p>Porque el primer bit (el más a la izquierda) es el coeficiente de <code>x^(n−1)</code>.</p>
+<p><strong>Toda la aritmética se hace en el campo de Galois <code>GF(2)</code></strong>, y <code>GF(2)</code> tiene
+<strong>una sola diferencia con la aritmética normal</strong>:</p>
+<div class="codehilite"><pre><span></span><code> ┌──────────────────────────────────────────────────────┐
+ │ + es XOR (sin acarreo, 1+1 = 0) │
+ │ × es AND (0·x = 0, 1·x = x) │
+ └──────────────────────────────────────────────────────┘
+
+ Ejemplos:
+ 1 + 1 = 0
+ 101 + 110 = 011 (XOR)
+ 101 × 110 = 100 (AND)
+</code></pre></div>
+
+<p><strong>Por qué polinomios y no "dividir el número entero":</strong> porque <code>GF(2)</code> no tiene
+división entera con resto. Los polinomios sobre <code>GF(2)</code> <strong>sí</strong> se pueden dividir,
+con resto, siempre. Esa es la razón matemática de que el CRC se defina como una
+división polinómica.</p>
+<h3>1.5.2 La división polinómica larga</h3>
+<p><strong>El procedimiento completo, en palabras:</strong></p>
+<div class="codehilite"><pre><span></span><code>  1. Sea G el polinomio generador, de grado r.
+  2. Sea D el bloque de datos de N bits. Se representa como polinomio.
+  3. Se agregan r CEROS a la derecha:  T = D · x^r
+     (en binario: se desplazan D r posiciones hacia la izquierda).
+  4. Se divide T por G con "división larga", donde cada resta es un XOR.
+  5. El resto R (grado &lt; r) es el CRC, y se transmite pegado a D.
+</code></pre></div>
+
+<p><strong>El paso 4 en detalle — esto es lo que hay que escribir en el examen:</strong></p>
+<div class="codehilite"><pre><span></span><code>  While el polinomio de trabajo T sea de grado &gt;= grado de G:
+      • Ubicar el término de MAYOR grado de T.
+      • Poner G sobre él, desplazado para que coincidan las potencias mayores.
+      • REEMPLAZAR esa porción de T por el XOR de ambas (o sea, "restar").
+  Cuando deg(T) &lt; deg(G), lo que queda de T es el resto R.
+</code></pre></div>
+
+<p><strong>Ejemplo completo, con <code>G = 1001 = x³+x+1</code> (grado 3) y <code>D = 10101010</code>.</strong>
+El desarrollo línea por línea, con los seis XOR, está en <strong>§2.4</strong>. Acá va la
+estructura, que es lo que hay que entender:</p>
+<div class="codehilite"><pre><span></span><code>  D · x³ = 10101010 000 = 10101010000        (grado 10)
+
+  x¹⁰ → ⊕ G en x¹⁰  →  00111010000
+  x⁸  → ⊕ G en x⁸   →  00011110000
+  x⁷  → ⊕ G en x⁷   →  00001100000
+  x⁶  → ⊕ G en x⁶   →  00000101000
+  x⁵  → ⊕ G en x⁵   →  00000000110
+  x³  → ⊕ G en x³   →  00000000101   ← grado 2 &lt; 3, FIN
+
+  R = 101 = 5 = 0x5
+</code></pre></div>
+
+<p><strong>Comprobación (multiplicación de vuelta en <code>GF(2)</code>):</strong></p>
+<div class="codehilite"><pre><span></span><code>  T ⊕ R = 10101010101 ⊕ 00000000101 = 10101010000 = D · x³  ✓
+  Y 10101010101 = 1001 × 10111101   →  divisible, resto 0  ✓
+</code></pre></div>
+
+<p><strong>Lo que se transmite es <code>D || R</code>:</strong></p>
+<div class="codehilite"><pre><span></span><code>  10101010 101
+  └───D────┘ └R┘   8 + 3 = 11 bits para 8 de información
+  overhead = 3 bits = el grado de G
+</code></pre></div>
+
+<h3>1.5.3 El cálculo con XOR: cómo lo hace realmente el hardware</h3>
+<p>Nadie implementa una división polinómica con restas. El hardware real usa un
+<strong>registro de desplazamiento de <code>r</code> bits</strong> y una sola operación de XOR:</p>
+<div class="codehilite"><pre><span></span><code> R = 0 (r bits)
+ for cada bit b del mensaje D, del más significativo al menos:
+ fb = (bit más significativo de R) XOR b
+ R = (R &lt;&lt; 1), quedándose con r bits
+ si fb = 1: R = R XOR (G módulo 2^r)
+ Al final, R es el CRC.
+</code></pre></div>
+
+<p><strong>Por qué es equivalente a la división polinómica:</strong> cada iteración hace
+exactamente <strong>una</strong> de las "restas" (XOR) de la división larga, y lo hace en el
+momento en que el bit que sale por la izquierda del registro corresponde al
+término mayor. Al final, en el registro queda lo mismo que en el polinomio de
+trabajo: el resto. La ventaja es que <strong>es un circuito de <code>r</code> flip-flops, <code>r</code>
+puertas XOR y un cable de realimentación</strong> — o sea, unos pocos nanoseconds por
+byte.</p>
+<p><strong>La tabla completa del ejemplo anterior</strong> (<code>G = 1001</code>, <code>r = 3</code>, <code>D = 1 0 1 0 1 0 1 0</code>) está en <strong>§2.5</strong> y da <code>R = 101</code>, el mismo resultado que la división polinómica. Eso es exactamente lo que hay que demostrar cuando alguien dice "el XOR de hardware es equivalente a la división", y podés decirlo en el examen poniendo los dos resultados de lado.</p>
+<h3>1.5.4 Los polinomios generadores estándar, y por qué hay tantos</h3>
+<div class="codehilite"><pre><span></span><code>  ┌────────────────┬──────────────────┬─────────────────────────────────┐
+  │ Nombre         │ Polinomio        │ Dónde se usa                    │
+  ├────────────────┼──────────────────┼─────────────────────────────────┤
+  │ CRC-32         │ 0x04C11DB7       │ Ethernet (IEEE 802.3), ZIP,     │
+  │ (IEEE 802.3)   │ grado 32         │ PNG, gzip, HTTP                 │
+  ├────────────────┼──────────────────┼─────────────────────────────────┤
+  │ CRC-32C        │ 0x1EDC6F41       │ SCTP, iSCSI, ext4, Ceph         │
+  │ (Castagnoli)   │ grado 32         │                                 │
+  ├────────────────┼──────────────────┼─────────────────────────────────┤
+  │ CRC-16/CCITT   │ 0x1021           │ HDLC (FCS), X.25, MPEG-2,      │
+  │                │ = x¹⁶+x¹²+x⁵+1  │ Bluetooth                       │
+  ├────────────────┼──────────────────┼─────────────────────────────────┤
+  │ CRC-8          │ 0x07             │ ATM (celdas de 53 bytes)        │
+  │                │ = x⁸+x²+x+1      │                                 │
+  └────────────────┴──────────────────┴─────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>En el hardware se usan las versiones "reflejadas"</strong> (<em>reflected</em>): el registro
+desplaza a la derecha en vez de a la izquierda, y los polinomios aparecen
+invertidos byte a byte. Por eso el CRC-32 se escribe <code>0xEDB88320</code> en el software
+y <code>0x04C11DB7</code> en el estándar, y el CRC-32C aparece como <code>0x82F63B78</code>.</p>
+<p><strong>¿Por qué hacen falta polinomios distintos?</strong> Por cuatro razones, todas de
+optimización:</p>
+<ol>
+<li><strong>Detectar todos los errores de un bit</strong> ⇒ el término independiente tiene que
+   ser <strong>1</strong> (el polinomio no puede ser divisible por <code>x</code>).</li>
+<li><strong>Detectar ráfagas cortas</strong> ⇒ el polinomio debe tener <strong>muchos términos no
+   nulos</strong> y ser irreducible o primitivo, para que la división produzca muchos
+   restos distintos.</li>
+<li><strong>Detectar el error extremo a extremo además del de línea</strong>: en una llamada
+   telefónica, dos FCS de línea iguales pueden <strong>compensarse</strong> y anular un error;
+   un polinomio distinto por capa lo evita.</li>
+<li><strong>Ser barato en hardware</strong> ⇒ se elige el grado que da el overhead justo
+   (32 bits = 4 bytes, comparable de un vistazo).</li>
+</ol>
+<p><strong>Lo que se escribe en el examen</strong> es la idea: <em>el mismo problema, optimizado
+para contextos distintos, tiene soluciones distintas; por eso hay varios
+polinomios estandarizados y no uno solo.</em></p>
+<h3>1.5.5 La propiedad clave del CRC — y el punto conceptual que se pregunta</h3>
+<p>Acá está todo. Sea <code>G</code> un polinomio de grado <code>r</code>.</p>
+<blockquote>
+<p><strong>Un patrón de error <code>E</code> NO es detectado si y sólo si <code>G</code> divide a <code>E</code>.</strong>
+En otras palabras: los patrones no detectados son exactamente <strong>los múltiplos
+de <code>G</code></strong>.</p>
+</blockquote>
+<p>De ahí salen las tres garantías:</p>
+<p><strong>(a) Se detecta el 100 % de los errores de UN bit.</strong></p>
+<div class="codehilite"><pre><span></span><code> Un error de un solo bit en la posición k es el polinomio E = x^k.
+ Para que fuera undetected, haría falta G | x^k.
+ Pero x^k tiene grado k, y el coeficiente de x^k en G... un polinomio de
+ grado r ≥ 1 no divide a un monomio, porque x^k tiene un solo término.
+ ∴ E ≠ 0 nunca es undetected.
+</code></pre></div>
+
+<p><strong>(b) Se detectan TODOS los errores por ráfaga (<em>burst error</em>) de longitud ≤ r.</strong></p>
+<div class="codehilite"><pre><span></span><code> Una ráfaga de longitud L es un error cuyos bits están todos en una ventana
+ de L posiciones consecutivas: E = x^s · (polinomio de grado ≤ L−1)
+ Si L ≤ r, entonces grado(E) ≤ s + r − 1 ... y el factor de la derecha tiene
+ grado &lt; r = grado(G), así que NO puede ser múltiplo de G.
+ ∴ undetected imposible. ✓
+</code></pre></div>
+
+<p>Ésta es la razón por la que el CRC anduvo en enlaces de datos reales durante
+décadas: los errores de línea <strong>no son aleatorios</strong>, son <strong>ráfagas</strong> (un
+transitorio electromagnético voltea un grupo de bits juntos), y el CRC los
+detecta todos mientras sean cortos.</p>
+<p><strong>(c) Para un error de <code>b</code> bits, la fórmula y su lectura correcta.</strong></p>
+<div class="codehilite"><pre><span></span><code> Los undetected son los múltiplos de G: E = G · Q.
+ En una ventana de b posiciones, los múltiplos de G son los G·Q con
+ deg(Q) ≤ b−1−r, o sea 2^(b−r) cocientes distintos.
+
+ De ahí sale la expresión que circula en los apuntes:
+
+ P(detectar) = 1 − 2^(−(n − b))
+
+ donde n = grado del polinomio generador y b = número de bits del error.
+
+ ⚠️ CÓMO HAY QUE USARLA: la expresión da sentido numérico sólo mientras
+ b sea mucho menor que n. Interpretada así:
+
+ b = 1 → P ≈ 1 − 2^(−n) ≈ 1 (seguro)
+ b = n/2 → P ≈ 1 − 2^(−n/2) ≈ 1 (muy seguro)
+ b ≈ n → la protección se agota
+
+ ⚠️ La versión RIGUROSA — y la que hay que saber argumentar — son (a), (b) y
+ la distancia mínima:
+
+ d = r + 1 (para los generadores bien elegidos, sin múltiplos
+ de peso bajo)
+
+ ∴ se detectan TODOS los errores de peso ≤ r = d − 1.
+
+ Los errores de peso mayor se detectan con probabilidad muy alta, pero no
+ con certeza: existen C(n, b) patrones posibles y sólo 2^(b−r) de ellos son
+ múltiplos de G.
+</code></pre></div>
+
+<p><strong>Consecuencia práctica, que es lo que se lleva uno al examen:</strong></p>
+<div class="codehilite"><pre><span></span><code> CRC-32, r = 32:
+ error de 1 bit → detectado SIEMPRE
+ ráfaga de ≤ 32 bits → detectada SIEMPRE
+ error de 32 bits → probabilidad de detección ≈ 1 − 2^(−32)
+ error de 64 bits → todavía altísima
+ (y en la práctica, más de 10^11 bits transferidos con undetected = 0)
+</code></pre></div>
+
+<h3>1.5.6 ⚠️ El CRC detecta, NO corrige</h3>
+<p>Esto se pregunta, y la respuesta tiene dos partes:</p>
+<p><strong>1. Teóricamente, un CRC con <code>d = r + 1</code> podría corregir <code>⌊r/2⌋</code> errores.</strong> Con
+<code>d = 33</code>, serían 16. ¿Por qué no se hace?</p>
+<ul>
+<li>El <strong>síndrome</strong> (el resto de la división) tiene sólo <code>r = 32</code> bits. El número de
+ patrones de error de <strong>un</strong> bit es <code>N</code>, mucho mayor que <code>2^32</code>. Con una tabla
+ de log se puede localizar un error de un solo bit (<code>G·x^i</code> módulo <code>x^r</code> da la
+ tabla), pero para 16 errores hay <code>binom(N,16)</code> patrones y <strong>no hay forma
+ práctica de distinguirlos</strong> con 32 bits de información.</li>
+<li>El hardware real de CRC hace una sola cosa: comparar el resto con cero.</li>
+</ul>
+<p><strong>2. Para corregir de verdad se usan otros códigos:</strong> <strong>Hamming y SECDED</strong>
+(clase 40, para 1 y 2 bits) y los <strong>códigos correctores de Reed–Solomon</strong> o
+<strong>LDPC</strong>, que agregan mucha más redundancia y son los que se usan en
+discos, DVDs, satelite, DVB-T y 5G.</p>
+<blockquote>
+<p><strong>La frase para el examen:</strong> <em>el CRC es un mecanismo de </em><em>detección</em><em> de alta
+probabilidad con overhead mínimo. La corrección exige redundancia
+considerable y algoritmos de decodificación distintos; por eso nunca se usa el
+CRC como corrector.</em></p>
+</blockquote>
+<h2>1.6 La tabla que resume todo</h2>
+<table>
+<thead>
+<tr>
+<th>Mecanismo</th>
+<th>Redundancia</th>
+<th>Detecta</th>
+<th>Corrige</th>
+<th>Dónde</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Paridad 1D</strong></td>
+<td>1 bit</td>
+<td><strong>errores de peso impar</strong>; falla con peso par</td>
+<td>nada</td>
+<td>xo, casi nunca se usa solo</td>
+</tr>
+<tr>
+<td><strong>Paridad 2D</strong></td>
+<td><code>m + n</code> bits</td>
+<td><strong>todos</strong> los de 1 y 2 bits; <strong>no</strong> todos los de 4</td>
+<td><strong>1 bit</strong></td>
+<td>práctica, teaching</td>
+</tr>
+<tr>
+<td><strong>Internet checksum</strong></td>
+<td>16 bits</td>
+<td>todos los de 1 bit; <strong>casi todos</strong> los múltiples; <strong>NO</strong> word swaps</td>
+<td>nada</td>
+<td>IP(no), <strong>UDP, TCP</strong></td>
+</tr>
+<tr>
+<td><strong>Hamming SEC</strong></td>
+<td><code>r</code> bits, <code>2^r ≥ m+1</code></td>
+<td>hasta <code>d−1</code></td>
+<td><strong>1 bit</strong></td>
+<td>clase 40</td>
+</tr>
+<tr>
+<td><strong>Hamming SECDED</strong></td>
+<td><code>r + 1</code></td>
+<td>2 bits</td>
+<td><strong>2 bits</strong></td>
+<td>clase 40</td>
+</tr>
+<tr>
+<td><strong>CRC-r</strong></td>
+<td><code>r</code> bits</td>
+<td><strong>1 bit siempre</strong>, ráfagas ≤ <code>r</code> siempre, más</td>
+<td><strong>nada</strong></td>
+<td><strong>Ethernet, ZIP, PNG, iSCSI, SCTP</strong></td>
+</tr>
+<tr>
+<td><strong>Reed–Solomon</strong></td>
+<td>alto</td>
+<td>ráfagas largas</td>
+<td><strong>varios bits</strong></td>
+<td>DVD, DVB-T, 5G, RAID 6</td>
+</tr>
+</tbody>
+</table>
+<h2>1.7 ⚠️ Actualización a 2026</h2>
+<p><strong>Sigue igual — de memoria, sin dudar:</strong>
+- <strong>Paridad</strong>: par e impar, y la propiedad de detectar todo error de <strong>número
+  impar</strong> de bits y ninguno de <strong>número par</strong>.
+- <strong>Internet checksum</strong>: 16 bits, complemento a uno, con acarreo circular. Vive en
+  <strong>UDP y TCP</strong>. Lo que <strong>NO</strong> detecta: el <strong>intercambio de dos words</strong>.
+- <strong>CRC</strong>: división polinómica en <code>GF(2)</code> con <code>+</code> = XOR, <code>r</code> ceros agregados,
+  y la propiedad "detecta siempre un error de 1 bit y toda ráfaga de hasta <code>r</code>
+  bits".
+- <strong>CRC-32 = <code>0x04C11DB7</code></strong> para Ethernet, ZIP y PNG. <strong>CRC detecta, no corrige.</strong></p>
+<p><strong>Cambió o se afinó:</strong>
+- <strong>El campo de aplicación se movió, no el mecanismo.</strong> <code>CRC-32C</code>
+  (Castagnoli) es el de <strong>SCTP, iSCSI, ext4 y Ceph</strong>; <code>CRC-32</code> es el de
+  <strong>Ethernet, ZIP y PNG</strong>. Conviven por las cuatro razones de §1.5.4.
+- <strong>El CRC dejó de ser un cálculo</strong>: en 1 a 400 Gbit/s se implementa como
+  <strong>circuito combinacional</strong> (tabla de 256 entradas de 32 bits, o una matriz
+  lineal de XOR y desplazamientos). El resultado es el mismo.
+- <strong>El checksum de IPv4 no existe y no volvió</strong>: los routers lo descartan para
+  ganar velocidad. <code>RFC 1624</code> documenta que <strong>no se puede cambiar</strong> el algoritmo
+  del checksum de TCP/UDP sin romper compatibilidad.
+- ⚠️ <strong>Tema en desuso:</strong> la <strong>paridad 2D como mecanismo de producción</strong>. Se
+  enseña y se pregunta, pero no aparece en ningún protocolo comercial: todo lo
+  real usa CRC o <strong>Reed–Solomon</strong>.
+- Lo que <strong>sí</strong> se usa para <strong>corregir</strong> de verdad: <strong>Hamming</strong> y <strong>SECDED</strong>
+  (clase 40), y <strong>Reed–Solomon</strong> o <strong>LDPC</strong> en discos, DVB-T, 5G y RAID 6.</p>
+<p><strong>Consecuencia para el examen:</strong> la pregunta <code>2010-02 P3</code> <strong>se sigue preguntando
+tal cual</strong>. Lo que suma es el criterio de <strong>distancia mínima</strong>, que es lo que
+distingue a quien entendió de quien memorizó.</p>
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<blockquote>
+<p>Los <strong>ejercicios 1 a 4</strong> son del <strong>Práctico 5 de 2008</strong>
+(<code>material-oficial/practicos/png/prac05_2008-p01.png</code>), extraídos del libro de
+Kurose &amp; Ross. Los <strong>ejercicios 5 a 11</strong> son <em>inventados y resueltos</em>.</p>
+</blockquote>
+<h2>2.1 Ejercicio 1 (Práctico 5) — Paridad en dos dimensiones con paridad par</h2>
+<p><strong>Enunciado.</strong> Supongamos que el contenido de un paquete es el patrón de bits
+<code>1010101010101011</code>, y que se utiliza un esquema de <strong>paridad par</strong>. ¿Cuál sería
+el valor del campo de comprobación para el caso de un esquema de paridad de
+<strong>dos dimensiones</strong>? La respuesta debe usar un campo de comprobación de
+<strong>longitud mínima</strong>.</p>
+<h3>Paso 1 — Dimensionar la matriz</h3>
+<p>Son 16 bits de datos. Con una matriz de <code>m</code> filas de <code>n</code> columnas hay <code>m · n</code>
+posiciones de datos, y el campo de comprobación mide <code>m + n</code> bits (un bit de
+paridad por fila + uno por columna; la esquina no aporta nada, §1.3).</p>
+<p>Buscamos el mínimo de <code>m + n</code> con <code>m · n ≥ 16</code>:</p>
+<div class="codehilite"><pre><span></span><code> m n m·n m+n
+ ─── ─── ───── ─────
+ 4 4 16 8 ← mínimo
+ 5 4 20 9
+ 3 6 18 9
+ 2 8 16 10
+ 1 16 16 17
+ 8 2 16 10
+</code></pre></div>
+
+<p><strong>Matriz de 4 × 4.</strong> la convención de la cátedra ("el bit j-ésimo de cada
+palabra forma la columna j-ésima"), el patrón se parte en cuatro palabras de
+cuatro bits:</p>
+<div class="codehilite"><pre><span></span><code> f1 = 1010
+ f2 = 1010
+ f3 = 1010
+ f4 = 1011
+</code></pre></div>
+
+<h3>Paso 2 — Paridad de cada FILA</h3>
+<p>Paridad par ⇒ el bit de paridad vale <strong>(número de unos) mod 2</strong>.</p>
+<div class="codehilite"><pre><span></span><code> f1 = 1 0 1 0 → 2 unos → 2 mod 2 = 0
+ f2 = 1 0 1 0 → 2 unos → 0
+ f3 = 1 0 1 0 → 2 unos → 0
+ f4 = 1 0 1 1 → 3 unos → 3 mod 2 = 1
+ Rp = 0 0 0 1
+</code></pre></div>
+
+<h3>Paso 3 — Paridad de cada COLUMNA</h3>
+<div class="codehilite"><pre><span></span><code> c1 (bit 1 de cada palabra): 1,1,1,1 → 4 unos → 0
+ c2 (bit 2): 0,0,0,0 → 0 unos → 0
+ c3 (bit 3): 1,1,1,1 → 4 unos → 0
+ c4 (bit 4): 0,0,0,1 → 1 uno → 1
+ Cp = 0 0 0 1
+</code></pre></div>
+
+<h3>Respuesta</h3>
+<div class="codehilite"><pre><span></span><code> c1 c2 c3 c4 │ Rp
+ ┌──┬─────────────┬────┐
+ │f1│ 1 0 1 0 │ 0 │
+ │f2│ 1 0 1 0 │ 0 │
+ │f3│ 1 0 1 0 │ 0 │
+ │f4│ 1 0 1 1 │ 1 │
+ ├──┼─────────────┼────┤
+ │Cp│ 0 0 0 1 │ │
+ └──┴─────────────┴────┘
+
+ CAMPO DE COMPROBACIÓN = Rp || Cp = 0 0 0 1 0 0 0 1 = 8 bits
+
+ Frame total = 16 bits de datos + 8 de comprobación = 24 bits.
+</code></pre></div>
+
+<p><strong>Verificación de la esquina</strong> (la propiedad de §1.3): la paridad de la suma de
+las paridades de fila es <code>(0+0+0+1) mod 2 = 1</code>; la de la suma de las de columna es
+<code>(0+0+0+1) mod 2 = 1</code>. <strong>Coinciden</strong>, como debe ser.</p>
+<h2>2.2 Ejercicio 2 (Práctico 5) — 2D paridad: corrige 1 bit, detecta 2</h2>
+<p><strong>Enunciado.</strong> Mostrar, con un ejemplo <strong>distinto al del libro</strong>, que la paridad
+de dos dimensiones puede <strong>corregir y detectar un error en un bit único</strong>. Mostrar,
+con otro ejemplo, que un error en <strong>dos</strong> bits puede ser <strong>detectado pero no
+corregido</strong>.</p>
+<h3>(a) Corrección de un error de un bit</h3>
+<p>Datos (paridad par), matriz de 4 × 4:</p>
+<div class="codehilite"><pre><span></span><code>        c1 c2 c3 c4 │ Rp
+   f1   1  0  1  1 │  1     ← 3 unos
+   f2   0  1  1  0 │  0     ← 2 unos
+   f3   1  1  0  0 │  0     ← 2 unos
+   f4   0  0  1  0 │  1     ← 1 uno
+   ────────────────┼───
+   Cp   0  0  1  1 │         ← c1:2→0  c2:2→0  c3:3→1  c4:1→1
+</code></pre></div>
+
+<p><strong>Se voltea el bit de la fila 3, columna 3</strong> (de <code>0</code> a <code>1</code>). El receptor recalcula:</p>
+<div class="codehilite"><pre><span></span><code>  FILAS
+   f1 = 1 0 1 1 → 3 unos → Rp debe ser 1. Recibido 1. ✓
+   f2 = 0 1 1 0 → 2 unos → Rp debe ser 0. Recibido 0. ✓
+   f3 = 1 1 1 0 → 3 unos → Rp debe ser 1. Recibido 0. ✗  ← FALLA
+   f4 = 0 0 1 0 → 1 uno  → Rp debe ser 1. Recibido 1. ✓
+
+  COLUMNAS
+   c1 = 1,0,1,0 → 2 unos → Cp debe ser 0. Recibido 0. ✓
+   c2 = 0,1,1,0 → 2 unos → Cp debe ser 0. Recibido 0. ✓
+   c3 = 1,1,1,1 → 4 unos → Cp debe ser 0. Recibido 1. ✗  ← FALLA
+   c4 = 1,0,0,0 → 1 uno  → Cp debe ser 1. Recibido 1. ✓
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>  Fila que falla = 3 ; Columna que falla = 3
+  ∴ el bit equivocado es el de la intersección (3,3)
+  ∴ CORRIGE: se lo invierte y el mensaje queda intacto.  ✓
+</code></pre></div>
+
+<p><strong>Interpretación.</strong> Ese es el corazón de la técnica: la fila te dice <strong>en qué
+franja</strong> y la columna te dice <strong>en qué posición dentro de la franja</strong>. Con esos
+dos datos la posición del error queda <strong>completamente determinada</strong>: no hay
+ambigüedad posible.</p>
+<h3>(b) Dos errores: detecta, pero no corrige</h3>
+<p>Con la misma matriz, se voltean los bits <strong>(1,1)</strong> y <strong>(2,2)</strong>:</p>
+<div class="codehilite"><pre><span></span><code>  FILAS
+   f1 = 0 0 1 1 → 2 unos → Rp debe ser 0. Recibido 1. ✗  ← FALLA
+   f2 = 0 0 1 0 → 1 uno  → Rp debe ser 1. Recibido 0. ✗  ← FALLA
+   f3 = 1 1 0 0 → 2 unos → 0. Recibido 0. ✓
+   f4 = 0 0 1 0 → 1 uno  → 1. Recibido 1. ✓
+
+  COLUMNAS
+   c1 = 0,0,1,0 → 1 uno  → Cp debe ser 1. Recibido 0. ✗  ← FALLA
+   c2 = 0,0,1,0 → 1 uno  → Cp debe ser 1. Recibido 0. ✗  ← FALLA
+   c3 = 1,1,0,1 → 3 unos → 1. Recibido 1. ✓
+   c4 = 1,0,0,0 → 1 uno  → 1. Recibido 1. ✓
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>  Filas que fallan    : 1 y 2
+  Columnas que fallan: 1 y 2
+
+  Posiciones candidatas = las 4 intersecciones:
+        (1,1)  (1,2)
+        (2,1)  (2,2)
+  y SOLO dos están mal.  ¿Cuáles?  ¡INDETERMINADO!
+
+  ∴ DETECTA (hay incoherencia) pero NO PUEDE CORREGIR.
+</code></pre></div>
+
+<p><strong>Por qué no puede: la información no alcanza.</strong> El receptor tiene cuatro
+observaciones ("fallan estas dos filas y estas dos columnas") y hay <strong>cuatro</strong>
+combinaciones distintas de dos bits que las producen exactamente igual: <code>(1,1)+(2,2)</code>,
+<code>(1,1)+(2,1)</code>, <code>(1,2)+(2,1)</code> y <code>(1,2)+(2,2)</code>. <strong>Sin redundancia extra no hay forma
+de desempatar.</strong></p>
+<h3>(c) Y el caso peor: un error de CUATRO bits que <strong>no se detecta</strong></h3>
+<p>Volteamos un <strong>rectángulo 2 × 2</strong>: (1,1), (1,2), (2,1) y (2,2).</p>
+<div class="codehilite"><pre><span></span><code>  FILAS
+   f1 = 0 1 1 1 → 3 unos → Rp = 1. Recibido 1. ✓   (original: 1 0 1 1 = 3 unos)
+   f2 = 1 0 1 0 → 2 unos → Rp = 0. Recibido 0. ✓   (original: 0 1 1 0 = 2 unos)
+   f3 = 1 1 0 0 → 2 unos → 0. Recibido 0. ✓   (sin cambios)
+   f4 = 0 0 1 0 → 1 uno  → 1. Recibido 1. ✓   (sin cambios)
+
+  COLUMNAS
+   c1 = 0,1,1,0 → 2 unos → 0. Recibido 0. ✓   (original: 1,0,1,0 = 2 unos)
+   c2 = 1,0,1,0 → 2 unos → 0. Recibido 0. ✓   (original: 0,1,1,0 = 2 unos)
+   c3 = 1,1,0,1 → 3 unos → 1. Recibido 1. ✓   (sin cambios)
+   c4 = 1,0,0,0 → 1 uno  → 1. Recibido 1. ✓   (sin cambios)
+</code></pre></div>
+
+<p><strong>Resultado: CERO verificaciones fallan.</strong> El receptor acepta una trama con
+<strong>cuatro</strong> bits equivocados y no se entera de nada. Ése es el tope de la paridad
+2D, y por eso no se usa en producción.</p>
+<p><strong>La razón, en una frase:</strong> cada fila y cada columna afectada recibe <strong>dos</strong>
+cambios de signo opuesto, que se <strong>cancelan</strong> en el conteo de unos. Exactamente
+el mismo argumento de la paridad 1D, pero aplicado a las dos dimensiones a la vez.</p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Calcular la paridad de columna leyendo las filas.</strong> La columna <code>j</code> es el bit
+  <code>j</code> de <strong>cada</strong> fila, no el último bit de cada fila.</li>
+<li><strong>Olvidar que la paridad es la del número de unos</strong>, no "la del último bit".</li>
+<li><strong>Cerrar en 8 bits el campo de comprobación cuando <code>m·n &gt; 16</code>.</strong> Si la matriz
+  no es cuadrada, el campo mide <code>m + n</code>, y hay que elegir la que minimiza.</li>
+<li><strong>Confundir "detectar 2 errores" con "corregir 2 errores".</strong> Con dos filas y dos
+  columnas fallando hay cuatro candidatos y sólo dos están mal.</li>
+</ul>
+<h2>2.3 Ejercicio 3 (Práctico 5) — Internet checksum de los bytes 0 a 9</h2>
+<p><strong>Enunciado.</strong> Supóngase que la porción de información de un paquete contiene
+diez bytes, que suponen la representación binaria sin signo de ocho bits de los
+enteros del 0 al 9. Calcular la suma de comprobación (<em>checksum</em>) Internet para
+estos datos.</p>
+<p><strong>Paso 1 — Los diez bytes en binario y en hexadecimal.</strong></p>
+<div class="codehilite"><pre><span></span><code> decimal binario hex
+ ─────── ───────── ────
+ 0 00000000 0x00
+ 1 00000001 0x01
+ 2 00000010 0x02
+ 3 00000011 0x03
+ 4 00000100 0x04
+ 5 00000101 0x05
+ 6 00000110 0x06
+ 7 00000111 0x07
+ 8 00001000 0x08
+ 9 00001001 0x09
+</code></pre></div>
+
+<p><strong>Paso 2 — Emparejarlos en words de 16 bits</strong> (un byte par, un byte impar).</p>
+<div class="codehilite"><pre><span></span><code> byte: 0 1 │ 2 3 │ 4 5 │ 6 7 │ 8 9
+ ↓ ↓ │ ↓ ↓ │ ↓ ↓ │ ↓ ↓ │ ↓ ↓
+ 0x0001 │ 0x0203 │ 0x0405 │ 0x0607 │ 0x0809
+
+ w1 = 0000 0000 0000 0001 = 0x0001 = 1
+ w2 = 0000 0010 0000 0011 = 0x0203 = 515
+ w3 = 0000 0100 0000 0101 = 0x0405 = 1029
+ w4 = 0000 0110 0000 0111 = 0x0607 = 1543
+ w5 = 0000 1000 0000 1001 = 0x0809 = 2057
+</code></pre></div>
+
+<p><strong>Paso 3 — Sumar.</strong> Ojo: <strong>10 bytes son 5 words exactas, así que no hace falta
+byte de relleno</strong> (el relleno con 0 sólo hace falta cuando el número de bytes es
+impar).</p>
+<div class="codehilite"><pre><span></span><code> S = 1 + 515 + 1029 + 1543 + 2057
+
+ 1 + 515 = 516
+ 516 + 1029 = 1545
+ 1545 + 1543 = 3088
+ 3088 + 2057 = 5145
+
+ 5145 &lt; 65535 → NO hay acarreo que devolver. S = 5145
+</code></pre></div>
+
+<p><strong>Paso 4 — Complementar los 16 bits.</strong></p>
+<div class="codehilite"><pre><span></span><code> 5145 en binario: 0001 0100 0001 1001
+ │ │ │ │
+ Su complemento: 1110 1011 1110 0110
+ = 0xEBE6
+
+ Decimales: 65535 − 5145 = 60390 = 0xEBE6
+</code></pre></div>
+
+<h3>Respuesta</h3>
+<div class="codehilite"><pre><span></span><code> Internet checksum = 0xEBE6 = 60390 (16 bits)
+
+ Trama completa: 00 01 02 03 04 05 06 07 08 09 | EB E6
+</code></pre></div>
+
+<p><strong>Interpretación.</strong> Con <strong>diez bytes</strong> el checksum es de <strong>2 bytes</strong>. La
+proporción de protección es del 20 %: muchísima redundancia para tan pocos datos,
+que es exactamente lo que pasa con los mensajes cortos. Los checksums tienen
+sentido en los encabezados de <strong>TCP/IP</strong> (decenas de bytes), no en un payload
+chico.</p>
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Sumar byte a byte y no word a word.</strong> Hay que agrupar de a 16 bits, y el
+ <strong>primer byte va en el bit más alto</strong> de la word.</li>
+<li><strong>Olvidar el acarreo circular.</strong> Acá no hubo, pero en el ejercicio 2.8 sí.</li>
+<li><strong>Complementar dos veces</strong> (una al sumar, otra al final).</li>
+</ul>
+<h2>2.4 Ejercicio 4 (Práctico 5) — CRC con <code>G = 1001</code> y <code>D = 10101010</code></h2>
+<p><strong>Enunciado.</strong> Considérese el generador de cuatro bits <code>G</code>, mostrado en la Figura
+5.8 del libro, y supóngase que <code>D</code> tiene el valor <code>10101010</code>. ¿Cuál es el valor de
+<code>R</code>?</p>
+<div class="codehilite"><pre><span></span><code> G = 1001 = x³ + x + 1 grado r = 3
+ D = 10101010 = x⁷+x⁵+x³+x¹ grado 7
+</code></pre></div>
+
+<p><strong>El desarrollo completo de la división polinómica</strong> está hecho en §1.5.2, con
+los seis pasos y todos los XOR. Se reproduce acá en forma de tabla, que es como
+hay que presentarlo:</p>
+<div class="codehilite"><pre><span></span><code> T = D·x³ = 10101010 000 = 10101010000 (11 bits)
+
+ iter término mayor XOR con G alineado T después
+ ──── ────────────── ────────────────────────── ──────────
+ 1 x¹⁰ 10010000000 (x¹⁰+x⁸+x⁷) 00111010000
+ 2 x⁸ 00001001000 (x⁸+x⁶+x⁵) 00011110000
+ 3 x⁷ 00000010010 (x⁷+x⁵+x⁴) 00001100000
+ 4 x⁶ 00000001001 (x⁶+x⁴+x³) 00000101000
+ 5 x⁵ 00000000110 (x⁵+x³+x²) 00000000110
+ 6 x³ 00000000010 (x³+x+1) 00000000101
+ ──────────
+ grado 2 &lt; 3 → R = 101
+</code></pre></div>
+
+<p><strong>El paso a paso, línea por línea (esto es lo que se escribe en el examen):</strong></p>
+<div class="codehilite"><pre><span></span><code> Paso 1 1 0 1 0 1 0 1 0 0 0 0
+ ⊕ 1 0 0 1 0 0 0 0 0 0 0
+ ───────────────────────
+ 0 0 1 1 1 0 1 0 0 0 0
+
+ Paso 2 0 0 1 1 1 0 1 0 0 0 0
+ ⊕ 0 0 0 1 0 0 1 0 0 0 0
+ ───────────────────────
+ 0 0 0 1 1 1 1 0 0 0 0
+
+ Paso 3 0 0 0 1 1 1 1 0 0 0 0
+ ⊕ 0 0 0 1 0 0 0 1 0 0 0
+ ───────────────────────
+ 0 0 0 0 1 1 0 0 0 0 0
+
+ Paso 4 0 0 0 0 1 1 0 0 0 0 0
+ ⊕ 0 0 0 0 1 0 0 1 0 0 0
+ ───────────────────────
+ 0 0 0 0 0 1 0 1 0 0 0
+
+ Paso 5 0 0 0 0 0 1 0 1 0 0 0
+ ⊕ 0 0 0 0 0 1 0 0 1 0 0
+ ───────────────────────
+ 0 0 0 0 0 0 0 1 1 0 0
+
+ Paso 6 0 0 0 0 0 0 0 1 1 0 0
+ ⊕ 0 0 0 0 0 0 0 1 0 0 1
+ ───────────────────────
+ 0 0 0 0 0 0 0 0 1 0 1
+ R = 1 0 1
+</code></pre></div>
+
+<h3>Respuesta</h3>
+<div class="codehilite"><pre><span></span><code> R = 101 (3 bits = el grado de G)
+ Trama que va por el cable: 10101010 101
+ └─ D ──┘ └R┘
+ Receiver: 10101010101 ÷ 1001 = 10111101, resto 0 ✓
+</code></pre></div>
+
+<blockquote>
+<p><strong>Nota sobre la numeración del Práctico 5.</strong> El PDF oficial
+(<code>prac05_2008-p01.png</code>) numera este ejercicio como el <strong>número 4</strong>, y al CRC
+como el <strong>4</strong> y el checksum como el <strong>3</strong>. Algunas reediciones lo numeran como
+"Ejercicio 2". Acá se usa la numeración del PDF de FING.</p>
+</blockquote>
+<h2>2.5 Verificación del Ejercicio 4 con el método de XOR</h2>
+<p><strong>Mismo dato, mismo generador, método de hardware.</strong> La tabla completa está en
+§1.5.3 y da <code>R = 101</code>. Se reproduce para que se vea el paralelismo:</p>
+<div class="codehilite"><pre><span></span><code> G = 1001, r = 3, G mod 2³ = 001
+ D = 1 0 1 0 1 0 1 0
+
+ paso b R antes MSB⊕b R&lt;&lt;1 ¿XOR 001? R final
+ ──── ─── ─────── ───── ────── ────────── ───────
+ 1 1 000 1 000 sí 001
+ 2 0 001 0 010 no 010
+ 3 1 010 1 100 sí 101
+ 4 0 101 1 010 sí 011
+ 5 1 011 1 110 sí 111
+ 6 0 111 1 110 sí 111
+ 7 1 111 0 110 no 110
+ 8 0 110 1 100 sí 101
+
+ R = 101 ✓ IGUAL
+</code></pre></div>
+
+<p><strong>Interpretación.</strong> Los dos métodos dan <code>101</code>. Eso es lo que significa "son
+equivalentes": <strong>el registro de desplazamiento con XOR hace exactamente la misma
+división polinómica</strong>, pero con <code>r</code> flip-flops en vez de una tabla.</p>
+<h2>2.6 Ejercicio 5 (inventado) — Paridad par e impar sobre el mismo mensaje</h2>
+<p><strong>Datos.</strong> <code>D = 11010011</code> (8 bits). Número de unos = <strong>5</strong>.</p>
+<div class="codehilite"><pre><span></span><code>  Paridad PAR:   5 es impar → el bit debe hacer el total PAR    → bit = 1
+                 (5 + 1 = 6, par ✓)
+  Paridad IMPAR: 5 es impar → el total debe quedar IMPAR        → bit = 0
+                 (5 + 0 = 5, impar ✓)
+</code></pre></div>
+
+<p><strong>Comprobación con los dos errores de un bit posibles:</strong></p>
+<div class="codehilite"><pre><span></span><code>  Se envía: 1 1 0 1 0 0 1 1 | 1     (paridad par;  6 unos = par)
+  Error en bit 3 (0→1):  ahora 7 unos → IMPAR
+                        el receptor con paridad par espera PAR → NO CUADRA → DETECTADO ✓
+  Error en bit 5 (0→1):  idéntico → DETECTADO ✓
+
+  Se envía: 1 1 0 1 0 0 1 1 | 0     (paridad impar; 5 unos = impar)
+  Error en bit 3:         → 6 unos → PAR; la paridad impar espera IMPAR → DETECTADO ✓
+</code></pre></div>
+
+<p><strong>Y el caso que NO detecta:</strong></p>
+<div class="codehilite"><pre><span></span><code>  Se envía: 1 1 0 1 0 0 1 1 | 1
+  Se voltean los bits 3 y 5 (los dos 0 → 1): quedan 8 unos = PAR
+  → el receptor ve 8 unos, que es PAR, y espera PAR → NO DETECTADO ✗
+</code></pre></div>
+
+<h2>2.7 Ejercicio 6 (inventado) — Paridad 2D: cuatro escenarios con la misma matriz</h2>
+<p>Se usa la matriz de §2.2(a), con el bit (3,3) correcto:</p>
+<div class="codehilite"><pre><span></span><code>        c1 c2 c3 c4 │ Rp
+   f1   1  0  1  1 │  1
+   f2   0  1  1  0 │  0
+   f3   1  1  0  0 │  0
+   f4   0  0  1  0 │  1
+   Cp   0  0  1  1 │
+</code></pre></div>
+
+<p><strong>Escenario A — un error en (3,3).</strong></p>
+<div class="codehilite"><pre><span></span><code>  Fallan f3 (3 unos, esperaba 2) y c3 (4 unos, esperaba 3)
+  → intersección (3,3) → CORRIGE. ✓
+</code></pre></div>
+
+<p><strong>Escenario B — dos errores en (1,1) y (4,4).</strong></p>
+<div class="codehilite"><pre><span></span><code>  f1 = 0 0 1 1 → 2 unos → Rp 0, hay 1  ✗ FALLA
+  f4 = 0 0 1 1 → 2 unos → Rp 0, hay 1  ✗ FALLA
+  c1 = 0,0,1,0 → 2 unos → Cp 0, hay 0  ✓
+  c4 = 1,1,0,1 → 3 unos → Cp 1, hay 1  ✓
+  → 2 filas y 0 columnas. Detecta, no corrige. ✗
+</code></pre></div>
+
+<p><strong>Escenario C — dos errores en (1,1) y (2,1), en la misma columna.</strong></p>
+<div class="codehilite"><pre><span></span><code>  f1 = 0 0 1 1 → 2 unos → Rp 0, hay 1  ✗ FALLA
+  f2 = 1 1 1 0 → 3 unos → Rp 1, hay 0  ✗ FALLA
+  c1 = 0,1,1,0 → 2 unos → Cp 0, hay 0  ✓   (¡la columna NO falla: los dos
+                                             errores se compensan!)
+  → 2 filas y 0 columnas. Detecta, no corrige. ✗
+</code></pre></div>
+
+<p><strong>Escenario D — dos errores en (1,1) y (2,2).</strong></p>
+<div class="codehilite"><pre><span></span><code>  Fallan f1, f2, c1, c2  (dos filas, dos columnas)
+  → Detecta, no corrige.  (Es el caso de §2.2(b).)
+</code></pre></div>
+
+<p><strong>Conclusión del ejercicio:</strong></p>
+<div class="codehilite"><pre><span></span><code>  ┌──────────────────────┬───────────────┬────────────────────┐
+  │ Filas que fallan     │ Columnas      │ Qué puede hacer    │
+  ├──────────────────────┼───────────────┼────────────────────┤
+  │ 1                    │ 1             │ CORRIGE            │
+  │ 2                    │ 2             │ detecta, no corrige│
+  │ 2                    │ 0             │ detecta, no corrige│
+  │ 0                    │ 0             │ ¡nada! (4 errores) │
+  └──────────────────────┴───────────────┴────────────────────┘
+</code></pre></div>
+
+<h2>2.8 Ejercicio 7 (inventado) — Internet checksum con acarreo circular</h2>
+<p><strong>Datos.</strong> Cuatro words de 16 bits: <code>0x1234 = 4660</code>, <code>0x5678 = 22136</code>,
+<code>0x9ABC = 39612</code>, <code>0xDEF0 = 57072</code>.</p>
+<p><strong>Paso 1 — sumar y arrastrar el acarreo.</strong></p>
+<div class="codehilite"><pre><span></span><code>      4660
+    + 22136   →  26796   (&lt; 65536, sin acarreo)
+    + 39612   →  66408   (≥ 65536 → hay acarreo)
+
+      66408  −  65536  =    872
+      872    +      1  =    873      ← acarreo devuelto al final
+
+    + 57072   →  57945   (&lt; 65536, sin acarreo)
+
+  S = 57945
+</code></pre></div>
+
+<p><strong>Paso 2 — complementar.</strong></p>
+<div class="codehilite"><pre><span></span><code>  ~57945 = 65535 − 57945 = 7590
+  7590 = 1×4096 + 13×256 + 10×16 + 6 = 4096 + 3328 + 160 + 6  → 0x1DA6
+</code></pre></div>
+
+<p><strong>Paso 3 — verificar.</strong></p>
+<div class="codehilite"><pre><span></span><code>  57945 + 7590 = 65535 = 0xFFFF  ✓   (todo unos: checksum correcto)
+</code></pre></div>
+
+<p><strong>Respuesta: Internet checksum = <code>0x1DA6</code> = 7590.</strong></p>
+<p><strong>El caso que NO detecta, demostrado con estos números:</strong></p>
+<div class="codehilite"><pre><span></span><code>  Trama original:  w1=0x1234  w2=0x5678  w3=0x9ABC  w4=0xDEF0
+  Trama con dos words intercambiadas:
+                   w1=0x5678  w2=0x1234  w3=0x9ABC  w4=0xDEF0
+
+  Suma original      : 4660+22136+39612+57072 = 123480  →  → 57945
+  Suma intercambiada : 22136+4660+39612+57072  = 123480  →  → 57945
+
+  LAS SUMAS SON IDÉNTICAS → el checksum es el mismo
+  → el receptor ACEPTA la trama.  El error pasa inadvertido.  ✗
+</code></pre></div>
+
+<p><strong>Interpretación.</strong> Es <strong>exactamente el mismo argumento de la paridad</strong>, aplicado
+a words: dos perturbaciones que se compensan en la suma no dejan rastro. Por eso
+el checksum de UDP no protege contra reordenamientos de datos.</p>
+<h2>2.9 Ejercicio 8 (inventado) — CRC por división polinómica: <code>G = 1101</code>, <code>D = 100100</code></h2>
+<p><strong>Datos.</strong></p>
+<div class="codehilite"><pre><span></span><code>  G = 1101 = x³ + x² + 1          r = 3
+  D = 100100 = x⁵ + x²
+  T = D·x³ = 100100000 = x⁸ + x⁵        (9 bits)
+</code></pre></div>
+
+<p><strong>División polinómica, paso a paso.</strong> En cada paso, <code>G</code> cubre las <strong>cuatro
+columnas que empiezan en la del término mayor</strong>, con los valores <code>d₃ d₂ d₁ d₀</code>:</p>
+<div class="codehilite"><pre><span></span><code>  Paso 1    1 0 0 1 0 0 0 0 0
+          ⊕ 1 1 0 1 0 0 0 0 0      ← G en x⁸
+            ─────────────────────
+            0 1 0 0 0 0 0 0 0
+
+  Paso 2    0 1 0 0 0 0 0 0 0
+          ⊕ 0 1 1 0 1 0 0 0 0      ← G en x⁷
+            ─────────────────────
+            0 0 1 0 1 0 0 0 0
+
+  Paso 3    0 0 1 0 1 0 0 0 0
+          ⊕ 0 0 1 1 0 1 0 0 0      ← G en x⁶
+            ─────────────────────
+            0 0 0 1 1 1 0 0 0
+
+  Paso 4    0 0 0 1 1 1 0 0 0
+          ⊕ 0 0 0 1 1 0 1 0 0      ← G en x⁵
+            ─────────────────────
+            0 0 0 0 0 1 0 1 0
+
+  Paso 5    0 0 0 0 0 1 0 1 0
+          ⊕ 0 0 0 0 0 1 1 0 1      ← G en x³
+            ─────────────────────
+            0 0 0 0 0 0 0 0 1
+                                              grado 0 &lt; 3 → FIN
+</code></pre></div>
+
+<h3>Respuesta</h3>
+<div class="codehilite"><pre><span></span><code>  R = 001  (3 bits = el grado de G)
+  Se transmite:  100100 001
+  Recepción:     100100001 ÷ 1101 = 1011110 , resto 0
+</code></pre></div>
+
+<p><strong>Verificación por multiplicación en <code>GF(2)</code></strong> (que es la única forma válida:
+en <code>GF(2)</code> multiplicar <strong>no</strong> es multiplicar enteros, es XOR de desplazamientos):</p>
+<div class="codehilite"><pre><span></span><code>  Q = 1011110
+  Q &lt;&lt; 3 = 1 0 1 1 1 1 0 0 0     (posiciones 8..0: 1 1 1 1)
+  Q &lt;&lt; 2 =   1 0 1 1 1 1 0 0     (posiciones 7..0: 1 1 1 1)
+  Q       =       1 0 1 1 1 0     (posiciones 5..0: 1 1 1 1 0 1)
+
+  XOR columna por columna:
+     pos8: 1                  = 1
+     pos7: 1 ⊕ 1              = 0
+     pos6: 1 ⊕ 1              = 0
+     pos5: 1 ⊕ 1 ⊕ 1          = 1
+     pos4:     1 ⊕ 1          = 0
+     pos3: 1 ⊕ 1              = 0
+     pos2:     1 ⊕ 1          = 0
+     pos1:         0 ⊕ 1      = 1
+     pos0:         1          = 1
+  ─────────────────────────────
+     resultado = 1 0 0 1 0 0 0 0 1  = 100100001  ✓
+</code></pre></div>
+
+<h3>⚠️ Errores típicos</h3>
+<ul>
+<li><strong>Perder la cuenta de columnas</strong> al escribir un XOR largo. El error más común
+  de todos: uno escribe la fila del generador con un cero de más o de menos y el
+  resultado sale distinto. <strong>Por eso en el examen hay que alinear las columnas
+  con espacios</strong>, y <strong>por eso en la práctica se usa el registro de desplazamiento</strong>
+  (§2.10), que sólo toca <code>r</code> bits por iteración y es inmune a este error.</li>
+<li><strong>Sumar en vez de XORar.</strong> En <code>GF(2)</code> no hay acarreo.</li>
+<li><strong>Olvidar los <code>r</code> ceros a la derecha.</strong> Sin ellos el polinomio se divide mal y
+  el receptor no puede recomputar el resto.</li>
+</ul>
+<h2>2.10 Ejercicio 9 (inventado) — El mismo cálculo con la tabla de XOR</h2>
+<p><strong>Datos.</strong> <code>G = 1011 = x³ + x + 1</code>, <code>r = 3</code>, <code>G mod 2³ = 011</code>.
+<code>D = 1001001 = x⁶ + x³ + 1</code>.</p>
+<p><strong>Método del registro de desplazamiento</strong> (§1.5.3), un renglón por bit de <code>D</code>:</p>
+<div class="codehilite"><pre><span></span><code>  paso   b    R       MSB(R)⊕b   R = R&lt;&lt;1    ¿XOR 011?   R final
+  ────  ───  ─────   ────────   ─────────   ──────────   ───────
+   1     1    000        1        000          sí          011
+   2     0    011        0        110          no          110
+   3     0    110        1        100          sí          111
+   4     1    111        0        110          no          110
+   5     0    110        1        100          sí          111
+   6     0    111        1        110          sí          101
+   7     1    101        0        010          no          010
+                                              ───────────────────
+                                                    R = 010
+</code></pre></div>
+
+<p><strong>Y la división polinómica del mismo caso, para que se vean iguales:</strong></p>
+<div class="codehilite"><pre><span></span><code>  T = D·x³ = 1001001000 = x⁹ + x⁶ + x³      (10 bits)
+
+  Paso 1    1 0 0 1 0 0 1 0 0 0
+          ⊕ 1 0 1 1 0 0 0 0 0 0      ← G en x⁹
+            ───────────────────────
+            0 0 1 0 0 0 1 0 0 0
+
+  Paso 2    0 0 1 0 0 0 1 0 0 0
+          ⊕ 0 0 1 0 1 1 0 0 0 0      ← G en x⁷
+            ───────────────────────
+            0 0 0 0 1 1 0 0 0 0
+
+  Paso 3    0 0 0 0 1 1 0 0 0 0
+          ⊕ 0 0 0 0 1 0 1 1 0 0      ← G en x⁵
+            ───────────────────────
+            0 0 0 0 0 1 1 1 0 0
+
+  Paso 4    0 0 0 0 0 1 1 1 0 0
+          ⊕ 0 0 0 0 0 1 0 1 1 0      ← G en x⁴
+            ───────────────────────
+            0 0 0 0 0 0 1 0 1 0
+
+  Paso 5    0 0 0 0 0 0 1 0 1 0
+          ⊕ 0 0 0 0 0 0 0 1 0 1 1    ← G en x³ (las 4 últimas columnas)
+            ───────────────────────
+            0 0 0 0 0 0 0 0 1 0      ← grado 1 &lt; 3 → FIN
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>  R = 010   ✓  el mismo que por la tabla de XOR
+
+  Verificación:  T ⊕ R = 1001001000 ⊕ 0000000010 = 1001001010
+                 Q = 1011110 y  Q × 1011 = 1001001010   (resto 0)
+</code></pre></div>
+
+<p><strong>Interpretación.</strong> Dos métodos, un resultado. El de la <strong>división polinómica</strong>
+es el que hay que saber hacer en un examen de papel; el del <strong>registro de
+desplazamiento</strong> es el que está en el silicio y el que usan <code>zlib</code>, <code>iSCSI</code>,
+SCTP y la placa de red de tu máquina.</p>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2010-02, Pregunta 3 (8 puntos) — paridad en dos dimensiones</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen <code>eirc1002</code> / <code>sirc1002</code> — febrero de 2010.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1002.pdf</p>
+</blockquote>
+<h3>Enunciado (texto del examen)</h3>
+<blockquote>
+<p>Pregunta 3 (8 puntos)</p>
+<p>a) Explique el funcionamiento del mecanismo de chequeo por paridad en dos
+dimensiones utilizado para detección de errores en Capa de Enlace.</p>
+<p>b) ¿Permite realizar correcciones? ¿De cuántos bits? Justifique</p>
+</blockquote>
+<h3>Respuesta oficial (del PDF de soluciones)</h3>
+<blockquote>
+<p>La paridad en dos dimensiones considera el flujo de datos como un flujo "bi
+dimensional", tomando el flujo como una matriz donde cada palabra es puesta en
+una fila, y palabras consecutivas en filas consecutivas. De esta forma el bit
+j-ésimo de cada palabra forma la columna j-ésima de toda la matriz.</p>
+<p>A cada fila se le agrega un bit de paridad (calculado sobre la fila) y cada
+cierto numero de palabras se agrega una palabra de paridad calculada por
+columna.</p>
+<p>La paridad en dos dimensiones permite:
+- Corregir errores de un bit por palabra y por columna, ya que esto hace
+posible saber que bit está invertido a través de la intersección de la fila y
+columna que fallan la verificación de paridad.
+- En algunos casos permite detectar errores dobles.</p>
+</blockquote>
+<h3>Análisis de la solución oficial</h3>
+<p><strong>Lo que está bien, y es el corazón del puntaje:</strong></p>
+<ol>
+<li><strong>La definición de la matriz</strong> es exactamente la que hay que usar: "cada
+ palabra es puesta en una fila, palabras consecutivas en filas consecutivas,
+ el bit j-ésimo de cada palabra forma la columna j-ésima". Con eso se entiende
+ que <strong>no hay ambigüedad</strong> en cómo se arma.</li>
+<li><strong>"Una palabra de paridad calculada por columna"</strong> — ojo con la frase: la
+ solución dice "<strong>palabra</strong>" de paridad por columna, cuando lo correcto es que
+ el cálculo de columna <strong>escribe un bit por columna</strong>, todos en una última fila.
+ Las dos cosas son consistentes (una fila de bits de paridad), pero si el
+ enunciado mezclara los niveles, hay que aclarar cuál es cuál.</li>
+<li><strong>La razón de la corrección</strong> está bien: <em>"a través de la intersección de la
+ fila y columna que fallan la verificación de paridad"</em>. Ésa es la frase que
+ hay que decir.</li>
+</ol>
+<p><strong>Lo que le falta — y son los puntos que se pueden sumar:</strong></p>
+<ol>
+<li><strong>El ítem (b) pide "de cuántos bits", y la solución oficial no lo dice con
+ claridad.</strong> Hay que decir explícitamente: <strong>corrige exactamente 1 bit</strong>.</li>
+<li><strong>"En algunos casos permite detectar errores dobles"</strong> es <strong>demasiado
+ generoso</strong>. La 2D paridad detecta <strong>todos</strong> los errores de dos bits, no
+ "algunos". Lo que es cierto es que <strong>no puede corregirlos</strong>.</li>
+<li><strong>No menciona el techo</strong>: existen errores de <strong>cuatro</strong> bits (un rectángulo
+ <code>2 × 2</code>) que <strong>no se detectan en absoluto</strong>. Es el dato que demuestra que
+ entendiste la estructura lineal del código.</li>
+<li><strong>No justifica por qué 2D y no 1D.</strong> La respuesta es: 1D detecta los errores
+ de <strong>número impar</strong> de bits y ninguno de número par; 2D agrega la dimensión
+ que faltaba.</li>
+</ol>
+<blockquote>
+<p><strong>Nota:</strong> la solución oficial del ítem (b) es más laxa que lo que la pregunta
+pide. Mi respuesta es más fuerte, y creo que es la que el corrector busca: la
+pregunta dice "¿de cuántos bits?" y eso exige un número.</p>
+</blockquote>
+<h3>Mi resolución</h3>
+<p><strong>(a) Cómo funciona.</strong></p>
+<p>Se considera el flujo de datos como <strong>una matriz de <code>m</code> filas por <code>n</code> columnas</strong>:
+cada palabra de <code>n</code> bits del flujo se coloca en una fila, y palabras consecutivas
+en filas consecutivas. Así, <strong>el bit <code>j</code> de cada palabra forma la columna <code>j</code></strong> de
+toda la matriz.</p>
+<p>Al bloque se le agrega <strong>un campo de comprobación de <code>m + n</code> bits</strong>:
+- <strong>un bit de paridad al final de cada fila</strong>, calculado sobre los <code>n</code> bits de esa
+ fila;
+- <strong>un bit de paridad al final de cada columna</strong>, calculado sobre los <code>m</code> bits de
+ esa columna.</p>
+<p>El receptor <strong>recalcula las <code>m</code> paridades de fila y las <code>n</code> paridades de columna</strong>
+y las compara con las recibidas:</p>
+<div class="codehilite"><pre><span></span><code> c1 c2 c3 c4 │ Rp(c)
+ ┌──┬─────────────┬───────┐
+ │f1│ n bits │ │
+ ├──┼─────────────┼───────┤ f1..fm = datos
+ │fm│ │ │
+ ├──┼─────────────┼───────┤
+ │Cp│ n bits │ │ Cp = paridades de columna
+ └──┴─────────────┴───────┘ Rp(c) = paridades de fila
+
+ Campo de comprobación = (Rp(1)..Rp(m)) || (Cp(1)..Cp(n)) = m + n bits
+</code></pre></div>
+
+<p><em>Nota:</em> no hace falta un bit de esquina. La paridad de la suma de las paridades
+de fila y la de la suma de las de columna son <strong>iguales</strong> por construcción (ambas
+son la paridad del número total de unos de la matriz), así que la esquina es
+redundante.</p>
+<p><strong>(b) ¿Corrige? ¿Cuántos bits?</strong></p>
+<p><strong>Sí: corrige exactamente 1 bit.</strong> Y detecta (sin corregir) <strong>todos</strong> los errores
+de dos bits.</p>
+<p><strong>Justificación de la corrección de 1 bit:</strong></p>
+<div class="codehilite"><pre><span></span><code> Si hay UN solo bit equivocado, y está en la fila i, columna j:
+
+ → la paridad de la FILA i falla (tiene un uno de más o de menos)
+ → la paridad de la COLUMNA j falla (idem)
+
+ → la intersección (i, j) queda completamente determinada
+ → el receptor invierte ese bit y el mensaje queda EXACTO.
+</code></pre></div>
+
+<p><strong>Justificación de por qué no puede corregir 2 bits:</strong></p>
+<div class="codehilite"><pre><span></span><code> Con dos errores, hay varios casos:
+
+ Caso 1 — en filas distintas y columnas distintas: (i,j) y (k,l), i≠k, j≠l
+ fallan las filas i y k, y las columnas j y l
+ → 4 posiciones candidatas, sólo 2 están mal → INDETERMINADO
+
+ Caso 2 — en la misma columna: (i,j) y (k,j)
+ fallan las filas i y k; la columna j NO falla (2 errores se compensan)
+ → 2 filas y 0 columnas: el patrón es imposible de atribuir
+
+ Caso 3 — en la misma fila: análogo, 0 filas y 2 columnas
+
+ En todos los casos: DETECTA que hay error (algo falló), pero NO PUEDE
+ decir dónde. Faltaría redundancia extra para desempatar.
+</code></pre></div>
+
+<p><strong>El techo, que es lo que demuestra que entendiste:</strong></p>
+<div class="codehilite"><pre><span></span><code> Con un error de CUATRO bits formando un rectángulo 2×2 — (i,j), (i,l), (k,j),
+ (k,l) — cada fila y cada columna afectada recibe DOS cambios, de signo opuesto,
+ así que NINGUNA paridad se altera:
+
+ fila i: +1 y −1 → la paridad no cambia
+ fila k: +1 y −1 → la paridad no cambia
+ columna j: +1 y −1 → la paridad no cambia
+ columna l: +1 y −1 → la paridad no cambia
+
+ ∴ Las 2D paridades NO detectan ese error. Cero verificaciones fallan.
+</code></pre></div>
+
+<p><strong>Conclusión con la distancia de Hamming:</strong></p>
+<div class="codehilite"><pre><span></span><code> La 2D paridad es un código con d = 3 sobre los bits de datos
+ (d = 3 por el patrón de 3 flips en el bloque de paridades; y los patrones
+ de 2 flips en datos siempre se detectan).
+
+ Con d = 3:
+ detecta todos los errores de peso ≤ 2
+ corrige todos los errores de peso ≤ ⌊(3−1)/2⌋ = 1
+
+ Coincide con lo demostrado arriba. ✓
+</code></pre></div>
+
+<blockquote>
+<p><strong>Tope para 8 puntos:</strong> la definición de la matriz (palabras en filas, bit j =
+columna j), el campo de <code>m + n</code> bits, el recálculo de las paridades de fila y
+de columna, y la corrección del error de 1 bit <strong>por intersección</strong>. Para el
+ítem (b): decir explícitamente <strong>"corrige 1 bit"</strong> y <strong>justificar por qué 2 no</strong>
+(ambigüedad de las 4 intersecciones). Sumar el argumento del rectángulo 2 × 2
+como techo.</p>
+</blockquote>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen</h2>
+<ol>
+<li><strong>Detectar</strong> es saber que hubo error; <strong>corregir</strong> es saber cuál era el bit y
+ repararlo. El corrector cuesta mucha más redundancia.</li>
+<li><strong>Paridad 1D</strong>: un bit. Detecta <strong>todos</strong> los errores de <strong>número impar</strong> de
+ bits y <strong>ninguno de número par</strong> (dos bits que se voltean se compensan).</li>
+<li><strong>Paridad 2D</strong>: matriz <code>m × n</code> + <code>m</code> paridades de fila + <code>n</code> de columna. Campo
+ de <code>m + n</code> bits. La esquina es redundante.</li>
+<li><strong>Corrige 1 bit</strong> (por intersección fila × columna) y <strong>detecta todos los de
+ 2</strong>, pero <strong>no los corrige</strong>. Hay un techo: el <strong>rectángulo 2 × 2</strong> de 4
+ errores <strong>no se detecta</strong>.</li>
+<li><strong>Internet checksum</strong>: 16 bits, complemento a uno, con acarreo circular.
+ Detecta todos los errores de un bit; <strong>no detecta el intercambio de dos
+ words</strong> (la suma es conmutativa).</li>
+<li><strong>CRC</strong>: división polinómica en <code>GF(2)</code>, donde <code>+</code> es <strong>XOR</strong> y <code>×</code> es <strong>AND</strong>.
+ Se agregan <code>r</code> ceros y se divide; el resto es el CRC.</li>
+<li><strong>El hardware</strong> hace lo mismo con un <strong>registro de <code>r</code> bits y un XOR por bit</strong>:
+ los dos métodos dan el mismo resultado.</li>
+<li><strong>CRC-32 = <code>0x04C11DB7</code></strong> (Ethernet, ZIP, PNG), <strong>CRC-32C = <code>0x1EDC6F41</code></strong>
+ (SCTP, iSCSI), <strong>CRC-16/CCITT = <code>0x1021</code></strong> (HDLC). Hay varios porque cada
+ aplicación optimiza para algo distinto.</li>
+<li><strong>Propiedad clave</strong>: un error pasa inadvertido <strong>si y sólo si es múltiplo de
+ <code>G</code></strong>. Por eso el CRC detecta <strong>siempre</strong> un error de 1 bit y <strong>siempre</strong> una
+ ráfaga de hasta <code>r</code> bits. La distancia mínima es <code>d = r + 1</code>.</li>
+<li><strong>El CRC detecta, no corrige.</strong> Para corregir hacen falta <strong>Hamming</strong> o
+ <strong>Reed–Solomon</strong>.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> Demostrá por qué la paridad de una dimensión <strong>no detecta</strong> un error de dos
+bits.</p>
+<details><summary>Respuesta</summary>
+
+Porque voltear dos bits cambia el número de unos en **+2**, **−2** o **0**, y
+todos esos valores son **pares**. Como el bit de paridad guardaba la paridad del
+total **original**, y esa paridad no cambió, el receptor ve un total que **sigue
+cuadrando**. Simétricamente, los errores de **número impar** de bits cambian la
+paridad del total y por eso se detectan **siempre**.
+
+</details>
+
+<p><strong>2.</strong> En una matriz 4 × 4 con paridad par, ¿cuánto mide el campo de comprobación
+y por qué no hace falta el bit de esquina?</p>
+<details><summary>Respuesta</summary>
+
+Mide **`m + n = 8` bits**: 4 paridades de fila + 4 de columna. La esquina **no
+hace falta** porque la paridad de la suma de las Rp y la de la suma de las Cp
+son **iguales por construcción**: ambas son la paridad del número total de unos
+de la matriz. Es redundante.
+
+</details>
+
+<p><strong>3.</strong> Se detecta un error de un bit y fallan la fila 2 y la columna 5. ¿Qué hacés
+y qué se corrige?</p>
+<details><summary>Respuesta</summary>
+
+Invierto el bit de la **intersección (2, 5)**. Que falle la fila 2 dice que el
+error está **en esa fila**; que falle la columna 5 dice que está **en esa
+columna**; la intersección de las dos afirmaciones es **un único** bit. Y como
+hubo un solo error, **invertirlo restaura el mensaje exacto**.
+
+</details>
+
+<p><strong>4.</strong> ¿Por qué dos errores no se pueden corregir con paridad 2D, si los errores
+sí se detectan?</p>
+<details><summary>Respuesta</summary>
+
+Porque **la información que llega no alcanza**. Si fallan las filas `i` y `k` y
+las columnas `j` y `l`, las posiciones candidatas son las **cuatro
+intersecciones**, y **sólo dos** están realmente mal. Cuatro observaciones son
+compatibles con cuatro combinaciones distintas de dos bits equivocados: hace
+falta **redundancia adicional** para desempatar.
+
+</details>
+
+<p><strong>5.</strong> ¿Por qué el Internet checksum <strong>no detecta</strong> el intercambio de dos words
+de 16 bits? ¿Qué otro error tampoco detecta?</p>
+<details><summary>Respuesta</summary>
+
+Porque **la suma es conmutativa**: `w₁ + w₂ = w₂ + w₁`. Las dos words
+intercambiadas dan **exactamente** la misma suma, el mismo checksum, y el
+receptor acepta la trama.
+
+Tampoco detecta **voltear el bit `k` en una word y el bit `k` en otra** en
+sentidos opuestos: `+2^k` y `−2^k` se anulan. Es **el mismo argumento de la
+paridad 1D**, generalizado a words de 16 bits.
+
+</details>
+
+<p><strong>6.</strong> En <code>GF(2)</code>, ¿qué son la suma y el producto? ¿Por qué se usan polinomios y no
+división entera?</p>
+<details><summary>Respuesta</summary>
+
+En `GF(2)`: la **suma es XOR** (sin acarreo, `1+1 = 0`) y el **producto es AND**
+(`0·x = 0`, `1·x = x`).
+
+Se usan polinomios porque **`GF(2)` no tiene división entera con resto**, pero
+**sí tiene división de polinomios** con resto, siempre. Ahí está la razón
+matemática de que el CRC se defina como división polinómica.
+
+</details>
+
+<p><strong>7.</strong> Ejecutá el CRC de <code>D = 10101010</code> con <code>G = 1001</code>. ¿Cuál es <code>R</code> y cuánto
+overhead agrega?</p>
+<details><summary>Respuesta</summary>
+
+`r = 3`, así que se agregan 3 ceros: `T = 10101010000`. La división polinómica
+da **`R = 101`** (verificado: `10101010101 = 1001 × 10111101`, resto 0, y el
+registro de desplazamiento con XOR da el mismo `101`).
+
+El overhead es de **3 bits**, exactamente el **grado del generador**. Se manda
+`10101010 101`.
+
+</details>
+
+<p><strong>8.</strong> ¿Por qué hay varios polinomios generadores de CRC estandarizados en lugar
+de uno solo?</p>
+<details><summary>Respuesta</summary>
+
+Porque **el mismo problema se optimiza para contextos distintos**: (a) hay que
+detectar **todos** los errores de un bit, y para eso el término independiente
+debe ser 1; (b) hay que detectar **ráfagas cortas**, y para eso el polinomio
+debe tener muchos términos no nulos y ser irreducible o primitivo; (c) en
+teléfono dos FCS de línea iguales pueden **compensarse**, así que conviene un
+polinomio distinto por capa; (d) el **grado** debe dar el overhead justo.
+
+Y en el hardware se usan las versiones **reflejadas**: por eso el CRC-32 es
+`0x04C11DB7` en el estándar y `0xEDB88320` en el software.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong>Examen <code>eirc1002</code> / <code>sirc1002</code></strong> — P3 (8 pts, paridad en dos dimensiones: funcionamiento y corrección)</li>
+<li><strong>Examen <code>eirc0707</code> / <code>sirc0707</code></strong> — P2 (5 pts, nombres de los mecanismos de detección y corrección de la capa de enlace)</li>
+<li><strong>Examen <code>eirc0812</code> / <code>sirc0812</code></strong> — P4 (7 pts, DLE en POP3: el mismo concepto de transparencia)</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 4 §4.2 ("Error Detection and Correction")</li>
+<li><strong>Kurose &amp; Ross</strong>, <em>Computer Networking: A Top-Down Approach</em>, §5.5 ("Error Detection and Correction") — figuras 5.4 a 5.9</li>
+<li><strong>Práctico 5 de 2008</strong> — <code>material-oficial/practicos/png/prac05_2008-p01.png</code>, ejercicios 1 a 4 (paridad 2D, Internet checksum, CRC)</li>
+<li><strong><code>RFC 1071</code></strong> — Internet checksum: cálculo en UDP e IP</li>
+<li><strong><code>RFC 1624</code></strong> — por qué no se puede cambiar el algoritmo del checksum de TCP/UDP</li>
+<li><strong><code>RFC 9293</code></strong> — TCP (2022, <em>Internet Standard</em>): el checksum de TCP es el Internet checksum</li>
+<li><strong>IEEE 802.3</strong> — el FCS de Ethernet es un CRC-32 (<code>0x04C11DB7</code>), 4 bytes</li>
+<li><strong>Clase siguiente:</strong> 40 — Corrección de errores y ARQ: Hamming, Stop-and-Wait, Go-Back-N y Selective Repeat</li>
+</ul></body></html>

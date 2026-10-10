@@ -1,0 +1,781 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 29 — Taller de subnetting y planes de numeración</h1>
+<p><strong>Bloque:</strong> D (Capa de Red) · <strong>Semana:</strong> 10 · <strong>Duración estimada:</strong> 120 min
+<strong>Correlativa:</strong> Clase 28 (VLSM y planes de numeración) · <strong>Sigue con:</strong> Clase 30 (tablas de enrutamiento, next hop y ARP)
+<strong>Material de referencia:</strong> Tanenbaum cap. 5 · RFC 1918 (privadas) 🔍 · RFC 4632 (CIDR) 🔍 · RFC 6177 · RFC 8200</p>
+<blockquote>
+<p>🔍 = RFC <strong>no verificado</strong> en <code>ACTUALIZACIONES.md</code>: no lo cites sin confirmarlo.
+Esta clase es <strong>de taller</strong>: la única teoría nueva es el recuadro de fórmulas.</p>
+</blockquote>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Escribir de memoria las cinco fórmulas del subnetting.</li>
+<li>Dividir un bloque en subredes iguales con el <strong>prefijo más largo</strong> que alcance.</li>
+<li>Aplicar VLSM a un <code>/16</code> con cinco necesidades distintas, con la aritmética a la vista.</li>
+<li>Resolver <strong>entero</strong> los cuatro problemas de plan de numeración que más se repiten en FING.</li>
+<li>Reconstruir una topología de 6 routers desde los datos de una tabla y sacar sus tablas de enrutamiento.</li>
+<li>Decidir si un conjunto de prefijos se puede <strong>sumarizar</strong>, y hasta dónde.</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong> <code>2011-03 Problema 2d</code> · <code>2010-12 P2a-i</code> · <code>2010-07 P2a-i</code> · <code>2006-08 Problema 1</code> · <code>2006-08 P4</code> · <code>2008-12 P2a-i</code>.</p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — EL RECUADRO QUE HAY QUE COPIAR AL EXAMEN</h1>
+<div class="codehilite"><pre><span></span><code> ╔══════════════════════════════════════════════════════════════════════════╗
+ ║  hosts necesarios H   →   2^h − 2 ≥ H   →   h = ceil(log2(H + 2))     ║
+ ║  →  prefijo = 32 − h                                                      ║
+ ║                                                                          ║
+ ║  cantidad de subredes  =  2^(bits de host que quedan)                    ║
+ ║  tamaño del bloque     =  2^(32 − prefijo)                               ║
+ ║  dir. de red           =  (dir / tamaño) · tamaño     (división entera) ║
+ ║  broadcast             =  dir de red + tamaño − 1                        ║
+ ║  rango de hosts        =  [ dir de red + 1 ,  broadcast − 1 ]            ║
+ ║  puntero de VLSM       =  primer múltiplo de "tamaño" ≥ puntero actual   ║
+ ╚══════════════════════════════════════════════════════════════════════════╝
+</code></pre></div>
+
+<p><strong>Tres aclaraciones, porque son las tres trampas del examen:</strong></p>
+<ol>
+<li><strong>El <code>− 2</code> es de red y broadcast</strong>, no un margen de seguridad: <code>/27</code> son <strong>30</strong>
+   utilizables, y por eso 16 direcciones pedidas <strong>no</strong> entran en un <code>/27</code>.</li>
+<li><strong><code>2^(32 − prefijo)</code> es el tamaño del bloque, no el de los hosts.</strong> <code>/25</code> son
+   128 direcciones totales; de ahí el error de creer que "alcanza para 250 hosts".</li>
+<li><strong>El puntero se redondea hacia arriba al siguiente múltiplo del tamaño.</strong> Si no
+   sos múltiplo, perdés todo el tramo hasta el múltiplo siguiente. Por eso el paso
+   1 (ordenar de mayor a menor) es obligatorio.</li>
+</ol>
+<div class="codehilite"><pre><span></span><code>  EJEMPLO DE REDONDEO DEL PUNTERO
+  puntero = 192.168.1.160,  bloque pedido /26 (tamaño 64)
+    160 / 64 = 2,5   →   no es múltiplo   →   siguiente = 3 × 64 = 192
+    Se pierden 32 direcciones (.160 – .191). Con un bloque /27 (32) no se pierde nada.
+</code></pre></div>
+
+<hr />
+<h1>PARTE 2 — EJERCICIOS DEL TALLER</h1>
+<h2>2.1 Ejercicio 1 — <code>192.168.10.0/24</code> en cuatro subredes iguales</h2>
+<p><strong>Enunciado.</strong> Dividí <code>192.168.10.0/24</code> en <strong>cuatro</strong> subredes iguales. Decidí
+entre <code>/26</code> y <code>/27</code> y justificá.</p>
+<p><strong>Paso 1 — cuántas subredes necesito.</strong> 4 = <code>2^2</code>, o sea <strong>2 bits</strong> de la parte
+de host hay que convertir en bits de subred.</p>
+<p><strong>Paso 2 — el prefijo.</strong> El <code>/24</code> tiene 8 bits de host. Robamos 2:</p>
+<div class="codehilite"><pre><span></span><code>  prefijo = 24 + 2 = /26      (equivalente: h = 6 host bits, prefijo = 32 − 6 = 26)
+  Subredes:  2^2 = 4  ✓        Tamaño: 2^(32−26) = 2^6 = 64 direcciones
+  Utilizables por subred: 64 − 2 = 62      Total utilizable: 4 × 62 = 248
+  Chequeo: 4 × 64 = 256 = el /24 entero  ✓
+</code></pre></div>
+
+<p><strong>Paso 3 — ¿y <code>/27</code>?</strong> Un <code>/27</code> son <code>2^3 = 8</code> subredes de 32 direcciones
+(30 utilizables cada una). O sea: <code>8 × 30 = 240</code> utilizables, repartidos en
+<strong>ocho</strong> subredes en vez de cuatro.</p>
+<div class="codehilite"><pre><span></span><code>  ┌────────────┬────────┬──────────────┬───────────────┬──────────────────────┐
+  │ Opción     │ Subred │ Tam. subred   │ Utilizables   │ ¿Sirve?              │
+  ├────────────┼────────┼──────────────┼───────────────┼──────────────────────┤
+  │ /25        │   2    │ 128           │ 126 c/u       │ ✗ NO ALCANZA (4)     │
+  │ /26        │   4    │  64           │ 62 c/u        │ ✓ la correcta       │
+  │ /27        │   8    │  32           │ 30 c/u        │ ✓ pero sobre-dimensionada │
+  │ /28        │  16    │  16           │ 14 c/u        │ ✓ pero 12 de sobra  │
+  └────────────┴────────┴──────────────┴───────────────┴──────────────────────┘
+</code></pre></div>
+
+<p><strong>La justificación, en una frase:</strong> el subnetting clásico <strong>roba el mínimo número
+de bits posible</strong>, o sea usa el <strong>prefijo más largo</strong> que todavía produzca las
+subredes pedidas.</p>
+<p><strong>Con <code>/26</code> las cuatro quedan:</strong></p>
+<div class="codehilite"><pre><span></span><code>  192.168.10.0/26    .0   – .63    red .0    | bc .63   | hosts .1   – .62
+  192.168.10.64/26   .64  – .127   red .64   | bc .127  | hosts .65  – .126
+  192.168.10.128/26  .128 – .191   red .128  | bc .191  | hosts .129 – .190
+  192.168.10.192/26  .192 – .255   red .192  | bc .255  | hosts .193 – .254
+</code></pre></div>
+
+<p><strong>⚠️ Error típico:</strong> elegir <code>/27</code> "porque es más chico y parece más seguro". No es
+seguridad: es desperdicio.</p>
+<h2>2.2 Ejercicio 2 — VLSM de <code>172.16.0.0/16</code> para 500, 250, 100, 50 y 25 hosts</h2>
+<p><strong>Enunciado.</strong> Del bloque <code>172.16.0.0/16</code> sacar subredes para 500, 250, 100, 50 y
+25 hosts (más <strong>1 dirección de router</strong> en cada una). Plan alineado, cuentas de
+desperdicio y mayor prefijo libre.</p>
+<p><strong>Paso 1 — ordenar de mayor a menor:</strong> 501 → 251 → 101 → 51 → 26.</p>
+<p><strong>Paso 2 — los prefijos.</strong></p>
+<div class="codehilite"><pre><span></span><code>  501:  2^8 − 2 = 254 &lt; 501 ✗   2^9 − 2 = 510 ≥ 501 ✓  →  h = 9  →  /23  (512 dir)
+  251:  2^7 − 2 = 126 &lt; 251 ✗   2^8 − 2 = 254 ≥ 251 ✓  →  h = 8  →  /24  (256 dir)
+  101:  2^6 − 2 =  62 &lt; 101 ✗   2^7 − 2 = 126 ≥ 101 ✓  →  h = 7  →  /25  (128 dir)
+   51:  2^5 − 2 =  30 &lt;  51 ✗   2^6 − 2 =  62 ≥  51 ✓  →  h = 6  →  /26  ( 64 dir)
+   26:  2^4 − 2 =  14 &lt;  26 ✗   2^5 − 2 =  30 ≥  26 ✓  →  h = 5  →  /27  ( 32 dir)
+</code></pre></div>
+
+<p>⚠️ Ningún <code>2^h − 2</code> alcanza en el primer intento: en los cinco casos hay que subir
+un exponente. Es lo que hace este ejercicio engañoso.</p>
+<p><strong>Paso 3 — asignación con el puntero</strong>, con la alineación verificada:</p>
+<div class="codehilite"><pre><span></span><code>  puntero = 172.16.0.0
+
+  /23  tamaño 512   inicio = 0 ✓                    →  172.16.0.0/23     puntero → 172.16.2.0
+  /24  tamaño 256   inicio = 512 ✓  (512/256 = 2)   →  172.16.2.0/24     puntero → 172.16.3.0
+  /25  tamaño 128   inicio = 768 ✓  (768/128 = 6)   →  172.16.3.0/25     puntero → 172.16.3.128
+  /26  tamaño  64   inicio = 896 ✓  (896/64 = 14)   →  172.16.3.128/26   puntero → 172.16.3.192
+  /27  tamaño  32   inicio = 960 ✓  (960/32 = 30)   →  172.16.3.192/27   puntero → 172.16.3.224
+
+  172.16.0.0/16
+  ├─  .0.0/23      500 hosts  gw 172.16.0.1     (.0.0 – .1.255)
+  ├─  .2.0/24      250 hosts  gw 172.16.2.1     (.2.0 – .2.255)
+  ├─  .3.0/25      100 hosts  gw 172.16.3.1     (.3.0 – .3.127)
+  ├─  .3.128/26     50 hosts  gw 172.16.3.129   (.3.128 – .3.191)
+  ├─  .3.192/27     25 hosts  gw 172.16.3.193   (.3.192 – .3.223)
+  └─  .3.224/27 LIBRE  +  4.0/22 · 8.0/21 · 16.0/20 · 32.0/19 · 64.0/18 · 128.0/17
+</code></pre></div>
+
+<p><strong>Cuentas finales.</strong></p>
+<div class="codehilite"><pre><span></span><code>  Consumidas:  512 + 256 + 128 + 64 + 32 = 992  de 65 536
+  Libres:      65 536 − 992 = 64 544   (98,5 %)
+  Desperdicio dentro de los bloques:
+     (510 − 501) + (254 − 251) + (126 − 101) + (62 − 51) + (30 − 26)
+       =    9   +     3    +     25    +    11   +    4    =  52
+  Red + broadcast: 5 redes × 2 = 10
+  Total no utilizable = 62            Eficiencia = 65 474 / 65 536 = 99,9 %
+  Mayor prefijo libre contiguo: 172.16.128.0/17 (32 768) — un /17 dentro de un /16
+     ocupa 2^(24−17) = 128 unidades del tercer octeto, y .128 es la última válida
+</code></pre></div>
+
+<p><strong>Con FLSM el mismo plan no existe:</strong> las cinco subredes serían <code>/23</code> (512 dir) =
+2560 direcciones, y el <code>/16</code> entraría justo, sin margen para ni un enlace. Con VLSM
+entran las cinco <strong>y</strong> sobra el 98,5 %.</p>
+<h2>2.3 ⭐ Ejercicio 3 (de examen) — <code>2011-03</code> Problema 2 d</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen 21 de febrero de 2011, <code>sirc1103</code>, Problema 2 (30 pts), d.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1103.pdf</p>
+</blockquote>
+<p><strong>Enunciado (literal).</strong></p>
+<blockquote>
+<p>Se adquiere para la Red A el bloque de direcciones IP públicas <code>100.100.100.0/24</code>,
+y los administradores deciden aislar la red de servidores de los puestos de
+trabajo. Especifique las subredes del bloque mencionado que cumplan con este
+requerimiento y permitan dejar la mayor cantidad posible de direcciones IP para
+uso futuro. Mencione las modificaciones necesarias en el router R1 y su nueva
+tabla de enrutamiento.</p>
+</blockquote>
+<p><strong>Contexto.</strong> Red A privada con <strong>15 servidores</strong> y <strong>70 puestos</strong>; R1 traduce con
+<code>220.10.10.30</code> sobre <code>220.10.10.28/30</code>. Ahora compran un bloque <strong>público</strong>.</p>
+<h3>a) Los prefijos</h3>
+<div class="codehilite"><pre><span></span><code>  Red            Hosts  + gw  =  a direccionar   2^h − 2   h   prefijo  bloque
+  ─────────────────────────────────────────────────────────────────────────────────
+  PUESTOS          70  +  1  =      71          2^7−2=126 ✓  7   /25     128 dir
+                              2^6 − 2 = 62 &lt; 71 ✗
+  SERVIDORES       15  +  1  =      16          2^5−2= 30 ✓  5   /27      32 dir
+                              2^4 − 2 = 14 &lt; 16 ✗   ← el error típico
+</code></pre></div>
+
+<h3>b) La asignación con el puntero</h3>
+<div class="codehilite"><pre><span></span><code>  puntero = 100.100.100.0
+
+  /25  tamaño 128   inicio = menor múltiplo de 128 ≥ 0    = 0     → 100.100.100.0/25
+  /27  tamaño  32   inicio = menor múltiplo de  32 ≥ 128  = 128   → 100.100.100.128/27
+
+  100.100.100.0/24
+  ├─ .0     /25   PUESTOS    red .0    bc .127  hosts .1   – .126  gw .1
+  ├─ .128   /27   SERVIDORES red .128  bc .159  hosts .129 – .158  gw .129
+  └─ .160 ────────── LIBRE 96 dir = 100.100.100.160/26 + 100.100.100.224/27
+</code></pre></div>
+
+<h3>c) La tabla de enrutamiento nueva de R1</h3>
+<div class="codehilite"><pre><span></span><code>  Red destino / Máscara      Gateway (next hop)     Distancia
+  ───────────────────────────────────────────────────────────────
+  100.100.100.0/25            C – Directamente conectado    1
+  100.100.100.128/27          C – Directamente conectado    1
+  220.10.10.28/30             C – Directamente conectado    1
+  0.0.0.0/0                   220.10.10.29                 2
+</code></pre></div>
+
+<p><strong>Las modificaciones en R1, en orden:</strong></p>
+<ol>
+<li><strong>Una interfaz por subred</strong> (o dos sub-interfaces de VLAN). Antes tenía una
+   sola para la red A.</li>
+<li><strong>Se elimina el NAT.</strong> Los hosts ya son alcanzables por dirección pública;
+   seguir traduciendo "sobre-vendería" las públicas recién compradas, y rompería
+   la señalización de los servidores (que es justamente lo que se quiere aislar
+   y proteger).</li>
+<li><strong>La ruta por defecto y la interfaz WAN no cambian.</strong></li>
+<li>Cada subred <strong>conserva su gateway</strong>: <code>100.100.100.1</code> y <code>100.100.100.129</code>.</li>
+</ol>
+<h3>d) El análisis: ¿esto <strong>maximiza</strong> lo que queda para el futuro?</h3>
+<p>Este es el apartado que más puntos da, porque el enunciado pide <strong>justificar</strong> y
+no basta con decir "así me quedó".</p>
+<div class="codehilite"><pre><span></span><code>  ┌───────────────────────┬───────────┬──────────┬──────────┬────────────────┐
+  │ Plan                  │ Puestos   │ Servidor │ Total    │ Libre del /24  │
+  ├───────────────────────┼───────────┼──────────┼──────────┼────────────────┤
+  │ OFICIAL  /25 + /27    │   128     │    32    │   160    │ 96 (37,5 %)    │
+  │ "Cómodo" /25 + /26    │   128     │    64    │   192    │ 64 (25,0 %)    │
+  │ "Apretado" /25 + /28  │   128     │ 14 &lt; 16  │ inválido │ no sirve       │
+  │ "Simétrico" /26 + /26 │ 62 &lt; 71   │    64    │ inválido │ no sirve       │
+  └───────────────────────┴───────────┴──────────┴──────────┴────────────────┘
+
+  Desperdicio DENTRO de los bloques:
+    OFICIAL   (126 − 71) + (30 − 16) = 55 + 14 =  69
+    "CÓMODO"  (126 − 71) + (62 − 16) = 55 + 46 = 101
+    Diferencia a favor de la oficial: 32 direcciones = el doble de libres.
+</code></pre></div>
+
+<p><strong>Conclusión, y acá es donde se verifica en vez de copiar:</strong></p>
+<blockquote>
+<p><strong>La oficial dice <code>/25</code> y <code>/27</code>. Verifiqué la cuenta y es correcta, y además es la
+<em>única</em> solución posible</strong>: <code>/26</code> no alcanza para 71 utilizables y <code>/28</code> no alcanza
+para 16. No hay margen en los prefijos, solo en el <strong>orden</strong> de asignación.</p>
+<p><strong>Mi lectura, que es la que suma puntos:</strong> "dejar la mayor cantidad posible para
+uso futuro" tiene dos lecturas, y la oficial cumple las dos: gasta el mínimo hoy
+(160 de 256) <strong>y</strong> deja un remanente que se descompone limpiamente.
+<code>100.100.100.160</code>–<code>100.100.100.255</code> son 96 direcciones contiguas =
+<code>100.100.100.160/26</code> + <code>100.100.100.224/27</code>, justo lo que hace falta para dos LANs
+futuras de hasta 62 y de hasta 30 hosts. Con <code>/26</code> para los servidores, el libre
+quedaría partido en <code>.160/28</code> + <code>.176/27</code> + <code>.208/27</code> = 8 + 32 + 32: tres
+bloques inservibles por separado.</p>
+<p>O sea: <strong>lo que el profesor quiere ver no es "la oficial está bien", sino "la
+oficial es correcta porque el mínimo de cada prefijo la obliga, y además produce
+un remanente alineado que sirve para el segundo reading del objetivo"</strong>.</p>
+</blockquote>
+<p><strong>⚠️ Errores típicos:</strong> <code>/28</code> para los servidores; no contar el router (<code>+1</code> en
+cada subred); dejar el NAT puesto; olvidar <code>0.0.0.0/0</code> en la nueva tabla (sin ella
+los hosts de las subredes nuevas no salen a Internet, que era el objetivo).</p>
+<h2>2.4 ⭐ Ejercicio 4 (de examen) — <code>2010-07</code> Problema 2 a-i</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen 27 de julio de 2010, <code>sirc1007</code>, Problema 2, parte a-i.</p>
+</blockquote>
+<p><strong>Enunciado (literal).</strong></p>
+<blockquote>
+<p>Asigne las direcciones de red a las subredes LAN2 y LAN3 utilizando el prefijo
+de dirs. IP privadas mencionado anteriormente, asumiendo que se conectarán hasta
+250 hosts por subred.</p>
+</blockquote>
+<p>Datos: prefijo <strong><code>192.168.2.0/23</code></strong> para las dos sucursales; el ISP asignó
+<code>220.10.10.28/30</code> al enlace WAN de R1. LAN1 y los enlaces entre routers ya están
+numerados.</p>
+<p><strong>Solución oficial.</strong> <em>"Para cada subred se necesitan como máximo 250 (hosts) + 1
+(router) = 251 direcciones IP por LAN. Entonces cada subred necesita utilizar una
+<code>/24</code>: LAN 2 <code>192.168.2.0/24</code> · LAN 3 <code>192.168.3.0/24</code>"</em>.</p>
+<p><strong>Mi resolución, con las dos cuentas que hay que dar.</strong></p>
+<div class="codehilite"><pre><span></span><code>  250 hosts + 1 router = 251 direcciones pedidas
+  + red y broadcast  ⇒  el bloque necesita ≥ 253 direcciones
+
+  2^7 = 128  &lt; 253   ✗   (/25 NO alcanza: son 128, no 256)
+  2^8 = 256  ≥ 253   ✓   →  h = 8  →  prefijo = 32 − 8 = /24
+  /24 = 256 direcciones totales, 254 utilizables.   254 ≥ 251 ✓  (sobran 3)
+
+  ¿Cuántas subredes entran en el /23?
+    Por bits:   el /23 deja 32 − 23 = 9 bits de subred; un /24 usa 8 de ellos;
+                quedan 1 bit  →  2^1 = 2 subredes
+    Por tamaño: 2^(32−23) = 512 direcciones ;  512 / 256 = 2 subredes   ✓
+</code></pre></div>
+
+<p><strong>Asignación con el puntero.</strong></p>
+<div class="codehilite"><pre><span></span><code>  puntero = 192.168.2.0
+
+  /24  tamaño 256   inicio = 0 ✓                    →  192.168.2.0/24  (LAN2) gw .2.1
+        puntero = 256
+  /24  tamaño 256   inicio = 256 ✓  (256/256 = 1)   →  192.168.3.0/24  (LAN3) gw .3.1
+        puntero = 512 = 192.168.4.0
+
+  Cuentas:  total /23 = 512 ; consumido 2 × 256 = 512  →  LIBRE: 0
+            no utilizable = 2 redes × 2 (red+bc) + 2 redes × 3 (sobrantes) = 10
+            eficiencia = (512 − 10) / 512 = 98,0 %
+</code></pre></div>
+
+<p><strong>El comentario que vale puntos:</strong> el bloque queda <strong>al 100 % de ocupación</strong>. Si la
+empresa supiera que necesitaría una tercera sucursal, debería haber pedido un
+<code>/22</code>; el enunciado no lo dice, así que la respuesta correcta es usar el <code>/23</code>
+entero. Pero <strong>mencionar el costo de oportunidad del plan</strong> es lo que demuestra que
+entendiste el ejercicio, no solo la cuenta.</p>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 820 430" style="max-width:820px"><rect width="820" height="430" fill="#ffffff"/><text x="410.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Plan de numeracion de una empresa con sucursales</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><rect x="30" y="100" width="210" height="86" rx="8" fill="#f5f9fc" stroke="#7aa7c4" stroke-width="1.5" stroke-dasharray="6 4"/><text x="42" y="122" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#14507a">Casa central</text><text x="42" y="144" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">LAN1  192.168.1.0/26</text><text x="42" y="162" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">enlace: /30</text><rect x="30" y="236" width="210" height="86" rx="8" fill="#f5f9fc" stroke="#7aa7c4" stroke-width="1.5" stroke-dasharray="6 4"/><text x="42" y="258" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#14507a">LAN2  (70 puestos)</text><text x="42" y="280" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">192.168.1.128/25</text><text x="42" y="298" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">enlace: /30</text><rect x="580" y="100" width="210" height="86" rx="8" fill="#f5f9fc" stroke="#7aa7c4" stroke-width="1.5" stroke-dasharray="6 4"/><text x="592" y="122" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#14507a">Sucursal Colonia</text><text x="592" y="144" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">LAN3  192.168.3.0/26</text><text x="592" y="162" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">enlace: /30</text><rect x="580" y="236" width="210" height="86" rx="8" fill="#f5f9fc" stroke="#7aa7c4" stroke-width="1.5" stroke-dasharray="6 4"/><text x="592" y="258" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#14507a">Sucursal Maldonado</text><text x="592" y="280" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#1a1a1a">LAN4  192.168.4.0/26</text><text x="592" y="298" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="9" font-weight="400" fill="#666">enlace: /30</text><rect x="280" y="88" width="72" height="50" rx="6" fill="#f7d9c8" stroke="#c8621a" stroke-width="1.2"/><text x="316.0" y="117.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#1a1a1a">R1</text><rect x="280" y="224" width="72" height="50" rx="6" fill="#f7d9c8" stroke="#c8621a" stroke-width="1.2"/><text x="316.0" y="253.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#1a1a1a">R1b</text><rect x="480" y="88" width="72" height="50" rx="6" fill="#f7d9c8" stroke="#c8621a" stroke-width="1.2"/><text x="516.0" y="117.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#1a1a1a">R2</text><rect x="480" y="224" width="72" height="50" rx="6" fill="#f7d9c8" stroke="#c8621a" stroke-width="1.2"/><text x="516.0" y="253.2" text-anchor="middle" font-family="Consolas,'Cascadia Mono',monospace" font-size="12" font-weight="700" fill="#1a1a1a">R3</text><line x1="240" y1="130" x2="278" y2="114" stroke="#c8621a" stroke-width="1.8" marker-end="url(#po)"/><line x1="240" y1="266" x2="278" y2="242" stroke="#c8621a" stroke-width="1.8" marker-end="url(#po)"/><line x1="354" y1="114" x2="478" y2="114" stroke="#2e7d4f" stroke-width="1.8" marker-end="url(#po)"/><line x1="354" y1="258" x2="478" y2="258" stroke="#2e7d4f" stroke-width="1.8" marker-end="url(#po)"/><rect x="330" y="150" width="180" height="50" rx="8" fill="#eef4f8" stroke="#b8cfdb"/><text x="420" y="172" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#14507a">ISP</text><text x="420" y="190" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#666">100.100.100.0/24</text><text x="30" y="46" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="14" font-weight="700" fill="#0b3d5c">Plan de numeracion con bloque publico del ISP</text><text x="30" y="348" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="10" font-weight="700" fill="#14507a">Cada LAN pide el prefijo MAS PEQUENO que la abarque:</text><text x="30" y="368" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">LAN2 con 70 puestos necesita 71 direcciones -&gt; /25 (128).</text><text x="30" y="386" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">Las otras, con 63 hosts, necesitan 65 -&gt; /26 (64).</text><text x="30" y="408" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#c8621a">Los bloques se asignan de mayor a menor, alineados. Asi se deja libre lo que masTamano queda.</text></svg></p>
+<p><strong>⚠️ Errores típicos:</strong> usar <code>/25</code> "porque 250 &lt; 256" (<code>/25</code> son 128 direcciones; el
+número que importa es <code>2^(32−prefijo) ≥ 253</code>); pedir un <code>/23</code> por subred (un <code>/23</code>
+no es una LAN: son 512 direcciones, y la unidad es <code>/24</code> porque es lo que <strong>cabe</strong>);
+contar los hosts del enlace WAN, que viene del bloque del ISP y no del <code>/23</code>.</p>
+<h2>2.5 ⭐ Ejercicio 5 (de examen) — <code>2010-12</code> Problema 2 a-i</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen 1 de agosto de 2008, <code>sirc0807</code>, Problema 2, parte a-i (el
+banco de exámenes lo indexa también bajo <code>sirc1007</code>).</p>
+</blockquote>
+<p><strong>Enunciado (literal).</strong></p>
+<blockquote>
+<p>Realice un plan de numeración de las subredes LAN3, 4 y 5 utilizando el prefijo
+de dirs. IP públicas mencionado anteriormente, asumiendo que no se conectan más
+de 120 hosts por subred. ¿Cuántas subredes se pueden numerar de acuerdo a su
+plan de numeración?</p>
+</blockquote>
+<p>Datos: prefijo <strong><code>147.10.8.0/21</code></strong>; la red corporativa tiene sede central y
+sucursal, con <code>220.10.10.13/30</code> y <code>220.10.20.14/30</code> en las interfaces WAN.</p>
+<p><strong>Solución oficial.</strong> <em>"Para cada subred se necesitan como máximo </em><em>120 + 1 + 2 =
+123</em><em> direcciones IP por LAN."</em> → plan A: LAN3 <code>147.10.8.0/25</code>, LAN4
+<code>147.10.8.128/25</code>, LAN5 <code>147.10.9.0/25</code>; plan B: LAN3 <code>147.10.8.0/25</code>, LAN4
+<code>147.10.9.0/25</code>, LAN5 <code>147.10.10.0/25</code>. <em>"Según este plan se cuenta con <code>2^4 = 16</code>
+subredes /25."</em></p>
+<p><strong>El <code>+2</code> de la oficial:</strong> 120 hosts + 1 router + <strong>2 de reserva</strong> para crecimiento
+inmediato de cada LAN (no red ni broadcast, que ya están dentro del <code>2^h</code>). Si no
+lo decís, parece un error de suma.</p>
+<p><strong>La aritmética del prefijo.</strong></p>
+<div class="codehilite"><pre><span></span><code>  120 hosts + 1 router + 2 reserva = 123 direcciones pedidas
+  + red y broadcast  ⇒  el bloque necesita ≥ 125 direcciones
+
+  2^6 =  64  &lt; 125   ✗   NO ALCANZA
+  2^7 = 128  ≥ 125   ✓   →  h = 7  →  prefijo = 32 − 7 = /25
+  /25 = 128 direcciones, 126 utilizables.   126 ≥ 123 ✓  (sobran 3 utilizables)
+
+  Variante con el mínimo estricto (120 + 1 = 121, sin la reserva):
+  121 + 2 = 123  ⇒  2^7 = 128 ≥ 125 ✓  →  ¡también /25!  La reserva NO cambia
+  el prefijo: sirve para el futuro, no para la cuenta.
+</code></pre></div>
+
+<p><strong>¿Cuántas subredes da el plan?</strong> Las dos cuentas, y hay que dar las dos:</p>
+<div class="codehilite"><pre><span></span><code>  Por tamaño:  2^(32 − 21) = 2^11 = 2048 direcciones ; 2048 / 128 = 16 subredes /25
+  Por bits:    el /21 deja 32 − 21 = 11 bits de subred.
+               un /25 usa  32 − 25 =  7 de esos bits.
+               Quedan     11 − 7  =  4 bits  →  2^4 = 16   ✓
+</code></pre></div>
+
+<p><strong>Asignación con el puntero (el plan A de la oficial):</strong></p>
+<div class="codehilite"><pre><span></span><code>  puntero = 147.10.8.0
+
+  /25  inicio = 0 ✓                     →  147.10.8.0/25     puntero → 147.10.8.128
+  /25  inicio = 128 ✓  (128/128 = 1)    →  147.10.8.128/25   puntero → 147.10.9.0
+  /25  inicio = 256 ✓  (256/128 = 2)    →  147.10.9.0/25     puntero → 147.10.9.128
+
+  LIBRE desde 147.10.9.128: 13 subredes /25 = 1 664 direcciones
+  Cuentas:  total /21 = 2048 ; consumido 3 × 128 = 384 ; libre 1 664 = 13 /25
+            desperdicio interno = 3 × (126 − 123) = 9   eficiencia = 97,7 %
+</code></pre></div>
+
+<p><strong>⚠️ Por qué la oficial prefiere el plan A (lo que más suma):</strong></p>
+<div class="codehilite"><pre><span></span><code>  PLAN A:  LAN3 .8.0/25 · LAN4 .8.128/25 · LAN5 .9.0/25
+           LAN3 + LAN4 = 147.10.8.0/24  ← SUMARIZA (0 es múltiplo de 256)
+           ⇒ R2 necesita 2 rutas hacia la empresa.
+
+  PLAN B:  LAN3 .8.0/25 · LAN4 .9.0/25 · LAN5 .10.0/25
+           ⇒ R2 necesita 3 rutas. NO SE PUEDE sumarizar: para resumir LAN4
+             (.9.0–.9.127) y LAN5 (.10.0–.10.127) harían falta 256 direcciones
+             arrancando en .8.0 o en .10.0, y .9.0 no es ninguno de los dos.
+
+  O sea: "la solución no es única, pero no todas son equivalentes: el plan tiene
+  que optimizar no solo las direcciones sino la cantidad de rutas" — y eso se
+  decide en el paso 3, no en el paso 2.
+</code></pre></div>
+
+<h2>2.6 ⭐ Ejercicio 6 (de examen) — <code>2006-08</code> Problema 1: seis routers</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen 5 de agosto de 2006, <code>sirc0608</code>, Problema 1 (30 pts).
+<strong>Aclaración:</strong> el problema original es una figura. <strong>Adaptamos la figura a texto</strong>:
+routers, enlaces, direcciones y default gateway (192.168.1.254 y 192.168.2.254)
+son los del examen; la métrica es el costo de enlace de la tabla del enunciado,
+reasignado de forma consistente con las soluciones oficiales de los apartados b)
+y e) del mismo examen. La topología de abajo reproduce <strong>exactamente</strong> las dos
+respuestas oficiales de <code>traceroute</code> (ver §2.6 c).</p>
+</blockquote>
+<h3>La topología</h3>
+<div class="codehilite"><pre><span></span><code>        LAN1 192.168.1.0/24                      LAN2 192.168.2.0/24
+        gw 192.168.1.254                         gw 192.168.2.254
+        ┌──────────────────────┐                  ┌──────────────────────┐
+        │ PC1 .1   PC2 .2     │                  │ PC5 .1   PC6 .2     │
+        │    \      /         │                  │    \      /         │
+        │     \    /          │                  │     \    /          │
+        │      R1             │                  │      R2             │
+        └──────────────────────┘                  └──────────────────────┘
+
+              ╱10.10.13/30 (c2)          ╲10.10.24/30 (c4)
+             ╱      R1 .1 · R3 .3        ╲    R1 .4 · R2 .2
+            ╱                             ╲
+   10.10.15/30 (c1)                     10.10.26/30 (c1)
+   R1 .1 — R5 .5                          R2 .2 — R6 .6
+          ╲                                  ╱
+           ╲       10.10.34/30 (c2)        ╱
+            ╲    R3 .3 — R4 .4           ╱
+             ╲                            ╱
+      ┌──────┴──────┐    10.10.36/30 (c4)
+      │     R4      │    R3 .3 — R6 .6
+      └──────┬──────┘            │
+             │                   │
+      10.10.45/30 (c1)           │
+      R4 .4 — R5 .5              │
+                       10.10.56/30 (c1)
+                       R5 .5 — R6 .6
+
+  Enlaces y costos (los del enunciado):
+    10.10.13  R1.1  – R3.3     10.10.15  R1.1 – R5.5      10.10.24  R1.4 – R2.2
+    10.10.26  R2.2  – R6.6     10.10.34  R3.3 – R4.4      10.10.36  R3.3 – R6.6
+    10.10.45  R4.4  – R5.5     10.10.56  R5.5 – R6.6
+</code></pre></div>
+
+<h3>a) Tablas de enrutamiento de los seis routers</h3>
+<p>Formato de la cátedra: <strong>Red destino / Máscara · Gateway (next hop) · Distancia</strong>.</p>
+<div class="codehilite"><pre><span></span><code>  R1                                    R2
+  192.168.1.0/24   C – Directamente conectado  1     192.168.2.0/24  C – Directamente conectado 1
+  192.168.2.0/24   10.10.15.5                 3     192.168.1.0/24  10.10.26.6                3
+
+  R3                                    R4
+  192.168.1.0/24   10.10.13.1                 2     192.168.1.0/24  10.10.45.5                2
+  192.168.2.0/24   10.10.36.6                 5     192.168.2.0/24  10.10.45.5                3
+
+  R5                                    R6
+  192.168.1.0/24   10.10.15.1                 1     192.168.1.0/24  10.10.56.5                2
+  192.168.2.0/24   10.10.56.6                 2     192.168.2.0/24  10.10.26.2                1
+</code></pre></div>
+
+<p><strong>Cómo se calcularon, con Dijkstra sobre la matriz de costos</strong> (elementales 1, 2 y
+4). El más caro de todos, R3 hacia LAN2:</p>
+<div class="codehilite"><pre><span></span><code>  R3 → LAN2:   vía R6 = 4 + 1 = 5   ✓   vía R1 = 2 + 3 = 5   vía R4 = 2 + 3 = 5
+  Empate en los tres; con empate gana el vecino de menor dirección de enlace:
+  R6 (10.10.36.6) ✓  — que es lo que dice la oficial, con costo 5.
+
+  Y el que define la tabla de R2, el corazón del ejercicio:
+  R2 → LAN1:   vía R6 = 1 + 1 + 1 = 3  ✓      vía R1 (directo) = 4   peor
+  ⇒ R2 usa 10.10.26.6 con distancia 3   (la oficial dice 10.10.26.6)  ✓
+</code></pre></div>
+
+<h3>b) Tablas de enrutamiento de los hosts</h3>
+<p><strong>Todos los hosts de LAN1</strong> (<code>.1.1</code> … <code>.1.254</code>) y de LAN2 (<code>.2.1</code> … <code>.2.254</code>):</p>
+<div class="codehilite"><pre><span></span><code>  Red destino / Máscara   Gateway (next hop)          Distancia
+  192.168.1.0/24          C – Directamente conectado        1
+  0.0.0.0/0               192.168.1.254                     2      ← hosts de LAN1
+
+  Red destino / Máscara   Gateway (next hop)          Distancia
+  192.168.2.0/24          C – Directamente conectado        1
+  0.0.0.0/0               192.168.2.254                     2      ← hosts de LAN2
+</code></pre></div>
+
+<p>⚠️ <strong>Un host tiene una entrada por red local más la default</strong>, nunca más: si un
+host tiene <strong>dos</strong> interfaces, tiene <strong>dos</strong> redes locales y una default, y el
+<em>longest prefix match</em> decide por cuál sale cada destino (Clase 30).</p>
+<h3>c) Verificación contra las soluciones oficiales</h3>
+<p><strong>Enrutamiento normal.</strong> La oficial: <em>"el camino de menor costo de 192.168.2.0/24
+a 192.168.1.0/24 es R2 → R6 → R5 → R1"</em>:</p>
+<div class="codehilite"><pre><span></span><code>  PC6 (LAN2) → R2 → R6 → R5 → R1 → PC2 (LAN1)
+  Interfaces que reporta traceroute:  192.168.2.254 · 10.10.26.6 · 10.10.56.5
+                                    · 10.10.15.1 · 192.168.1.2
+  Suma: 4 enlaces.  En mis tablas R2 usa 10.10.26.6 (d=3), R6 usa 10.10.56.5
+  (d=2), R5 usa 10.10.15.1 (d=1).   ✓ COINCIDE
+</code></pre></div>
+
+<p><strong>Si se cae R4.</strong> La oficial: <em>"la respuesta es la misma, pues R4 no es utilizado
+en el camino de ida"</em> → <strong>el <code>traceroute</code> no cambia una línea</strong>. En mis tablas
+ningún next hop apunta a <code>10.10.34.4</code> ni a <code>10.10.45.4</code>. ✓ COINCIDE</p>
+<p><strong>Si se cae R5.</strong> La oficial da <code>R2 → R6 → R3 → R1</code> con interfaces
+<code>192.168.2.254 · 10.10.26.6 · 10.10.36.3 · 10.10.13.1</code>:</p>
+<div class="codehilite"><pre><span></span><code>  Con R5 caído, R6 ya no puede ir por 10.10.56.5, así que su next hop a LAN1 pasa
+  a ser R3 por 10.10.36.3 (d = 4 + 2 = 6); R3 mantiene 10.10.13.1 (d = 2).
+  Camino:  192.168.2.254 · 10.10.26.6 · 10.10.36.3 · 10.10.13.1 · destino
+  ✓ COINCIDE con la solución oficial, interfaz por interfaz.
+</code></pre></div>
+
+<p><strong>Ese es el mejor detalle del problema:</strong> la tabla de enrutamiento no dice "el
+camino más corto a la LAN", sino "el camino más corto <strong>al vecino más barato</strong>".
+Cuando R5 se cae, R3 —que antes era un rodeo— pasa a ser la primera opción de R6.
+Por eso los apartados d) y e) hablan de <em>convergencia</em>, no de tablas fijas.</p>
+<hr />
+<h1>PARTE 3 — EJERCICIOS EXTRA (dificultad creciente)</h1>
+<h2>3.1 Ejercicio 7 — VLSM con cinco redes y tres enlaces</h2>
+<p><strong>Enunciado.</strong> De <code>172.20.0.0/16</code>: LAN de <strong>300</strong>, <strong>120</strong> y <strong>60</strong> hosts, más
+<strong>tres enlaces punto a punto</strong>.</p>
+<div class="codehilite"><pre><span></span><code>  301 → 2^8 − 2 = 254 &lt; 301 ✗ ; 2^9 − 2 = 510 ≥ 301 ✓  →  /23  (512 dir)
+  121 → 2^7 − 2 = 126 ≥ 121 ✓                          →  /25  (128 dir)
+   61 → 2^6 − 2 =  62 ≥  61 ✓                          →  /26  ( 64 dir)
+    2 → 2^2 − 2 =   2 ≥   2 ✓                          →  /30  (  4 dir)  ×3
+
+  puntero = 172.20.0.0
+  /23  inicio = 0    ✓                 → 172.20.0.0/23     puntero → 172.20.2.0
+  /25  inicio = 512  ✓ (512/128 = 4)   → 172.20.2.0/25     puntero → 172.20.2.128
+  /26  inicio = 640  ✓ (640/64 = 10)  → 172.20.2.128/26   puntero → 172.20.2.192
+  /30  inicio = 704  ✓ (704/4 = 176)  → 172.20.2.192/30   puntero → 172.20.2.196
+  /30  inicio = 708  ✓ (708/4 = 177)  → 172.20.2.196/30   puntero → 172.20.2.200
+  /30  inicio = 712  ✓ (712/4 = 178)  → 172.20.2.200/30   puntero → 172.20.2.204
+
+  Consumidas:  512 + 128 + 64 + 4 + 4 + 4 = 716  de 65 536
+  Libres:      65 536 − 716 = 64 820   (98,9 %)
+  Desperdicio interno: (510−301) + (126−121) + (62−61) + 0 + 0 + 0 = 209 + 5 + 1 = 215
+  Libre a partir de 172.20.2.204:  .204/30 (4) · .208/29 (8) · .216/29 (8) ·
+                                     .224/28 (16) · 172.20.3.0/24 · 4.0/23 · …
+  Mayor prefijo libre: 172.20.128.0/17 (32 768)
+</code></pre></div>
+
+<p><strong>Lo que enseña:</strong> los tres <code>/30</code> seguidos no pierden nada: <code>704, 708,</code>
+712` son múltiplos de 4, así que el puntero nunca se desvía.</p>
+<h2>3.2 Ejercicio 8 — ¿Cuántas direcciones desperdicia cada plan?</h2>
+<p><strong>Enunciado.</strong> Del bloque <code>192.168.0.0/21</code> (2048 dir) se necesitan LANs de 300,
+200 y 50 hosts más un enlace punto a punto. Compará FLSM y VLSM <strong>midiendo el
+desperdicio</strong>, no solo la cantidad de direcciones.</p>
+<div class="codehilite"><pre><span></span><code>  ══ FLSM ══  el mayor pide 301 → h = 9 → /23 para TODAS
+     4 × 512 = 2048 = el bloque entero.  Libre: 0
+     Usado realmente: 301 + 201 + 51 + 2 = 555
+     Desperdicio = 2048 − 555 = 1493   (72,9 % del bloque)
+
+  ══ VLSM ══  301 → /23 (512) · 201 → /24 (256) · 51 → /26 (64) · 2 → /30 (4)
+     Total = 836   Libre = 2048 − 836 = 1212
+     Desperdicio interno = (510−301)+(254−201)+(62−51)+(2−2) = 209+53+11+0 = 273
+     Red + broadcast = 4 redes × 2 = 8      Total no utilizable = 281 (13,7 %)
+
+  ┌──────────────┬───────────────┬──────────────┬──────────────────┐
+  │              │ FLSM (/23 x4) │ VLSM         │ Diferencia       │
+  ├──────────────┼───────────────┼──────────────┼──────────────────┤
+  │ Direccionadas │         2 048 │          836 │  − 1 212         │
+  │ Libres       │             0 │        1 212 │  + 1 212         │
+  │ Desperdicio  │         1 493 │          281 │  − 81 %          │
+  │ Eficiencia   │       27,1 % │       86,3 % │  + 59,2 pp       │
+  └──────────────┴───────────────┴──────────────┴──────────────────┘
+</code></pre></div>
+
+<p><strong>Conclusión:</strong> el FLSM no desperdicia un 27 % "de direcciones": desperdicia el
+<strong>73 %</strong>. Ese es el número que hay que decir, no "usa más direcciones".</p>
+<h2>3.3 Ejercicio 9 — Renumerar para meter un switch (y cuándo NO hace falta)</h2>
+<p><strong>Enunciado.</strong> Se reemplaza R2 por un switch, y las subredes 2 y 3 quedan en el
+mismo dominio de broadcast. ¿Hay que renumerar?</p>
+<p><strong>Caso A — <code>192.168.108.0/24</code> y <code>192.168.109.0/24</code>.</strong></p>
+<div class="codehilite"><pre><span></span><code>  ¿Es un /23?  108 = 01101100,  109 = 01101101 → difieren en **UN bit**
+     (00001100 vs 00001101), y un /23 "se come" el último bit del tercer octeto.
+     108 es par  ⇒  108/2 = 54 exacto  ⇒  /23 cubre .108.0 – .109.255   ✓
+  ⇒ NO HAY QUE RENUMERAR. Solo cambian:
+       · la máscara de R1 en esa interfaz:  /24 → /23
+       · la máscara de los hosts de las subredes 2 y 3:  /24 → /23
+       · el default gateway de esos hosts:  192.168.108.1  (no cambia)
+</code></pre></div>
+
+<p><strong>Caso B — <code>192.168.0.0/24</code>, <code>.1.0/24</code> y <code>.2.0/24</code> (del <code>2010-03 P1b</code>)</strong></p>
+<div class="codehilite"><pre><span></span><code>  ¿.0.0/24 + .1.0/24 = un /23? Arrancaría en 192.168.0.0/23 → sí, cubre
+  .0.0–.1.255 ✓. PERO .2.0/24 queda en otra subred, así que el switch no puede
+  unificar 1 y 2. Para meter las TRES hace falta un /22:
+       192.168.0.0/22 cubre .0.0 – .3.255 (1024 dir); 0 es múltiplo de 4 ✓
+  ⇒ SÍ hay que renumerar. La solución oficial (mínima cantidad de direcciones
+    modificadas) mueve SOLO la subred 1:  192.168.0.0/24 → 192.168.3.0/24, y las
+    subredes 2 y 3 quedan en 192.168.0.0/22.
+    Tabla de R1:  192.168.3.0/24 → C (eth0)  ·  192.168.0.0/22 → C (eth1)
+</code></pre></div>
+
+<p><strong>Lo que hay que decir en el examen:</strong> <em>"la renumeración es necesaria cuando las
+subredes a unificar </em><em>no forman un prefijo contiguo y alineado</em><em>; si son contiguas
+y la cantidad es potencia de 2, alcanza con cambiar la máscara"</em>, y eso se verifica
+mirando cuántos bits las distingue en binario.</p>
+<h2>3.4 Ejercicio 10 — ¿Se puede sumarizar?</h2>
+<p><svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 780 400" style="max-width:780px"><rect width="780" height="400" fill="#ffffff"/><text x="390.0" y="24" text-anchor="middle" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="15" font-weight="600" fill="#0b3d5c">Como se aplica una mascara de subred, bit a bit</text><defs><marker id="p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#14507a"/></marker><marker id="po" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c8621a"/></marker><marker id="pr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#b3261e"/></marker></defs><text x="40" y="44" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="12" font-weight="700" fill="#0b3d5c">IP</text><text x="400" y="44" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="12" font-weight="700" fill="#0b3d5c">Mascara  (/26)</text><text x="600" y="44" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="12" font-weight="700" fill="#0b3d5c">AND = resultado</text><text x="40" y="76" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="400" fill="#1a1a1a">11000000</text><text x="400" y="76" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="400" fill="#1a1a1a">11111111</text><text x="600" y="76" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#2e7d4f">11000000</text><line x1="36" y1="86" x2="756" y2="86" stroke="#eef2f4"/><text x="40" y="108" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="400" fill="#1a1a1a">10101000</text><text x="400" y="108" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="400" fill="#1a1a1a">11111111</text><text x="600" y="108" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#2e7d4f">10101000</text><line x1="36" y1="118" x2="756" y2="118" stroke="#eef2f4"/><text x="40" y="140" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="400" fill="#1a1a1a">00001010</text><text x="400" y="140" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="400" fill="#1a1a1a">11111111</text><text x="600" y="140" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#2e7d4f">00001010</text><line x1="36" y1="150" x2="756" y2="150" stroke="#eef2f4"/><text x="40" y="172" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="400" fill="#1a1a1a">00110111</text><text x="400" y="172" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="400" fill="#1a1a1a">11000000</text><text x="600" y="172" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="13" font-weight="700" fill="#2e7d4f">00000000</text><line x1="36" y1="182" x2="756" y2="182" stroke="#eef2f4"/><text x="40" y="216" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="13" font-weight="700" fill="#0b3d5c">192.168.10.55  AND  255.255.255.192  =  192.168.10.64</text><text x="40" y="248" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#666">Lo que resulta de ese AND:</text><rect x="40" y="268" width="190" height="26" rx="3" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="46" y="284.5" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">direccion de red</text><text x="242" y="286" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#c8621a">192.168.10.64</text><rect x="40" y="297" width="190" height="26" rx="3" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="46" y="313.5" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">primer host</text><text x="242" y="315" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#2e7d4f">192.168.10.65</text><rect x="40" y="326" width="190" height="26" rx="3" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="46" y="342.5" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">ultimo host</text><text x="242" y="344" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#2e7d4f">192.168.10.126</text><rect x="40" y="355" width="190" height="26" rx="3" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="46" y="371.5" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">broadcast</text><text x="242" y="373" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#b3261e">192.168.10.127</text><rect x="40" y="384" width="190" height="26" rx="3" fill="#f7f9fa" stroke="#b8cfdb" stroke-width="1.2"/><text x="46" y="400.5" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="10" font-weight="400" fill="#666">hostables</text><text x="242" y="402" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="700" fill="#0b3d5c">62</text><text x="400" y="248" text-anchor="start" font-family="'Segoe UI','Noto Sans',sans-serif" font-size="11" font-weight="700" fill="#666">El prefijo /26 significa:</text><text x="400" y="270" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">26 bits de red + 6 bits de host</text><text x="400" y="290" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#1a1a1a">2^6 = 64 direcciones en la subred</text><text x="400" y="310" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#c8621a">64 - 2 = 62 hostables</text><text x="400" y="344" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#666">El AND pone en 0 todos los bits</text><text x="400" y="360" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#666">de host: por eso el resultado es</text><text x="400" y="376" text-anchor="start" font-family="Consolas,'Cascadia Mono',monospace" font-size="11" font-weight="400" fill="#666">la direccion de RED, no una de host.</text></svg></p>
+<p><strong>Enunciado.</strong> Del plan del Ejercicio 2 (<code>172.16.0.0/16</code>): <code>0.0/23</code>, <code>2.0/24</code>,
+<code>3.0/25</code>, <code>3.128/26</code>, <code>3.192/27</code>. Agrupá las rutas de a dos, de a tres, etc., hasta
+cuántas quedan.</p>
+<div class="codehilite"><pre><span></span><code>  Nivel 1:  172.16.3.0/25 + 172.16.3.128/26  = 172.16.3.0/24  ✓ (128+64 = 192,
+           contiguo dentro de .3.0–.3.255)
+           172.16.3.0/24 + 172.16.3.192/27  = 172.16.3.0/24  ✓ ya dentro
+  Nivel 2:  172.16.2.0/24 + 172.16.3.0/24    = 172.16.2.0/23  ✓ (256+256 = 512)
+  Nivel 3:  172.16.0.0/23 + 172.16.2.0/23    = 172.16.0.0/21  ✓ (512+512 = 1024)
+
+  RESULTADO: 5 rutas → 1 sola: 172.16.0.0/21
+  Chequeo: el plan ocupa .0.0 – .3.255 = 1024 = un /21 exacto. ✓
+  Ojo: el /21 ABARCA .4.0 – .7.255, que están LIBRES. Al sumarizar estás
+  anunciando también lo que no usás, y eso es correcto: el espacio de una red es
+  del router hacia afuera, no "lo que yo uso".
+</code></pre></div>
+
+<p><strong>El caso que NO se puede</strong>, para que quede la regla:</p>
+<div class="codehilite"><pre><span></span><code>  172.16.3.128/26 + 172.16.3.192/27  →  64 + 32 = 96, no es potencia de 2.
+  Un /25 arrancaría en .128/25 = .128–.255  ✗ incluye .224/27, que es otra red.
+  REGLA: la cantidad de direcciones tiene que ser POTENCIA DE 2 y el arranque tiene
+  que estar alineado a ese tamaño. Si no, no hay resumen.
+</code></pre></div>
+
+<h2>3.5 Ejercicio 11 — El puntero que cambia de paso</h2>
+<p><strong>Enunciado.</strong> En <code>192.168.1.0/24</code> ya usaste <code>/25</code>, <code>/26</code>, <code>/27</code>, <code>/30</code> y <code>/30</code>;
+el puntero quedó en <strong>232</strong>. Ahora piden, en este orden, un <code>/29</code>, un <code>/31</code>, un
+<code>/32</code> y un <code>/28</code>. Verificá.</p>
+<div class="codehilite"><pre><span></span><code>  puntero = 192.168.1.232
+  /29  inicio = menor múltiplo de 8  ≥ 232 = 232  ✓  → .232/29 (.232–.239)  ptr 240
+  /31  inicio = menor múltiplo de 2  ≥ 240 = 240  ✓  → .240/31 (.240–.241)  ptr 242
+  /32  inicio = cualquier entero ≥ 242             → .242/32 (.242)         ptr 243
+  /28  inicio = menor múltiplo de 16 ≥ 243 = 256  ✗  ¡NO ENTRA!
+</code></pre></div>
+
+<p><strong>Acá está la lección:</strong> un <code>/28</code> (16 direcciones) <strong>ya no entra</strong>, porque el bloque
+libre que queda (<code>.232</code>–<code>.255</code>, 24 direcciones) no está alineado a 16. Si lo hubieras
+pedido <strong>antes</strong> del <code>/29</code>:  <code>/28</code> arranque en 240 → <code>.240/28</code> → puntero 256 = FIN,
+y el <code>/29</code> + <code>/31</code> + <code>/32</code> NO HABRÍAN ENTRADO.</p>
+<p><strong>Conclusión práctica:</strong> el <strong>último</strong> bloque del plan es el que peor redondeo
+sufre; si vas a necesitar uno grande al final, pedilo primero.</p>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen</h2>
+<ol>
+<li>Las cinco fórmulas: <code>2^h − 2 ≥ H</code> · <code>2^(32−prefijo)</code> · <code>dir/tamaño × tamaño</code> ·
+   <code>dir + tamaño − 1</code> · <code>puntero = menor múltiplo de tamaño ≥ puntero</code>.</li>
+<li>Para <strong>n</strong> subredes iguales se roban <code>log2(n)</code> bits: 4 subredes en un <code>/24</code> →
+   <strong>/26</strong> (62 utilizables c/u), no <code>/27</code>.</li>
+<li><code>172.16.0.0/16</code> para 500/250/100/50/25 → <code>/23 · /24 · /25 · /26 · /27</code> =
+   992 direcciones, libre 64 544, mayor prefijo libre <code>172.16.128.0/17</code>.</li>
+<li><code>100.100.100.0/24</code> para 70+1 y 15+1 → <strong><code>/25</code> + <code>/27</code></strong>; el <code>/28</code> NO entra
+   (14 utilizables &lt; 16). Libre: 96 = <code>/26 + /27</code>.</li>
+<li><code>192.168.2.0/23</code> con 251 por LAN → <code>/24</code> → exactamente <strong>2</strong> subredes, bloque al
+   100 %.</li>
+<li><code>147.10.8.0/21</code> con 123 por LAN → <code>/25</code> → <strong>16</strong> subredes; el plan A es mejor
+   que el B porque <code>LAN3 + LAN4</code> <strong>sumarizan</strong> en un <code>/24</code> (2 rutas en vez de 3).</li>
+<li>Seis routers: el <code>traceroute</code> normal va <code>R2→R6→R5→R1</code>; si cae R5, pasa a
+   <code>R2→R6→R3→R1</code>. Si cae R4, no cambia. Las tablas se recalculan, no se borran.</li>
+<li><strong>Desperdicio, no "direcciones usadas":</strong> con FLSM, un <code>/21</code> para 300+200+50
+   pierde el <strong>73 %</strong>; con VLSM, el <strong>13,7 %</strong>.</li>
+<li>Renumerar <strong>no</strong> hace falta si las subredes a unificar ya forman un prefijo
+   contiguo y alineado (<code>108.0/24</code> + <code>109.0/24</code> = <code>/23</code>). Hace falta si no.</li>
+<li>El <strong>último</strong> bloque del plan es el que peor redondeo sufre: pedí primero el
+    más grande.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p>Respondé sin mirar. Las respuestas están en <code>&lt;details&gt;</code>.</p>
+<p><strong>1.</strong> ¿Por qué 16 direcciones no entran en un <code>/27</code> de 32 direcciones?</p>
+<details><summary>Respuesta</summary>
+
+Porque `2^4 = 16` es el total **incluyendo** red y broadcast: los utilizables son
+`16 − 2 = 14`. El `+2` va **dentro** del `2^h`, así que el prefijo es `/27`
+(`2^5 − 2 = 30 ≥ 16`).
+
+</details>
+
+<p><strong>2.</strong> Cuatro subredes iguales en un <code>/24</code>: ¿por qué <code>/26</code> y no <code>/27</code>?</p>
+<details><summary>Respuesta</summary>
+
+Porque el subnetting clásico **roba el mínimo número de bits**: 4 = `2^2`, roba 2
+y queda `/26` (62 c/u, 248 en total, `4 × 64 = 256`). `/27` daría **8** subredes de
+30: cuatro de sobra. `/25` daría solo 2, insuficiente.
+
+</details>
+
+<p><strong>3.</strong> <code>172.16.0.0/16</code> para 500, 250, 100, 50 y 25 hosts (+1 router cada una):
+prefijos, consumo y mayor prefijo libre.</p>
+<details><summary>Respuesta</summary>
+
+`501 → /23` · `251 → /24` · `101 → /25` · `51 → /26` · `26 → /27`.
+Consumo `512+256+128+64+32 = 992` de 65 536 → libre 64 544. Puntero:
+`0.0/23` · `2.0/24` · `3.0/25` · `3.128/26` · `3.192/27`; libre desde `3.224/27` y,
+en grande, desde `4.0`. Mayor prefijo libre contiguo: **`172.16.128.0/17`**
+(32 768), porque un `/17` dentro de un `/16` ocupa 128 unidades del tercer octeto.
+
+</details>
+
+<p><strong>4.</strong> <code>100.100.100.0/24</code> para 70 puestos + 1 router y 15 servidores + 1 router.
+Verificá la solución oficial y decí quécfc остаток queda libre.</p>
+<details><summary>Respuesta</summary>
+
+Puestos piden 71 → `2^6 − 2 = 62 < 71` ✗, `2^7 − 2 = 126 ≥ 71` ✓ → **`/25`**.
+Servidores piden 16 → `2^4 − 2 = 14 < 16` ✗, `2^5 − 2 = 30 ≥ 16` ✓ → **`/27`**.
+Puntero: `100.100.100.0/25` y `100.100.100.128/27`. **Libre: `.160`–`.255` = 96
+direcciones**, que se descomponen en `160/26` + `224/27`. La oficial es correcta y
+es la única solución posible; lo que suma es observar que ese remanente está
+**alineado**, que es el segundo reading de "maximizar para el futuro".
+
+</details>
+
+<p><strong>5.</strong> Del <code>/21</code> <code>147.10.8.0</code> con 123 direcciones por LAN: ¿qué prefijo y cuántas
+subredes? Dad las dos cuentas.</p>
+<details><summary>Respuesta</summary>
+
+`123 + 2 = 125` → `123 + 2 = 125` → `2^6 = 64 < 125` ✗, `2^7 = 128 ≥ 125` ✓ → **`/25`**.
+Por tamaño: `2048 / 128 = 16` subredes. Por bits: `11 − 7 = 4` bits → `2^4 = 16`.
+
+</details>
+
+<p><strong>6.</strong> <code>192.168.108.0/24</code> y <code>192.168.109.0/24</code>: ¿hay que renumerar para ponerlas
+en el mismo dominio de broadcast con un switch?</p>
+<details><summary>Respuesta</summary>
+
+**No.** `108 = 01101100` y `109 = 01101101` difieren **en un solo bit**, así que
+`192.168.108.0/23` cubre `.108.0`–`.109.255`. Alcanza con cambiar la máscara de R1
+y de los hosts a `/23`; el gateway sigue siendo `192.168.108.1`.
+
+</details>
+
+<p><strong>7.</strong> Del plan del ejercicio 2, ¿cuántas rutas quedan al sumarizar y cuál es la más
+agregada posible? ¿Y por qué está bien anunciar direcciones que no usás?</p>
+<details><summary>Respuesta</summary>
+
+De 5 a 1: `3.0/25 + 3.128/26` → `3.0/24`; `2.0/24 + 3.0/24` → `2.0/23`;
+`0.0/23 + 2.0/23` → **`172.16.0.0/21`**. Se anuncia el prefijo entero aunque
+incluya `.4.0`–`.7.255`, que están libres: el espacio de una red es del router
+hacia afuera, y lo que se agregue en el futuro entra **sin tocar ninguna tabla**.
+
+</details>
+
+<p><strong>8.</strong> El puntero quedó en 232 y quedan 24 direcciones libres
+(<code>192.168.1.232</code>–<code>.255</code>). ¿Entran un <code>/29</code>, un <code>/31</code> y un <code>/28</code>? ¿En qué orden?</p>
+<details><summary>Respuesta</summary>
+
+En ese orden: `/29` arranca en 232 (múltiplo de 8 ✓), puntero 240; `/31` en 240
+(múltiplo de 2 ✓), puntero 242; y el `/28` (16) **ya no entra**: el menor múltiplo
+de 16 mayor o igual que 242 es 256, fuera del `/24`. Al revés, el `/28` arranca en
+240 y se lleva todo. **El último bloque es el que peor redondeo sufre**: pedí
+primero el más grande.
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li><strong><code>eirc1103</code> / <code>sirc1103</code></strong> (21-feb-2011) — Problema 2 d: <code>100.100.100.0/24</code> para 70 puestos + 15 servidores (Ejercicio 3)</li>
+<li><strong><code>sirc1007</code></strong> (27-jul-2010) — P2 a-i: <code>192.168.2.0/23</code> con 250 hosts (Ejercicio 4)</li>
+<li><strong><code>sirc0807</code></strong> (1-ago-2008) — P2 a-i: <code>147.10.8.0/21</code> con 120 hosts por LAN (Ejercicio 5)</li>
+<li><strong><code>sirc0608</code></strong> (5-ago-2006) — <strong>Problema 1</strong>: topología de 6 routers (Ejercicio 6) · P4: <code>200.40.224.0/25</code> en 18, 11 y 9 hosts</li>
+<li><strong><code>sirc0912</code></strong> / <strong><code>sirc1003</code></strong> — Problema 1 b: renumerar para agregar un switch (Ejercicio 9)</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 5 "La capa de red"</li>
+<li><strong>RFC 1918</strong> (privadas) 🔍 · <strong>RFC 4632</strong> (CIDR) 🔍 · <strong>RFC 6177</strong> (2011) · <strong>RFC 8200</strong> (2017)</li>
+<li><strong>Clase anterior:</strong> 28 — VLSM y planes de numeración · <strong>Clase siguiente:</strong> 30 — Tablas de enrutamiento, next hop y ARP</li>
+</ul></body></html>

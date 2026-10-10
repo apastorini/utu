@@ -1,0 +1,1242 @@
+<!DOCTYPE html><html lang='es'><head><meta charset='utf-8'><style>
+@page {
+  size: A4;
+  margin: 18mm 16mm 20mm 16mm;
+  @bottom-center {
+    content: "página " counter(page) " de " counter(pages);
+    font: 9pt sans-serif; color: #888;
+  }
+}
+html { font-size: 10.5pt; }
+body {
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  line-height: 1.55; color: #1a1a1a; max-width: none;
+}
+h1 { font-size: 20pt; color: #0b3d5c; border-bottom: 3px solid #0b3d5c;
+     padding-bottom: 5px; margin-top: 0; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; }
+h2 { font-size: 14.5pt; color: #0b3d5c; border-bottom: 1px solid #b8cfdb;
+     padding-bottom: 3px; margin-top: 1.6em; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #14507a; margin-top: 1.3em; page-break-after: avoid; }
+h4 { font-size: 11pt; color: #333; margin-top: 1.1em; page-break-after: avoid; }
+p { margin: 0.55em 0; text-align: justify; }
+strong { color: #000; }
+a { color: #14507a; text-decoration: none; }
+hr { border: none; border-top: 1px solid #d0d0d0; margin: 1.4em 0; }
+blockquote {
+  border-left: 4px solid #7aa7c4; background: #f2f7fa;
+  margin: 0.9em 0; padding: 0.7em 1em; color: #333;
+}
+blockquote p { margin: 0.3em 0; }
+code {
+  font-family: "Cascadia Mono", "Consolas", monospace; font-size: 9pt;
+  background: #eef2f5; padding: 1px 4px; border-radius: 3px;
+}
+pre {
+  background: #fbfbfb; border: 1px solid #d8d8d8; border-radius: 4px;
+  padding: 0.8em; overflow-x: auto; font-size: 8.8pt; line-height: 1.35;
+  page-break-inside: avoid;
+}
+pre code { background: none; padding: 0; font-size: 8.8pt; }
+svg {
+  display: block; margin: 1.1em auto 1.3em; max-width: 100%;
+  page-break-inside: avoid; page-break-after: avoid;
+}
+figure { margin: 1.2em 0; text-align: center; page-break-inside: avoid; }
+figure svg { border: 1px solid #d8d8d8; border-radius: 6px; background: #fff; }
+table {
+  border-collapse: collapse; width: 100%; margin: 0.9em 0;
+  font-size: 9.2pt; page-break-inside: avoid;
+}
+th, td { border: 1px solid #c5c5c5; padding: 4px 7px; text-align: left;
+         vertical-align: top; }
+th { background: #0b3d5c; color: white; font-weight: 600; }
+tr:nth-child(even) td { background: #f7f9fa; }
+ul, ol { margin: 0.5em 0; padding-left: 1.6em; }
+li { margin: 0.25em 0; }
+details { margin: 0.6em 0; border: 1px solid #d8d8d8; border-radius: 4px;
+          padding: 0.5em 0.8em; background: #fcfcf7; }
+summary { font-weight: 600; color: #0b3d5c; cursor: pointer; }
+img { max-width: 100%; }
+.clase-pagina { page-break-before: always; }
+.portada { text-align: center; padding-top: 4cm; page-break-after: always; }
+.portada h1 { border: none; page-break-before: avoid; font-size: 30pt; }
+ol.toc-clase { list-style: none; padding-left: 0; column-count: 2;
+               column-gap: 8mm; font-size: 9.5pt; }
+ol.toc-clase li { break-inside: avoid; margin: 0.15em 0; }
+ol.toc-clase li.toc-parte { font-weight: 700; color: #0b3d5c; margin-top: 0.7em;
+                            border-bottom: 1px solid #b8cfdb; }
+ol.toc-clase li.toc-item { padding-left: 5mm; color: #333; }
+</style></head><body><h1>Clase 14 — Sockets: la API de la capa de transporte</h1>
+<p><strong>Bloque:</strong> B (Aplicación) · <strong>Semana:</strong> 5 · <strong>Duración estimada:</strong> 120 min
+<strong>Correlativa:</strong> Clase 13 (correo) · <strong>Sigue con:</strong> Clase 15 (DHCP + Simulacro 2)
+<strong>Material de referencia:</strong> Tanenbaum cap. 6 · RFC 9293 ·  §14</p>
+<hr />
+<h2>🎯 Al terminar esta clase vas a poder</h2>
+<ol>
+<li>Explicar por qué la capa de transporte se programa con una <strong>API</strong> y no con
+ "registros" del protocolo, y qué es un <em>socket</em>.</li>
+<li>Escribir en C un <strong>servidor TCP</strong> y un <strong>cliente TCP</strong> completos y compilables,
+ con el orden exacto de las llamadas.</li>
+<li>Explicar para qué sirven  /  /  y qué falla exactamente si
+ se olvidan.</li>
+<li>Diferenciar el modelo <strong>con conexión</strong> (TCP:  +  + ) del
+ <strong>sin conexión</strong> (UDP:  / ).</li>
+<li><strong>Analizar críticamente</strong> el pseudocódigo en C de una solución oficial de examen,
+ encontrar sus errores y <strong>escribir la versión corregida</strong>.</li>
+</ol>
+<blockquote>
+<p><strong>Prerequisito del examen:</strong>  (30 puntos — 
+con sockets UDP),  (30 puntos — cliente anti-spam vía HTTP
+con consulta DNS por UDP). <strong>Los dos problemas de 30 puntos de la capa de
+aplicación son de programación.</strong></p>
+</blockquote>
+<hr />
+<h1>PARTE 1 — TEORÍA</h1>
+<h2>1.1 Qué es una API, y por qué la capa 4 se programa así</h2>
+<p>La capa de transporte es la <strong>primera en que el sistema operativo implementa
+servicios para los procesos</strong>. Antes (física, enlace, red) los datos viajan sin
+que ningún proceso los pida: un paquete de red es un paquete, va a donde diga la
+cabecera IP y a nadie le importa quién lo pidió.</p>
+<p>A partir de TCP/UDP aparecen <strong>las questions</strong>: "¿este datagrama es para el
+navegador o para el correo?". Como <strong>la CPU tiene un solo programa ejecutándose a
+la vez</strong>, el SO necesita un mecanismo para:</p>
+<ul>
+<li>que un proceso <strong>reserve un puerto</strong> y así pedirle al mundo "lo que llegue por
+ este número es mío";</li>
+<li><strong>entregar</strong> cada segmento que llega al proceso correcto;</li>
+<li><strong>permitir</strong> que un proceso espere o intente enviar sin bloquear la CPU entera.</li>
+</ul>
+<p>Ese mecanismo se llama <strong>socket</strong>. Y el conjunto de llamadas que el SO expone para
+usarlo se llama la <strong>API de sockets</strong>, que en Unix viene de <strong>Berkeley (BSD)</strong> y
+es el mismo en Linux, macOS y Windows (con diferencias de nombres).</p>
+<blockquote>
+<p><strong>Dato clave para el examen:</strong> la API de sockets <strong>nunca fue parte del protocolo
+TCP/IP</strong>. Es una interfaz del sistema operativo. Por eso el mismo  puede
+hablar TCP o UDP según qué  creaste: <strong>el protocolo lo decide el
+ y el /, no el código de aplicación</strong>.</p>
+</blockquote>
+<h3>Qué es un socket, en una frase</h3>
+<p>Un socket es <strong>un par de descriptores de archivo más un estado</strong>: el SO mantiene
+por cada socket las direcciones involucradas, el buffer de envío, el de recepción
+y la tabla de rutas interna (para TCP, el estado de la conexión completa).</p>
+<p>En Unix, un socket es <strong>un número entero</strong> (el <em>file descriptor</em>), y por eso
+funciona con <code>read()</code>, <code>write()</code> y <code>close()</code> como cualquier archivo. Eso no es un
+detalle: es la razón de que la API sea tan simple.</p>
+<p><code>Proceso A Proceso B (otro host)
+ ┌───────────────┐ ┌───────────────┐
+ │ socket() │ │ socket() │
+ │ bind() │ │ listen() │
+ │ listen() │ │ accept() │
+ │ accept() │ │ │
+ └───────┬───────┘ └───────┬───────┘
+ │ socket fd = 3 │
+ ┌─────┴──────────────┐ ┌──────┴─────────┐
+ │ TABLA DE SOCKETS │ │ TABLA DE SOCKETS│
+ │ del proceso │ │ del proceso │
+ │ ┌───────────────┐ │ │ ┌────────────┐ │
+ │ │ fd=3 :49200 │ │ │ │ fd=3 :80 │ │
+ │ │ → 132.42.1.5:80│ │ │ │← 10.0.0.7 │ │
+ │ └───────────────┘ │ │ └────────────┘ │
+ └────────────────────┘ └─────────────────┘
+ │ BSD sockets del SO │
+ └────────► stack TCP/IP ◄───────┘</code></p>
+<h2>1.2 La API de Berkeley/POSIX, llamada por llamada</h2>
+<h3>Las que se usan siempre</h3>
+<table>
+<thead>
+<tr>
+<th>Llamada</th>
+<th>Qué hace</th>
+<th>Disponible en</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td><strong>Crea</strong> un socket y devuelve el file descriptor</td>
+<td>TCP y UDP</td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Fija la dirección local</strong> (IP y puerto)</td>
+<td>ambos</td>
+</tr>
+<tr>
+<td></td>
+<td>Marca el socket como <strong>pasivo</strong>: "acepto conexiones"</td>
+<td><strong>solo TCP</strong></td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Espera</strong> una conexión entrante y devuelve <strong>un nuevo fd</strong> para esa conexión</td>
+<td><strong>solo TCP</strong></td>
+</tr>
+<tr>
+<td></td>
+<td><strong>Inicia</strong> la conexión hacia un destino</td>
+<td><strong>solo TCP</strong></td>
+</tr>
+<tr>
+<td></td>
+<td>Envía por una conexión <strong>establecida</strong></td>
+<td>ambos</td>
+</tr>
+<tr>
+<td></td>
+<td>Recibe de una conexión establecida</td>
+<td>ambos</td>
+</tr>
+<tr>
+<td></td>
+<td>Envía <strong>a un destino</strong>, sin conexión previa</td>
+<td><strong>solo UDP</strong></td>
+</tr>
+<tr>
+<td></td>
+<td>Recibe <strong>y quién lo mandó</strong></td>
+<td><strong>solo UDP</strong></td>
+</tr>
+<tr>
+<td></td>
+<td>Ajusta opciones del socket</td>
+<td>ambos</td>
+</tr>
+<tr>
+<td></td>
+<td>Libera el socket (cierra el fd)</td>
+<td>ambos</td>
+</tr>
+</tbody>
+</table>
+<h3>El orden exacto: servidor TCP</h3>
+<p>Este es <strong>el orden que se corrige en el examen</strong>, y el orden importa porque cada
+llamada deja el socket en un estado que habilita la siguiente:</p>
+<p><code>1. socket(AF_INET, SOCK_STREAM, 0)
+ │ crear el socket. Devuelve fd = 3 (por ejemplo)
+ ▼
+ 2. setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &amp;uno, sizeof uno)
+ │ opcional pero recomendado: permite reabrir el puerto en el futuro
+ │ sin esperar al TIME_WAIT
+ ▼
+ 3. bind(fd, (struct sockaddr*)&amp;dir, sizeof dir)
+ │ FIJA IP y puerto LOCALES. OBLIGATORIO en el servidor:
+ │ sin esto el SO asigna un puerto efímero y nadie puede llegar
+ ▼
+ 4. listen(fd, backlog)
+ │ pasa a estado PASIVO: el kernel empieza a ENCOLAR
+ │ conexiones entrantes en la cola de backlog
+ ▼
+ 5. accept(fd, (struct sockaddr*)&amp;cli, &amp;len)
+ │ BLOQUEA hasta que llegue una conexión.
+ │ Devuelve un fd NUEVO, dedicado a esa conexión,
+ │ y llena cli con la IP y el puerto del cliente.
+ │ ¡OJO: el fd original NO se usa para atender la conexión!
+ ▼
+ 6. send / recv sobre el fd NUEVO</code></p>
+<p><strong>El error conceptual más común</strong>: creer que  devuelve "la misma
+conexión" en el  original. No: devuelve <strong>un descriptor nuevo</strong>. El original
+sigue siendo el "teléfono de la central" y se usa para el siguiente <code>accept()</code>.</p>
+<h3>El orden exacto: cliente TCP</h3>
+<p><code>1. socket(AF_INET, SOCK_STREAM, 0) → fd
+ 2. connect(fd, (struct sockaddr*)&amp;destino, sizeof destino)
+ │ ¡NO HAY bind() NI listen()!
+ │ El SO elige un puerto efímero automáticamente
+ │ y hace el three-way handshake por debajo
+ ▼
+ 3. send / recv sobre ese mismo fd</code></p>
+<h3>El orden exacto: UDP, en ambos extremos</h3>
+<p>`
+ SERVIDOR (desea conocer quién le habla)</p>
+<ol>
+<li>socket(AF_INET, SOCK_DGRAM, 0) → SOCK_DGRAM, no SOCK_STREAM</li>
+<li>bind(fd, (struct sockaddr*)&amp;dir, sizeof dir)
+ │ NECESARIO si querés un puerto fijo.
+ │ Si no hacés bind, el SO asigna un puerto efímero
+ │ y los clientes no pueden anticiparlo
+ ▼</li>
+<li>n = recvfrom(fd, buf, len, 0, (struct sockaddr*)&amp;origen, &amp;len_origen)
+ │ ESPERA un datagrama. Además te dice QUIÉN lo mandó
+ │ (IP y puerto), que es lo que TCP te da gratis
+ ▼</li>
+<li>sendto(fd, buf, n, 0, (struct sockaddr*)&amp;origen, len_origen)
+ │ respondés a la dirección que te devolvió recvfrom</li>
+</ol>
+<p>CLIENTE
+ 1. socket(AF_INET, SOCK_DGRAM, 0)
+ 2. sendto(fd, buf, n, 0, (struct sockaddr*)&amp;destino, sizeof destino)
+ 3. recvfrom(fd, buf, len, 0, NULL, NULL) para escuchar respuestas
+`</p>
+<blockquote>
+<p><strong>Nota de examen:</strong>  y  son a la vez "send/recv" <strong>y</strong>
+"connect/accept" combinados. No existen  ni  en UDP porque <strong>no hay
+conexión que establecer</strong>.</p>
+</blockquote>
+<h2>1.3  y el orden de bytes</h2>
+<h3>La estructura</h3>
+<p><code>c
+struct sockaddr_in {
+ sa_family_t sin_family; // AF_INET para IPv4
+ in_port_t sin_port; // puerto, EN ORDEN DE RED
+ struct in_addr sin_addr; // IP, EN ORDEN DE RED
+ // ... y un padding para que sea del tamaño de sockaddr
+};</code></p>
+<h3>El problema que resuelve</h3>
+<p>Las redes y las máquinas usan <strong>ordenes de bytes distintos</strong>:</p>
+<ul>
+<li><strong>big-endian</strong> (<em>network byte order</em>): el byte más significativo <strong>primero</strong>.
+ Es el estándar de todas las redes.</li>
+<li><strong>little-endian</strong> (<em>host byte order</em>): el byte menos significativo primero. Es lo
+ que usan x86, ARM en su modo normal, y prácticamente toda computadora de escritorio.</li>
+</ul>
+<p>Si guardás el puerto 80 como número y lo mandás sin convertir:</p>
+<p>`
+ Puerto 80 en decimal = 0x0050</p>
+<p>En little-endian en memoria: [ 50 ] [ 00 ] ← se manda primero el 0x50
+ Lo que recibe la red: 0x5000 = 20480 ← ¡puerto equivocado!
+ En big-endian en memoria: [ 00 ] [ 50 ] ← correcto
+`</p>
+<p>Por eso existen las conversoras:</p>
+<table>
+<thead>
+<tr>
+<th>Función</th>
+<th>Qué hace</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td>host → network, <strong>short</strong> (16 bits, puertos)</td>
+</tr>
+<tr>
+<td></td>
+<td>network → host, short</td>
+</tr>
+<tr>
+<td></td>
+<td>host → network, <strong>long</strong> (32 bits, direcciones IP)</td>
+</tr>
+<tr>
+<td></td>
+<td>network → host, long</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Se usan igual en cliente y servidor.</strong> No es "el servidor convierte y el
+cliente no". <strong>Los dos lados</strong> convierten, porque los dos escriben en un formato
+de red. Esto es una pregunta de examen clásica y casi todos la contestan mal.</p>
+</blockquote>
+<h3>y</h3>
+<p>`c
+// Forma clásica (devuelve INADDR_NONE si falla — no se puede distinguir error
+// de la dirección 255.255.255.255):
+struct in_addr a = inet_addr("132.42.120.5");</p>
+<p>// Forma moderna y preferida (devuelve 1 si tuvo éxito, 0 si falló):
+struct in_addr a;
+inet_pton(AF_INET, "132.42.120.5", &amp;a);
+`</p>
+<h2>1.4 Multiplexación y demultiplexación: el papel de</h2>
+<p>Aunque la teoría profunda está en la <strong>Clase 16</strong>, el punto de conexión con esta
+clase es uno solo y es el que más se pregunta:</p>
+<p>`
+ El SO mantiene una TABLA que asocia:</p>
+<p>(protocolo, IP local, puerto local) → file descriptor</p>
+<p>Cuando llega un datagrama UDP de la red:
+ 1. el SO lee el puerto destino de la cabecera UDP
+ 2. busca en la tabla (IP, puerto)
+ 3. si está, ENTREGA los bytes al proceso dueño de ese fd
+ 4. si no está, lo DESCARTA y a veces manda ICMP port unreachable
+`</p>
+<p>es lo que <strong>inscribe una fila en esa tabla</strong>. Sin  del lado
+servidor, no hay fila, y todo lo que llega se descarta.</p>
+<p><strong>El caso de TCP</strong> es un refinamiento: la tabla tiene
+ — la <strong>4-tupla</strong> —
+porque dos clientes distintos pueden estar conectados al mismo puerto 80.</p>
+<h2>1.5 ⚠️ Actualización a 2026</h2>
+<p><strong>Sigue igual — de memoria:</strong>
+- Las llamadas ////////
+ /. <strong>No cambió nada.</strong> Los runtimes modernos (Go, Rust, Node, Python)
+ las envuelven, pero el kernel sigue siendo BSD sockets.
+- La 4-tupla identifica una conexión TCP; la 2-tupla identifica un socket UDP <strong>no
+ conectado</strong>.
+-  /  / ,  / ,
+  / .
+- El modelo cliente-servidor con /, y la programación
+ multiproceso o multihilo.</p>
+<p><strong>Cambió:</strong>
+- <strong>La herramienta de laboratorio.</strong> Antes se usaba <code>tcpdump</code>; hoy lo estándar es
+ <strong>Wireshark</strong> (libpcap/npcap, con filtros de display y <strong>descodificación
+ integrada</strong> de QUIC, HTTP/3, TLS 1.3, DNSSEC y DoH).  sigue para captura
+ masiva o headless.
+- <strong>Ya no se puede sniffear HTTP/3 con captura pasiva.</strong> El tráfico va cifrado en
+ el cable con claves derivadas de TLS 1.3, y las cabeceras HTTP/3 viajan en QPACK.
+ Para "ver" una sesión de HTTP/3 hace falta <strong>instrumentación en el endpoint</strong>
+ (registro de QUIC con claves de depuración, o un proxy MITM). <strong>Esto es un
+ cambio real de la pedagogía del sniffing</strong>, y explica por qué se enseña HTTPS y
+ no HTTP/3 en el laboratorio.
+- <strong>IPv6 dual-stack y direcciones v4-mapped.</strong>  es la forma
+ IPv6 de escribir una dirección IPv4. Con  (default en Linux),
+ un socket  acepta <strong>también</strong> tráfico IPv4. Es cómodo y es la razón de
+ una larga lista de vulnerabilidades de clase y de bugs de validación. <strong>Cualquier
+ curso de sockets de hoy tiene que cubrirlo.</strong>
+- <strong>El matiz sobre la 2-tupla.</strong> La clave real de demultiplexación en el kernel es la
+ <strong>5-tupla</strong> . La "2-tupla (IP, puerto)"
+ es la simplificación clásica para un socket UDP no conectado. Y lo que rompe el
+ modelo de verdad es <strong>QUIC</strong>: multiplexa <strong>muchas conexiones en el mismo 5-tupla</strong>
+ usando el <strong>Connection ID</strong> ( §5.1) en lugar del 5-tupla.</p>
+<hr />
+<h1>PARTE 2 — PRÁCTICA RESUELTA</h1>
+<h2>2.1 Un servidor TCP de eco completo</h2>
+<p><strong>Qué tiene que hacer</strong>: aceptar conexiones, leer lo que le mandan, devolvérselo,
+y seguir escuchando.</p>
+<p>`c</p>
+<h1>include <stdio.h></h1>
+<h1>include <string.h></h1>
+<h1>include <stdlib.h></h1>
+<h1>include <unistd.h></h1>
+<h1>include <arpa/inet.h></h1>
+<h1>include <sys/socket.h></h1>
+<h1>include <netinet/in.h></h1>
+<h1>define PUERTO 80</h1>
+<h1>define MAX 1024</h1>
+<p>int main(void)
+{
+ int fd, fd_cli, n;
+ struct sockaddr_in dir, cli;
+ socklen_t len;
+ char buf[MAX];</p>
+<p>/<em> 1. crear el socket: AF_INET (IPv4), SOCK_STREAM (TCP) </em>/
+ fd = socket(AF_INET, SOCK_STREAM, 0);
+ if (fd &lt; 0) { perror("socket"); return 1; }</p>
+<p>/<em> 2. (opcional pero recomendado) permitir reabrir el puerto enseguida </em>/
+ int uno = 1;
+ setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &amp;uno, sizeof uno);</p>
+<p>/<em> 3. fijar la direccion local </em>/
+ memset(&amp;dir, 0, sizeof dir); /<em> limpiar: sin esto sin_addr tiene basura </em>/
+ dir.sin_family = AF_INET;
+ dir.sin_port = htons(PUERTO); /<em> OJO: htons </em>/
+ dir.sin_addr.s_addr = htonl(INADDR_ANY); /<em> cualquier interfaz </em>/</p>
+<p>if (bind(fd, (struct sockaddr *)&amp;dir, sizeof dir) &lt; 0) {
+ perror("bind"); return 1;
+ }</p>
+<p>/<em> 4. pasar a modo pasivo y encolar hasta 5 conexiones pendientes </em>/
+ if (listen(fd, 5) &lt; 0) { perror("listen"); return 1; }</p>
+<p>printf("Escuchando en el puerto %d...\n", PUERTO);</p>
+<p>/<em> 5. bucle: atender una conexion a la vez </em>/
+ for (;;) {
+ len = sizeof cli;
+ fd_cli = accept(fd, (struct sockaddr <em>)&amp;cli, &amp;len); /</em> BLOQUEA */
+ if (fd_cli &lt; 0) { perror("accept"); continue; }</p>
+<p>/<em> imprimir quien se conecto </em>/
+ char ip[INET_ADDRSTRLEN];
+ inet_ntop(AF_INET, &amp;cli.sin_addr, ip, sizeof ip);
+ printf("Conexion desde %s:%d\n", ip, ntohs(cli.sin_port));</p>
+<p>/<em> 6. atender mientras el cliente no cierre </em>/
+ while ((n = recv(fd_cli, buf, MAX - 1, 0)) &gt; 0) {
+ buf[n] = '\0';
+ printf("Recibido (%d bytes): %s\n", n, buf);
+ send(fd_cli, buf, n, 0); /<em> el eco </em>/
+ }</p>
+<p>close(fd_cli); /<em> el fd NUEVO se cierra, el original sigue </em>/
+ printf("Conexion cerrada.\n");
+ }
+}
+`</p>
+<p><strong>Puntos para justificar en un examen:</strong></p>
+<ul>
+<li><strong>antes</strong> dear : si no, el padding
+ tiene basura y  puede fallar.</li>
+<li>y : <strong>las dos conversiones</strong>, siempre.</li>
+<li>devuelve <strong>0</strong> cuando el cliente cerró (FIN): ese es el <strong>único</strong> caso en
+ que  es falso sin error.</li>
+<li>devuelve <strong>un fd nuevo</strong>. El  original nunca se usa para atender.</li>
+<li>=  = "escuchar en todas las interfaces".</li>
+</ul>
+<h2>2.2 El cliente TCP</h2>
+<p>`c</p>
+<h1>include <stdio.h></h1>
+<h1>include <string.h></h1>
+<h1>include <unistd.h></h1>
+<h1>include <arpa/inet.h></h1>
+<h1>include <sys/socket.h></h1>
+<h1>include <netinet/in.h></h1>
+<p>int main(void)
+{
+ int fd, n;
+ struct sockaddr_in dest;
+ char buf[1024] = "Hola servidor\n";</p>
+<p>fd = socket(AF_INET, SOCK_STREAM, 0);
+ if (fd &lt; 0) { perror("socket"); return 1; }</p>
+<p>memset(&amp;dest, 0, sizeof dest);
+ dest.sin_family = AF_INET;
+ dest.sin_port = htons(80); /<em> OJO: htons </em>/
+ inet_pton(AF_INET, "132.42.120.5", &amp;dest.sin_addr);</p>
+<p>/<em> NO hay bind() ni listen() en el cliente </em>/
+ if (connect(fd, (struct sockaddr *)&amp;dest, sizeof dest) &lt; 0) {
+ perror("connect"); return 1;
+ }</p>
+<p>send(fd, buf, strlen(buf), 0);</p>
+<p>n = recv(fd, buf, sizeof buf - 1, 0);
+ if (n &gt; 0) {
+ buf[n] = '\0';
+ printf("Respuesta: %s", buf);
+ }</p>
+<p>close(fd);
+ return 0;
+}
+`</p>
+<h2>2.3 Un par UDP que intercambia datagramas</h2>
+<p>`c
+/<em> ---------- SERVIDOR UDP ---------- </em>/</p>
+<h1>include <stdio.h></h1>
+<h1>include <string.h></h1>
+<h1>include <unistd.h></h1>
+<h1>include <arpa/inet.h></h1>
+<h1>include <sys/socket.h></h1>
+<h1>include <netinet/in.h></h1>
+<p>int main(void)
+{
+ int fd, n;
+ struct sockaddr_in dir, origen;
+ socklen_t len;
+ char buf[1024];</p>
+<p>fd = socket(AF_INET, SOCK_DGRAM, 0); /<em> SOCK_DGRAM, no STREAM </em>/
+ if (fd &lt; 0) { perror("socket"); return 1; }</p>
+<p>memset(&amp;dir, 0, sizeof dir);
+ dir.sin_family = AF_INET;
+ dir.sin_port = htons(5000);
+ dir.sin_addr.s_addr = htonl(INADDR_ANY);</p>
+<p>if (bind(fd, (struct sockaddr *)&amp;dir, sizeof dir) &lt; 0) {
+ perror("bind"); return 1;
+ }</p>
+<p>for (;;) {
+ len = sizeof origen;
+ n = recvfrom(fd, buf, sizeof buf - 1, 0,
+ (struct sockaddr *)&amp;origen, &amp;len);
+ if (n &lt; 0) { perror("recvfrom"); break; }
+ buf[n] = '\0';</p>
+<p>char ip[INET_ADDRSTRLEN];
+ inet_ntop(AF_INET, &amp;origen.sin_addr, ip, sizeof ip);
+ printf("De %s:%d -&gt; %s\n", ip, ntohs(origen.sin_port), buf);</p>
+<p>/<em> responder a QUIEN VINO, no a una direccion guardada aparte </em>/
+ sendto(fd, "recibido\n", 9, 0,
+ (struct sockaddr *)&amp;origen, len);
+ }
+ close(fd);
+ return 0;
+}
+`</p>
+<p>`c
+/<em> ---------- CLIENTE UDP ---------- </em>/
+int main(void)
+{
+ int fd;
+ struct sockaddr_in dest;
+ char buf[1024];
+ int n;</p>
+<p>fd = socket(AF_INET, SOCK_DGRAM, 0);</p>
+<p>memset(&amp;dest, 0, sizeof dest);
+ dest.sin_family = AF_INET;
+ dest.sin_port = htons(5000);
+ inet_pton(AF_INET, "10.0.0.7", &amp;dest.sin_addr);</p>
+<p>sendto(fd, "hola\n", 5, 0, (struct sockaddr *)&amp;dest, sizeof dest);</p>
+<p>n = recvfrom(fd, buf, sizeof buf - 1, 0, NULL, NULL);
+ if (n &gt; 0) { buf[n] = '\0'; printf("Respuesta: %s", buf); }</p>
+<p>close(fd);
+ return 0;
+}
+`</p>
+<p><strong>Las 4 diferencias con TCP, que es lo que se pregunta:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>TCP</th>
+<th>UDP</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tipo de socket</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>/</td>
+<td>sí</td>
+<td><strong>no existen</strong></td>
+</tr>
+<tr>
+<td>/</td>
+<td>/</td>
+<td><strong>/</strong></td>
+</tr>
+<tr>
+<td>¿Sabés quién envía?</td>
+<td>sí, la conexión</td>
+<td>**solo si usás **</td>
+</tr>
+</tbody>
+</table>
+<h2>2.4 Ejercicio 1 — ¿Por qué este servidor no funciona?</h2>
+<p>`c
+int main(void) {
+ int fd, fd_cli;
+ struct sockaddr_in dir;
+ char buf[100];</p>
+<p>fd = socket(AF_INET, SOCK_STREAM, 0);</p>
+<p>memset(&amp;dir, 0, sizeof dir);
+ dir.sin_family = AF_INET;
+ dir.sin_port = 80; /<em> &lt;-- falta htons </em>/</p>
+<p>bind(fd, (struct sockaddr <em>)&amp;dir, sizeof dir);
+ listen(fd, 5);
+ fd_cli = accept(fd, NULL, NULL); /</em> &lt;-- falta listen? no, esta bien <em>/
+ recv(fd, buf, 100, 0); /</em> &lt;-- usa el fd equivocado <em>/
+ send(fd, buf, 5, 0); /</em> &lt;-- idem */
+ return 0;
+}
+`</p>
+<p><strong>Resolución — los 3 errores:</strong></p>
+<ol>
+<li>** <code>dir.sin_port = 80;</code> sin <code>htons</code>.<strong> En little-endian, 80 = <code>0x0050</code> se escribe
+  en memoria, y al enviarlo al cable el otro extremo lee <code>0x5000 = 20480</code>.
+ El servidor queda escuchando en el puerto 20480. </strong>El error clásico.**</li>
+<li>** y  sobre el fd del listening socket.** Hay que
+ usar <code>fd_cli</code>, el descriptor que devolvió <code>accept</code>. Con <code>fd</code> el comportamiento no
+ es lo que uno espera, y lo que corresponde al socket pasivo no es el eco.</li>
+<li>** con  en la dirección** — eso está permitido, pero si después
+ querés responder por  no vas a saber a quién. Con TCP usás  sobre
+ la conexión, así que  es aceptable; no es error, es una decisión.</li>
+</ol>
+<h2>2.5 Ejercicio 2 — ¿Por qué el  del servidor es obligatorio?</h2>
+<p><strong>Pregunta:</strong> el servidor UDP de arriba hizo  al puerto 5000. ¿Qué pasaría
+si lo sacáramos?</p>
+<p><strong>Resolución.</strong> Sin <code>bind()</code>, el SO le asigna un <strong>puerto efímero</strong> (típicamente
+entre 32768 y 60999 en Linux). El cliente no tiene forma de saber cuál es, porque:</p>
+<ul>
+<li>no está en ningún protocolo de descubrimiento;</li>
+<li>el cliente UDP <strong>no recibe nada</strong> hasta que envía primero;</li>
+<li>y no hay ningún mensaje de error que le diga "el servidor está en el puerto X".</li>
+</ul>
+<p>O sea: <strong>el servidor quedaría escuchando en un puerto que nadie conoce</strong>, y el
+servicio sería inaccesible. En TCP esto se(compensa parcialmente) porque el cliente
+conoce el puerto <strong>80</strong> por convención; en UDP <strong>no hay puerto conocido por
+convención</strong>.</p>
+<p>Por eso  es <strong>obligatorio en el servidor</strong> y <strong>opcional en el cliente</strong>.</p>
+<h2>2.6 Ejercicio 3 — Dos procesos en el mismo puerto</h2>
+<p><strong>Pregunta:</strong> ¿qué pasa si dos procesos hacen  al mismo puerto TCP?</p>
+<p><strong>Resolución.</strong> Sin <code>SO_REUSEADDR</code>, el <strong>segundo <code>bind()</code> falla</strong> con 
+("address already in use"). Eso es lo correcto: dos procesos no pueden atender el
+mismo puerto, porque las conexiones llegarían a cualquiera de los dos al azar.</p>
+<p>Con  (en Linux también ), <strong>ambos</strong> pueden hacer bind
+y el SO reparte las conexiones entrantes entre ellos según el hash de la 4-tupla.
+Es lo que usan los servidores nginx para tener N workers. Ojo:  en
+TCP <strong>no</strong> permite que dos sockets <strong>escuchen</strong> al mismo tiempo y roben traffic de
+forma insegura; en UDP <strong>sí</strong> es peligroso, porque cada datagrama se lo lleva un
+proceso cualquiera.</p>
+<hr />
+<h1>PARTE 3 — PROBLEMAS DE EXAMEN DE FING</h1>
+<h2>3.1 ⭐ Examen 2010-12, Problema 1 (30 puntos) —</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen  / , 14 de diciembre de 2010.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc1012.pdf</p>
+</blockquote>
+<h3>Enunciado (texto del examen)</h3>
+<blockquote>
+<p>Se desea implementar un sistema para brindar un servicio de conexión inalámbrica
+móvil a Internet, donde el usuario puede elegir el proveedor que le ofrezca un
+precio más bajo.</p>
+<p>Este sistema se implementará como una API en el equipo del usuario con la función
+ y un servicio que se ejecuta en los puntos de acceso (AP).</p>
+<p>Para conectarse a Internet, la API del usuario deberá informarse del precio de
+cada punto de acceso a su alcance y luego conectarse al más barato. Si el punto
+de acceso más barato rechaza la conexión, se intentará con el siguiente, y así
+hasta lograr conectarse o no tener mas puntos de acceso disponibles.</p>
+<p>En tanto, el servicio del punto de acceso deberá comunicar su precio actual a los
+usuarios.</p>
+<p>Los puntos de acceso pueden aceptar un máximo de  conectados.</p>
+<p>En los equipos de los usuarios se cuenta con las siguientes primitivas:
+-  retorna la lista de APs dentro del alcance como una lista de SSID.
+- , se asocia al AP con el ssid dado. Los APs cuentan con un
+servicio DHCP por el cual en el momento de asociarse también se le asigna al
+usuario una dirección IP y direcciones de DNS.
+- , informa al sistema que el usuario se encuentra conectado a un AP
+y se pueden enviar datos.</p>
+<p>En los APs se cuenta con las siguientes primitivas:
+- , retorna la cantidad de usuarios conectados a este punto de acceso.
+- , devuelve el precio actual del punto de acceso.</p>
+<p>Se pide:
+1. Especificar todos los mensajes necesarios para la comunicación.
+2. Dibujar las máquinas de estado que especifiquen los procesos usuario y punto de acceso.
+3. Implementar en un lenguaje de alto nivel las máquinas de estado definidas en el
+punto anterior. La comunicación entre usuarios y puntos de acceso se deberá
+realizar mediante sockets UDP. El usuario recibe las ofertas de precio en el
+puerto 12345.</p>
+</blockquote>
+<h3>Parte 1 — Los mensajes del protocolo</h3>
+<p><strong>Solución oficial:</strong> , , , .</p>
+<p><strong>Análisis — por qué esos cuatro y no otros:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Mensaje</th>
+<th>Quién lo manda</th>
+<th>Para qué</th>
+<th>Payload</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>****</td>
+<td>AP → usuarios (broadcast)</td>
+<td>"este soy yo y este es mi precio"</td>
+<td>precio (int)</td>
+</tr>
+<tr>
+<td>****</td>
+<td>usuario → AP</td>
+<td>"quiero conectarme a vos"</td>
+<td>nada (o id de usuario)</td>
+</tr>
+<tr>
+<td>****</td>
+<td>AP → usuario</td>
+<td>"aceptado, ya estás conectado"</td>
+<td>id de sesión</td>
+</tr>
+<tr>
+<td>****</td>
+<td>AP → usuario</td>
+<td>"no, tengo "</td>
+<td>motivo</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Observación 1 que suma puntos:</strong> la solución oficial no define ningún mensaje de
+<strong>desconexión</strong> ni de <strong>error</strong>. Un protocolo completo debería tener un
+ (o el AP detecta la caída por timeout) y un  para el caso de
+que el AP no responda. <strong>Decí que el diseño oficial es mínimo y por qué eso es
+insuficiente en la práctica.</strong></p>
+<p><strong>Observación 2 — por qué  es broadcast y los otros no:</strong></p>
+<ul>
+<li>va por <strong>broadcast</strong> porque el usuario todavía <strong>no sabe la IP del AP</strong>:
+ no la tiene, y  es justamente el mensaje que se lo da. Si fuera unicast
+ necesitaría conocer la IP destino. <em>(Y un broadcast requiere .)</em></li>
+<li><strong>sí puede ser unicast</strong>, porque en ese momento el usuario ya tiene la
+ IP del AP (viene en el <code>OFFER</code>, o se la deduce del hecho de haberle recibido el
+ ).</li>
+<li><code>COMMIT</code> y <code>REFUSE</code> van por unicast al usuario que mandó el <code>CONNECT</code>.</li>
+</ul>
+<h3>Parte 2 — Las máquinas de estado</h3>
+<p><strong>Usuario:</strong></p>
+<p><code>list()
+ ┌─────────┐ ┌─────────────┐
+ │ INICIO ├──►│ REFRESCANDO│
+ └─────────┘ └──────┬──────┘
+ precios │ recibidos
+ recibidos ▼
+ ┌─────────────┐ sort() ┌──────────────┐
+ │ ELIGIENDO ├──────────►│ INTENTANDO │
+ └─────────────┘ por precio└──────┬───────┘
+ CONNECT│
+ ┌─────────────────┼─────────────────┐
+ │REFUSE │(timeout) │COMMIT
+ ▼ ▼ ▼
+ ┌───────────┐ ┌───────────┐ ┌───────────┐
+ │ INTENTANDO│ │ REINTENTA│ │ CONECTADO │
+ │ SIGUIENTE│ └─────┬─────┘ └─────┬─────┘
+ └───────────┘ │(siguiente AP) │
+ ▲ └───────────────────┘
+ │ (se acabaron) (más barato)
+ ▼
+ ┌─────────┐
+ │ FALLIDO │
+ └─────────┘</code></p>
+<p><strong>Punto de atención: los  tienen que distinguir "este AP no me sirve" de
+"no me pude comunicar".</strong> Un  explícito avanza al siguiente AP de la lista
+ordenada; un <strong>timeout</strong> obliga a <strong>reintentar el mismo</strong> o a considerar que está
+caído. <strong>La solución oficial no distingue los dos casos</strong>, y esa es la diferencia
+entre un protocolo que funciona y uno que se cuelga.</p>
+<p><strong>AP:</strong></p>
+<p><code>┌────────┐ priceService() ┌──────────┐
+ │INICIO ├──────────────────►│ DIFIUNDE │◄────┐
+ └────────┘ │ (OFFER) │ │ cada 1 s
+ └────┬─────┘ │
+ │ │
+ ┌─────────────────────────────▼───────────▼────┐
+ │ ESCUCHA (recvfrom en otro puerto/hilo) │
+ └───┬─────────────────────────────┬────────────┘
+ CONNECT │ │ timer
+ ▼ ▼
+ ┌───────────────┐ ┌────────────────┐
+ │ ¿countUsers() │ │ TIMEOUT │
+ │ &lt; maxUsers? │──── sí ───►│ (saca al │
+ └───────┬───────┘ │ usuario) │
+ │ no └────────────────┘
+ ▼
+ ┌──────────┐
+ │ COMMIT │ + userConnected(origen)
+ └──────────┘</code></p>
+<h3>Parte 3 — La implementación</h3>
+<p><strong>La solución oficial, verbatim (con sus errores marcados):</strong></p>
+<p>`c
+void priceService(){
+ int socket = socket(AF_INET, SOCK_DGRAM, 0);
+ while (true){
+ sleep(1);
+ int broadcast = 1;
+ setsockopt(socket, SOL_SOCKET, SO_BROADCAST, &amp;broadcast, sizeof broadcast) // [E1]</p>
+<p>struct sockaddr_in addr;
+ socklen_t addr_size = sizeof addr;
+ addr.sin_family = AF_INET;
+ addr.sin_port = htons(12345);
+ addr.sin_addr.s_addr = inet_addr(INADDR_BROADCAST); // [E2]
+ char msg[5]; // [E3]
+ sprintf(msg, %d, getPrice()); // [E4]
+ int msg_size = strlen(msg);
+ int sent_msg_size = sendto(socket, msg, msg_size, 0, (struct sockaddr*)&amp;addr, addr_size);
+ }
+}
+`</p>
+<h4>Los errores, uno por uno</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Error</th>
+<th>Consecuencia</th>
+<th>Corrección</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>E1</strong></td>
+<td><strong>le falta el paréntesis de cierre</strong></td>
+<td>No compila</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>E2</strong></td>
+<td></td>
+<td>** es una macro  (un entero), no una cadena.**  espera</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>E3</strong></td>
+<td></td>
+<td>Si el precio es 5 dígitos () <strong>no entra</strong>:  desborda el buffer</td>
+<td>o mejor</td>
+</tr>
+<tr>
+<td><strong>E4</strong></td>
+<td></td>
+<td><strong>No compila</strong>: faltan las comillas del formato</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>E5</strong></td>
+<td><strong>adentro</strong> del loop, junto al</td>
+<td>El  se re-setea 60 veces por minuto sin necesidad. Menor, pero es ruido</td>
+<td>Sacar el  <strong>fuera</strong> del loop</td>
+</tr>
+<tr>
+<td><strong>E6</strong></td>
+<td>se asigna y <strong>nunca se usa</strong></td>
+<td>El  puede fallar () y el servicio no se entera</td>
+<td>Verificar el retorno y decidir qué hacer</td>
+</tr>
+<tr>
+<td><strong>E7</strong></td>
+<td>No hay manejo de error en</td>
+<td>Si falla,  vale  y todo lo demás falla en cascada</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>El error E4 es el que más suma puntos</strong>, porque revela que <strong>la solución
+oficial no fue probada</strong>. Decirlo es el tipo de observación que el corrector valora.</p>
+<h4>La versión corregida de</h4>
+<p>`c</p>
+<h1>define PUERTO_PRECIO 12345</h1>
+<h1>define MAX_PRECIO 16 /<em> alcanza para un int con signo + \0 </em>/</h1>
+<p>void priceService(void)
+{
+ int fd, ssize_t enviados;
+ int broadcast = 1;
+ char msg[MAX_PRECIO];</p>
+<p>fd = socket(AF_INET, SOCK_DGRAM, 0);
+ if (fd &lt; 0) { perror("socket"); return; }</p>
+<p>/<em> E5: esto se hace UNA vez, no en cada vuelta </em>/
+ if (setsockopt(fd, SOL_SOCKET, SO_BROADCAST,
+ &amp;broadcast, sizeof broadcast) &lt; 0) {
+ perror("setsockopt"); close(fd); return;
+ }</p>
+<p>struct sockaddr_in destino;
+ memset(&amp;destino, 0, sizeof destino);
+ destino.sin_family = AF_INET;
+ destino.sin_port = htons(PUERTO_PRECIO);
+ destino.sin_addr.s_addr = htonl(INADDR_BROADCAST); /<em> E2 </em>/</p>
+<p>for (;;) {
+ sleep(1);</p>
+<p>snprintf(msg, sizeof msg, "%d", getPrice()); /<em> E3 + E4 </em>/</p>
+<p>enviados = sendto(fd, msg, strlen(msg), 0,
+ (struct sockaddr <em>)&amp;destino, sizeof destino);
+ if (enviados &lt; 0) /</em> E6 <em>/
+ perror("sendto OFFER");
+ /</em> si es 0 o menor que strlen(msg), se perdio parte: hay que avisar */
+ }
+}
+`</p>
+<p><strong>Y  corregida.</strong> Los errores de la oficial son más graves:</p>
+<p>`c
+void connectCheaper(void)
+{
+    int fd, i, r, n, n_ofertas = 0;
+    int exito = 0;                          /<em> estado del protocolo </em>/
+    char respuesta[MAX_PRECIO];
+    char **lista;</p>
+<div class="codehilite"><pre><span></span><code>struct oferta {
+    char *ssid;
+    int   precio;
+    struct sockaddr_in dir;             /* de donde vino el OFFER */
+} *ofertas;
+
+/* ================ 1. socket y bind al puerto 12345 ================ */
+fd = socket(AF_INET, SOCK_DGRAM, 0);
+if (fd &lt; 0) { perror("socket"); return; }
+
+struct sockaddr_in local;
+memset(&amp;local, 0, sizeof local);
+local.sin_family      = AF_INET;
+local.sin_port        = htons(PUERTO_PRECIO);
+local.sin_addr.s_addr = htonl(INADDR_ANY);
+if (bind(fd, (struct sockaddr *)&amp;local, sizeof local) &lt; 0) {
+    perror("bind"); close(fd); return;
+}
+
+/* E-A: la oficial compara con "==" sobre punteros. Eso compara DIRECCIONES
+   de memoria, no el contenido de las cadenas. SIEMPRE strcmp. */
+/* E-B: ademas el literal va sin comillas, asi que ni siquiera compila. */
+/* E-C: la oficial llama recv() en vez de recvfrom(), y no guarda de quien
+   vino el OFFER: sin eso no sabe a que AP responderle el CONNECT. */
+/* E-D: no hay timeout. Si el AP mas barato esta caido, recv() bloquea
+   para siempre y el usuario se queda sin conexion. */
+/* E-E: declara "int data_size" y lo usa sin inicializar. */
+
+/* ================ 2. descubrir APs y recoger precios ================ */
+lista = list();
+n = length(lista);
+ofertas = malloc(n * sizeof *ofertas);
+
+/* E-D: sin timeout, un AP caido bloquea el bucle entero */
+struct timeval tv = { .tv_sec = 2, .tv_usec = 0 };
+setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &amp;tv, sizeof tv);
+
+for (i = 0; i &lt; n; i++) {
+    struct sockaddr_in de;
+    socklen_t le = sizeof de;
+
+    associate(lista[i]);            /* el AP ya tiene nuestra IP por DHCP */
+
+    /* E-C: recvfrom, no recv: necesito la direccion del emisor */
+    r = recvfrom(fd, respuesta, sizeof respuesta - 1, 0,
+                 (struct sockaddr *)&amp;de, &amp;le);
+    if (r &lt;= 0) continue;          /* nadie respondio: lo salto */
+
+    respuesta[r] = '\0';
+
+    /* E-F: la oficial no valida que el OFFER sea un numero */
+    char *fin;
+    long pr = strtol(respuesta, &amp;fin, 10);
+    if (fin == respuesta || *fin != '\0' || pr &lt; 0) continue;
+
+    ofertas[n_ofertas].ssid   = lista[i];
+    ofertas[n_ofertas].precio = (int)pr;
+    ofertas[n_ofertas].dir    = de;
+    n_ofertas++;
+}
+
+if (n_ofertas == 0) {
+    printf("no hay APs que respondan\n");
+    free(ofertas); close(fd); return;
+}
+
+sort(ofertas);                     /* de menor a mayor precio */
+
+/* ================ 3. intentar en orden de precio ================ */
+for (i = 0; i &lt; n_ofertas &amp;&amp; !exito; i++) {
+    char *req = "CONNECT";
+    char resp[MAX_PRECIO];
+
+    /* E-G: hay que asociarse ANTES de pedir la conexion; es lo que hace
+       posible que el DHCP del AP exista cuando le llegue el CONNECT */
+    associate(ofertas[i].ssid);
+
+    sendto(fd, req, strlen(req), 0,
+           (struct sockaddr *)&amp;ofertas[i].dir, sizeof ofertas[i].dir);
+
+    /* PROBLEMA DE DISEÑO que la oficial ignora: el socket esta bindeado al
+       puerto 12345, pero el AP responde a NUESTRO PUERTO EFIMERO, no al
+       12345. Este recv se queda esperando donde no va a llegar nada.
+
+       Dos formas correctas de resolverlo:
+         (a) hacer connect() sobre el socket UDP hacia cada AP: el SO fija
+             el peer y las respuestas llegan por este mismo socket;
+         (b) crear un socket efimero aparte para la fase de conexion. */
+    r = recvfrom(fd, resp, sizeof resp - 1, 0, NULL, NULL);
+
+    if (r &gt; 0) {
+        resp[r] = '\0';
+        /* E-A corregido: strcmp, y el literal con comillas */
+        if (strcmp(resp, "COMMIT") == 0) {
+            connected();            /* la API confirma la conexion */
+            exito = 1;
+        }
+        /* si es REFUSE, el for sigue con el siguiente AP mas barato */
+    }
+    /* si hubo timeout (r &lt; 0), tambien seguimos con el i siguiente */
+}
+
+if (!exito) printf("No se pudo conectar a ningun AP disponible.\n");
+
+free(ofertas);
+close(fd);
+</code></pre></div>
+
+<p>}</p>
+<p><strong>Los 7 errores de la oficial, resumidos para el examen:</strong></p>
+<ol>
+<li>en vez de  al comparar "COMMIT" (y el literal sin comillas).</li>
+<li>en vez de : <strong>no guarda la dirección del AP</strong>, así que no
+ puede dirigirle el <code>CONNECT</code>.</li>
+<li><strong>No hay timeout</strong>: si el AP más barato no responde,  bloquea para
+ siempre.</li>
+<li><strong>sin inicializar</strong>.</li>
+<li>se llama en el bucle de precios pero <strong>no se vuelve a llamar</strong> antes
+ del <code>OFFER</code>.</li>
+<li>No valida que el OFFER recibido sea un número ( sobre basura).</li>
+<li><strong>El  del AP vuelve al puerto efímero</strong>, no al 12345 de los : la
+ oficial no resuelve ese desajuste entre las dos fases.</li>
+</ol>
+<blockquote>
+<p>El punto 7 es el más fino y el que mejor diferencia a quien entendió el problema.
+La solución de un examen tiene que atacar <strong>los dos lados</strong> (AP y usuario), y
+si solo manda mensajes, el usuario nunca recibe las respuestas.</p>
+</blockquote>
+<hr />
+<h2>3.2 Examen 2009-07, Problema 2 (30 puntos) — cliente anti-spam vía HTTP</h2>
+<blockquote>
+<p><strong>Fuente:</strong> Examen  / , julio de 2009.
+<strong>Link:</strong> https://www.fing.edu.uy/inco/cursos/redescomp/examenes/sirc0907.pdf</p>
+</blockquote>
+<p>El enunciado describe una aplicación web de detección de spam: por cada correo que
+llega, se consulta y, si no es spam, se guarda.</p>
+<h3>Apartado a) — Implementar la consulta DNS por UDP</h3>
+<p><strong>Enunciado:</strong> <em>"Implementar la invocación al DNS necesaria para obtener la IP del
+servidor de correo dado su nombre de dominio. Esto debe realizarse en una función
+en el cabezal:  que devuelva la dirección
+IP en su formato decimal separado por puntos. Se debe realizar la invocación vía
+UDP, la misma que se utiliza para consultar cualquier otro host."</em></p>
+<p><strong>Solución oficial (resumida del PDF):</strong></p>
+<p><code>c
+string getMailServer(string hostName)
+{
+ int s = socket(AF_INET, SOCK_DGRAM, 0);
+ struct sockaddr_in dest;
+ /* armar la consulta DNS para hostName, tipo A */
+ enviar(s, hostName, (struct sockaddr *)&amp;dest, sizeof dest);
+ /* recibir la respuesta */
+ int r = recv(s, respuesta, sizeof respuesta, 0);
+ /* ... buscar la primer entrada de tipo A ... */
+ return(ip_en_puntos, buf);
+}</code></p>
+<p><strong>Resolución completa.</strong> La estructura del pseudocódigo, con la cuenta de bytes
+que hay que hacer:</p>
+<p>`
+ PASO 1 — Socket UDP y destino</p>
+<p>s = socket(AF_INET, SOCK_DGRAM, 0)
+ destino.sin_family = AF_INET
+ destino.sin_port = htons(53) ← DNS está en el puerto 53
+ destino.sin_addr = la IP del servidor DNS local
+ (¡NO la del nombre que buscamos!exito)</p>
+<p>PASO 2 — Armar la cabecera del mensaje DNS</p>
+<p>El mensaje DNS empieza con 12 bytes de cabecera, en ORDEN DE RED:
+ ID (2 bytes) = un número cualquiera, ej. 0x1234
+ flags (2 bytes) = 0x0100 → QR=0 (consulta), RD=1 (quiero recursión)
+ QDCOUNT (2 bytes) = 0x0001 → una pregunta
+ ANCOUNT, NSCOUNT, ARCOUNT = 0</p>
+<p>Después va el nombre a consultar, en formato "etiqueta":
+ 3www3fing4edu2uy0
+ (cada byte dice cuántos caracteres tiene la etiqueta; el 0 final
+ marca el fin del nombre)</p>
+<p>Después: QTYPE (2 bytes) = 0x0001 para tipo A
+ QCLASS (2 bytes) = 0x0001 para clase IN</p>
+<p>PASO 3 — Enviar y recibir</p>
+<p>sendto(s, consulta, largo, 0, (struct sockaddr *)&amp;destino, sizeof destino)
+ r = recv(s, respuesta, MAX, 0) ← con recvfrom si querés
+ saber qué servidor respondió</p>
+<p>PASO 4 — Buscar la respuesta</p>
+<p>En la respuesta, el ID DEBE coincidir con el que mandaste (si no,
+ se descarta: puede ser una respuesta vieja de otra consulta).
+ ANCOUNT dice cuántas respuestas hay. Con ANCOUNT = 0 y RCODE = 3
+ (NXDOMAIN) no existe ese nombre.
+ La respuesta trae el mismo nombre, luego TYPE=1, CLASS=1,
+ TTL (4 bytes) y finalmente los 4 bytes de la IPv4.</p>
+<p>PASO 5 — Formatear</p>
+<p>Convertir los 4 bytes a decimal separado por puntos con snprintf.
+ Devolver ese string, o la cadena vacía si fallo.
+`</p>
+<p><strong>Errores frecuentes que se\columnwidth en este tipo de ejercicio:</strong></p>
+<ul>
+<li>**Mandá ** en vez de : el enunciado dice explícitamente UDP.</li>
+<li><strong>Usar el puerto equivocado</strong>: es el <strong>53</strong>, y hay que convertirlo con <code>htons</code>.</li>
+<li><strong>No verificar el ID</strong>: la respuesta que llegue puede ser de una consulta
+ anterior. El enunciado no lo dice, pero es la robustez mínima.</li>
+<li><strong>Devolver la primera IP del <code>Answer</code></strong> en vez de la del <code>Additional</code>.</li>
+</ul>
+<h3>Apartado c) — Dónde llamar a</h3>
+<p><strong>Enunciado:</strong> modificar el pseudo del SMTP para invocar  donde
+corresponda y guardar el correo solo si no es spam.</p>
+<p><strong>Resolución.</strong> El punto clave es <strong>dónde</strong>: la verificación va <strong>después</strong> de
+recibir el mensaje completo pero <strong>antes</strong> de escribirlo en el archivo.</p>
+<p>`
+ SMTP del cliente (pseudo de FING)</p>
+<p>...
+ else if (line.startsWith("DATA")) {
+ <leer el cuerpo del mensaje hasta el terminador ".">
+ <SEGUIMIENTO DE SOLUCION OFICIAL: acá va la llamada></p>
+<p>if (isSpam(getMailServer(hostRemitente), subject)) {
+ /<em> no se guarda nada: se descarta </em>/
+ rejection = "550 mensaje clasificado como spam";
+ } else {
+ escribirCorreo(archivo, mensaje);
+ OK = "250 mensaje recibido";
+ }
+ ...
+ }
+`</p>
+<p><strong>Las tres decisiones que hay que justificar:</strong></p>
+<ol>
+<li><strong>Después de <code>DATA</code>, no antes.</strong> Antes no tenés el <code>Subject</code> ni el cuerpo, que es
+ lo que  necesita para clasificar.</li>
+<li><strong>Antes de escribir en disco.</strong> Si guardás y después descartás, el archivo ya
+ quedó escrito: eso es precisamente lo que un antivirus bien hecho evita.</li>
+<li><strong>El  se llama sobre el remitente</strong>, porque la API del servicio
+ recibe la IP del servidor de correo del que vino el mensaje, no el nombre.</li>
+</ol>
+<blockquote>
+<p><strong>Tope para 30 puntos:</strong> el 1er apartado vale más (es el que tiene la parte de
+programación), y el punto 3 del listado de errores es el que más suma: demuestra
+que pensaste en <strong>por qué</strong> la DNS se consulta y no solo en <strong>cómo</strong>.</p>
+</blockquote>
+<hr />
+<h1>PARTE 4 — CIERRE</h1>
+<h2>📌 Resumen</h2>
+<ol>
+<li>Un <strong>socket</strong> es un par de descriptores de archivo más un estado que el SO
+ mantiene: direcciones, buffers y (en TCP) la tabla de la conexión.</li>
+<li>La API de sockets <strong>no es parte de TCP/IP</strong>: es del sistema operativo.</li>
+<li><strong>Servidor TCP</strong>:  →  →  →  →
+  → /. ** devuelve un fd NUEVO.**</li>
+<li><strong>Cliente TCP</strong>:  →  → /. <strong>Sin  ni .</strong></li>
+<li><strong>UDP</strong>: , /, <strong>no hay  ni </strong>, y
+  es lo que te dice quién te mandó el datagrama.</li>
+<li>/ <strong>en los dos lados</strong>: la red es big-endian y el host little-endian.
+ Sin la conversión, el puerto 80 llega como 20480.</li>
+<li>es <strong>obligatorio en el servidor</strong> (si no, queda en un puerto efímero que
+ nadie conoce) y <strong>opcional en el cliente</strong>.</li>
+<li><strong>Sin </strong>, un segundo  al mismo puerto falla con
+ .</li>
+<li>La clave real de demux del kernel es la <strong>5-tupla</strong>; la "2-tupla de UDP" es la
+ simplificación clásica. QUIC la reemplaza por el <strong>Connection ID</strong>.</li>
+<li><strong>Wireshark</strong> es la herramienta de laboratorio, y <strong>HTTP/3 ya no se puede
+ sniffear</strong> con captura pasiva.</li>
+</ol>
+<h2>✅ Autoevaluación</h2>
+<p><strong>1.</strong> ¿Por qué el servidor TCP hace  pero el cliente no?</p>
+<details><summary>Respuesta</summary>
+
+Porque  **fija la dirección local**. El servidor necesita un puerto **conocido
+por todos** (el 80 por convención), o nadie podría conectarse. El cliente no: él
+**conoce** el puerto del servidor, y su propio puerto es irrelevante para el
+servidor, así que lo deja que el SO le asigne como **efímero**. En UDP la
+distinción es más tajante: sin  del lado servidor **nadie sabría a qué
+puerto enviar**, porque en UDP el cliente no tiene a quién "preguntar".
+
+</details>
+
+<p><strong>2.</strong> Si escribís <code>dir.sin_port = 80;</code> sin <code>htons</code>, ¿qué puerto queda escuchando el
+servidor? ¿Y si la máquina fuera big-endian?</p>
+<details><summary>Respuesta</summary>
+
+En little-endian (x86, ARM en modo normal): el puerto queda en **20480**, porque
+ se escribe al revés y al enviarlo se lee `0x5000 = 20480`. En una máquina
+big-endian **no pasa nada**: el orden ya coincide, y por eso el bug aparece en
+algunas máquinas y en otras no — que es la peor forma de bug. La solución correcta
+es **siempre** usar `htons()`, sin importar la arquitectura.
+
+</details>
+
+<p><strong>3.</strong> ¿Qué devuelve  y por qué el descriptor que devuelve no es el mismo
+que se le pasó?</p>
+<details><summary>Respuesta</summary>
+
+Devuelve **un file descriptor nuevo**, dedicado a **esa** conexión concreta, y
+además llena la dirección del cliente que se le pasó por puntero. El descriptor
+original sigue siendo el "socket de escucha" y se usa **únicamente** para el
+próximo `accept()`. La razón es que un proceso puede tener **muchas** conexiones
+simultáneas: cada una necesita su propio descriptor para poder atenderla por
+separado.
+
+</details>
+
+<p><strong>4.</strong> ¿Qué dos funciones de la API no existen para UDP, y por qué?</p>
+<details><summary>Respuesta</summary>
+
+ y `accept()`. Las dos existen para **administrar la cola de conexiones
+pendientes** de un servicio con conexión. En UDP **no hay conexión**: no hay
+handshake que completar, no hay estado que establecer y no hay "pendiente de
+aceptar". Cada datagrama es independiente y se entrega si el socket está ahí. A
+cambio, UDP tiene /, que son a la vez "enviar" y "a quién",
+porque sin conexión el destino hay que indicar en **cada** llamada.
+
+</details>
+
+<p><strong>5.</strong> ¿Por qué la solución oficial de  usa para comparar con
+"COMMIT", y qué hay que usar?</p>
+<details><summary>Respuesta</summary>
+
+Porque el autorapid733 trata como si comparara **contenido** de cadenas, y lo
+que  compara en C son **direcciones de memoria**: dos literales idénticos
+pueden estar en direcciones distintas, así que el resultado es **indefinido** y
+casi siempre falso. Además el literal va sin comillas, así que ni siquiera compila.
+Lo correcto es ****.
+
+</details>
+
+<p><strong>6.</strong> En el problema de <code>connectCheaper()</code>, ¿qué problema tiene el hecho de que los
+ lleguen al puerto 12345 pero las respuestas (/) no regresen
+allí?</p>
+<details><summary>Respuesta</summary>
+
+El socket del usuario está **eado al puerto 12345**. Cuando manda el 
+al AP, el AP le responde **al puerto efímero** del socket (el que el SO le asignó) y
+**no** al 12345. La solución oficial no resuelve ese desajuste: si el  escucha
+en 12345, se va a quedar esperando respuestas que nunca llegan ahí. Hay dos
+soluciones correctas: hacer un ** a otro puerto efímero** para la fase de
+conexión, o usar **** sobre el socket UDP (que existe y hace que las
+respuestas del mismo destino lleguen por ese socket).
+
+</details>
+
+<h2>🔗 Referencias</h2>
+<ul>
+<li>**Examen  / ** — Problema 1 completo (30 pts, ), P2 (8 pts, mux/demux UDP)</li>
+<li>**Examen  / ** — Problema 1 (30 pts, sockets y AX.25), Problema 2 (30 pts, anti-spam por HTTP)</li>
+<li>**Examen  / ** — Problema 1: dos tarjetas de red en un mismo host</li>
+<li><strong>Tanenbaum &amp; Wetherall</strong>, <em>Redes de computadoras</em> 5ª ed., cap. 6</li>
+<li>** §14** — sockets, Wireshark, IPv6 dual-stack, 5-tupla vs. Connection ID</li>
+<li><strong>Clase siguiente:</strong> 15 — DHCP, configuración y Simulacro 2</li>
+</ul></body></html>
