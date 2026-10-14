@@ -127,13 +127,13 @@ $$
 
 **Paso 4.** $k(x)=\displaystyle\int-\frac{dx}{(x-1)^2}=\frac{1}{x-1}+C$.
 
-**Paso 5.**
+**Paso 5.** Como $e^{-\int a}=e^{\ln|x(x-1)|}=x(x-1)$:
 $$
-y=\left(\frac1{x-1}+C\right)\frac1{x(x-1)}=\boxed{\frac{1+C(x-1)}{x(x-1)}}.
+y=\left(\frac1{x-1}+C\right)x(x-1)=\frac{x(x-1)}{x-1}+C\,x(x-1)=\boxed{x+C\,x(x-1)}.
 $$
-O, equivalente: $\boxed{y=\dfrac{C'}{x(x-1)}+\dfrac1{x(x-1)^2}}$ (como sale de integrar directo).
+O, escrito como $C\,x^2+(1-C)x$, que deja ver la **particular** $x$ y la **homogénea** $C\,x(x-1)$.
 
-> 💡 Notá la estructura: el término con $C'$ es la **homogénea** $k/[x(x-1)]$ y el resto la **particular**.
+> 💡 Chequeo rápido: $y=x+C\,x(x-1)$ resuelve la homogénea cuando $C$ varía… no; el término $x$ es la particular y $C\,x(x-1)$ la homogénea (que coincide con el ej. 4a-2 de la clase 11).
 
 ---
 
@@ -230,9 +230,9 @@ $$
 
 ---
 
-## 🏛️ 5. Problema de parcial/examen (con cambio u = y/x)
+## 🏛️ 5. Problema tipo (para practicar el método)
 
-### Ejercicio 6 (Parcial 1 2019-1S, MO 1). La solución de $y'=\dfrac{y^2+x^2}{xy}$ con $y(1)=1$ cumple:
+### Ejercicio 6 (problema tipo). La solución de $y'=\dfrac{y^2+x^2}{xy}$ con $y(1)=1$. Calcular $y(e)$
 
 **Paso 1.** Reescribimos:
 $$
@@ -287,7 +287,7 @@ $$
 1. Resolver $y'-2xy=2x$ (pista: $b=2x$).
 2. Resolver $y'+y=\cos x$.
 3. Resolver $y'=\dfrac{y}{x}+\dfrac{x}{y}$ con $u=y/x$.
-4. Resolver $xy'=y+x^2$ (no es $f(y/x)$: ¡no uses el cambio!).
+4. Resolver $xy'=y+x^2$ de **dos maneras**: (a) como lineal de primer orden; (b) con el cambio $u=y/x$. ¿Coinciden?
 5. (V/F) En la variación de constantes, $k'(x)$ se obtiene sustituyendo $y_P$ en la ecuación homogénea.
 
 <details>
@@ -296,7 +296,7 @@ $$
 1. $a=-2x$, $e^{\int a}=e^{-x^2}$; $k'=2xe^{-x^2}\Rightarrow k=-e^{-x^2}+C$; $y=-1+Ce^{x^2}$.
 2. $a=1$, $e^x$: $k'=\cos x\,e^x\Rightarrow k=\frac{e^x(\cos x+\sin x)}2$; $y=\frac{\cos x+\sin x}2+Ce^{-x}$.
 3. $u'x=1/u\Rightarrow u^2=2\ln|x|+C$; $y=x\sqrt{2\ln|x|+C}$.
-4. Es lineal: $y'-\frac yx=x\Rightarrow y=Cx+x^2$. (Si intentás $u=y/x$: $xu'=x\Rightarrow u'=1$… también funciona, pero $f(y/x)$ pide $y'=(y/x)f(1)$, y acá $y'=u+x$ que depende de $x$ *y* de $u$: la forma "no es solo $f(u)$"; ojo con este tipo de trampas.)
+4. (a) Lineal $y'-\frac yx=x$, $e^{\int a}=1/x$: $(\frac yx)'=1\Rightarrow y=Cx+x^2$. (b) $u=y/x$: $u+xu'=u+x\Rightarrow u'=1\Rightarrow u=x+C\Rightarrow y=x^2+Cx$. **Coinciden.** (Ojo: acá el cambio funciona porque los $u$ se cancelan; el método está *garantizado* solo para $y'=f(y/x)$.)
 5. **Falso**: $k'=be^{\int a}$, con $b$ del lado derecho **no homogéneo**; en la homogénea $k'$ daría 0.
 
 </details>

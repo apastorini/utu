@@ -147,10 +147,13 @@ porque $-\dfrac1x-\dfrac1{x-1}=\dfrac{-(x-1)-x}{x(x-1)}=\dfrac{1-2x}{x(x-1)}$ �
 
 **Paso 3.** Con $a(x)=-\frac1x-\frac1{x-1}$:
 $$
-\int a\,dx=-\ln|x|-\ln|x-1|=-\ln|x(x-1)|\Rightarrow y=ke^{\ln|x(x-1)|}=\boxed{\frac{k}{x(x-1)}}
+\int a\,dx=-\ln|x|-\ln|x-1|=-\ln|x(x-1)|\Rightarrow y=ke^{-(-\ln|x(x-1)|)}=ke^{\ln|x(x-1)|}=\boxed{k\,x(x-1)}
 $$
 
-**Verificación:** $y=\frac{k}{x(x-1)}$ → $y'=-k\frac{2x-1}{x^2(x-1)^2}$, y sustituyendo en la original se cumple ✔.
+**Verificación:** $y=k\,x(x-1)\Rightarrow y'=k(2x-1)$; sustituyendo:
+$$
+x(x-1)\cdot k(2x-1)+(1-2x)\cdot k\,x(x-1)=k\,x(x-1)\big[(2x-1)-(2x-1)\big]=0\ \checkmark
+$$
 
 ---
 

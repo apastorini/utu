@@ -269,7 +269,7 @@ $u(t)\to u_0$ (no se vacía): la cota cerrada. Con $\lambda$ chico el vaciado es
 <summary>Respuestas</summary>
 
 1. $v_\infty=10\cdot1/2=5$; $v(t)=5(1-e^{-2t})$; $t=\frac12\ln2$.
-2. $\lim a A=5$; solución $x(t)=\dfrac{5}{1+(5-1)e^{-10t}}\cdot$… más simple: $x=\frac{10}{1+9e^{-10t}}$ (con $A=5$), duplicar de $1$ a $2$: $\frac{10}{1+9e^{-10t}}=2\Rightarrow 9e^{-10t}=4\Rightarrow t=\frac1{10}\ln\frac94$.
+2. $\lim_{t\to\infty}x(t)=A=5$; solución $x(t)=\dfrac{5}{1+C e^{-10t}}$ con $x(0)=1\Rightarrow C=4$: $x(t)=\dfrac{5}{1+4e^{-10t}}$. Duplicar de $1$ a $2$: $\dfrac{5}{1+4e^{-10t}}=2\Rightarrow 4e^{-10t}=\dfrac32\Rightarrow t=\dfrac1{10}\ln\dfrac83$.
 3. $u(10)=\dfrac{3}{1+0{,}2\cdot3\cdot100}=\dfrac{3}{61}\approx0{,}049$.
 4. $v(t)=v_\infty$ constante: fricción y gravedad ya se equilibran desde el inicio.
 5. Decrece (porque $x'>0$ solo en $(0,A)$; con $x>A$, $x'<0$) y tiende a $A$ desde arriba.

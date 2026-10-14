@@ -221,6 +221,28 @@ Los enunciados de ejercicios y exámenes se reproducen con **fines de estudio**.
 - `06_polar_demoivre.md`
 - `07_raices_n_esimas.md`
 - `08_exponencial_euler.md`
+- `09_edo_separables.md`
+- `10_edo_aplicaciones.md`
+- `11_edo_lineal_1er_orden_homogenea.md`
+- `12_edo_no_homogenea_u_yx.md`
+- `13_edo_2do_orden_homogeneas.md`
+- `14_edo_2do_orden_no_homogeneas.md`
+- `15_edo_repaso_parciales.md`
 - (y así hasta `48_...md`)
 
-> Las imágenes están en `img/`. Los scripts que las generan están en `figuras/`.
+> Las imágenes están en `img/`. Los scripts que las generan están en `figuras/` (`_bloque0.py`, `_bloque1.py`, `_bloque2.py`, …).
+
+---
+
+## Estado de avance
+
+| Bloque | Clases | Estado |
+|---|---|---|
+| Bloque 0 — Prerrequisitos | 1–4 | ✅ completo |
+| Bloque 1 — Números complejos | 5–8 | ✅ completo |
+| Bloque 2 — Ecuaciones diferenciales | 9–15 | ✅ completo |
+| Bloque 3 — Sucesiones | 16–20 | ⏳ pendiente |
+| Bloque 4 — Series | 21–25 | ⏳ pendiente |
+| Bloque 5 — Integrales impropias | 26–29 | ⏳ pendiente |
+| Bloque 6 — Topología en Rⁿ | 30–33 | ⏳ pendiente |
+| Bloques 7–10 | 34–48 | ⏳ pendiente |
