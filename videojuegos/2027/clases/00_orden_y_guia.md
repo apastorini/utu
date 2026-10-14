@@ -32,10 +32,10 @@ mismos módulos de assets, audio, spritesheets, tilemaps, cámara, UI, etc.
 
 | # | Tema | Código del motor | Juego / ejemplo | Estado |
 |---|------|------------------|-----------------|--------|
-| 1–4 | Pensar como diseñador + primeros pasos Pygame (ventana, bucle, rectángulos, movimiento, colisiones) | — (Pygame puro) | Ejercicios de rectángulos | ✅ `clases/paso_a_paso/clase_1_2.py`, `clase_3_4_*.py` |
-| 5 | Delta de tiempo, FPS, teclado evento vs estado, colisiones | — | Ejercicios | ✅ `clases/paso_a_paso/clase_5_*.py` |
-| 6 | Sprites, sonido y animación con spritesheet | — (primer `game_object`) | Ejemplo con sprites | ✅ `clases/paso_a_paso/clase_6_a.py` + `clases/paso_a_paso/core/` |
-| 7 | Arkanoid (versión "de un solo archivo") | — | Arkanoid básico | ✅ `clases/paso_a_paso/arkanoid/` |
+| 1–4 | Pensar como diseñador + primeros pasos Pygame (ventana, bucle, rectángulos, movimiento, colisiones) | — (Pygame puro) | Ejercicios de rectángulos | ✅ — ver `clase_01_02_pygame_basico.md` y `clase_03_04_rectangulos_colisiones.md` |
+| 5 | Delta de tiempo, FPS, teclado evento vs estado, colisiones | — | Ejercicios | ✅ — ver `clase_05_delta_fps_colisiones.md` |
+| 6 | Sprites, sonido y animación con spritesheet | — (primer `game_object`) | Ejemplo con sprites | ✅ — ver `clase_06_sprites_sonido_spritesheet.md` |
+| 7 | Arkanoid (de un archivo a módulos) | — | Arkanoid básico | ✅ — ver `clase_07_arkanoid.md` |
 | 8 | **Reestructuración del motor** (núcleo) | `game_loop`, `ui`, `game_object`, `sprite_sheet`, `asset_manager`, `dialogue_manager`, `utils/` | Arkanoid refactorizado | ✅ `engine/` + `arkanoid/` — ver `clase_08_*.md` |
 | 9 | Audio y gestión de niveles | `audio` + `level_loader` + escenas | Arkanoid con vidas/niveles/menú/game over | ✅ — ver `clase_09_*.md` |
 | 10–11 | Juegos de plataforma | `tilemap`, `camera` + entidades | Plataformero con Tiled y cámara | ✅ — ver `clase_10_11_*.md` |
@@ -96,6 +96,19 @@ python -m slingshot.main        # resortera (PyMunk)
 python -m adventure.main        # aventura gráfica (escenas)
 python -m insult_soccer.main    # fútbol de duelo verbal (escenas)
 python -m soccer_rpg.main       # fútbol RPG (escenas)
+```
+
+### Clases 1-7 (ejercicios, Pygame "puro", dentro de `clases/paso_a_paso/`)
+
+```bash
+python clases/paso_a_paso/clase_1_2.py
+python clases/paso_a_paso/clase_3_4_a.py       # y b, c, d
+python clases/paso_a_paso/clase_5_1.py         # y clase_5_2.py
+python clases/paso_a_paso/clase_6_a.py
+
+# Clase 7 (Arkanoid): se ejecuta como módulo desde clases/paso_a_paso
+cd clases/paso_a_paso
+python -m arkanoid.core_arkanoid.clase_7_arkanoid
 ```
 
 También funciona `python arkanoid/main.py` (cada `main.py` ajusta el `sys.path`).

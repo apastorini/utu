@@ -100,13 +100,18 @@ python wrestling/generar_assets.py     # gráficos de ese juego (igual en los de
 
 ## Apuntes por clase
 
-En `clases/` están `clase_08_*.md` … `clase_26_*.md`, cada uno con el **código
-completo** del motor y del juego de esa etapa. Se pueden regenerar desde el
-código real:
+En `clases/` están `clase_01_*.md` … `clase_26_*.md`, cada uno con el **código
+completo** del motor y del juego/ejercicio de esa etapa (las clases 1–7 no
+tienen motor todavía: son ejercicios de Pygame "puro").
+
+Los apuntes de las **clases 1–7 y 13–26** se generan desde el código real:
 
 ```bash
 python herramientas/generar_apuntes.py
 ```
+
+(Los de las clases **8–12** son redactados a mano y no los sobrescribe el
+generador.)
 
 ## Los dos enfoques, en 3 líneas
 

@@ -18,6 +18,117 @@ CLASES = os.path.join(ROOT, "clases")
 
 DOCS = [
     {
+        "file": "clase_01_02_pygame_basico.md",
+        "title": "Clases 1 y 2 — Pensar como diseñador y primeros pasos con Pygame",
+        "intro": (
+            "Objetivo: **pensar como diseñador** y dar los primeros pasos con Pygame:\n"
+            "abrir una ventana, montar el **bucle principal** (game loop), dibujar\n"
+            "formas y mover un rectángulo con el teclado.\n\n"
+            "En esta etapa **todavía no hay motor**: es Pygame \"puro\", todo en un\n"
+            "archivo. A partir de la clase 8 esto se convertirá en `engine/`."
+        ),
+        "engine": [],
+        "code_title": "Ejercicio de la clase — código completo",
+        "game": ["clases/paso_a_paso/clase_1_2.py"],
+        "run": "python clases/paso_a_paso/clase_1_2.py",
+        "controls": "flechas para mover el rectángulo; cerrar la ventana para salir.",
+    },
+    {
+        "file": "clase_03_04_rectangulos_colisiones.md",
+        "title": "Clases 3 y 4 — Rectángulos, movimiento y colisiones",
+        "intro": (
+            "Objetivo: trabajar con **rectángulos** (`pygame.Rect`), movimiento,\n"
+            "límites de pantalla y **detección de colisiones** básica.\n\n"
+            "Son cuatro variantes del mismo ejercicio que van sumando: mover, chocar\n"
+            "contra los bordes y detectar solapamientos entre rectángulos."
+        ),
+        "engine": [],
+        "code_title": "Ejercicios de la clase — código completo",
+        "game": [
+            "clases/paso_a_paso/clase_3_4_a.py",
+            "clases/paso_a_paso/clase_3_4_b.py",
+            "clases/paso_a_paso/clase_3_4_c.py",
+            "clases/paso_a_paso/clase_3_4_d.py",
+        ],
+        "run": "python clases/paso_a_paso/clase_3_4_a.py   # y b, c, d",
+        "controls": "flechas para mover; cada variante añade una idea nueva.",
+    },
+    {
+        "file": "clase_05_delta_fps_colisiones.md",
+        "title": "Clase 5 — Delta de tiempo, FPS, teclado y colisiones",
+        "intro": (
+            "Objetivo: que el movimiento **no dependa de los FPS** usando el\n"
+            "**delta de tiempo** (`dt`), controlar la velocidad con el reloj, y\n"
+            "distinguir los **eventos** de teclado (`KEYDOWN`, un evento puntual) del\n"
+            "**estado** de las teclas (`pygame.key.get_pressed()`, continuo).\n\n"
+            "También se afinan las colisiones vistas en la clase anterior."
+        ),
+        "engine": [],
+        "code_title": "Ejercicios de la clase — código completo",
+        "game": [
+            "clases/paso_a_paso/clase_5_1.py",
+            "clases/paso_a_paso/clase_5_2.py",
+        ],
+        "run": "python clases/paso_a_paso/clase_5_1.py   # y clase_5_2.py",
+        "controls": "flechas/teclas según el ejercicio; se muestra el FPS en pantalla.",
+    },
+    {
+        "file": "clase_06_sprites_sonido_spritesheet.md",
+        "title": "Clase 6 — Sprites, sonido y animación con spritesheet",
+        "intro": (
+            "Objetivo: usar **sprites**, reproducir **sonido** y **animar** con una\n"
+            "**spritesheet** (recortando fotogramas de una sola imagen).\n\n"
+            "Aparece el primer `core/` con clases propias (`Player`, `Enemy`,\n"
+            "`Collectible`...) que es el antecedente directo de `engine/game_object.py`\n"
+            "y del concepto de animación del motor."
+        ),
+        "engine": [],
+        "code_title": "Ejercicio y su 'core' — código completo",
+        "game": [
+            "clases/paso_a_paso/clase_6_a.py",
+            "clases/paso_a_paso/core/__init__.py",
+            "clases/paso_a_paso/core/Player.py",
+            "clases/paso_a_paso/core/PlayerRect.py",
+            "clases/paso_a_paso/core/Enemy.py",
+            "clases/paso_a_paso/core/Collectible.py",
+            "clases/paso_a_paso/core/Colors.py",
+            "clases/paso_a_paso/core/utils/__init__.py",
+            "clases/paso_a_paso/core/utils/utils.py",
+        ],
+        "run": "python clases/paso_a_paso/clase_6_a.py",
+        "controls": "flechas para mover; el personaje se anima y recoge objetos.",
+    },
+    {
+        "file": "clase_07_arkanoid.md",
+        "title": "Clase 7 — Arkanoid (de un archivo a módulos)",
+        "intro": (
+            "Objetivo: programar el primer **Arkanoid** completo. Se empieza con todo\n"
+            "en un archivo y luego se **separa en módulos** dentro de\n"
+            "`core_arkanoid/` (`Player`, `Ball`, `Brick`, `SpriteSheet`), con una\n"
+            "segunda versión que ya carga sprites con un spritesheet.\n\n"
+            "Este es el **antecedente directo** de la reestructuración del motor de la\n"
+            "clase 8 (`engine/` + `arkanoid/` con escenas)."
+        ),
+        "engine": [],
+        "code_title": "Juego de ejemplo — código completo",
+        "game": [
+            "clases/paso_a_paso/arkanoid/core_arkanoid/__init__.py",
+            "clases/paso_a_paso/arkanoid/core_arkanoid/clase_7_arkanoid.py",
+            "clases/paso_a_paso/arkanoid/core_arkanoid/Player.py",
+            "clases/paso_a_paso/arkanoid/core_arkanoid/Ball.py",
+            "clases/paso_a_paso/arkanoid/core_arkanoid/Brick.py",
+            "clases/paso_a_paso/arkanoid/core_arkanoid/SpriteSheet.py",
+            "clases/paso_a_paso/arkanoid/core_arkanoid/sprite_sheet/__init__.py",
+            "clases/paso_a_paso/arkanoid/core_arkanoid/sprite_sheet/Game.py",
+            "clases/paso_a_paso/arkanoid/core_arkanoid/sprite_sheet/Player.py",
+            "clases/paso_a_paso/arkanoid/core_arkanoid/sprite_sheet/Ball.py",
+            "clases/paso_a_paso/arkanoid/core_arkanoid/sprite_sheet/Brick.py",
+            "clases/paso_a_paso/arkanoid/core_arkanoid/sprite_sheet/visor_sprites.py",
+        ],
+        "run": "cd clases/paso_a_paso\npython -m arkanoid.core_arkanoid.clase_7_arkanoid",
+        "controls": "flechas para mover la paleta; `ESC`/cerrar la ventana para salir. (La segunda versión, con sprites cargados de spritesheet, está en `sprite_sheet/Game.py`.)",
+    },
+    {
         "file": "clase_13_isometrica.md",
         "title": "Clase 13 — Perspectiva isométrica",
         "intro": (
@@ -213,7 +324,13 @@ DOCS = [
 
 def read_code(rel_path):
     full = os.path.join(ROOT, rel_path)
-    with open(full, encoding="utf-8") as f:
+    for enc in ("utf-8", "cp1252", "latin-1"):
+        try:
+            with open(full, encoding=enc) as f:
+                return f.read().rstrip("\n")
+        except UnicodeDecodeError:
+            continue
+    with open(full, encoding="utf-8", errors="replace") as f:
         return f.read().rstrip("\n")
 
 
@@ -230,7 +347,8 @@ def build_doc(spec):
             lines.append(read_code(rel))
             lines.append("```\n")
 
-    lines.append("## Juego de ejemplo — código completo\n")
+    code_title = spec.get("code_title", "Juego de ejemplo — código completo")
+    lines.append(f"## {code_title}\n")
     for rel in spec["game"]:
         lines.append(f"**`{rel}`**\n")
         lines.append("```python")
