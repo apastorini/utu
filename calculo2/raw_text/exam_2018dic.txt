@@ -1,0 +1,117 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo diferencial e integral en varias variables
+Facultad de Ingenier´ıa
+IMERL
+Examen.
+Diciembre 2018
+No. Examen
+Apellido y nombre
+Firma
+C´edula
+PARA USO DOCENTE
+Ej 1
+Ej 2
+Ej 3
+Ej 4
+Ej 5
+Ej 6
+Total
+Ejercicios de M´ultiple Opci´on.
+Total: 70 puntos.
+14 puntos respuesta correcta, -3 puntos respuesta incorrecta, 0 puntos si no contesta.
+1. Se considera el conjunto V = {(x, y, z) ∈R3 : x2 + y2 ≤z, 0 ≤x −z + 2}.
+Indicar la opci´on correcta:
+(A) V ol(V ) = 75
+8 π.
+□
+(B) V ol(V ) = 81
+32π.
+□
+(C) V ol(V ) = 9
+4π.
+□
+(D) V ol(V ) = 45
+8 π.
+□
+2. Se considera la sucesi´on x0 = 1, x1 = 1 + 1/1, x2 = 1 +
+1
+1+1/1, · · · deﬁnida por inducci´on
+mediante la regla xn+1 = 1 + 1/xn. Indicar la opci´on correcta:
+(A) La sucesi´on es mon´otona y est´a acotada.
+□
+(B) La sucesi´on no es mon´otona pero esta acotada.
+□
+(C) La sucesi´on no est´a acotada pero es mon´otona.
+□
+(D) La sucesi´on no es mon´otona ni acotada.
+□
+1
+
+===== PAGE 2 =====
+3. Sean, a, b, ϕ y θ n´umeros reales positivos. Consideremos los n´umeros complejos z = aei(θ+ϕ)
+y w = beiϕ. Deﬁniendo c = |z −w| indicar la opci´on correcta:
+(A) c2 = a2 + b2.
+□
+(B) c2 = a2 + b2 −2ab sin(θ).
+□
+(C) c2 = a2 + b2 −2ab cos(θ).
+□
+(D) c2 = a2 + b2 + 2ab cos(θ).
+□
+4. Sea f : R2 →R tal que
+f(x, y) =
+
+
+
+x sin(xy)
+x2+y2
+si (x, y)̸ = (0, 0),
+0
+si (x, y) = (0, 0).
+Indicar la opci´on correcta:
+(A) Existen fx(0, 0), fy(0, 0) y ∂f
+∂v (0, 0) = fx(0, 0)v1 + fy(0, 0)v2, ∀v = (v1, v2)̸ = (0, 0).
+□
+(B) f es diferenciable en todo R2.
+□
+(C) Existen fx(0, 0), fy(0, 0) y ∂f
+∂v (0, 0)̸ = fx(0, 0)v1 + fy(0, 0)v2, ∀v = (v1, v2) : v1v2̸ = 0.
+□
+(D) Existe fyx(0, 0) y fyx(0, 0) = 1.
+□
+5. Se consideran las siguientes integrales impropias:
+(I)
+Z +∞
+0
+sin(x)dx
+x2(1 + ex)
+(II)
+Z +∞
+−∞
+dx
+(1 + |x|)(1 +
+p
+|x|)
+Indicar la opci´on correcta:
+(A) La integral (I) converge, pero la integral (II) diverge.
+□
+(B) La integral (II) converge, pero la integral (I) diverge.
+□
+(C) Ambas integrales convergen.
+□
+(D) Ambas integrales divergen.
+□
+2
+
+===== PAGE 3 =====
+Ejercicio de Desarrollo
+Total: 30 puntos.
+6.
+1. (20 puntos) Probar el siguiente resultado:
+Sea f : R2 →R una funci´on y (x0, y0) ∈R2 un punto, tales que las derivadas parciales de
+f existen en una bola de centro (x0, y0) y ambas son continuas en (x0, y0). Entonces f es
+diferenciable en (x0, y0).
+2. (10 puntos) ¿Es cierto el rec´ıproco? Demostrar o dar un contraejemplo.
+3

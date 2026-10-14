@@ -1,0 +1,66 @@
+
+===== PAGE 1 =====
+C´alculo Diferencial e Integral en Varias Variables
+Segundo semestre de 2022
+Soluci´on Primer parcial
+1 de octubre de 2022
+M ´ULTIPLE OPCI´ON
+Las vesiones del parcial se identiﬁcan por el primer ejercicio de m´ultiple opci´on.
+Versi´on 1: El primer ejercicio es “Sea y(x) la soluci´on a la ecuaci´on diferencial ...”
+Versi´on 2: El primer ejercicio es “Considere las soluciones de la siguiente ecuaci´on en los
+n´umeros complejos ...”
+Las respuestas correctas en cada versi´on son:
+Versi´on
+1
+2
+3
+4
+5
+1
+E
+B
+A
+D
+D
+2
+B
+E
+C
+A
+C
+DESARROLLO
+1.
+a) Deﬁnir l´ımite ﬁnito de una sucesi´on
+(lim
+n→∞an = L ∈R sii . . .
+)
+Ver deﬁnici´on 2.3. en las notas del curso.
+b) Deﬁnir sucesi´on acotada (Se dice que una sucesi´on an es acotada sii . . . )
+Ver deﬁnici´on 2.5. en las notas del curso.
+2. Sean an y bn sucesiones tales que lim
+n→∞an = 0 y bn es acotada. Demostrar que lim
+n→∞anbn = 0.
+Sea ε > 0. Buscaremos un n0 a partir del cual la sucesi´on producto anbn cumpla
+|anbn −0| < ε. Como bn es acotada, existe un K ∈R tal que |bn| < K para todo natural
+n. Tomemos entonces ε′ =
+ε
+K . Como an tiene l´ımite cero, entonces existe un n0 ∈N a
+partir del cual |an| < ε′.
+Tenemos entonces que a partir de ese n0, se cumple que |anbn| = |ab||bn| < ε
+K K = ε, que
+es lo que se pretend´ıa encontrar.
+3.
+a) Dar un ejemplo de un par de sucesiones an y bn, con lim
+n→∞an = 0 y bn no acotada,
+tales que lim
+n→∞anbn = 0.
+Hay much´ısimos ejemplos de sucesiones, y muy distintos, que cumplen lo pedido. Un
+ejemplo es an = 1/n y bn = √n, ya que el producto resulta anbn =
+1
+√n.
+b) Dar un ejemplo de un par de sucesiones an y bn, con lim
+n→∞an = 0 y bn no acotada,
+tales que el l´ımite de anbn no sea cero (inﬁnito u otro l´ımite real no nulo).
+De nuevo, hay much´ısimos ejemplos de sucesiones, y muy distintos, que cumplen lo
+pedido. Un ejemplo es an = 1/n y bn = n2, ya que el producto resulta anbn = n.
+1

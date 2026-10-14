@@ -1,0 +1,177 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo Diferencial e Integral en Varias Variables
+Facultad de Ingenier´ıa - IMERL
+Julio 2022
+Examen – 21 Julio de 2022
+Nro de Examen
+C´edula
+Apellido y nombre
+Respuestas Verdadero o Falso
+1
+2
+3
+4
+5
+Respuestas Ejercicios Multiple Opci´on
+E. 1
+E. 2
+E. 3
+E. 4
+E. 5
+E. 6
+E. 7
+E. 8
+E. 9
+E. 10
+Importante
+• El examen dura 3h.
+• En cada ejercicio se indica la cantidad de puntos que le corresponden.
+Tienen 5 ejercicios ver-
+dadero/falso de 4 puntos cada uno y 10 ejercicios m´ultiple opci´on de 8 puntos cada uno. El examen
+es de 100 puntos en total. Se aprueba con 60 puntos.
+• Solo ser´an v´alidas las respuestas indicadas en el cuadro de respuestas.
+• En cada ejercicio hay una sola opci´on correcta.
+• Notaci´on: Dado A ⊆Rn, la frontera y el interior de A se denotan por ∂(A) y int(A) respectivamente.
+1. Verdadero - Falso.
+Puntajes: 4 puntos si la respuesta es correcta,−1 punto si la respuesta es incorrecta 0 punto por no contestar.
+Indique sus respuestas (V/F) en los casilleros correspondientes.
+(1) Si A ⊂R2 es abierto y B ⊂R2 es cerrado entonces A ∩B es cerrado.
+(2) Si f : R2 →R es un funci´on continua en (0, 0) y las derivadas parciales de f en (0, 0) existen, entonces
+f es diferenciable (0, 0).
+(3) La serie
++∞
+P
+n=1
+sin
+( 1
+n
+)
+es convergente.
+(4) La parte imaginaria del complejo
+5
+2 −i es igual a 1.
+(5) La funci´on y(x) = e3x sin(2x) es soluci´on de la ecuaci´on diferencial y′′ −6y′ + 13y = 0.
+1
+
+===== PAGE 2 =====
+2
+2. M´ultiple Opci´on
+Puntajes: 8 puntos si la respuesta es correcta, −2 punto si la respuesta es incorrecta 0 punto por no contestar.
+Indique sus respuestas en los casilleros correspondientes.
+(1) Sea f : R2 →R deﬁnida como
+f(x, y) =
+p
+x2 + y2.
+Entonces
+A. La funci´on f es continua en R2 y el ´unico punto de R2 donde sus derivadas parciales no existen
+en (0, 0).
+B. La funci´on f es una funci´on con derivadas parciales continuas en (0, 0) por lo tanto es diferenciable
+(0, 0).
+C. La funci´on f es una funci´on continua en R2 y su plano tangente en (0, 0) es igual a z = 0.
+D. La funci´on f es diferenciable en (0, 0) pero no tiene derivadas parciales continuas en (0, 0).
+(2) Consideremos la funci´on w = 2st donde s = x2 + y2, t = x
+y .
+Entonces, la direcci´on de m´aximo
+crecimiento de w en x = y = 1 es:
+A. la direcci´on del vector (1, 0).
+B. la direcci´on del vector (0, 1).
+C. la direcci´on del vector (2, 1).
+D. la direcci´on del vector (1, 1).
+(3) El volumen encerrado entre el plano de ecuaci´on z = 0 y el gr´aﬁco de la funci´on f(x, y) = 2 −x2 −y2
+vale:
+A. 4
+√
+2π
+3
+.
+B. 8
+√
+2π
+3
+.
+C. 2π.
+D. π.
+(4) El polinomio de Taylor de orden 2 de la funci´on f(x, y) = cos(x + y)e−x2 en (0, 0) es:
+A. 1 −3
+2x2 −xy −1
+2y2.
+B. 1 + x −3
+2x2 + xy −1
+2y2.
+C. 1 + 3
+2x2 −xy + 1
+2y2.
+D. 1.
+(5) La serie:
++∞
+X
+n=1
+(
+n log
+(
+1 + 2
+n
+))n
+A. No se puede clasiﬁcar.
+B. diverge.
+C. oscila.
+D. converge.
+
+===== PAGE 3 =====
+2. M´ULTIPLE OPCI´ON
+3
+(6) Se considera la sucesi´on an, deﬁnida para todo n ∈N, de la siguiente manera:
+
+
+
+an+1 =
+a2
+n
+an−2
+a0 = 5
+2
+Entonces, de an se puede decir que:
+A. es mon´otona creciente y convergente a 1.
+B. es mon´otona decreciente y convergente a 1.
+C. es mon´otona creciente y no convergente.
+D. es mon´otona decreciente y no convergente.
+(7) Considere las siguientes aﬁrmaciones:
+I. Si A es un subconjunto de Rn entonces ∂(A) ∪int(A) = A.
+II. Si A es un subconjunto de Rn entonces el conjunto de sus puntos de acumulaci´on es cerrado.
+III. Si {Ai}i∈I es una familia cualquiera de conjuntos cerrados entonces ∪i∈IAi es un conjunto cer-
+rado.
+Entonces
+A. I, III son verdaderas y II es falsa
+B. I, II, son verdaderas y III es falsa.
+C. II, III son verdaderas y I es falsa.
+D. Solamente II es verdadera.
+(8) Sea (an, bn) una sucesi´on en R2.
+Entonces
+A. Si (an) y (bn) no convergen entonces (an, bn) no tiene subsucesi´on convergente.
+B. Si (an, bn) converge entonces la sucesi´on real cn = anbn converge.
+C. Si (an, bn) converge entonces la sucesi´on real dn = an + bn diverge.
+D. Si (an, bn) tiene una subsucesi´on convergente entonces la sucesi´on (an, bn) converge.
+(9) Sea y = y(x) una funci´on que satisface la ecuaci´on diferencial y′′ −y′ −6y = −6x2 −8x + 13 con
+condiciones iniciales y(0) = 2 y y′(0) = 3.
+Entonces
+A. y(1) = e2 + e3.
+B. y(1) = 2( 1
+e2 + e3).
+C. y(1) = e−2 + e3.
+D. y(1) = 1
+e2 + e3 + 1.
+(10) Sea α ∈R. La integral
+2
+Z
+0
+(
+x
+2 −x
+)α
+dx:
+A. converge para todo α > 1.
+B. converge para todo α ∈(−1, 1).
+C. converge para todo α < 0.
+D. converge para todo α ∈(−1, 0).

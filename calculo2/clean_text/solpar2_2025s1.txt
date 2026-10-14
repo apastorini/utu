@@ -1,0 +1,502 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo Diferencial e Integral en Varias Variables.
+Facultad de Ingenier´ıa - IMERL
+Julio 2025.
+SEGUNDO PARCIAL – Mi´ercoles 2 de Julio de 2025.
+SOLUCI´ON
+Ejercicio 1. Considere los siguientes conjuntos en R2
+A = {(x, y) ∈R2 : x = 0, y =
+1
+2n , n ∈N}
+B = {(x, y) ∈R2 : x2 + y2 < 1, (x, y)̸ = (0, 0)}.
+Entonces
+A) A no es abierto y B ∩∂(B)̸ = ∅.
+B) A◦= A y B es abierto.
+C) ∂(A) ⊆A y B◦= B.
+D) A no es abierto y B◦= B.
+(Cor-
+recta).
+Soluci´on: El conjunto A no tiene puntos interiores, por lo tanto no es abierto. En cambio, B s´ı es
+un conjunto abierto (ver Ejercicio 2 del Pr´actico 6).
+Por lo tanto, la opci´on correcta es la D: A no es abierto y B◦= B.
+Ejercicio 2. Sea f : D ⊆R2 →R definida por f(x, y) =
+q
+xy + x
+y en su dominio D, y π el plano
+tangente a la gr´afica de f en el punto (2, 1, 2). Entonces
+A) (0, 1, 3) ∈π.
+B) (4, 1, 3) ∈π.
+(Correcta).
+C) (4, 0, −3) ∈π.
+D) (0, 0, 3) ∈π.
+Soluci´on: La ecuaci´on del plano tangente a la gr´afica de una funci´on diferenciable f(x, y) en el punto
+(x0, y0) es:
+z = f(x0, y0) + ∂f
+∂x(x0, y0)(x −x0) + ∂f
+∂y (x0, y0)(y −y0)
+Calculamos las derivadas parciales:
+f(x, y) =
+(
+xy + x
+y
+)1/2
+∂f
+∂x(x, y) = 1
+2
+(
+xy + x
+y
+)−1/2 (
+y + 1
+y
+)
+∂f
+∂y (x, y) = 1
+2
+(
+xy + x
+y
+)−1/2 (
+x −x
+y2
+)
+Evaluamos en (2, 1):
+• ∂f
+∂x(2, 1) = 1
+2
+• ∂f
+∂y (2, 1) = 0
+Entonces, la ecuaci´on del plano tangente es: z = 2 + 1
+2(x −2) + 0(y −1) = 2 + 1
+2(x −2)
+Simplificando:
+x −2z + 2 = 0
+
+===== PAGE 2 =====
+Por lo tanto, la opci´on correcta es la B: (4, 1, 3) pertenece al plano π.
+Ejercicio 3. Sea f : R2 →R definida por f(x, y) =
+
+
+
+
+
+|x|y
+p
+x2 + y2
+si (x, y)̸ = (0, 0),
+0
+si (x, y) = (0, 0).
+Entonces:
+A) La funci´on f es diferenciable en (0, 0) y, por lo tanto, continua en (0, 0).
+B) La funci´on f tiene derivadas parciales en (0, 0), pero no es continua en (0, 0).
+C) No existen las derivadas parciales de f en (0, 0), pero f es continua en (0, 0).
+D) La funci´on f no es diferenciable en (0, 0), aunque f es continua en (0, 0) y existen las derivadas
+parciales de f en (0, 0).
+(Correcta).
+Soluci´on:
+Derivadas parciales: La funci´on f tiene derivadas parciales en (0, 0).
+Notamos que si y = 0, entonces:
+f(h, 0) =
+|h| · 0
+√
+h2 + 0
+= 0.
+Entonces,
+∂f
+∂x(0, 0) = lim
+h→0
+f(h, 0) −f(0, 0)
+h
+= 0.
+Por otro lado, notamos que si x = 0, entonces:
+f(0, h) =
+|0| · h
+√
+0 + h2 = 0.
+Entonces,
+∂f
+∂y (0, 0) = lim
+h→0
+f(0, h) −f(0, 0)
+h
+= 0.
+Continuidad: f es continua en (0, 0). Para eso, debemos verificar que
+lim
+(x,y)→(0,0) f(x, y) = f(0, 0) = 0.
+lim
+(x,y)→(0,0) f(x, y) =
+lim
+(x,y)→(0,0)
+|x|y
+p
+x2 + y2 =
+lim
+(x,y)→(0,0) y · .
+|x|
+p
+x2 + y2
+Notamos que la funci´on
+|x|
+p
+x2 + y2 est´a acotada por 1, ya que
+|x|
+p
+x2 + y2 =
+√
+x2
+p
+x2 + y2 ≤1.
+Como y →0 cuando (x, y) →(0, 0), y el producto de una funci´on acotada por una que tiende a cero
+tiene como l´ımite cero, concluimos que
+lim
+(x,y)→(0,0) f(x, y) = 0.
+
+===== PAGE 3 =====
+Difereciabilidad: f no es diferenciable en (x0, y0) pues
+r(∆x, ∆y)
+∥(∆x, ∆y)∥= f(∆x, ∆y)
+∥(∆x, ∆y)∥.
+Al evaluar el limite
+lim
+(∆x,∆y)→(0,0)
+r(∆x, ∆y)
+∥(∆x, ∆y)∥=
+lim
+(∆x,∆y)→(0,0)
+f(∆x, ∆y)
+∥(∆x, ∆y)∥=
+lim
+(∆x,∆y)→(0,0)
+|∆x|∆y
+∆x2 + ∆y2
+se puede concluir que no existe (usando trayectorias). Por lo tanto, f no es diferenciable en (0, 0).
+Por lo tanto, la opci´on correcta es la D: La funci´on f no es diferenciable en (0, 0), aunque f es continua
+en (0, 0) y existen las derivadas parciales de f en (0, 0).
+Ejercicio 4. Sean f : R2 →R3 definida por f(x, y) = (exy, x + y, x2) y g : R2 →R2 definida por
+g(u, v) = (2uv, u). Entonces d(f ◦g)(1,1)(0, 1) es:
+A) (2e2, 2, 8).
+(Correcta).
+B) (e1, 2, 2).
+C) (2e1, 2, 8).
+D) (e2, 2, 2).
+Soluci´on:
+Por la regla de la cadena tenemos que
+d(f ◦g)(1,1) = dfg(1,1) ◦dg(1,1)
+o, equivalentemente, en t´erminos de las matrices jabobianas:
+J(f ◦g)(1,1) = J(f)g(1,1) ◦J(g)(1,1)
+Tenemos que
+J(f)(x,y) =
+
+
+
+yexy
+xexy
+1
+1
+2x
+0
+
+
+
+y
+J(g)(u,v) =
+ 
+2v
+2u
+1
+0
+!
+Por lo que
+J(f)(2,1) =
+
+
+
+e2
+2e2
+1
+1
+4
+0
+
+
+
+y
+J(g)(1,1) =
+ 
+2
+2
+1
+0
+!
+Luego,
+J(f ◦g)(1,1) =
+
+
+
+e2
+2e2
+1
+1
+4
+0
+
+
+
+ 
+2
+2
+1
+0
+!
+=
+
+
+
+4e2
+2e2
+3
+2
+8
+8
+
+
+
+y obtenemos que
+d(f ◦g)(1,1) =
+
+
+
+4e2
+2e2
+3
+2
+8
+8
+
+
+
+ 
+0
+1
+!
+=
+
+
+
+2e2
+2
+8
+
+
+
+
+===== PAGE 4 =====
+Por lo tanto, la opci´on correcta es la A.
+Ejercicio 5. La integral
+ZZ
+R
+p
+x2 + y2 dx dy, donde R es la regi´on del plano definida por
+R =
+{
+(x, y) ∈R2 }} 0 ≤x, 0 ≤y, x2 + y2 ≤1, x2 −2x + y2 ≥0
+}
+.
+puede expresarse en coordenadas polares como:
+A)
+Z
+π
+2
+π
+3
+Z 1
+2 cos(θ)
+r2 dr dθ
+(Correcta).
+B)
+Z
+π
+3
+0
+Z 2 cos(θ)
+1
+r2 dr dθ
+C)
+Z
+π
+3
+0
+Z 1
+2 cos(θ)
+r2 dr dθ
+D)
+Z
+π
+2
+π
+3
+Z 2 cos(θ)
+1
+r2 dr dθ
+Soluci´on:
+R =
+n
+(r, θ) ∈R2 }}} π
+3 ≤θ ≤π
+2 ,
+2 cos θ ≤r ≤1
+o
+x
+y
+r = 1
+r = 2 cos θ
+θ = π
+3
+θ = π
+2
+R
+Por lo tanto, la opci´on correcta es la A.
+
+===== PAGE 5 =====
+EJERCICIOS DE DESARROLLO
+Ejercicio 1
+a) Sean f, g : U ⊆Rn →R. Sea p ∈U. Supongamos g acotada en B(p, δ) ⊆U y limx→p f(x) =
+0. Probar que limx→p f(x)g(x) = 0.
+Soluci´on: Ver Ejercicio 6a del pr´actico 7.
+b) Si h(x, y) =
+x2y
+x2+y2 · sin
+(
+1
+x2+y2
+)
+. Calcular (justificando) el valor de
+lim
+(x,y)→(0,0) h(x, y).
+Soluci´on: Reescribimos la funci´on como
+h(x, y) = y ·
+(
+x2
+x2 + y2 · sin
+(
+1
+x2 + y2
+))
+.
+Observamos que:
+– La funci´on
+x2
+x2 + y2 ·sin
+(
+1
+x2 + y2
+)
+est´a acotada, ya que 0 ≤
+x2
+x2 + y2 ≤1 y
+}}}}sin
+(
+1
+x2 + y2
+)}}}} ≤
+1.
+– La funci´on y tiende a cero cuando (x, y) →(0, 0).
+Por lo tanto, h(x, y) es el producto de una funci´on acotada por una funci´on que tiende a cero,
+y aplicando el resultado del ´ıtem (a), concluimos que
+lim
+(x,y)→(0,0) h(x, y) = 0.
+Ejercicio 2 Sea f : R2 →R una funci´on diferenciable en el punto (1, 1). Suponga que las derivadas
+direccionales de f en dicho punto en las direcciones v1 = (2, −1) y v2 = (1, 4) son
+∂f
+∂v1 (1, 1) =
+5
+y
+∂f
+∂v2 (1, 1) = 7. Calcular, justificando su respuesta, el gradiente ∇f(1, 1).
+Soluci´on: La derivada direccional de f en una direcci´on v se puede expresar como el producto escalar
+entre el gradiente de f y el vector v, de acuerdo con el Teorema 7.13 de las notas del curso:
+∂f
+∂v (1, 1) = ∇f(1, 1) · v.
+Llamemos ∇f(1, 1) = (a, b). Usando las direcciones dadas:
+∂f
+∂v1
+(1, 1) = (a, b) · (2, −1) = 2a −b = 5,
+∂f
+∂v2
+(1, 1) = (a, b) · (1, 4) = a + 4b = 7.
+Resolviendo este sistema de ecuaciones:
+
+
+
+2a −b = 5
+a + 4b = 7
+⇒a = 3,
+b = 1.
+Por lo tanto, el gradiente de f en el punto (1, 1) es:
+∇f(1, 1) = (3, 1).
+
+===== PAGE 6 =====
+Ejercicio 3. Sea f : R2 →R una funci´on continua, y suponga que la integral de f sobre la regi´on R
+est´a dada por
+Z Z
+R
+f(x, y) dy dx =
+Z √
+2/2
+0
+Z x
+0
+f(x, y) dy dx +
+Z 1
+√
+2/2
+Z √
+1−x2
+0
+f(x, y) dy dx.
+Entonces:
+(a)
+x
+y
+y = x
+y =
+√
+1 −x2
+√
+2
+2
+1
+(b) Reescriba la integral anterior expres´andola como una integral iterada en el orden dx dy y
+calcular su valor si f(x, y) = 2xy.
+Sea f(x, y) = 2xy. La integral original est´a dada por
+Z
+√
+2
+2
+0
+Z x
+0
+f(x, y) dy dx +
+Z 1
+√
+2
+2
+Z √
+1−x2
+0
+f(x, y) dy dx =
+ZZ
+R
+2xy dx dy =
+Z
+√
+2
+2
+0
+Z √
+1−y2
+y
+2xy dx dy = 1
+8

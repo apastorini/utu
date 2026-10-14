@@ -1,0 +1,352 @@
+
+===== PAGE 1 =====
+SOLUCI´ON PRIMER PARCIAL 2018 PRIMER SEMESTRE
+1
+Respuestas M´ultiple Opci´on
+1. A
+2. A
+3. D
+4. C
+5. D
+6. D
+2
+Resoluci´on ejercicios M.O.
+1. Tenemos que hallar la soluci´on x′−6x+25x = 0, con las condiciones iniciales x(0) = 0
+y —x′(0) = 4.
+Para esto, planteamos el polinomio caracter´ıstico asociado a la ecuaci´on: λ2 −6λ+2
+y hallamos sus ra´ıces:
+6 ± √−64
+2
+= 3 ± 4i.
+La soluci´on general es de la forma:
+x(t) = e3x(C1 sin 4x + C2 cos 4x).
+Sabemos que x(0) = 0 y que x(0) = C2, luego C2 = 0.
+As´ı que x(t) = C1e3x sin 4x y por lo tanto,
+x′(t) = e3x(3C1 sin 4x + 4C2 cos 4x).
+Como x′(0) = 4 y x′(0) = 4C2, luego c2 = 1 y
+x(t) = e3x sin 4x
+y
+x(π) = 0.
+2. Hallamos la soluci´on de x′(t) = −2tx(t) tal que x(0) = 1.
+x′(t) = −2tx(t) →x′(t)
+x(t) = −2t,
+integrando con respecto de t y aplicando el teorema de cambio de variable en la parte
+a la izquierdda del signo de igual:
+ˆ x′(t)
+x(t) dt =
+ˆ
+−2tdt →ln |x(t)| = −t2 + C →|x(t)| = e−t2+c = Ke−t2,
+donde C es una constante real y K = eC > 0. Para eliminar las barras de valor
+absoluto, hacemos que K ∈R : x(t) = Ke−t2.
+Como x(0) = 1 y esto implica K = 1:
+x(t) = e−t2 →x′(t) = −2tet2 →x′′(t) = −2e−t2 + (4t2)e−t2 →x′′(0) = −2
+1
+
+===== PAGE 2 =====
+3. Estudiar la convergencia de
++∞
+X
+n=1
+log
+(
+6 + 6
+n
+)
+−log
+(
+6 +
+6
+n + 2
+)
+.
+Deﬁnimos:
+• an = log(6 + 6
+n),
+• bn = log
+(
+6 + 6
+n
+)
+−log
+(
+6 +
+6
+n + 2
+)
+• BK =
+K
+X
+n=1
+bn..
+Observar que bn = an −an+2 = (an −an+1) + (an+1 −an+2). Entonces:
+Bk =
+K
+X
+n=1
+bn =
+K
+X
+n=1
+an −an+2
+=
+K
+X
+n=1
+(an −an+1) + (an+1 −an+2)
+=
+K
+X
+n=1
+(an −an+1) +
+K
+X
+n=1
+(an+1 −an+2)
+Calculemos,
+(a)
+K
+X
+n=1
+(an−an+1) = (a1−a2)−(a1−a2)−(a2−a3)−. . .−(aK −aK+1) = a1−aK+1,
+(b)
+K
+X
+n=1
+(an+1 −an+2) = (a2 −a3) −(a3 −a4) −. . . −(aK+1 −aK+2) = a2 −aK+2
+BK =
+K
+X
+n=1
+(an −an+1) −
+K
+X
+n=1
+(an+1 −an+2) = a1 + a2 −aK+1 −ak+2.
+Queremos saber como se comporta
+lim
+K→+∞BK. Observar que
+lim
+n→+∞an = log 6, en-
+tonces
+lim
+n→+∞an+1 = log 6 y
+lim
+n→+∞an+2 = log 6.
+Luego,
+lim
+K→+∞BK = log 12 + log 9 −2 log 6
+4. Clasiﬁcar
++∞
+X
+n=1
+log n
+√n y
+ˆ +∞
+1
+log x
+√x dx
+2
+
+===== PAGE 3 =====
+(a) SERIE: Tenemos que f(n) > 0 para todo n > 1. Adem´as si n ≥3 entonces
+log n > 1 ⇒log n
+√n >
+1
+√n
+.
+La serie
++∞
+X
+n=1
+1
+√n es divergemte y usando el criterio de compraci´on de serie de
+t´erminos positivos
++∞
+X
+n=1
+log n
+√n diverge
+(b) Integral Impropia
+Calculemos:
+ˆ T
+1
+log x
+√x dx = log x√x|T
+1 −
+ˆ T
+1
+2
+√xdx = 2 log n√n −4√n + 4
+Luego
+ˆ +∞
+1
+log x
+√x dx =
+lim
+T→+∞
+ˆ T
+1
+log x
+√x dx = +∞
+5. Deﬁnamos an la altura del enes´ımo rebote, tenemos que a0 = 2 y que por letra
+an+1 = 2
+3. Por lo tanto:
+an =
+(2
+3
+)n
+.
+Luego de que la pelota rebote por primera vez, sube una distancia 22
+3, y a su vez la
+tiene que bajar: por lo tanto en cada recorre en el primer rebote una distancia total
+de : a0 + 2a1; en el segundo recorre a0 + 2a1 + 2a2. En general la distancia recorrida
+en el enes´ımo rebote es: 2 +
+n
+X
+n=1
+4
+(2
+3
+)n
+Queremos calcular el total recorrido ypara
+eso recurrimos a la suma inﬁnita.
+d =2 +
+∞
+X
+n=1
+4
+(2
+3
+)n
+= 2 + 4
+∞
+X
+n=1
+(2
+3
+)n
+=2 + 42
+3
+∞
+X
+n=0
+(2
+3
+)n
+=2 + 8
+3
+ 
+1
+1 −2
+3
+!
+=10.
+6. Clasiﬁcar
+ˆ 1
+0
+(
+x
+(x −1)2
+)s
+3
+
+===== PAGE 4 =====
+(a) Caso s ≥0.
+Observar que:
+(
+x
+(x −1)2
+)s
+≥0
+si 0 ≤x < 1 y usando el criterio del equivalente la integral que queremos integrar
+se comporta de la misma manera que
+ˆ 1
+0
+1
+(x −1)2s dx. Usando la deﬁnici´on de
+integral impropia y el cambio de variable y = x −1 tenemos que:
+ˆ 1
+0
+1
+(x −1)2s dx = lim
+T→1−
+ˆ T
+0
+1
+(x −1)2s dx = lim
+U→0−
+ˆ U
+−1
+1
+y2s dy
+Como la funci´on
+1
+y2s es par:
+ˆ 1
+0
+1
+(x −1)2s dx = lim
+U→0+
+ˆ 1
+U
+1
+y2s dy,
+Esta integral diverge si 2s > 1 y converge si 2s < 1.
+Luego si s ≥0
+ˆ 1
+0
+(
+x
+(x −1)2
+)s
+converge s´ı 0 ≤s < 1
+2. Resta estudiar el caso s < 0
+(b) Caso s < 0.
+Observar que:
+(
+x
+(x −1)2
+)s
+≥0
+si 0 < x ≤1, adem´as y usando el criterio del equivalente la integral se comporta de la
+misma manera que
+ˆ 1
+0
+1
+x−s dx.
+Dicha integral converge si −s > 1 y por lo tanto −1 < s < 0.
+Usando las partes (a) y (b) concluimos que:
+ˆ 1
+0
+(
+x
+(x −1)2
+)s
+converge s´ı y s´olo s´ı
+−1 < s < 1
+2
+3
+Soluci´on del Problema de Desarrollo
+1. Deﬁnimos las normas pedidas:
+(a) |(x1, . . . , xd)|1 = |x1| + . . . + |xd|
+(b) |(x1, . . . , xd)|2 =
+q
+x2
+1 + . . . + x2
+d
+(c) |(x1, . . . , xd)|∞= max{|x1|, . . . , |xd|}
+2. En R2 dibujar B((0, 0), 1)
+4
+
+===== PAGE 5 =====
+La primera imagen corresponde a la |, |2, la segunda a |, |1 y al tercera a |, |∞
+3. Como las normas son funciones positivas para demostrar que norma Eucl´ıdes es
+menor o igual a su norma de la sumas, podemos mostrar que el cuadrado de la
+norma eucl´ıdea es menor o igual al cuadrado de la norma de la suma.
+Dado (x, y) ∈R2 :
+|(x, y)|2
+2 = x2 + y2 ≤x2 + y2 + 2|x||y| = (|x| + |y|)2 = |(x, y)|2
+1
+Para que se de la igualdad, necesariamente tiene que pasar que 2|x||y| = 0 y por lo
+tanto las nomras coinciden s´olo s´ı x = 0 o y = 0
+5

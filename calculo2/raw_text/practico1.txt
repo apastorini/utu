@@ -1,0 +1,210 @@
+
+===== PAGE 1 =====
+Cálculo Diferencial e Integral en Varias Variables
+II Semestre 2026
+Práctico 1 – Ecuaciones diferenciales
+1. Resolver las siguientes ecuaciones diferenciales mediante el método de variables separables:
+a) y′ = 2y
+b) y′ = xy
+c) y′ = y2
+d) y′ = x(1 + y2)
+e) y′ = x√y
+2. Hallar la solución general de las siguientes ecuaciones diferenciales de variables separables:
+a) y′ = y2 −1
+b) yy′ + 1 = 0
+c) xe2yy′ −(1 + e2y) = 0
+3. Resolver las siguientes ecuaciones diferenciales mediante el cambio de variables u(x) = y(x)/x , de forma de
+llevarlas a ecuaciones de variables separadas del tipo u′ = A(u)B(x):
+a) x2y′ + y(y −x) = 0
+b) (x + y)y′ = x −y
+4.
+a) Resolver las siguientes ecuaciones diferenciales lineales de primer orden homogéneas:
+1) y′ + y cos x = 0
+2) x(x −1)y′ + (1 −2x)y = 0
+3) y′ −(2/x)y = 0
+b) Resolver las siguientes ecuaciones diferenciales lineales de primer orden no homogéneas:
+1) y′ + y cos x = cos x sen x
+2) x(x −1)y′ + (1 −2x)y + x2 = 0
+3) y′ −(2/x)y = x4
+5.
+a) Hallar la solución general de las siguientes ecuaciones diferenciales:
+1) y′′ −5y′ + 6y = 0
+2) y′′ + y′ = 0
+3) y′′ + 4y′ + 5y = 0
+4) y′′ + 2y′ + y = 0
+b) Resolver los siguientes problemas de valores iniciales:
+1) y′′ −5y′ + 6y = 0,
+y(1) = e2,
+y′(1) = 3e2.
+2) y′′ −6y′ + 5y = 0,
+y(0) = 3,
+y′(0) = 11.
+3) y′′ + 4y′ + 5y = 0,
+y(0) = 1,
+y′(0) = 0.
+4) y′′ + 8y′ −9y = 0,
+y(1) = 2,
+y′(1) = 0.
+6. Hallar todos los valores reales de la constante a para que las ecuaciones y′′ + ay′ −2y = 0 e y′′ −2y′ + ay = 0
+tengan soluciones en común además de y(x) ≡0. Resolver las ecuaciones obtenidas.
+7. Hallar a ∈R para que y(x) = ex sea una solución de la ecuación diferencial y′′ + ay′ −2y = 0. Hallar la
+solución general de dicha ecuación. Hallar la solución de la ecuación con datos iniciales y(0) = y′(0) = 1.
+1
+
+===== PAGE 2 =====
+Cálculo Diferencial e Integral en Varias Variables – II Semestre 2026
+Práctico 1
+8. Hallar las constantes a y b reales para que y(x) = e2x cos x sea solución de la ecuación diferencial y′′+ay′+by =
+0. Hallar la solución de la ecuación con datos iniciales y(0) = y′(0) = 1.
+9. Hallar la solución de cada una de las siguientes ecuaciones diferenciales, con las condiciones iniciales dadas:
+a) y′′ + 2y′ + 2y = cos(2x),
+y(0) = 1,
+y′(0) = 0.
+b) y′′ + 2y′ + 2y = sen (2x),
+y(0) = 1,
+y′(0) = 0.
+c) y′′ + 2y′ + 2y = cos(2x) + sen (2x),
+y(0) = 1,
+y′(0) = 0.
+d) y′′ + y = 3x2 −5x,
+y(0) = 1,
+y′(0) = 0.
+e) y′′ + 4y′ + 3y = 3ex + x,
+y(0) = 1,
+y′(0) = 0.
+f ) y′′ + y = (1 + x)2,
+y(0) = 1,
+y′(0) = 0.
+g) y′′ + 2y′ + y = x,
+y(0) = 0,
+y′(0) = 0
+h) y′′ + y = cos(x),
+y(0) = 0,
+y′(0) = 1
+Ejercicios propuestos en evaluaciones anteriores
+1. (Primer parcial segundo semestre 2023) Sea y(x) la solución a la ecuación diferencial
+y′′(x) −y′(x) −2y(x) = −2x2 + 3
+que cumple y(0) = 0, y′(0) = 2. Entonces:
+(A) y(1) = e2 −e−1
+(B) y(1) = e2+e−1
+2
+(C) y(1) = e−1 −e2 + 1
+(D) y(1) = e2−e−1
+e2+e−1
+(E) y(1) = e2 −1
+2. (Examen febrero 2023) Consideremos la siguiente ecuación diferencial (E) dependiendo de una función
+r(x):
+y′′ + 4y′ + 4y = r(x)
+y las siguientes aﬁrmaciones:
+(I) Si e−2x + x2 es solución de (E) entonces r(x) = 4x2 + 8x + 2.
+(II) Si r(x) = x2 entonces y(x) = e−2x + 3xe−2x + x2 es la única solución de (E) que veriﬁca que y(0) =
+y′(0) = 1.
+(III) Si r(x) = 0 entonces todas las soluciones son de la forma y(x) = ae−2x + be−2xx con a, b ∈R.
+Entonces:
+(A) Todas las aﬁrmaciones son verdaderas.
+(B) Solamente (III) es verdadera.
+(C) Solamente (I) es verdadera.
+(D) Solamente (I) y (III) son verdaderas.
+3. (Primer parcial segundo semestre 2022) Sea y(x) la solución a la ecuación diferencial
+y′(x)ex2
+x
+= −2(1 + y2(x))
+que cumple y(0) = 0. Entonces:
+2
+
+===== PAGE 3 =====
+Cálculo Diferencial e Integral en Varias Variables – II Semestre 2026
+Práctico 1
+(A) y(
+√
+2) = −e
+(B) y(
+√
+2) = tan(1 + e2)
+(C) y(
+√
+2) = tan(1)
+(D) y(
+√
+2) = 1
+(E) y(
+√
+2) = tan(e−2 −1)
+4. (Examen julio 2021) Se considera la ecuación diferencial:
+y′′ + αy′ + βy = 2e3x
+donde α, β ∈R. Sabemos que
+y(x) = x2e3x
+es solución de la ecuación. Entonces α + β vale:
+(A) 3
+(B) 0
+(C) 1
+(D) 2
+(E) 4
+5. (Primer parcial segundo semestre 2018) Consideramos la siguiente ecuación diferencial con condición
+inicial:
+(
+y′
+=
+(y−2)2
+(x+1)2
+y(0)
+=
+5
+2
+Entonces y(1) vale:
+(A) 4
+(B)
+9
+2
+(C) 2
+(D)
+8
+3
+Aplicaciones y Problemas Complemetarios
+1. Se considera la ecuación mv′ = mg −kv que representa la velocidad v(t) de caída de un cuerpo de masa m,
+donde g es la gravedad y k < mg una constante de resistencia al aire.
+a) Hallar v(t) suponiendo conocida la velocidad inicial v0.
+b) Hallar el límite de v(t) cuando t tiende a +∞, que se llamará v∞.
+c) Calcule cuanto tiempo demora el cuerpo en alcanzar la velocidad (v∞+ v0)/2.
+d) Suponga v0 = 0 y calcule cual es la distancia recorrida por el cuerpo cuando su velocidad es v∞/2.
+2. Se considera la ecuación diferencial x′ = αx(A −x) que representa la evolución de una población.
+a) Demostrar que ninguna solución tiene extremos relativos.
+b) Averiguar el límite cuando t tiende a +∞de la solución de la ecuación con condición inicial x(0) = A/2.
+c) Determinar cuanto tiempo hay que esperar para que una población de A/2 pobladores se incremente en
+un cincuenta por ciento.
+3
+
+===== PAGE 4 =====
+Cálculo Diferencial e Integral en Varias Variables – II Semestre 2026
+Práctico 1
+3. La ecuación u′ = −2λtu2 representa la cantidad u(t) de agua en una represa, donde λ es una constante positiva
+a determinar con la apertura de los diques.
+a) Hallar la solución de condición inicial u(0) = u0, suponiendo u0 > 0.
+b) Hallar el límite de esa solución cuando t tiende a +∞.
+c) Sea u1 < u0. Determinar (en función de u0 y u1) cuanto tiene que valer λ para que la cantidad de agua
+en la represa en el instante T sea igual a u1, es decir u(T) = u1.
+d) Concretamos las magnitudes: el tiempo se mide en días, u se mide en millones de hectolitros. Hallar λ de
+la parte anterior suponiendo que u0 = 2 millones de hectolitros, u1 = 1, 5 y que T = 5 días. Respuesta:
+1/150
+4. Para cada una de las siguientes ecuaciones diferenciales:
+(I) y′′ −3y′ + 2y = 0
+(II) y′′ + 4y′ + 4y = 0
+; (III) 2y′′ + 2y′ + y = 0
+a) Encontrar las soluciones y1(x) e y2(x) para las que se cumple los siguientes datos iniciales:
+ y1(0) = 1
+y′
+1(0) = 0
+ y2(0) = 0
+y′
+2(0) = 1
+y demostrar que y1(x) e y2(x) son linealmente independientes en el espacio vectorial de todas las funciones
+f : R 7→R.
+b) Dadas las constantes a y b reales, hallar la solución y(x) tal que
+
+y(0) = a
+y′(0) = b
+y probar que se cumple
+y(x) = ay1(x) + by2(x) para todo x ∈R.
+c) Deducir que las funciones y1(x) e y2(x) forman una base del espacio vectorial de todas las soluciones de
+la ecuación diferencial, y concluir que ese espacio tiene dimensión dos.
+4

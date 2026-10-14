@@ -1,0 +1,475 @@
+
+===== PAGE 1 =====
+2do. parcial - C´alculo Diferencial e Integral en Varias Variables
+PARTE I: VERDADERO O FALSO
+Verdadero o Falso #1
+V1: Sea
+z =
+( 1
+√
+2 +
+i
+√
+2
+)2021
+.
+Entonces
+Re(z) = −1
+√
+2
+y
+Im(z) = −1
+√
+2.
+• Verdadero.
+• Falso.
+V2: Sea
+z =
+( 1
+√
+2 −
+i
+√
+2
+)2021
+.
+Entonces
+Re(z) = −1
+√
+2
+y
+Im(z) = −1
+√
+2.
+• Verdadero.
+• Falso.
+V3: Sea
+z =
+(
+−1
+√
+2 +
+i
+√
+2
+)2021
+.
+Entonces
+Re(z) = −1
+√
+2
+y
+Im(z) =
+1
+√
+2.
+• Verdadero.
+• Falso.
+V4: Sea
+z =
+(
+−1
+√
+2 −
+i
+√
+2
+)2021
+.
+Entonces
+Re(z) =
+1
+√
+2
+y
+Im(z) =
+1
+√
+2.
+• Verdadero.
+• Falso.
+1
+
+===== PAGE 2 =====
+Verdadero o Falso #2
+V1: Considere la sucesi´on dada por
+an = cos(2π/n)
+n2
+para n ∈Z>0. Entonces, (an) es mon´otona y convergente.
+• Verdadero.
+• Falso.
+V2: Considere (an) la sucesi´on dada por
+an = cos(2π/n)
+n2
+para n ∈Z>0. Entonces, tanto (an) como la serie P+∞
+n=1 an convergen.
+• Verdadero.
+• Falso.
+V3: Considere (an) la sucesi´on dada por
+an = sin(2π/n) + 1
+n
+para n ∈Z>0. Entonces, (an) es mon´otona y convergente.
+• Verdadero.
+• Falso.
+V4: Considere (an) la sucesi´on dada por
+an = sin(2π/n) + 1
+n
+para n ∈Z>0. Entonces, (an) converge y la serie P+∞
+n=1 an diverge.
+• Verdadero.
+• Falso.
+2
+
+===== PAGE 3 =====
+Verdadero o Falso #3
+V1: Considere la familia de subconjuntos de R2 dada por
+An =
+(
+−1
+n, 1
+n
+)
+×
+(
+−1
+n, 1
+n
+)
+con n ∈Z>0. Entonces,
+int
+
+\
+n≥1
+An
+
+=
+\
+n≥1
+int(An).
+• Verdadero.
+• Falso.
+V2: Considere la familia de subconjuntos de R2 dada por
+An =
+(
+−1 −1
+n, 1 + 1
+n
+)
+×
+(
+−1 −1
+n, 1 + 1
+n
+)
+con n ∈Z>0. Entonces,
+\
+n≥1
+An =
+\
+n≥1
+int(An).
+• Verdadero.
+• Falso.
+V3: Considere la familia de subconjuntos de R2 dada por
+An =
+(
+−1
+n, 1
+n
+)
+×
+(
+−1
+n, 1
+n
+)
+con n ∈Z>0. Entonces,
+∂
+
+\
+n≥1
+An
+
+=
+\
+n≥1
+∂(An).
+• Verdadero.
+• Falso.
+V4: Considere la familia de subconjuntos de R2 dada por
+An =
+(
+−1 −1
+n, 1 + 1
+n
+)
+×
+(
+−1 −1
+n, 1 + 1
+n
+)
+con n ∈Z>0. Entonces,
+\
+n≥1
+An = int
+
+\
+n≥1
+An
+
+.
+• Verdadero.
+• Falso.
+3
+
+===== PAGE 4 =====
+Verdadero o Falso #4
+V1: Sea f : R2 →R una funci´on continua y Un = B((0, 0), 1 + 1/n) la bola cerrada de centro (0, 0) y radio
+1 + 1/n. Si U = T
+n≥1 Un es la intersecci´on de todas las bolas anteriores, entonces la restricci´on f|U de f sobre
+U posee m´aximo y m´ınimo absoluto.
+• Verdadero.
+• Falso.
+V2: Sea f : R2 →R una funci´on continua y Un = B((0, 0), 2 + 1/n) la bola cerrada de centro (0, 0) y radio
+2 + 1/n. Si U = T
+n≥1 Un es la intersecci´on de todas las bolas anteriores, entonces la restricci´on f|U de f sobre
+U no posee m´aximo absoluto.
+• Verdadero.
+• Falso.
+V3: Sea f : R2 →R una funci´on continua y Un = B((0, 0), 3 −1/n) la bola abierta de centro (0, 0) y radio
+3 −1/n. Si U = S
+n≥1 Un es la uni´on de todas las bolas anteriores, entonces la restricci´on f|U de f sobre U no
+posee necesariamente m´ınimo absoluto.
+• Verdadero.
+• Falso.
+V4: Sea f : R2 →R una funci´on continua y Un = B((0, 0), 4 −1/n) la bola abierta de centro (0, 0) y radio
+4 −1/n. Si U = S
+n≥1 Un es la uni´on de todas las bolas anteriores, entonces la restricci´on f|U de f sobre U
+posee necesariamente m´aximo y m´ınimo absoluto.
+• Verdadero.
+• Falso.
+4
+
+===== PAGE 5 =====
+PARTE II: M´ULTIPLE OPCI´ON
+M´ultiple Opci´on #1
+V1: Se considera la ecuaci´on diferencial
+x′′ + αx′ + βx = 2e2t
+donde α, β ∈R. Sabemos que
+x(t) = t2e2t
+es soluci´on de la ecuaci´on. Entonces α + β vale:
+• 0
+• −1
+• −2
+• 1
+• 2
+V2: Se considera la ecuaci´on diferencial
+x′′ + αx′ + βx = 2e3t
+donde α, β ∈R. Sabemos que
+x(t) = t2e3t
+es soluci´on de la ecuaci´on. Entonces α + β vale:
+• 3
+• 0
+• 1
+• 2
+• 4
+V3: Se considera la ecuaci´on diferencial
+x′′ + αx′ + βx = 2e−2t
+donde α, β ∈R. Sabemos que
+x(t) = t2e−2t
+es soluci´on de la ecuaci´on. Entonces α + β vale:
+• 8
+• 2
+• 4
+• 6
+• 10
+5
+
+===== PAGE 6 =====
+M´ultiple Opci´on #2
+V1: Se considera el s´olido
+D =
+{
+(x, y, z) ∈R3 : x2 + y2 + z2
+4 ≤1
+}
+.
+Entonces la integral
+ZZZ
+D
+z3 + z dxdydz vale
+• 0
+• −
+√
+2
+2
+•
+2π
+3
+• −π2
+4
+•
+√
+3π
+V2: Se considera el s´olido
+D =
+{
+(x, y, z) ∈R3 :
+x2
+9 + y2 + z2 ≤1
+}
+.
+Entonces la integral
+ZZZ
+D
+z3 + z dxdydz vale
+• 0
+• −
+√
+3
+3
+•
+4π
+9
+• −π2
+9
+•
+√
+6π
+V3: Se considera el s´olido
+D =
+{
+(x, y, z) ∈R3 : x2 + y2
+16 + z2 ≤1
+}
+.
+Entonces la integral
+ZZZ
+D
+z3 + z dxdydz vale
+• 0
+• −1
+2
+•
+π
+3
+• −π2
+16
+• 4π
+6
+
+===== PAGE 7 =====
+M´ultiple Opci´on #3
+V1: Sea F0 un cuadrado de lado 3, que est´a todo pintado de blanco.
+• A partir de F0, construimos la ﬁgura F1 de la siguiente manera: subdividimos el cuadrado grande en 9
+cuadrados iguales, tomamos el cuadrado central, y lo pintamos de azul.
+• Ahora construimos F2: subdividimos cada uno de los cuatro cuadrados adyacentes con el central, en
+nueve cuadrados iguales, y pintamos los cuatro cuadrados centrales respectivos, de azul.
+• Repetimos este proceso inductivamente hasta el inﬁnito.
+Al terminar el proceso, ¿cu´al es el ´area que queda pintada de azul?
+•
+9
+5
+•
+7
+3
+• 5
+•
+3
+2
+• 4
+V2: Sea F0 un cuadrado de lado 6, que est´a todo pintado de blanco.
+• A partir de F0, construimos la ﬁgura F1 de la siguiente manera: subdividimos el cuadrado grande en 9
+cuadrados iguales, tomamos el cuadrado central, y lo pintamos de azul.
+• Ahora construimos F2: subdividimos cada uno de los cuatro cuadrados adyacentes con el central, en
+nueve cuadrados iguales, y pintamos los cuatro cuadrados centrales respectivos, de azul.
+• Repetimos este proceso inductivamente hasta el inﬁnito.
+Al terminar el proceso, ¿cu´al es el ´area que queda pintada de azul?
+7
+
+===== PAGE 8 =====
+•
+36
+5
+•
+28
+3
+•
+21
+2
+• 6
+• 16
+V3: Sea F0 un cuadrado de lado 9, que est´a todo pintado de blanco.
+• A partir de F0, construimos la ﬁgura F1 de la siguiente manera: subdividimos el cuadrado grande en 9
+cuadrados iguales, tomamos el cuadrado central, y lo pintamos de azul.
+• Ahora construimos F2: subdividimos cada uno de los cuatro cuadrados adyacentes con el central, en
+nueve cuadrados iguales, y pintamos los cuatro cuadrados centrales respectivos, de azul.
+• Repetimos este proceso inductivamente hasta el inﬁnito.
+Al terminar el proceso, ¿cu´al es el ´area que queda pintada de azul?
+•
+81
+5
+•
+62
+3
+•
+27
+2
+• 36
+• 45
+8
+
+===== PAGE 9 =====
+PARTE III: DESARROLLO
+Desarrollo #1
+[25 puntos]
+(a) Sea
+f(t) =
+1
+t log2(t −3).
+Determine la convergencia o divergencia de las integrales
+Z 2021
+4
+f(t) dt y
+Z +∞
+2021
+f(t) dt.
+Luego, clasiﬁque la integral impropia
+Z +∞
+4
+f(t) dt.
+[12 puntos]
+(b) Enuncie el criterio serie-integral para clasiﬁcaci´on de series.
+[5 puntos]
+(c) Se considera la serie
++∞
+X
+n=2021
+sen(n)
+n log2(n −3).
+Demuestre que esta serie converge absolutamente.
+[8 puntos]
+Desarrollo #2
+[25 puntos]
+Sea f : R2 →R la funci´on dada por
+f(x, y) =
+(
+y3
+x2+y2
+si (x, y)̸ = (0, 0),
+λ
+si (x, y) = (0, 0),
+con λ ∈R.
+(a) Hallar el valor de λ para el cual f es continua en (0, 0).
+[3 puntos]
+Para el valor de λ hallado en la parte (a):
+(b) Calcule las derivadas parciales de f en todos los puntos de R2.
+[6 puntos]
+(c) Determine la diferenciabilidad de f en todos los puntos de R2.
+[12 puntos]
+(d) Calcule las derivadas direccionales ∂f
+∂⃗v (0, 1) y ∂f
+∂⃗v (0, 0) donde⃗v = (1, 1).
+[4 puntos]
+9

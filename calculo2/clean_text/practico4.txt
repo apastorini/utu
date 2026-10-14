@@ -1,0 +1,430 @@
+
+===== PAGE 1 =====
+Cálculo Diferencial e Integral en Varias Variables
+II Semestre 2026
+Práctico 4 – Integrales impropias
+1.
+a) Sean a > 0 y f : [a, +∞) →R una función continua tal que f(t) ≥0. Deﬁnimos F(x) =
+Z x
+a
+f(t)dt.
+Demostrar que F(x) es creciente y que
+Z +∞
+a
+f(t)dt converge ⇐⇒F(x) está acotada superiormente.
+b) Sea g : [a, +∞) →R una función continua que veriﬁca 0 ≤f(t) ≤g(t) para todo t ≥a.
+i) Probar que sí
+Z +∞
+a
+g(t)dt converge entonces
+Z +∞
+a
+f(t)dt también converge.
+ii) Sí
+Z +∞
+a
+f(t)dt diverge entonces
+Z +∞
+a
+g(t)dt diverge .
+2. Clasiﬁcar y hallar la integral en caso de convergencia
+a)
++∞
+Z
+2
+1
+x logα(x) dx
+b)
++∞
+Z
+0
+x3e−x2 dx
+c)
+1
+Z
+0
+1
+x2 sen
+( 1
+x
+)
+dx
+d)
++∞
+Z
+−∞
+dx
+1 + x2
+e)
++∞
+Z
+−∞
+1
+ex + e−x dx
+3. Sea k > 0. Hallar el valor de k para que la integral
++∞
+Z
+1
+(
+x
+2x2 + 2k −
+k
+x + 1
+)
+dx sea convergente y calcularla.
+4.
+a) Probar que para x →+∞se cumple que
+sin(x)
+√x
++ sin2(x)
+x
+∼sin(x)
+√x
+b) Probar que
+Z +∞
+1
+sin(x)
+√x
+dx converge mientras que
+Z +∞
+1
+(sin(x)
+√x
++ sin2(x)
+x
+)
+dx diverge.
+c) ¿Por qué no aplica el criterio del equivalente en este caso?
+5. Sean f y g dos funciones derivables en [a, +∞) y tales que sus derivadas f ′ y g′ son funciones integrables en
+el mismo [a, +∞) . Además se cumple que
+l´ım
+x→+∞f(x)g(x) = L ∈R.
+a) Probar que
+Z +∞
+a
+f ′(x)g(x)dx converge si y solo si
+Z +∞
+a
+f(x)g′(x)dx converge.
+b) Clasiﬁcar:
+1)
+Z +∞
+0
+sent
+t
+dt y
+Z +∞
+1
+sent
+t2
+dt,
+2)
+Z +∞
+0
+sen(t2) dt 1 y
+Z +∞
+1
+| sin(x2) | dx.
+1Sugerencia: escribir sen(t2) = 2tsen(t2) 1
+2t y usar la fórmula de partes.
+1
+
+===== PAGE 2 =====
+Cálculo Diferencial e Integral en Varias Variables – II Semestre 2026
+Práctico 4
+6. Clasiﬁcar:
+a)
++∞
+Z
+−∞
+e−x2 dx
+b)
+1
+Z
+0
+e−x
+x dx
+c)
+1
+Z
+0
+log(x)
+√x
+dx
+d)
++∞
+Z
+1
+sin(x)
+x2
+dx
+e)
++∞
+Z
+0
+sin2(t) dt
+f)
++∞
+Z
+0
+x
+√
+x4 + 1
+dx
+g)
++∞
+Z
+−∞
+x
+cosh(x) dx
+h)
+1
+Z
+−1
+1
+x2 −1 dx
+i)
++∞
+Z
+0
+cos(x)
+√x
+dx
+j)
++∞
+Z
+0
+e−√x
+√x dx
+k)
+Z +∞
+0
+ex2−1
+x2 dx
+l)
+Z 1
+−1
+e
+−1
+x−1
+(x −1)2 dx
+m)
+Z
+π
+2
+0
+dx
+sinα(x) cosβ(x)
+(α, β ∈R)
+7. Determinar para qué valores de α las siguientes integrales impropias son convergentes.
+a)
+Z +∞
+0
+xα
+x + 1 dx
+b)
+Z +∞
+0
+1
+(ex2 −1)α dx
+8. Usando el criterio integral clasiﬁcar las siguientes series
+a)
+∞
+X
+n=1
+ne−n2
+b)
+∞
+X
+n=2
+1
+n
+p
+log(n)
+c)
+∞
+X
+n=1
+log(n)
+n2
+9. Estudiar la convergencia de
+Z ∞
+2
+dx
+x ln x y
+∞
+X
+2
+1
+n ln n.
+10. Probar que
+Z +∞
+0
+log
+(
+1 + a2
+x2
+)
+dx converge y calcularla. Sugerencia: hacer partes con 1 · log
+(
+1 + a2
+x2
+)
+.
+Ejercicios propuestos en evaluaciones anteriores
+1. (Primer parcial primer semestre 2023)
+1. Sea f : [1, +∞) →R continua y positiva. Además existe b > 1 tal que f restricta al intervalo [b, +∞) es
+decreciente. Para cada n natural tal que n ≥1 se deﬁne an = f(n).
+Prueba que la serie P an converge si y sólo si la integral
+Z +∞
+1
+f(x)dx converge.
+2. Sea f : [2, +∞) →R tal que f(x) =
+1
+x lnα(x), α > 0. Prueba que f es decreciente.
+3. Calsiﬁca, discutiendo según α > 0, la serie
+X
+1
+n lnα(n).
+2. (Primer parcial segundo semestre 2022) Considere la siguiente integral impropia:
+Z +∞
+2
+1 + e−x
+log(x) (1 + x logα(x))dx
+Entonces:
+2
+
+===== PAGE 3 =====
+Cálculo Diferencial e Integral en Varias Variables – II Semestre 2026
+Práctico 4
+(A) La integral es divergente para todo α ∈R.
+(B) La integral es convergente si y solo si α < 1.
+(C) La integral es convergente para todo α ∈R.
+(D) La integral es convergente si y solo si α > 0.
+(E) La integral es convergente si y solo si α > 1.
+3. (Examen julio 2021)
+a. Sea
+f(t) =
+1
+t log2(t −3).
+Determine la convergencia o divergencia de las integrales
+Z 2021
+4
+f(t) dt
+y
+Z +∞
+2021
+f(t) dt
+Luego, clasiﬁque la integral impropia
+Z +∞
+4
+f(t) dt.
+b. Se considera la serie
++∞
+X
+n=2021
+sen(n)
+n log2(n −3).
+Demuestre que esa serie converge absolutamente.
+4. (Primer parcial segundo semestre 2020 – turno vespertino) Sean α y β dos reales positivos. Considere
+la integral impropia
+Z ∞
+1
+dx
+n(ln(x))α(ex + 1)β
+Entonces la integral es convergente sí y solo sí:
+(A) α < 1, y para todo β > 0.
+(B) α + β < 1.
+(C) α < 1
+2, y β > 1.
+(D) α < 1, y β > 1.
+(E) α + β < 1
+2.
+5. (Examen diciembre 2018) Se consideran las siguientes integrales impropias
+(I)
+Z +∞
+0
+sen(x)
+x2(1 + ex)dx
+(II)
+Z +∞
+−∞
+dx
+(1 + |x|)(1 +
+p
+|x|)
+Indicar la opción correcta:
+(A) La integral (I) converge, pero la integral (II) diverge.
+(B) La integral (II) converge, pero la integral (I) diverge.
+(C) Ambas integrales convergen.
+(D) Ambas integrales divergen.
+3
+
+===== PAGE 4 =====
+Cálculo Diferencial e Integral en Varias Variables – II Semestre 2026
+Práctico 4
+Ejercicios Complementarios
+1. La trompeta de Torricelli. Sea f : [a, +∞) →R una función derivable que toma solamente valores positivos.
+Se pueden extender a este caso las fórmulas vistas para el área y el volumen del cuerpo de revolución generado
+por la gráﬁca de la función alrededor del eje de las abscisas (observemos que en este caso es un cuerpo no
+acotado). Las fórmulas son:
+A(f) = 2π
+Z +∞
+a
+f(t)
+p
+1 + (f ′(t))2dt ,
+V (f) = π
+Z +∞
+a
+(f(t))2dt.
+Cuando A(f) converge decimos que el cuerpo tiene área ﬁnita, y cuando diverge decimos que tiene área
+inﬁnita. De la misma forma, cuando V (f) converge decimos que el cuerpo tiene volumen ﬁnito, y cuando
+diverge decimos que tiene volumen inﬁnito.
+Considere la función f : [1, +∞) →R dada por f(t) = 1
+t . La trompeta de Torricelli es el cuerpo de revolución
+obtenido al girar f alrededor del eje 0t, como se muestra en la ﬁgura. Demuestre que la trompeta de Torricelli
+tiene área inﬁnita pero volumen ﬁnito.
+4
+
+===== PAGE 5 =====
+Cálculo Diferencial e Integral en Varias Variables – II Semestre 2026
+Práctico 4
+2. La función Gamma, Γ : (0, +∞) →R, extiende el concepto de factorial a los números reales positivos. La
+podemos deﬁnir como Γ(x) =
+Z +∞
+0
+e−ttx−1dt.
+a) Probar que Γ(n) es una integral impropia convergente ∀n ∈N∗.(En realidad se puede ver que es
+convergente y derivable ∀x ∈R+.)
+b) Encontrar una relación entre Γ(n) y Γ(n −1).
+c) Probar que Γ(n) = (n −1)! ∀n ∈N∗, lo cual muestra que Γ es una extensión del factorial a todos los
+reales positivos.
+3. Sea f : R →R con derivada continua y tal que
+R ∞
+−∞f(x) dx converge. Se deﬁne F : R →R como
+F(x) =
+
+
+
+−x
+R x
+−∞f( 1
+t ) 1
+t2 dt
+si x < 0
+0
+si x = 0
+x
+R +∞
+x
+f( 1
+t ) 1
+t2 dt
+si x > 0
+a) Investigar si F es continua
+b) Probar que F es derivable en todo x̸ = 0 y que es derivable en x = 0 si solo si
+R ∞
+−∞f(t + a) −f(t) dt = 0.
+Calcular F ′ en este caso y determinar si F ′ es continua
+5

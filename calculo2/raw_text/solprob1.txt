@@ -1,0 +1,398 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo diferencial e integral en varias variables
+Facultad de Ingenier´ıa - IMERL
+Primer Semestre 2020
+1
+Problema de desarrollo 1
+1. Objetivo: Uniﬁcar todos los conceptos vistos en la secci´on de diferenciabilidad.
+Sea f : U ⊆R2 →R una funci´on de dos variables deﬁnida en un conjunto abierto U del plano y sea
+p = (x0,y0) un punto de U. Considere las siguientes aﬁrmaciones:
+A. Existe el l´ımite de la funci´on f en p.
+B. La funci´on f en continua en p.
+C. Existen las derivadas parciales de f en p.
+D. Existen las derivadas direccionales de f en p en la direcci´on de cualquier vector unitario u ∈R2.
+E. f es diferenciable p.
+F. f tiene derivadas parciales continuas en alguna bola B contenida en U con centro p.
+Llene el siguiente cuadro, indicando con una V (verdadero) en la l´ınea i y columna j, cuando la aﬁrmaci´on
+de la l´ınea i implique la aﬁrmaci´on de la columna j y con F(falso) cuando no la implique. Por ejemplo, la
+aﬁrmaci´on B implica la aﬁrmaci´on A, pero la aﬁrmaci´on A no implica la aﬁrmaci´on C. Para cada uno de los
+casos, a excepcion de la diagonal del cuadrado, debe justiﬁcar su respuesta explicando el razonamiento de la
+aﬁrmaci´on verdadera o mostrando un (contra)ejemplo para el caso que sea falsa.
+A
+B
+C
+D
+E
+F
+A
+V
+?
+F
+?
+?
+?
+B
+V
+V
+?
+?
+?
+?
+C
+?
+?
+V
+?
+?
+?
+D
+?
+?
+?
+V
+?
+?
+E
+?
+?
+?
+?
+V
+?
+F
+?
+?
+?
+?
+?
+V
+2
+Soluci´on
+A
+B
+C
+D
+E
+F
+A
+V
+F
+F
+F
+F
+F
+B
+V
+V
+F
+F
+F
+F
+C
+F
+F
+V
+F
+F
+F
+D
+F
+F
+V
+V
+F
+F
+E
+V
+V
+V
+V
+V
+F
+F
+V
+V
+V
+V
+V
+V
+Para justiﬁcar cada una de las implicaciones consideremos los siguientes hechos:
+1. La condici´on F es la propiedad m´as fuerte. Recordemos:
+1.A Sea f : U ⊆R2 →R una funci´on tal que las derivadas parciales son funciones continuas en alguna bola
+B contenida en U con centro p = (x0,y0), entonces f es diferenciable en p = (x0,y0).
+¿Podemos encontrar condiciones m´as fuertes? S´ı, podemos pedir para la funci´on por ejemplo que tenga
+derivadas de segundo orden continuas, y en general derivadas de orden n-´esimas continuas. Notemos
+justamente las hip´otesis del teorema de Taylor para funciones de varias variables. Si deseamos mejorar la
+aproximaci´on polinomial en una vecidad del punto debemos pedir un buen comportamiento(existencia
+y continudad) a niveles mayores.
+1
+
+===== PAGE 2 =====
+2. La condici´on de diferenciabilidad sobre una funci´on f : U ⊆R2 →R en el punjto p = (x0,y0) es una de las
+propiedades m´as deseadas para una funci´on (pueden ver que implica todas las condiciones a excepci´on
+de la aﬁrmaci´on F). Esta buena propiedad garantiza la continuidad en p = (x0,y0), la existencia de las
+derivadas parciales y de las derivadas direccionales en p = (x0,y0)(adem´as nos proporciona una f´ormula
+muy f´acil para calcular las direccionales en funci´on del vector gradiente y las derivadas parciales). Desde
+el punto de vista geom´etrico todas las anteriores propiedades tambi´en se pueden traducir: la gr´aﬁca de
+f no tiene saltos ni huecos en p = (x0,y0), la superﬁcie es ”suave” en la vecidad del punto y lo m´as impor-
+tante nos permite aproximar la gr´aﬁca de la funci´on por una estructura lineal que es el plano tangente
+en el punto (x0,y0,f (x0,y0)). Recordemos algunos resultados cuya demostraci´on pueden encontrar en los
+apuntes te´oricos del curso.
+2.A Si la funci´on f : U ⊆R2 →R deﬁnida en el abierto U del plano es diferenciable en p = (x0,y0), entonces
+f es continua en p = (x0,y0).
+2.B Si la funci´on f : U ⊆R2 →R deﬁnida en el abierto U del plano es diferenciable en p = (x0,y0) entonces
+∂f (x0,y0)
+∂x
+y ∂f (x0,y0)
+∂y
+existen.
+2.C Si la funci´on f : U ⊆R2 →R deﬁnida en el abierto U del plano es diferenciable en p = (x0,y0), y sea
+v = (v1,v2) un vector unitario. Entonces:
+∂f (x0,y0)
+∂v
+= v1
+∂f (x0,y0)
+∂x
++ v2
+∂f (x0,y0)
+∂y
+3 Sea f : R2 →R la deﬁnida por:
+f (x,y) =
+
+(x2 + y2) sin
+1
+p
+x2 + y2
+si (x,y) , (0,0)
+0
+si (x,y) = (0,0)
+3 A. Las derivadas parciales de f son discontinuas en (0,0). En efecto:
+∂f (x,y)
+∂x
+=
+
+(2x) sin
+1
+p
+x2 + y2 −
+x
+p
+x2 + y2 cos
+1
+p
+x2 + y2
+si (x,y) , (0,0)
+0
+si (x,y) = (0,0)
+∂f (x,y)
+∂x
+=
+
+(2y) sin
+1
+p
+x2 + y2 −
+y
+p
+x2 + y2 cos
+1
+p
+x2 + y2
+si (x,y) , (0,0)
+0
+si (x,y) = (0,0)
+Se puede demostrar que las (funciones) derivadas parciales anteriores no tienen l´ımite en (0,0).
+3.B. La funci´on f es diferenciable en (0,0). En efecto:
+Calculemos la expresi´on que tiene el resto de la funci´on en (0,0) al aplicar la deﬁnici´on de diferenciabil-
+idad y teniendo en cuenta el valor de las derivadas parciales en (0,0) calculado en el item anterior.
+r(h1,h2) = (h2
+1 + h2
+2)sen
+1
+q
+h2
+1 + h2
+2
+Se veriﬁca que:
+lim
+(h1,h2)→(0,0)
+r(h1,h2)
+q
+h2
+1 + h2
+2
+= 0
+2
+
+===== PAGE 3 =====
+4 Consideremos f (x,y) =
+p
+x2 + y2. Es una funci´on deﬁnida sobre R2, positiva. Dicha funci´on evidente-
+mente es continua, pues es la composici´on de un polinomio de dos variabes(continua) y una funci´on de
+una variable(la funci´on raiz cuadrada) continua. Su gr´aﬁca es la parte superior de un cono con vertice
+en el (0,0) y secciones transversales paralelas al plano XY que se componen de c´ırculos conc´etricos en
+el (0,0). Recordemos que esta superﬁcie se puede obtener al revolucionar la curva plana z = |x| o bien
+z = |y| alrededor del eje z. Dichas curvas que engendran la superﬁcie de revoluci´on que en este caso es el
+cono, son continuas en todo su dominio pero no derivables en los puntos x = 0 o bien y = 0. Como era de
+esperar este mal mal comportamiento con respecto a la derivada ser´a heredado por la superﬁcie. Veremos
+que las derivadas parciales de f en el (0,0) no existen.
+Calculando las derivadas por deﬁnici´on en (0,0) (lo hacemos por deﬁnici´on porque al calcular las derivadas
+usando las reglas de derivaci´on parcial y luego evaluar en (0,0) obtenemos una indeterminaci´on):
+∂f (x0,y0)
+∂x
+= lim
+h→0
+f (h,0) −f (0,0)
+h
+= lim
+h→0
+|h|
+h
+Recordemos que los limites planetados en el c´alculo de las derivadas parciales son l´ımites de una vari-
+able, en este caso la variable h. Si estudiamos la tendencia a 0 por derecha e izquierda tenemos:
+lim
+h→0+
+|h|
+h = lim
+h→0+
+h
+h = 1
+lim
+h→0−
+|h|
+h = lim
+h→0−
+−h
+h = −1
+De donde podemos concluir que el l´ımite no existe. Y por lo tanto la funci´on no tiene derivada parcial
+con respecto a x. Un argumento an´alogo nos permite concluir que la derivada con respecto a y tampoco
+existe.
+5. Sea f : R2 →R la deﬁnida por:
+f (x,y) =
+
+xy
+x2 + y2
+si (x,y) , (0,0)
+0
+si (x,y) = (0,0)
+5.1 La funci´on no tiene l´ımite en (0,0). Podemos calcular el valor del l´ımite sobre algunas trayectorias ( Por
+ejemplo y = x, y = 0).
+5.2 Aplicando la deﬁnici´on de las derivadas parciales, se puede demostrar que:
+∂f (0,0)
+∂x
+= lim
+h→0
+f (h,0) −f (0,0)
+h
+= 0
+∂f (0,0)
+∂y
+= lim
+h→0
+f (h,0) −f (0,0)
+h
+= 0
+5.3 Las derivadas direccionales de f existen solamente en las direcciones can´onicas. En efecto: Sea v un
+vector unitario, podemos expresarlo como v = (cosφ,senφ), donde φ , π
+2 , 3π
+2 ,0,π (podemos excluir estos
+casos pues son precisamente las direcciones can´onicas y ya calculamos las derivadas parciales.)
+∂f (0,0)
+∂v
+= lim
+h→0
+f (hcosφ,hsenφ) −f (0,0)
+h
+= lim
+h→0
+cosφsenφ
+h
+Por las restricciones que tenemos sobre los ´angulos vemos que el numerador de la expresi´on anterior es
+diferente de cero, lo que nos permite concluir que el limite no existe. Por lo tanto la funci´on no tiene
+derivadas direccionales en direcciones diferentes a las can´onicas.
+3
+
+===== PAGE 4 =====
+6. Sea f : R2 →R la deﬁnida por:
+f (x,y) =
+
+x2y
+x4 + y2
+si (x,y) , (0,0)
+0
+si (x,y) = (0,0)
+6.1 La funci´on no tiene l´ımite en (0,0). Podemos calcular el valor del l´ımite sobre algunas trayectorias ( Por
+ejemplo y = x2, y = 0).
+6.2 Aplicando la deﬁnici´on de las derivadas parciales, se puede demostrar que:
+∂f (0,0)
+∂x
+= lim
+h→0
+f (h,0) −f (0,0)
+h
+= 0
+∂f (0,0)
+∂y
+= lim
+h→0
+f (h,0) −f (0,0)
+h
+= 0
+6.3 Las derivadas direccionales existen en cualquier direcci´on. En efecto, por el item anterior, dado un vector
+unitario v = (a,b) podemos suponer que a , 0 y b , 0 y al calcular la derivada direccional
+∂f (0,0)
+∂v
+= lim
+h→0
+f (ha,hb) −f (0,0)
+h
+= a2
+b
+A ⇒A Verdad. Es una tautolog´ıa.
+A ⇒B Falso. Consideremos la siguiente funci´on:
+f (x,y) =
+(
+x2 + y2
+si (x,y) , (0,0)
+2
+si (x,y) = (0,0)
+Tiene l´ımite en (0,0) pero no es continua en dicho punto.
+A ⇒C Falso. Ejemplo Item 4.
+A ⇒D Falso. Ejemplo Item 4. Las derivadas parciales son un caso particular de las direccionales.
+A ⇒E Falso. Ejemplo Item 4. Razonando por el absurdo. Si suponemos que E se cumple entonces la funci´on
+tendr´ıa derivadas parciales en (0,0).
+A ⇒F Falso. Ejemplo Item 4. Razonando por el absurdo. Si suponemos que F se cumple entonces la funci´on
+tendr´ıa derivadas parciales en (0,0).
+B ⇒A Verdad. Es inmediato de la deﬁnici´on de continuidad.
+B ⇒B Verdad. Es una tautolog´ıa.
+B ⇒C Falso. Ejemplo Item 4.
+B ⇒D Falso. Ejemplo Item 4. Las derivadas parciales son un caso particular de las direccionales.
+B ⇒E Falso. Ejemplo Item 4. Razonando por el absurdo. Si suponemos que E se cumple entonces la funci´on
+tendr´ıa derivadas parciales en (0,0).
+B ⇒F Falso. Ejemplo Item 4. Razonando por el absurdo. Si suponemos que F se cumple entonces la funci´on
+tendr´ıa derivadas parciales en (0,0).
+C ⇒A Falso. Ejemplo Item 5.
+4
+
+===== PAGE 5 =====
+C ⇒B Falso. Ejemplo Item 5.
+C ⇒C Verdad. Es una tautolog´ıa.
+C ⇒D Falso. Ejemplo Item 5.
+C ⇒E Falso. Ejemplo Item 5. Razonando por el absurdo. Si suponemos que E se cumple entonces la funci´on
+ser´ıa continua en (0,0).
+C ⇒F Falso. Ejemplo Item 5. Razonando por el absurdo. Si suponemos que F se cumple entonces la funci´on
+ser´ıa continua en (0,0).
+D ⇒A Falso. Ejemplo Item 6.
+D ⇒B Falso. Ejemplo Item 6.
+D ⇒C Verdad. Las derivadas parciales son un caso particulcar de las derivadas direccionales.
+D ⇒D Verdad. Es una tautolog´ıa.
+D ⇒E Falso. Ejemplo Item 6. Razonando por el absurdo. Si suponemos que E se cumple entonces la funci´on
+ser´ıa continua en (0,0).
+D ⇒F Falso. Ejemplo Item 6. Razonando por el absurdo. Si suponemos que F se cumple entonces la funci´on
+ser´ıa continua en (0,0).
+E ⇒A,B,C,D,E Verdad. Item 2A y deﬁnici´on de diferenciabilidad.
+E ⇒F Falso. Item 3.
+F ⇒A,B,C,D,E,F Verdad. Item 1.A.
+5

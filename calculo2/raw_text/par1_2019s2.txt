@@ -1,0 +1,68 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo Diferencial e Integral en Varias Variables
+Facultad de Ingenier´ıa - IMERL
+Setiembre 2019
+Primer Parcial – S´abado 28 de setiembre de 2019
+Nro de Parcial
+C´edula
+Apellido y nombre
+Escribir nombre y c´edula en todas las hojas que se entreguen.
+Ejercicio 1.(4 pts.) Se considera la ecuaci´on ez = e2z. El conjunto soluci´on en IC es:
+Ejercicio 2.(7 pts.) Resolver la ecuaci´on diferencial con condiciones iniciales:
+
+
+
+
+
+
+
+y′′ + y′ + π2y = π cos(πx) + 5π2x + 5
+y(0) = 0
+y′(0) = π + 5,
+sabiendo que la soluci´on es de la forma:
+y(x) = sin(πx) + ax2 + bx + c
+La soluci´on es:
+y(x) =
+Ejercicio 3.(5pts.) Se considera el conjunto A = {(x, y) ∈IR2 : |x| < 1, |y| < 1, x ∈IQ, y ∈IQ}.
+Entonces:
+∂A =
+A =
+˚
+A =
+Ejercicio 4.(5pts.) Si
+lim
+n→∞(n2 + 2n + 1) log
+n2 + an + 2
+n2 + 2n + 1
+
+es ﬁnito, entonces:
+a =
+1
+
+===== PAGE 2 =====
+2
+Ejercicios de desarrollo
+Ejercicio 5.(9 pts.) Calcular
+Z P∞
+n=2( 1
+2 )n
+0
+1
+√x dx
+Ejercicio 6.(10 pts.)
+(1) (2 pts.) Probar que si P an converge, entonces limn an = 0
+(2) (4 pts.) Enunciar y probar el criterio del cociente.
+(3) (2 pts.) Clasiﬁcar
+∞
+X
+n=1
+n3 + 5n + 1
+πn3 + 2n
+(4) (2 pts.) Clasiﬁcar
+∞
+X
+n=1
+(n!)2
+(2n)!

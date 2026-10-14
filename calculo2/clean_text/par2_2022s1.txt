@@ -1,0 +1,275 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo Diferencial e Integral en Varias Variables
+Facultad de Ingenier´ıa - IMERL
+Julio 2022
+Segundo parcial – 02 Julio de 2022
+Nro de Parcial
+C´edula
+Apellido y nombre
+Respuestas Verdadero o Falso
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+Respuestas Ejercicios Multiple Opci´on
+E. 1
+E. 2
+E. 3
+E. 4
+E. 5
+E. 6
+E. 7
+E. 8
+E. 9
+E. 10
+Importante
+• El parcial dura 3h.
+• En cada ejercicio se indica la cantidad de puntos que le corresponden.
+Tienen 10 ejercicios ver-
+dadero/falso de 2 puntos cada uno y 10 ejercicios m´ultiple opci´on de 4 puntos cada uno. El parcial es
+de 60 puntos en total.
+• Solo ser´an v´alidas las respuestas indicadas en el cuadro de respuestas.
+• En cada ejercicio hay una sola opci´on correcta.
+• No se restan puntos.
+• Notaci´on: Dado un conjunto A ⊂Rn, denotaremos por ∂(A) la frontera de A, int(A) el conjunto de
+sus puntos interiores y Ac = Rn\A.
+1. Verdadero - Falso.
+Puntajes: 2 puntos si la respuesta es correcta, 0 punto por no contestar. Indique sus respuestas (V/F) en los
+casilleros correspondientes.
+(1) Si f : R2 →R tiene todas sus derivadas direccionales en (0, 0) entonces f es continua en (0, 0).
+(2) Si f : R2 →R tiene todas sus derivadas direccionales en (0, 0) entonces f es diferenciable en (0, 0).
+(3) Sea A = {(x, y) ∈R2 : x2 + y2 < 1}. Entonces la frontera de A coincide con el conjunto de los puntos
+de acumulaci´on de A.
+(4) Sea A = {(x, y) ∈R2 : x2 + y2 ≤1} ∩Q × Q. Entonces la frontera de A coincide con el conjunto de
+los puntos de acumulaci´on de A.
+(5) Si f : R2 →R es tal que f(x, y) = x + 2y + 1 entonces el diferencial de f en (1,1) es df(1,1)(x, y) =
+x + 2y + 1.
+(6) Si f : R2 →R es tal que f(x, y) = x+2y +1 entonces el plano tangente de f en (1,1) es z = x+2y +1.
+(7) Si A ⊂R2 entonces Ac ∪∂(A) = (int(A))c.
+(8) Si f es diferenciable en a entonces −5f es diferenciable en a.
+(9) Si una sucesi´on en R2 es acotada entonces alguna sucesi´on coordenada es convergente.
+(10) Si f : R2 →R es diferenciable en a entonces ∂f
+∂y existe en a.
+1
+
+===== PAGE 2 =====
+2
+2. M´ultiple Opci´on
+Puntajes: 4 puntos si la respuesta es correcta, 0 punto por no contestar. Indique sus respuestas en los casilleros
+correspondientes.
+1. Sea la funci´on f : R2 →R
+f(x, y) =
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1
+si x > 0 y > 0
+2
+si x < 0 y > 0
+3
+si x < 0 y < 0
+4
+si x > 0 y < 0
+0
+en otro caso
+Entonces:
+A. La funci´on es continua en todo punto de R2.
+B. La funci´on es discontinua solamente en (0, 0).
+C. La funci´on es continua para todo (x, y) tal que xy̸ = 0.
+D. La funci´on es discontinua ´unicamente sobre todos los puntos del eje (0x).
+2. Considere las siguientes aﬁrmaciones:
+I. Si A y B son dos conjuntos abiertos en Rn. Entonces su uni´on A S B y su intersecci´on A T B
+son conjuntos abiertos en Rn.
+II. El conjunto A = {p} fomado por un solo punto p ∈Rn no es un abierto en Rn.
+III. Sea A un conjunto cualquiera de Rn. La frontera de A es un conjunto cerrado.
+IV. El conjunto A =
+{
+(x, 0) ∈R2 : x = 1
+n, n ∈N, n̸ = 0
+}
+no tiene puntos interiores.
+Entonces
+A. Todas las aﬁrmaciones son verdaderas.
+B. I, II, IV son verdaderas y III es falsa.
+C. II, III, IV son veradaderas y I es falsa.
+D. I, III y IV son verdaderas II es falsa.
+3. Si f(x, y) = (e2x sin(y), e3x cos(y)), y g : R →R2 diferenciable tal que:
+Jg(1) =
+ 
+1
+2
+!
+,
+g(1) = (0, 0)
+Entonces d(f ◦g)(1)(t −1) vale
+A. ((t −1), 2(t −1))
+B. (2e2(t −1), 3e3(t −1))
+C. (3(t −1), 2(t −1))
+D. (2(t −1), 3(t −1))
+4. De la funci´on f : R2 →R se conoce que:
+• f es diferenciable en
+( √
+2
+2 ,
+√
+2
+2
+)
+• f
+( √
+2
+2 , t
+)
+= t2 + 2t
+•
+∂f
+∂⃗v
+( √
+2
+2 ,
+√
+2
+2
+)
+= 0 con⃗v = (1, −2)
+Si g(r, θ) = (r cos θ, r sin θ), entonces
+∂
+∂θ (f ◦g) (r, θ) en
+(1, π
+4
+)
+vale:
+A. −
+√
+2 −2
+B.
+√
+2 + 2
+C.
+√
+2
+D. −
+√
+2
+Puede ser ´util recordar que sin
+( π
+4
+)
+= cos
+( π
+4
+)
+=
+√
+2
+2
+
+===== PAGE 3 =====
+2. M´ULTIPLE OPCI´ON
+3
+5. Sea f : R2 →R deﬁnida como
+f(x, y) = cos(2cx + ay)
+donde c es una constante no nula (c̸ = 0).
+Entonces
+A. La funci´on f satisface la ecuaci´on
+∂2f
+∂x2 = c2 ∂2f
+∂y2
+para inﬁnitos valor de a.
+B. Existen ex´actamente dos valores de a para los cuales la funci´on f satisface la ecuaci´on
+∂2f
+∂x2 = c2 ∂2f
+∂y2 .
+C. Existe un ´unico valor de a para el cual la funci´on f satisface la ecuaci´on
+∂2f
+∂x2 = c2 ∂2f
+∂y2 .
+D. No existen valores de a para los cuales la funci´on f satisface la ecuaci´on
+∂2f
+∂x2 = c2 ∂2f
+∂y2 .
+6. Sea f : R2 →R deﬁnida como
+f(x, y) =
+(
+x3
+x2+y2
+si (x, y)̸ = (0, 0)
+0
+si (x, y) = (0, 0)
+Entonces
+A. Existen las derivadas parciales de f en todo punto del plano y ambas son continuas en (0, 0).
+B. Existen las derivadas parciales de f en todo punto del plano y s´olo una de ellas es continua en
+(0, 0).
+C. Existen las derivadas parciales de f en todo punto del plano y ninguna es continua en (0, 0).
+D. Las derivadas parciales de f no est´an deﬁnidas en todo el plano.
+7. Sea f : R2 →R deﬁnida como
+f(x, y) =
+(
+ex2+y2−1
+x2+y2
+si (x, y)̸ = (0, 0)
+1
+si (x, y) = (0, 0)
+Entonces:
+A. f es continua y diferenciable en (0, 0).
+B. f es continua en (0, 0) pero no es diferenciable en (0, 0).
+C. f es diferenciable en (0, 0) pero no es continua en (0, 0).
+D. f no es diferenciable ni continua en (0, 0).
+8 El valor del l´ımite
+lim
+(x,y)→(2,0)
+xey −
+(2 + (x −2) + 2y + 2y2 + (x −2)y + (x −2)2)
+(x −2)2 + y2
+es:
+A. 1
+B. −1.
+C. 0
+D. No existe.
+
+===== PAGE 4 =====
+4
+9. Sea π el plano tangente a la gr´aﬁca de la funci´on f(x, y) = x3y + 2y2 + exy en el punto (0, 2, f(0, 2)).
+Selecione la opci´on correcta:
+A. (−1
+2, 1) ∈π.
+B. (−1, 1, 9) ∈π.
+C. (−1
+2, 1, 0) ∈π.
+D. (−1, 1, 0) ∈π.
+10. Se considera la regi´on D = {(x, y) ∈R2 : x ≤x2 + y2 ≤1, x ≥0, y ≥0} Entonces
+R R
+D
+xy dy dx es
+igual a
+A.
+π
+4
+B.
+1
+12
+C.
+1
+6
+D. −1
+12

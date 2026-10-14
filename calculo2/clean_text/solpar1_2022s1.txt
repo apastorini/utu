@@ -1,0 +1,612 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo Diferencial e Integral en Varias Variables
+Facultad de Ingenier´ıa - IMERL
+Mayo 2022
+I parcial-Soluci´on – 04 Mayo de 2022
+1. Respuestas: Verdadero - Falso.
+Puntajes: 1 punto si la respuesta es correcta, −1 punto si la respuesta es incorrecta, 0 punto por no contestar.
+Indique sus respuestas (V/F) en los casilleros correspondientes.
+(1) Sea an̸ = 0 para todo n ≥1. Si
++∞
+X
+n=1
+an converge entonces
++∞
+X
+n=1
+1
+an
+converge tambi´en. FALSO
+(2) Si z es un numero complejo entonces zz = Re(z) + Im(z) FALSO
+(3) Si a̸ = 0, entonces la funci´on f(z) = az transforma el cuadrado con v´ertices (0, 0), (1, 0), (0, 1) y (1, 1)
+en otro cuadrado. VERDADERO
+(4) Si y1 e y2 son soluciones de la misma ecuaci´on diferencial entonces 4y1 −2022y2 es soluci´on tambi´en
+de la ecuaci´on diferencial. FALSO
+(5) Si (an)n≥1 es una sucesi´on acotada entonces (an)n≥1 es convergente.FALSO
+(6) Si f : [n0, +∞) →R y an = f(n) entonces
++∞
+X
+n=n0
+an e
+Z +∞
+n0
+f(x) dx se comportan de la misma manera.
+FALSO
+(7) Si z0 es raiz de un polinomio P tal que P(0) = i entonces P(z0) + P(z0) = 0. FALSO
+(8) Si z0 es un complejo tal que Re(z0) = 0 entonces ez0 = eIm(z0) FALSO
+(9) Sea an̸ = 0 para todo n ≥1. Si (an)n≥1 no converge entonces ( 1
+an )n≥1 converge FALSO
+(10) Si f : R →R es continua y
+Z +∞
+a
+f(x)dx converge entonces
+Z +∞
+b
+f(x)dx converge para todo b ≥a.
+VERDADERO
+1
+
+===== PAGE 2 =====
+2
+2.
+Respuesta: M´ultiple Opci´on
+1. Considera el siguiente n´umero complejo:
+z0 =
+1
+i +
+1
+i +
+1
+1 + i
+La forma bin´omica de z0 es igual a:
+A. 1.
+B. i.
+C. −1
+D. −i
+Respuesta correcta: 1
+Notar
+1
+1 + i = 1
+2(1 −i). Por lo tanto
+1
+i +
+1
+1 + i
+= 1 −i
+i +
+1
+i +
+1
+1 + i
+= 1
+1
+i +
+1
+i +
+1
+1 + i
+= 1
+2. El n´umero complejo z =
+√
+3
+2 + 1
+2i es la ra´ız sexta de un cierto complejo, las otras cinco ra´ıces son:
+A. i, −i,
+√
+3
+2 −1
+2i, −
+√
+3
+2 + 1
+2i, −
+√
+3
+2 −1
+2i
+B. 2i, −2i,
+√
+3
+2 −1
+2i, −
+√
+3
+2 + 1
+2i, −
+√
+3
+2 −1
+2i
+C. i, −i, −1
+2 +
+√
+3
+2 i, −
+√
+3
+2 + 1
+2i, 1
+2 −
+√
+3
+2 i
+D. i, −i, −1
+2 +
+√
+3
+2 i, −
+√
+3
+2 −1
+2i, 1
+2 −
+√
+3
+2 i
+Respuesta correcta:
+Recordar que dado z = r(cos(θ) + sen(θ)i), las ra´ıces sextas de z vienen dadas por
+zk = r1/6(cos(θ + 2kπ
+6
+) + sen(θ + 2kπ
+6
+)i)
+con k = 0, · · · , 5. Sabemos que z =
+√
+3
+2 + 1
+2i es una de tales ra´ıces, por lo tanto podemos deducir el
+valor correspondiente de r y θ. Al calcular las restantes obtenemos:
+i, −i,
+√
+3
+2 −1
+2i, −
+√
+3
+2 + 1
+2i, −
+√
+3
+2 −1
+2i.
+3. Consideremos la sucesi´on de n´umeros reales
+(an
+)
+n≥1 que satisface la relaci´on
+an+1 =
+s
+an2 + 2
+an + 2
+y tal que a1 = 7.
+
+===== PAGE 3 =====
+2.
+RESPUESTA: M´ULTIPLE OPCI´ON
+3
+Entonces:
+A.
+(an
+)
+n≥1 es mon´otona decreciente y tiene l´ımite̸ = 1.
+B.
+(an
+)
+n≥1 es mon´otona decreciente y tiene l´ımite 1.
+C.
+(an
+)
+n≥1 no es ni creciente ni decreciente, pero converge a 1.
+D.
+(an
+)
+n≥1 es mon´otona creciente y no est´a acotada superiormente.
+Respuesta correcta:
+(an
+)
+n≥1 es mon´otona decreciente y tiene l´ımite 1.
+Hay que probar que est´a acotada inferiormente por 1 y es decreciente. Para ver que est´a acotada
+por 1 se usa inducci´on a1 = 7 > 1, an+1 ≥1 ⇔
+r(an
+)2
++2
+an+2
+≥1 ⇔
+(an
+)2
++2
+an+2
+≥1 ⇔
+(an
+)2 ≥an ⇔
+an(an −1) ≥0. Lo cual pasa por hip´otesis. Es mon´otona decreciente: an+1 ≤an ⇔
+r(an
+)2
++2
+an+2
+≤
+an ⇔
+(an
+)2
++2
+an+2
+≤a2
+n ⇔a2
+n + 2 ≤a3
+n + 2a2
+n ⇔a2
+n
+(an + 1
+)
+≥2. Lo ´ultimo se cumple porque an ≥1.
+Esto prueba que la sucesi´on es convergente. Por lo tanto existe y es ﬁnito el l´ımite L. Tomando l´ımite
+en la deﬁnici´on por recurrencia tenemos que L =
+q
+L2+2
+L+2 ⇒L2(L + 2) = L2 + 2 ⇒L3 + L2 −2 = 0.
+´Unica ra´ız real L = 1.
+4. Sea m =
++∞
+X
+n=0
+2−n. Entonces la serie:
++∞
+X
+n=1
+sinm
+( 1
+n
+)
+A. Converge.
+B. Oscila.
+C. Diverge.
+D. m = +∞, por lo que la serie que se deﬁne luego no existe.
+Respuesta Correcta: Converge
+La primera serie es geom´etrica, y su resultado vale:
+m =
++∞
+X
+n=0
+2−n =
++∞
+X
+n=0
+(1
+2
+)n
+=
+1
+1 −1
+2
+= 2
+Es importante recordar que el resultado de la ´ultima igualdad vale porque el ´ındice inferior de la
+suma es n = 0.
+Luego la ´ultima serie resulta:
++∞
+X
+n=0
+sin2
+( 1
+n
+)
+Como sin(u) ∼u cuando u →0, sin(1/n) ∼1/n cuando n →+∞, y puntualmente: sin2(1/n) ∼
+1
+n2 .
+Por otro lado, sin2 ( 1
+n
+)
+es una sucesi´on de t´erminos positivos, por lo que utilizando el criterio del
+equivalente, la serie converge.
+5. Considere la siguiente serie:
++∞
+X
+n=2
+2
+2n + n2
+Entonces:
+A. La serie converge a 5
+6.
+
+===== PAGE 4 =====
+4
+B. La serie converge a 3
+2.
+C. La serie converge a 1
+2.
+D. La serie diverge.
+Respuesta Correcta: La serie converge a 5
+6.
+El t´ermino general lo podemos reescribir como
+2
+2n+n2 =
+2
+(2+n)n =
+1
+n −
+1
+n+2, por lo que la serie es
+P+∞
+n=2
+1
+n −
+1
+n+2. El convergente n-´esimo de la serie es Sn = 1
+2 −1
+4 + 1
+3 −1
+5 + 1
+4 −1
+6 + · · · + 1
+n −
+1
+n+2,
+que es una suma geom´etrica en d´onde s´olo sobreviven los dos primeros t´erminos que suman y los dos
+´ultimos que restan, o sea que Sn = 1
+2 + 1
+3 −
+1
+n+1 −
+1
+n+2.
+P+∞
+n=2
+1
+n −
+1
+n+2 = lim Sn = 1
+2 + 1
+3 = 5
+6.
+6. La rapidez con que cierto medicamento se disemina en el ﬂujo sangu´ıneo se rige por la ecuaci´on
+diferencial
+x′(t) = A −Bx(t),
+x(0) = 0,
+donde A y B son constantes positivas. La funci´on x(t) describe la concentraci´on del medicamento en
+el ﬂujo sangu´ıneo en un instante cualquiera t.
+Entonces:
+A.
+lim
+t→+∞x(t) = A
+B y el tiempo que tarda la concentraci´on en alcanzar la mitad de este valor l´ımite
+es t = log(2)
+B
+.
+B.
+lim
+t→+∞x(t) = A
+B y el tiempo que tarda la concentraci´on en alcanzar la mitad de este valor l´ımite
+es t = log(2).
+C.
+lim
+t→+∞x(t) = A
+B y el tiempo que tarda la concentraci´on en alcanzar la mitad de este valor l´ımite
+es t = 1
+B log
+( 2(A−B)
+A
+)
+.
+D.
+lim
+t→+∞x(t) = B
+A y el tiempo que tarda la concentraci´on en alcanzar la mitad de este valor l´ımite
+es t = log(2).
+Respuesta Correcta: lim
+t→∞x(t) = A
+B y el tiempo que tarda la concentraci´on en alcanzar la mitad
+de este valor l´ımite es t = log(2)
+B
+.
+Notar que la soluci´on del problema es x(t) = A
+B
+(1 −e−Bt)
+. Por lo tanto al tomar el l´ımite cuando
+t tiende a inﬁnito vemos que da
+A
+B . Finalmente al igualar la soluci´on con la mitad de este valor,
+observamos que el momento donde ocurre es log(2)
+B
+.
+7. Sea E1 la ecuaci´on diferencial de segundo ´orden homog´enea, lineal y de coeﬁcientes constantes, tal
+que y(x) = 3ex cos(2x) es soluci´on.
+Se le llama y2(x) a la soluci´on de E1 con las condiciones iniciales:
+
+
+
+
+
+
+
+E1
+y(0) = 0
+y′(0) = 2
+¿Cu´anto vale y2(π/2)?
+A. 0.
+B. e.
+C. e2.
+D. Ninguna de las anteriores.
+Respuesta Correcta: La respuesta correcta es 0.
+
+===== PAGE 5 =====
+2.
+RESPUESTA: M´ULTIPLE OPCI´ON
+5
+E1 tiene la forma: y′′ + ay′ + by = 0. Las ra´ıces de la ecuaci´on caracter´ıstica λ2 + aλ + b = 0
+describen la forma de la soluci´on. En particular, 3excos(2x) es soluci´on siempre y cuando las ra´ıces
+sean λ = 1 ± 2i. Esto implica que la soluci´on general a la ecuaci´on diferencial E1 es
+y(x) = Aexcos(2x) + Bexsen(2x)
+Imponiendo condiciones iniciales se puede resolver la soluci´on al problema completo (y2(x)), y
+luego evaluar.
+• y(0) = A = 0
+• y′(0) = 2B = 2 ⇒B = 1
+Entonces y2(x) = exsen(2x), por lo que al evaluar resulta: y2(π/2) = eπ/2sen(π) = 0
+8. Sea (an)n≥1 una sucesi´on de t´erminos positivos (an > 0, ∀n). Adem´as sabemos que:
+(a2n)n≥1 es mon´otona creciente y acotada.
+(a2n+1)n≥1 no converge y es acotada.
+Considere las siguientes aﬁrmaciones:
+I) (an)n≥1 no puede converger.
+II) (a2n+1)n≥1 tiene una subsucesi´on convergente.
+III) (a4n)n≥1 es necesariamente convergente.
+IV) (a3n)n≥1 no puede converger.
+Entonces:
+A. I, II y III son verdaderas y IV es falsa.
+B. Todas son verdaderas.
+C. I y II son verdaderas, III y IV son falsas.
+D. Solamente I es verdadera.
+Respuesta correcta: I, II y III son verdaderas y IV es falsa.
+9. Sea α ∈R. La integral impropia
++∞
+Z
+0
+e
+1
+x+1 −1
+(x2 −ln(1 + x2))α dx
+(a) Converge solamente para todo α con 0 < α < 1/4.
+(b) Converge para todo α con 0 < α < 1/2.
+(c) Converge para todo α con 1 < α.
+(d) No converge ´unicamente si α < 0.
+Respuesta Correcta: La integral anterior es una integral mixta por lo que la separamos en dos:
++∞
+Z
+0
+e
+1
+x+1 −1
+(x2 −ln(1 + x2))α dx =
+1
+Z
+0
+e
+1
+x+1 −1
+(x2 −ln(1 + x2))α dx +
++∞
+Z
+1
+e
+1
+x+1 −1
+(x2 −ln(1 + x2))α dx
+siendo el primer sumando I1 una integral impropia de segunda especie (en x = 0) y el segundo
+sumando I2 una integral impropia de primera especie.
+
+===== PAGE 6 =====
+6
+• Cuando x →0 entonces
+e
+1
+x+1 −1
+(x2−ln(1+x2))α ∼
+e−1
+((
+x2
+2
+)2)α = 4α(e−1)
+x4α
+. Como
+1R
+0
+1
+x4α dx converge cuando
+4α < 1 es decir α < 1/4, deducimos que I1 converge si α < 1/4.
+• Cuando x →+∞entonces
+e
+1
+x+1 −1
+(x2−ln(1+x2))α ∼
+1
+x−1
+(x2)α ∼
+1
+x2α+1 . Como
++∞
+R
+1
+1
+x2α+1 dx converge cuando
+2α + 1 > 1 es decir α > 0, deducimos que I2 converge si α > 0.
+Concluimos que la integral mixta converge para todo α con 0 < α < 1/4.
+10. Si f : R −{−1} →R dada por f(x) =
+2x −3
+(x2 + 4)(x + 1), consideramos la siguiente integral impropia
+Z +∞
+0
+f(x)dx
+Entonces:
+A. Converge y lo hace a π
+4 .
+B. Converge y lo hace a π
+4 −log 2.
+C. No converge.
+D. Converge y lo hace a π
+2 .
+Respuesta Correcta: Converge y lo hace a π
+4 −log 2.
+Notemos primero que el integrando puede escribirse como:
+2x −3
+(x2 + 4)(x + 1) = x + 1
+x2 + 4 −
+1
+x + 1.
+La integral a calcular es:
+Z +∞
+0
+( x + 1
+x2 + 4 −
+1
+x + 1
+)
+dx.
+Para hallar una primitiva del primer sumando, separamos la fracci´on e integramos t´ermino a t´ermino:
+Z
+t + 1
+t2 + 4dt =
+Z
+t
+t2 + 4dt +
+Z
+1
+x2 + 4dx = 1
+2 log
+(x2 + 4
+)
++ 1
+2 arctan
+(x
+2
+)
++ C.
+Para el segundo,
+Z
+1
+x + 1 = log (x + 1) + C.
+La integral entre 0 e +∞se obtiene evaluando entre 0 y p y tomando l´ımite con p →+∞:
+Z +∞
+0
+2x −3
+(x2 + 4)(x + 1)dx =
+lim
+p→+∞
+Z p
+0
+2x −3
+(x2 + 4)(x + 1) =
+lim
+p→+∞
+(1
+2 arctan
+(p
+2
+)
++ 1
+2 log
+(p2 + 4
+)
+−log (p + 1) −1
+2 log(4)
+)
+=
+π
+4 −log 2.

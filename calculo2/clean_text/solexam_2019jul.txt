@@ -1,0 +1,214 @@
+
+===== PAGE 1 =====
+SOLUCI ´ON DEL EXAMEN DE CDIVV DEL MIERCOLES 17/7/20191
+Respuestas por Versi´on
+Versi´on
+Empieza
+MO1
+MO2
+MO3
+MO4
+MO5
+1
+L´ımite
+B
+C
+B
+D
+A
+2
+Complejos
+A
+D
+D
+C
+B
+3
+Volumen
+A
+D
+C
+B
+C
+L´ımite
+lim
+(x,y)→(0,0)
+ex2+y2 + ln(2(x2 + y2) + 1) −3
+2(x2 + y2) −1
+x2 + y2
+Notamos f(x, y) = ex2+y2 −1 y g(x, y) = ln(2(x2 + y2) + 1). Usando la
+propiedad de composici´on de polinomios de Taylor tenemos:
+T2,f,(0,0)(x, y) = x2 + y2
+y
+T2,g,(0,0)(x, y) = 2x2 + 2y2.
+Sustituyendo en el l´ımite, resulta:
+lim
+(x,y)→(0,0) = x2 + y2 + 2(x2 + y2) −3
+2(x2 + y2)
+x2 + y2
+= 3
+2
+Complejos
+Sea z = |z|eiϕ Igualando m´odulo: |z| = |z| = 2|z|2, por lo que |z| = 0, en
+cuyo caso z = 0, o |z| = 1/2. Igualando fases tenemos que −ϕ + 2kπ = 2ϕ,
+por lo que ϕ = 2kπ/3, con k ∈{0, 1, 2}. El conjunto soluci´on es entonces A =
+{0, 1/2, 1/2e2iπ/3, 1/2e−2iπ/3}, que tiene 4 elementos y una dupla de conjudados.
+Integral Doble
+Usando coordenadas polares x = r cos(θ), y = r sin(θ) y luego usando el cambio
+de variable u = 1 + r2 se obtiene:
+ZZ
+A
+1
+1 + x2 + y2 dxdy =
+Z π/2
+−π/2
+Z 1
+0
+1
+1 + r2 rdrdθ = π/2
+Z 2
+1
+1
+udu = π log(2)/2.
+
+===== PAGE 2 =====
+SOLUCI ´ON DEL EXAMEN DE CDIVV DEL MIERCOLES 17/7/20192
+Volumen
+Aplicando Fubini:
+ZZZ
+V
+1dxdydz =
+Z 1
+0
+dx
+Z 1
+x
+dy
+Z 1
+y
+dz =
+Z 1
+0
+dx
+Z 1
+x
+(y−1)dy =
+Z 1
+0
+(x −1)2
+2
+dx = 1
+6.
+Series
+El t´ermino general en magnitud es decreciente y tiende a 0. Por el criterio de
+Leibniz la serie converge. Para estudiar convergencia absoluta aplicaremos el
+criterio serie integral:
+Z +∞
+13
+1
+x(ln x)2 dx =
+lim
+T →+∞
+Z T
+13
+1
+x(ln x)2 dx =
+lim
+T →+∞
+Z ln T
+ln 13
+1
+u2 du =
+Z +∞
+ln 13
+1
+u2 du
+Luego la serie
++∞
+X
+n=13
+(−1)n
+n(ln n)2 tambi´en converge absolutamente.
+Problema 1 de Desarrollo
+1. Primero estudiamos existencia de las derivadas parciales:
+fx(0, 0) = lim
+h→0
+f(h, 0) −f(0, 0)
+h
+= lim
+h→0
+1 + h2sen(1/h) −1
+h
+= 0;
+fy(0, 0) = lim
+h→0
+f(0, h) −f(0, 0)
+h
+= lim
+h→0
+h2 + h + 1 −1
+h
+= 1.
+2. Para estudiar diferenciabilidad, primero expresamos el residuo:
+f(x, y) = f(0, 0) + fx(0, 0)x + fy(0, 0)y + r(x, y).
+Utilizando que fx(0, 0) = 0 y que fy(0, 0) = 1, tenemos que:
+r(x, y) =
+{ y2,
+si x = 0
+x2 sin
+( 1
+x
+)
+,
+si x̸ = 0
+Tomando l´ımites del residuo dividido
+por su norma, tenemos en la primera porci´on que:
+lim
+(x,y)→(0,0)
+r(x, y)
+p
+x2 + y2 =
+lim
+(x,y)→(0,0)
+y2
+p
+x+y2 = lim
+ρ→0
+ρ2sen2(θ)
+ρ
+= 0.
+En la segunda porci´on el l´ımite resulta:
+lim
+(x,y)→(0,0)
+x2sen(1/x)
+p
+x2 + y2 = 0,
+Luego, f(x, y) es diferenciable.
+
+===== PAGE 3 =====
+SOLUCI ´ON DEL EXAMEN DE CDIVV DEL MIERCOLES 17/7/20193
+3. La matriz jacobiana de la composici´on es el producto de las matrices:
+Jg◦f(0, 0) = Jg(f(0, 0))Jf(0, 0) = Jg(1)Jf(0, 0). Con las derivadas antes
+calculadas tenemos que Jf(0, 0) = (fx(0, 0), fy(0, 0)) = (0, 1). Luego, la
+matriz jacobiana de g ◦f en 0, 0 es el producto:
+Jg◦f(0, 0) =
+
+
+0
+1
+0
+−1
+0
+2
+
+
+Problema 2 de Desarrollo
+(a) Sea (an) una sucesi´on de Rn. Decimos que limn→+∞an = L ∈Rn si
+para todo ϵ > 0 existe n0 ∈N tal que para todo natural n ≥n0 se
+cumple que ∥an −L∥< ϵ.
+(b) Decimos que la funci´on f es continua en a si para todo ϵ > 0 existe
+δ > 0 tal que si ∥x −a∥< δ ⇒|f(x) −f(a)| < ϵ.
+(c) Dado ϵ > 0 existe δ > 0 tal que ∥x −a∥< δ ⇒|f(x) −f(a)| < ϵ.
+Como limn→+∞an = a existe n0 tal que ∥an −a∥< δ, para todo
+n ≥n0. Luego |f(an) −f(a)| < ϵ, para todo n ≥n0, y la sucesi´on
+(f(an)) converge a f(a), como quer´ıamos demostrar.

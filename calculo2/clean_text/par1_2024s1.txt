@@ -1,0 +1,205 @@
+
+===== PAGE 1 =====
+C´alculo Diferencial e Integral en Varias Variables
+Primer semestre de 2024
+Primer parcial
+30 de abril de 2024
+No Lista
+Apellido, Nombre
+C´edula
+Firma
+IMPORTANTE
+• La duraci´on del parcial es de tres horas y media.
+• No se permite usar ni calculadora ni material de consulta.
+• El parcial tiene 5 ejercicios de m´ultiple opci´on y un ejercicio de desarrollo con 2 partes.
+• En cada ejercicio de m´ultiple opci´on solo hay una opci´on correcta.
+• La comprensi´on de la letra de los ejercicios es parte de la prueba.
+• Tenga cuidado al pasar las respuestas. Para los ejercicios de m´ultiple opci´on lo completado en
+el cuadro de abajo ser´a lo ´unico tenido en cuenta a la hora de corregir.
+• Recuerde que
+lim
+n→+∞
+(
+1 + 1
+n
+)n
+= e.
+• La siguiente tabla de valores para las funciones seno y coseno puede ser de utilidad:
+x
+0
+π
+6
+π
+4
+π
+3
+π
+2
+sin(x)
+0
+1
+2
+1
+√
+2
+√
+3
+2
+1
+cos(x)
+1
+√
+3
+2
+1
+√
+2
+1
+2
+0
+M ´ULTIPLE OPCI´ON (Total: 25 puntos)
+Llenar cada casilla con las respuestas A, B, C, D o E, seg´un corresponda.
+1
+2
+3
+4
+5
+Correctas: 5 puntos. Incorrectas: −1 puntos. Sin responder: 0 puntos.
+DESARROLLO (Total: 15 puntos)
+Un ejercicio de desarrollo se encuentra al ﬁnal de la p´agina 2.
+SOLO PARA USO DOCENTE
+MO
+D.1.a)
+D.1.b)
+D.2
+Total
+1
+
+===== PAGE 2 =====
+M ´ULTIPLE OPCI´ON
+1. Sea y(x) la soluci´on a la ecuaci´on diferencial
+y′′(x) + 2y′(x) + y(x) = cos(x)
+que cumple y(0) = 0, y′(0) = 1. Entonces:
+y(π) = e−π + 1
+(A)
+y(π) = πe−π + 1
+2
+(B)
+y(π) = π
+2 e−π
+(C)
+y(π) = π
+4 e−π
+(D)
+y(π) = −1
+(E)
+2. Sea A ⊂C el conjunto de los n´umeros z ∈C que
+veriﬁcan:
+
+
+
+z5 =
+√
+3 + i
+√
+3 −i
+z + ¯z > 0
+Solo una de las siguientes aﬁrmaciones sobre el conjunto
+A es correcta. Indique cu´al:
+(A) A tiene exactamente cinco elementos distintos.
+(B) A es sim´etrico respecto al eje real.
+(C) A es sim´etrico respecto al eje imaginario.
+(D) A tiene exactamente cuatro elementos distintos.
+(E) A tiene exactamente tres elementos distintos.
+3. Considere las siguientes integrales impropias:
+(I)
+Z +∞
+π
+(4 + cos(x))(x + 2√x)
+(e−x + √x)x
+dx
+(II)
+Z 1
+0
+e−x2 + 1
+e
+√x −1 dx
+Entonces:
+(A) Ambas integrales convergen absolutamente.
+(B) Ambas integrales no convergen.
+(C) La integral (I) converge y la integral (II) no con-
+verge.
+(D) La integral (I) no converge y la integral (II) con-
+verge.
+(E) La integral (I) converge, pero no converge absolu-
+tamente y la integral (II) converge.
+4. Considere las siguientes series:
+(I)
++∞
+X
+n=1
+(−1)n ln
+(
+1 + 1
+n
+)
+(II)
++∞
+X
+n=1
+knn!
+nn
+Entonces:
+(A) La serie (I) converge absolutamente y para todo
+k > 2 la serie (II) converge.
+(B) La serie (I) no converge y para todo k > e la serie
+(II) converge.
+(C) La serie (I) converge, pero no converge absoluta-
+mente, y para k = 2 la serie (II) converge.
+(D) La serie (I) converge absolutamente y para todo
+k > e la serie (II) no converge.
+(E) La serie (I) converge, pero no converge absoluta-
+mente, y para k = 4 la serie (II) converge.
+5. Recuerde que decimos que L es un punto de aglom-
+eraci´on de la sucesi´on an si existe una subsucesi´on de an
+que converge a L.
+Considere la sucesi´on an =
+n
+2n + 1 sin
+(nπ
+2
+)
+. Entonces:
+(A) an tiene exactamente 3 puntos de aglomeraci´on,
+pero no tiene l´ımite.
+(B) an tiene exactamente 2 puntos de aglomeraci´on,
+pero no tiene l´ımite.
+(C) an tiene exactamente 1 punto de aglomeraci´on,
+pero no tiene l´ımite.
+(D) an tiene l´ımite ﬁnito.
+(E) an tiende a +∞.
+DESARROLLO
+1.
+a) Sea bn una sucesi´on de t´erminos no negativos, tal
+que
+lim
+n→+∞bn = L < 1. Demostrar que existen
+k ∈(0, 1) y n0 ∈N tales que bn < k, ∀n ≥n0.
+b) Sea
++∞
+X
+n=1
+an una serie de t´erminos positivos. De-
+mostrar que si
+lim
+n→+∞
+n√an = L < 1, entonces la
+serie es convergente.
+2. Usando el resultado de la parte anterior, clasiﬁcar la
+serie
++∞
+X
+n=1
+(log n)n
+nn
+2

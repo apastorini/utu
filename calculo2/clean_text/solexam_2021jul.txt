@@ -1,0 +1,1479 @@
+
+===== PAGE 1 =====
+2do. parcial - C´alculo Diferencial e Integral en Varias Variables
+(Soluciones)
+PARTE I: VERDADERO O FALSO
+Verdadero o Falso #1
+V1: Sea
+z =
+( 1
+√
+2 +
+i
+√
+2
+)2021
+.
+Entonces
+Re(z) = −1
+√
+2
+y
+Im(z) = −1
+√
+2.
+• Verdadero
+• Falso
+Soluci´on: Usamos la forma polar de
+1
+√
+2 +
+i
+√
+2, la cual es eiπ/4. Luego,
+z = (eiπ/4)2021 = ei2021 π
+4 = ei(505π+ π
+4 ) = ei505πeiπ/4 = −eiπ/4 = −1
+√
+2 −
+i
+√
+2.
+Otra manera de resolverlo es la siguiente: llevar el complejo w =
+1
+√
+2 +
+i
+√
+2 a un complejo m´as sencillo, como i,
+que es un complejo cuyas potencias se repiten peri´odicamente. Por ejemplo, para i sabemos:
+i1 = i,
+i2 = −1,
+i3 = −i,
+i4 = 1,
+i5 = i,
+· · ·
+Veamos que pasa si hacemos w2:
+w2 =
+(1 + i
+√
+2
+)2
+= (1 + i)(1 + i)
+2
+= 1 + 2i + i2
+2
+= 1 + 2i −1
+2
+= i.
+Entonces:
+z =
+(1 + i
+√
+2
+)2021
+=
+(1 + i
+√
+2
+)
+· w2020 =
+(1 + i
+√
+2
+)
+·
+"(1 + i
+√
+2
+)2#1010
+=
+(1 + i
+√
+2
+)
+· i1010 =
+(1 + i
+√
+2
+)
+· i2 · i1008
+=
+(1 + i
+√
+2
+)
+· (−1) · (i4)252 =
+(−1 −i
+√
+2
+)
+· 1252 = −1
+√
+2 −
+i
+√
+2.
+V2: Sea
+z =
+( 1
+√
+2 −
+i
+√
+2
+)2021
+.
+Entonces
+Re(z) = −1
+√
+2
+y
+Im(z) = −1
+√
+2.
+• Verdadero
+• Falso
+1
+
+===== PAGE 2 =====
+Soluci´on: Usamos la forma polar de
+1
+√
+2 −
+i
+√
+2, la cual es e−iπ/4. Luego,
+z = (e−iπ/4)2021 = e−i2021 π
+4 = ei(−505π−π
+4 ) = e−i505πe−iπ/4 = −e−iπ/4 = −1
+√
+2 +
+i
+√
+2.
+Otra manera de resolverlo es la siguiente: llevar el complejo w =
+1
+√
+2 −
+i
+√
+2 a un complejo m´as sencillo, como i,
+que es un complejo cuyas potencias se repiten peri´odicamente. Por ejemplo, para i sabemos:
+i1 = i,
+i2 = −1,
+i3 = −i,
+i4 = 1,
+i5 = i,
+· · ·
+Veamos que pasa si hacemos w2:
+w2 =
+(1 −i
+√
+2
+)2
+= (1 −i)(1 −i)
+2
+= 1 −2i + i2
+2
+= 1 −2i −1
+2
+= −i.
+Entonces:
+z =
+(1 −i
+√
+2
+)2021
+=
+(1 −i
+√
+2
+)
+· w2020 =
+(1 −i
+√
+2
+)
+·
+"(1 −i
+√
+2
+)2#1010
+=
+(1 −i
+√
+2
+)
+· (−i)1010
+=
+(1 −i
+√
+2
+)
+· (−i)2 · (−i)1008 =
+(1 −i
+√
+2
+)
+· (−1) · (i4)252 =
+(−1 + i
+√
+2
+)
+· 1252 = −1
+√
+2 +
+i
+√
+2.
+V3: Sea
+z =
+(
+−1
+√
+2 +
+i
+√
+2
+)2021
+.
+Entonces
+Re(z) = −1
+√
+2
+y
+Im(z) =
+1
+√
+2.
+• Verdadero
+• Falso
+Soluci´on: Por V2 se tiene z =
+(
+−1
+√
+2 +
+i
+√
+2
+)2021
+= (−1)2021 (
+1
+√
+2 −
+i
+√
+2
+)2021
+= −
+(
+−1
+√
+2 +
+i
+√
+2
+)
+=
+1
+√
+2 −
+i
+√
+2.
+V4: Sea
+z =
+(
+−1
+√
+2 −
+i
+√
+2
+)2021
+.
+Entonces
+Re(z) =
+1
+√
+2
+y
+Im(z) =
+1
+√
+2.
+• Verdadero
+• Falso
+Soluci´on: Por V1 se tiene z =
+(
+−1
+√
+2 −
+i
+√
+2
+)2021
+= (−1)2021 (
+1
+√
+2 +
+i
+√
+2
+)2021
+= −
+(
+−1
+√
+2 −
+i
+√
+2
+)
+=
+1
+√
+2 +
+i
+√
+2.
+Verdadero o Falso #2
+V1: Considere la sucesi´on dada por
+an = cos(2π/n)
+n2
+para n ∈Z>0. Entonces, (an) es mon´otona y convergente.
+2
+
+===== PAGE 3 =====
+• Verdadero
+• Falso
+Soluci´on: La sucesi´on no es mon´otona ya que a1 = 1 > −1
+4 = a2, y a2 = −1
+4 < −1
+18 = a3.
+V2: Considere (an) la sucesi´on dada por
+an = cos(2π/n)
+n2
+para n ∈Z>0. Entonces, tanto (an) como la serie P+∞
+n=1 an convergen.
+• Verdadero
+• Falso
+Soluci´on: La sucesi´on (an) converge a cero, y la serie P an converge absolutamente (por ende converge) por
+el criterio de comparaci´on, ya que |an| ≤
+1
+n2 para todo n ≥1, y P 1
+n2 converge.
+V3: Considere (an) la sucesi´on dada por
+an = sin(2π/n) + 1
+n
+para n ∈Z>0. Entonces, (an) es mon´otona y convergente.
+• Verdadero
+• Falso
+Soluci´on: La sucesi´on no es mon´otona ya que a1 = 1 > 1
+2 = a2 y a2 = 1
+2 < 2+
+√
+3
+6
+= a3.
+V4: Considere (an) la sucesi´on dada por
+an = sin(2π/n) + 1
+n
+para n ∈Z>0. Entonces, (an) converge y la serie P+∞
+n=1 an diverge.
+• Verdadero
+• Falso
+Soluci´on: La sucesi´on (an) converge a cero, y la serie P an diverge por el criterio de comparaci´on, ya que
+an > 1
+n para todo n ≥1, y P 1
+n diverge.
+Verdadero o Falso #3
+V1: Considere la familia de subconjuntos de R2 dada por
+An =
+(
+−1
+n, 1
+n
+)
+×
+(
+−1
+n, 1
+n
+)
+con n ∈Z>0. Entonces,
+int
+
+\
+n≥1
+An
+
+=
+\
+n≥1
+int(An).
+• Verdadero
+• Falso
+3
+
+===== PAGE 4 =====
+Soluci´on: T
+n≥1 An = {(0, 0)} = T
+n≥1 int(An), y por otro lado, int
+(T
+n≥1 An
+)
+= int({(0, 0)}) = ∅.
+V2: Considere la familia de subconjuntos de R2 dada por
+An =
+(
+−1 −1
+n, 1 + 1
+n
+)
+×
+(
+−1 −1
+n, 1 + 1
+n
+)
+con n ∈Z>0. Entonces,
+\
+n≥1
+An =
+\
+n≥1
+int(An).
+• Verdadero
+• Falso
+Soluci´on: T
+n≥1 An = [−1, 1] × [−1, 1] = T
+n≥1 int(An).
+V3: Considere la familia de subconjuntos de R2 dada por
+An =
+(
+−1
+n, 1
+n
+)
+×
+(
+−1
+n, 1
+n
+)
+con n ∈Z>0. Entonces,
+∂
+
+\
+n≥1
+An
+
+=
+\
+n≥1
+∂(An).
+• Verdadero
+• Falso
+Soluci´on: Por un lado, T
+n≥1 An = {(0, 0)} y as´ı ∂
+(T
+n≥1 An
+)
+= ∂({(0, 0)}) = {(0, 0)}.
+Por otro lado,
+T
+n≥1 ∂(An) = ∅.
+V4: Considere la familia de subconjuntos de R2 dada por
+An =
+(
+−1 −1
+n, 1 + 1
+n
+)
+×
+(
+−1 −1
+n, 1 + 1
+n
+)
+con n ∈Z>0. Entonces,
+\
+n≥1
+An = int
+
+\
+n≥1
+An
+
+.
+• Verdadero
+• Falso
+Soluci´on: T
+n≥1 An = [−1, 1] × [−1, 1] no es abierto.
+Verdadero o Falso #4
+V1: Sea f : R2 →R una funci´on continua y Un = B((0, 0), 1 + 1/n) la bola cerrada de centro (0, 0) y radio
+1 + 1/n. Si U = T
+n≥1 Un es la intersecci´on de todas las bolas anteriores, entonces la restricci´on f|U de f sobre
+U posee m´aximo y m´ınimo absoluto.
+• Verdadero
+• Falso
+4
+
+===== PAGE 5 =====
+Soluci´on: Al ser U = T
+n≥1 Un cerrado (por ser intersecci´on de cerrados) y acotado, y f continua, se tiene que
+f|U posee m´aximo y m´ınimo absoluto por el Teorema de Weierstrass.
+V2: Sea f : R2 →R una funci´on continua y Un = B((0, 0), 2 + 1/n) la bola cerrada de centro (0, 0) y radio
+2 + 1/n. Si U = T
+n≥1 Un es la intersecci´on de todas las bolas anteriores, entonces la restricci´on f|U de f sobre
+U no posee m´aximo absoluto.
+• Verdadero
+• Falso
+Soluci´on: Al ser U = T
+n≥1 Un cerrado (por ser intersecci´on de cerrados) y acotado, y f continua, se tiene que
+f|U posee m´aximo absoluto por el Teorema de Weierstrass.
+V3: Sea f : R2 →R una funci´on continua y Un = B((0, 0), 3 −1/n) la bola abierta de centro (0, 0) y radio
+3 −1/n. Si U = S
+n≥1 Un es la uni´on de todas las bolas anteriores, entonces la restricci´on f|U de f sobre U no
+posee necesariamente m´ınimo absoluto.
+• Verdadero
+• Falso
+Soluci´on: Note que U = S
+n≥1 Un = B((0, 0), 3) es abierto (por ser la uni´on de abiertos).
+Si bien no se
+cumple una de las hip´otesis del Teorema de Weierstrass, la tesis a´un podr´ıa cumplirse para ciertos ejemplos de
+f (recuerde que dicho teorema no es un enunciado del tipo “si, y s´olo si”). Tal es el caso de f(x, y) = x2 + y2
+(paraboloide circular), pues f|U posee m´ınimo absoluto en (0, 0) igual a cero.
+V4: Sea f : R2 →R una funci´on continua y Un = B((0, 0), 4 −1/n) la bola abierta de centro (0, 0) y radio
+4 −1/n. Si U = S
+n≥1 Un es la uni´on de todas las bolas anteriores, entonces la restricci´on f|U de f sobre U
+posee necesariamente m´aximo y m´ınimo absoluto.
+• Verdadero
+• Falso
+Soluci´on: Note que U = S
+n≥1 B((0, 0), 4 −1/n) = B((0, 0), 4) es abierto. Al no cumplirse una de la hip´otesis
+del Teorema de Weierstrass, se puede hallar una funci´on continua f para la cual f|U no posea m´aximo o m´ınimo
+absoluto.
+La funci´on de la versi´on 3 no posee m´aximo absoluto, ya que 4 es el supremo de Im(f|U) pero
+f(x, y) < 4 para todo (x, y) ∈U.
+5
+
+===== PAGE 6 =====
+PARTE II: M´ULTIPLE OPCI´ON
+M´ultiple Opci´on #1
+V1: Se considera la ecuaci´on diferencial
+x′′ + αx′ + βx = 2e2t
+donde α, β ∈R. Sabemos que
+x(t) = t2e2t
+es soluci´on de la ecuaci´on. Entonces α + β vale:
+• 0
+• −1
+• −2
+• 1
+• 2
+Soluci´on: Imponemos que la funci´on x(t) = t2e2t satisface la ecuaci´on diferencial para as´ı sacar las condiciones
+sobre α y β.
+x(t) = t2e2t,
+x′(t) = 2te2t + 2t2e2t,
+x′′(t) = 2e2t + 8te2t + 4t2e2t.
+Imponemos esto en la ecuaci´on:
+x′′(t) + αx′(t) + βx(t) = (2α + β + 4)t2e2t + (2α + 8)te2t + 2e2t.
+Esta ´ultima expresi´on queremos que sea igual a 2e2t. Entonces igualando coeﬁciente a coeﬁciente obtenemos
+las siguientes dos ecuaciones:
+2α + β + 4 = 0,
+2α + 8 = 0.
+Resolviendo obtenemos que α = −4 y β = 4. Por lo que la respuesta es α + β = 0.
+V2: Se considera la ecuaci´on diferencial
+x′′ + αx′ + βx = 2e3t
+donde α, β ∈R. Sabemos que
+x(t) = t2e3t
+es soluci´on de la ecuaci´on. Entonces α + β vale:
+• 3
+• 0
+• 1
+• 2
+• 4
+6
+
+===== PAGE 7 =====
+Soluci´on: Imponemos que la funci´on x(t) = t2e3t satisface la ecuaci´on diferencial para as´ı sacar las condiciones
+sobre α y β.
+x(t) = t2e3t,
+x′(t) = 2te3t + 3t2e3t,
+x′′(t) = 2e3t + 12te3t + 9t2e3t.
+Imponemos esto en la ecuaci´on:
+x′′(t) + αx′(t) + βx(t) = (9 + 3α + β)t2e3t + (12 + 2α)te3t + 2e3t.
+Esta ´ultima expresi´on queremos que sea igual a 2e3t. Entonces igualando coeﬁciente a coeﬁciente obtenemos
+las siguientes dos ecuaciones:
+9 + 3α + β = 0,
+12 + 2α = 0.
+Resolviendo obtenemos que α = −6 y β = 9. Por lo que la respuesta es α + β = 3.
+V3: Se considera la ecuaci´on diferencial
+x′′ + αx′ + βx = 2e−2t
+donde α, β ∈R. Sabemos que
+x(t) = t2e−2t
+es soluci´on de la ecuaci´on. Entonces α + β vale:
+• 8
+• 2
+• 4
+• 6
+• 10
+Soluci´on: Imponemos que la funci´on x(t) = t2e−2t satisface la ecuaci´on diferencial para as´ı sacar las condiciones
+sobre α y β.
+x(t) = t2e−2t,
+x′(t) = 2te−2t −2t2e−2t,
+x′′(t) = 2e−2t −8te−2t + 4t2e−2t.
+Imponemos esto en la ecuaci´on:
+x′′(t) + αx′(t) + βx(t) = (4 −2α + β)t2e−2t + (2α −8)te−2t + 2e−2t.
+Esta ´ultima expresi´on queremos que sea igual a 2e−2t. Entonces igualando coeﬁciente a coeﬁciente obtenemos
+las siguientes dos ecuaciones:
+4 −2α + β = 0,
+2α −8 = 0.
+Resolviendo obtenemos que α = 4 y β = 4. Por lo que la respuesta es α + β = 8.
+7
+
+===== PAGE 8 =====
+M´ultiple Opci´on #2
+V1: Se considera el s´olido
+D =
+{
+(x, y, z) ∈R3 : x2 + y2 + z2
+4 ≤1
+}
+.
+Entonces la integral
+ZZZ
+D
+z3 + z dxdydz vale
+• 0
+• −
+√
+2
+2
+•
+2π
+3
+• −π2
+4
+•
+√
+3π
+Soluci´on: Una forma de resolver la integral es notar que la funci´on f(x, y, z) = z3 + z es impar seg´un el eje
+z y que estamos integrando con respecto a un conjunto D que es sim´etrico con respecto a z = 0. Por lo tanto
+RRR
+D f = 0.
+La otra forma de resolver la integral es mediante un cambio de variable a coordenadas esf´ericas reescalado.
+Planteamos as´ı el cambio de variable
+x = ρ sin(ϕ) cos(θ),
+y = ρ sin(ϕ) sin(θ),
+z
+2 = ρ cos(ϕ),
+donde ρ ∈[0, +∞), θ ∈[0, 2π) y ϕ ∈[0, π).
+De esta forma obtenemos una funci´on g: [0, +∞) × [0, 2π) × [0, π) →R3 tal que
+g(ρ, ϕ, θ) = (ρ sin(ϕ) cos(θ), ρ sin(ϕ) sin(θ), 2ρ cos(ϕ)) = (x, y, z),
+y cuya matriz Jacobiana es
+Jg(ρ, ϕ, θ) =
+
+
+sin(ϕ) cos(θ)
+ρ cos(ϕ) cos(θ)
+−ρ sin(ϕ) sin(θ)
+sin(ϕ) sin(θ)
+ρ cos(ϕ) sin(θ)
+ρ sin(ϕ) cos(θ)
+2 cos(ϕ)
+−2ρ sin(ϕ)
+0
+
+.
+Utilizando el resultado conocido sobre las coordenadas esf´ericas obtenemos que
+det(Jg(ρ, ϕ, θ)) = 2ρ2 sin(ϕ).
+Luego, por el teorema de cambio de variable tenemos que
+ZZZ
+D
+z3 + z dxdydz =
+Z 2π
+0
+Z π
+0
+Z 1
+0
+[(2ρ cos(ϕ))3 + 2ρ cos(ϕ)]2ρ2 sin(ϕ) dρ dϕ dθ
+= 2π
+Z π
+0
+2 sin(ϕ)
+(Z 1
+0
+8ρ5 cos3(ϕ) + 2ρ3 cos(ϕ) dρ
+)
+dϕ
+= 4π
+Z π
+0
+sin(ϕ)
+ 
+4
+3ρ6 cos3(ϕ) + 1
+2ρ4 cos(ϕ)
+}}}}
+ρ=1
+ρ=0
+!
+dϕ
+= 4π
+Z π
+0
+sin(ϕ)
+(4
+3 cos3(ϕ) + 1
+2 cos(ϕ)
+)
+dϕ.
+Realizando el cambio de variable u = cos(ϕ) tenemos que
+4π
+Z π
+0
+sin(ϕ)
+(4
+3 cos3(ϕ) + 1
+2 cos(ϕ)
+)
+dϕ = 4π
+Z 1
+−1
+4
+3u3 + 1
+2u du = 0.
+8
+
+===== PAGE 9 =====
+V2: Se considera el s´olido
+D =
+{
+(x, y, z) ∈R3 :
+x2
+9 + y2 + z2 ≤1
+}
+.
+Entonces la integral
+ZZZ
+D
+z3 + z dxdydz vale
+• 0
+• −
+√
+3
+3
+•
+4π
+9
+• −π2
+9
+•
+√
+6π
+Soluci´on: Una forma de resolver la integral es notar que la funci´on f(x, y, z) = z3 + z es impar seg´un el eje
+z y que estamos integrando con respecto a un conjunto D que es sim´etrico con respecto a z = 0. Por lo tanto
+RRR
+D f = 0.
+La otra forma de resolver la integral es mediante un cambio de variable a coordenadas esf´ericas reescalado.
+Planteamos as´ı el cambio de variable
+x
+3 = ρ sin(ϕ) cos(θ),
+y = ρ sin(ϕ) sin(θ),
+z = ρ cos(ϕ),
+donde ρ ∈[0, +∞), θ ∈[0, 2π) y ϕ ∈[0, π).
+De esta forma obtenemos una funci´on g: [0, +∞) × [0, 2π) × [0, π) →R3 tal que
+g(ρ, ϕ, θ) = (3ρ sin(ϕ) cos(θ), ρ sin(ϕ) sin(θ), ρ cos(ϕ)) = (x, y, z),
+y cuya matriz Jacobiana es
+Jg(ρ, ϕ, θ) =
+
+
+3 sin(ϕ) cos(θ)
+3ρ cos(ϕ) cos(θ)
+−3ρ sin(ϕ) sin(θ)
+sin(ϕ) sin(θ)
+ρ cos(ϕ) sin(θ)
+ρ sin(ϕ) cos(θ)
+2 cos(ϕ)
+−2ρ sin(ϕ)
+0
+
+.
+Utilizando el resultado conocido sobre las coordenadas esf´ericas obtenemos que
+det(Jg(ρ, ϕ, θ)) = 3ρ2 sin(ϕ).
+Luego, por el teorema de cambio de variable tenemos que
+ZZZ
+D
+z3 + z dxdydz =
+Z 2π
+0
+Z π
+0
+Z 1
+0
+[(ρ cos(ϕ))3 + ρ cos(ϕ)]3ρ2 sin(ϕ) dρ dϕ dθ
+= 2π
+Z π
+0
+3 sin(ϕ)
+(Z 1
+0
+ρ5 cos3(ϕ) + ρ3 cos(ϕ) dρ
+)
+dϕ
+= 6π
+Z π
+0
+sin(ϕ)
+ 
+1
+6ρ6 cos3(ϕ) + 1
+4ρ4 cos(ϕ)
+}}}}
+ρ=1
+ρ=0
+!
+dϕ
+= 6π
+Z π
+0
+sin(ϕ)
+(1
+6 cos3(ϕ) + 1
+4 cos(ϕ)
+)
+dϕ.
+Realizando el cambio de variable u = cos(ϕ) tenemos que
+6π
+Z π
+0
+sin(ϕ)
+(1
+6 cos3(ϕ) + 1
+4 cos(ϕ)
+)
+dϕ = 6π
+Z 1
+−1
+1
+6u3 + 1
+4u du = 0.
+9
+
+===== PAGE 10 =====
+V3: Se considera el s´olido
+D =
+{
+(x, y, z) ∈R3 : x2 + y2
+16 + z2 ≤1
+}
+.
+Entonces la integral
+ZZZ
+D
+z3 + z dxdydz vale
+• 0
+• −1
+2
+•
+π
+3
+• −π2
+16
+• 4π
+Soluci´on: Una forma de resolver la integral es notar que la funci´on f(x, y, z) = z3 + z es impar seg´un el eje
+z y que estamos integrando con respecto a un conjunto D que es sim´etrico con respecto a z = 0. Por lo tanto
+RRR
+D f = 0.
+La otra forma de resolver la integral es mediante un cambio de variable a coordenadas esf´ericas reescalado.
+Planteamos as´ı el cambio de variable
+x = ρ sin(ϕ) cos(θ),
+y
+4 = ρ sin(ϕ) sin(θ),
+z = ρ cos(ϕ),
+donde ρ ∈[0, +∞), θ ∈[0, 2π) y ϕ ∈[0, π).
+De esta forma obtenemos una funci´on g: [0, +∞) × [0, 2π) × [0, π) →R3 tal que
+g(ρ, ϕ, θ) = (ρ sin(ϕ) cos(θ), 4ρ sin(ϕ) sin(θ), ρ cos(ϕ)) = (x, y, z),
+y cuya matriz Jacobiana es
+Jg(ρ, ϕ, θ) =
+
+
+sin(ϕ) cos(θ)
+ρ cos(ϕ) cos(θ)
+−ρ sin(ϕ) sin(θ)
+4 sin(ϕ) sin(θ)
+4ρ cos(ϕ) sin(θ)
+4ρ sin(ϕ) cos(θ)
+cos(ϕ)
+ρ sin(ϕ)
+0
+
+.
+Utilizando el resultado conocido sobre las coordenadas esf´ericas obtenemos que
+det(Jg(ρ, ϕ, θ)) = 4ρ2 sin(ϕ).
+Luego, por el teorema de cambio de variable tenemos que
+ZZZ
+D
+z3 + z dxdydz =
+Z 2π
+0
+Z π
+0
+Z 1
+0
+[(ρ cos(ϕ))3 + ρ cos(ϕ)]3ρ2 sin(ϕ) dρ dϕ dθ
+= 2π
+Z π
+0
+4 sin(ϕ)
+(Z 1
+0
+ρ5 cos3(ϕ) + ρ3 cos(ϕ) dρ
+)
+dϕ
+= 8π
+Z π
+0
+sin(ϕ)
+ 
+1
+6ρ6 cos3(ϕ) + 1
+4ρ4 cos(ϕ)
+}}}}
+ρ=1
+ρ=0
+!
+dϕ
+= 8π
+Z π
+0
+sin(ϕ)
+(1
+6 cos3(ϕ) + 1
+4 cos(ϕ)
+)
+dϕ.
+Realizando el cambio de variable u = cos(ϕ) tenemos que
+8π
+Z π
+0
+sin(ϕ)
+(1
+6 cos3(ϕ) + 1
+4 cos(ϕ)
+)
+dϕ = 8π
+Z 1
+−1
+1
+6u3 + 1
+4u du = 0.
+10
+
+===== PAGE 11 =====
+M´ultiple Opci´on #3
+V1: Sea F0 un cuadrado de lado 3, que est´a todo pintado de blanco.
+• A partir de F0, construimos la ﬁgura F1 de la siguiente manera: subdividimos el cuadrado grande en 9
+cuadrados iguales, tomamos el cuadrado central, y lo pintamos de azul.
+• Ahora construimos F2: subdividimos cada uno de los cuatro cuadrados adyacentes con el central, en
+nueve cuadrados iguales, y pintamos los cuatro cuadrados centrales respectivos, de azul.
+• Repetimos este proceso inductivamente hasta el inﬁnito.
+Al terminar el proceso, ¿cu´al es el ´area que queda pintada de azul?
+•
+9
+5
+•
+7
+3
+• 5
+•
+3
+2
+• 4
+Soluci´on: Sea {An}n≥1 el ´area pintada en cada paso y A = 9 el ´area total del cuadrado.
+Para n = 1 tenemos que el ´area pintada es 1
+9 del ´area total por lo que A1 = 1
+9A.
+Para n = 2 pintamos 4 cuadrados de ´area igual a 1
+9A1, por lo que A2 es igual a 4
+9A1 =
+4
+92 A.
+Para n = 3 observemos que siempre pintamos 4 cuadrados cuya ´area es igual a 1
+9A2. Por lo tanto el ´area pintada
+en el paso 3 es igual a A3 = 4
+9A2 = 42
+93 A.
+Mediante un razonamiento an´alogo obtenemos que para todo n ≥1, el ´area pintada en el paso n es An = 4n−1
+9n A.
+Por lo tanto el ´area pintada total es
+∞
+X
+n=1
+An =
+∞
+X
+n=1
+4n−1
+9n A = A
+4
+∞
+X
+n=1
+(4
+9
+)n
+= A
+4
+(
+4
+9
+1 −4
+9
+)
+= A
+4
+(4
+5
+)
+= A
+5 = 9
+5.
+V2: Sea F0 un cuadrado de lado 6, que est´a todo pintado de blanco.
+• A partir de F0, construimos la ﬁgura F1 de la siguiente manera: subdividimos el cuadrado grande en 9
+cuadrados iguales, tomamos el cuadrado central, y lo pintamos de azul.
+• Ahora construimos F2: subdividimos cada uno de los cuatro cuadrados adyacentes con el central, en
+nueve cuadrados iguales, y pintamos los cuatro cuadrados centrales respectivos, de azul.
+• Repetimos este proceso inductivamente hasta el inﬁnito.
+11
+
+===== PAGE 12 =====
+Al terminar el proceso, ¿cu´al es el ´area que queda pintada de azul?
+•
+36
+5
+•
+28
+3
+•
+21
+2
+• 6
+• 16
+Soluci´on: Haciendo A = 36 en la soluci´on anterior, se tiene A
+5 = 36
+5 .
+V3: Sea F0 un cuadrado de lado 9, que est´a todo pintado de blanco.
+• A partir de F0, construimos la ﬁgura F1 de la siguiente manera: subdividimos el cuadrado grande en 9
+cuadrados iguales, tomamos el cuadrado central, y lo pintamos de azul.
+• Ahora construimos F2: subdividimos cada uno de los cuatro cuadrados adyacentes con el central, en
+nueve cuadrados iguales, y pintamos los cuatro cuadrados centrales respectivos, de azul.
+• Repetimos este proceso inductivamente hasta el inﬁnito.
+Al terminar el proceso, ¿cu´al es el ´area que queda pintada de azul?
+•
+81
+5
+•
+62
+3
+•
+27
+2
+• 36
+• 45
+Soluci´on: Haciendo A = 81 en la soluci´on anterior de V1, se tiene A
+5 = 81
+5 .
+12
+
+===== PAGE 13 =====
+PARTE III: DESARROLLO
+Desarrollo #1
+[25 puntos]
+(a) Sea
+f(t) =
+1
+t log2(t −3).
+Determine la convergencia o divergencia de las integrales
+Z 2021
+4
+f(t) dt y
+Z +∞
+2021
+f(t) dt.
+Luego, clasiﬁque la integral impropia
+Z +∞
+4
+f(t) dt.
+[12 puntos]
+(b) Enuncie el criterio serie-integral para clasiﬁcaci´on de series.
+[5 puntos]
+(c) Se considera la serie
++∞
+X
+n=2021
+sen(n)
+n log2(n −3).
+Demuestre que esta serie converge absolutamente.
+[8 puntos]
+Soluci´on:
+(a) Para la integral
+R 2021
+4
+f(t) dt, comparamos con la funci´on g(t) =
+1
+(t−4)2 . Tenemos que:
+lim
+t→4+
+f(t)
+g(t) = lim
+t→4+
+1
+t log2(t−3)
+1
+(t−4)2
+= lim
+t→4+
+(t −4)2
+t log2(t −3) = lim
+t→4+
+1
+t
+(
+t −4
+log(t −3)
+)2
+= 1
+4 > 0.
+Las funciones f y g son entonces equivalente, por lo que
+R 2021
+4
+f(t) dt y
+R 2021
+4
+dt
+(t−4)2 son de la misma clase.
+Como
+R 2021
+4
+dt
+(t−4)2 =
+R 2017
+0
+dt
+t2 diverge, se tiene que
+R 2021
+4
+f(t) dt diverge por el criterio de equivalentes.
+Para la integral
+R +∞
+2021 f(t) dt =
+R +∞
+2021
+dt
+t log2(t−3), comparamos con g(t) =
+1
+t log2(t). Tenemos que:
+lim
+t→+∞
+f(t)
+g(t) =
+lim
+t→+∞
+t log2(t)
+t log2(t −3) =
+lim
+t→+∞
+(
+log(t)
+log(t −3)
+)2
+= 1.
+Entonces, las integrales
+R +∞
+2021
+dt
+t log2(t−3) y
+R +∞
+2021
+dt
+t log2(t) son de la misma clase. Por otro lado,
+Z +∞
+2021
+dt
+t log2(t) =
+lim
+c→+∞
+Z c
+2021
+dt
+t log2(t) =
+lim
+c→+∞−
+1
+log(t)
+}}}}
+c
+2021
+=
+lim
+c→+∞
+(
+1
+log(2021) −
+1
+log(c)
+)
+=
+1
+log(2021).
+Entonces, la integral
+R +∞
+2021
+dt
+t log2(t) converge, y por lo tanto
+R +∞
+2021 f(t) dt converge por el criterio de equiv-
+alentes.
+Finalmente, la integral mixta
+R +∞
+4
+f(t) dt diverge ya que
+R 2021
+4
+f(t) dt diverge.
+(b) Ver te´orico.
+(c) Como | sin(n)| ≤1 para todo n ≥2021, tenemos que
+}}}}
+sin(n)
+n log2(n −3)
+}}}} ≤
+1
+n log2(n −3).
+13
+
+===== PAGE 14 =====
+Por otro lado, veamos que la serie
++∞
+P
+n=2021
+sin(n)
+n log2(n−3) converge por el criterio de serie-integral. Consideramos
+la funci´on f : [2021, +∞) →R dada por
+f(t) =
+sin(t)
+n log2(t −3),
+la cual es continua y positiva en su dominio. M´as a´un, la funci´on en creciente ya que
+t1 > t2 ⇒t1−3 > t2−3 ⇒log(t1−3) > log(t2−3) > 1 ⇒log2(t1−3) > log2(t2−3) ⇒
+1
+log2(t1 −3) <
+1
+log2(t2 −3)
+y
+t1 > t2 ⇒
+1
+t1
+< 1
+t2
+.
+Entonces,
+t1 > t2 ⇒
+1
+t1 log2(t1 −3) <
+1
+t2 log2(t2 −3).
+Se veriﬁcan as´ı las hip´otesis del criterio serie-integral. Como
+R +∞
+2021
+1
+t log2(t−3) dt converge por la parte (a),
+se tiene que la serie
++∞
+P
+n=2021
+1
+n log2(n−3) converge. Por lo tanto, por el criterio de comparaci´on, la serie
++∞
+P
+n=2021
+}}}
+sin(n)
+n log2(n−3)
+}}} converge, es decir,
++∞
+P
+n=2021
+sin(n)
+n log2(n−3) converge absolutamente.
+Desarrollo #2
+[25 puntos]
+Sea f : R2 →R la funci´on dada por
+f(x, y) =
+(
+y3
+x2+y2
+si (x, y)̸ = (0, 0),
+λ
+si (x, y) = (0, 0),
+con λ ∈R.
+(a) Hallar el valor de λ para el cual f es continua en (0, 0).
+[3 puntos]
+Para el valor de λ hallado en la parte (a):
+(b) Calcule las derivadas parciales de f en todos los puntos de R2.
+[6 puntos]
+(c) Determine la diferenciabilidad de f en todos los puntos de R2.
+[12 puntos]
+(d) Calcule las derivadas direccionales ∂f
+∂⃗v (0, 1) y ∂f
+∂⃗v (0, 0) donde⃗v = (1, 1).
+[4 puntos]
+Soluci´on:
+(a) Para encontrar λ ∈R que hace que la funci´on f sea continua en (0, 0) debemos estudiar lim(x,y)→(0,0) f(x, y).
+Pasando a polares x = ρ cos(θ) e y = ρ sin(θ) obtenemos
+f(ρ, θ) = ρ3 sin3(θ)
+ρ2
+= ρ sin3(θ).
+Como f(ρ, θ) es de la forma h(ρ)g(θ) donde h(ρ) = ρ y g(θ) = sin3(θ) y adem´as h(ρ) →0 cuando ρ →0
+y g(θ) est´a acotado, tenemos que
+lim
+(x,y)→(0,0) f(x, y) = lim
+ρ→0 h(ρ)g(θ) = 0.
+Por lo tanto para que f(x, y) sea continua en (0, 0) debemos elegir λ = 0.
+Otra forma de verlo es escribir
+y3
+x2+y2 = y ·
+y2
+x2+y2 , donde la funci´on (x, y) 7→y tiende a cero en (0, 0),
+mientras que la funci´on (x, y) 7→
+y2
+x2+y2 est´a acotada (por 1) en un entorno reducido de (0, 0).
+14
+
+===== PAGE 15 =====
+(b) Observar que si (x, y)̸ = (0, 0) como la funci´on es un cociente de funciones derivables, podemos calcular
+las derivadas parciales sin hacer el l´ımite, de donde
+∂f
+∂x(x, y) = −
+2y3x
+(x2 + y2)2 ,
+∂f
+∂y (x, y) = 3x2y2 + y4
+(x2 + y2)2 .
+Por otro lado, si (x, y) = (0, 0) debemos realizar la derivada mediante el l´ımite del cociente incremental.
+Por un lado
+∂f
+∂x(0, 0) = lim
+h→0
+f(h, 0) −f(0, 0)
+h
+= lim
+h→0
+0
+h = 0,
+mientras que por otro
+∂f
+∂y (0, 0) = lim
+h→0
+f(0, h) −f(0, 0)
+h
+= lim
+h→0
+h3
+h2
+h = lim
+h→0
+h
+h = lim
+h→0 1 = 1.
+(c) Si (x, y)̸ = (0, 0) la funci´on es diferenciable por ser cociente de funciones diferenciables y en donde el
+denominador no se anula.
+Si (x, y) = (0, 0) entonces debemos veriﬁcar la deﬁnici´on de diferenciabilidad, es decir debemos ver si
+lim
+(x,y)→(0,0)
+r(x, y)
+||(x, y)|| = 0
+donde
+r(x, y) = f(x, y) −f(0, 0) −∂f
+∂x(0, 0)x −∂f
+∂y (0, 0)y = f(x, y) −y =
+y3
+x2 + y2 −y = −
+x2y
+x2 + y2 .
+Luego
+lim
+(x,y)→(0,0)
+r(x, y)
+||(x, y)|| =
+lim
+(x,y)→(0,0) −
+x2y
+x2+y2
+p
+x2 + y2 =
+lim
+(x,y)→(0,0) −
+x2y
+(x2 + y2)
+3
+2
+Observar que si nos acercamos por la recta x = y tenemos que
+lim
+x→0 −
+x3
+(2x2)
+3
+2 = lim
+x→0 −
+x3
+2
+√
+2|x|3 = lim
+x→0 −
+x
+2
+√
+2|x|.
+Como el l´ımite anterior no existe, la funci´on no es diferenciable en (0, 0).
+(d) En (0, 1) como la funci´on es diferenciable tenemos que
+∂f
+∂v (0, 1) = ⟨∇f(0, 1), (1, 1)⟩=
+* 
+−
+2y3x
+(x2 + y2)2
+}}}}
+(0,1)
+, 3x2y2 + y4
+(x2 + y2)2
+}}}}
+(0,1)
+!
+, (1, 1)
++
+= ⟨(0, 1), (1, 1)⟩= 1.
+Como en (0, 0) la funci´on no es diferenciable, debemos estudiar el l´ımite:
+∂f
+∂v (0, 0) = lim
+h→0
+f(h, h) −f(0, 0)
+h
+= lim
+h→0
+h3
+2h2
+h
+= lim
+h→0
+h
+2
+h = lim
+h→0
+1
+2 = 1
+2.
+15

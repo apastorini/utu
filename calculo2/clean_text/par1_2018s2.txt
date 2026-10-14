@@ -1,0 +1,129 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo diferencial e integral en varias variables
+Facultad de Ingenier´ıa - IMERL
+Segundo semestre 2018
+Primer parcial.
+No. Parcial
+Apellido y nombre
+Firma
+C´edula
+Asiste a te´orico
+PARA USO DOCENTE
+Ej 1
+Ej 2
+Ej 3
+Ej 4
+Ej 5
+Ej 6
+Total
+Ejercicios de M´ultiple Opci´on.
+Total: 25 puntos.
+5 puntos respuesta correcta, -1 puntos respuesta incorrecta.
+1. Se considera conjunto B = S
+n∈N∗{(x, y) ∈R2 : xy = 1/n}. Determinar la opci´on correcta:
+(A) ∂B ∩B = ∅.
+□
+(B) B es un conjunto cerrado.
+□
+(C) B′ ∩B = ∅.
+□
+(D) A ⊂B, donde A = {(x, y) ∈R2 : y = 0}.
+□
+2. Se considera la sucesi´on (an)n∈N tal que a0 = k, k ∈R, y an+1 =
+q
+an
+2+an .
+Indicar la opci´on correcta:
+(A) Para k = 1, (an) es monotona creciente y l´ım an = +∞.
+□
+(B) Para k = 1
+4, (an) es monotona decreciente y l´ım an = 0.
+□
+(C) Para k = 1, no es monotona decreciente ni monotona creciente y l´ım an = −1 +
+√
+2.
+□
+(D) Para k = 1
+4, (an) es monotona creciente y l´ım an = −1 +
+√
+2.
+□
+1
+
+===== PAGE 2 =====
+3. Consideremos z = r(cos(ϕ) + i sin(ϕ)) tal que z3 = i y ϕ ∈[π
+2 , π]; w = r′(cos(θ) + i sin(θ))
+tal que w3 = −i y θ ∈[π, 3π
+2 ].
+Indicar la opci´on correcta:
+(A) z + w = i
+2.
+□
+(B) z + w = i.
+□
+(C) z + w = −
+√
+3.
+□
+(D) z + w =
+√
+3 + i.
+□
+4. Sea (an)n∈N una sucesi´on de n´umeros reales positivos cuyos t´erminos satisfacen
+1 < an+1
+an
+< 2
+Indicar la opci´on correcta:
+(A) P an
+n! diverge y P an
+en converge.
+□
+(B) P an
+n! converge y P an
+en converge.
+□
+(C) P an
+n! diverge y P an
+en diverge.
+□
+(D) P an
+n! converge y P an
+en diverge.
+□
+5. Consideramos la siguiente ecuaci´on diferencial con condici´on inicial:
+
+
+
+
+
+x′ = (x−2)2
+(t+1)2
+x(0) = 5
+2
+Entonces x(1) vale:
+(A) 4.
+□
+(B) 9
+2.
+□
+(C) 2.
+□
+(D) 8
+3.
+□
+2
+
+===== PAGE 3 =====
+Ejercicio de Desarrollo
+Total: 15 puntos.
+6.
+i. Enunciar y demostrar el criterio integral.
+ii. Clasiﬁcar
++∞
+X
+n=2
+1
+n ln(n)α , discutiendo seg´un α ∈R.
+3

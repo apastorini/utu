@@ -1,0 +1,456 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo diferencial e integral en varias variables
+Facultad de Ingenier´ıa - IMERL
+Segundo Semestre 2020
+Segundo parcial – S´abado 5 de diciembre de 2020
+Nro de Parcial
+C´edula
+Apellido y nombre
+(I) M´ultiple opci´on. Total: 40 puntos
+Puntajes: 8 puntos si la respuesta es correcta, 0 punto por no contestar y -1.5 si la respuesta es incorrecta.
+Indique sus respuestas en los casilleros correspondientes, con letras may´usculas imprenta: A, B, C, D o E.
+Ejercicio 1
+Ejercicio 2
+Ejercicio 3
+Ejercicio 4
+Ejercicio 5
+D
+D
+B
+C
+C
+Ejercicio 1
+Sea D = {(x, y) ∈R2/ |y| > x2, −4 < y < 1}. Entonces
+
+D(3 −6xy) dxdy vale
+A) 8
+B) 16
+C) 22
+D) 36
+E) 48
+Soluci´on: Observar que la regi´on D es la siguiente:
+De donde se ve claramente que si 0 ≤y < 1 entonces −√y < x < √y y si −4 < y < 0 entonces
+−√−y < x < √−y. Por lo que
+
+D
+(3 −6xy)dxdy =
+ 0
+−4
+ √−y
+−√−y
+(3 −6xy)dxdy +
+ 1
+0
+ √y
+−√y
+(3 −6xy)dxdy
+=
+ 0
+−4
+(3x −3x2y)
+
+√−y
+−√−y
+dy +
+ 1
+0
+(3x −3x2y)
+
+√y
+−√y
+dy
+=
+ 0
+−4
+6√−ydy +
+ 1
+0
+6√ydy
+=
+ 4
+0
+6√ydy + 4y3/2
+
+1
+0
+= 4y3/2
+
+4
+0
++ 4
+= 32 + 4 = 36
+Respuesta: D.
+1
+
+===== PAGE 2 =====
+2
+Ejercicio 2
+Sean f y g las dos funciones de R2 a R deﬁnidas como sigue:
+f(x, y) = x4 −y4 + x6
+(x2 + y2)2
+g(x, y) =
+
+x2y2
+x3−y3
+si x = y
+0
+si x = y
+Considere los l´ımites
+l´ım
+(x,y)→(0,0) f(x, y), y
+l´ım
+(x,y)→(0,0) g(x, y). Entonces:
+A) Ambos l´ımites existen y son 0.
+B) El l´ımite de f(x, y) existe y es 0, pero el l´ımite de g(x, y) no existe.
+C) El l´ımite de g(x, y) existe y es 0, pero el l´ımite de f(x, y) no existe.
+D) No existen ninguno de los dos l´ımites.
+E) Ambos l´ımites existen, pero no son 0.
+Soluci´on:
+Empecemos con el l´ımite de f.
+Observar que si x = 0 entonces f(x, 0) = 1 + x2 y si y = 0 tenemos f(0, y) = −1. Por lo tanto,
+l´ım
+(x,y)→(0,0) f(x, y) no existe, ya que en cada eje el l´ımite da distinto.
+Veamos ahora que pasa para g.
+Si nos consideramos la curva y = x + x2, tenemos que g(x, x + x2) =
+x4+2x5+x6
+−3x4−3x5−x6 , por lo tanto si nos
+consideramos el l´ımite de g a lo largo de esa curva con x tenndiendo a 0, tenemos que g tiende a −1/3.
+Por otra parte, g(x, x) = 0 por lo que
+l´ım
+(x,y)→(0,0) g(x, y) no existe.
+Respuesta: D.
+Ejercicio 3
+Sea f : R2 →R una funci´on que cumple:
+f(x, x2) = 1, ∀x = 0,
+f(x, 0) = 0, ∀x ∈R,
+f(0, y) = 0, ∀y ∈R.
+Seleccione la opci´on correcta.
+A) f no es continua en (0, 0) y en consecuencia no existe ninguna derivada direccional en (0, 0)
+B) Las derivadas parciales de f en (0, 0) existen pero f no es diferenciable.
+C) Se veriﬁcan las hip´otesis de la condici´on suﬁciente de diferenciabilildad, luego f es diferenciable
+D) f es diferenciable, aunque no se veriﬁca la condici´on suﬁciente de diferenciabilildad.
+E) Ninguna de las opciones anteriores es correcta.
+Soluci´on:
+Observar que de las condiciones que cumple f, obtenemos que
+l´ım
+(x,y)→(0,0) f(x, y). Por lo tanto, f no es
+continua en (0, 0) y por ende, tampoco diferenciable.
+La condici´on f(x, 0) = 0, ∀x ∈R implica que fx(0, 0) = 0 y an´alogamente f(0, y) = 0, ∀y ∈R implica
+que fy(0, 0). Por lo que ambas derivadas parciales existen en (0, 0).
+Respuesta: B.
+
+===== PAGE 3 =====
+3
+Ejercicio 4
+Hallar la integral de la funci´on f(x, y, z) =
+
+x2 + y2 en el conjunto
+D = {(x, y, z) ∈IR3 : 0 ≤z ≤1, y ≥0, x2 + y2 ≤2x}.
+A) 8
+3
+B) 2π
+3
+C) 16
+9
+D) 9
+2
+E) 8
+Soluci´on:
+Bien, observar que la ecuaci´on x2 + y2 = 2x es la ecuaci´on de la circunferencia de radio 1 y centro
+(1, 0). Adem´as la intersecci´on entre esta circunferencia y una recta que pasa por el origen (y = mx)
+es el conjunto
+
+(0, 0),
+
+2
+1 + m2 ,
+2m
+1 + m2
+
+.
+Por lo tanto, si consideramos coordenadas cil´ındricas, tenemos que la preimagen de D es el conjunto
+{(ρ, θ, z) ∈IR3 : 0 ≤z ≤1, 0 ≤θ ≤π/2, 0 ≤ρ ≤2cos(θ)}.
+Entonces,
+
+D
+f(x, y, z)dxdydz =
+ 1
+0
+ π/2
+0
+ 2 cos(θ)
+0
+ρ2dρdθdz = 8
+3
+ 1
+0
+ π/2
+0
+cos3(θ)dθdz = 16
+9
+ 1
+0
+dz = 16
+9
+Respuesta: C.
+Ejercicio 5
+Sean f : IR2 →IR2 y g : IR2 →IR2 dos funciones diferenciables. Se sabe que f(x, y) =
+
+x
+2 + y2
+4 −x3 + 3
+4, xy + y4
+2
+	
+,
+y que:
+Jg
+
+1, 1
+2
+
+=
+
+2
+π
+0
+3
+
+,
+Jg (0, 1) =
+
+1
+0
+e
+2
+
+.
+Sea h = g ◦f. Entonces la matriz Jacobiana de h en el punto (0, 1) es:
+A) Jh(0, 1) =
+
+1
+2
+1
+2
+1
+2
+
+B) Jh(0, 1) =
+
+1
+π
+2 + 3
+2
+π
+2 −3
+
+C) Jh(0, 1) =
+
+1 + π
+1 + 2π
+3
+6
+
+D) Jh(0, 1) =
+
+1+e
+2
+1
+1 + 2e
+4
+
+E) Jh(0, 1) =
+
+1
+2
+1
+2
+e
+2 + 2
+e
+2 + 4
+
+Soluci´on:
+Primero que nada recordar que si h = g ◦f entonces Jh(1, 0) = Jg(f(1, 0))Jf(1, 0). Observar que
+f(1, 0) = (1, 1/2) y falta hallar Jf(1, 0).
+Es f´acil ver que
+∂f1
+∂x (x, y) = 1
+2 −3x
+∂f1
+∂y (x, y) = 1
+2y
+∂f2
+∂x (x, y) = y
+∂f1
+∂y (x, y) = x + 2y
+
+===== PAGE 4 =====
+4
+Por lo que Jf(1, 0) =
+
+1/2
+1/2
+1
+2
+
+y por tanto
+Jh(1, 0) = Jg(1, 1/2)Jf(1, 0) =
+
+2
+π
+0
+3
+ 
+1/2
+1/2
+1
+2
+
+=
+
+1 + π
+1 + 2π
+3
+6
+
+Respuesta: C.
+(II) Desarrollo. Total: 20 puntos. Justiﬁque sus respuestas.
+Problema 1
+Sea f : R2 →R.
+1. Deﬁnir continuidad de f en un punto.
+Soluci´on: Una funci´on f : R2 →R es continua en un punto a sii ∀ε > 0 existe δ > 0 tal
+que f(B(a, δ)) ⊂B(f(a), ε).
+2. Deﬁnir diferenciabilidad de f en un punto.
+Soluci´on: f es diferenciable en (a, b) sii existen dos reales A, B tales que
+f(a + Δx, b + Δy) = f(a, b) + AΔx + BΔy + r(Δx, Δy)
+con r : R2 →R una funci´on que cumple
+l´ım
+(Δx,Δy)→(0,0)
+r(Δx, Δy)
+
+(Δx, Δy)
+ = 0.
+3. Deﬁnir derivadas parciales y direccionales de f en un punto.
+Soluci´on: Se deﬁna la derivada direccional de f respecto al vector direcci´on v en el punto
+a como el siguiente l´ımite, si existe:
+∂f
+∂v (a) = l´ım
+h→0
+f(a + hv) −f(a)
+h
+Las derivadas parciales son las derivadas direccionales seg´un las direcciones (1, 0) y (0, 1).
+Demostrar que si f es diferenciable en el punto (a, b), entonces:
+4. f es continua en (a, b).
+Soluci´on: Si f es diferenciable en (a, b) entonces existen dos reales A, B tales que
+f(a + Δx, b + Δy) = f(a, b) + AΔx + BΔy + r(Δx, Δy)
+por lo tanto, si tomamos l´ımite con (Δx, Δy) →(0, 0), tenemos
+l´ım
+(Δx,Δy)→(0,0) f(a + Δx, b + Δy) =
+l´ım
+(Δx,Δy)→(0,0) f(a, b) + AΔx + BΔy + r(Δx, Δy)
+= f(a, b) +
+l´ım
+(Δx,Δy)→(0,0) AΔx + BΔy + r(Δx, Δy)
+= f(a, b)
+por lo que f es continua en (a, b).
+5. Existen las derivadas parciales de f en (a, b).
+Soluci´on: Si planteamos la deﬁnici´on de derivada parcial tenemos
+∂f
+∂x(a, b) = l´ım
+(h→0
+f(a + h, b) −f(a, b)
+h
+= l´ım
+(h→0
+Ah + r(h, 0)
+h
+= A + l´ım
+(h→0
+r(h, 0)
+h
+= A
+
+===== PAGE 5 =====
+5
+Problema 2
+Sea f : R2 →R deﬁnida como f(x, y) =
+
+xy · sen(
+1
+x2+y2 )
+si (x, y) = (0, 0)
+0
+si (x, y) = (0, 0)
+1. Estudiar la continuidad de f en el origen.
+Soluci´on: Para estudiar la continuidad en el origen, nos conviene pasar a polares, as´ı
+tenemos que estudiar el siguiente l´ımite
+l´ım
+ρ→0 cos(θ) sen(θ)ρ2 sen(1/ρ2)
+pero observar que 1 ≤cos(θ) sen(θ) ≤1 por lo tanto como ρ2 sen(1/ρ2) tiende a cero (por ser
+sen(1/ρ2) acotado), tenemos que el l´ımite anterior es cero. Por lo tanto, f es continua en el
+origen.
+2. Estudiar las derivadas parciales de f en el orgien.
+Soluci´on Observar que f(x, 0) = 0 = f(0, y), por lo tanto las derivadas parciales existen
+en el origen y son nulas.
+3. Estudiar la diferenciabilidad de f en el origen.
+Soluci´on: Pasando a polares se puede ver que
+l´ım
+(x,y)→(0,0)
+xy
+
+x2 + y2 = 0. Por lo tanto, por
+ser sen
+
+1
+x2+y2
+
+acotado, tenemos
+l´ım
+(x,y)→(0,0)
+xy
+
+x2 + y2 sen
+
+1
+x2 + y2
+
+= 0,
+es decir f es diferenciable en el origen. Basta tomar A = 0 = B y r(x, y) = xy sen
+
+1
+x2+y2
+
+4. Estudiar si las derivadas parciales son continuas en el origen.
+Soluci´on: Veamos que las derivadas parciales no son continuas en (0, 0). Observar que
+como la formula de f es sim´etrica, basta probarlo para una sola, por ejemplo fx.
+Si (x, y) = (0, 0) tenemos
+fx(x, y) = y sen
+
+1
+x2 + y2
+
+−
+2x2y
+(x2 + y2)2 cos
+
+1
+x2 + y2
+
+.
+Observar que si nos movemos por la recta x = y, tenemos
+l´ım
+x→0 fx(x, x) = l´ım
+x→0 x sen
+ 1
+2x2
+
+−2x3
+x4 cos
+ 1
+2x2
+
+= ±∞,
+por lo tanto la derivada parcial fx no es continua en (0, 0).

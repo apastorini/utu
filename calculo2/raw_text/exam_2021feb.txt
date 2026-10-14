@@ -1,0 +1,715 @@
+
+===== PAGE 1 =====
+Resoluciones del examen del 24-2-21
+Juan Piccini
+1
+Problema 1 (Número Complejo)
+Sean z = r(cos θ + i sin θ) y w dos números complejos donde r > 0 y θ ∈R tales que:
+• z4 = i
+• θ ∈
+−π
+4 , π
+4
+
+,
+• ez−w = 1
+• 5 < Im(w) < 7
+Hallar z + w (siguen las cuatro opciones)
+Resolución:
+Versión 1:: El dato z4 = i nos dice que z es una de las cuatro raíces cuartas de la unidad imaginaria i. Como
+|z|4 = |i| = 1, z debe tener módulo 1.
+Las raíces cuartas de i están sobre la cfa de centro en el origen y radio 1 y forman los vértices de un
+cuadrado. Llamemos z0, z1, z2, z3 a estas cuatro raíces cuartas, enumeradas en sentido antihorario.
+El argumento de z0 es la cuarta parte del argumento de i, que es π/2. Por tanto z0 tiene módulo 1
+y argumento π/8, z0 = cos(π/8) + i sin(π/8).
+Obtenemos z1 sumando π/2 al argumento de z0, z1 = cos(5π/8) + i sin(5π/8).
+Sumando π/2
+pasamos a z2 = cos(pπ/8) + i sin(9π/8).
+Del mismo modo, z3 = cos(13π/8) + i sin(13π/8), que equivale a z3 = cos(−3π/8) + i sin(−3π/8)
+(z0 y z3 están en el primer y cuarto cuadrante respectivamente).
+El dato θ ∈
+−π
+4 , π
+4
+
+nos dice que z es z0, z = cos(π/8) + i sin(π/8).
+Supongamos que z = a + bi y w = c + di, z −w = a −c + (b −d)i. Por la deﬁnición de exponencial
+compleja, ez−w = ea−c(cos(b −d) + i sin(b −d))
+El dato ez−w = 1 = 1 + 0i nos dice que cos(b −d) = 1 y que sin(b −d) = 0, lo que nos deja
+b −d = 2kπ, de donde d = b + 2kπ = π/8 + 2kπ. Como ea−c = 1, tenemos que c = a.
+Entonces Re(w) = Re(z) = cos(π/8) mientras que Im(w) = Im(z) + 2kπ = sin(π/8) + 2kπ.
+Por último, el dato 5 < Im(w) < 7 nos dice que k = 1.
+Por tanto w = cos(π/8) + i(sin(π/8) + 2π) y
+z + w = 2 cos(π/8) + 2i(sin(π/8) + π)
+1
+
+===== PAGE 2 =====
+Versión 2: Mismo enunciado pero ahora los datos son
+• z4 = i
+• θ ∈
+hπ
+2 , π
+i
+,
+• ez−w = 1
+• 0 < Im(w) < 2
+El dato θ ∈
+hπ
+2 , π
+i
+nos dice que z = z1, la raíz que está en el segundo cuadrante,
+z = z1 = cos(5π/8) + i sin(5π/8).
+El dato ez−w = 1 nos lleva (mismas cuentas que en la versión anterior, solamente cambian a, b) a
+obtener:
+c = a = cos(5π/8), d = b + 2kπ = sin(5π/8) + 2kπ.
+Como ahora es 0 < Im(w) < 2 , tenemos que k = 0.
+Por tanto w = cos(5π/8) + i sin(5π/8) y
+z + w = 2 cos(5π/8) + 2i sin(5π/8)
+Versión 3: Misma letra pero ahora los datos son
+• z4 = i
+• θ ∈
+h
+0, π
+2
+i
+,
+• ez−w = 1
+• 0 < Im(w) < 2
+Los dos primeros datos nos dicen que z = z0 = cos(π/8) + i sin(π/8), el dato ez−w = 1 nos dice que
+c = a = cos(π/8) y d = b + 2kπ, d = sin(π/8) + 2kπ.
+El dato 0 < Im(w) < 2 nos dice k = 0, de donde w = cos(π/8) + i sin(π/8) y por tanto
+z + w = 2 cos(π/8) + 2i sin(π/8)
+2
+
+===== PAGE 3 =====
+2
+Problema 2 (Topología)
+1. Considere el siguiente conjunto de R2:
+A = [0, 1]2 ∩Q × Qc.
+Donde el conjunto Q denota a los números racionales y Qc representa el conjunto de los números
+irracionales (en algunas versiones se intercambian los roles, y se intersecta con Qc ×Q, de cualquier
+modo el problema es simétrico en ese aspecto).
+Considere las las siguientes aﬁrmaciones:.... (Las aﬁrmaciones varían según la versión, pero todas
+giran en torno a la compacidad, acotación, puntos de acumulación y puntos aislados de A, por tanto
+veremos c/u de ellas).
+Resolución:
+El conjunto A es la intersección del producto cartesiano [0, 1] × [0, 1] (denotado como [0, 1]2 del
+mismo modo que el producto cartesiando R × R se denota como R2), con el producto cartesiano
+Q × Qc.
+Recordemos que dados dos conjuntos A1, A2 no vacíos, el producto cartesiano A1×A2 es el conjunto
+de pares (a, b) : a ∈A1, b ∈A2, son todas las parejas donde la primera componente es un elemento
+de A1 y la segunda componente es un elemento de A2.
+El producto [0, 1]2 son todas las parejas (x, y) : x ∈[0, 1], y ∈[0, 1], mientras que Q × Qc son las
+parejas (x, y) donde x es racional e y es irracional (en algunas versiones x e y intercambian roles).
+Entonces A son los puntos del cuadrado [0, 1] × [0, 1] que además tienen una coordenada racional y
+la otra irracional.
+Una vez que tenemos claro quién es A, veamos las aﬁrmaciones.
+• Acotación:
+Es claro que el cuadrado [0, 1]2 es acotado y que A ⊂[0, 1]2, por tanto A es acotado.
+• P. de Acumulación:
+Recordemos que los puntos de acumulación de A son aquellos puntos tales que si tomamos
+bolas reducidas centradas en ellos, sin importar su radio siempre tendrán al menos un punto
+de A.
+Sea (x0, y0) ∈[0, 1]2 y para un δ > 0 dado tomemos la bola B∗
+(x0,y0,δ). Como los racionales y los
+irracionales son densos en [0, 1], siempre habrá un x racional y un y irracional suﬁcientemente
+cerca de x0 e y0 respectivamente (o al revés según la versión), esto es, d((x0, y0), (x, y)) < δ.
+Por tanto este punto (x, y) será un elemento de A, porque estará en el cuadrado [0, 1]2 y tendrá
+una coordenada racional y la otra irracional, según sea la versión.
+Esto prueba que cualquier punto del cuadrado [0, 1]2 es punto de acumulación de A.
+En
+particular, A no contiene a todos sus puntos de acumulación, ya que alcanza con elegir
+un (x, y) ∈[0, 1]2 con sus dos coordenadas racionales (o ambas irracionales), este punto es de
+acumulación de A pero no pertenece a A.
+• Puntos Aislados: El que los racionales sean densos y los irracionales también permite probar
+que A no tiene puntos aislados, si tomamos un punto (x, y) ∈A , cualquier bola centrada
+en él tendrá puntos de A ya que puedo acercarme tanto como quiera a la coordenada racional
+mediante racionales y a la irracional mediante irracionales.
+Es imposible construír una bola donde el único elemento de A sea el centro de la bola.
+• Compacidad: Para que A sea compacto tiene que ser acotado y cerrado. Sabemos que es
+acotado, pero no puede ser cerrado ya que un conjunto cerrado contiene a todos sus puntos
+de acumulación y A no lo hace (todo punto de [0, 1]2 con las dos coordenadas racionales o las
+dos irracionales es de acumulación de A pero no pertenece a A).
+3
+
+===== PAGE 4 =====
+Por tanto A no es compacto.
+Resumen: A es acotado, no es compacto porque no es cerrado, no tiene puntos aisla-
+dos, sus puntos de acumulación son todo el cuadrado [0, 1]2.
+Con esto presente, veamos las versiones:
+Versión
+Considere las las siguientes aﬁrmaciones:
+(I) A compacto. (Falsa)
+(II) A acotado. (Verdadera)
+(III) A tiene puntos aislados. (Falsa)
+A) Las únicas verdaderas son la aﬁrmación (I) y la (III).
+B) Todas las aﬁrmaciones son verdaderas.
+C) La única aﬁrmación verdadera es la (II) es la correcta
+D) Las únicas aﬁrmaciones verdaderas son la (II) y la (III)
+Versión
+Considere las las siguientes aﬁrmaciones:
+(I) A acotado (Verdadera)
+(II) A compacto. (Falsa)
+(III) A no tiene puntos aislados. (Verdadera)
+A) Las únicas verdaderas son la aﬁrmación (I) y la (III). es la correcta
+B) Todas las aﬁrmaciones son verdaderas.
+C) La única aﬁrmación verdadera es la (I)
+D) Las únicas aﬁrmaciones verdaderas son la (II) y la (III)
+Versión
+Considere las las siguientes aﬁrmaciones:
+(I) A acotado. (Verdadera)
+(II) A no tiene puntos de acumulación. (Falsa)
+(III) A compacto. (Falsa)
+A) Las únicas verdaderas son la aﬁrmación (I) y la (III).
+B) Todas las aﬁrmaciones son verdaderas.
+C) La única aﬁrmación verdadera es la (I). es la correcta
+D) Las únicas aﬁrmaciones verdaderas son la (II) y la (III)
+4
+
+===== PAGE 5 =====
+3
+Problema 3 (Sucesiones y Series)
+Una pelota de goma cae verticalmente desde 10 mt. de altura sobre una superﬁcie dura y comienza a
+rebotar. En cada rebote la pelota alcanza 2/3 de la altura alcanzada en el rebote anterior (en otras
+versiones es 4/5 por ejemplo).
+Sean N el primer rebote cuya altura es menor o igual a 1 mt. y H la suma de las alturas de los
+rebotes 1, 2, . . . , N.
+Entonces: (siguen las opciones donde se presentan distintos valores para N y para H).
+Resolución:
+La altura del primer rebote es 2
+3 × 10, la del segundo es 2/3 de la anterior, la del tercero es 2/3 de la
+anterior.
+Dichas alturas forman la sucesión 10( 2
+3), 10( 2
+3)2, 10( 2
+3)3, . . . , 10( 2
+3)N, . . . .
+Buscamos el primer rebote cuya altura no supera un 1 mt. (o 1.25 mt. según la versión). Esto es,
+buscamos el primer N : 10( 2
+3)N ≤1.
+Esto es lo mismo que el primer N : ( 2
+3)N ≤
+1
+10, o N log(2/3) ≤log(1/10).
+De aquí despejamos
+N ≥log(1/10)
+log(2/3)
+(recordemos que cuando multiplicamos ambos miembros de una desigualdad por un
+número negativo, la misma cambia de signo).
+Obtenemos N ≥5.67, de donde N = 6 (en el quinto rebote se alcanza una altura que es mayor a 1
+mt., en el sexto por primera vez no se supera 1 mt.).
+Como H es la suma de las alturas de los rebotes 1,2,...,N, tenemos que hallar
+H = 10(2
+3) + 10(2
+3)2 + 10(2
+3)3 + · · · + 10(2
+3)6
+Recordemos que PN
+k=1 pk = 1−pN+1
+1−p
+−1. Sustituyendo p = 2/3 N = 6 y sacando 10 de factor común
+obtenemos
+H = 10
+ 
+1 −27
+37
+1 −2
+3
+−1
+!
+= 10
+ 
+1 −27
+37
+1
+3
+−1
+!
+Recordemos que dividir entre 1/3 es lo mismo que multiplicar por 3, por tanto
+H = 10
+
+3(1 −27
+37 ) −1
+
+= 10
+
+(3 −27
+36 ) −1
+
+= 10
+
+2 −27
+36
+
+Las otras versiones se resuelven igual, para quienes no dispongan de calculadora, recordar que 1.25 mt.
+es lo mismo que 5/4 mt.
+5
+
+===== PAGE 6 =====
+4
+Problema 4 (Diferenciabilidad: Regla de la Cadena)
+Sea f : R2 →R2 deﬁnida por
+f(x, y) = (e−(x+y) −cos(x2 + y2), xy −x + y)
+y g : R2 →R tal que ∇g(0, 0) = (3, 2). Consideremos h = g ◦f (según la versión cambia la segunda
+componente de f y el valor de ∇g(0, 0)). Entonces (siguen opciones para el valor de ∇h(0, 0)).
+Resolución:
+Para h = g ◦f, tenemos que Jh(0, 0) = Jg(f(0, 0))Jf(0, 0).
+Como h : R2 →R, su matriz jacobiana será una matriz ﬁla, que llamamos ∇h(0, 0).
+Lo mismo para g, pero como f = (f1, f2) : R2 →R2 (donde fi : R2 →R son las dos funciones
+componentes, f1(x, y) = e−(x+y) −cos(x2 + y2) y f2 = xy −x + y), la matriz jacobiana de f será 2 x 2,
+la primera ﬁla es ∇f1(0, 0) y la segunda es ∇f2(0, 0).
+Por tanto ∇h(0, 0) = ∇g(0, 0)
+ 
+∂f1
+∂x (0, 0)
+∂f1
+∂y (0, 0)
+∂f2
+∂x (0, 0)
+∂f2
+∂y (0, 0)
+!
+• Versión f(x, y) = (e−(x+y) −cos(x2 + y2), xy −x + y) ∇g(0, 0) = (3, 2):
+∂f1
+∂x (x, y) = −e−(x + y) + 2xsen(x2 + y2), evaluada en (0, 0) queda igual a -1.
+∂f1
+∂y (x, y) = −e−(x + y) + 2ysen(x2 + y2), evaluada en (0, 0) queda igual a -1 (f1 es simétrica en x
+e y).
+∂f2
+∂x (x, y) = y −1, evaluada en (0, 0) queda igual a -1.
+∂f2
+∂y (x, y) = x + 1, evaluada en (0, 0) queda igual a 1.
+Por tanto ∇h(0, 0) = (3 2)
+
+−1
+−1
+−1
+1
+
+= (−5 −1)
+• Versión f(x, y) = (e−(x+y) −cos(x2 +y2), xy −x+y) ∇g(0, 0) = (2, 3): solamente cambia ∇g(0, 0)
+que ahora es la matriz ﬁla (2 3).
+Por tanto ∇h(0, 0) = (2 3)
+ −1
+−1
+−1
+1
+
+= (−5
+1)
+• Versión f(x, y) = (e−(x+y) −cos(x2 + y2), xy + x −y) ∇g(0, 0) = (3, 2):
+Es como la primera versión, solamente cambia f2 por lo que solamente cambia la segunda ﬁla de
+Jf.
+Las derivadas parciales de f2(x, y) = xy + x −y evaluadas en (0, 0) ahora valen 1 y -1, por tanto
+∇h(0, 0) = (3 2)
+
+−1
+−1
+1
+−1
+
+= (−1 −5)
+6
+
+===== PAGE 7 =====
+5
+Problema 5 (Límites y Continuidad)
+Sean f : R2 →R : f(x, y) =
+
+1
+2
+si x2
+2 < y < x2
+0
+sino
+y
+g : [0, +∞) × [0, 2π) →R2: g(r, θ) = f(rcos(θ), rsen(θ)).
+Considere las siguientes aﬁrmaciones: (vienen aﬁrmaciones sobre el límite de f y g en el origen, sobre
+la continuidad de f en el origen, sobre si f es una función acotada).
+f es una función constante a trozos, vale 1/2 en la región limitada entre dos parábolas y 0 en el resto
+del plano.
+Lo que cambia en las versiones es la región donde f = k, (k > 0) y el valor de k. Las regiones siempre
+están limitadas entre dos parábolas.
+Resolución:
+Que el límite en polares sea cero signiﬁca que al acercarnos al origen por restricciones y = mx el límite
+es cero (sin importar la pendiente de la recta, tarde o temprano sale de la región parabólica y termina
+llegando al origen por la región donde f = 0).
+Sin embargo alcanza con tender al origen en una curva que esté entre las dos parábolas (región donde
+f = 1/2) para tener límite =1/2.
+Por tanto no existe el límite de f en el origen.
+Tampoco puede ser f continua en el origen, por lo anterior.
+f sí es acotada en su dominio R2, ya que 0 ≤f(x, y) ≤1/2 ∀(x, y) ∈R2.
+Nada de esto cambia en las restantes versiones: f acotada, no tiene límite en el origen y no es
+continua en el origen.
+Con esto presente, veamos las distintas versiones:
+Versión
+Considere las siguientes aﬁrmaciones:
+I) lim g(r, θ)
+r→0
+= 0 ∀θ ∈[0, 2π) y lim f(x, y)
+(x,y)→(0,0)
+= 0 (Falsa)
+II) lim g(r, θ)
+r→0
+= 0 ∀θ ∈[0, 2π) pero ∄lim f(x, y)
+(x,y)→(0,0)
+(Verdadera)
+III) f es continua en (0, 0) (Falsa)
+IV) f es no acotada en R2 (Falsa)
+Entonces:
+A Solamente II es verdadera. es la correcta
+B Solamente I y III son verdaderas.
+C Solamente II y IV son verdaderas.
+D Solamente I, III y IV son verdaderas.
+Versión
+Considere las siguientes aﬁrmaciones:
+I) lim g(r, θ)
+r→0
+= 0 ∀θ ∈[0, 2π) y lim f(x, y)
+(x,y)→(0,0)
+= 0 (Falsa)
+II) lim g(r, θ)
+r→0
+= 0 ∀θ ∈[0, 2π) pero ∄lim f(x, y)
+(x,y)→(0,0)
+(Verdadera)
+III) f es continua en (0, 0) (Falsa)
+IV) f es acotada en R2 (Verdadera)
+7
+
+===== PAGE 8 =====
+Entonces:
+A Solamente IV es verdadera.
+B Solamente I y III son verdaderas.
+C Solamente II y IV son verdaderas. es la correcta
+D Solamente I, III y IV son verdaderas.
+Versión
+Considere las siguientes aﬁrmaciones:
+I) lim g(r, θ)
+r→0
+= 0 ∀θ ∈[0, 2π) y lim f(x, y)
+(x,y)→(0,0)
+= 0 (Falsa)
+II) lim g(r, θ)
+r→0
+= 0 ∀θ ∈[0, 2π) pero ∄lim f(x, y)
+(x,y)→(0,0)
+(Verdadera)
+III) f no es continua en (0, 0) (Verdadera)
+IV) f es no acotada en R2 (Falsa)
+Entonces:
+A Solamente II es verdadera.
+B Solamente II y III son verdaderas. es la correcta
+C Solamente II y IV son verdaderas.
+D Solamente I, III y IV son verdaderas.
+8
+
+===== PAGE 9 =====
+6
+Problema 6 (Diferenciabilidad: Plano Tangente)
+Consideremos la función f : R2 →R deﬁnida por
+f(x, y) = log(x2 + 2y2 + 1).
+Sea π el plano tangente al gráﬁco de f en el punto (1, 1, log(4)).
+Indicar cuál de los siguientes vectores es perpendicular a π (las distintas versiones diﬁeren en ligeros
+cambios en f o en el punto de tangencia).
+Resolución:
+El plano tangente al gráﬁco de f por el punto (x0, y0, z0) (donde z0 = f(x0, y0)) son los
+{(x, y, z) ∈R3 = z0 + ∂f
+∂x(x0, y0)(x −x0) + ∂f
+∂y (x0, y0)(y −y0)}
+En nuestro caso, x0 = 1, y0 = 1, z0 = log(4), ∂f
+∂x(1, 1) = 1/2, ∂f
+∂y (1, 1) = 1.
+Sustituyendo obtenemos z = log(4) + 1
+2(x −1) + 1(y −1) y haciendo distributiva y agrupando,
+1
+2x + y −z + 3
+2 −log(4) = 0
+Que es la ecuación del plano tangente, los coeﬁcientes de x, y, z son las componentes del vector normal.
+Por tanto un vector normal es (1/2, 1, −1).
+• Para la versión f(x, y) = log(2x2 + y2 + 1), (1, 1, log(4)), solamente intercambian roles x e y, por lo
+que ahora ∂f
+∂x(1, 1) = 1 y ∂f
+∂y (1, 1) = 1/2.
+El plano tangente nos queda
+x + 1
+2y −z −3
+2 + log(4) = 0
+De donde el vector normal es (1, 1/2, −1).
+• Para la versión f(x, y) = log(2x2 +2y2 +1) y el punto (1, 1, log(5)), cambian las derivadas parciales
+que ahora evaluadas en (1, 1) valen 4/5 (cambió la función).
+Ahora z0 = log(5) mientras que x0 e y0 permanecen como antes.
+El plano tangente ahora será
+4
+5x + 4
+5y −z + log(5) −8
+5 = 0
+El vector normal es ( 4
+5, 4
+5, −1).
+En todos los casos la constante que aparece en la ecuación del plano no afecta al vector normal, dado que
+el mismo viene dado por los coeﬁcientes en x, y, z.
+9
+
+===== PAGE 10 =====
+7
+Problema 7 (Taylor)
+Sean a, b, c, d, e, f ∈R tales que
+lim
+(x,y)→(1,1)
+xlog(y)
+y
+−ax2 −by2 −cxy −dx −ey −f
+(x −1)2 + (y −1)2
+= 0
+Entonces la suma a + b + c + d + e + f es: (luego vienen las opciones dentro de las cuales escoger).
+Resolución:
+Versión 1: Sustituímos f(x, y) =
+xlog(y)
+y
+por f(x, y) = (Polinomio de Taylor en (1,1) de orden 2) + (Resto)
+con lo que en el numerador del límite a calcular quedará un polinomio en dos variables y un resto
+que luego separaremos.
+Después agrupamos en las variables y vemos qué condiciones imponer para que dicho límite exista
+y sea cero.
+Recordemos que
+f(x, y) = f(1, 1)+∂f
+∂x(1, 1)(x−1)+∂f
+∂y (1, 1)(y−1)+1
+2
+
+(x −1 y −1)Hf(1, 1)
+ (x −1)
+(y −1)
+
++R(x, y)
+Donde Hf(1, 1) =
+ 
+∂2f
+∂x2 (1, 1)
+∂2f
+∂x∂y(1, 1)
+∂2f
+∂y∂x(1, 1)
+∂2f
+∂y2 (1, 1)
+!
+es la matriz Hessiana de f en el punto (1, 1) y R es
+el resto, del cual sabemos que
+lim
+(x,y)→(1,1)
+R(x, y)
+(x −1)2 + (y −1)2 = 0
+Las derivadas cruzadas son iguales, de donde la Hessiana es una matriz simétrica.
+Operando, tenemos que el término cudrático (para simpliﬁcar pongamos H =
+ A
+B
+B
+C
+
+), queda
+1
+2[A(x −1)2 + 2B(x −1)(y −1) + C(y −1)2] y por tanto (llamando D y E a las derivadas parciales
+de primer orden),
+f(x, y) = f(1, 1) + D(x −1) + E(y −1) + 1
+2[A(x −1)2 + 2B(x −1)(y −1) + C(y −1)2] + R(x, y)
+Tenemos que f(1, 1) = 0, ∂f
+∂x(x, y) = log(y)
+y
+, que evaluada en (1, 1) da cero. Asimismo ∂f
+∂y (x, y) =
+x
+
+1−log(y)
+y2
+
+, que evaluada en (1, 1) da 1.
+Por tanto nos queda f(x, y) = E(y −1) + 1
+2[A(x −1)2 + 2B(x −1)(y −1) + C(y −1)2] + R(x, y).
+El límite pedido puede escribirse entonces como
+lim
+(x,y)→(1,1)
+E(y −1) + 1
+2[A(x −1)2 + 2B(x −1)(y −1) + C(y −1)2] −ax2 −by2 −cxy −dx −ey −f
+(x −1)2 + (y −1)2
++
+lim
+(x,y)→(1,1)
+R(x, y)
+(x −1)2 + (y −1)2
+El segundo sumando tiene límite cero, de modo que hay que enfocarse en que
+lim
+(x,y)→(1,1)
+E(y −1) + 1
+2[A(x −1)2 + 2B(x −1)(y −1) + C(y −1)2] −ax2 −by2 −cxy −dx −ey −f
+(x −1)2 + (y −1)2
+= 0
+10
+
+===== PAGE 11 =====
+Si en el numerador llegasen a quedar términos de orden menor a 2, el límite sería ∞, si quedasen
+solamente términos cuadráticos el límite sería una constante no nula, por tanto el numerador tiene
+que valer cero.
+Si hacemos distributiva en la parte de Taylor, obtenemos
+E(y−1)+1
+2[A(x−1)2+2B(x−1)(y−1)+C(y−1)2] = A
+2 x2+C
+2 y2+Bxy−(A+B)x−(E−B−C)y+A + C
+2
+−E
+Sumando −ax2 −by2 −cxy −dx −ey −f y agrupando, el numerador queda
+(A
+2 −a)x2 + (C
+2 −b)y2 + (B −c)xy −(A + B + d)x −(−E + B + C + e)y + A + C
+2
++ B −E −f
+Para que todo valga cero, tiene que cumplirse
+a = A/2
+(1)
+b = C/2
+(2)
+c = B
+(3)
+d = −A −B
+(4)
+e = E −B −C
+(5)
+f = A/2 + C/2 + B −E
+(6)
+Por tanto a + b + c + d + e + f = (sumamos todos los lados derechos de las igualdades) = 0.
+Versión 2: Ahora tenemos
+lim
+(x,y)→(1,1) =
+2xlog(y)
+y
+−ax2 −by2 −cxy −dx −ey −f
+(x −1)2 + (y −1)2
+= 0
+El único cambio es que ahora f(x, y) es la f(x, y) de la versión anterior multiplicada por 2. Al
+derivar esta constante sale multiplicando, de donde ahora
+2xlog(y)
+y
+= 2f(1, 1)+2∂f
+∂x(1, 1)(x−1)+2∂f
+∂y (1, 1)(y−1)+21
+2
+
+(x −1 y −1)2Hf(1, 1)
+ (x −1)
+(y −1)
+
++R(x, y)
+Donde f es la misma función de la versión anterior. El 2 que multiplica a la Hessiana se debe a que
+si g = 2f, entonces
+∂g
+∂x2 = 2 ∂f
+∂x y por tanto ∂2g
+∂x =
+∂
+∂x(2 ∂f
+∂x) = 2 ∂2f
+∂x2 .
+Lo mismo sucede con las otras derivadas de segundo orden, por lo que la Hessiana de g es la misma
+que la de f pero con cada entrada multiplicada por 2.
+El término cuadrático ahora queda 2[A(x−1)2 +2B(x−1)(y −1)+C(y −1)2], y el límite a estudiar
+ahora es
+lim
+(x,y)→(1,1)
+2E(y −1) + 2[A(x −1)2 + 2B(x −1)(y −1) + C(y −1)2] −ax2 −by2 −cxy −dx −ey −f
+(x −1)2 + (y −1)2
+= 0
+Agrupando, el numerador queda
+(2A−a)x2+(2C−b)y2+(4B−c)xy−(4A+4B+d)x−(−2E+4B+4C+e)y+2(A+C)+4B−2E−f
+Para que todo valga cero, tiene que cumplirse
+a = 2A
+(7)
+b = 2C
+(8)
+c = 4B
+(9)
+d = −4A −4B
+(10)
+e = 2E −4B −4C
+(11)
+f = 2A + 2C + 4B −2E
+(12)
+Al igual que antes al sumar todos los términos se cancelan por lo que a + b + c + d + e + f = 0.
+11
+
+===== PAGE 12 =====
+8
+Problema 8 (Integrales Dobles)
+Sea f : R2 →R una función deﬁnida por f(x, y) = yex y sea R la región delimitada por x ≥y2 + 1,
+y ≥0, y x ≤K donde K > 1.
+Halle K para que
+¨
+R
+f(x, y)dxdy = e
+2
+Resolución: Si planteamos a R como región de tipo I, tenemos
+¨
+R
+f(x, y)dxdy =
+ˆ K
+1
+ ˆ √x−1
+0
+exy dy
+!
+dx =
+ˆ K
+1
+ex
+ ˆ √x−1
+0
+y dy
+!
+dx
+La integral en y queda y2
+2 |
+√x−1
+0
+= x−1
+2
+por lo que la integral en x queda
+´ K
+1 ex( x−1
+2 )dx.
+Versión 1: Luego de aplicar distributiva y aplicar Barrow obtenemos
+´ K
+1 ex( x−1
+2 )dx = 1
+2
+ eK(K −2) + e
+
+= e
+2,
+igualdad que se cumple para K = 2.
+Versión 2: Hay que hallar K de modo que
+¨
+R
+f(x, y)dxdy = e3 + e
+2
+.
+Repitiendo las mismas cuentas, llegamos a 1
+2
+ eK(K −2) + e
+
+= e3+e
+2
+, igualdad que se cumple para
+K = 3.
+Versión 3: Hay que hallar K de modo que
+¨
+R
+f(x, y)dxdy = 2e4 + e
+2
+.
+En esta ocasión es 1
+2
+ eK(K −2) + e
+
+= 2e4+e
+2
+, igualdad que se cumple para K = 4.
+12

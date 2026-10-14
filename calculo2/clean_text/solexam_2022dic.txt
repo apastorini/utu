@@ -1,0 +1,464 @@
+
+===== PAGE 1 =====
+C´alculo Diferencial e Integral en Varias Variables
+Soluci´on Examen Diciembre 2022
+19 de diciembre de 2022
+RESPUESTAS AL M ´ULTIPLE OPCI´ON
+Las versiones del examen se identiﬁcan por el primer ejercicio del m´ultiple opci´on.
+Versi´on 1: El primer ejercicio es “Sea y(x) la soluci´on a la ecuaci´on diferencial . . . ”
+Versi´on 2: El primer ejercicio es “Considere la integral impropia y la serie que siguen: . . . ”
+Las respuestas correctas en cada versi´on son:
+Versi´on
+MO 1
+MO 2
+MO 3
+MO 4
+MO 5
+MO 6
+1
+B
+D
+A
+C
+A
+E
+2
+A
+B
+D
+D
+E
+C
+Resoluci´on de ejercicios
+1. Sea y(x) la soluci´on a la ecuaci´on diferencial y′′ −y′ −2y = 1 −2x, con condiciones iniciales
+y(0) = −1, y′(0) = 4. Entonces, y(2) es igual a:
+y(2) = e2 + e−2 −1
+(A)
+y(2) = e4 −e−2 + 1
+(B)
+y(2) = e2 + e−4 −2
+(C)
+y(2) = e4 + e−2 −4
+(D)
+y(2) = e4 + 2e−2 −1
+(E)
+Se trata de una ecuaci´on diferencial lineal de segundo orden y coeﬁcientes constantes, por
+lo que debemos calcular su soluci´on homog´enea y una soluci´on particular para obtener todo el
+conjunto de soluciones.
+Para hallar la soluci´on de la homog´enea planteamos el polinomio caracter´ıstico, λ2 −λ −2,
+que tiene ra´ıces λ = 2 y λ = −1. La soluci´on de la homog´enea es entonces yH(x) = Ae2x+Be−x.
+Para hallar una soluci´on particular, buscamos una de la forma yP (x) = αx + β. De aqu´ı
+tenemos que y′
+P (x) = α y que y′′
+P (x) = 0. Sustituyendo en la ecuaci´on:
+0 −α −2(αx + β) = 1 −2x
+de donde α = 1 y β = −1.
+La soluci´on general de la ecuaci´on diferencial es entonces
+y(x) = yH(x) + yP (x) = Ae2x + Be−x + x −1.
+Imponiendo las condiciones iniciales tenemos:
+{ y′(0) = A + B −1 = −1
+y′(0) = 2A −B + 1 = 4
+de donde A = 1 y B = −1, y entonces la soluci´on al problema de condiciones iniciales es
+y(x) = e2x −e−x + x −1.
+1
+
+===== PAGE 2 =====
+Evaluando en x = 2 obtenemos
+y(2) = e4 −e−2 + 1.
+2. Considere la integral impropia y la serie que siguen:
+Z +∞
+0
+e−x2
+x2 dx
++∞
+X
+n=0
+sin
+( 1
+2n
+)
+Entonces:
+(A) Ambas son divergentes.
+(B) La serie es divergente y la integral es convergente.
+(C) Ambas son convergentes.
+(D) La integral es divergente y la serie es absolutamente convergente.
+(E) La integral es divergente, la serie es condicionalmente convergente.
+La integral es impropia en 0 y en +∞, por lo que debemos separarla e dos:
+Z +∞
+0
+e−x2
+x2 dx =
+Z 1
+0
+e−x2
+x2 dx +
+Z +∞
+1
+e−x2
+x2 dx
+Observando la primera, vemos que el factor e−x2 tiende a uno cuando x tiende a cero, por
+lo que se comporta como una constante a todos los efectos, y entonces la primera integral es
+equivalente a
+Z 1
+0
+1
+x2 dx
+que es divergente, por lo que toda la integral es divergente.
+Para la serie, observemos que sin(x) ∼x cuando x →0, por lo que sin
+( 1
+2n
+)
+∼
+1
+2n cuando
+n →∞. Adem´as, para estos valores el seno es una funci´on positiva (para argumentos positivos
+peque˜nos), por lo que
+}}sin
+( 1
+2n
+)}} = sin
+( 1
+2n
+)
+∼
+1
+2n .
+La serie de t´ermino general
+1
+2n es una geom´etrica convergente, por lo que la serie original es
+absolutamente convergente.
+3. Sean f : R2 →R y g : R2 →R2 dos funciones de clase C1, que cumplen:
+• g(u, v) = (u2 + v3, eu2 −v)
+• ∇f(1, 0) = (1, −1)
+• Para el vector⃗v = (1, 1), se tiene ∂f
+∂⃗v (1, e) = 4
+• f(x, e) = x2 + 1.
+La matriz Jacobiana de la funci´on f ◦g en el punto (1, 0) es:
+(4 + 4e, −2)
+(A)
+(4 + 2e, −2e)
+(B)
+(2 + 2e, 0)
+(C)
+(2e, −1)
+(D)
+(2 −2e, 1)
+(E)
+2
+
+===== PAGE 3 =====
+Por la regla de la cadena, podemos calcular Jf◦g(1, 0) = Jf(g(1, 0)) · Jg(1, 0). Necesitamos
+entonces la Jacobiana de g en el (1, 0), y la Jacobiana (o gradiente) de f en g(1, 0) = (1, e).
+La Jacobiana de g la podemos calcular directamente ya que tenemos la expresi´on de la
+funci´on:
+Jg(u, v) =
+(
+2u
+3v2
+2ueu2
+−1
+)
+=⇒Jg(1, 0) =
+( 2
+0
+2e
+−1
+)
+.
+Por otro lado, para calcular las derivadas de f en el (1, e), podemos observar que como f(x, e) =
+x2 + 1, entonces la derivada respecto a x es fx(x, e) = 2x, de donde fx(1, e) = 2.
+Adem´as, como ∂f
+∂⃗v (1, e) = fx(1, e) · 1 + fy(1, e) · 1 = 4, tenemos que fy(1, e) = 2.
+Por lo tanto,
+Jf◦g(1, 0) = Jf(g(1, 0)) · Jg(1, 0) = (2, 2) ·
+( 2
+0
+2e
+−1
+)
+= (4 + 4e, −2).
+4. Sea A ⊂C el conjunto de los n´umeros z ∈C que veriﬁcan:
+{
+z4 = 1 −i
+√
+3
+z + ¯z > 0
+Solo una de las siguientes aﬁrmaciones sobre el conjunto A es correcta. Indique cu´al:
+(A) A es sim´etrico respecto al eje real.
+(B) A es sim´etrico respecto al eje imaginario.
+(C) A tiene exactamente dos elementos distintos.
+(D) A tiene exactamente cuatro elementos distintos.
+(E) Todos los elementos de A est´an en la circunferencia de centro 0 y radio 1.
+El complejo 1−i
+√
+3 tiene m´odulo 2 y argumento −π/3, por lo que si z = ρeiϕ es un complejo
+que cumple z4 = 1 −i
+√
+3, su m´odulo y su argumento deben cumplir:
+(
+ρ4 = 2
+4ϕ = −π
+3 + 2kπ
+⇒
+
+
+
+ρ =
+4√
+2
+ϕ = −π
+12 + kπ
+2
+Entonces tenemos 4 complejos distintos que cumplen z4 = 1 −i
+√
+3, que se muestran en la
+ﬁgura (notar que π/12 radianes es igual a 15◦):
+Re(z)
+Im(z)
+||z|| =
+4√
+2
+−π
+12
+3
+
+===== PAGE 4 =====
+Si adem´as queremos que cumplan que z + ¯z > 0, basta observar que esa condici´on es equivalente
+a Re(z) > 0, por lo que hay exactamente 2 complejos distintos que cumplen ambas condiciones.
+5. Sea B ⊂R2 el conjunto deﬁnido como:
+B =
+{
+(x, y) ∈R2 : cos(x) = 0 , sin(y) = −1
+}
+Considere las siguientes aﬁrmaciones sobre el conjunto B:
+(I) int(B) = ∅.
+(II) B es cerrado.
+(III) Todos los elementos de B son puntos de acumulaci´on de Bc.
+Entonces:
+(A) Todas las aﬁrmaciones son verdaderas.
+(B) Solamente las aﬁrmaciones (I) y (II) son verdaderas.
+(C) Solamente la aﬁrmaci´on (II) es verdadera.
+(D) Solamente las aﬁrmaciones (I) y (III) son verdaderas.
+(E) Todas las aﬁrmaciones son falsas.
+El conjunto est´a formado por todos los puntos (x, y) ∈R2 tales que x = π
+2 + kπ e y =
+−π
+2 + 2mπ. Por lo tanto, en cualquier bola reducida de centro
+( π
+2 + kπ, π
+2 + 2mπ
+)
+hay puntos
+que no son de la forma
+( π
+2 + kπ, π
+2 + 2mπ
+)
+(es decir, puntos que no pertenecen a B). Entonces
+int(B) = ∅y todo punto de B es punto de acumulaci´on de su complemento. Adem´as si tomamos
+un punto en Bc es f´acil ver que existe una bola centrada en ese punto totalmente contenida
+en Bc (basta tomar un radio menor al punto de B m´as cercano), por lo que Bc es abierto (y
+entonces B es cerrado).
+6. Sea f : R2 →R deﬁnida como f(x, y) = y y D ⊂R2 el conjunto deﬁnido como:
+D =
+{
+(x, y) ∈R2 : x2 + y2 ≤2x , y ≥x
+}
+La integral de f en D es igual a:
+ZZ
+D
+f = π
+3
+(A)
+ZZ
+D
+f = 1
+(B)
+ZZ
+D
+f = √π
+(C)
+ZZ
+D
+f = 3
+4
+(D)
+ZZ
+D
+f = 1
+6
+(E)
+Observemos que x2 + y2 = 2x es la ecuaci´on de una circunferencia de centro (1, 0) y radio 1,
+por lo que el dominio de integraci´on es el conjunto de puntos del interior de esa circunferencia
+que adem´as cumplen y ≥x. Gr´aﬁcamente, ese conjunto es:
+4
+
+===== PAGE 5 =====
+x
+y
+x2 + y2 = 2x
+y = x
+D
+Haciendo un cambio de variable a polares (x = ρ cos θ, y = ρ sin θ), la condici´on x2 + y2 ≤
+2x se transforma en ρ2 ≤2ρ cos θ ⇒ρ ≤2 cos θ, mientras que la condici´on y ≥x resulta
+ρ sin θ ≥ρ cos θ ⇒sin θ ≥cos θ ⇒tan θ ≥1 ⇒θ ≥π
+4 . Observar adem´as que como ρ ≥0,
+para que pueda cumplirse que 0 ≤ρ ≤2 cos θ necesariamente debe pasar que cos θ ≥0 ⇒θ ∈
+[0, π/2] ∪[3π/2, 2π]. Uniendo ambas condiciones en θ, tenemos que π
+4 ≤θ ≤π
+2 . Observar que
+esa condici´on es razonable dado el dibujo anterior: los puntos en D tienen ´angulos entre π
+4 y π
+2 .
+Recordando que el jacobiano del cambio de variable a polares es ρ, la integral que queremos
+calcular es:
+ZZ
+D
+f =
+Z
+π
+2
+π
+4
+dθ
+Z 2 cos θ
+0
+ρ2 sin θ dρ =
+Z
+π
+2
+π
+4
+ρ3
+3
+}}}
+ρ=2 cos θ
+ρ=0
+sin θdθ =
+Z
+π
+2
+π
+4
+8 cos3(θ)
+3
+sin θdθ = −2 cos4(θ)
+3
+}}}
+θ= π
+2
+θ= π
+4
+⇒
+ZZ
+D
+f = 1
+6
+DESARROLLO
+1. (26 puntos) Sea f : R2 →R una funci´on y a = (x0, y0) un punto del plano.
+a) Deﬁnir continuidad de f en el punto a.
+Ver te´orico, deﬁnici´on 5.5 en las notas del curso.
+b) Sea an una sucesi´on de elementos de R2. Deﬁnir lim
+n→∞an = a.
+Ver te´orico, deﬁnici´on 4.24 en las notas del curso.
+c) Demostrar que si f es continua en a, y una sucesi´on an cumple lim
+n→∞an = a, entonces
+lim
+n→∞f(an) = f(a).
+Ver te´orico, demostraci´on del Teorema 5.9 en las notas del curso (solamente se pide el
+directo de esa demostraci´on).
+d) Sea f : R2 →R deﬁnida como
+f(x, y) =
+
+
+
+x6
+(x2 −y)2 + x6
+si (x, y)̸ = (0, 0)
+0
+si (x, y) = (0, 0)
+5
+
+===== PAGE 6 =====
+Utilice el resultado del ´ıtem anterior para estudiar la continuidad de f en el origen.
+Si tomamos un sucesi´on de la forma (xn, yn) =
+( 1
+n, 1
+n2
+)
+, entonces observamos por un lado
+que lim
+n→∞(xn, yn) = (0, 0). Por otro lado, tenemos que:
+lim
+n→∞f(xn, yn) = lim
+n→∞
+( 1
+n)6
+(( 1
+n)2 −( 1
+n)2)2 + ( 1
+n)6 = lim
+n→∞
+( 1
+n)6
+( 1
+n)6 = 1.
+Como tenemos que f(0, 0) = 0, entonces f no es continua en el origen.
+2. (26 puntos) Sea f : R2 →R una funci´on.
+a) Deﬁnir diferenciabilidad de f en un punto a = (x0, y0) ∈R2.
+Ver te´orico, deﬁnici´on 6.11 o 6.12 en las notas del curso.
+Sea ahora f : R2 →R deﬁnida como:
+f(x, y) =
+
+
+
+x3y + xy3
+x2 + y2 +
+p
+x2 + y2
+si (x, y)̸ = (0, 0)
+0
+si (x, y) = (0, 0)
+b) Calcular las derivadas parciales de f en el (0, 0).
+Calculemos fx(0, 0) a partir de la deﬁnici´on:
+fx(0, 0) = lim
+h→0
+f(h, 0) −f(0, 0)
+h
+= lim
+h→0
+h3 · 0 + h · 03
+h2 + 02 +
+√
+h2 + 02 = lim
+h→0
+0
+h2 + |h| = 0.
+La cuenta para fy(0, 0) es an´aloga, por lo que fx(0, 0) = fy(0, 0) = 0.
+c) Estudiar la diferenciabilidad de la funci´on en el origen.
+Teniendo calculadas las derivadas parciales, para ver si f es diferenciable debemos despejar
+el resto y veriﬁcar si se cumple la condici´on de la deﬁnici´on. Esto es:
+r(∆x, ∆y) = f(0 + ∆x, 0 + ∆y) −fx(0, 0)∆x −fy(0, 0)∆y −f(0, 0).
+Como tanto las derivadas parciales como la funci´on en el origen se anulan, el resto coincide
+con la funci´on. Debemos calcular entonces:
+lim
+(∆x,∆y)→(0,0)
+r(∆x, ∆y)
+||(∆x, ∆y)|| =
+lim
+(∆x,∆y)→(0,0)
+∆x3∆y + ∆x∆y3
+(∆x2 + ∆y2 +
+p
+∆x2 + ∆y2)
+p
+∆x2 + ∆y2
+Pasando a coordenadas polares, el l´ımite queda
+lim
+ρ→0
+ρ4 cos(θ) sin(θ)
+(ρ2 + ρ)ρ
+= 0,
+pues cos(θ) sin(θ) est´a acotado, y el factor en funci´on de ρ tiende a cero. Por lo tanto la
+funci´on es diferenciable en el origen.
+6

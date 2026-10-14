@@ -1,0 +1,341 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo Diferencial e Integral en Varias Variables
+Facultad de Ingenier´ıa - IMERL
+Agosto 2020
+EXAMEN – Agosto de 2020
+Nro de Examen
+C´edula
+Apellido y nombre
+Escribir nombre y c´edula en todas las hojas que se entreguen.
+Ejercicio 1.(10 pts.) Los z ∈IC que veriﬁcan la ecuaci´on z5 = 1 +
+√
+3i son:
+Soluci´on:
+{z ∈IC : z = ρeiϕ :, ρ = 21/5, ϕ = π/15 + 2/5kπ, k ∈ZZ}
+Ejercicio 2.(20 pts.) Se considera la ecuaci´on diferencial
+y′′ −y = −sin(Log(x))
+x2
+−cos(Log(x))
+x2
+−sin(Log(x)).
+Se sabe que y(x) = ex + e−x + sin(Log(x)) es soluci´on de la ecuaci´on.
+Soluci´on:
+La ecuaci´on a estudiar es y′′ −y = −sin(log(x))/x2 −cos(log(x))/x2 −sin(log(x)).
+La soluci´on
+general de este tipo de ecuaciones se puede expresar como la suma de una soluci´on particular y una
+soluci´on general de la ecuaci´on homog´enea. La correspondiente ecuaci´on homog´enea y su polinomio
+caracter´ıstico son:
+y′′ −y = 0,
+λ2 −1 = 0
+Por lo tanto podemos escribir una soluci´on general de la ecuaci´on homog´enea como
+yH(x) = c1ex + c2e−x
+Sabemos por la letra que una soluci´on particular de la ecuaci´on original es
+yp(x) = ex + e−x + sin(log(x))
+Por lo tanto la soluci´on general de la ecuaci´on es
+y(x) = yH(x) + yp(x) = c1ex + c2e−x + ex + e−x + sin(log(x))
+y(x) = (c1 + 1)ex + (c2 + 1)e−x + sin(log(x))
+Observamos que c1 + 1 y c2 + 1 son constantes arbitrarias, pues c1 y c2 lo son. Es decir, podemos
+expresar una soluci´on general como y(x) = b1ex + b2e−x + sin(log(x)) con b1, b2 constantes.
+Ejercicio 3.(15 pts.)
+Clasiﬁcar, justiﬁcando:
+Z +∞
+0
+e−√x
+√x dx
+1
+
+===== PAGE 2 =====
+2
+Soluci´on:
+La funci´on f(x) = e−√x
+√x
+presenta una discontinuidad en x = 0, y no est´a acotada alrededor de dicho
+punto, por lo que la integral impropia
+R +∞
+0
+e−√x
+√x dx es del tipo mixto. En este caso, usamos la propiedad
+de aditividad en el dominio de integraci´on, y tenemos:
+Z +∞
+0
+e−√x
+√x dx =
+Z 1
+0
+e−√x
+√x dx +
+Z +∞
+1
+e−√x
+√x dx.
+Entonces,
+R +∞
+0
+e−√x
+√x dx converge si
+R 1
+0
+e−√x
+√x dx y
+R +∞
+1
+e−√x
+√x dx convergen, o diverge si
+R 1
+0
+e−√x
+√x dx o
+R +∞
+1
+e−√x
+√x dx diverge.
+Determinar la convergencia de ambas integrales del lado derecho de la igualdad resulta sencillo usando
+el hecho de que f(x) = e−√x
+√x posee una familia de primitivas expresada como combinaci´on de funciones
+elementales:
+Z
+f(x) = e−√x
+√x dx = −2e−√x + K,
+donde K es una constante real. Entonces, aplicando la Regla de Barrow y la deﬁnici´on de integrales
+impropias de primera y segunda especie, tenemos lo siguiente:
+Z 1
+0
+e−√x
+√x dx = lim
+c→0+
+Z 1
+c
+e−√x
+√x dx = lim
+c→0+ −2e−√x|1
+c = lim
+c→0+(2e−√c −2e−1) = 2 −2
+e,
+Z +∞
+1
+e−√x
+√x dx =
+lim
+a→+∞
+Z a
+1
+e−√x
+√x dx =
+lim
+a→+∞−2e−√x|a
+1 =
+lim
+a→+∞(2e−1 −2e−√a) = 2
+e.
+Entonces,
+R 1
+0
+e−√x
+√x dx y
+R +∞
+1
+e−√x
+√x dx convergen, por lo que
+R +∞
+0
+e−√x
+√x dx converge. Adem´as,
+Z +∞
+0
+e−√x
+√x dx =
+(
+2 −2
+e
+)
++ 2
+e = 2.
+Ejercicio 4.(20 pts.)Sea f : R2 →R tal que:
+f(x, y) =
+(
+x2y
+x4+y2
+si
+(x, y)̸ = (0, 0)
+0
+si
+(x, y) = (0, 0)
+Soluci´on:
+1 Calcular las derivadas direccionales de f en (0, 0).
+Calculamos primero las derivadas parciales en (0, 0)
+∂f
+∂x(0, 0) = limh→0
+f(h, 0) −f(0, 0)
+h
+= 0
+∂f
+∂y (0, 0) = limh→0
+f(0, h) −f(0, 0)
+h
+= 0
+Para las direcciones no can´onicas consideramos v = (v1, v2). Podemos suponer que el
+vector tiene componenentes no nulas.
+
+===== PAGE 3 =====
+3
+∂f
+∂v (0, 0) = limh→0
+f(hv1, hv2) −f(0, 0)
+h
+= limh→0
+h2v2
+1hv2
+h4v4
+1 + h2v2
+2
+h
+= v2
+1
+v2
+.
+2 Estudiar la diferenciabilidad de f en (0, 0).
+La funci´on f no es continua en (0, 0). El l´ımite de dicha funci´on en (0, 0) no existe.
+Es
+suﬁciente con calcularlo sobre las trayectorias y = 0 y y = x2. Por lo tanto la funci´on no es
+diferenciable.
+Ejercicio 5.(15 pts.) Calcular, justiﬁcando:
+lim(x,y)→(0,0)
+xy −sen(x)sen(y)
+x2 + y2
+Soluci´on:
+Para calcular este l´ımite planteamos el desarrollo de Taylor de la funci´on f(x, y) =
+sen(x)sen(y) en el punto (0, 0) (ver notas del curso, Teorema 6.31). Tenemos que:
+f(0, 0) = 0.
+fx = cos(x)sen(y). Luego, fx(0, 0) = 0.
+fy = sen(x)cos(y). Luego, fy(0, 0) = 0.
+fxx = −sen(x)sen(y). Luego, fxx(0, 0) = 0.
+fyy = −sen(x)sen(y). Luego, fyy(0, 0) = 0.
+fxy = cos(x)cos(y). Luego, fxy(0, 0) = 1.
+fyx = cos(x)cos(y). Luego, fyx(0, 0) = 1.
+Teniendo estos valores num´ericos, la funci´on f en un entorno de (0, 0) cumple que
+f(∆x, ∆y) = 0 + 0∆x + 0∆y + 1
+2[0∆x2 + 2∆x∆y + 0∆y2] + r(∆x, ∆y)
+= ∆x∆y + r(∆x, ∆y)
+Tenemos entonces que
+lim(x,y)→(0,0)
+xy −sen(x)sen(y)
+x2 + y2
+= lim(x,y)→(0,0)
+xy −xy −r(x, y)
+x2 + y2
+= lim(x,y)→(0,0)
+−r(x, y)
+x2 + y2
+Por ser r el resto de Taylor, este l´ımite da 0.
+
+===== PAGE 4 =====
+4
+Ejercicio 6.(20 pts.) Usando integraci´on m´ultiple, demostrar que el volumen del s´olido limitado por
+los planos x
+a + y
+b + z
+c = 1, x = 0, y = 0, z = 0, donde a, b y c son n´umeros reales positivos es igual a
+abc
+6 .
+Soluci´on: La intersecci´on del plano Π = {(x, y, z) ∈R3 : x
+a + y
+b + z
+c = 1} con el plano {(x, y, z) ∈R3 :
+x = 0} es el conjunto (x, y, z) ∈R3 : y
+b + z
+c = 1, que podemos escribir como la recta z = c −c
+by del
+plano yz. Esta recta pasa por los puntos (0, b, 0) y (0, 0, z).
+De modo similar la intersecci´on de Π con el plano {(x, y, z) ∈R3 : y = 0} es el conjunto (x, y, z) ∈
+R3 : x
+a + z
+c = 1, esto es, la recta z = c −c
+ax del plano xz, la que pasa por los puntos (a, 0, 0) y (0, 0, c).
+Por ´ultimo la intersecci´on del plano Π con el plano {(x, y, z) ∈R3 : z = 0} es el conjunto (x, y, z) ∈
+R3 : x
+a + y
+b = 1, que es la recta y = b −b
+ax del plano xy, que pasa por los puntos (a, 0, 0) y (0, b, 0).
+Estas intersecciones deﬁnen un tetraedro de v´ertices (0, 0, 0), (a, 0, 0), (0, b, 0), (0, 0, c) cuyo volumen
+obtendremos integrando la funci´on f(x, y, z) : f(x, y, z) = 1 en dicho tetraedro.
+Tenemos seis formas de plantear la integral triple, de la que solamente escribiremos dos de ellas:
+(1)
+Z a
+0
+dx
+Z b−b
+ax
+0
+dy
+Z c(1−x
+a −y
+b )
+0
+1dz
+(2)
+Z a
+0
+dx
+Z c−c
+ax
+0
+dz
+Z c(1−x
+a −z
+c )
+0
+1dy
+En el primer caso para cada x entre 0 y a, y puede variar entre 0 y la recta y = b −b
+ax, y para cada
+pareja (x, y) en dichas condiciones, z puede variar entre 0 y el plano c(1 −x
+a −y
+b).
+En el segundo caso para cada x entre 0 y a, z puede variar entre 0 y la recta z = c(1 −x
+a −y
+b), y para
+cada pareja (x, z) en dichas condiciones, y puede variar entre 0 y el plano c(1 −x
+a −z
+c.
+Para cada y entre 0 y b tenemos otros dos casos, y lo mismo para cada z entre 0 y c.
+Cualquiera de las seis opciones va a dar el mismo resultado, haremos la primera,
+Z a
+0
+dx
+Z b−b
+ax
+0
+dy
+Z c(1−x
+a −y
+b )
+0
+1dz.
+Al integrar la constante 1 respecto a z y evaluar entre 0 y c(1 −x
+a −y
+b) obtenemos la funci´on g(x, y) =
+c(1 −x
+a −y
+b), que integraremos respecto de y entre 0 y (b −b
+ax).
+La primitiva (recordemos que todo lo que no sea y lo tratamos como si fuese una constante), es
+(c −c
+ax)y −c
+b
+y2
+2 , que evaluaremos entre 0 y (b −b
+ax).
+Esto nos da la funci´on h(x) = bc
+2 −bcx
+a + bcx2
+2a2 .
+Por ´ultimo integramos esta funci´on respecto a x entre 0 y a, obteniendo bc
+2 a −bc
+a
+a2
+2 + bc
+2a2 a3
+3 , que luego
+de operar es igual a abc
+6 .

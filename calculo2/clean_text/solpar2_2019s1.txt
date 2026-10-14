@@ -1,0 +1,230 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo diferencial e integral en varias variables
+Facultad de Ingenier´ıa - IMERL
+Primer Semestre 2019
+Soluci´on del Segundo Parcial
+S´abado 29 de Junio de 2019
+VERSI´ON
+Empieza con:
+MO1
+MO2
+MO3
+MO4
+MO5
+1
+Taylor
+A
+B
+A
+D
+C
+2
+Integral
+C
+D
+B
+B
+A
+3
+Cadena
+B
+A
+C
+D
+D
+Soluci´on M´ultiple Opci´on
+Taylor en Rn
+Calculamos las derivadas parciales de primer y segundo orden:
+fx(x, y) = ln(1 + x + 2y) +
+x
+1+x+2y, fx(0, 0) = 0
+fy(x, y) =
+2x
+1+x+2y, fy(0, 0) = 0
+fxx(x, y) =
+1
+1+x+2y +
+1+2y
+(1+x+2y)2 , fxx(0, 0) = 2
+fxy(x, y) =
+2+4y
+(1+x+2y)2 , fxy(0, 0) = 1
+fyy(x, y) =
+−2x
+(1+x+2y)2 , fyy(0, 0) = 0
+Luego, p(∆x, ∆y) = ∆x2 + 2∆x∆y y p(2, 1) = 4 + 4 = 8
+Regla de la Cadena
+Sean f1(x, y) = x2y + ex, f2(x, y) = y3x y f3(x, y) = sin(y), tenemos que
+f(x, y) = (f1(x, y), f2(x, y), f3(x, y))
+Luego,
+∂h
+∂y (0, π/2) = ∂g
+∂x(f(0, π/2))∂f1
+∂y (0, π/2) + ∂g
+∂y(f(0, π/2))∂f2
+∂y (0, π/2) + ∂g
+∂z(f(0, π/2))∂f3
+∂y (0, π/2)
+Considerando que f(0, π/2) = (1, 0, 1) y ∂f1
+∂y (0, π/2) = 0, ∂f2
+∂y (0, π/2) = 0 y ∂f3
+∂y (0, π/2) = 0,
+tenemos que ∂h
+∂y (0, π/2) = 0
+Extremos Relativos
+En primer lugar calculemos los puntos cr´ıticos de f, es decir los puntos que anulan el gradiente.
+fx = 3x2 + ay = 0
+fy = 3y2 + ax = 0
+Restando las ecuaciones obtenemos que
+0 = 3(x2 −y2) + a(y −x) = 3(x + y)(x −y) + a(y −x) = 0 ⇒3(x + y)(x −y) = a(x −y)
+(∗)
+1
+
+===== PAGE 2 =====
+Si x −y = 0 entonces x = y y sustituyendo en la ecuaci´on fx = 0 obtenemos 0 = 3x2 + ax =
+x(3x+a). Por lo tanto o bien x = 0 o bien x = −a
+3 . As´ı obtenemos los puntos (0, 0) y (−a
+3 , −a
+3 ).
+Si x −y̸ = 0 en (∗) obtenemos que 3(x + y) = a, por lo tanto x = a
+3 −y. Sustituyendo en la
+ecuaci´on fy = 0 obtenemos un polinomio de segundo grado en y que no tiene ra´ıces reales, por
+lo tanto no hay m´as puntos cr´ıticos que los ya mencionados. La matriz Hessiana de f es
+Hf(x, y) =
+( 6x
+a
+a
+6y
+)
+Por lo tanto
+Hf(0, 0) =
+( 0
+a
+a
+0
+)
+El det Hf(0, 0) = −a2 < 0 y por lo tanto f tiene en (0, 0) un punto silla. Por otro lado
+Hf(−a
+3 , −a
+3 ) =
+( −2a
+a
+a
+−2a
+)
+El det Hf(−a
+3 , −a
+3 ) = 3a2 > 0 y tra Hf(−a
+3 , −a
+3 ) = −4a < 0 si a > 0. Por lo tanto si a > 0, f
+tiene en (−a
+3 , −a
+3 ) un m´aximo relativo.
+Integrales M´ultiples
+Utilizando el cambio de variable u = x + 1, v = y + 1, tenemos que
+ZZ
+B
+(x2 + y2)dxdy =
+ZZ
+B′((u −1)2 + (v −1)2)dudv =
+ZZ
+B′(u2 + v2 −2u −2v + 2)dudv,
+Donde B′ = B((0, 0), 1). Utilizando cambio de variable a polares:
+ZZ
+B′(u2 + v2 −2u −2v + 2) =
+Z 2π
+0
+Z 1
+0
+(ρ3 −2ρ2cos(θ) −2ρ2sin(θ) + 2ρ)dρdθ
+=
+Z 2π
+0
+(5
+4 −2
+3(cos(θ) + sin(θ))dθ = 5π
+2
+L´ımites y Continuidad
+Veamos si f es continua en (0, 0):
+lim
+(x,y)→(0,0)
+x2 + y2 + x4y4
+x2 + y2
+=
+lim
+(x,y)→(0,0)
+x2 + y2
+x2 + y2 +
+x4y4
+x2 + y2
+=
+lim
+(x,y)→(0,0) 1 + (
+x2
+x2 + y2 )x2y4 = 1
+Como el l´ımite no coincide con f(0, 0), f no es continua en (0, 0). Adem´as f(x, y) > 0 para todo
+(x, y)̸ = (0, 0) y f(0, 0) = 0 por lo tanto f tiene en (0, 0) un m´ınimo absoluto.
+2
+
+===== PAGE 3 =====
+Soluci´on del Desarrollo.
+Problema 1
+1. Puesto que f(x, y) = y −x si y ≥x, si existen las derivadas parciales en (0, 0) deben ser
+fx(0, 0) = −1 y fy(0, 0) = 1. Tomando l´ımite para la porci´on y < x se ve que:
+fx(0, 0) = limh→0
+f(h,0)−f(0,0)
+h
+= −1, y
+fy(0, 0) = limh→0
+f(0,h)−f(0,0)
+h
+= 1.
+Luego las derivadas parciales existen, y valen fx(0, 0) = −1 y fy(0, 0) = 1.
+2. Para probar la diferenciabilidad de f en (0, 0) tenemos que calcular lim(x,y)→(0,0)
+f(x,y)−df(0,0)
+√
+x2+y2
+.
+Para la porci´on y ≥x este l´ımite es 0. Si y < x tenemos:
+lim
+(x,y)→(0,0)
+1
+p
+x2 + y2 ·
+( 2x3y
+x2 + y2 + y −x −(−x + y)
+)
+=
+lim
+(x,y)→(0,0) y
+2x
+p
+x2 + y2
+|
+{z
+}
+acot
+x2
+x2 + y2
+|
+{z
+}
+acot
+= 0.
+3. En el caso de usar la expresi´on f(x, y) = y −x, esta es una transformaci´on lineal y por
+tanto diferenciable. Usando lo anterior el plano tangente resulta π : z = y −x.
+Problema 2
+Consideramos el siguiente cambio de variable: x = 2ρ cos θ, y = 5ρ sin θ, z = z.
+Las restricciones ahora son 0 < θ < π, ρ ≤√z y 0 ≤z ≤1, pues z no toma valores negativos.
+Notar que el jacobiano de este cambio de variable vale 10ρ. Entonces:
+V =
+Z π
+0
+Z 1
+0
+Z √z
+0
+10ρ dρ dz dθ = 5π/2.
+3

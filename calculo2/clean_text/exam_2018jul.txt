@@ -1,0 +1,176 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo diferencial e integral en varias variables
+Facultad de Ingenier´ıa - IMERL
+Primer Semestre 2018
+Examen – Jueves 19 de julio de 2018
+Nro de lista
+C´edula
+Apellido y nombre
+(I) M´ultiple opci´on. Total: 64 puntos
+Puntajes: 8 puntos si la respuesta es correcta, 0 punto por no contestar y -1 si la respuesta es incorrecta.
+Indique sus respuestas en los casilleros correspondientes, con letras may´usculas imprenta: A, B, C, D o E.
+Ejer. 1
+Ejer. 2
+Ejer. 3
+Ejer. 4
+Ejer. 5
+Ejer. 6
+Ejer. 7
+Ejer. 8
+D
+B
+C
+A
+B
+C
+D
+C
+Ejercicio 1
+Sea z = (−1 + i)8.
+Indicar la opci´on correcta:
+(A) z = −16
+(B) z = −8 −8i
+(C) z = −32i
+(D) z = 16
+(E) z = 8i
+Ejercicio 2
+Sea x(t) la soluci´on a la ecuaci´on diferencial
+
+
+
+(1 + t2)x′(t) = x(t)
+x(0) = 2
+.
+Indicar la opci´on correcta:
+(A) x(1) = 2eπ/2
+(B) x(1) = 2eπ/4
+(C) x(1) = eπ/4
+(D) x(1) = 1
+(E) x(1) = eπ/2
+1
+
+===== PAGE 2 =====
+2
+Ejercicio 3
+Sea S =
++∞
+P
+n=4
+( 3
+4
+)n.
+Indicar la opci´on correcta:
+(A) S = 3
+(B) S = 4
+(C) S = 81/64
+(D) S = 27/16
+(E) S = 243/256
+Ejercicio 4
+Dados α y β reales positivos, se considera la integral impropia
+Z ∞
+0
+dx
+xα(1 + ex2xβ)
+Indicar la opci´on correcta:
+(A) La integral es convergente si α < 1, para todo β.
+(B) La integral es convergente si y solo si α < 1, y β > 1 −α.
+(C) La integral es convergente si y solo si α < 1, y β < 1 −α.
+(D) La integral es convergente si y solo si α > 1, y β > 1 −α.
+(E) La integral es convergente si y solo si α > 1, y β < 1 −α.
+Ejercicio 5
+Considere las funciones deﬁnidas por f(x, y) = (x4−6x2y2+y4, 4x3y−4xy3), g(x, y) = (ex cos(y), ex sin(y))
+y la funci´on compuesta h(x, y) = g(f(x, y)).
+¿Cu´al es la matriz de derivadas parciales de h en el punto (0, 1)?
+Indicar la opci´on correcta:
+(A)
+ 
+e cos(4)
+0
+0
+e cos(4)
+!
+(B)
+ 
+0
+4e
+−4e
+0
+!
+(C)
+ 
+0
+2e
+−2e
+0
+!
+(D)
+ 
+0
+4e
+4e
+0
+!
+(E)
+ 
+0
+2
+−2
+0
+!
+
+===== PAGE 3 =====
+3
+Ejercicio 6
+Sea f(x, y, z) = z y D = {(x, y, z) ∈IR3 : y ≥0, z ≥0, x2 + y2 + z2 ≤2, x2 + y2 ≤1}.
+Entonces
+ZZZ
+D
+f(x, y, z)dxdydz vale: (sugerencia: utilizar coordenadas cil´ındricas)
+(A) 3π
+2
+(B) π
+8
+(C) 3π
+8
+(D) 5π
+6
+(E) 3π
+4
+Ejercicio 7
+Sea V el volumen de la regi´on en IR3 deﬁnida por 0 ≤x ≤1, 1 ≤y ≤2, 0 ≤z ≤x2 + y2.
+Indicar la opci´on correcta:
+(A) V = 4/3
+(B) V = 1/3
+(C) V = 2/3
+(D) V = 8/3
+(E) V = 10/3
+Ejercicio 8
+El l´ımite
+l´ım
+(x,y)→(0,0)
+x3y + 2xy3
+(x2 + y2)2
+(A) Vale 1.
+(B) Vale 4.
+(C) No existe.
+(D) Vale 0.
+(E) Vale +∞.
+Problema (36 puntos)
+Se considera la funci´on f : IR2 →IR deﬁnida como:
+f(x, y) =
+
+
+
+x2y
+√
+x2+y2 + 3x + 2y + 2xy
+si (x, y)̸ = (0, 0)
+A
+si (x, y) = (0, 0)
+.
+a) Hallar A para que f sea continua en (0, 0).
+b) Para el valor de A hallado, estudiar la existencia de derivadas parciales en (0, 0).
+c) Deﬁnir diferenciabilidad de una funci´on g : IR2 →IR en el punto (0, 0).
+d) Para el valor de A hallado, estudiar la diferenciabilidad de f en el (0, 0).

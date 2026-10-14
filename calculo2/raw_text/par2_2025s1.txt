@@ -1,0 +1,216 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo Diferencial e Integral en Varias Variables.
+Facultad de Ingenier´ıa - IMERL
+Julio 2025.
+SEGUNDO PARCIAL – Mi´ercoles 2 de Julio de 2025.
+Nro de Parcial
+C´edula
+Apellido y nombre
+• La duraci´on del parcial es de tres horas y
+media.
+• No se permite usar ni calculadora ni ma-
+terial de consulta.
+• Hay 5 ejercicios de m´ultiple opci´on de 5
+puntos cada uno y 3 ejercicios de desar-
+rollo. El parcial es de 60 puntos en total.
+• Tenga cuidado al pasar las respuestas.
+Para los ejercicios de m´ultiple opci´on lo
+completado en el cuadro de abajo ser´a lo
+´unico que se tendr´a en cuenta a la hora
+de corregir.
+• Cada respuesta incorrecta en los ejerci-
+cios de m´ultiple opci´on resta 1 punto.
+Preguntas sin contestar suman 0 puntos.
+En cada ejercicio de m´ultiple opci´on hay
+una sola opci´on correcta.
+Notaci´on: Sea X ⊆Rn. Denotamos por X◦al
+conjunto de los puntos interiores de X, y por ∂X
+al conjunto de los puntos frontera de X.
+´Angulo
+sin(θ)
+cos(θ)
+30◦
+1
+2
+√
+3
+2
+45◦
+√
+2
+2
+√
+2
+2
+60◦
+√
+3
+2
+1
+2
+EJERCICIOS DE M ´ULTIPLE OPCI´ON
+25 puntos totales.
+Ejercicio 1
+Ejercicio 2
+Ejercicio 3
+Ejercicio 4
+Ejercicio 5
+EJERCICIOS DE DESARROLLO
+35 puntos totales.
+SOLO PARA USO DOCENTE
+Ejercicio 1a
+Ejercicio 1b
+Ejercicio 2
+Ejercicio 3a
+Ejercicio 3b
+1
+
+===== PAGE 2 =====
+2
+Ejercicio 1. Considere los siguientes conjuntos en R2
+A = {(x, y) ∈R2 : x = 0, y =
+1
+2n , n ∈N}
+B = {(x, y) ∈R2 : x2 + y2 < 1, (x, y)̸ = (0, 0)}.
+Entonces
+A) A no es abierto y B ∩∂(B)̸ = ∅.
+B) A◦= A y B es abierto.
+C) ∂(A) ⊆A y B◦= B.
+D) A no es abierto y B◦= B.
+Ejercicio 2. Sea f : D ⊆R2 →R definida por f(x, y) =
+q
+xy + x
+y en su dominio D, y π el plano
+tangente a la gr´afica de f en el punto (2, 1, 2). Entonces
+A) (0, 1, 3) ∈π.
+B) (4, 1, 3) ∈π.
+C) (4, 0, −3) ∈π.
+D) (0, 0, 3) ∈π.
+Ejercicio 3. Sea f : R2 →R definida por f(x, y) =
+
+
+
+
+
+|x|y
+p
+x2 + y2
+si (x, y)̸ = (0, 0),
+0
+si (x, y) = (0, 0).
+Entonces:
+A) La funci´on f es diferenciable en (0, 0) y, por lo tanto, continua en (0, 0).
+B) La funci´on f tiene derivadas parciales en (0, 0), pero no es continua en (0, 0).
+C) No existen las derivadas parciales de f en (0, 0), pero f es continua en (0, 0).
+D) La funci´on f no es diferenciable en (0, 0), aunque f es continua en (0, 0) y existen las derivadas
+parciales de f en (0, 0).
+Ejercicio 4. Sean f : R2 →R3 definida por f(x, y) = (exy, x + y, x2) y g : R2 →R2 definida por
+g(u, v) = (2uv, u). Entonces d(f ◦g)(1,1)(0, 1) es:
+A) (2e2, 2, 8).
+B) (e1, 2, 2).
+C) (2e1, 2, 8).
+D) (e2, 2, 2).
+Ejercicio 5. La integral
+ZZ
+R
+p
+x2 + y2 dx dy, donde R es la regi´on del plano definida por
+R =
+
+(x, y) ∈R2  0 ≤x, 0 ≤y, x2 + y2 ≤1, x2 −2x + y2 ≥0
+	
+.
+puede expresarse en coordenadas polares como:
+A)
+Z
+π
+2
+π
+3
+Z 1
+2 cos(θ)
+r2 dr dθ
+B)
+Z
+π
+3
+0
+Z 2 cos(θ)
+1
+r2 dr dθ
+C)
+Z
+π
+3
+0
+Z 1
+2 cos(θ)
+r2 dr dθ
+D)
+Z
+π
+2
+π
+3
+Z 2 cos(θ)
+1
+r2 dr dθ
+
+===== PAGE 3 =====
+3
+EJERCICIOS DE DESARROLLO
+3 ejercicios, 35 puntos totales.
+Ejercicio 1
+a) (6 pts) Sean f, g : U ⊆Rn →R. Sea p ∈U. Supongamos g acotada en B(p, δ) ⊆U y
+limx→p f(x) = 0. Probar limx→p f(x)g(x) = 0.
+b) (4 pts) Si h(x, y) =
+x2y
+x2+y2 · sin
+
+1
+x2+y2
+
+. Calcular (justificando) el valor de
+lim
+(x,y)→(0,0) h(x, y).
+
+===== PAGE 4 =====
+4
+Ejercicio 2 (10 pts) Sea f : R2 →R una funci´on diferenciable en el punto (1, 1). Suponga que
+las derivadas direccionales de f en dicho punto en las direcciones v1 = (2, −1) y v2 = (1, 4) son
+∂f
+∂v1 (1, 1) = 5
+y
+∂f
+∂v2 (1, 1) = 7. Calcular, justificando su respuesta, el gradiente ∇f(1, 1).
+
+===== PAGE 5 =====
+5
+Ejercicio 3. Sea f : R2 →R una funci´on continua, y suponga que la integral de f sobre la regi´on R
+est´a dada por
+Z Z
+R
+f(x, y) dy dx =
+Z √
+2/2
+0
+Z x
+0
+f(x, y) dy dx +
+Z 1
+√
+2/2
+Z √
+1−x2
+0
+f(x, y) dy dx.
+Entonces:
+(a) (5 pts) Dibuje la regi´on de integraci´on R en el plano.
+(b) (10 pts) Reescriba la integral anterior expres´andola como una integral iterada en el orden
+dx dy y calcular su valor si f(x, y) = 2xy.
+
+===== PAGE 6 =====
+6
+Use este recuadro por si necesita espacio adicional para el desarrollo.

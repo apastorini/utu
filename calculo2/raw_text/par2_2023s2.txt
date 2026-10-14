@@ -1,0 +1,179 @@
+
+===== PAGE 1 =====
+C´alculo Diferencial e Integral en Varias Variables
+Segundo semestre de 2023
+Segundo parcial
+25 de noviembre de 2023
+No Lista
+Apellido, Nombre
+C´edula
+Firma
+IMPORTANTE
+ La duraci´on del parcial es de tres horas y media.
+ No se permite usar ni calculadora ni material de consulta.
+ El parcial tiene 6 ejercicios de m´ultiple opci´on y dos ejercicios de desarrollo.
+ En cada ejercicio de m´ultiple opci´on solo hay una opci´on correcta.
+ La comprensi´on de la letra de los ejercicios es parte de la prueba.
+ Tenga cuidado al pasar las respuestas. Para los ejercicios de m´ultiple opci´on
+lo completado en el cuadro de abajo ser´a lo ´unico tenido en cuenta a la hora
+de corregir.
+M ´ULTIPLE OPCI´ON (Total: 42 puntos)
+Llenar cada casilla con las respuestas A, B, C, D o E, seg´un corresponda.
+1
+2
+3
+4
+5
+6
+Correctas: 7 puntos. Incorrectas: −1 puntos. Sin responder: 0 puntos.
+DESARROLLO (Total: 18 puntos)
+Los dos ejercicios de desarrollo se encuentran en la p´agina 3.
+Justifique sus respuestas.
+SOLO PARA USO DOCENTE
+MO
+D.1.1.a)
+D.1.1.b)
+D.1.2
+D.2
+Total
+1
+
+===== PAGE 2 =====
+M ´ULTIPLE OPCI´ON
+1. Sea f : R2 →R la funci´on dada por f(x, y) = em´ax{|xy|,x2}. Entonces, la figura que m´as se
+asemeja a las curvas de nivel de f es:
+(a)
+(b)
+(c)
+(d)
+(e)
+2. Sea f(x, y) una funci´on integrable, y considere la siguiente integral doble:
+Z 1
+0
+Z 2−√y
+y2
+f(x, y)dxdy
+Entonces una forma equivalente de escribir la integral es:
+(A)
+R 2
+0
+R (x−2)2
+√x
+f(x, y)dydx
+(B)
+R 1
+0
+R √x
+0
+f(x, y)dydx +
+R 2
+1
+R (x−2)2
+0
+f(x, y)dydx
+(C)
+R 1
+0
+R x2
+0
+f(x, y)dydx +
+R 2
+1
+R √x−2
+0
+f(x, y)dydx
+(D)
+R 1
+0
+R √x
+x2 f(x, y)dydx +
+R 2
+1
+R √x−2
+(x−2)2 f(x, y)dydx
+(E)
+R 2
+0
+R √2−x
+x2
+f(x, y)dydx
+3. Sean f : R3 →R definida como f(x, y, z) = e(x+y) + sen(y + z), y g : R →R4 definida como
+g(t) = (t2, t4, t8, t16). Entonces la suma de las entradas de Jg◦f(0, 0, 0) es:
+(A) 1
+(B) 0
+(C) π
+(D) 120
+(E) e + 1
+2
+
+===== PAGE 3 =====
+4. Sea f : R2 →R definida como f(x, y) = ex2+y −1 −y −x2. Entonces el polinomio de Taylor
+de orden 3 de f en el punto (0, 0) es:
+(A)
+1
+2y2 + 1
+6x3
+(B) 2xy + 1
+3y3
+(C)
+1
+2y2 + x2y + 1
+6y3
+(D)
+1
+2xy
+(E)
+1
+2x2 + y2 −2xy2
+5. Para cada α, β ∈R considere la funci´on fα,β : R2 →R definida como:
+fα,β(x, y) =
+
+
+
+3xe2y
+si
+y ≥0
+αx + βxy
+si
+y < 0
+Los valores de α y β para los cuales fα,β es diferenciable en todo R2 son:
+(A) α = 1 y β = 2
+(B) α = 3 y β = 6
+(C) α = 3 y β = 3
+(D) α = 1 y β = 1
+(E) α = 0 y β = 1
+6. Sea f : R2 →R definida como: f(x, y) =
+
+
+
+
+
+y(x2+y2)
+x2−y2
+si
+|x|̸ = |y|
+A
+si
+|x| = |y|
+Entonces el valor de A para que f sea continua en el origen es:
+(A) A = 1
+(B) A = 0
+(C) A = 3/2
+(D) No existe A para que f sea continua
+(E) A = 1/2
+DESARROLLO
+Ejercicio 1
+1. Completar las siguientes definiciones.
+a) Sea a ∈R2. Decimos que una funci´on f : R2 →R es continua en a sii . . .
+b) Sea ak una sucesi´on de puntos en R2, y a ∈R2. Decimos que lim
+k→∞ak = a sii . . .
+2. Demostrar que si ak es una sucesi´on en R2 tal que lim
+k→∞ak = a, y f es una funci´on continua
+en a, entonces lim
+k→∞f(ak) = f(a)
+Ejercicio 2
+Sea D = {(x, y, z) ∈R3 : 1 ≤x2 + y2 ≤4, 0 ≤y ≤x, 0 ≤z ≤1} y la funci´on f(x, y, z) = z.
+Calcule
+RRR
+D f(x, y, z).
+3

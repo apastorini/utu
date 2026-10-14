@@ -1,0 +1,1570 @@
+
+===== PAGE 1 =====
+2do. parcial - C´alculo Diferencial e Integral en Varias Variables
+(soluciones)
+PARTE I: VERDADERO O FALSO
+Verdadero o Falso #1
+V1: Si f : R3 →R es una funci´on continua, entonces
+S0 := {(x, y, z) ∈R3 : f(x, y, z) = 0},
+es un conjunto cerrado de R3.
+• Verdadero.
+• Falso.
+Soluci´on: El conjunto S0 es cerrado, pues contiene a cualquiera de sus puntos de acumulaci´on. En efecto,
+sea (a, b, c) un punto de acumulaci´on de S0.
+Veamos que (a, b, c) ∈S0.
+Sea (xk, yk, zk) una sucesi´on con
+recorrido en S0 −{(a, b, c)} y que converge a (a, b, c). Como f es continua en (a, b, c), se tiene que f(a, b, c) =
+limk→+∞f(xk, yk, zk) = limk→+∞0 = 0, es decir, (a, b, c) ∈S0.
+Otra forma de resolver esto es la siguiente: {0} es un subconjunto cerrado de R, por lo cual S0 = f −1({0})
+(imagen inversa) es un subconjunto cerrado de R3 por ser f continua.
+V2: Si f : R3 →R es una funci´on continua, entonces
+S0 := {(x, y, z) ∈R3 : f(x, y, z) ≤0},
+es un conjunto cerrado de R3.
+• Verdadero.
+• Falso.
+Soluci´on: El conjunto S0 es cerrado, pues contiene a cualquiera de sus puntos de acumulaci´on. En efecto,
+sea (a, b, c) un punto de acumulaci´on de S0.
+Veamos que (a, b, c) ∈S0.
+Sea (xk, yk, zk) una sucesi´on con
+recorrido en S0 −{(a, b, c)} y que converge a (a, b, c). Como f es continua en (a, b, c), se tiene que f(a, b, c) =
+limk→+∞f(xk, yk, zk) = limk→+∞rk donde rk ≤0 para todo k ∈N. Tenemos entonces que {rk} es una sucesi´on
+convergente en R y acotada superiormente por 0, por lo cual f(a, b, c) ≤0.
+Otra forma de resolver esto es la siguiente:
+(−∞, 0] es un subconjunto cerrado de R, por lo cual S0 =
+f −1((−∞, 0]) (imagen inversa) es un subconjunto cerrado de R3 por ser f continua.
+1
+
+===== PAGE 2 =====
+V3: Si f : R3 →R es una funci´on continua, entonces
+S0 := {(x, y, z) ∈R3 : f(x, y, z) < 0},
+es un conjunto abierto de R3.
+• Verdadero.
+• Falso.
+Soluci´on: El conjunto S0 es abierto porque su complemento es cerrado (ver la versi´on 2).
+Verdadero o Falso #2
+V1: Sea (x0, y0) ∈R2. Existe una funci´on f : R2 →R diferenciable en (x0, y0), que cumple que
+df(x0,y0)(1, 1) = 1 = df(x0,y0)(−1, 1),
+y adem´as
+∂f
+∂y (x0, y0) = 0.
+(df(x0,y0) denota el diferencial de f en el punto (x0, y0).)
+• Verdadero.
+• Falso.
+Soluci´on: Por un lado,
+1 = df(x0,y0)(1, 1) = ⟨∇f(x0, y0), (1, 1)⟩= ∂f
+∂x(x0, y0) + ∂f
+∂y (x0, y0).
+Por otro lado,
+1 = df(x0,y0)(−1, 1) = ⟨∇f(x0, y0), (−1, 1)⟩= −∂f
+∂x(x0, y0) + ∂f
+∂y (x0, y0).
+De donde
+2 = 2∂f
+∂y (x0, y0)
+1 = ∂f
+∂y (x0, y0).
+V2: Sea (x0, y0) ∈R2. Existe una funci´on f : R2 →R diferenciable en (x0, y0), que cumple que
+df(x0,y0)(1, 1) = 1 = df(x0,y0)(−1, 1),
+y adem´as
+∂f
+∂x(x0, y0) = 0.
+(df(x0,y0) denota el diferencial de f en el punto (x0, y0).)
+• Verdadero.
+• Falso.
+2
+
+===== PAGE 3 =====
+Soluci´on: Siguiendo la soluci´on de la versi´on 1, se tiene que
+0 = 2∂f
+∂x(x0, y0)
+0 = ∂f
+∂x(x0, y0).
+V3: Sea (x0, y0) ∈R2. Existe una funci´on f : R2 →R diferenciable en (x0, y0), que cumple que
+df(x0,y0)(1, 1) = 1 = df(x0,y0)(1, −1),
+y adem´as
+∂f
+∂x(x0, y0) = 0.
+(df(x0,y0) denota el diferencial de f en el punto (x0, y0).)
+• Verdadero.
+• Falso.
+Soluci´on: Por un lado,
+1 = df(x0,y0)(1, 1) = ⟨∇f(x0, y0), (1, 1)⟩= ∂f
+∂x(x0, y0) + ∂f
+∂y (x0, y0).
+Por otro lado,
+1 = df(x0,y0)(1, −1) = ⟨∇f(x0, y0), (1, −1)⟩= ∂f
+∂x(x0, y0) −∂f
+∂y (x0, y0).
+De donde
+2 = 2∂f
+∂x(x0, y0)
+1 = ∂f
+∂x(x0, y0).
+Verdadero o Falso #3
+V1: Sea f : D →R continua y positiva en D, donde D ⊆R2 es un rect´angulo compacto (es decir, cerrado y
+acotado). Entonces necesariamente f es integrable y adem´as
+ZZ
+D
+f ≥´area(D).
+• Verdadero.
+• Falso.
+Soluci´on: Considere D = [0, 1] × [0, 1] y f la funci´on constantemente igual a 1/2 sobre D. Entonces
+ZZ
+D
+f = 1
+2
+ZZ
+D
+1 = 1
+2 · ´area(D) = 1
+2 < 1 = ´area(D).
+3
+
+===== PAGE 4 =====
+V2: Sea f : D →R continua en D, donde D ⊆R2 es un rect´angulo compacto (es decir, cerrado y acotado).
+Entonces necesariamente f es integrable y adem´as
+
+ZZ
+D
+f
+ ≥
+ZZ
+D
+|f|.
+• Verdadero.
+• Falso.
+Soluci´on: Considere D = [−1, 1] × [0, 1] y f(x, y) = x. Entonces,
+ZZ
+D
+f =
+Z 1
+0
+Z 1
+−1
+xdx
+
+dy =
+Z 1
+0
+0dy = 0,
+
+ZZ
+D
+f
+ = 0,
+ZZ
+D
+|f| =
+Z 1
+0
+Z 1
+−1
+|x|dx
+
+dy =
+Z 1
+0
+1dy = 1.
+Luego,
+RR
+D f
+ <
+RR
+D |f|.
+V3: Sean U y V rect´angulos compactos de R2 (es decir, cerrados y acotados). Si existe f : R2 →R integrable,
+que cumple
+ZZ
+U∪V
+f =
+ZZ
+U
+f +
+ZZ
+V
+f,
+entonces necesariamente U y V son disjuntos.
+• Verdadero.
+• Falso.
+Soluci´on: Tome U = V , de donde U ∩V = U̸ = ∅. La funci´on f constantemente igual a cero claramente
+cumple con ser integrable y con
+RR
+U∪V f =
+RR
+U f +
+RR
+V f.
+4
+
+===== PAGE 5 =====
+PARTE II: M´ULTIPLE OPCI´ON
+M´ultiple Opci´on #1
+V1: Sea α: R →R2 una funci´on diferenciable con α(0) = (0, 0), y f : R2 →R2 la funci´on dada por
+f(x, y) = (ex+y, ex−y).
+Sabiendo que (f ◦α)′(0) = (2, 0), el diferencial de α en 0 es el vector dado por:
+(A) α′(0) = (1, 1)
+(B) α′(0) = (1, −1)
+(C) α′(0) = (0, 0)
+(D) α′(0) = (−1, 1)
+(E) α′(0) = (1, 0)
+Soluci´on: Por la Regla de la Cadena, se tiene que
+
+2
+0
+
+= (f ◦α)′(0) = Jf(α(0)) · α′(0) = Jf(0, 0) ·
+
+x′(0)
+y′(0)
+
+ 2
+0
+
+=
+
+
+
+∂
+∂x(ex+y)
+
+(0,0)
+∂
+∂y(ex+y)
+
+(0,0)
+∂
+∂x(ex−y)
+
+(0,0)
+∂
+∂y(ex−y)
+
+(0,0)
+
+
+·
+ x′(0)
+y′(0)
+
+=
+ ex+y|(0,0)
+ex+y|(0,0)
+ex−y|(0,0)
+−ex−y|(0,0)
+
+·
+ x′(0)
+y′(0)
+
+ 2
+0
+
+=
+ 1
+1
+1
+−1
+
+·
+ x′(0)
+y′(0)
+
+=
+ x′(0) + y′(0)
+x′(0) −y′(0)
+
+.
+Se sigue que x′(0) + y′(0) = 2 y x′(0) −y′(0) = 0, de donde x′(0) = 1 e y′(0) = 1, es decir, α′(0) = (1, 1).
+V2: Sea α: R →R2 una funci´on diferenciable con α(0) = (0, 0), y f : R2 →R2 la funci´on dada por
+f(x, y) = (ex+y, ex−y).
+Sabiendo que (f ◦α)′(0) = (0, 4), el diferencial de α en 0 es el vector dado por:
+(A) α′(0) = (2, −2)
+(B) α′(0) = (−2, 2)
+(C) α′(0) = (2, 2)
+(D) α′(0) = (0, 0)
+(E) α′(0) = (2, 0)
+Soluci´on: Siguiendo el procedimiento de la versi´on 1, se tiene que x′(0) + y′(0) = 0 y x′(0) −y′(0) = 4, de
+donde x′(0) = 2 e y′(0) = −2, es decir, α′(0) = (2, −2).
+V3: Sea α: R →R2 una funci´on diferenciable con α(0) = (0, 0), y f : R2 →R2 la funci´on dada por
+f(x, y) = (ex+y, ex−y).
+Sabiendo que (f ◦α)′(0) = (1, 3), el diferencial de α en 0 es el vector dado por:
+5
+
+===== PAGE 6 =====
+(A) α′(0) = (2, −1)
+(B) α′(0) = (−2, 1)
+(C) α′(0) = (−1, 2)
+(D) α′(0) = (1, −2)
+(E) α′(0) = (0, 0)
+Soluci´on: Siguiendo el procedimiento de la versi´on 1, se tiene que x′(0) + y′(0) = 1 y x′(0) −y′(0) = 3, de
+donde x′(0) = 2 e y′(0) = −1, es decir, α′(0) = (2, −1).
+M´ultiple Opci´on #2
+V1: Hallar el valor de α ∈R para el cual
+lim
+(x,y)→(0,0)
+cos(x2 + y) −1 + x2 + αy2
+x2 + y2
+= 1.
+(A) α = 3/2
+(B) α = 1/2
+(C) α = −1/2
+(D) α = −3/2
+(E) α = 0
+Soluci´on: Hallamos el desarrollo de Taylor de orden dos de f(x, y) = cos(x2 + y) en un entorno de (0, 0). La
+funci´on f claramente es de clase C3. Primero calculamos todas las derivadas parciales de orden 1 y 2 de f, y
+luego evaluamos en (0, 0) para hallar el gradiente y la Hessiana de f en (0, 0):
+∂f
+∂x(x, y) = −2x sin(x2 + y),
+∂f
+∂y (x, y) = −sin(x2 + y),
+∂2f
+∂x2 (x, y) = −2 sin(x2 + y) −4x2 cos(x2 + y),
+∂2f
+∂y2 (x, y) = −cos(x2 + y),
+∂2f
+∂x∂y (x, y) = ∂2f
+∂y∂x(x, y) = −2x cos(x2 + y).
+Luego,
+∇f(0, 0) =
+
+∂f
+∂x(0, 0)
+∂f
+∂y (0, 0)
+
+=
+  0
+0 
+,
+Hf(0, 0) =
+ 
+∂2f
+∂x2 (0, 0)
+∂2f
+∂x∂y(0, 0)
+∂2f
+∂x∂y(0, 0)
+∂2f
+∂y2 (0, 0)
+!
+=
+ 0
+0
+0
+−1
+
+.
+El desarrollo de Taylor de orden dos de f(x, y) = cos(x2 + y) en (0, 0) viene entonces dado por:
+6
+
+===== PAGE 7 =====
+f(x, y) = f(0, 0) + ∇f(0, 0) ·
+ x
+y
+
++ 1
+2
+ x
+y
+
+Hf(0, 0)
+ x
+y
+
++ r2(x, y)
+cos(x2 + y) = 1 +
+  0
+0 
+·
+
+x
+y
+
++ 1
+2
+  x
+y  
+0
+0
+0
+−1
+ 
+x
+y
+
++ r2(x, y)
+cos(x2 + y) = 1 + 1
+2
+  0
+−y   x
+y
+
++ r2(x, y)
+cos(x2 + y) = 1 −y2
+2 + r2(x, y),
+donde
+lim
+(x,y)→(0,0)
+r2(x, y)
+x2 + y2 = 0. Luego,
+cos(x2 + y) −1 + x2 + αy2
+x2 + y2
+= 1 −y2
+2 + r2(x, y) −1 + x2 + αy2
+x2 + y2
+= x2 + (α −1/2)y2 + r2(x, y)
+x2 + y2
+cos(x2 + y) −1 + x2 + αy2
+x2 + y2
+= x2 + (α −1/2)y2
+x2 + y2
++ r2(x, y)
+x2 + y2
+x2 + (α −1/2)y2
+x2 + y2
+= cos(x2 + y) −1 + x2 + αy2
+x2 + y2
+−r2(x, y)
+x2 + y2 .
+Tomando (x, y) →(0, 0), se tiene
+lim
+(x,y)→(0,0)
+x2 + (α −1/2)y2
+x2 + y2
+=
+lim
+(x,y)→(0,0)
+cos(x2 + y) −1 + x2 + αy2
+x2 + y2
+−
+lim
+(x,y)→(0,0)
+r2(x, y)
+x2 + y2 = 1 −0 = 1.
+De lo anterior se sigue que α −1/2 = 1, es decir, α = 3/2.
+Otra manera de resolver este ejercicio es la siguiente: se nos dice que el l´ımite
+lim
+(x,y)→(0,0)
+cos(x2 + y) −1 + x2 + αy2
+x2 + y2
+existe y vale uno. En particular, esto se cumplir´a para cualquier l´ımite direccional. Si hacemos el l´ımite a lo
+largo de la recta x = 0, y aplicamos un par de veces al Regla de l’Hˆopital, tenemos que
+lim
+y→0
+cos(y) −1 + αy2
+y2
+= 1
+lim
+y→0
+−sin(y) + 2αy
+2y
+= 1
+lim
+y→0
+−cos(y) + 2α
+2
+= 1
+2α −1 = 2
+2α = 3
+α = 3/2.
+V2: Hallar el valor de α ∈R para el cual
+lim
+(x,y)→(0,0)
+cos(x2 + y) −1 + 2x2 + αy2
+x2 + y2
+= 2.
+(A) α = 5/2
+(B) α = 3/2
+(C) α = −3/2
+(D) α = −5/2
+(E) α = 0
+7
+
+===== PAGE 8 =====
+Soluci´on: Siguiendo el razonamiento de la versi´on 1, se tiene que
+cos(x2 + y) −1 + 2x2 + αy2
+x2 + y2
+= 1 −y2
+2 + r2(x, y) −1 + 2x2 + αy2
+x2 + y2
+= 2x2 + (α −1/2)y2 + r2(x, y)
+x2 + y2
+cos(x2 + y) −1 + 2x2 + αy2
+x2 + y2
+= 2x2 + (α −1/2)y2
+x2 + y2
++ r2(x, y)
+x2 + y2
+2x2 + (α −1/2)y2
+x2 + y2
+= cos(x2 + y) −1 + 2x2 + αy2
+x2 + y2
+−r2(x, y)
+x2 + y2 .
+Tomando (x, y) →(0, 0), se tiene
+lim
+(x,y)→(0,0)
+2x2 + (α −1/2)y2
+x2 + y2
+=
+lim
+(x,y)→(0,0)
+cos(x2 + y) −1 + 2x2 + αy2
+x2 + y2
+−
+lim
+(x,y)→(0,0)
+r2(x, y)
+x2 + y2 = 2 −0 = 2.
+De lo anterior se sigue que α −1/2 = 2, es decir, α = 5/2.
+Otra manera de resolver este ejercicio es la siguiente: se nos dice que el l´ımite
+lim
+(x,y)→(0,0)
+cos(x2 + y) −1 + 2x2 + αy2
+x2 + y2
+existe y vale 2. En particular, esto se cumplir´a para cualquier l´ımite direccional. Si hacemos el l´ımite a lo largo
+de la recta x = 0, y aplicamos un par de veces al Regla de l’Hˆopital, tenemos que
+lim
+y→0
+cos(y) −1 + αy2
+y2
+= 2
+lim
+y→0
+−sin(y) + 2αy
+2y
+= 2
+lim
+y→0
+−cos(y) + 2α
+2
+= 2
+2α −1 = 4
+2α = 5
+α = 5/2.
+V3: Hallar el valor de α ∈R para el cual
+lim
+(x,y)→(0,0)
+cos(x2 + y) −1 −x2 + αy2
+x2 + y2
+= −1.
+(A) α = −1/2
+(B) α = 1/2
+(C) α = 3/2
+(D) α = −3/2
+(E) α = 0
+Soluci´on: Siguiendo el razonamiento de la versi´on 1, se tiene que
+cos(x2 + y) −1 −x2 + αy2
+x2 + y2
+= 1 −y2
+2 + r2(x, y) −1 −x2 + αy2
+x2 + y2
+= −x2 + (α −1/2)y2 + r2(x, y)
+x2 + y2
+cos(x2 + y) −1 −x2 + αy2
+x2 + y2
+= −x2 + (α −1/2)y2
+x2 + y2
++ r2(x, y)
+x2 + y2
+−x2 + (α −1/2)y2
+x2 + y2
+= cos(x2 + y) −1 −x2 + αy2
+x2 + y2
+−r2(x, y)
+x2 + y2 .
+Tomando (x, y) →(0, 0), se tiene
+lim
+(x,y)→(0,0)
+−x2 + (α −1/2)y2
+x2 + y2
+=
+lim
+(x,y)→(0,0)
+cos(x2 + y) −1 −x2 + αy2
+x2 + y2
+−
+lim
+(x,y)→(0,0)
+r2(x, y)
+x2 + y2 = −1 −0 = −1.
+8
+
+===== PAGE 9 =====
+De lo anterior se sigue que α −1/2 = −1, es decir, α = −1/2.
+Otra manera de resolver este ejercicio es la siguiente: se nos dice que el l´ımite
+lim
+(x,y)→(0,0)
+cos(x2 + y) −1 −x2 + αy2
+x2 + y2
+existe y vale −1. En particular, esto se cumplir´a para cualquier l´ımite direccional. Si hacemos el l´ımite a lo
+largo de la recta x = 0, y aplicamos un par de veces al Regla de l’Hˆopital, tenemos que
+lim
+y→0
+cos(y) −1 + αy2
+y2
+= −1
+lim
+y→0
+−sin(y) + 2αy
+2y
+= −1
+lim
+y→0
+−cos(y) + 2α
+2
+= −1
+2α −1 = −2
+2α = −1
+α = −1/2.
+M´ultiple Opci´on #3
+V1: Se asume que existe la integral doble mostrada a continuaci´on para una funci´on continua f : D →R sobre
+una regi´on D y que
+ZZ
+D
+f =
+Z 4
+0
+ Z (y−4)/2
+−√4−y
+f(x, y) dx
+!
+dy.
+Si se invierte el orden de integraci´on, entonces:
+(A)
+Z 0
+−2
+ Z 4−x2
+2x+4
+f(x, y) dy
+!
+dx
+(B)
+Z 0
+−2
+Z 2x+4
+4−x2 f(x, y) dy
+
+dx
+(C)
+Z 0
+−2
+ Z √16+8x
+2x+4
+f(x, y) dy
+!
+dx
+(D)
+Z 0
+−2
+ Z 4−x2
+x+2
+f(x, y) dy
+!
+dx
+(E)
+Z 4
+0
+ Z (x−4)/2
+−√4−x
+f(x, y) dy
+!
+dx
+Soluci´on: De la ﬁgura
+x = −
+p
+4 −y2
+x = y−4
+2
+D
+9
+
+===== PAGE 10 =====
+obtenemos que el conjunto D es
+D = {(x, y) ∈R2 : −2 ≤x ≤0, 2x + 4 ≤y ≤4 −x2}.
+Luego,
+ZZ
+D
+f =
+Z 0
+−2
+ Z 4−x2
+2x+4
+f(x, y) dy
+!
+dx.
+V2: Se asume que existe la integral doble mostrada a continuaci´on para una funci´on continua f : D →R sobre
+una regi´on D y que
+ZZ
+D
+f =
+Z 4
+0
+ Z √4−y
+(4−y)/2
+f(x, y) dx
+!
+dy.
+Si se invierte el orden de integraci´on, entonces:
+(A)
+Z 2
+0
+ Z 4−x2
+4−2x
+f(x, y) dy
+!
+dx
+(B)
+Z 2
+0
+Z 4−2x
+4−x2 f(x, y) dy
+
+dx
+(C)
+Z 2
+0
+ Z 4−x2
+2−x
+f(x, y) dy
+!
+dx
+(D)
+Z 2
+0
+ Z √16−8x
+4−2x
+f(x, y) dy
+!
+dx
+(E)
+Z 4
+0
+ Z √4−x
+(4−x)/2
+f(x, y) dy
+!
+dx
+Soluci´on: De la ﬁgura
+x = √4 −y
+x = 4−y
+2
+D
+obtenemos que el conjunto D es
+D = {(x, y) ∈R2 : 0 ≤x ≤2, 4 −2x ≤y ≤4 −x2}.
+Luego,
+ZZ
+D
+f =
+Z 2
+0
+ Z 4−x2
+4−2x
+f(x, y) dy
+!
+dx.
+10
+
+===== PAGE 11 =====
+V3: Se asume que existe la integral doble mostrada a continuaci´on para una funci´on continua f : D →R sobre
+una regi´on D y que
+ZZ
+D
+f =
+Z 4
+0
+ Z −2+√y
+(y−4)/2
+f(x, y) dx
+!
+dy.
+Si se invierte el orden de integraci´on, entonces:
+(A)
+Z 0
+−2
+ Z 2x+4
+(x+2)2 f(x, y) dy
+!
+dx
+(B)
+Z 0
+−2
+ Z (x+2)2
+2x+4
+f(x, y) dy
+!
+dx
+(C)
+Z 0
+−2
+ Z x+2
+(x+2)2 f(x, y) dy
+!
+dx
+(D)
+Z 0
+−2
+Z 2x+4
+4−√−8x
+f(x, y) dy
+
+dx
+(E)
+Z 4
+0
+ Z −2+√x
+(x−4)/2
+f(x, y) dy
+!
+dx
+Soluci´on: De la ﬁgura
+x = √y −2
+x = y−4
+2
+D
+obtenemos que el conjunto D es
+D = {(x, y) ∈R2 : −2 ≤x ≤0, 2x + 4 ≤y ≤(x + 2)2}.
+Luego,
+ZZ
+D
+f =
+Z 0
+−2
+ Z 2x+4
+(x+2)2 f(x, y)dy
+!
+dx.
+11
+
+===== PAGE 12 =====
+PARTE III: DESARROLLO
+D1
+(a) Deﬁna qu´e signiﬁca que una funci´on f : R2 →R sea diferenciable en un punto (x0, y0).
+[3 puntos]
+Considere la funci´on f : R2 →R dada por
+f(x, y) =
+
+
+
+
+
+
+
+(2x2 + 3y2) cos
+
+1
+2x2 + 3y2
+
++ 2x −3y + 1
+si (x, y)̸ = (0, 0),
+1
+si (x, y) = (0, 0).
+(b) Hallar ∂f
+∂x(0, 0) y ∂f
+∂y (0, 0), en caso de existir.
+[4 puntos]
+(c) Determine si f es diferenciable en (0, 0).
+[7 puntos]
+(d) Determine si f es de clase C1.
+[4 puntos]
+Soluci´on:
+(a) Ver te´orico.
+(b) Como (0, 0) es un punto donde la funci´on puede presentar problemas, en necesario usar la deﬁnici´on de
+derivada parcial en (0, 0) para poder determinar su existencia, es decir, calcular (en caso de existir) el
+l´ımite
+lim
+h→0
+f(h, 0) −f(0, 0)
+h
+.
+Como (h, 0)̸ = (0, 0), tenemos que:
+lim
+h→0
+f(h, 0) −f(0, 0)
+h
+= lim
+h→0
+(2h2 + 3 · 02) cos
+
+1
+2h2+3·02
+
++ 2h −3 · 0 + 1 −1
+h
+= lim
+h→0
+2h2 cos
+  1
+2h2
+
++ 2h
+h
+= lim
+h→0 2h cos
+ 1
+2h2
+
++ 2 = 2,
+donde lim
+h→0 2h cos
+ 1
+2h2
+
+= 0 ya que lim
+h→0 2h = 0 y cos
+  1
+2h2
+
+es una funci´on acotada en un entorno reducido
+de 0. Por lo tanto,
+∂f
+∂x(0, 0) = 2.
+De manera similar,
+lim
+h→0
+f(0, h) −f(0, 0)
+h
+= lim
+h→0
+(2 · 02 + 3h2) cos
+
+1
+2·02+3h2
+
++ 2 · 0 −3h + 1 −1
+h
+= lim
+h→0
+3h2 cos
+  1
+3h2
+
+−3h
+h
+= lim
+h→0 3h cos
+ 1
+3h2
+
+−3 = −3.
+Por lo tanto,
+∂f
+∂y (0, 0) = −3.
+(c) Para determinar si f es diferenciable en (0, 0), se debe usar la deﬁnici´on de diferenciabilidad, ya que f
+puede presentar problemas en dicho punto. Recordemos que f es diferenciable en (0, 0) si:
+• Las derivadas parciales de f en (0, 0) existen.
+•
+lim
+(x,y)→(0,0)
+f(x, y) −f(0, 0) −∂f
+∂x(0, 0)x −∂f
+∂y (0, 0)y
+||(x, y)||
+= 0.
+12
+
+===== PAGE 13 =====
+La primera condici´on la tenemos por la parte (b). Para veriﬁcar la segunda, simplemente calculamos el
+l´ımite:
+lim
+(x,y)→(0,0)
+f(x, y) −f(0, 0) −∂f
+∂x(0, 0)x −∂f
+∂y (0, 0)y
+||(x, y)||
+=
+lim
+(x,y)→(0,0)
+(2x2 + 3y2) cos
+
+1
+2x2+3y2
+
++ 2x −3y + 1 −1 −2x + 3y
+p
+x2 + y2
+=
+lim
+(x,y)→(0,0)
+(2x2 + 3y2) cos
+
+1
+2x2+3y2
+
+p
+x2 + y2
+=
+lim
+(x,y)→(0,0)
+ 
+2
+x2
+p
+x2 + y2 cos
+
+1
+2x2 + 3y2
+
++ 3
+y2
+p
+x2 + y2 cos
+
+1
+2x2 + 3y2
+!
+.
+Respecto al l´ımite
+lim
+(x,y)→(0,0)
+x2
+p
+x2 + y2 cos
+
+1
+2x2 + 3y2
+
+, se tiene que
+lim
+(x,y)→(0,0)
+x2
+p
+x2 + y2 cos
+
+1
+2x2 + 3y2
+
+=
+lim
+(x,y)→(0,0) x ·
+ 
+x
+p
+x2 + y2 cos
+
+1
+2x2 + 3y2
+!
+= 0,
+al ser el producto de una funci´on con l´ımite cero en (0, 0) (a saber, (x, y) →x) por una funci´on acotada en
+un entorno reducido de (0, 0) (a saber, (x, y) →
+x
+√
+x2+y2 cos
+
+1
+2x2+3y2
+
+). En efecto, la primera aﬁrmaci´on
+es evidente, mientras que para la segunda se tiene que
+
+x
+p
+x2 + y2 cos
+
+1
+2x2 + 3y2
+ =
+
+x
+p
+x2 + y2
+
+cos
+
+1
+2x2 + 3y2
+ ≤
+
+x
+p
+x2 + y2
+ =
+|x|
+p
+x2 + y2 =
+√
+x2
+p
+x2 + y2 =
+s
+x2
+x2 + y2 ≤1.
+De manera similar, se tiene que
+lim
+(x,y)→(0,0)
+y2
+p
+x2 + y2 cos
+
+1
+2x2 + 3y2
+
+= 0.
+Por lo tanto,
+lim
+(x,y)→(0,0)
+f(x, y) −f(0, 0) −∂f
+∂x(0, 0)x −∂f
+∂y (0, 0)y
+||(x, y)||
+= 2
+lim
+(x,y)→(0,0)
+x2
+p
+x2 + y2 cos
+
+1
+2x2 + 3y2
+
++ 3
+lim
+(x,y)→(0,0)
+y2
+p
+x2 + y2 cos
+
+1
+2x2 + 3y2
+
+= 2 · 0 + 3 · 0
+= 0,
+es decir, f es diferenciable en (0, 0).
+(d) Para determinar si f es de clase C1, debemos estudiar la continuidad de las funciones derivadas parciales
+de orden uno. De momento s´olo tenemos
+∂f
+∂x(0, 0) = 2 y
+∂f
+∂y (0, 0) = −3. Para calcular las derivadas
+parciales en los puntos diferentes de (0, 0), usamos las reglas de derivaci´on.
+∂f
+∂x(x, y) = ∂
+∂x
+
+(2x2 + 3y2) cos
+
+1
+2x2 + 3y2
+
++ 2x −3y + 1
+
+= 4x cos
+
+1
+2x2 + 3y2
+
++ (2x2 + 3y2)
+
+−sin
+
+1
+2x2 + 3y2
+ 
+−
+1
+(2x2 + 3y2)2 · 4x
+
++ 2
+= 4x cos
+
+1
+2x2 + 3y2
+
++
+
+−sin
+
+1
+2x2 + 3y2
+ 
+−
+1
+2x2 + 3y2 · 4x
+
++ 2
+= 4x cos
+
+1
+2x2 + 3y2
+
++
+4x
+2x2 + 3y2 sin
+
+1
+2x2 + 3y2
+
++ 2.
+Luego tenemos:
+∂f
+∂x(x, y) =
+
+
+
+
+
+
+
+4x cos
+
+1
+2x2 + 3y2
+
++
+4x
+2x2 + 3y2 sin
+
+1
+2x2 + 3y2
+
++ 2
+si (x, y)̸ = (0, 0),
+2
+si (x, y) = (0, 0).
+13
+
+===== PAGE 14 =====
+La funci´on ∂f
+∂x(x, y) es continua en todo punto diferente del origen, por lo que habr´ıa que estudiar su
+continuidad en (0, 0). Tenemos entonces que estudiar
+lim
+(x,y)→(0,0) 4x cos
+
+1
+2x2 + 3y2
+
++
+4x
+2x2 + 3y2 sin
+
+1
+2x2 + 3y2
+
++ 2.
+Como
+lim
+(x,y)→(0,0) 4x cos
+
+1
+2x2 + 3y2
+
+= 0 (funci´on con l´ımite cero en (0, 0) por funci´on acotada en un
+entorno reducido de (0, 0)) y
+lim
+(x,y)→(0,0) = 2, el problema se reduce a estudiar
+lim
+(x,y)→(0,0)
+4x
+2x2 + 3y2 sin
+
+1
+2x2 + 3y2
+
+.
+El l´ımite anterior no existe, porque el l´ımite unidimensional no existe a lo largo de la recta y = 0, es decir,
+lim
+x→0
+4x
+2x2 sin
+ 1
+2x2
+
+= lim
+x→0
+2
+x sin
+ 1
+2x2
+
+no existe. Por lo tanto,
+lim
+(x,y)→(0,0)
+∂f
+∂x(x, y)
+no existe, por lo que ∂f
+∂x(x, y) no es continua en (0, 0), y entonces f no es de clase C1. Se puede llegar a
+la misma conclusi´on analizando ∂f
+∂y .
+D2
+(a) Enuncie el Teorema de Cambio de Variable para integrales triples.
+[3 puntos]
+(b) Sea
+D = {(x, y, z) ∈R3 : y ≥|x|, 0 ≤z ≤
+p
+x2 + y2 ≤1},
+y g el cambio de variable a coordenadas cil´ındricas que asocia a la terna (ρ, θ, z) la terna (x, y, z). Realice
+un bosquejo aproximado de D y g−1(D).
+[6 puntos]
+(c) Sea f : R3 →R, dada por
+f(x, y, z) = yz.
+Calcule
+ZZZ
+D
+f, donde D es la regi´on de la parte (b).
+[9 puntos]
+Soluci´on:
+(a) Ver te´orico.
+(b) Viendo la ﬁgura
+tenemos que
+0 ≤ρ ≤1,
+π/4 ≤θ ≤3π/4 y 0 ≤z ≤ρ.
+14
+
+===== PAGE 15 =====
+Luego,
+D = {(ρ cos(θ), ρ sin(θ), z) ∈R3 : 0 ≤ρ ≤1,
+π/4 ≤θ ≤3π/4 y 0 ≤z ≤ρ}.
+Por otro lado, el conjunto a donde pertenecen las coordenadas cil´ındricas viene dado por
+g−1(D) = {(ρ, θ, z) ∈R3 : 0 ≤ρ ≤1,
+π/4 ≤θ ≤3π/4 y 0 ≤z ≤ρ}.
+El conjunto g−1(D) tambi´en pueden representarse de la siguiente manera:
+g−1(D) = {(ρ, θ, z) : π/4 ≤θ ≤3π/4; 0 ≤z ≤1; z ≤ρ ≤1}.
+Los bosquejos de D y de g−1(D):
+La regi´on D tiene como frontera una parte del cono, parte de los planos z = 0, y = x, y = −x y parte de un
+cilindro. En resumen es un subconjunto compacto de un cilindro s´olido. El conjunto g−1(D) es la “mitad”
+de un prisma de caras paralelas a los planos coordenados. Entonces g manda una parte compacta del
+prisma en una parte compacta de un cilindro lo cual tiene sentido ya que estamos usando las coordenadas
+cil´ındricas.
+(c) Calcularemos la integral
+ZZZ
+D
+f mediante el cambio a coordenadas cil´ındricas de la parte (b). Por el
+teorema de cambio de variables para integrales triples, se tiene que
+ZZZ
+D
+f(x, y, z)dxdydz =
+ZZZ
+g−1(D)
+f(g(ρ, θ, z))|det(Jg(ρ, θ, z))|drdθdz
+donde g: g−1(D) →D es el cambio de variables dado por
+g(ρ, θ, z) = (ρ cos(θ), ρ sin(θ), z).
+15
+
+===== PAGE 16 =====
+Tenemos que
+Jg(ρ, θ, z) =
+
+
+
+
+
+
+
+∂
+∂ρ(ρ cos(θ))
+∂
+∂θ(ρ cos(θ))
+∂
+∂z (ρ cos(θ))
+∂
+∂ρ(ρ sin(θ))
+∂
+∂θ(ρ sin(θ))
+∂
+∂z (ρ sin(θ))
+∂
+∂ρ(z)
+∂
+∂θ(z)
+∂
+∂z (z)
+
+
+
+
+
+
+
+=
+
+
+cos(θ)
+−ρ sin(θ)
+0
+sin(θ)
+ρ cos(θ)
+0
+0
+0
+1
+
+
+det(Jg(ρ, θ, z)) = det
+
+
+cos(θ)
+−ρ sin(θ)
+0
+sin(θ)
+ρ cos(θ)
+0
+0
+0
+1
+
+= det
+ cos(θ)
+−ρ sin(θ)
+sin(θ)
+ρ cos(θ)
+
+= ρ · det
+
+cos(θ)
+−sin(θ)
+sin(θ)
+cos(θ)
+
+= ρ(cos2(θ) + sin2(θ)) = ρ.
+Entonces,
+ZZZ
+D
+f =
+ZZZ
+g−1(D)
+f(g(ρ, θ, z))|det(Jg(ρ, θ, z))|drdθdz
+=
+Z 1
+0
+ Z 3π/4
+π/4
+Z ρ
+0
+(ρ sin(θ)zρ)dz
+
+dθ
+!
+dρ =
+Z 1
+0
+ Z 3π/4
+π/4
+
+ρ2 sin(θ)
+Z ρ
+0
+zdz
+
+dθ
+!
+dρ
+=
+Z 1
+0
+ Z 3π/4
+π/4
+
+ρ2 sin(θ) z2
+2
+
+ρ
+0
+
+dθ
+!
+dρ =
+Z 1
+0
+ Z 3π/4
+π/4
+
+ρ2 sin(θ)ρ2
+2
+
+dθ
+!
+dρ
+=
+Z 1
+0
+ρ4
+2
+ Z 3π/4
+π/4
+sin(θ)dθ
+!
+dρ =
+Z 1
+0
+ρ4
+2
+
+−cos(θ)|3π/4
+π/4
+
+dρ =
+Z 1
+0
+ρ4
+2 (cos(π/4) −cos(3π/4)) dρ
+=
+Z 1
+0
+ρ4
+2 · 2
+√
+2dρ =
+1
+√
+2
+Z 1
+0
+ρ4dρ =
+1
+√
+2
+ρ5
+5
+
+1
+0
+=
+1
+5
+√
+2 =
+√
+2
+10 .
+Tambi´en se puede hacer el c´alculo de la integral anterior usando la segunda representaci´on mostrada para
+g−1(D):
+ZZZ
+D
+yzdxdydz =
+ZZZ
+g−1(D)
+ρ2 sin(θ)zdρdθdz =
+Z 3π/4
+π/4
+sin(θ)
+Z 1
+0
+Z 1
+z
+ρ2zdρdz
+=
+√
+2
+Z 1
+0
+Z 1
+z
+ρ2zdρdz =
+√
+2
+3
+Z 1
+0
+z −z4dz =
+√
+2
+3 (1/2 −1/5) =
+√
+2
+3 · 3
+10
+=
+√
+2
+10 .
+16

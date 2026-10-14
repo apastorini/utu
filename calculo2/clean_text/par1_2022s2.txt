@@ -1,0 +1,148 @@
+
+===== PAGE 1 =====
+C´alculo Diferencial e Integral en Varias Variables
+Segundo semestre de 2022
+Primer parcial
+1 de octubre de 2022
+No Lista
+Apellido, Nombre
+C´edula
+Firma
+IMPORTANTE
+• La duraci´on del parcial es de tres horas.
+• No se permite usar ni calculadora ni material de consulta.
+• El parcial tiene 5 ejercicios de m´ultiple opci´on y un ejercicio de desarrollo con 3 partes.
+• En cada ejercicio de m´ultiple opci´on solo hay una opci´on correcta.
+• La comprensi´on de la letra de los ejercicios es parte de la prueba.
+• Tenga cuidado al pasar las respuestas. Para los ejercicios de m´ultiple opci´on
+lo completado en el cuadro de abajo ser´a lo ´unico tenido en cuenta a la hora
+de corregir.
+• Notaci´on: Dado un conjunto A ⊂Rn, denotamos con ∂(A) a la frontera de A y ¯A a la
+clausura de A, deﬁnida como ¯A = A ∪∂(A).
+M ´ULTIPLE OPCI´ON (Total: 25 puntos)
+Llenar cada casilla con las respuestas A, B, C, D o E, seg´un corresponda.
+1
+2
+3
+4
+5
+Correctas: 5 puntos. Incorrectas: −1 puntos. Sin responder: 0 puntos.
+DESARROLLO (Total: 15 puntos)
+Un ejercicio de desarrollo se encuentra en la p´agina 3.
+SOLO PARA USO DOCENTE
+MO
+D.1.a)
+D.1.b)
+D.2
+D.3.a)
+D.3.b)
+Total
+1
+
+===== PAGE 2 =====
+M ´ULTIPLE OPCI´ON
+1. Sea y(x) la soluci´on a la ecuaci´on diferencial y′(x)ex2
+x
+= −2(1 + y2(x)) que cumple y(0) = 0.
+Entonces:
+(A) y(
+√
+2) = −e
+(B) y(
+√
+2) = tan(1 + e2)
+(C) y(
+√
+2) = tan(1)
+(D) y(
+√
+2) = 1
+(E) y(
+√
+2) = tan(e−2 −1)
+2. Considere las siguientes aﬁrmaciones sobre series:
+(1) La serie
++∞
+X
+n=1
+1
+n log
+(1 + 1
+n
+) es convergente.
+(2) La serie
++∞
+X
+n=1
+(−1)nn
+3n
+es absolutamente convergente.
+(3) La serie
++∞
+X
+n=2
+log(2) · log(3) · log(4) · · · log(n)
+n!
+es convergente.
+Entonces:
+(A) Solamente las aﬁrmaciones (1) y (2) son verdaderas.
+(B) Solamente las aﬁrmaciones (2) y (3) son verdaderas.
+(C) Todas las aﬁrmaciones son verdaderas.
+(D) Solamente la aﬁrmaci´on (2) es verdadera.
+(E) Solamente las aﬁrmaciones (1) y (3) son verdaderas.
+3. Considere las soluciones de la siguiente ecuaci´on en los n´umeros complejos:
+z3 = i
+Entonces:
+(A) Las soluciones son sim´etricas respecto al eje vertical (eje imaginario).
+(B) El producto de las soluciones es 0.
+(C) Las soluciones son sim´etricas respecto al eje horizontal (eje real).
+(D) La suma de las soluciones es −1.
+(E) Hay exactamente dos soluciones en el eje imaginario.
+2
+
+===== PAGE 3 =====
+4. Considere la siguiente integral impropia:
+Z +∞
+2
+1 + e−x
+log(x) (1 + x logα(x))dx
+Entonces:
+(A) La integral es divergente para todo α ∈R.
+(B) La integral es convergente si y solo si α < 1.
+(C) La integral es convergente para todo α ∈R.
+(D) La integral es convergente si y solo si α > 0.
+(E) La integral es convergente si y solo si α > 1.
+5. Considere el conjunto
+A =
+{
+(x, y) ∈R2 : x2 + y2 < 1, y ≥|x|
+}
+y las siguientes aﬁrmaciones:
+(I) A es un conjunto abierto.
+(II) ¯A = A.
+(III) (0, 1/2) es un punto de acumulaci´on de A.
+Entonces:
+(A) Todas las aﬁrmaciones son verdaderas.
+(B) Solo la aﬁrmaci´on (I) es verdadera.
+(C) Solo las aﬁrmaciones (II) y (III) son verdaderas.
+(D) Solo la aﬁrmaci´on (III) es verdadera.
+(E) Ninguna de las tres aﬁrmaciones es verdadera.
+DESARROLLO
+1.
+a) Deﬁnir l´ımite ﬁnito de una sucesi´on
+(lim
+n→∞an = L ∈R sii . . .
+)
+b) Deﬁnir sucesi´on acotada (Se dice que una sucesi´on an es acotada sii . . . )
+2. Sean an y bn sucesiones tales que lim
+n→∞an = 0 y bn es acotada. Demostrar que lim
+n→∞anbn = 0.
+3.
+a) Dar un ejemplo de un par de sucesiones an y bn, con lim
+n→∞an = 0 y bn no acotada,
+tales que lim
+n→∞anbn = 0.
+b) Dar un ejemplo de un par de sucesiones an y bn, con lim
+n→∞an = 0 y bn no acotada,
+tales que el l´ımite de anbn no sea cero (inﬁnito u otro l´ımite real no nulo).
+3

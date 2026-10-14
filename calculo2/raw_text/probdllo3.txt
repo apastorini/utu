@@ -1,0 +1,57 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo diferencial e integral en varias variables
+Facultad de Ingenier´ıa - IMERL
+Primer Semestre 2020
+1
+Ejercicios de desarrollo 3
+Regla de la cadena y coordenadas polares
+Consideremos la funci´on z = f (x,y) diferenciable con respecto a las variables x e y que se compone de la
+funci´ones x = x(u,v), y = y(u,v), tambi´en diferenciables con respecto a las variables u y v. Ya sabemos por la
+regla de la cadena que las derivadas respecto de u y v de la funci´on compuesta se pueden calcular y obtenemos:
+∂f
+∂u = ∂f
+∂x
+∂x
+∂u + ∂f
+∂y
+∂y
+∂u
+∂f
+∂v = ∂f
+∂x
+∂x
+∂v + ∂f
+∂y
+∂y
+∂v
+Aplicaci´on: Uno de los cambios de variable m´as usando en el c´alculo es el cambio de coordenadas carte-
+sianas a coordenadas polares. Consideremos el caso de una funci´on diferenciable z = f (x,y) y las funciones
+usuales del cambio de varaible dadas por
+x = x(r,φ) = rcosφ
+y = y(r,φ) = rsenφ
+1. Determine las expresiones de ∂f
+∂r y ∂f
+∂φ.
+2. Una de las ecuaciones m´as importantes en la ingenier´ıa es la ecuaci´on de Laplace:
+∂2z
+∂x2 + ∂2z
+∂y2 = 0
+Supongamos que z = f (x,y) es una funci´on de dos variables que satisface la ecuaci´on de Laplace. De-
+mostrar que z = f (x −2y,2x + y) tambi´en la satisface.
+3. Dada una funci´on f : U ⊆R2 →R (suﬁcientemente diferenciable), se le asocia a ella su laplaciano,
+denotado por ∇2f y deﬁnido por
+∇2f = ∂2z
+∂x2 + ∂2z
+∂y2
+(Obs´ervese que la Ecuaci´on de Laplace del ejemplo anterior es ∇2f = 0 )
+¿C´ual es la expresi´on del laplaciano en coordenadas polares?
+Razones de cambio
+4. Dos aeronaves, que salieron al mismo tiempo desde un mismo punto, van, una, hacia el norte y, la otra,
+hacia el noreste. Sus velocidad son 10Km
+h
+y 15Km
+h , respectivamente. ¿Con qu´e velocidad aumenta la
+distancia entre ellas?
+1

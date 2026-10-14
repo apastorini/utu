@@ -1,0 +1,411 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo Diferencial e Integral en Varias Variables
+Facultad de Ingenier´ıa - IMERL
+Julio 2022
+Examen – 21 Julio de 2022
+Nro de Examen
+C´edula
+Apellido y nombre
+Respuestas Verdadero o Falso
+1
+2
+3
+4
+5
+F
+F
+F
+V
+V
+Respuestas Ejercicios Multiple Opci´on
+E. 1
+E. 2
+E. 3
+E. 4
+E. 5
+E. 6
+E. 7
+E. 8
+E. 9
+E. 10
+A
+A
+C
+A
+B
+C
+D
+B
+B
+B
+Importante
+• El examen dura 3h.
+• En cada ejercicio se indica la cantidad de puntos que le corresponden.
+Tienen 5 ejercicios ver-
+dadero/falso de 4 puntos cada uno y 10 ejercicios m´ultiple opci´on de 8 puntos cada uno. El examen
+es de 100 puntos en total. Se aprueba con 60 puntos.
+• Solo ser´an v´alidas las respuestas indicadas en el cuadro de respuestas.
+• En cada ejercicio hay una sola opci´on correcta.
+• Notaci´on: Dado A ⊆Rn, la frontera y el interior de A se denotan por ∂(A) y int(A) respectivamente.
+1. Verdadero - Falso.
+Puntajes: 4 puntos si la respuesta es correcta,−1 punto si la respuesta es incorrecta 0 punto por no contestar.
+Indique sus respuestas (V/F) en los casilleros correspondientes.
+(1) Si A ⊂R2 es abierto y B ⊂R2 es cerrado entonces A ∩B es cerrado.
+(2) Si f : R2 →R es un funci´on continua en (0, 0) y las derivadas parciales de f en (0, 0) existen, entonces
+f es diferenciable (0, 0).
+(3) La serie
++∞
+P
+n=1
+sin
+( 1
+n
+)
+es convergente.
+(4) La parte imaginaria del complejo
+5
+2 −i es igual a 1.
+(5) La funci´on y(x) = e3x sin(2x) es soluci´on de la ecuaci´on diferencial y′′ −6y′ + 13y = 0.
+1
+
+===== PAGE 2 =====
+2
+2. M´ultiple Opci´on
+Puntajes: 8 puntos si la respuesta es correcta, −2 punto si la respuesta es incorrecta 0 punto por no contestar.
+Indique sus respuestas en los casilleros correspondientes.
+(1) Sea f : R2 →R deﬁnida como
+f(x, y) =
+p
+x2 + y2.
+Entonces
+A. La funci´on f es continua en R2 y el ´unico punto de R2 donde sus derivadas parciales no existen
+en (0, 0).
+B. La funci´on f es una funci´on con derivadas parciales continuas en (0, 0) por lo tanto es diferenciable
+(0, 0).
+C. La funci´on f es una funci´on continua en R2 y su plano tangente en (0, 0) es igual a z = 0.
+D. La funci´on f es diferenciable en (0, 0) pero no tiene derivadas parciales continuas en (0, 0).
+Soluci´on. La opci´on correcta es la (A): Notemos que la funci´on es la composici´on de las funciones
+continuas h(t) =
+√
+t y g(x, y) = x2 + y2. Por lo tanto f es continua para todo punto de R2.
+Al calcular las derivadas parciales
+I (x, y) = (0, 0)
+∂f
+∂x(0, 0) = lim
+h→0
+f(h, 0) −f(0, 0)
+h
+= lim
+h→0
+√
+h2
+h
+= lim
+h→0
+|h|
+h
+Por lo tanto, podemos concluir que la funci´on no tiene derivada parcial respecto a x en (0, 0).
+Razonando de manera an´aloga concluimos que no tiene derivada parcial respecto a y en (0, 0).
+II (x, y)̸ = (0, 0)
+∂f
+∂x(x, y) =
+x
+p
+x2 + y2
+∂f
+∂y (x, y) =
+y
+p
+x2 + y2 .
+(2) Consideremos la funci´on w = 2st donde s = x2 + y2, t = x
+y .
+Entonces, la direcci´on de m´aximo
+crecimiento de w en x = y = 1 es:
+A. la direcci´on del vector (1, 0).
+B. la direcci´on del vector (0, 1).
+C. la direcci´on del vector (2, 1).
+D. la direcci´on del vector (1, 1).
+Soluci´on. La opci´on correcta es la (A):
+La direcci´on de m´aximo crecimiento es la direcci´on del gradiente en el punto (1, 1).
+∂w
+∂x (x, y) = 6x2 + 2y2
+y
+∂w
+∂y (x, y) = 2xy2 −2x3
+y2
+⇒∇w(1, 1) = (8, 0). Entonces la direcci´on de m´aximo crecimiento es el eje (Ox) con direcci´on (1, 0).
+(3) El volumen encerrado entre el plano de ecuaci´on z = 0 y el gr´aﬁco de la funci´on f(x, y) = 2 −x2 −y2
+vale:
+
+===== PAGE 3 =====
+2. M´ULTIPLE OPCI´ON
+3
+A. 4
+√
+2π
+3
+.
+B. 8
+√
+2π
+3
+.
+C. 2π.
+D. π.
+Soluci´on.
+La opci´on correcta es la (C): Para calcular el volumen pedido, encontramos la in-
+tersecci´on del gr´aﬁco del paraboloide con el plano xy y luego calculamos la integral de la funci´on
+f(x, y) = 2 −x2 −y2 en ese dominio. Como el plano xy se corresponde con la ecuaci´on z = 0, la
+intersecci´on del gr´aﬁco del paraboloide con el plano xy es la circunferencia x2 + y2 = 2, y debemos
+integrar en su interior.
+Luego, la integral a calcular es:
+ZZ
+D
+(2 −x2 −y2)
+dxdy =
+Z 2π
+0
+Z √
+2
+0
+(2 −r2)
+rdrdθ = 2π
+Z √
+2
+0
+(2 −r2)
+rdr
+= 2π
+Z √
+2
+0
+(2r −r3)
+dr = 2π
+(
+r2 −r4
+4
+)√
+2
+0
+= 2π.
+(4) El polinomio de Taylor de orden 2 de la funci´on f(x, y) = cos(x + y)e−x2 en (0, 0) es:
+A. 1 −3
+2x2 −xy −1
+2y2.
+B. 1 + x −3
+2x2 + xy −1
+2y2.
+C. 1 + 3
+2x2 −xy + 1
+2y2.
+D. 1.
+Soluci´on. La opci´on correcta es la (A): Las derivadas hasta segundo orden de la funci´on f(x, y) =
+cos(x + y)e−x2 son:
+∂f
+∂x = −e−x2 (sin(x + y) + 2x cos(x + y)) ,
+∂f
+∂y = −e−x2 sin(x + y),
+∂2f
+∂x2 = e−x2 ((4x2 −3
+)
+cos(x + y) + 4x sin(x + y)
+)
+,
+∂2f
+∂x∂y = e−x2 (2x sin(x + y) −cos(x + y)) ,
+∂2f
+∂y2 = −e−x2 cos(x + y).
+Evaluadas en el origen:
+∂f
+∂x = 0,
+∂f
+∂y = 0,
+∂2f
+∂x2 = −3,
+∂2f
+∂x∂y = −1,
+∂2f
+∂y2 = −1.
+Ahora, el polinomio de Taylor de orden 2 de f(x, y) alrededor del origen es:
+f(0, 0) + ∂f
+∂x(0, 0)x + ∂f
+∂y (0, 0)y + 1
+2
+(∂2f
+∂x2 (0, 0)x2 + 2 ∂2f
+∂x∂y (0, 0)xy + ∂2f
+∂y2 (0, 0)y2
+)
+.
+Sustituyendo los t´erminos correspondientes, tenemos el polinomio:
+1 −3
+2x2 −xy −1
+2y2.
+
+===== PAGE 4 =====
+4
+(5) La serie:
++∞
+X
+n=1
+(
+n log
+(
+1 + 2
+n
+))n
+A. No se puede clasiﬁcar.
+B. diverge.
+C. oscila.
+D. converge.
+Soluci´on. La opci´on correcta es la (B):
+Por un lado, es una serie de t´erminos positivos, con lo cual se puede utilizar el criterio de la ra´ız
+en´esima. La ra´ız en´esima del t´ermino de la serie es:
+n log
+(
+1 + 2
+n
+)
+Como log(1 + 2
+n)
+n→∞
+∼
+2
+n, el l´ımite limn→∞n√an = limn→∞n 2
+n = 2 > 1.
+Seg´un el criterio de la ra´ız en´esima, la serie diverge.
+(6) Se considera la sucesi´on an, deﬁnida para todo n ∈N, de la siguiente manera:
+
+
+
+an+1 =
+a2
+n
+an−2
+a0 = 5
+2
+Entonces, de an se puede decir que:
+A. es mon´otona creciente y convergente a 1.
+B. es mon´otona decreciente y convergente a 1.
+C. es mon´otona creciente y no convergente.
+D. es mon´otona decreciente y no convergente.
+Soluci´on. La opci´on correcta es la (C):
+Para ver si es creciente o decreciente, es necesario comparar a an+1 con an. Por ejemplo, se puede
+investigar si an+1 −an es mayor o menor que 0.
+an+1 −an =
+a2
+n
+an −2 −an = a2
+n −a2
+n + 2an
+an −2
+=
+2an
+an −2
+Notar que si an > 2, esta expresi´on tiene signo positivo, es decir, an+1 > an. Como a0 = 5
+2,
+inicialmente es mon´otona creciente estricto, por lo que ser´a mayor que 2 para todo n ∈N y entonces
+siempre ser´a mon´otona creciente estricto.
+Para investigar si es acotada o no, se puede ver si existe alg´un k tal que an+1 −an > k > 0. Por
+ejemplo para k = 2, sucede que:
+an+1 −an > 2 ⇔an+1 −an −2 > 0 ⇔
+2an
+an −2 −2 > 0 ⇔
+4
+an −2 > 0
+Como esto sucede para todo an > 2, se puede ver que la sucesi´on siempre crece por un t´ermino
+mayor a 2, con lo cual es no acotada, es decir, es divergente (y no convergente).
+(7) Considere las siguientes aﬁrmaciones:
+I. Si A es un subconjunto de Rn entonces ∂(A) ∪int(A) = A.
+II. Si A es un subconjunto de Rn entonces el conjunto de sus puntos de acumulaci´on es cerrado.
+III. Si {Ai}i∈I es una familia cualquiera de conjuntos cerrados entonces ∪i∈IAi es un conjunto cer-
+rado.
+
+===== PAGE 5 =====
+2. M´ULTIPLE OPCI´ON
+5
+Entonces
+A. I, III son verdaderas y II es falsa
+B. I, II, son verdaderas y III es falsa.
+C. II, III son verdaderas y I es falsa.
+D. Solamente II es verdadera.
+Soluci´on. La opci´on correcta es la (D): Remitimos a las notas del curso.
+(8) Sea (an, bn) una sucesi´on en R2.
+Entonces
+A. Si (an) y (bn) no convergen entonces (an, bn) no tiene subsucesi´on convergente.
+B. Si (an, bn) converge entonces la sucesi´on real cn = anbn converge.
+C. Si (an, bn) converge entonces la sucesi´on real dn = an + bn diverge.
+D. Si (an, bn) tiene una subsucesi´on convergente entonces la sucesi´on (an, bn) converge.
+Soluci´on.La opci´on correcta es la (B): Remitimos a las notas del curso.
+(9) Sea y = y(x) una funci´on que satisface la ecuaci´on diferencial y′′ −y′ −6y = −6x2 −8x + 13 con
+condiciones iniciales y(0) = 2 y y′(0) = 3.
+Entonces
+A. y(1) = e2 + e3.
+B. y(1) = 2( 1
+e2 + e3).
+C. y(1) = e−2 + e3.
+D. y(1) = 1
+e2 + e3 + 1.
+Soluci´on. La opci´on correcta es la (B):
+La ecuaci´on caracter´ıstica de la ecuaci´on homog´enea es λ2 −λ −6 = 0 cuyas soluciones son −2 y
+3. La soluci´on general de la ecuaci´on homog´enea es entonces:
+ΦH(x) = C1e−2x + C2e3x
+Buscamos una soluci´on particular de la forma Φp(x) = ax2 + bx + c. Sustituyendo en la ecuaci´on
+diferencial tenemos que:
+2a −(2ax + b) −6(ax2 + bx + c) = −6x2 −8x + 13 ⇒−6ax2 + (−2a −6b)x + (2a −b −6c) = −6x2 −8x + 13
+Identiﬁcando:
+
+
+
+
+
+−6a = −6
+−2a −6b = −8
+2a −b −6c = 13
+por lo que a = 1, b = 1, c = −2. La soluci´on general de la ecuaci´on es:
+Φ(x) = C1e−2x + C2e3x + x2 + x −2
+Sustituyendo las condiciones iniciales tenemos
+(
+C1 + C2 = 4
+−2C1 + 3C2 = 2
+por lo que C1 = C2 + 2.
+Entonces
+Φ(x) = 2e−2x + 2e3x + x2 + x −2
+Finalmente Φ(1) = 2e−2 + e3 = 2
+( 1
+e2 + e3)
+
+===== PAGE 6 =====
+6
+(10) Sea α ∈R. La integral
+2
+Z
+0
+(
+x
+2 −x
+)α
+dx:
+A. converge para todo α > 1.
+B. converge para todo α ∈(−1, 1).
+C. converge para todo α < 0.
+D. converge para todo α ∈(−1, 0).
+Soluci´on. La opci´on correcta es la (B):
+• Si α = 0 la integral claramente es convergente
+• Si α > 0 entonces la integral es de segunda especie en x = 2 y se comporta como
+2
+Z
+0
+1
+(2 −x)α dx
+la cual converge si α < 1
+• Si α < 0 entonces la integral es de segunda especie en x = 0 y se comporta como
+2
+Z
+0
+1
+(x)−α dx la
+cual converge si −α < 1 es decir si α > 1.
+Por lo tanto la integral converge si y s´olo si α ∈(−1, 1).

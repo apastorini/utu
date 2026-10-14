@@ -1,0 +1,310 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo Diferencial e Integral en Varias Variables
+Facultad de Ingenier´ıa - IMERL
+Mayo 2022
+Primer parcial – 04 Mayo de 2022
+Nro de Parcial
+C´edula
+Apellido y nombre
+Respuestas Verdadero o Falso
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+Respuestas Ejercicios Multiple Opci´on
+E. 1
+E. 2
+E. 3
+E. 4
+E. 5
+E. 6
+E. 7
+E. 8
+E. 9
+E. 10
+Importante
+• El parcial dura 3h.
+• En cada ejercicio se indica la cantidad de puntos que le corresponden.
+Tienen 10 ejercicios ver-
+dadero/falso de 1 punto cada uno y 10 ejercicios m´ultiple opci´on de 3 puntos cada uno. El parcial es
+de 40 puntos en total.
+• Solo ser´an v´alidas las respuestas indicadas en el cuadro de respuestas.
+• En cada ejercicio hay una sola opci´on correcta.
+1. Verdadero - Falso.
+Puntajes: 1 punto si la respuesta es correcta, −1 punto si la respuesta es incorrecta, 0 punto por no contestar.
+Indique sus respuestas (V/F) en los casilleros correspondientes.
+(1) Sea an̸ = 0 para todo n ≥1. Si
++∞
+X
+n=1
+an converge entonces
++∞
+X
+n=1
+1
+an
+converge tambi´en.
+(2) Si z es un numero complejo entonces zz = Re(z) + Im(z)
+(3) Si a̸ = 0, entonces la funci´on f(z) = az transforma el cuadrado con v´ertices (0, 0), (1, 0), (0, 1) y (1, 1)
+en otro cuadrado.
+(4) Si y1 e y2 son soluciones de la misma ecuaci´on diferencial entonces 4y1 −2022y2 es soluci´on tambi´en
+de la ecuaci´on diferencial.
+(5) Si (an)n≥1 es una sucesi´on acotada entonces (an)n≥1 es convergente.
+(6) Si f : [n0, +∞) →R y an = f(n) entonces
++∞
+X
+n=n0
+an e
+Z +∞
+n0
+f(x) dx se comportan de la misma manera.
+(7) Si z0 es raiz de un polinomio P tal que P(0) = i entonces P(z0) + P(z0) = 0.
+(8) Si z0 es un complejo tal que Re(z0) = 0 entonces ez0 = eIm(z0)
+(9) Sea an̸ = 0 para todo n ≥1. Si (an)n≥1 no converge entonces ( 1
+an )n≥1 converge
+(10) Si f : R →R es continua y
+Z +∞
+a
+f(x)dx converge entonces
+Z +∞
+b
+f(x)dx converge para todo b ≥a.
+1
+
+===== PAGE 2 =====
+2
+2. M´ultiple Opci´on
+Puntajes: 3 puntos si la respuesta es correcta, −1 punto si la respuesta es incorrecta, 0 punto por no contestar.
+Indique sus respuestas en los casilleros correspondientes.
+1. Considera el siguiente n´umero complejo:
+z0 =
+1
+i +
+1
+i +
+1
+1 + i
+La forma bin´omica de z0 es igual a:
+A. 1.
+B. i.
+C. −1
+D. −i
+2. El n´umero complejo z =
+√
+3
+2 + 1
+2i es la ra´ız sexta de un cierto complejo, las otras cinco ra´ıces son:
+A. i, −i,
+√
+3
+2 −1
+2i, −
+√
+3
+2 + 1
+2i, −
+√
+3
+2 −1
+2i
+B. 2i, −2i,
+√
+3
+2 −1
+2i, −
+√
+3
+2 + 1
+2i, −
+√
+3
+2 −1
+2i
+C. i, −i, −1
+2 +
+√
+3
+2 i, −
+√
+3
+2 + 1
+2i, 1
+2 −
+√
+3
+2 i
+D. i, −i, −1
+2 +
+√
+3
+2 i, −
+√
+3
+2 −1
+2i, 1
+2 −
+√
+3
+2 i
+3. Consideremos la sucesi´on de n´umeros reales
+(an
+)
+n≥1 que satisface la relaci´on
+an+1 =
+s
+an2 + 2
+an + 2
+y tal que a1 = 7.
+Entonces:
+A.
+(an
+)
+n≥1 es mon´otona decreciente y tiene l´ımite̸ = 1.
+B.
+(an
+)
+n≥1 es mon´otona decreciente y tiene l´ımite 1.
+C.
+(an
+)
+n≥1 no es ni creciente ni decreciente, pero converge a 1.
+D.
+(an
+)
+n≥1 es mon´otona creciente y no est´a acotada superiormente.
+4. Sea m =
++∞
+X
+n=0
+2−n. Entonces la serie:
++∞
+X
+n=1
+sinm
+( 1
+n
+)
+A. Converge.
+B. Oscila.
+C. Diverge.
+D. m = +∞, por lo que la serie que se deﬁne luego no existe.
+
+===== PAGE 3 =====
+2. M´ULTIPLE OPCI´ON
+3
+5. Considere la siguiente serie:
++∞
+X
+n=2
+2
+2n + n2
+Entonces:
+A. La serie converge a 5
+6.
+B. La serie converge a 3
+2.
+C. La serie converge a 1
+2.
+D. La serie diverge.
+6. La rapidez con que cierto medicamento se disemina en el ﬂujo sangu´ıneo se rige por la ecuaci´on
+diferencial
+x′(t) = A −Bx(t),
+x(0) = 0,
+donde A y B son constantes positivas. La funci´on x(t) describe la concentraci´on del medicamento en
+el ﬂujo sangu´ıneo en un instante cualquiera t.
+Entonces:
+A.
+lim
+t→+∞x(t) = A
+B y el tiempo que tarda la concentraci´on en alcanzar la mitad de este valor l´ımite
+es t = log(2)
+B
+.
+B.
+lim
+t→+∞x(t) = A
+B y el tiempo que tarda la concentraci´on en alcanzar la mitad de este valor l´ımite
+es t = log(2).
+C.
+lim
+t→+∞x(t) = A
+B y el tiempo que tarda la concentraci´on en alcanzar la mitad de este valor l´ımite
+es t = 1
+B log
+( 2(A−B)
+A
+)
+.
+D.
+lim
+t→+∞x(t) = B
+A y el tiempo que tarda la concentraci´on en alcanzar la mitad de este valor l´ımite
+es t = log(2).
+7. Sea E1 la ecuaci´on diferencial de segundo ´orden homog´enea, lineal y de coeﬁcientes constantes, tal
+que y(x) = 3ex cos(2x) es soluci´on.
+Se le llama y2(x) a la soluci´on de E1 con las condiciones iniciales:
+
+
+
+
+
+
+
+E1
+y(0) = 0
+y′(0) = 2
+¿Cu´anto vale y2(π/2)?
+A. 0.
+B. e.
+C. e2.
+D. Ninguna de las anteriores.
+8. Sea (an)n≥1 una sucesi´on de t´erminos positivos (an > 0, ∀n). Adem´as sabemos que:
+(a2n)n≥1 es mon´otona creciente y acotada.
+(a2n+1)n≥1 no converge y es acotada.
+Considere las siguientes aﬁrmaciones:
+I) (an)n≥1 no puede converger.
+II) (a2n+1)n≥1 tiene una subsucesi´on convergente.
+III) (a4n)n≥1 es necesariamente convergente.
+IV) (a3n)n≥1 no puede converger.
+
+===== PAGE 4 =====
+4
+Entonces:
+A. I, II y III son verdaderas y IV es falsa.
+B. Todas son verdaderas.
+C. I y II son verdaderas, III y IV son falsas.
+D. Solamente I es verdadera.
+9. Sea α ∈R. La integral impropia
++∞
+Z
+0
+e
+1
+x+1 −1
+(x2 −ln(1 + x2))α dx
+A. Converge solamente para todo α con 0 < α < 1/4.
+B. Converge para todo α con 0 < α < 1/2.
+C. Converge para todo α con 1 < α.
+D. No converge ´unicamente si α < 0.
+10. Si f : R −{−1} →R dada por f(x) =
+2x −3
+(x2 + 4)(x + 1), consideramos la siguiente integral impropia
+Z +∞
+0
+f(x)dx
+Entonces:
+A. Converge y lo hace a π
+4 .
+B. Converge y lo hace a π
+4 −log 2.
+C. No converge.
+D. Converge y lo hace a π
+2 .

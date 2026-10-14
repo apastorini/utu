@@ -1,0 +1,38 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+Facultad de Ingenier´ıa - IMERL
+C´alculo diferencial e integral en varias
+variables
+Primer semestre 2023
+Segundo Parcial
+Duraci´on: 3 horas y media.
+Deben justificar todas sus respuestas. En caso de utilizar un resultado demostrado en
+clase, deben enunciarlo y justificar que se puede aplicar en el contexto del problema
+N° Parcial
+Apellido, Nombre
+Firma
+C´edula
+1. Sea f : R2 →R definida como
+f (x,y) = (x2 + y2) sin
+1
+x2 + y2 si (x,y) , (0,0),
+f (0,0) = 0
+a) Probar que existen derivadas parciales en todos los puntos y calcularlas.
+b) Probar que f es diferenciable.
+c) Probar que f no es de clase C1.
+2.
+a) Sea D La regi´on cerrada y acotada del plano delimitada por la elipse de ecuaci´on
+x2
+4 + y2
+9 = 1. Encontrar un cambio de variable que transforme D en un disco.
+b) Sea S la regi´on cerrada y acotada de R3 definida por:
+S = {(x,y,z) ∈R3 :
+x2
+4 + y2
+9 ≤z ≤1}.
+1) Representar gr´aficamente la regi´on S.
+2) Calcular el volumen de S.
+∗En este ejercicio cada vez que realice un cambio de variable deber´a representar
+gr´aficamente los conjuntos que estos cambios vinculan.
+1

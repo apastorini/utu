@@ -1,0 +1,70 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo diferencial e integral en varias variables
+Facultad de Ingenier´ıa - IMERL
+Primer Semestre 2020
+Problema de desarrollo 1
+1. Objetivo: Uniﬁcar todos los conceptos vistos en la secci´on de diferenciabilidad.
+Sea f : U ⊆R2 →R una funci´on de dos variables deﬁnida en un conjunto abierto U del plano y sea
+p = (x0,y0) un punto de U. Considere las siguientes aﬁrmaciones:
+A. Existe el l´ımite de la funci´on f en p.
+B. La funci´on f en continua en p.
+C. Existen las derivadas parciales de f en p.
+D. Existen las derivadas direccionales de f en p en la direcci´on de cualquier vector unitario u ∈R2.
+E. f es diferenciable p.
+F. f tiene derivadas parciales continuas en alguna bola B contenida en U con centro p.
+Llene el siguiente cuadro, indicando con una V (verdadero) en la l´ınea i y columna j, cuando la aﬁrmaci´on
+de la l´ınea i implique la aﬁrmaci´on de la columna j y con F(falso) cuando no la implique. Por ejemplo, la
+aﬁrmaci´on B implica la aﬁrmaci´on A, pero la aﬁrmaci´on A no implica la aﬁrmaci´on C. Para cada uno de los
+casos, a excepcion de la diagonal del cuadrado, debe justiﬁcar su respuesta explicando el razonamiento de la
+aﬁrmaci´on verdadera o mostrando un (contra)ejemplo para el caso que sea falsa.
+A
+B
+C
+D
+E
+F
+A
+V
+?
+F
+?
+?
+?
+B
+V
+V
+?
+?
+?
+?
+C
+?
+?
+V
+?
+?
+?
+D
+?
+?
+?
+V
+?
+?
+E
+?
+?
+?
+?
+V
+?
+F
+?
+?
+?
+?
+?
+V
+1

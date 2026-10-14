@@ -1,0 +1,42 @@
+
+===== PAGE 1 =====
+C´alculo Diferencial e Integral en Varias Variables
+Segundo semestre de 2023
+Soluciones - Segundo parcial
+25 de noviembre de 2023
+M ´ULTIPLE OPCI´ON
+Versi´on 1
+(Comienza con “Sea f : R2 →R la funci´on dada por f(x, y) = em´ax{|xy|,x2}.”)
+1
+2
+3
+4
+5
+6
+E B D C B D
+Versi´on 2
+(Comienza con ‘Sea f : R2 →R definida como f(x, y) = ex2+y −1 −y −x2.”)
+1
+2
+3
+4
+5
+6
+B A E C D A
+DESARROLLO
+Ejercicio 1
+1.
+a) Ver Definici´on 5.5 en las notas del curso.
+b) Ver Definici´on 4.24 en las notas del curso.
+2. Ver primera parte de la demostraci´on del Teorema 5.9 en las notas del curso.
+Ejercicio 2
+En coordenadas cil´ındricas, la integral resulta
+Z π/4
+0
+Z 2
+1
+Z 1
+0
+zρ dzdρdθ = 3π
+16
+1

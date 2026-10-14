@@ -1,0 +1,159 @@
+
+===== PAGE 1 =====
+Cálculo Diferencial e Integral en Varias Variables
+Examen
+26 de febrero de 2022
+No Lista
+Apellido, Nombre
+Cédula
+Firma
+La duración del examen es de tres horas, y no se permite usar ni calculadora
+ni material de consulta. La comprensión de las preguntas es parte de la prueba.
+Tenga cuidado al pasar las respuestas
+Para los ejercicios de verdadero o falso y los de múltiple opción,
+lo completado aquí será lo único tenido en cuenta a la hora de corregir.
+VERDADERO O FALSO (Total: 12 puntos)
+Llenar cada casilla con las respuestas V o F, según corresponda.
+1
+2
+3
+4
+5
+6
+Correctas: 2 puntos. Incorrectas: −2 puntos. Sin responder: 0 puntos.
+MÚLTIPLE OPCIÓN (Total: 40 puntos)
+Llenar cada casilla con las respuestas A, B, C, D, E o F, según corresponda.
+1
+2
+3
+4
+Correctas: 10 puntos. Incorrectas: −2 puntos. Sin responder: 0 puntos.
+DESARROLLO (Total: 48 puntos)
+Dos ejercicios de desarrollo se encuentran en la página 3.
+SOLO PARA USO DOCENTE
+V/F
+MO
+D1
+D2
+Total
+1
+
+===== PAGE 2 =====
+PARTE I: Verdadero o Falso
+Sea f : R2 →R deﬁnida como f(x, y) = |x + ey2|. Indicar si cada una de las siguientes aﬁrmaciones sobre
+f es verdadera o falsa.
+(1) f es continua en (0, 0).
+(2) f no es continua en (−1, 0).
+(3) f es diferenciable en (0, 0) y su gradiente en ese punto es (1, 0).
+(4) Existe la derivada parcial de f respecto a x en (−1, 0) y vale 1.
+(5) Existe la derivada parcial de f respecto a y en (−1, 0) y vale 0.
+(6) f es integrable en K = [0, 1] × [−1, 1] y
+¨
+K
+f = 2
+¨
+[0,1]×[0,1]
+f.
+PARTE II: Múltiple Opción
+MO 1. Sean a, b, c, d, e, f ∈R tales que
+l´ım
+(x,y)→(0,1)
+xy + ln(x2 + y) −(a + bx + cy + dx2 + ey2 + fxy)
+x2 + (y −1)2
+= 0.
+Entonces la suma a + b + c + d + e + f es igual a:
+(A) 2
+(B) 0
+(C) 1
+(D) −1
+(E) 3
+(F) −2
+MO 2. Sea T ⊂R2 el triángulo de vértices (1, 0), (0, 2) y (2, 4). Calcular la integral
+¨
+T
+x dxdy.
+(A) 2
+(B) 3
+(C) 2
+3
+(D) 5
+3
+(E) 4
+(F) 11
+2
+MO 3. Consideremos la región D rayada en la ﬁgura, que está comprendida entre dos elipses y contenida
+en el primer cuadrante.
+2
+
+===== PAGE 3 =====
+Calcular
+¨
+D
+y dxdy.
+(A) 5
+3
+(B) 7
+3
+(C) 11
+3
+(D) 14
+3
+(E) 19
+3
+(F) 22
+3
+MO 4. Recordemos que el plano complejo C se puede identiﬁcar con R2, considerando que el número
+complejo z = x + iy ∈C es el punto (x, y) ∈R2.
+Consideremos el siguiente subconjunto del plano complejo:
+A = {z ∈C : z¯z > 2, Re(z) > 1, Im(ez) = 0}.
+Si ahora pensamos en A como subconjunto de R2, indicar cuál de las siguientes aﬁrmaciones es correcta:
+(A) A es abierto, es acotado, y acumula en (1, 1).
+(B) A no es abierto, es acotado, y acumula en (1, 1).
+(C) A no es abierto, es acotado, y no acumula en (1, 1).
+(D) A es abierto, no es acotado, y no acumula en (1, 1).
+(E) A no es abierto, no es acotado, y no acumula en (1, 1).
+(F) A no es abierto, no es acotado, y acumula en (1, 1).
+PARTE III: Desarrollo
+(Justiﬁque detalladamente todas sus respuestas)
+Desarrollo 1. [24 pts.] Consideremos las siguientes sucesiones de números reales:
+an =
+√n
+n + 2 con (n ≥2)
+y
+bn =
+1
+n ln(n) (ln(ln(n)))2
+con (n ≥3).
+(A) Para la sucesión (an), estudiar su monotonía y convergencia.
+[6 pts.]
+(B) Para la sucesión (bn), estudiar su monotonía y convergencia.
+[6 pts.]
+(C) Determinar si la serie
+∞
+X
+n=2
+(−1)nan es absoluta y condicionalmente convergente.
+[6 pts.]
+(D) Determinar si la serie
+∞
+X
+n=3
+bn converge o diverge.
+[6 pts.]
+Desarrollo 2. [24 puntos] Consideremos la siguiente función escalar sobre R2:
+f(x, y) =
+
+
+
+y (x2 −y2)
+x2 + y2
+si (x, y)̸ = (0, 0),
+0
+si (x, y) = (0, 0).
+(A) Determinar si f es continua en el punto (0, 0).
+[8 pts.]
+(B) Calcular, en caso de existir, todas las derivadas direccionales de f en el punto (0, 0).
+[8 pts.]
+(C) Determinar si f es diferenciable en (0, 0).
+[8 pts.]
+3

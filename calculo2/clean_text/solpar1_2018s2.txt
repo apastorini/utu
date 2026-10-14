@@ -1,0 +1,116 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo diferencial e integral en varias variables
+Facultad de Ingenier´ıa - IMERL
+Segundo semestre 2018
+Vectores de respuestas de las versiones:
+Versi´on 1. Primer ejercicio de topolog´ıa:
+1 (D); 2 (D); 3 (C); 4 (B); 5 (D).
+Versi´on 2. Primer ejercicio de series:
+1 (A); 2 (D); 3 (B); 4 (B); 5 (B).
+Versi´on 3. Primer ejercicio de complejos:
+1 (B); 2 (C); 3 (A); 4 (A); 5 (A).
+Ejercicio de desarrollo
+Parte i. Ver te´orico.
+Parte ii. Consideramos
++∞
+X
+n=2
+1
+n ln(n)β ·
+Si β ≤0, entonces se cumple que
+1
+n ln(n)β ≥1
+n· Por lo tanto
++∞
+X
+n=2
+1
+n ln(n)β diverge.
+Si β ≥0. Consideramos la funci´on f : [2, +∞] →R tal que f(x) =
+1
+x ln(x)β . Luego
+f
+′(x) = −ln(x)β−1(ln(x) + β)
+[x ln(x)β]2
+·
+De donde deducimos que f
+′ es negativa si x ≥2 y por lo tanto f es decreciente. Por lo tanto
+podemos aplicar el criterio integral ya que f es continua y positiva para x ≥2. Por otro lado
+Z +∞
+2
+dx
+x ln(x)β =
+l´ım
+t→+∞
+Z t
+2
+dx
+x ln(x)β ·
+Haciendo el cambio de variable u = ln(x) obtenemos
+Z
+dx
+x ln(x)β =
+Z du
+uβ =
+
+
+
+
+
+u(−β+1)
+−β+1
+si
+β̸ = 1,
+ln(u)
+si
+β = 1
+1
+
+===== PAGE 2 =====
+Por lo tanto, si β̸ = 1 se tiene que
+l´ım
+t→+∞
+Z t
+2
+dx
+x ln(x)β =
+l´ım
+t→+∞
+ln(x)−β+1
+−β + 1
+}}t
+2 =
+
+
+
+
+
++∞
+si
+β < 1,
+−ln(2)−β+1
+−β+1
+si
+β > 1
+Si β = 1, se tiene que
+l´ım
+t→+∞
+Z t
+2
+dx
+x ln(x) =
+l´ım
+t→+∞ln(ln(x)) |t
+2=
+l´ım
+t→+∞ln(ln(t)) −ln(ln(2)) = +∞
+Por lo tanto, por el criterio integral, tenemos que
++∞
+X
+n=2
+1
+n ln(n)β converge si β > 1 y diverge si
+β ≤1.
+2

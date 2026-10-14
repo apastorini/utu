@@ -1,0 +1,715 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo Diferencial e Integral en Varias Variables
+Facultad de Ingenier´ıa - IMERL
+Julio 2022
+Segundo parcial – 02 Julio de 2022
+Nro de Parcial
+C´edula
+Apellido y nombre
+Respuestas Verdadero o Falso
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+F
+F
+F
+V
+F
+V
+V
+V
+F
+V
+Respuestas Ejercicios Multiple Opci´on
+E. 1
+E. 2
+E. 3
+E. 4
+E. 5
+E. 6
+E. 7
+E. 8
+E. 9
+E. 10
+C
+A
+D
+B
+C
+A
+B
+C
+B
+Importante
+• El parcial dura 3h.
+• En cada ejercicio se indica la cantidad de puntos que le corresponden.
+Tienen 10 ejercicios ver-
+dadero/falso de 2 puntos cada uno y 10 ejercicios m´ultiple opci´on de 4 puntos cada uno. El parcial es
+de 60 puntos en total.
+• Solo ser´an v´alidas las respuestas indicadas en el cuadro de respuestas.
+• En cada ejercicio hay una sola opci´on correcta.
+• No se restan puntos.
+• Notaci´on: Dado un conjunto A ∈Rn, denotaremos por ∂(A) la frontera de A, int(A) el conjunto de
+sus puntos interiores y Ac = Rn\A.
+1. Verdadero - Falso.
+Puntajes: 2 puntos si la respuesta es correcta, 0 punto por no contestar. Indique sus respuestas (V/F) en los
+casilleros correspondientes.
+(1) Si f : R2 →R tiene todas sus derivadas direccionales en (0, 0) entonces f es continua en (0, 0).
+(2) Si f : R2 →R tiene todas sus derivadas direccionales en (0, 0) entonces f es diferenciable en (0, 0).
+(3) Sea A = {(x, y) ∈R2 : x2 + y2 < 1}. Entonces la frontera de A coincide con el conjunto de los puntos
+de acumulaci´on de A.
+(4) Sea A = {(x, y) ∈R2 : x2 + y2 ≤1} ∩Q × Q. Entonces la frontera de A coincide con el conjunto de
+los puntos de acumulaci´on de A.
+(5) Si f : R2 →R es tal que f(x, y) = x + 2y + 1 entonces el diferencial de f en (1,1) es df(1,1)(x, y) =
+x + 2y + 1.
+(6) Si f : R2 →R es tal que f(x, y) = x+2y +1 entonces el plano tangente de f en (1,1) es z = x+2y +1.
+(7) Si A ⊂R2 entonces Ac ∪∂(A) = (int(A))c.
+(8) Si f es diferenciable en a entonces −5f es diferenciable en a.
+(9) Si una sucesi´on en R2 es acotada entonces alguna sucesi´on coordenada es convergente.
+(10) Si f : R2 →R es diferenciable en a entonces ∂f
+∂y existe en a.
+1
+
+===== PAGE 2 =====
+2
+2. M´ultiple Opci´on
+Puntajes: 4 puntos si la respuesta es correcta, 0 punto por no contestar. Indique sus respuestas en los casilleros
+correspondientes.
+1. Sea la funci´on f : R2 →R
+f(x, y) =
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+1
+si x > 0 y > 0
+2
+si x < 0 y > 0
+3
+si x < 0 y < 0
+4
+si x > 0 y < 0
+0
+en otro caso
+Entonces:
+A. La funci´on es continua en todo punto de R2.
+B. La funci´on es discontinua solamente en (0, 0).
+C. La funci´on es continua para todo (x, y) tal que xy̸ = 0.
+D. La funci´on es discontinua ´unicamente sobre todos los puntos del Eje X.
+La opci´on correcta es la (C):
+Consideremos un punto (x0, y0) tal que x0y0 = 0. En otras palabras, un punto cualquiera sobre el
+Eje X o el Eje Y . Es f´acil veriﬁcar que lim(x,y)→(x0,y0) f(x, y) no existe, usando trayectorias. (Rectas
+paralelas a los ejes coordenados). Por lo tanto, f no es continua en (x0, y0). En los restantes puntos
+la funci´on siempre es constante en alg´un entorno y por lo tanto continua.
+2. Considere las siguientes aﬁrmaciones:
+I. Si A y B son dos conjuntos abiertos en Rn. Entonces su uni´on A S B y su intersecci´on A T B
+son conjuntos abiertos en Rn.
+II. El conjunto A = {p} fomado por un solo punto p ∈Rn no es un abierto en Rn.
+III. Sea A un conjunto cualquiera de Rn. La frontera de A es un conjunto cerrado.
+IV. El conjunto A =
+{
+(x, 0) ∈R2 : x = 1
+n, n ∈N
+}
+no tiene puntos interiores.
+Entonces
+A. Todas las aﬁrmaciones son verdaderas.
+B. I, II, IV son verdaderas y III es falsa.
+C. II, III, IV son veradaderas y I es falsa.
+D. I, III y IV son verdaderas II es falsa.
+La opci´on correcta es la (A):
+Remitimos a las notas del Curso.
+3. Si f(x, y) = (e2x sin(y), e3x cos(y)), y g : R →R2 diferenciable tal que:
+Jg(1) =
+ 
+1
+2
+!
+,
+g(1) = (0, 0)
+Entonces d(f ◦g)(1)(t −1) vale
+A. ((t −1), 2(t −1))
+B. (2e2(t −1), 3e3(t −1))
+C. (3(t −1), 2(t −1))
+D. (2(t −1), 3(t −1))
+La opci´on correcta es la (D):
+Utilizando la regla de la cadena III, la Jacobiana de la funci´on f ◦g en t = 1 se encuentra como:
+
+===== PAGE 3 =====
+2. M´ULTIPLE OPCI´ON
+3
+Jf◦g(1) = Jf(g(1)) · Jg(1)
+Jf(g(1)) =
+ 
+2e2x sin(y)
+e2x cos(y)
+3e3x cos(y)
+−e3x sin(y)
+! }}}}
+(0,0)
+=
+ 
+0
+1
+3
+0
+!
+⇒Jf◦g(1) =
+ 
+0
+1
+3
+0
+! 
+1
+2
+!
+=
+ 
+2
+3
+!
+Finalmente d(f ◦g)(1) = Jf◦g(1) ·
+(
+t −1
+)
+= (2(t −1), 3(t −1)).
+4. De la funci´on f : R2 →R se conoce que:
+• f es diferenciable en
+( √
+2
+2 ,
+√
+2
+2
+)
+• f
+( √
+2
+2 , t
+)
+= t2 + 2t
+•
+∂f
+∂⃗v
+( √
+2
+2 ,
+√
+2
+2
+)
+= 0 con⃗v = (1, −2)
+Si g(r, θ) = (r cos θ, r sin θ), entonces
+∂
+∂θ (f ◦g) (r, θ) en
+(1, π
+4
+)
+vale:
+A.
+B.
+C.
+D.
+Puede ser ´util recordar que sin
+( π
+4
+)
+= cos
+( π
+4
+)
+=
+√
+2
+2
+Primero, usando la diferencialidad de f en (
+√
+2
+2 ,
+√
+2
+2 ) y el hecho de que ∂f
+∂⃗v
+( √
+2
+2 ,
+√
+2
+2
+)
+= 0
+∂f
+∂v (
+√
+2
+2 ,
+√
+2
+2 ) = ⟨(∂f
+∂x(
+√
+2
+2 ,
+√
+2
+2 ), ∂f
+∂y (
+√
+2
+2 ,
+√
+2
+2 )), (1, −2)⟩= 0
+lo cual implica que ∂f
+∂x
+( √
+2
+2 ,
+√
+2
+2
+)
+= 2 ∂f
+∂y
+( √
+2
+2 ,
+√
+2
+2
+)
+.
+Por otra parte, podemos calcular por deﬁnici´on el valor de ∂f
+∂y
+( √
+2
+2 ,
+√
+2
+2
+)
+usando que f
+( √
+2
+2 , t
+)
+=
+t2 + 2t
+∂f
+∂y
+ √
+2
+2 ,
+√
+2
+2
+!
+= 2 +
+√
+2
+Ahora, sean g1 y g2 las funciones componentes de g
+g(r, θ) = (g1(r, θ), g2(r, θ)) = (r cos θ, r sin θ).
+Usando esta notaci´on, por la regla de la cadena tenemos que:
+∂(f ◦g)
+∂θ
+(1, π
+4 ) = ∂f
+∂x(
+√
+2
+2 ,
+√
+2
+2 )∂g1
+∂θ (1, π
+4 ) + ∂f
+∂y (
+√
+2
+2 ,
+√
+2
+2 )∂g2
+∂θ (1, π
+4 ) = ∂f
+∂y (
+√
+2
+2 ,
+√
+2
+2 )(2∂g1
+∂θ (1, π
+4 ) + ∂g2
+∂θ (1, π
+4 ))
+∂(f ◦g)
+∂θ
+(1, π
+4 ) = (2 +
+√
+2)(2∂g1
+∂θ (1, π
+4 ) + ∂g2
+∂θ (1, π
+4 ))
+Finalmente usando que ∂g1
+∂θ (1, π
+4 ) = −
+√
+2
+2
+y ∂g2
+∂θ (1, π
+4 ) =
+√
+2
+2
+∂(f ◦g)
+∂θ
+(1, π
+4 ) = −1 −
+√
+2
+5. Sea f : R2 →R deﬁnida como
+f(x, y) = cos(2cx + ay)
+donde c es una constante no nula (c̸ = 0).
+Entonces
+
+===== PAGE 4 =====
+4
+A. La funci´on f satisface la ecuaci´on
+∂2f
+∂x2 = c2 ∂2f
+∂y2
+para inﬁnitos valor de a.
+B. Existen ex´actamente dos valores de a para los cuales la funci´on f satisface la ecuaci´on
+∂2f
+∂x2 = c2 ∂2f
+∂y2 .
+C. Existe un ´unico valor de a para el cual la funci´on f satisface la ecuaci´on
+∂2f
+∂x2 = c2 ∂2f
+∂y2 .
+D. No existen valores de a para los cuales la funci´on f satisface la ecuaci´on
+∂2f
+∂x2 = c2 ∂2f
+∂y2 .
+La opci´on correcta es la (B): Hay que calcular las derivadas segundas e igualar los resultados,
+∂f
+∂x(x, t) = −sin(2cx + at)2c ⇒∂2f
+∂x2 (x, t) = −cos(2cx + at)4c2. Por otro lado ∂f
+∂t (x, t) = −sin(2cx +
+at)a ⇒∂2f
+∂t2 (x, t) = −cos(2cx + at)a2. Entonces
+∂2f
+∂x2 = c2 ∂2f
+∂t2 ⇔cos(2cx + at)4c2 = cos(2cx + at)a2c2 ⇔a2 = 4 ⇔a = ±2.
+6. Sea f : R2 →R deﬁnida como
+f(x, y) =
+(
+x3
+x2+y2
+si (x, y)̸ = (0, 0)
+0
+si (x, y) = (0, 0)
+Entonces
+A. Existen las derivadas parciales de f en todo punto del plano y ambas son continuas en (0, 0).
+B. Existen las derivadas parciales de f en todo punto del plano y s´olo una de ellas es continua en
+(0, 0).
+C. Existen las derivadas parciales de f en todo punto del plano y ninguna es continua en (0, 0).
+D. Las derivadas parciales de f no est´an deﬁnidas en todo el plano.
+La opci´on correcta es la (C):
+• Calculemos primero ∂f
+∂x: Para todo (x, y)̸ = (0, 0) basta aplicar las reglas de derivaci´on para calcular
+dicha derivada parcial.
+∂f
+∂x(x, y) = 3x2(x2 + y2) −x3(2x)
+(x2 + y2)2
+= 3x4 + 3x2y2 −2x4
+(x2 + y2)2
+= x4 + 3x2y2
+(x2 + y2)2 .
+Para (x, y) = (0, 0):
+∂f
+∂x(0, 0) = lim
+h→0
+f(h, 0) −f(0, 0)
+h
+= lim
+h→0
+h3
+h2
+h = lim
+h→0
+h
+h = 1.
+Entonces
+∂f
+∂x(x, y) =
+(
+x4+2x2y2
+(x2+y2)2
+si (x, y)̸ = (0, 0)
+1
+si (x, y) = (0, 0)
+• Calculemos ahora
+∂f
+∂y : Para todo (x, y)̸ = (0, 0), al igual que antes, basta aplicar las reglas de
+derivaci´on para calcular dicha derivada parcial.
+∂f
+∂y (x, y) =
+−x3(2y)
+(x2 + y2)2 =
+−2x3y
+(x2 + y2)2 .
+
+===== PAGE 5 =====
+2. M´ULTIPLE OPCI´ON
+5
+Para (x, y) = (0, 0):
+∂f
+∂y (0, 0) = lim
+h→0
+f(0, h) −f(0, 0)
+h
+= lim
+h→0
+0
+h = 0.
+Entonces
+∂f
+∂y (x, y) =
+(
+−2x3y
+(x2+y2)2
+si (x, y)̸ = (0, 0)
+0
+si (x, y) = (0, 0)
+Estudiamos ahora la continuidad en el origen de ambas derivadas.
+Si consideramos la recta x = 0: limy→0
+∂f
+∂x(0, y) = limy→0 0 = 0̸ = 1.
+Entonces ∂f
+∂x no es continua en (0, 0).
+Para la otra derivada parcial podemos considera la recta x = y:
+lim
+x→0
+∂f
+∂y (x, x) = lim
+x→0
+−2x4
+(2x2)2 = −1
+2̸ = 0.
+Entonces ∂f
+∂y no es continua en (0, 0).
+7. Sea f : R2 →R deﬁnida como
+f(x, y) =
+(
+ex2+y2−1
+x2+y2
+si (x, y)̸ = (0, 0)
+1
+si (x, y) = (0, 0)
+Entonces:
+A. f es continua y diferenciable en (0, 0).
+B. f es continua en (0, 0) pero no es diferenciable en (0, 0).
+C. f es diferenciable en (0, 0) pero no es continua en (0, 0).
+D. f no es diferencible ni continua en (0, 0).
+La opci´on correcta es la (A.):
+• Continuidad en (0, 0):
+lim
+(x,y)→(0,0)
+ex2+y2 −1
+x2 + y2
+=
+lim
+r→0,θ∈[0,2π)
+er2 −1
+r2
+=
+lim
+r→0,θ∈[0,2π)
+r2
+r2 = 1 = f(0, 0).
+• Diferencviabilidad en (0, 0):
+∂f
+∂x(0, 0) = lim
+h→0
+eh2−1
+h2
+−1
+h
+= lim
+h→0
+eh2 −1 −h2
+h3
+= lim
+h→0
+2heh2 −2h
+3h2
+= lim
+h→0
+2eh2 −2
+3h
+= lim
+h→0
+4heh2
+3
+= 0.
+Por simetr´ıa podemos deducir que ∂f
+∂y (0, 0) = 0.
+Para ver la diferenciabilidad tenemos que calcular el siguiente l´ımite:
+lim
+(x,y)→(0,0)
+f(x, y) −f(0, 0)
+(x2 + y2)1/2
+=
+lim
+r→0,θ∈[0,2π)
+er2 −1 −r2
+r3
+= 0.
+8 El valor del l´ımite
+lim
+(x,y)→(2,0)
+xey −
+(2 + (x −2) + 2y + 2y2 + (x −2)y + (x −2)2)
+(x −2)2 + y2
+es:
+A. 1.
+B. -1.
+C. 0.
+D. No existe.
+La opci´on correcta es la (B):
+Llamemos f(x, y) = xey. Sus derivadas hasta orden 2 son:
+
+===== PAGE 6 =====
+6
+• ∂f
+∂x = ey,
+∂f
+∂y = xey,
+• ∂2f
+∂x2 = 0,
+∂2f
+∂x∂y = ey,
+∂2f
+∂y2 = xey.
+Luego, el desarrollo de Taylor de f en un entorno de (2, 0) es:
+f(x, y) = f(2, 0) + ∂f
+∂x(2, 0)(x −2) + ∂f
+∂y (2, 0)y + 1
+2
+(∂2f
+∂x2 (2, 0)(x −2)2 + 2 ∂2f
+∂x∂y (2, 0)(x −2)y + ∂2f
+∂y (2, 0)y2
+)
++ r3(x −2, y) =
+= 2 + (x −2) + 2y + 1
+2
+(2(x −2)y + 2y2)
++ r2(x −2, y).
+Sustituyendo en el l´ımite, tenemos:
+lim
+(x,y)→(2,0)
+xey −
+(2 + (x −2) + 2y + 2y2 + (x −2)y + (x −2)2)
+(x −2)2 + y2
+=
+=
+lim
+(x,y)→(2,0)
+y2 −2y2 −(x −2)2 + r2
+(x −2)2 + y2
+=
+lim
+(x,y)→(2,0)
+−
+(y2 + (x −2)2)
++ r2
+(x −2)2 + y2
+= −1,
+porque lim(x,y)→(2,0)
+r2
+(x −2)2 + y2 = 0.
+9. Sea π el plano tangente a la gr´aﬁca de la funci´on f(x, y) = x3y + 2y2 + exy en el punto (0, 2, f(0, 2)).
+Selecione la opci´on correcta:
+A. (−1
+2, 1) ∈π.
+B. (−1, 1, 9) ∈π.
+C. (−1
+2, 1, 0) ∈π.
+D. (−1, 1, 0) ∈π.
+La opci´on correcta es la (C):
+∂f
+∂x = 3x2y + yexy
+∂f
+∂x(0, 2) = 2
+∂f
+∂y = x3 + 4y + xexy
+∂f
+∂y (0, 2) = 8
+Por lo tanto la ecuaci´on del plano tangente es
+z −f(0, 2) = ∂f
+∂x(0, 2)(x −0) + ∂f
+∂y (0, 2)(y −2)
+z −9 = 2(x −0) + 8(y −2)
+z = 2x + 8y −7
+10. Se considera la regi´on D = {(x, y) ∈R2 : x ≤x2 + y2 ≤1, x ≥0, y ≥0} Entonces
+R R
+D
+xy dy dx es
+igual a
+A.
+π
+4
+B.
+1
+12
+
+===== PAGE 7 =====
+2. M´ULTIPLE OPCI´ON
+7
+C.
+1
+6
+D. −1
+12
+La opci´on correcta es la (B):
+Pasando a coordenadas polares
+R R
+D
+xy dy dx =
+R π/2
+0
+R 1
+cosθ rcosθrsenθrdrdθ =
+R π/2
+0
+R 1
+cosθ r3cosθsenθdrdθ =
+1
+12

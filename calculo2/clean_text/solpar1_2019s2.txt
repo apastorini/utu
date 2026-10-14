@@ -1,0 +1,336 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo Diferencial e Integral en Varias Variables
+Facultad de Ingenier´ıa - IMERL
+Setiembre 2019
+Primer Parcial – SOLUCI´ON
+Ejercicio 1
+Versi´on 1. Resolver la ecuaci´on ez = e2z. Si multiplicamos por un complejo distinto de cero el
+conjunto soluci´on de la ecuaci´on permanece inalterado: ez(ez)−1 = e2z(ez)−1.
+De la f´ormula ez+w = ezew concluimos (ez)−1 = e−z por lo que 1 = ez. Si z = a + bi concluimos
+1 = ea y eib = ei0 es decir a = 0 y b = 2kπ con k ∈Z.
+Otra forma es compararlo directamente ez = e2z, es decir, ea = e2a y eib = ei2b.
+De la primera
+ecuaci´on, concluyo que a = 0. De a segunda tengo que b + 2kπ = 2b con k ∈Z, es decir b = 2kπ con
+k ∈Z. De esto, z = 2kπi con k ∈Z.
+Ejercicio 1
+Versi´on 2. Resolver la ecuaci´on ez = e3z. Si multiplicamos por un complejo distinto de cero el
+conjunto soluci´on de la ecuaci´on permanece inalterado: ez(ez)−1 = e3z(ez)−1.
+De la f´ormula ez+w = ezew concluimos (ez)−1 = e−z por lo que 1 = e2z. Si z = a + bi concluimos
+1 = e2a y ei2b = ei0 es decir a = 0 y 2b = 2kπ con k ∈Z, es decir, a = 0 y b = kπ con k ∈Z.
+Otra forma es compararlo directamente ez = e3z, es decir, ea = e3a y eib = ei3b.
+De la primera
+ecuaci´on, concluyo a = 0. De a segunda tengo que b + 2kπ = 3b con k ∈Z, es decir b = kπ con k ∈Z.
+De esto, z = kπi con k ∈Z.
+Ejercicio 2. Versi´on 1 Resolver la ecuaci´on diferencial con condiciones iniciales:
+
+
+
+
+
+
+
+y′′ + y′ + π2y = π cos(πx) + 5π2x + 5
+y(0) = 0
+y′(0) = π + 5,
+sabiendo que la soluci´on es de la forma:
+y(x) = sin(πx) + ax2 + bx + c
+La soluci´on es de la forma y(x) = sin(πx) + ax2 + bx + c entonces sabiendo que
+y′(x) = π cos(πx) + 2ax + b
+y′′(x) = −π2 sin(πx) + 2a
+obtenemos que
+y′′(x) + y′(x) + π2y(x) = π cos(πx) + π2ax2 + (2a + π2b)x + 2a + b + π2c = π cos(πx) + 5π2x + 5
+entonces por identidad de polinomios
+π2a = 0
+2a + π2b = 5π2
+2a + b + π2c = 5
+=⇒
+a = 0
+b = 5
+c = 0
+Luego y(x) = sin(πx) + 5x. Adem´as se veriﬁca que y(0) = 0 y y′(0) = π + 5 entonces es soluci´on del
+sistema
+
+
+
+
+
+y′′(x) + y′(x) + π2y(x) = π cos(πx) + 5π2x + 5
+y(0) = 0
+y′(0) = π + 5
+1
+
+===== PAGE 2 =====
+2
+Versi´on 2. Resolver la ecuaci´on diferencial con condiciones iniciales:
+
+
+
+
+
+
+
+y′′ + y′ + 7y = −
+√
+7 sin(
+√
+7x) + 14x + 2
+y(0) = 1
+y′(0) = 2,
+sabiendo que la soluci´on es de la forma:
+y(x) = cos(
+√
+7x) + ax2 + bx + c
+La soluci´on es de la forma y(x) = cos(
+√
+7x) + ax2 + bx + c entonces sabiendo que
+y′(x) = −
+√
+7 sin(
+√
+7x) + 2ax + b
+y′′(x) = −
+√
+7 cos(
+√
+7x) + 2a
+obtenemos que
+y′′(x) + y′(x) + 7y(x) = −
+√
+7 sin(
+√
+7x) + 7ax2 + (2a + 7b)x + 2a + b + 7c = −
+√
+7 sin(
+√
+7x) + 14x + 2
+entonces por identidad de polinomios
+7a = 0
+2a + 7b = 14
+2a + b + 7c = 2
+=⇒
+a = 0
+b = 2
+c = 0
+Luego y(x) = cos(
+√
+7x) + 2x. Adem´as se veriﬁca que y(0) = 1 y y′(0) = 2 entonces es soluci´on del
+sistema
+
+
+
+
+
+y′′(x) + y′(x) + 7y(x) = −
+√
+7 sin(
+√
+7x) + 14x + 2
+y(0) = 0
+y′(0) = 2
+Ejercicio 3. Se considera el conjunto A = {(x, y) ∈IR2 : |x| < 1, |y| < 1, x ∈IQ, y ∈IQ}.
+Entonces:
+∂A = A
+A = A ∪∂A
+˚
+A = ∅
+1era v´ıa: Sea B = {(x, y) ∈R2 :| x |< 1, | y |< 1}, entonces el conjunto A dado se puede escribir como
+A = B ∩(Q × Q).
+Como B es un conjunto abierto, por el ejercicio 4 del pr´actico 6 sabemos que
+◦
+A = ∅y
+δA = A = B ∪δB = {(x, y) ∈R2 :| x |≤1, | y |≤1}.
+2da v´ıa: Sin usar el ejercicio citado, se puede analizar directamente c´omo queda cada uno de los
+conjuntos que nos piden encontrar.
+– Una bola cualquiera con centro en z ∈A contiene necesariamente puntos con las dos
+coordenadas racionales y puntos con las dos coordenadas irracionales, pues Q es denso
+en R. Esto muestra que
+◦
+A = ∅.
+– El razonamiento anterior muestra que todos los puntos de A en realidad est´an en su
+frontera. Esta frontera es mucho m´as grande pues no es dif´ıcil observar que B ⊂δA;
+m´as a´un esta frontera contiene a la frontera de B. As´ı tenemos que δA = A = B ∪δB =
+{(x, y) ∈R2 :| x |≤1, | y |≤1}.
+
+===== PAGE 3 =====
+3
+Ejercicio 4. Si
+lim
+n→∞(n2 + 2n + 1) log
+(n2 + an + 2
+n2 + 2n + 1
+)
+es ﬁnito, entonces:
+a = 2
+El l´ımite es una indeterminaci´on del tipo ∞.0.
+Sumando y restando 2n en el numerador del logaritmando obtenemos:
+n2 + an + 2
+n2 + 2n + 1 = n2 + 2n + 1 + (a −2)n + 1
+n2 + 2n + 1
+= 1 + bn
+donde
+bn = (a −2)n + 1
+n2 + 2n + 1
+(observar que bn depende de a).
+Si a = 2 tenemos que bn =
+1
+n2+2n+1 →0, entonces log(1 + bn) ∼bn, y como el logaritmo es factor en
+la expresi´on total del l´ımite, podemos cambiarlo por su equivalente. Por lo tanto:
+lim
+n→∞an = lim
+n→∞(n2 + 2n + 1) log(1 + bn) = lim
+n→∞(n2 + 2n + 1) bn
+= lim
+n→∞(n2 + 2n + 1)
+1
+n2 + 2n + 1 = lim
+n→∞1 = 1
+Si a̸ = 2 nuevamente bn →0 y podemos cambiar log(1 + bn) por bn, obteniendo:
+lim
+n→∞an = lim
+n→∞(n2 + 2n + 1) log(1 + bn) = lim
+n→∞(n2 + 2n + 1) bn
+= lim
+n→∞(n2 + 2n + 1)
+((a −2)n + 1
+n2 + 2n + 1
+)
+= lim
+n→∞(a −2)n + 1 = ±∞
+donde el signo depende de si a es mayor o menor que 2.
+
+===== PAGE 4 =====
+4
+Ejercicios de desarrollo
+Ejercicio 5. Versi´on 1. Calcular
+Z P∞
+n=2( 1
+2 )n
+0
+1
+√x dx
+En primer lugar calculemos P∞
+n=2
+( 1
+2
+)n. Utilizando la f´ormula P∞
+n=0 kn =
+1
+1−k, sabemos que P∞
+n=0
+( 1
+2
+)n =
+1
+1−1/2 = 2. Por lo tanto P∞
+n=2
+( 1
+2
+)n = 2 −1/2 −1 = 1/2
+A continuaci´on, debemos calcular,
+R 1/2
+0
+1
+√x dx. Como
+1
+√x no es acotada en 0, se trata de una integral
+impropia, y por lo tanto:
+Z
+1
+2
+0
+1
+√x dx = lim
+a→0
+Z
+1
+2
+a
+1
+√x dx = lim
+a→0 2√x
+}}}}
+x= 1
+2
+x=a
+= 2 ·
+r
+1
+2 =
+√
+2.
+Versi´on 2
+Calcular
+Z P∞
+n=2( 1
+3)
+n
+0
+1
+√x dx
+En primer lugar calculemos P∞
+n=2
+( 1
+3
+)n .. Utilizando la f´ormula P∞
+n=0 kn =
+1
+1−k, sabemos que P∞
+n=0
+( 1
+3
+)n =
+1
+1−1/3 = 3/2. Por lo tanto P∞
+n=2
+( 1
+2
+)n = 3/2 −1/3 −1 = 1/6
+A continuaci´on, debemos calcular,
+R 1/6
+0
+1
+√x dx. Como
+1
+√x no es acotada en 0, se trata de una integral
+impropia, y por lo tanto:
+Z
+1
+6
+0
+1
+√x dx = lim
+a→0
+Z
+1
+6
+a
+1
+√x dx = lim
+a→0 2√x
+}}}}
+x= 1
+6
+x=a
+=
+2
+√
+6.
+Ejercicio 6.
+(1) Probar que si P an converge, entonces limn an = 0. (Ver te´orico)
+(2) Enunciar y probar el criterio del cociente. (Ver te´orico)
+(3) Clasiﬁcar
+∞
+X
+n=1
+n3 + 5n + 1
+πn3 + 2n
+(Por la parte (1) DIVERGE)
+(4) Clasiﬁcar
+∞
+X
+n=1
+(n!)2
+(2n)!
+(Por la parte (2) CONVERGE)

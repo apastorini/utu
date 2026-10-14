@@ -1,0 +1,72 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo diferencial e integral en varias variables
+Facultad de Ingenier´ıa - IMERL
+Primer Semestre 2018
+Soluci´on Examen – Jueves 19 de julio de 2018
+Ejer. 1
+Ejer. 2
+Ejer. 3
+Ejer. 4
+Ejer. 5
+Ejer. 6
+Ejer. 7
+Ejer. 8
+D
+B
+C
+A
+B
+C
+D
+C
+Problema (36 puntos)
+Se considera la funci´on f : IR2 →IR deﬁnida como:
+f(x, y) =
+
+
+
+x2y
+√
+x2+y2 + 3x + 2y + 2xy
+si (x, y)̸ = (0, 0)
+A
+si (x, y) = (0, 0)
+.
+a) Hallar A para que f sea continua en (0, 0).
+b) Para el valor de A hallado, estudiar la existencia de derivadas parciales en (0, 0).
+c) Deﬁnir diferenciabilidad de una funci´on g : IR2 →IR en el punto (0, 0).
+d) Para el valor de A hallado, estudiar la diferenciabilidad de f en el (0, 0).
+Soluci´on:
+a) Debemos calcular el l´ımite de f(x, y) en el origen. Pasando a polares, es f´acil veriﬁcar que el
+l´ımite es cero, por lo que A = 0.
+b) Como f(0, h) y f(h, 0) son cero, los l´ımites de los cocientes incrementales para las derivadas
+respecto a x e y son 3 y 2 respectivamente.
+c) Decimos que una funci´on g es diferenciable en el origen sii existe una transformaci´on lineal
+dg : IR2 →IR tal que
+g(x, y) = g(0, 0) + dg(x, y) + r(x, y)
+con r una funci´on que cumple l´ım(x,y)→(0,0)
+r(x,y)
+√
+x2+y2 = 0.
+d) Despejando de la deﬁnici´on, resulta que la funci´on resto es r(x, y) =
+x2y
+√
+x2+y2 + 2xy, por lo que
+hay que calcular el l´ımite
+l´ım
+(x,y)→(0,0)
+r(x, y)
+p
+x2 + y2 =
+l´ım
+(x,y)→(0,0)
+x2y
+x2 + y2 +
+2xy
+p
+x2 + y2 .
+Nuevamente utilizando coordenadas polares, es f´acil veriﬁcar que le l´ımite es cero, y por lo
+tanto la funci´on es diferenciable.
+1

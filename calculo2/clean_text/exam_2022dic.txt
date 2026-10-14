@@ -1,0 +1,225 @@
+
+===== PAGE 1 =====
+C´alculo Diferencial e Integral en Varias Variables
+Examen
+19 de diciembre de 2022
+No Lista
+Apellido, Nombre
+C´edula
+Firma
+IMPORTANTE
+• La duraci´on del examen es de cuatro horas.
+• El puntaje total del examen es de 100 puntos. El m´ınimo para aprobar es 60 puntos.
+• No se permite usar ni calculadora ni material de consulta.
+• El examen tiene seis ejercicios de m´ultiple opci´on y dos ejercicios de desarrollo.
+• En cada ejercicio de m´ultiple opci´on solo hay una opci´on correcta.
+• La comprensi´on de la letra de los ejercicios es parte de la prueba.
+• Notaci´on: Dado un conjunto A ⊂Rn, denotamos con int(A) al interior de A y con Ac
+al complemento de A, deﬁnido como Ac = A \ Rn = {p ∈Rn : p̸ ∈A}.
+• La siguiente tabla de valores para las funciones seno y coseno puede ser de utilidad:
+x
+0
+π
+6
+π
+4
+π
+3
+π
+2
+sin(x)
+0
+1
+2
+1
+√
+2
+√
+3
+2
+1
+cos(x)
+1
+√
+3
+2
+1
+√
+2
+1
+2
+0
+• Tenga cuidado al pasar las respuestas. Para los ejercicios de m´ultiple opci´on
+lo completado en el cuadro de abajo ser´a lo ´unico tenido en cuenta a la hora
+de corregir.
+• En el desarrollo, todos los razonamientos y/o resultados a los que llegue deben
+ser justiﬁcados. Resultados correctos sin justiﬁcaci´on tendr´an 0 puntos.
+M ´ULTIPLE OPCI´ON (Total: 48 puntos)
+Llenar cada casilla con las respuestas A, B, C, D o E, seg´un corresponda.
+1
+2
+3
+4
+5
+6
+Correctas: 8 puntos. Incorrectas: −2 puntos. Sin responder: 0 puntos.
+SOLO PARA USO DOCENTE
+MO
+D.1.a)
+D.1.b)
+D.1.c)
+D.1.d)
+D.2.a)
+D.2.b)
+D.2.c)
+Total
+1
+
+===== PAGE 2 =====
+M ´ULTIPLE OPCI´ON
+1. Sea y(x) la soluci´on a la ecuaci´on diferencial y′′ −y′ −2y = 1 −2x, con condiciones iniciales
+y(0) = −1, y′(0) = 4. Entonces, y(2) es igual a:
+y(2) = e2 + e−2 −1
+(A)
+y(2) = e4 −e−2 + 1
+(B)
+y(2) = e2 + e−4 −2
+(C)
+y(2) = e4 + e−2 −4
+(D)
+y(2) = e4 + 2e−2 −1
+(E)
+2. Considere la integral impropia y la serie que siguen:
+Z +∞
+0
+e−x2
+x2 dx
++∞
+X
+n=0
+sin
+( 1
+2n
+)
+Entonces:
+(A) Ambas son divergentes.
+(B) La serie es divergente y la integral es convergente.
+(C) Ambas son convergentes.
+(D) La integral es divergente y la serie es absolutamente convergente.
+(E) La integral es divergente, la serie es condicionalmente convergente.
+3. Sean f : R2 →R y g : R2 →R2 dos funciones de clase C1, que cumplen:
+• g(u, v) = (u2 + v3, eu2 −v)
+• ∇f(1, 0) = (1, −1)
+• Para el vector⃗v = (1, 1), se tiene ∂f
+∂⃗v (1, e) = 4
+• f(x, e) = x2 + 1.
+La matriz Jacobiana de la funci´on f ◦g en el punto (1, 0) es:
+(4 + 4e, −2)
+(A)
+(4 + 2e, −2e)
+(B)
+(2 + 2e, 0)
+(C)
+(2e, −1)
+(D)
+(2 −2e, 1)
+(E)
+4. Sea A ⊂C el conjunto de los n´umeros z ∈C que veriﬁcan:
+{
+z4 = 1 −i
+√
+3
+z + ¯z > 0
+Solo una de las siguientes aﬁrmaciones sobre el conjunto A es correcta. Indique cu´al:
+2
+
+===== PAGE 3 =====
+(A) A es sim´etrico respecto al eje real.
+(B) A es sim´etrico respecto al eje imaginario.
+(C) A tiene exactamente dos elementos distintos.
+(D) A tiene exactamente cuatro elementos distintos.
+(E) Todos los elementos de A est´an en la circunferencia de centro 0 y radio 1.
+5. Sea B ⊂R2 el conjunto deﬁnido como:
+B =
+{
+(x, y) ∈R2 : cos(x) = 0 , sin(y) = −1
+}
+Considere las siguientes aﬁrmaciones sobre el conjunto B:
+(I) int(B) = ∅.
+(II) B es cerrado.
+(III) Todos los elementos de B son puntos de acumulaci´on de Bc.
+Entonces:
+(A) Todas las aﬁrmaciones son verdaderas.
+(B) Solamente las aﬁrmaciones (I) y (II) son verdaderas.
+(C) Solamente la aﬁrmaci´on (II) es verdadera.
+(D) Solamente las aﬁrmaciones (I) y (III) son verdaderas.
+(E) Todas las aﬁrmaciones son falsas.
+6. Sea f : R2 →R deﬁnida como f(x, y) = y y D ⊂R2 el conjunto deﬁnido como:
+D =
+{
+(x, y) ∈R2 : x2 + y2 ≤2x , y ≥x
+}
+La integral de f en D es igual a:
+ZZ
+D
+f = π
+3
+(A)
+ZZ
+D
+f = 1
+(B)
+ZZ
+D
+f = √π
+(C)
+ZZ
+D
+f = 3
+4
+(D)
+ZZ
+D
+f = 1
+6
+(E)
+3
+
+===== PAGE 4 =====
+DESARROLLO
+1. (26 puntos) Sea f : R2 →R una funci´on y a = (x0, y0) un punto del plano.
+a) Deﬁnir continuidad de f en el punto a.
+b) Sea an una sucesi´on de elementos de R2. Deﬁnir lim
+n→∞an = a.
+c) Demostrar que si f es continua en a, y una sucesi´on an cumple lim
+n→∞an = a, entonces
+lim
+n→∞f(an) = f(a).
+d) Sea f : R2 →R deﬁnida como
+f(x, y) =
+
+
+
+x6
+(x2 −y)2 + x6
+si (x, y)̸ = (0, 0)
+0
+si (x, y) = (0, 0)
+Utilice el resultado del ´ıtem anterior para estudiar la continuidad de f en el origen.
+2. (26 puntos) Sea f : R2 →R una funci´on.
+a) Deﬁnir diferenciabilidad de f en un punto a = (x0, y0) ∈R2.
+Sea ahora f : R2 →R deﬁnida como:
+f(x, y) =
+
+
+
+x3y + xy3
+x2 + y2 +
+p
+x2 + y2
+si (x, y)̸ = (0, 0)
+0
+si (x, y) = (0, 0)
+b) Calcular las derivadas parciales de f en el (0, 0).
+c) Estudiar la diferenciabilidad de la funci´on en el origen.
+4

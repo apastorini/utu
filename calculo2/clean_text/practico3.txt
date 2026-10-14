@@ -1,0 +1,285 @@
+
+===== PAGE 1 =====
+Cálculo Diferencial e Integral en Varias Variables
+II Semestre 2026
+Práctico 3 – Series
+1. Indicar si las siguientes series son convergentes o no, hallando sus suma en caso de serlo.
+a)
++∞
+X
+n=0
+(1
+3
+)n
+b)
++∞
+X
+n=1
+( 1
+√
+3
+)n+3
+c)
++∞
+X
+n=1
+5n+1
+d)
++∞
+X
+n=1
+3
+n(n + 3)
+e)
++∞
+X
+n=1
+log
+(n2 + 2n + 1
+n2
+)
+f)
++∞
+X
+n=1
+n
+(n + 1)(n + 2)(n + 3)
+g)
+∞
+X
+n=1
+n arc tg (n + 1) −(n + 1) arc tg (n)
+n(n + 1)
+2. Determinar si las siguientes series son convergentes o divergentes aplicando el criterio de comparación.
+a)
++∞
+X
+n=1
+1
+nn
+b)
++∞
+X
+n=1
+e−√n+1
+3. Determinar si las siguientes series son convergentes o divergentes aplicando el criterio del equivalente.
+a)
++∞
+X
+n=0
+1
+n2 + 1
+b)
++∞
+X
+n=1
+n2 + 1
+n3
+c)
++∞
+X
+n=1
+log(n + 1) −log(n)
+10n + 1
+4. Usar el criterio del cociente para estudiar la convergencia de las siguientes series:
+a)
++∞
+X
+n=1
+2n −1
+(
+√
+2)n
+b)
++∞
+X
+n=1
+n!
+nn
+5. Usar el criterio de la raíz para estudiar la convergencia de las siguientes series:
+a)
++∞
+X
+n=1
+2n −1
+(
+√
+2)n
+b)
++∞
+X
+n=1
+( n + 1
+2n −1
+)n
+6. Sabiendo que an ≥0 y que P an converge, indicar si las siguientes series son convergentes o no, explicando
+por qué.
+a)
+X 1
+an
+b)
+X
+a2
+n
+c)
+X √an
+d)
+X
+log(1 + an)
+7. Estudiar la convergencia de las siguientes series alternadas. En caso de que sean convergentes, estudiar si
+también lo son absolutamente.
+a)
++∞
+X
+n=1
+(−1)n+1
+3n
+b)
++∞
+X
+n=1
+(−1)n+1n
+n2 + 1
+c)
++∞
+X
+n=1
+(−1)nn
+6n −5
+d)
++∞
+X
+n=1
+(−1)n(n3 + 2n2 + 8n + 5)
+n5 + 4n3 + 15
+8. Estudiar la convergencia de las siguientes series:
+a)
++∞
+X
+n=1
+n
+(n + 1)(n + 2)
+b)
++∞
+X
+n=1
+n
+(n + 1) log(n + 1)
+c)
++∞
+X
+n=1
+n3
+en
+d)
++∞
+X
+n=1
+(−1)n+1
+√n
+1
+
+===== PAGE 2 =====
+Cálculo Diferencial e Integral en Varias Variables – II Semestre 2026
+Práctico 3
+9. Sea R un rectángulo de lado 1. Se trazan lineas de forma de dividir R en 9 rectángulos iguales de lado 1
+3, y
+se pinta el rectángulo del centro. Inductivamente, se divide cada rectángulo sin pintar en 9 rectángulos y se
+pinta el del centro.
+Calcular el área pintada luego de realizar el procedimiento n veces.
+Calcular el área pintada luego de realizar el procedimiento inﬁnitas veces.
+Realice el mismo tipo de estudio pero ahora con el perímetro del área pintada.
+Figura 1: Figura que se obtiene en el paso 2.
+Ejercicios propuestos en evaluaciones anteriores
+1. (Primer parcial segundo semestre 2022) Considere las siguientes aﬁrmaciones sobre series:
+(1) La serie
++∞
+X
+n=1
+1
+n log
+(1 + 1
+n
+) es convergente.
+(2) La serie
++∞
+X
+n=1
+(−1)nn
+3n
+es absolutamente convergente.
+(3) La serie
++∞
+X
+n=2
+log(2) · log(3) · log(4) · · · log(n)
+n!
+es convergente.
+Entonces:
+(A) Solamente las aﬁrmaciones (1) y (2) son verdaderas.
+(B) Solamente las aﬁrmaciones (2) y (3) son verdaderas.
+(C) Todas las aﬁrmaciones son verdaderas.
+(D) Solamente la aﬁrmación (2) es verdadera.
+(E) Solamente las aﬁrmaciones (1) y (3) son verdaderas.
+2. (Primer parcial segundo semestre 2021) La serie
+∞
+X
+n=0
+( 1
+3n + e−(n+1)2 −e−n2)
+(A) converge a 3
+2.
+2
+
+===== PAGE 3 =====
+Cálculo Diferencial e Integral en Varias Variables – II Semestre 2026
+Práctico 3
+(B) converge a 1
+2.
+(C) converge a 1.
+(D) converge a 3 −e.
+(E) diverge.
+3. (Primer parcial segundo semestre 2020 turno matutino) Sea an una sucesión de términos positivos
+tal que P an es convergente. Considere las siguientes series
+∞
+X
+n=1
+ea2
+n −1
+y
+∞
+X
+n=1
+cos(an) sen(an)
+Entonces:
+(A) Ambas series son divergentes.
+(B) Ambas series son convergentes.
+(C) Solo la primera serie es convergente.
+(D) Solo la segunda serie es convergente.
+(E) La segunda serie no se puede clasiﬁcar a priori, por no ser de signo constante.
+4. (Primer parcial segundo semestre 2019)
+(1) Probar que si P an es convergente entonces l´ım
+n an = 0.
+(2) Enunciar y probar el criterio del cociente.
+(3) Clasiﬁcar
+∞
+X
+n=1
+n3 + 5n + 1
+πn3 + 2n
+(4) Clasiﬁcar
+∞
+X
+n=1
+(n!)2
+(2n)!
+5. (Primer parcial primer semestre 2018) Una pelota de goma se deja caer desde una altura de 2 metros.
+Cada vez que toca el piso rebota y se eleva hasta una altura de 2/3 de la distancia desde la que cae.
+Interpretando la distancia que recorre la pelota luego de inﬁnitos rebotes como suma de una serie inﬁnita,
+indicar la opción correcta.
+(A) Luego de inﬁnitos rebotes la pelota recorre 4 metros.
+(B) Luego de inﬁnitos rebotes la pelota recorre 6 metros.
+(C) Luego de inﬁnitos rebotes la pelota recorre 8 metros.
+(D) Luego de inﬁnitos rebotes la pelota recorre 10 metros.
+(E) Para rebotar inﬁnitas veces la pelota debe recorrer una distancia inﬁnita (i.e. la serie no converge).
+3

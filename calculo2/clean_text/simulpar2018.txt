@@ -1,0 +1,137 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo diferencial e integral en varias variables
+Facultad de Ingenier´ıa - IMERL
+Primer Semestre 2018
+Simulacro de Primer parcial
+Nro de Parcial
+C´edula
+Apellido y nombre
+(I) M´ultiple opci´on. Total: 30 puntos
+Puntajes: 5 puntos si la respuesta es correcta, 0 punto por no contestar y -1 si la respuesta es incorrecta.
+Indique sus respuestas en los casilleros correspondientes, con letras may´usculas imprenta: A, B, C, D o E.
+Ejercicio 1
+Ejercicio 2
+Ejercicio 3
+Ejercicio 4
+Ejercicio 5
+Ejercicio 6
+Ejercicio 1
+Considere el polinomio complejo P(z) = z4 + z, y sea A ⊂IC el conjunto de ra´ıces de P(z). Entonces
+Indicar la opci´on correcta:
+(A) El conjunto A tiene inﬁnitos elementos.
+(B) El conjunto A tiene 4 elementos, ubicados en los v´ertices de un cuadrado.
+(C) El conjunto A tiene 3 elementos, ubicados en los v´ertices de un tri´angulo.
+(D) El conjunto A tiene 4 elementos, dos de ellos con parte real 1
+2.
+(E) El conjunto A tiene 4 elementos, todos la misma parte imaginaria.
+Ejercicio 2
+Considere los siguientes problemas de condiciones iniciales
+
+
+
+
+
+
+
+y′′(x) −4y′(x) + 3y(x) = 0
+y(0) = 0
+y′(0) = 2
+
+
+
+y′(x) = 3x2y(x)
+y(0) = 1
+Sean y1(x) e y2(x) las soluciones de estos problemas. Entonces y1(−1) + y2(−1) vale:
+(A) e−3
+(B) e−3 + e
+(C) 0
+(D) e−1 + e
+(E) e−3 + e−1
+1
+
+===== PAGE 2 =====
+2
+Ejercicio 3
+Considere las siguientes aﬁrmaciones:
+Aﬁrmaci´on (I) Si una sucesi´on real an est´a acotada, entonces toda subsucesi´on de an es convergente.
+Aﬁrmaci´on (II) Si an es una sucesi´on de elementos de [0, 1], entonces posee una subsucesi´on conver-
+gente a un elemento de [0, 1].
+Aﬁrmaci´on (III) Sea an una sucesi´on real tal que l´ım an = +∞. Entonces an puede tener una subsu-
+cesi´on convergente a un L ∈IR, y un ejemplo es la sucesi´on an = (1 + (−1)n)n.
+Indicar la opci´on correcta:
+(A) Solo las aﬁrmaciones (II) y (III) son verdaderas.
+(B) Solo la aﬁrmaci´on (II) es verdadera.
+(C) Ninguna de las aﬁrmaciones (I), (II) y (III) es verdadera.
+(D) Solo las aﬁrmaciones (I) y (II) son verdaderas.
+(E) Solo las aﬁrmaciones (I) y (III) son verdaderas
+Ejercicio 4
+Considere las siguientes series:
+(I)
+X
+log(n)e−n
+(II)
+X n + 1 + √n
+n2 + e−n
+Entonces:
+(A) La serie (I) diverge, y la serie (II) converge.
+(B) Ambas series son divergentes.
+(C) Ambas series son convergentes.
+(D) La serie (I) converge, y la serie (II) diverge.
+(E) La serie (II) converge, pero no absolutamente.
+Ejercicio 5
+Considere la serie y la integral que siguen:
+∞
+X
+n=1
+(2
+3
+)n
+Z ∞
+1
+(2
+3
+)x
+dx
+Entonces:
+(A) Tanto la serie como la integral convergen a 2, por el criterio serie-integral.
+(B) La serie es convergente, pero no se puede aplicar el criterio serie-integral en este caso.
+(C) La serie converge a 2. La integral tambi´en converge por el criterio serie-integral, pero no
+necesariamente converge a 2.
+(D) La serie diverge pues el t´ermino general no tiende a cero.
+(E) La serie converge a 3, pero la integral impropia diverge.
+
+===== PAGE 3 =====
+3
+Ejercicio 6
+Considere las siguientes integrales impropias.
+(I)
+Z +∞
+0
+e−x2dx
+x(x + 1)
+(II)
+Z +∞
+−∞
+x4dx
+(1 + x2)(ex + e−x)
+Entonces:
+(A) La integral (I) diverge, y la integral (II) converge.
+(B) Ambas integrales son divergentes.
+(C) Ambas integrales son convergentes.
+(D) La integral (I) converge, y la integral (II) diverge.
+(E) La integral (II) converge, y la integral (I) oscila.
+Problema (10 puntos)
+a) Deﬁnir punto interior a un conjunto A ⊂IRn.
+b)
+i) Deﬁnir conjunto abierto.
+ii) Demostrar que la bola abierta B(0, 1) es un conjunto abierto.
+Considere el siguiente subconjunto del plano IR2:
+A = {(x, y) ∈IR2 : 0 < x < 1, 0 < y < 1} ∪{(2, 2)} ∪{(x, y) ∈IQ2 : x = −y}
+c) Hallar el interior, la frontera, y la clausura de A.
+d)
+i) ¿Existe alguna una sucesi´on de elementos de A convergente al punto (−π, π)? Si existe,
+de un ejemplo. Si no existe, justiﬁque.
+ii) ¿Existe alguna una sucesi´on de elementos de AC convergente al punto (−π, π)? Si existe,
+de un ejemplo. Si no existe, justiﬁque.

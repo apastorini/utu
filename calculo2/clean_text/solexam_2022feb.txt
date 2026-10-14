@@ -1,0 +1,626 @@
+
+===== PAGE 1 =====
+Cálculo Diferencial e Integral en Varias Variables
+Examen
+26 de febrero de 2022
+No Lista
+Apellido, Nombre
+Cédula
+Firma
+0000
+Doe, John
+0.000.000-0
+La duración del examen es de tres horas, y no se permite usar ni calculadora
+ni material de consulta. La comprensión de las preguntas es parte de la prueba.
+Tenga cuidado al pasar las respuestas
+Para los ejercicios de verdadero o falso y los de múltiple opción,
+lo completado aquí será lo único tenido en cuenta a la hora de corregir.
+VERDADERO O FALSO (Total: 12 puntos)
+Llenar cada casilla con las respuestas V o F, según corresponda.
+1
+2
+3
+4
+5
+6
+V
+F
+V
+F
+V
+V
+Correctas: 2 puntos. Incorrectas: −2 puntos. Sin responder: 0 puntos.
+MÚLTIPLE OPCIÓN (Total: 40 puntos)
+Llenar cada casilla con las respuestas A, B, C, D, E o F, según corresponda.
+1
+2
+3
+4
+A
+B
+D
+E
+Correctas: 10 puntos. Incorrectas: −2 puntos. Sin responder: 0 puntos.
+DESARROLLO (Total: 48 puntos)
+Dos ejercicios de desarrollo se encuentran en la página 3.
+SOLO PARA USO DOCENTE
+V/F
+MO
+D1
+D2
+Total
+1
+
+===== PAGE 2 =====
+PARTE I: Verdadero o Falso
+Sea f : R2 →R deﬁnida como f(x, y) = |x + ey2|. Indicar si cada una de las siguientes aﬁrmaciones sobre
+f es verdadera o falsa.
+(1) f es continua en (0, 0).
+(2) f no es continua en (−1, 0).
+(3) f es diferenciable en (0, 0) y su gradiente en ese punto es (1, 0).
+(4) Existe la derivada parcial de f respecto a x en (−1, 0) y vale 1.
+(5) Existe la derivada parcial de f respecto a y en (−1, 0) y vale 0.
+(6) f es integrable en K = [0, 1] × [−1, 1] y
+¨
+K
+f = 2
+¨
+[0,1]×[0,1]
+f.
+Solución: f es una función continua en R2, por lo cual en particular va a ser continua en los puntos
+(0, 0) y (−1, 0).
+En un entorno lo suﬁcientemente pequeño de (0, 0), se tiene que f(x, y) = x+ey2, por lo cual f es una
+función diferenciable en dicho entorno (suma y composición de funciones diferenciables es diferenciable).
+En particular, se tiene que f es diferenciable en (0, 0). Por otro lado,
+fx(0, 0) = 1(0,0) = 1,
+fy(0, 0) = 2yey2|(0,0) = 0.
+Luego, ∇f(0, 0) = (1, 0).
+Note que (−1, 0) es un punto problema de f, por lo que sus derivadas parciales allí deben calcularse por
+deﬁnición:
+l´ım
+h→0
+f(h(1, 0) + (−1, 0)) −f(−1, 0)
+h
+= l´ım
+h→0
+f(h −1, 0) −0
+h
+= l´ım
+h→0
+|(h −1) + 1|
+h
+= l´ım
+h→0
+|h|
+h
+(no existe)
+l´ım
+h→0
+f(h(0, 1) + (−1, 0)) −f(−1, 0)
+h
+= l´ım
+h→0
+f(−1, h) −0
+h
+= l´ım
+h→0
+|eh2 −1|
+h
+= l´ım
+h→0
+eh2 −1
+h
+= 0.
+Por lo tanto, fx(−1, 0) no existe y fy(−1, 0) = 0.
+Finalmente, para la aﬁrmación de la integral, note que para cada x ∈R la función y 7→f(x, y) =
+|x + ey2| es par. Entonces,
+¨
+K
+f(x, y) dxdy =
+ˆ 1
+0
+(ˆ 1
+−1
+|x + ey2| dy
+)
+dx =
+ˆ 1
+0
+(
+2
+ˆ 1
+0
+|x + ey2| dy
+)
+dx
+= 2
+ˆ 1
+0
+(ˆ 1
+0
+|x + ey2| dy
+)
+dx = 2
+¨
+[0,1]×[0,1]
+f(x, y) dxdy.
+2
+
+===== PAGE 3 =====
+PARTE II: Múltiple Opción
+MO 1. Sean a, b, c, d, e, f ∈R tales que
+l´ım
+(x,y)→(0,1)
+xy + log(x2 + y) −(a + bx + cy + dx2 + ey2 + fxy)
+x2 + (y −1)2
+= 0.
+Entonces la suma a + b + c + d + e + f es igual a:
+(A) 2
+(B) 0
+(C) 1
+(D) −1
+(E) 3
+(F) −2
+Solución: Utilizaremos el desarrollo de Taylor de orden 2 y centrado en (0, 1) de la función
+f(x, y) = log(x2 + y).
+Tenemos que
+fx(x, y) =
+2x
+x2 + y , fy(x, y) =
+1
+x2 + y
+y
+fxx(x, y) = 2y −2x2
+(x2 + y)2 , fyy(x, y) = −
+1
+(x2 + y)2 , fxy(x, y) = fyx(x, y) = −
+2x
+(x2 + y)2 .
+Luego:
+∇f(0, 1) =
+( fx(0, 1)
+fy(0, 1) )
+=
+( 0
+1 )
+,
+Hf(0, 1) =
+( fxx(0, 1)
+fxy(0, 1)
+fxy(0, 1)
+fyy(0, 1)
+)
+=
+( 2
+0
+0
+−1
+)
+.
+Entonces,
+f(x, y) = f(0, 1) + ∇f(0, 1)
+(
+x
+y −1
+)
++ 1
+2
+( x
+y −1 )
+Hf(0, 1)
+(
+x
+y −1
+)
++ R(x, y)
+= 0 +
+(0
+1
+) (
+x
+y −1
+)
++ 1
+2
+(x
+y −1
+) ( 2
+0
+0
+−1
+) (
+x
+y −1
+)
++ R(x, y)
+= x2 −y2
+2 + 2y −3
+2 + R(x, y),
+donde R(x, y) es una función que cumple
+l´ım
+(x,y)→(0,1)
+R(x, y)
+x2 + (y −1)2 = 0.
+Por lo tanto, tenemos que:
+l´ım
+(x,y)→(0,1)
+xy + log(x2 + y) −(a + bx + cy + dx2 + ey2 + fxy)
+x2 + (y −1)2
+= 0
+l´ım
+(x,y)→(0,1)
+xy + x2 −y2
+2 + 2y −3
+2 + R(x, y) −(a + bx + cy + dx2 + ey2 + fxy)
+x2 + (y −1)2
+= 0
+l´ım
+(x,y)→(0,1)
+(1 −f)xy + (1 −d)x2 −(e + 1/2)y2 + (2 −c)y −(a + 3/2) −bx
+x2 + (y −1)2
++
+l´ım
+(x,y)→(0,1)
+R(x, y)
+x2 + (y −1)2 = 0
+l´ım
+(x,y)→(0,1)
+(1 −f)xy + (1 −d)x2 −(e + 1/2)y2 + (2 −c)y −(a + 3/2) −bx
+x2 + (y −1)2
+= 0.
+Debe cumplirse entonces que a = −3/2, b = 0, c = 2, d = 1, e = −1/2 y f = 1.
+3
+
+===== PAGE 4 =====
+MO 2. Sea T ⊂R2 el triángulo de vértices (1, 0), (0, 2) y (2, 4). Calcular la integral
+¨
+T
+x dxdy.
+(A) 2
+(B) 3
+(C) 2
+3
+(D) 5
+3
+(E) 4
+(F) 11
+2
+Solución: Observando el dominio de integración en la ﬁgura, y usando propiedades de la integral doble,
+tenemos que:
+¨
+T
+x dxdy =
+ˆ 1
+0
+(ˆ x+2
+2−2x
+x dy
+)
+dx +
+ˆ 2
+1
+(ˆ x+2
+4x−4
+x dy
+)
+dx =
+ˆ 1
+0
+3x2 dx +
+ˆ 2
+1
+x(6 −3x) dx
+=
+ˆ 1
+0
+3x2 dx +
+ˆ 2
+1
+(6x −3x2) dx = x3}}1
+0 + (3x2 −x3)
+}}2
+1 = 1 + (12 −8 −3 + 1) = 3.
+MO 3. Consideremos la región D rayada en la ﬁgura, que está comprendida entre dos elipses y contenida
+en el primer cuadrante.
+Calcular
+¨
+D
+y dxdy.
+(A) 5
+3
+(B) 7
+3
+(C) 11
+3
+(D) 14
+3
+(E) 19
+3
+(F) 22
+3
+4
+
+===== PAGE 5 =====
+Solución: Observando la ﬁgura, podemos proponer el siguiente cambio de variables para la región D:
+x = 2r cos(θ),
+y = r sin(θ),
+con r ∈[1, 2] y θ ∈[0, π/2]. El determinante del Jacobiano de este cambio es 2r. Luego, por el teorema
+de cambio de variables, se tiene que
+¨
+D
+y dxdy =
+ˆ 2
+1
+ ˆ π/2
+0
+r sin(θ) · (2r) dθ
+!
+dr =
+ˆ 2
+1
+2r2
+ ˆ π/2
+0
+sin(θ) dθ
+!
+dr =
+ˆ 2
+1
+2r2 (
+−cos(θ)|π/2
+0
+)
+dr
+=
+ˆ 2
+1
+2r2 dr = 2
+3r3
+}}}}
+2
+1
+= 2
+3 · 7 = 14
+3 .
+MO 4. Recordemos que el plano complejo C se puede identiﬁcar con R2, considerando que el número
+complejo z = x + iy ∈C es el punto (x, y) ∈R2.
+Consideremos el siguiente subconjunto del plano complejo:
+A = {z ∈C : z¯z > 2, Re(z) > 1, Im(ez) = 0}.
+Si ahora pensamos en A como subconjunto de R2, indicar cuál de las siguientes aﬁrmaciones es correcta:
+(A) A es abierto, es acotado, y acumula en (1, 1).
+(B) A no es abierto, es acotado, y acumula en (1, 1).
+(C) A no es abierto, es acotado, y no acumula en (1, 1).
+(D) A es abierto, no es acotado, y no acumula en (1, 1).
+(E) A no es abierto, no es acotado, y no acumula en (1, 1).
+(F) A no es abierto, no es acotado, y acumula en (1, 1).
+Solución: Como z¯z = |z|2, tenemos que |z| >
+√
+2, por lo que todos los puntos de A están fuera del disco de
+centro (0, 0) y radio
+√
+2. La condición Re(z) > 1 implica que todos los puntos de A están estrictamente
+a la derecha de la recta x = 1. Finalmente, si z = x + iy, sabemos que ez = ex(cos(y) + i sin(y)) =
+ex cos(y) + iex sin(y). Como ex sin(y) = Im(ez) = 0, se tiene que sin(y) = 0, es decir, y = kπ con k ∈Z.
+5
+
+===== PAGE 6 =====
+Teniendo en cuenta todas estas condiciones, A está formado por las semirrectas paralelas al eje X que
+parten de los puntos (1, kπ) con k ∈Z −{0} (sin incluirlos) con orientación a la derecha, y por la
+semirrecta paralela al eje X con orientación a la derecha y que parte del punto (
+√
+2, 0) (sin incluirlo).
+Vemos que A no es abierto, ni acotado, y (1, 1) no es punto de acumulación de A.
+PARTE III: Desarrollo
+(Justiﬁque detalladamente todas sus respuestas)
+Desarrollo 1. [24 pts.] Consideremos las siguientes sucesiones de números reales:
+an =
+√n
+n + 2 con (n ≥2)
+y
+bn =
+1
+n ln(n) (ln(ln(n)))2
+con (n ≥3).
+(A) Para la sucesión (an), estudiar su monotonía y convergencia.
+[6 pts.]
+(B) Para la sucesión (bn), estudiar su monotonía y convergencia.
+[6 pts.]
+(C) Determinar si la serie
+∞
+X
+n=2
+(−1)nan es absoluta y condicionalmente convergente.
+[6 pts.]
+(D) Determinar si la serie
+∞
+X
+n=3
+bn converge o diverge.
+[6 pts.]
+Solución:
+(A) La sucesión (an) es estrictamente monótona decreciente, ya que
+an+1 < an ⇐⇒
+√n + 1
+n + 3
+<
+√n
+n + 2 ⇐⇒(n + 2)
+√
+n + 1 < (n + 3)√n ⇐⇒(n + 2)2(n + 1) < (n + 3)2n
+⇐⇒(n2 + 2n + 4)(n + 1) < (n2 + 6n + 9)n ⇐⇒n3 + 3n2 + 6n + 4 < n3 + 6n2 + 9n
+⇐⇒4 < 3n2 + 3n,
+y la última desigualdad claramente se cumple para n ≥2. Por otro lado, (an) está acotada inferior-
+mente por 0, por lo cual (an) converge por ser monótona decreciente y acotada inferiormente.
+(B) La sucesión (ln(n)) es estrictamente creciente y positiva, por lo cual (ln(ln(n))) es estrictamente
+creciente y positiva. Luego, ((ln(ln(n)))2) es entonces estrictamente creciente y positiva. Tomando
+el producto de esta última con la sucesión (n ln(n)), la cual es estrictamente creciente y positiva,
+obtenemos la sucesión estrictamente creciente y positiva (n ln(n)(ln(ln(n)))2). Por lo tanto, (bn) es
+estrictamente monótona decreciente, al ser sus términos los inversos multiplicativos de la sucesión
+anterior. Por otro lado, al ser (bn) acotada inferiormente (por 0), se tiene por el mismo argumento
+de la parte (A) que (bn) converge.
+(C) Como la sucesión (an) es monótona decreciente y de términos positivos, y además
+l´ım
+n→+∞an =
+l´ım
+n→+∞
+√n
+n + 2 = 0 (por órdenes),
+se tiene por el criterio de Leibniz que la serie alternada P∞
+n=2(−1)nan converge. Por otro lado,
+consideremos la serie
+∞
+X
+n=2
+|(−1)nan| =
+∞
+X
+n=2
+√n
+n + 2.
+6
+
+===== PAGE 7 =====
+Como
+√n
+n+2 >
+1
+n+2 para n ≥2, y la serie P∞
+n=2
+1
+n+2 diverge (por ser de la misma clase que la serie
+armónica), se tiene por el criterio de comparación que P∞
+n=2
+√n
+n+2 diverge. Entonces, P∞
+n=2(−1)nan
+converge pero no absolutamente, es decir, P∞
+n=2(−1)nan es condicionalmente convergente.
+(D) Consideramos la función f : [3, +∞) →R dada por
+f(x) =
+1
+x ln(x) (ln(ln(x)))2 .
+Note que bn = f(n). Por el mismo argumento usado en la parte (B), se tiene que f es una función
+estrictamente decreciente y positiva. Por otro lado, calculemos la integral impropia
+´ ∞
+3
+f(x) dx.
+Haciendo el cambio de variables u = ln(ln(x)), tenemos que du =
+1
+x ln(x), de donde
+ˆ
+f(x) dx =
+ˆ
+1
+x ln(x) (ln(ln(x)))2 dx =
+ˆ
+1
+u2 du = −1
+u + constante,
+ˆ c
+3
+f(x) dx = 1
+3 −1
+c ,
+ˆ ∞
+3
+f(x) dx =
+l´ım
+c→+∞
+(1
+3 −1
+c
+)
+= 1
+3.
+Por lo tanto, como
+´ ∞
+3
+f(x) dx converge, se tiene por el criterio serie-integral que la serie P∞
+n=3 bn =
+P∞
+n=3 f(n) converge.
+Desarrollo 2. [24 puntos] Consideremos la siguiente función escalar sobre R2:
+f(x, y) =
+
+
+
+y (x2 −y2)
+x2 + y2
+si (x, y)̸ = (0, 0),
+0
+si (x, y) = (0, 0).
+(A) Determinar si f es continua en el punto (0, 0).
+[8 pts.]
+(B) Calcular, en caso de existir, todas las derivadas direccionales de f en el punto (0, 0).
+[8 pts.]
+(C) Determinar si f es diferenciable en (0, 0).
+[8 pts.]
+Solución:
+(A) En un entorno reducido de (0, 0), tenemos que
+f(x, y) = y (x2 −y2)
+x2 + y2 ,
+donde l´ım(x,y)→(0,0) y = 0 y (x, y) 7→(x2−y2)
+x2+y2
+es acotada. En efecto,
+}}}}
+(x2 −y2)
+x2 + y2
+}}}} ≤
+x2
+x2 + y2 +
+y2
+x2 + y2 ≤1 + 1 = 2.
+Entonces, l´ım(x,y)→(0,0) f(x, y) = 0 por uno de los resultados de límites del teórico. Entonces,
+l´ım(x,y)→(0,0) f(x, y) = f(0, 0), es decir, f es continua en (0, 0).
+7
+
+===== PAGE 8 =====
+(B) Consideremos un vector de dirección⃗v = (v1, v2)̸ = (0, 0). Luego,
+l´ım
+h→0
+f(h(v1, v2) + (0, 0)) −f(0, 0)
+h
+= l´ım
+h→0
+f(hv1, hv2) −0
+h
+= l´ım
+h→0(hv2)((hv1)2 −(hv2)2)
+(hv1)2 + (hv2)2
+1
+h
+= l´ım
+h→0 h3v2
+((v1)2 −(v2)2)
+h2((v1)2 + (v2)2)
+1
+h == l´ım
+h→0 v2
+(v1)2 −(v2)2
+(v1)2 + (v2)2
+= v2
+(v1)2 −(v2)2
+(v1)2 + (v2)2 .
+El límite anterior existe y es constante. Luego, por la deﬁnición de derivada direccional, tenemos que
+todas éstas existen en (0, 0) respecto a cualquier dirección, y valen
+∂f
+∂⃗v (0, 0) = v2[(v1)2 −(v2)2]
+(v1)2 + (v2)2
+.
+(C) Probaremos que f no es diferenciable en (0, 0) por reducción al absurdo. Entonces, si f es diferenciable
+en (0, 0), tenemos por un resultado del teórico que
+∂f
+∂⃗v (0, 0) = ⟨∇f(0, 0), (v1, v2)⟩= fx(0, 0)v1 + fy(0, 0)v2.
+Haciendo⃗v = (1, 0) y⃗v = (0, 1) respectivamente en la expresión calculada en (B), tenemos que
+fx(0, 0) = 0 y fy(0, 0) = −1. Entonces,
+∂f
+∂⃗v (0, 0) = −v2.
+(1)
+Por otro lado, usando nuevamente la expresión en (B), tenemos en particular para⃗v = (1, 1) que
+∂f
+∂(1, 1)(0, 0) = 0.
+Mientras que, por otro lado si usamos (1), tenemos que
+∂f
+∂(1, 1)(0, 0) = −1,
+obteniendo así una contradicción (a saber, 0 = −1).
+8

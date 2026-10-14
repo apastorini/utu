@@ -1,0 +1,268 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo diferencial e integral en varias variables
+Facultad de Ingenier´ıa - IMERL
+Primer Semestre 2019
+Soluci´on del Primer Parcial - Viernes 3 de mayo de
+2019
+VERSI´ON
+MO1
+MO2
+MO3
+MO4
+1
+A
+C
+A
+B
+2
+B
+D
+C
+D
+3
+A
+B
+B
+D
+Soluci´on M´ultiple Opci´on
+Soluci´on - N´umeros Complejos
+Para solucionar la ecuaci´on z3 = 1 tomamos z = reiθ y la ecuaci´on queda,
+r3e3iθ = 1e0i
+de donde deducimos:
+r = 1
+y
+θ = 2kπ
+3 .
+Luego las tres ra´ıces c´ubicas de la unidad son
+z1 = 1,
+z2 = e
+2iπ
+3
+y
+z3 = e
+4iπ
+3 .
+Su producto es z1z2z3 = e2iπ = 1.
+Soluci´on - Ecuaciones Diferenciales
+El problema homog´eneo,
+x′′ + 2x′ + x = 0,
+tiene soluci´on
+xH(t) = (A + Bt)e−t.
+Por inspecci´on xP (t) = et
+4 es soluci´on particular de x′′ + 2x′ + x = et.
+La soluci´on es entonces x(t) = (A + Bt)e−t + et/4.
+Para ajustar A y B imponemos las condiciones iniciales:
+x(1) = (A + B)/e + e/4 = 1/e + e/4,
+luego
+A + B = 1.
+x′(1) = −A/e + e/4 = −1/e + e/4
+debemos tener
+A = 1.
+En conclusi´on, x(t) = e−t + et
+4 , y x(0) = 5
+4.
+1
+
+===== PAGE 2 =====
+2
+Soluci´on - Series
+Consideremos la serie
++∞
+X
+n=2
+(−1)n
+nlog(n). Si denotamos (−1)nan al t´ermino general, se tiene que
+an =
+1
+nlog(n)
+Se observa que (an) es mon´otona decreciente y
+l´ım
+n→+∞an = 0. Estamos en las hip´otesis del Teorema
+de Leibnitz, y la serie es por lo tanto convergente.
+Para estudiar si la convergencia es absoluta utilizaremos el criterio Serie-Integral. Consideremos la
+funci´on f : [e, +∞) →R dada por
+f(x) =
+1
+xlog(x).
+La funci´on f es mon´otona decreciente y
+l´ım
+x→+∞f(x) = 0 . Luego:
++∞
+X
+n=2
+1
+nlog(n)
+y
+Z +∞
+e
+dx
+xlog(x)
+son de la misma clase.
+Se tiene que
+Z +∞
+e
+dx
+xlog(x) =
+l´ım
+T→+∞
+Z T
+e
+dx
+xlog(x) =
+l´ım
+T→+∞
+Z ln T
+1
+du
+u =
+Z +∞
+1
+du
+u
+donde se ha utilizado el cambio de variable u = log(x).
+Como la ´ultima integral impropia es divergente, la serie no converge absolutamente. Luego, la serie
+converge pero no absolutamente.
+Soluci´on - Integrales Impropias
+La integral impropia
++∞
+Z
+0
+dx
+(x2 + 1)s es una integral impropia de primera especie. Por esta raz´on
++∞
+Z
+0
+dx
+(x2 + 1)s
+y
++∞
+Z
+1
+dx
+(x2 + 1)s
+son de la misma clase.
+Deﬁnimos las funciones f, g : [1, +∞) →R dadas por:
+f(x) =
+1
+(x2 + 1)s
+y
+g(x) =
+1
+x2s
+Dichas funciones son equivalentes en el inﬁnito, i.e.: l´ımx→+∞
+f(x)
+g(x) = 1.
+Concluimos que
++∞
+Z
+0
+dx
+(x2 + 1)s y
++∞
+Z
+1
+dx
+x2s son de la misma clase. Sabemos que
++∞
+Z
+1
+dx
+xα converge si y solo
+si α > 1. En nuestro caso debemos tener que 2s > 1, o s > 1/2. Por lo tanto
++∞
+Z
+0
+dx
+(x2 + 1)s converge si
+y solo si s > 1/2.
+
+===== PAGE 3 =====
+3
+Soluci´on - Problemas de Desarrollo
+Problema 1
+a) (i) Una sucesi´on (an) es acotada si existen n´umeros reales m y M tales que
+m ≤an ≤M, ∀n ∈N.
+(ii) Una sucesi´on (an) tiene l´ımite L ∈R si para todo ϵ > 0 existe n0 ∈N tal que
+|an −L| ≤ϵ
+para todo
+n ≥n0.
+b) Si (an) tiene l´ımite L ∈R, tomando ϵ = 1 en la deﬁnici´on de l´ımite obtenemos:
+L −1 ≤an ≤L + 1
+para todo
+n ≥n0.
+Si consideramos
+m′ = m´ın{ai : 0 ≤i ≤n0 −1}
+y
+M′ = m´ax{ai : 0 ≤i ≤n0 −1}.
+Deﬁnimos:
+m = m´ın
+
+m′, L −1
+	
+y
+M = m´ax
+
+M′, L + 1
+	
+.
+Sea an cualquier t´ermino de la sucesi´on tenemos que:
+(n < n0) En este caso por construcci´on an ≥m′ ≥m y an ≤M′ ≤M
+(n ≥n0) Tenemos an ≥L −1 ≥m y an ≤L + 1 ≤M.
+Concluimos que la sucesi´on an es acotada.
+c) El rec´ıproco es falso y exponemos a continuaci´on un contrajemplo. Sea an = (−1)n, es una
+sucesi´on acotada:
+−1 ≤an ≤1
+para todo
+n ∈N.
+Dicha sucesi´on no es convergente. De hecho es una sucesi´on oscilante; n´otese que existen
+dos subsucesiones convergentes a l´ımite diferentes: a2n converge a 1 y a2n−1 converge a −1.
+
+===== PAGE 4 =====
+4
+Problema 2
+a) Un punto x es interior al conjunto A si existe r > 0 tal que
+B(x, r) ⊆A.
+El interior de A es el conjunto formado por todos los puntos interiores.
+b) Un punto x es de acumulaci´on de A si para todo ϵ > 0 se cumple que el entorno B(x, ϵ)
+contiene inﬁnitos puntos de A.
+c) Representemos el conjunto A gr´aﬁcamente:
+El conjunto de puntos frontera es:
+∂A =
+
+(x, y) ∈R2 : x2
+4 + y2
+9 = 1
+
+∪
+
+(n, m) :
+n, m ∈N
+n2
+4 + m2
+9 < 1
+
+.
+En el dibujo est´a representado por la l´ınea punteada verde y las cruzes azules.
+Todos los puntos frontera son de acumulaci´on. En efecto, se comprueba que cada bola
+centrada en x ∈∂A corta a A en inﬁnitos puntos, y es posible construir una sucesi´on inyectiva
+(an) tal que:
+an ∈B
+
+x, 1
+n
+
+∩A.
+Adem´as, se deduce de la deﬁnici´on que no son interiores a A, pues ni siquiera pertenecen a A.
+Por ´ultimo,
+extA =
+
+(x, y) ∈R2 : x2
+4 + y2
+9 > 1
+
+,
+se observa que los puntos exteriores no son de acumulaci´on. Por deﬁnici´on, ning´un punto
+exterior puede ser de acumulaci´on. En conclusi´on, el conjunto de puntos de acumulaci´on que
+no son interiores es exactamente ∂A.

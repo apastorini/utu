@@ -1,0 +1,183 @@
+
+===== PAGE 1 =====
+v 11
+C´alculo Diferencial e Integral en Varias Variables
+Segundo semestre de 2021
+Primer parcial
+5 de octubre de 2021
+No Lista
+Apellido, Nombre
+C´edula
+Firma
+La duraci´on del parcial es de tres horas, y no se permite usar ni calculadora
+ni material de consulta. La comprensi´on de las preguntas es parte de la prueba.
+Tenga cuidado al pasar las respuestas
+Lo completado aqu´ı ser´a lo ´unico tenido en cuenta a la hora de corregir.
+VERDADERO O FALSO (Total: 8 puntos)
+Llenar cada casilla con las respuestas V o F, seg´un corresponda.
+1
+2
+3
+4
+Correctas: 2 puntos. Incorrectas: −2 puntos. Sin responder: 0 puntos.
+M ´ULTIPLE OPCI´ON (Total: 32 puntos)
+Llenar cada casilla con las respuestas A, B, C, D o E, seg´un corresponda.
+1
+2
+3
+4
+5
+6
+7
+8
+Correctas: 4 puntos. Incorrectas: −1 punto. Sin responder: 0 puntos.
+SOLO PARA USO DOCENTE
+V/F
+MO
+Total
+1
+
+===== PAGE 2 =====
+Ejercicios del tipo VERDADERO/FALSO
+Indicar si las siguientes afirmaciones son necesariamente verdaderas.
+1. Todo n´umero complejo distinto de 0 tiene exactamente tres ra´ıces c´ublicas.
+2. Si P es un polinomio con coeficientes complejos y λ ∈C es ra´ız de P, entonces ¯λ tambi´en
+es ra´ız de P.
+3. Sea (an)n≥0 una sucesi´on de n´umeros reales. Si limn→∞an = 0 y ∀n ≥0 an ≥0, entonces
+P∞
+n=0 an converge.
+4. Consideremos la ecuaci´on diferencial y′ −cos(x)y = 0. Si y1 e y2 son soluciones de la
+misma, entonces y1 + y2 tambi´es es soluci´on.
+Ejercicios de M ´ULTIPLE OPCI´ON
+Ejercicio 1
+La serie
+∞
+X
+n=0
+( 1
+3n + e−(n+1)2 −e−n2)
+(A) converge a 3
+2.
+(B) converge a 1
+2.
+(C) converge a 1.
+(D) converge a 3 −e.
+(E) diverge.
+Ejercicio 2
+Consideremos las series
+∞
+X
+n=0
+ne−n
+n4 + 2n + 1 y
+∞
+X
+n=0
+(−1)n n√n.
+(A) La primera converge y la segunda diverge.
+(B) La primera converge, y la segunda converge pero no converge absolutamente.
+(C) La primera converge y la segunda converge absolutamente.
+(D) Ambas divergen.
+(E) La primera diverge, y la segunda converge pero no converge absolutamente.
+2
+
+===== PAGE 3 =====
+Ejercicio 3
+La integral impropia
+Z 1
+0
+log(x)
+√x
+dx
+(A) converge a −4.
+(B) converge a 2
+√
+3.
+(C) converge a −
+√
+2.
+(D) converge a −
+3√
+2
+(E) diverge.
+Ejercicio 4
+Consideremos los n´umeros complejos que satisfacen las tres condiciones siguientes:
+
+
+
+z¯z
+=
+4
+Re(z)4
+=
+1
+|ez|
+>
+1
+Entonces el producto de dichos n´umeros da:
+(A) 0
+(B) 4i
+(C) 16
+(D) 4
+(E) 2 + 2i
+Ejercicio 5
+Consideremos la ecuaci´on diferencial
+y′′ + 5y′ + 6y = 6x −1
+con las condiciones iniciales
+y(0) = 0,
+y′(0) = 0.
+Entonces y(1) vale:
+(A) −e−2 + 2e−3 −2
+(B) e2 −e−3 + 5
+(C) 2e−2 −e−3
+(D) e2 −e−3 + 3
+(E) e−2 + e−3 + 5
+3
+
+===== PAGE 4 =====
+Ejercicio 6
+Consideremos la sucesi´on de n´umeros reales (an)n≥0 que satisface la relaci´on
+an+1 = 2an + 5
+y tal que a0 = 0.
+Entonces:
+(A) (an)n≥0 es creciente y no es acotada.
+(B) (an)n≥0 es creciente y tiene l´ımite 5.
+(C) (an)n≥0 es creciente y tiene l´ımite −5.
+(D) (an)n≥0 es decreciente y tiene l´ımite −5.
+(E) (an)n≥0 no es ni creciente ni decreciente, pero converge a −5.
+Ejercicio 7
+Consideremos la sucesi´on en R2 dada por
+an =
+ 
+(1 −e
+1
+n2 )n2
+3
+, (−1)n log(n)
+log(2n + 1)
+!
+,
+n ≥1.
+Entonces:
+(A) (an)n≥1 converge a (−1/3, 0).
+(B) (an)n≥1 converge a (1/3, 0).
+(C) (an)n≥1 est´a acotada, y tiene subsucesiones que convergen a (−1/3, 1) y (−1/3, −1).
+(D) (an)n≥1 est´a acotada, y tiene subsucesiones que convergen a (1/3, 1) y (1/3, −1).
+(E) (an)n≥1 no est´a acotada.
+Ejercicio 8
+Consideremos el conjunto
+A = {(x, y) ∈R2 : x2 −4y2 = 0} −{(0, 0)},
+y las siguientes afirmaciones:
+(I) A no es ni abierto ni cerrado.
+(II) Todos los puntos de A son de acumulaci´on de A.
+4
+
+===== PAGE 5 =====
+(III) A es un conjunto acotado.
+Entonces:
+(A) S´olo la afirmaci´on (I) es verdadera.
+(B) S´olo la afirmaci´on (II) es verdadera.
+(C) S´olo las afirmaciones (I) y (II) son verdaderas.
+(D) Ninguna de las tres afirmaciones es verdadera.
+(E) Las tres afirmaciones son verdaderas.
+5

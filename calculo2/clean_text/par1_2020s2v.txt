@@ -1,0 +1,108 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo diferencial e integral en varias variables
+Facultad de Ingenier´ıa - IMERL
+Segundo Semestre 2020
+Primer parcial – S´abado 17 de octubre de 2020
+Nro de Parcial
+C´edula
+Apellido y nombre
+(I) M´ultiple opci´on. Total: 30 puntos
+Puntajes: 5 puntos si la respuesta es correcta, 0 punto por no contestar y -1 si la respuesta es incorrecta.
+Indique sus respuestas en los casilleros correspondientes, con letras may´usculas imprenta: A, B, C, D o E.
+Ejercicio 1
+Ejercicio 2
+Ejercicio 3
+Ejercicio 4
+Ejercicio 5
+Ejercicio 6
+Ejercicio 1
+Se considera el polinomio complejo P(z) = (z4 −1)(z4 −i), y las siguientes aﬁrmaciones:
+(I) P tiene 8 ra´ıces en IC.
+(II) Existe al menos un par de ra´ıces zi y zj tales que zi = ¯zj.
+(III) Si rotamos el conjunto de ra´ıces un ´angulo de π/2, permanece invariante1.
+Entonces:
+A) Solo las aﬁrmaciones (I) y (III) son correctas.
+B) Todas las aﬁrmaciones son correctas.
+C) Solo las aﬁrmaciones (II) y (III) son correctas.
+D) Ninguna aﬁrmaci´on es correcta.
+E) Solo la aﬁrmaci´on (I) es correcta.
+Ejercicio 2
+Sea y(t) la soluci´on a la ecuaci´on diferencial y′ = (y + 1)t que cumple y(0) = 0. Entonces y(1) vale:
+A) y(1) = e1/2 −1
+B) y(1) = e1/2
+C) y(1) = e−1/2 −1
+D) y(1) = e−1/2
+E) y(1) = e + 1
+Ejercicio 3
+Sea an = (e
+√n+1−√n −1) · nα con α un real positivo. Entonces:
+A) l´ımn→∞an es ﬁnito sii α ≤1
+2.
+B) l´ımn→∞an es ﬁnito sii α ≤1.
+C) l´ımn→∞an es ﬁnito para todo α.
+D) l´ımn→∞an no es ﬁnito para ning´un α.
+E) l´ımn→∞an es ﬁnito sii α ≤3
+2.
+1Es decir, que si rotamos el conjunto, obtenemos el mismo conjunto.
+
+===== PAGE 2 =====
+2
+Ejercicio 4
+Considere las series
+∞
+X
+n=1
+(−1)n log(n) + (n4 + 2n2 + 3n + 1)e−n
+n2 + 3n + 6
+y
+∞
+X
+n=1
+2n −1
+(
+√
+2)n .
+Entonces:
+A) Ambas series son divergentes.
+B) Ambas series son convergentes.
+C) Solo la primera serie es convergente.
+D) Solo la segunda serie es convergente.
+E) La primera serie converge condicionalmente y la segunda serie es divergente.
+Ejercicio 5
+Sean α y β dos reales positivos. Considere la integral impropia
+Z ∞
+1
+dx
+x(ln(x))α(ex + 1)β .
+Entonces la integral es convergente s´ı y solo s´ı:
+A) α < 1, y para todo β > 0
+B) α + β < 1.
+C) α < 1
+2, y β > 1
+D) α < 1 y β > 1.
+E) α + β < 1
+2.
+Ejercicio 6
+Deﬁnimos el conjunto A = {(x, y) ∈R2 : y < 2x + 1 } ∩{(x, y) ∈R2 : y + x2 ≤3 }. Seleccionar la
+opci´on correcta.
+A) El conjunto de los puntos interiores de A coincide con A.
+B) A es un conjunto cerrado.
+C) ∂A ⊂A.
+D) A′ ⊂A.
+E) El conjunto de puntos de acumulaci´on A′ es no acotado.
+(II)Desarrollo. Total: 10 puntos
+Sean A1 = {(x, y) ∈R2 : x ≥0, y ≥0, y ≤xα} y A2 = {(x, y) ∈R2 : x ≥0, y ≥0, y ≤xβ}, con α y β
+constantes reales y α ≤β.
+1. Realizar bosquejos de A1 y A2 (ambos en el mismo sistema de ejes) para los siguientes casos:
+a) β ≥α > 0
+b) β ≥0 > α
+c) 0 > β > α
+2. Indicar para qu´e valores de α y β el ´area de A1 ∩A2 es ﬁnita. Justiﬁcar.
+3. Para α = 1
+2 y β = 2, considere ahora el conjunto B = (A1 ∩A2) ∪{(1 + 1
+n, 1 + 1
+n) : n ∈IN}.
+a) Calcule los conjuntos ∂B y ∂B ∩B.
+b) ¿Es B un conjunto cerrado? Justiﬁque.

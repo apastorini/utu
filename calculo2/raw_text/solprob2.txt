@@ -1,0 +1,503 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo diferencial e integral en varias variables
+Facultad de Ingenier´ıa - IMERL
+Primer Semestre 2020
+1
+Problemas de desarrollo 2
+Plano tangente
+Consideremos f : U ⊆R2 →R una funci´on de dos variables deﬁnida en un conjunto abierto U del plano
+que es diferenciable en p = (x0,y0) un punto de U. Ya sabemos asociar a su gr´aﬁca un plano tangente que
+cumpla el mismo rol de la recta tangente a la gr´aﬁca de la funci´on de un sola variable. Recordemos que dicho
+plano se deﬁne por:
+z = f (x0,y0) + ∂f (x0,y0)
+∂x
+(x −x0) + ∂f (x0,y0)
+∂y
+(y −y0)♣
+La primera observaci´on que debemos hacer si tomamos como ejemplo el elipsoide(x2
+a2 + y2
+b2 + z2
+c2 = 1), es que
+no existe funci´on f : U ⊆R2 →R cuya gr´aﬁca sea esta superﬁcie. Por lo tanto para calcular un plano tangente
+al elipsoide debemos buscar una funci´on cuya gr´aﬁca sea al menos una secci´on de dicha superﬁcie en el punto.
+Esto se logra por ejemplo despejando z de la ecuaci´on anterior (como vemos obtenemos dos valores posibles
+para z uno positivo y otro negativo). ¿Existe una manera de poder hacer el ejercicio y no despejar z? S´ı, para
+ello podemos razonar de la siguinte manera:
+Recordemos que el vector gradf (x0,y0) es un vector ortogonal a la curva de nivel que pasa por (x0,y0), dicha
+propiedad fue discutida en las notas te´oricas del curso (Observaci´on Pag. 100). Llevando esta idea una di-
+mensi´on m´as arriba, tenemos que la superﬁcie que representa la gr´aﬁca de la funci´on z = f (x,y) tambi´en
+la podemos ver como el nivel cero de la funci´on de tres variables F(x,y,z) = z −f (x,y). Entonces, la su-
+perﬁcie z = f (x,y) se puede ver como una superﬁcie de nivel (correspondiente al nivel cero) de la funci´on
+F(x,y,z) = z−f (x,y), o bien, como la manera en que la gr´aﬁca de la funci´on F(x,y,z) = z−f (x,y) (que vive en el
+espacio R4 ) ”atraviesa” el espacio R3 (identiﬁcado como una porci´on de R4 correspondiente a aquellos puntos
+de R4 cuya ´ultima coordenada sea igual a cero).
+As´ı por ejemplo, la superﬁcie f (x,y) = x2 + y2 podemos verla como la superﬁcie de nivel de cero F(x,y,z) =
+z −x2 −y2. M´as a´un, podr´ıamos tener una superﬁcie en el espacio R3 , que no representa (globalmente) la
+gr´aﬁca de alguna funci´on z = f (x,y) y tambi´en verla como una superﬁcie de nivel de una funci´on u = F(x,y,z).
+Este es el caso que se presenta con el elipsoide (x2
+a2 + y2
+b2 + z2
+c2 = 1), el cual no es la gr´aﬁca de funci´on z = f (x.y)
+alguna, pero s´ı la podemos ver como el nivel cero de la funci´on F(x,y,z) = 1 −x2
+a2 −y2
+b2 −z2
+c2 . As´ı las cosas, si
+vemos la superﬁcie z = f (x,y) como el nivel cero de la funci´on F(x,y,z) = z −f (x;,y), y recordamos que el
+gradiente de esta funci´on es un vector perpendicular a cualquier superﬁcie de nivel de ella, concluimos que el
+vector gradiente
+grad(F) = (∂F
+∂x , ∂F
+∂y , ∂F
+∂z )
+debe ser normal a la superﬁcie considerada. En efecto, si calculamos estas
+grad(F) = (−∂f
+∂x ,−∂f
+∂y ,1)
+resultado que coincide con ♣. Teniendo el vector normal y el punto por donde pasa dicho plano tengente,
+podemos calcularlo de una manera muy sencilla, sin necesidad de despejar.
+1
+
+===== PAGE 2 =====
+Anexo podr´an encontrar las superﬁcies cu´adricas m´as importante y algunos detalles de las mismas. Los
+problemas de esta semana combinan ejercicios de planos tangentes a estas superﬁcies.
+1 Complete el siguiente cuadro. El objetivo es obtener el plano tangente de las superﬁcies cu´adricas en
+P = (x0,y0,z0) en su forma m´as simpliﬁcada.
+Esfera
+x2 + y2 + z2 = r2
+x0x + y0y + z0z = r2
+Elipsoide
+x2
+a2 + y2
+b2 + z2
+c2 = 1
+x0x
+a2 + y0y
+b2 + z0z
+c2 = 1
+Cono
+z =
+p
+x2 + y2
+z =
+1
+q
+x2
+0 + y2
+0
+(x0x + y0y) P , (0,0,0)
+Mostraremos el desarrollo para el plano tangente al elipsoide(la esfera es un caso particular a = b = c) y
+el correspondiente al cono se desprende de un razonamiento an´alogo.
+Calculemos el plano tangente a x2
+a2 + y2
+b2 + z2
+c2 = 1 en P utilizando dos m´etodos:
+1.1 Usando las t´ecnicas vistas en las notas te´oricas del curso: Para ello es necesario contar con una
+funci´on f : U ⊆R2 →R tal que la gr´aﬁca de f coincida en una vecindad del punto P = (x0,y0,z0)
+(en este caso z0 = f (x0,y0)) con la superﬁcie x2
+a2 + y2
+b2 + z2
+c2 = 1. Despejando la variable z obtenemos:
+z = ±c
+r
+1 −x2
+a2 −y2
+b2
+dependiendo del valor de z0 si es positivo o negativo, elegimos el signo de la anterior expresi´on(Note
+que el argumento presentado no funciona si z0 = 0 ). Supongamos que z0 > 0, entonces deﬁnimos:
+f (x,y) = c
+r
+1 −x2
+a2 −y2
+b2
+.
+El plano tangente viene dado por la expresi´on:
+z = f (x0,y0) + ∂f (x0,y0)
+∂x
+(x −x0) + ∂f (x0,y0)
+∂y
+(y −y0)
+Calculando las derivadas parciales obtenemos:
+∂f (x0,y0)
+∂x
+= −c
+a2
+x0
+r
+1 −x2
+0
+a2 −y2
+0
+b2
+∂f (x0,y0)
+∂y
+= −c
+b2
+y0
+r
+1 −x2
+0
+a2 −y2
+0
+b2
+Sustituyendo en la ecuaci´on del plano tangente resulta
+z = c
+s
+1 −x2
+0
+a2 −y2
+0
+b2 −
+1
+r
+1 −x2
+0
+a2 −y2
+0
+b2
+cx0
+a2 (x −x0) −
+1
+r
+1 −x2
+0
+a2 −y2
+0
+b2
+cy0
+b2 (y −y0)
+La anterior ecuaci´on es te´oricamente correcta, sin embargo para efectos de hacer c´alculos o aproxi-
+maciones ser´ıa conveniente contar una expresi´on m´as simplicada, para ello notamos
+2
+
+===== PAGE 3 =====
+z0 = c
+s
+1 −x2
+0
+a2 −y2
+0
+b2
+z2
+0
+c2 = 1 −x2
+0
+a2 −y2
+0
+b2
+as´ı las derivadas parciales asumen los valores
+∂f (x0,y0)
+∂x
+= −c2
+a2
+x0
+z0
+∂f (x0,y0)
+∂y
+= −c2
+b2
+y0
+z0
+Por lo tanto la ecuaci´on del plano se reduce a
+z = z0 −c2
+a2
+x0
+z0
+(x −x0) −c2
+b2
+y0
+z0
+(y −y0)
+De donde
+x0
+(x −x0)
+a2
++ y0
+(y −y0)
+b2
++ z0
+(z −z0)
+c2
+= 0
+Finalemente el hecho de que el punto se encuentre sobre la superﬁcie(x2
+0
+a2 + y2
+0
+b2 + z2
+0
+c2 = 1) produce la
+forma simpliﬁcada que estamos buscando x0x
+a2 + y0y
+b2 + z0z
+c2 = 1.
+1.2 Calculemos el plano tangente empleando el razonamiento expuesto en la parte inicial. Para ello
+basta deﬁnir una funci´on f : U ⊆R3 →R tal que la superﬁcie de nivel cero de F sea el elipsoide.
+Deﬁnimos F(x,y,z) = x2
+a2 + y2
+b2 + z2
+c2 −1. De donde
+(∂F(x0,y0,z0)
+∂x
+, ∂F(x0,y0,z0)
+∂y
+, ∂F(x0,y0,z0)
+∂z
+) = (2x0
+a2 ,2y0
+b2 ,2z0
+c2 )
+El vector gradiente anterior es normal al elipsoide en P = (x0,y0,z0), por lo tanto la ecuaci´on del
+plano tangente es
+∂F(x0,y0,z0)
+∂x
+(x −x0) + ∂F(x0,y0,z0)
+∂y
+(y −y0) + ∂F(x0,y0,z0)
+∂z
+(z −z0) = 0
+Al sustituir teniendo en cuenta que x2
+0
+a2 + y2
+0
+b2 + z2
+0
+c2 = 1, obtenemos que el plano tangente es x0x
+a2 +
+y0y
+b2 + z0z
+c2 = 1.
+Observaci´on: El m´etodo planteado en 1.2 no implica despejar alguna variable ni tener consid-
+eraciones sobre el lugar donde se encuentra el punto P = (x0,y0,z0), lo presentamos ac´a como un
+m´etodo alternativo para el c´aculo de planos tangentes que simpliﬁcan los c´alculos.
+2 Plano tangente y Esferas.
+2.1 Demostrar que el plano ax + by + cz = d es tangente a la esfera x2 + y2 + z2 = r2 si y solamente si a2r2 +
+b2r2 + c2r2 = d2.
+(⇒)Supongamos que el plano ax+by +cz = d es tangente a la esfera en un punto P = (x0,y0,z0). Notamos
+que d , 0 ¿Por qu´e? (recordemos que un plano con t´ermino independiente igual cero, contiene al punto
+3
+
+===== PAGE 4 =====
+(0,0,0). Dicho punto es tambi´en el centro de la esfera x2 + y2 + z2 = r2. En este caso la intersecci´on de la
+esfera con el plano ser´ıa un circulo de radio igual al radio de la esfera).
+Por el item anterior la ecuaci´on del plano tangente a la esfera viene dado por x0x + y0y + z0z = r2. En
+consecuencia los planos
+x0
+r2 x + y0
+r2 y + z0
+r2 z = 1
+a
+d x + b
+d y + c
+d z = 1
+son iguales. Como los terminos independientes son iguales a 1, podemos tener la siguientes relaciones:
+x0
+r2 = a
+d
+y0
+r2 = b
+d
+z0
+r2 = c
+d
+De donde
+a = x0
+r2 d
+b = y0
+r2 d
+c = z0
+r2 d
+Teniendo en cuenta que el punto P = (x0,y0,z0) se encuentra sobre la superﬁcie y por lo tanto satisface
+su ecuaci´on x2
+0 + y2
+0 + z2
+0 = r2 concluimos que a2r2 + b2r2 + c2r2 = d2.
+(⇐) Consideremos el plano ax +by +cz = d con la condici´on a2r2 +b2r2 +c2r2 = d2 sobre sus coeﬁcientes.
+Dedemos mostrar que el plano es tangente a la esfera. Primero debemos asegurarnos que ax +by +cz = d
+intersecta a x2 + y2 + z2 = r2(recordemos que siempre hablamos de tangencia a una superﬁcie en un
+punto.)
+Es bien conocida la f´ormula para calcular la distancia de un punto a un plano. Tomemos el punto como
+el centro de la esfera (0,0,0) y el plano que estamos considerando ax + by + cz = d, entonces:
+d((0,0,0),ax + by + cz = d) =
+|d|
+√
+a2 + b2 + c2 = r
+Por lo tanto el plano ax + by + cz = d se encuentra a r unidades del centro de la esfera. La deﬁci´on de
+una esfera viene dado como un lugar geom´etrico, justamente el lugar geom´etrico de todos los puntos del
+espacio que equidistan r unidades de su centro (0,0,0). Esto nos asegura que la intersecci´on es no vac´ıa.
+Sea P = (x0,y0,z0) que satisface esta condici´on. Utilizando el item 1 podemos construir el plano tangente
+a la esfera en P y veriﬁcar que es justamente ax + by + cz = d.
+Observaci´on:La interpretaci´on geom´etrica de este problema es interesante. Si bien es cierto que ahora
+tenemos una herramienta muy poderosa para calcular planos tangentes como lo es el c´alculo diferencial
+en varias variables, el concepto de tangencia ya era conocido desde hace mucho tiempo. Y para superﬁ-
+cies con una simetr´ıa(perfecta) como un esfera se sab´ıa c´omo calcularlo sin necesidad de las mismas. El
+problema se puede traducir en uno muy simple: Dada una esfera en el espacio y un plano, se consideran
+las posibles posiciones relativas de estos dos objetos. Los casos se reducen a tres:
+1. Su intersecci´on es vac´ıa.
+2. Su interesecci´on es un ´unico punto P . En cuyo caso se dice que el plano es tangente a la esfera
+en P .
+4
+
+===== PAGE 5 =====
+3. Su intersecci´on consiste en m´as de un punto, en este caso son secantes.
+Justamente nos interesa el item[2]. Se puede veriﬁcar que el plano tangente a la esfera tiene como vector
+normal, un vector radial a la esfera. Es decir, si unimos el centro de la esfera con el punto de tangencia,
+el vector obtenido es normal a la esfera. (se encuentra en la misma direcci´on que el gradiente en este
+punto.)
+2.2 Los puntos A = (2,5,3) y B = (−1,−2,−3) son los extremos de un di´ametro de una esfera. Hallar las
+ecuaciones de los planos tangentes a esta esfera en los puntos A y B. ¿Qu´e interpretaci´on geom´etrica
+tiene este resultado?
+Es necesario determinar la ecuaci´on de la esfera. Siendo el segmento de recta AB un di´ametro, con-
+cluimos que la mitad de su longitud es el radio de la esfera buscada y su punto medio el centro de la
+misma. Por lo tando r =
+√
+94
+2
+y (1
+2, 3
+2,0) su centro. Calculamos la ecuaci´on de la esfera con los datos
+anteriores y obtenemos que los planos 3x + 7y + 6z = 59 y 3x + 7y + 6z = −35 son tangentes a la esfera en
+los puntos A y B respectivamente.
+Observaci´on: Los puntos A y B reciben un nombre especial, se dice que son puntos antipodales en la
+esfera. Como vemos ellos determinan de manera ´unica a la esfera que los contiene. Adem´as dada una
+esfera y un punto P = (x0,y0,z0) sobre ella cualquiera, existe uno y s´olo un punto antipodal a P sobre la
+esfera. Geom´etricamente se obtienen de una manera muy sencilla, basta determinar la recta en el espacio
+que une al centro de la esfera y P . Dicha recta corta a la esfera en otro punto, precisamente el antipodal a
+P. El ejercicio anterior nos dicen que los puntos antipodales no solamente gozan de una simetr´ıa tremenda
+con respecto al centro de la esfera, adem´as comparten otra propiedad muy interesante y es que los planos
+tangentes a la esfera en dichos puntos antipodales son paralelos. Y el rec´ıproco tambi´en es cierto, pues
+si dos planos tangentes a una esfera son paralelos, dichos planos corresponden a puntos antipodales, eso
+es justamente lo que nos dice el pr´oximo enunciado.
+2.3 Determine la esfera que tenga por planos tangentes a los planos paralelos x + y + z = 5 x + y + z = −3,
+sabiendo que el punto (1,2,2) es uno de los puntos de contacto.
+Notemos que el punto (1,2,2) se encuentra sobre el plano x+y+z = 5, la observaci´on anterior nos conduce
+a la esfera 3x2 + 3y2 + 3z2 + 2x −4y −4z −13 = 0.
+Superﬁcies Tangentes
+Sean S1 y S2 superﬁcies y P = (x0,y0,z0) un punto tal que P ∈S1 ∩S2 Diremos que dos superﬁcies son
+tangentes entre s´ı en P , si el plano tangente a S1 en P es igual al plano tangente a S2 en P . En otras
+palabras, S1 y S2 son tangentes en P si comparten el mismo plano tangente en el punto.
+2.4 Demostrar que la esfera y el cono (eliptico) dados por las ecuaciones:
+x2 + y2 + (z −b2 + c2
+c
+)2 = b2
+c2 (b2 + c2)
+z2
+c2 = x2
+a2 + y2
+b2
+son tangentes entre s´ı en los puntos (0,±b,c).
+Deﬁnimos las funciones de tres variables F y G cuyas superﬁcies de nivel cero son precisamente la esfera
+y el cono dado.
+F(x,y,z) = x2 + y2 + (z −b2 + c2
+c
+)2 −b2
+c2 (b2 + c2)
+G(x,y,z) = z2
+c2 −x2
+a2 −y2
+b2
+5
+
+===== PAGE 6 =====
+Para P = (0,b,c) el plano tangente a la esfera vienen dado por:
+∂F(0,b,c)
+∂x
+(x −0) + ∂F(0,b,c)
+∂y
+(y −b) + ∂F(0,b,c)
+∂z
+(z −c) = 0
+2(0)(x −0) + 2(b)(y −b) + 2(c −b2 + c2
+c
+)(z −c) = 0
+(b)(y −b) + (c −b2 + c2
+c
+)(z −c) = 0
+−cy + bz = 0
+Para P = (0,b,c) el plano tangente al cono vienen dado por:
+∂G(0,b,c)
+∂x
+(x −0) + ∂G(0,b,c)
+∂y
+(y −b) + ∂G(0,b,c)
+∂z
+(z −c) = 0
+−2 0
+a2 (x −0) −2 b
+b2 (y −b) + 2 c
+c2 (z −c) = 0
+−1
+b (y −b) + 1
+c (z −c) = 0
+−y
+b + z
+c = 0
+−cy + bz = 0
+El procedimiento es an´alogo para (0,−b,c).
+´Angulo entre superﬁcies
+Se llama ´angulo entre dos superﬁcies en el punto de su intersecci´on al ´angulo que forman los planos
+tangentes a dichas superﬁcies en el punto que se considera. Entonces diremos que dos superﬁcies se
+cortan ortogonalmente si el ´angulo de intersecci´on es recto.
+2.5 ¿Qu´e ´angulo forman en su intersecci´on el cilindro x2 + y2 = 1 y la esfera (x −1)2 + y2 + z2 = 1 en el punto
+(1
+2,
+√
+3
+2 ,0)
+Consideremos los siguientes hechos:
+2.5.1 Para poder considerar el ´angulo entre dos superﬁcies es necesario que las mismas se corten. Es
+rutina veriﬁcar que P = (1
+2,
+√
+3
+2 ,0) es un punto que se encuentra sobre ambas.
+2.5.2 El ´angulo entre dos planos (no paralelos) es igual al ´angulo de sus vectores normales, recordemos
+que los vectores normales a los planos tangentes son justamente los vectores gradientes.
+Deﬁnimos F(x,y,z) = x2 +y2 −1 y G(x,y,z) = (x −1)2 +y2 +z2 −1, entonces las superﬁcies de nivel cero de
+F y G son justamente el cilindro y la esfera dados.
+gradF = (∂F
+∂x , ∂F
+∂y , ∂F
+∂z )
+6
+
+===== PAGE 7 =====
+gradG = (∂G
+∂x , ∂G
+∂y , ∂G
+∂z )
+Evaluados en P = (1
+2,
+√
+3
+2 ,0)
+gradF = (1,
+√
+3,0)
+gradG = (−1,
+√
+3,0)
+De donde el ´angulo entre ellos es igual a π
+3 .
+2.6 Demuestre que las esferas x2 + y2 + z2 = 2ax, x2 + y2 + z2 = 2by y x2 + y2 + z2 = 2cz se cortan entre s´ı
+ortogonalmente.
+Notemos que a, b y c son valores diferentes de cero. Geom´etricamente resulta m´as evidente si completa-
+mos los cuadrados y observamos cada esfera con su centro y radio correspondiente x2 + y2 + z2 = 2ax ⇔
+(x −a)2 + y2 + z2 = a2, x2 + y2 + z2 = 2by ⇔x2 + (y −b)2 + z2 = b2, x2 + y2 + z2 = 2cz ⇔x2 + y2 + (z −c)2 = c2.
+Consideremos el caso de las esferas
+x2 + y2 + z2 = 2ax
+x2 + y2 + z2 = 2by
+el corte sucede sobre todos los puntos del espacio que satisfacen la condici´on 2ax = 2by o equivalente-
+mente ax = by y se encuentran sobre las dos esferas.
+Sea P = (x0,y0,z0) con esta propiedad. Al calcular los vectores gradientes a x2+y2+z2 = 2ax y x2+y2+z2 =
+2by en P obtenemos los vectores (2x0−2a,2y0,2z0) y (2x0,2y0−2b,2z0) respectivamente. Si consideramos
+su producto punto teniendo en cuenta que que el punto P satisface las ecuaciones de las dos esferas
+(2x0 −2a,2y0,2z0) · (2x0,2y0 −2b,2z0) = 4x2
+0 −4ax0 + 4y2
+0 −4by0 + 4z2
+0 = 4[x2
+0 + y2
+0 + 4z2
+0 −ax0 −by0] = 0
+Por lo tanto se cortan ortogonalmente en dicho punto.
+7

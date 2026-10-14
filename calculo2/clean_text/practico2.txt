@@ -1,0 +1,217 @@
+
+===== PAGE 1 =====
+Cálculo Diferencial e Integral en Varias Variables
+II Semestre 2026
+Práctico 2 – Sucesiones
+1. Estudiar monotonía, acotación y convergencia de las siguientes sucesiones (an)n∈N, donde:
+a)
+an = 1 + 1
+n
+b)
+an = 1 + (−1)n
+n
+c)
+an = n + 1
+n
+d)
+an =
+n
+√
+n2 + 1
+e)
+an = n2
+2n
+2. Las siguientes sucesiones son convergentes (l´ımn→+∞an = L), es decir que dado ε > 0 existe n0 ∈N (que
+depende de ε > 0) tal que ∀n ≥n0, |an −L| < ε. Determinar en cada caso el primer valor de n0 que
+corresponde a los siguientes valores de ε: 1; 0,1; 0,01.
+a)
+an = 1
+n
+b)
+an =
+n
+n + 1
+c)
+an = (−1)n
+n
+d)
+an = 1
+n!
+e)
+an =
+2n
+n3 + 1
+3. Encontrar los límites de las sucesiones (an)n∈N, donde
+a)
+an = cos(n)
+n
+b)
+an =
+√
+n + 1−√n
+c)
+an =
+2n −5
+n + 3 −51/n
+d)
+an =
+np
+αn + βn α, β ∈R+
+e)
+an = sen
+( 1
+n
+)
+cos(n)
+f)
+an = nα
+en , α ∈R
+g)
+an =
+3n + (−2)n
+3n+1 + (−2)n+1
+4. Estudiar los límites de las siguientes sucesiones. ¿Existen subsucesiones convergentes? Indicar los límites de
+las subsucesiones convergentes.
+a)
+an = 1 + (−1)n
+2
+b)
+an = (−1)nn
+c)
+an = 3cos(nπ)
+d)
+an = n −1
+n + 1 cos 2nπ
+3
+e)
+an = n2 (1 + (−1)n)
+f)
+an = n(−1)n
+g)
+an = (−1)n
+n
++ 1 + (−1)n
+2
+5. Un punto se llama de aglomeración de una sucesión si existe una subsucesión que converge a este punto.
+a) Dar un ejemplo de una sucesión cuyos puntos de aglomeración sean 1, 2, 3 y 4.
+b) Dar un ejemplo de una sucesión cuyos puntos de aglomeración sean todos los naturales.
+c) ¿Existe alguna sucesión cuyos puntos de aglomeración sean exactamente los del conjunto A = { 1
+n : n ∈
+N}?
+6. Sea an una sucesión tal que sus subsucesiones a2n, a2n+1 y a3n convergen. Probar que an es convergente.
+7. Sea A un subconjunto de números reales no vacío y acotado superiormente. Demostrar que L = sup(A) si y
+solo si:
+a) L ≥x, ∀x ∈A.
+b) Existe {xm} una sucesión de A tal que l´ımm→+∞xm = L
+8. Sea f : R →R una función. Probar que f está acotada si y solamente si para toda sucesión an, la sucesión
+bn = f(an) está acotada.
+9. Probar que si an converge a 0, entonces existe n0 ∈N tal que a2
+n ≤|an| para todo n ≥n0.
+10. Probar que si an converge a α ∈R y f : R →R es continua en α, entonces bn = f(an) converge a f(α).
+1
+
+===== PAGE 2 =====
+Cálculo Diferencial e Integral en Varias Variables – II Semestre 2026
+Práctico 2
+Ejercicios propuestos en evaluaciones anteriores
+1. (Primer parcial segundo semestre 2022)
+1.
+a) Deﬁnir límite ﬁnito de una sucesión
+(l´ım
+n→∞an = L ∈R sii . . .
+)
+b) Deﬁnir sucesión acotada (Se dice que una sucesión an es acotada sii . . . )
+2. Sean an y bn sucesiones tales que l´ım
+n→∞an = 0 y bn es acotada. Demostrar que l´ım
+n→∞anbn = 0.
+3.
+a) Dar un ejemplo de un par de sucesiones an y bn, con l´ım
+n→∞an = 0 y bn no acotada, tales que
+l´ım
+n→∞anbn = 0.
+b) Dar un ejemplo de un par de sucesiones an y bn, con l´ım
+n→∞an = 0 y bn no acotada, tales que el
+límite de anbn no sea cero (inﬁnito u otro límite real no nulo).
+2. (Examen febrero 2022) Consideremos las siguientes sucesiones de números reales:
+an =
+√n
+n + 2 con (n ≥2)
+y
+bn =
+1
+n ln(n) (ln(ln(n)))2
+con (n ≥3).
+a) Para la sucesión (an), estudiar su monotonía y convergencia.
+b) Para la sucesión (bn), estudiar su monotonía y convergencia.
+3. (Primer parcial segundo semestre 2021) Consideremos la sucesión de números reales (an)n≥0 que satis-
+face la relación
+an+1 = 2an + 5
+y tal que a0 = 0. Entonces:
+(A) (an)n≥0 es creciente y no es acotada.
+(B) (an)n≥0 es creciente y tiene límite 5.
+(C) (an)n≥0 es creciente y tiene límite −5.
+(D) (an)n≥0 es decreciente y tiene límite −5.
+(E) (an)n≥0 no es ni creciente ni decreciente, pero converge a −5.
+4. (Primer parcial segundo semestre 2020 turno matituno)
+1. Sea (an)n∈N una sucesión de números reales. Completar las siguientes deﬁniciones:
+a) (an) es convergente si...
+b) (an) es monónona creciente si...
+c) (an) es acotada si...
+2. Dar ejemplos de:
+a) Una sucesión convergente que no es monótona.
+b) Una sucesión acotada que no es convergente.
+3. Consideremos la sucesión de término general an = 1 + log(n)
+n3
+. Probar que es monótona (decreciente),
+acotada y convergente.
+5. (Examen diciembre 2019) Se considera la sucesión x0 = 1, x1 = 1 + 1/1, x2 = 1 +
+1
+1+1/1, . . . deﬁnida por
+inducción mediante la regla xn+1 = 1 + 1/xn. Indicar la opción correcta:
+(A) La sucesión es monótona y está acotada.
+2
+
+===== PAGE 3 =====
+Cálculo Diferencial e Integral en Varias Variables – II Semestre 2026
+Práctico 2
+(B) La sucesión no es monótona pero está acotada.
+(C) La sucesión no está acotada pero es monótona.
+(D) La sucesión no es monótona ni acotada.
+Ejercicios Complementarios
+1. Sea la sucesión deﬁnida por a1 = 3 y la siguiente recurrencia:
+an+1 = 3(1 + an)
+3 + an
+.
+a) Demostrar que an ≥0 y que an ≤3, ∀n ≥1
+b) Demostrar que an+1 ≤an, ∀n ≥1.
+c) Deducir que an tiene límite, y calcularlo.
+2. Considere la sucesión
+√
+2,
+p
+2 +
+√
+2,
+q
+2 +
+p
+2 +
+√
+2, . . ..
+a) Exprese la sucesión como una sucesión deﬁnida por recurrencia.
+b) Estudie las propiedades de monotonía y acotación, y calcule el límite de la sucesión.
+3. Determinar si las siguientes sucesiones convergen, y en caso de convergencia calcular su límite.
+a) an = α(n)
+n
+donde α(n) es la cantidad de números primos que dividen a n
+b) bN = #{n∈N:n≤N y n es un cuadrado perfecto }
+N
+4.
+a) Escribir la negación de acotación de una función.
+b) Demostrar que si una función f no está acotada, se puede encontrar una sucesión an en el dominio de f
+tal que f(an) →∞.
+c) Si ahora el dominio de la función es [a, b], ¿qué se puede decir sobre la sucesión an construida en el item
+anterior?
+d) Si ahora además la función es continua, estudiar qué sucede con las imágenes de alguna subsucesión
+conveniente, y concluir que la función no puede ser no acotada.
+3

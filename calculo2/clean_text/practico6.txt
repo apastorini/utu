@@ -1,0 +1,445 @@
+
+===== PAGE 1 =====
+Cálculo Diferencial e Integral en Varias Variables
+II Semestre 2026
+Práctico 6 – Funciones de varias variables: representaciones gráﬁcas,
+límites y continuidad
+Sea f : U ⊂Rn →R una función, se deﬁne el conjunto de nivel a como:
+Ca = {p ∈U : f(p) = a}
+1. Dibuje el dominio, los conjuntos de nivel y la gráﬁca de las siguientes funciones:
+(a) x2 + y2
+(b) x2 −y2
+(c) x2
+(d) y/x
+(e) xy
+(f) max{x2, y3}
+(g) max{x2, x + y}
+2. Hallar el dominio y los conjuntos de nivel de las siguientes funciones:
+(a)
+x
+x −y −z
+(b) sen(x2 + y2 + z2)
+(c)
+x + y + z
+1 −x2 −y2 −z2
+(d)
+x + y
+min{x, y}
+3. Dibuje el dominio y los conjuntos de nivel de las siguientes funciones:
+(a)
+1
+p
+x2 + y2
+(b) log
+(1 −x2 −y2
+x2 + y2
+)
+(c) cosh
+(x2 −y2)
+(d) tg
+(x2
+y
+)
+(e) arc cos
+(rx
+y
+)
+(f) arc tg
+(x2
+y
+)
+(g) x(y2)
+4. Sea f : U ⊆R2 →R una función deﬁnida en una bola reducida U = B∗
+R((0, 0)) de centro (0, 0) y radio R.
+Mediante el cambio de variable x = r cos θ, y = r sen θ, se obtiene g: V ⊆R2 →R, g(r, θ) = f(r cos θ, r sen θ),
+donde V = (0, R) × [0, 2π).
+a) Probar que
+l´ım
+(x,y)→(0,0) f(x, y) = L sii ∀ε > 0 ∃δ > 0 tal que |g(r, θ) −L| < ε ∀r ∈(0, δ), θ ∈[0, 2π).
+b) Probar que si
+l´ım
+(x,y)→(0,0) f(x, y) = L entonces l´ım
+r→0+ g(r, θ) = L ∀θ ∈[0, 2π).
+c) Se consideran las funciones f siguientes
+(i) f(x, y) =
+x
+p
+x2 + y2
+(ii) f(x, y) =
+{ y/x
+si x̸ = 0
+0
+si x = 0
+(iii) f(x, y) =
+{ 1
+si 0 < y < x2
+0
+en otro caso
+Calcular, cuando existan,
+l´ım
+(x,y)→(0,0) f(x, y) y l´ım
+r→0+ g(r, θ), éste último en función de θ ∈[0, 2π).
+d) Probar que es falso el recíproco de la parte (b).
+e) En el caso particular en el que g tiene la forma g(r, θ) = h(r)k(θ), con h y k funciones h: (0, R) →R y
+k: [0, 2π) →R, probar que si k es una función acotada y l´ım
+r→0+ h(r) = 0 entonces
+l´ım
+(x,y)→(0,0) f(x, y) = 0.
+f ) Calcular:
+(i)
+l´ım
+(x,y)→(0,0)
+x2y
+x2 + y2
+(ii)
+l´ım
+(x,y)→(0,0)
+xy
+p
+x2 + y2
+5. Probar que en los siguientes casos NO existe l´ım(x,y)→(0,0) f(x, y):
+(a) f(x, y) = x2 −y2
+x2 + y2
+(b) f(x, y) =
+2x3y
+(x2 + y2)2
+(c) f(x, y) =
+{
+xy
+x+y,
+si x + y̸ = 0
+0,
+si x + y = 0
+1
+
+===== PAGE 2 =====
+Cálculo Diferencial e Integral en Varias Variables – II Semestre 2026
+Práctico 7
+6.
+a) Probar que si l´ım
+x→p f(x) = 0 y g es una función acotada en una bola reducida de centro p, entonces
+l´ım
+x→p f(x)g(x) = 0.
+b) Calcular los límites de las siguientes funciones para (x, y) →(0, 0):
+(a) x sen
+(
+1
+x2 + y2
+)
+(b)
+xy2
+x2 + y2
+(c)
+xy3
+x2 + y4 = y
+xy2
+x2 + y4
+7. Decidir si los límites siguientes existen y en caso aﬁrmativo calcularlos.
+(a)
+l´ım
+(x,y,z)→(2,2,6)
+x −y
+x2 + y −z
+(b)
+l´ım
+(x,y,z)→(1,0,1)
+sen(x2 + ey −z)
+x2 + tan(
+1
+cos(xyz))
+(c)
+l´ım
+(x,y,z)→(0,0,0)
+x2yz −z4
+x4 + y4 + z4
+8. Calcular:
+(a)
+l´ım
+(x,y)→(1,2)
+x2 + xy + 1
+x2 −x −y
+(b)
+l´ım
+(x,y)→(0,0) x y log |y|
+(c)
+l´ım
+(x,y)→(1,1)
+x2 + xy −2y2
+x2 −y2
+(d)
+l´ım
+(x,y)→(0,0)
+x3 + y3
+x2 + y2
+(e)
+l´ım
+(x,y)→(0,0)
+ex−y −1
+x2 −y2
+(f)
+l´ım
+(x,y)→(0,0)
+log(1 + x2 + y2)
+x2 + y2 + x3y
+9. Se considera la función
+f(x, y) =
+ax + y + by2
+sen y + log(1 + x)
+a, b ∈R.
+a) Determinar a y b para que todos los límites direccionales de f en (0, 0) sean iguales.
+b) Para los a y b determinados en la parte anterior, probar que f carece de límite.
+10. Discutir según α, β ∈R la existencia del límite:
+l´ım
+(x,y)→(0,0)
+xαyβ
+x2 + xy + y2
+11. Determinar en qué puntos de R2 las siguientes funciones f : R2 7→R son continuas y discontinuas.
+(a) f(x, y) =
+{
+(4x2y3)/(4x2 + y6)
+si (x, y)̸ = (0, 0)
+0
+si (x, y) = (0, 0)
+(b) f(x, y) =
+{
+x/y
+si y̸ = 0
+0
+si y = 0
+(c) f(x, y) =
+{ x2 + 2y −1
+si x ≥0
+3x + y2
+si x < 0
+12. ¿Cuáles de las siguientes funciones se pueden extender en forma continua a todo el plano?
+(a) sen (x2 + y2)
+x2 + y2
+(b) x2 log(x2 + y2)
+(c) sen (x4 + y4)
+x2 + y2
+13. Sea ϕ : R →R una función derivable con derivada continua.
+f(x, y) =
+{ (ϕ(y) −ϕ(x))/(y −x)
+si x̸ = y
+ϕ′(x)
+si x = y
+Determinar en qué puntos f es continua.
+14. Sea f : (0, +∞) × [0, 2π) →R2 \ {(0, 0)} deﬁnida por f(ρ, θ) = (ρ cos(θ), ρ sin(θ))
+2
+
+===== PAGE 3 =====
+Cálculo Diferencial e Integral en Varias Variables – II Semestre 2026
+Práctico 7
+a) Veriﬁcar que es continua y probar que es biyectiva.
+b) Calcular las imágenes de las rectas ρ = cte y θ = cte
+c) Calcular la función inversa f −1 : R2 \ {(0, 0)} →(0, +∞) × [0, 2π). ¿Es continua f −1?
+15.
+a) Probar que f : Rn →Rm es continua si y sólo si ∀A ⊆Rm abierto f −1(A) es abierto en Rn.
+b) Probar que f : Rn →Rm es continua si y sólo si ∀C ⊆Rm cerrado f −1(C) es cerrado en Rn.
+c) Demostrar que el conjunto de puntos (x, y, z) de R3 que veriﬁcan
+{ x2 + y3 < 4
+y2 + z3 > 2
+es un conjunto abierto.
+Ejercicios propuestos en evaluaciones anteriores
+1. (Segundo parcial segundo semestre 2023) Sea f : R2 →R deﬁnida como:
+f(x, y) =
+
+
+
+
+
+
+
+y(x2 + y2)
+x2 −y2
+si
+|x|̸ = |y|
+A
+si
+|x| = |y|
+Entonces el valor de A para que f sea continua en el origen es:
+(A) A = 1
+(B) A = 0
+(C) A = 3/2
+(D) No existe A para que f sea continua
+(E) A = 1/2
+2. (Segundo parcial segundo semestre 2022) Hallar el valor del parámetro α ∈R para el cual f : R2 →R
+deﬁnida como:
+f(x, y) =
+
+
+
+x4
+y(x2 + y2)
+si y̸ = 0
+α
+si y = 0
+es continua en (0, 0).
+(A) α = 1
+(B) α = 0
+(C) f es discontinua en (0, 0) para todo α ∈R
+(D) α = −1
+(E) α = 2
+3. (Examen diciembre 2022) Sea f : R2 →R una función y a = (x0, y0) un punto del plano.
+a) Deﬁnir continuidad de f en el punto a.
+b) Sea an una sucesión de elementos de R2. Deﬁnir l´ım
+n→∞an = a.
+c) Demostrar que si f es continua en a, y una sucesión an cumple l´ım
+n→∞an = a, entonces l´ım
+n→∞f(an) = f(a).
+3
+
+===== PAGE 4 =====
+Cálculo Diferencial e Integral en Varias Variables – II Semestre 2026
+Práctico 7
+d) Sea f : R2 →R deﬁnida como
+f(x, y) =
+
+
+
+x6
+(x2 −y)2 + x6
+si (x, y)̸ = (0, 0)
+0
+si (x, y) = (0, 0)
+Utilice el resultado del ítem anterior para estudiar la continuidad de f en el origen.
+4. (Segundo parcial primer semestre 2022) Sea la función f : R2 →R
+f(x, y) =
+
+
+
+
+
+
+
+
+
+
+
+1
+si x > 0, y > 0
+2
+si x < 0, y > 0
+3
+si x < 0, y < 0
+4
+si x > 0, y < 0
+0
+en otro caso
+Entonces:
+(A) La función es continua en todo punto de R2.
+(B) La función es discontinua solamente en (0, 0).
+(C) La función es continua para todo (x, y) tal que xy̸ = 0.
+(D) La función es discontinua únicamente sobre todos los puntos del eje (0x).
+5. (Segundo parcial segundo semestre 2022) Sea f : R2 →R la función dada por f(x, y) = m´ax{x2+y2, 2x}.
+Entonces, la ﬁgura que más se asemeja a las curvas de nivel de f es:
+(A)
+(B)
+(C)
+(D)
+(E)
+6. (Segundo parcial segundo semestre 2021) Hallar el valor del parámetro a para el cual f : R2 →R dada
+por
+f(x, y) =
+(
+xy
+ax2 + y2
+si (x, y)̸ = (0, 0)
+1
+si (x, y) = (0, 0)
+es continua.
+4
+
+===== PAGE 5 =====
+Cálculo Diferencial e Integral en Varias Variables – II Semestre 2026
+Práctico 7
+(A) a = 1
+2
+(B) a = 1
+(C) a = 1
+(D) a = −1
+(D) No hay ningún valor de a para el cual f sea continua.
+7. (Segundo parcial segundo semestre 2020) Sean f y g las dos funciones de R2 a R deﬁnidas como sigue:
+f(x, y) = x4 −y4 + x6
+(x2 + y2)2
+g(x, y) =
+
+
+
+x2y2
+x3 −y3
+si x̸ = y
+0
+si x = y
+Considere los límites
+l´ım
+(x,y)→(0,0) f(x, y) y
+l´ım
+(x,y)→(0,0) g(x, y). Entonces
+(A) Ambos límites existen y son 0.
+(B) El límite de f(x, y) existe y es 0, pero el límite de g(x, y) no existe.
+(C) El límite de g(x, y) existe y es 0, pero el límite de f(x, y) no existe.
+(D) No existen ninguno de los dos límites.
+(E) Ambos límites existen, pero no son 0.
+Ejercicios complementarios
+1. Sea C ⊆Rn cerrado y f : C →Rm una función continua. Demostrar que el gráﬁco de f,
+graf(f) = {(x, f(x)) : x ∈C},
+es un subconjunto cerrado de Rn+m.
+2. Si A ⊆Rn es acotado, se deﬁne el diámetro de A como diam(A) = sup({d(x, y) : x, y ∈A}).
+a) Probar que si C ⊂Rn es compacto entonces existen x, y ∈C tal que diam(C) = d(x, y).
+b) Sea C ⊆Rn y f : C →C una función tal que
+∥f(x) −f(y)∥> ∥x −y∥
+∀x̸ = y ∈C.
+Probar que C no puede ser compacto. Dar un ejemplo de una función en estas hipótesis
+3. Se considera la función determinante det: R4 →R tal que det(a, b, c, d) = ad −bc
+a) Probar que det es una función continua en R4.
+b) Sean A = {A ∈M2×2(R) : A es invertible} y B = {A ∈M2×2(R) : det(A) = 0}.
+Investigar si A y B son abiertos, cerrados o ninguna de las dos cosas. Aquí el espacio de matrices se
+considera como R4.
+4. Sea ε: R →R tal que ε(x) →0 cuando x →0, pero ε(0) = 1. Se considera la función
+f(x, y) = 3x2ε(y) −y2ε(x)
+log(x2 + y2 + 1)
+a) Analizar si f tiene límite en (0, 0) según el conjunto C = {(x, y) ∈R2 : xy̸ = 0}.
+b) Analizar si f tiene límite en (0, 0).
+5. Sea C ⊂Rn. Probar que si toda función continua f : C →R es acotada entonces C es compacto.
+5
+
+===== PAGE 6 =====
+Cálculo Diferencial e Integral en Varias Variables – II Semestre 2026
+Práctico 7
+6. Sea C ⊆Rn. Se llama camino (o arco) continuo en C a toda función continua α: [0, 1] →C. Si a, b ∈C y α
+es un camino en C tal que α(0) = a y α(1) = b, se dice que α conecta a con b. Se dice que C es conexo por
+caminos (o arcoconexo) sii ∀a, b ∈C ∃α camino en C que conecta a con b.
+a) Sean C ⊆Rn conexo por caminos y f : C →R continua. Probar que si a, b ∈C y µ ∈R son tales que
+f(a) ≤µ ≤f(b) entonces existe c ∈C tal que f(c) = µ. Sugerencia: considerar f ◦α con α un camino
+de a a b.
+b) Probar que si C es arcoconexo y f : C →Rm es continua entonces f(C) ⊆Rm es arcoconexo.
+c) Sean S1 = {a ∈R2 : ∥a∥= 1} y a0 ∈S1. Probar que S1 y S1\{a0} son arcoconexos.
+d) Probar que no existe f : S1 →[0, 1] continua y biyectiva. Sugerencia: suponer por absurdo que existe una
+tal f, sacar un punto de a0 ∈S1 conveniente y considerar la restricción de f a este nuevo conjunto.
+e) Sean P y Q dos puntos de R2 y m la mediatriz del segmento PQ. Demostrar que cualquier camino α que
+una P con Q debe intersectar a m. Sugerencia: demostrar que la función f(t) = d(Q, α(t)) −d(P, α(t))
+tiene una raíz t0 ∈[0, 1].
+7. Un teorema de punto ﬁjo.
+Sea C ⊆Rn un conjunto cerrado y f : C →C una contracción, esto es, existe k ∈(0, 1) tal que
+∥f(x) −f(y)∥≤k∥x −y∥
+∀x, y ∈C.
+a) Sea a un punto cualquiera de C. Se deﬁne la sucesión (xn)n≥0 de la siguiente forma: x0 = a y xn =
+f(xn−1), si n ≥1. Probar que
+∥xn+1 −xn∥≤kn∥x1 −x0∥
+∀n ≥0.
+b) Deducir que (xn) es una sucesión de Cauchy y que existe p ∈C tal que l´ımn xn = p.
+c) Demostrar que existe un único punto p ∈C tal que f(p) = p. Sugerencia: observar que f es continua y
+tomar p como en la parte anterior.
+d) Analizar si el resultado anterior es válido si C no fuese cerrado.
+8.
+a) Sean V y W espacios vectoriales normados y T : V →W una transformación lineal. Probar que las
+siguientes aﬁrmaciones son equivalentes.
+1) T es continua en V .
+2) T es continua en el vector nulo de V .
+3) Existe k ≥0 tal que ∥T(x)∥≤k∥x∥, ∀x ∈V .
+4) Existe k ≥0 tal que ∥T(x) −T(y)∥≤k∥x −y∥, ∀x, y ∈V .
+5) T(A) es acotado ∀A ⊆V acotado.
+b) Probar que toda transformación lineal de Rn en Rm es uniformemente continua. Deducir que los subes-
+pacios propios de Rn son conjuntos cerrados con interior vacío.
+6

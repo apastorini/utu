@@ -1,0 +1,262 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo diferencial e integral en varias variables
+Facultad de Ingenier´ıa - IMERL
+Segundo Semestre 2020
+Soluci´on primer parcial (matutino) – S´abado 17 de octubre de 2020
+(I) M´ultiple opci´on. Total: 30 puntos
+Puntajes: 5 puntos si la respuesta es correcta, 0 punto por no contestar y -1 si la respuesta es incorrecta.
+Indique sus respuestas en los casilleros correspondientes, con letras may´usculas imprenta: A, B, C, D o E.
+Ejercicio 1
+Ejercicio 2
+Ejercicio 3
+Ejercicio 4
+Ejercicio 5
+Ejercicio 6
+D
+B
+A
+B
+A
+E
+Ejercicio 1
+Se considera el polinomio complejo P(z) = z3 + 2z2 + 3
+2z + 1
+2, y las siguientes aﬁrmaciones:
+(I) Existen dos ra´ıces tales que su suma es igual a la ra´ız restante.
+(II) La distancia entre dos ra´ıces distintas siempre es constante.
+(III) El producto de todas las ra´ıces es igual al inverso de la suma de todas sus ra´ıces.
+Entonces:
+A) Todas las aﬁrmaciones son correctas.
+B) Ninguna aﬁrmaci´on es correcta.
+C) Solo las aﬁrmaciones (II) y (III) son correctas.
+D) Solo las aﬁrmaciones (I) y (III) son correctas.
+E) Solo la aﬁrmaci´on (I) es correcta.
+Soluci´on:
+Calculemos las ra´ıces de P(z).
+Se puede ver que tenemos ra´ız evidente z = −1, ya que 1 + 3/2 = 2 + 1/2. Por lo tanto podemos
+escribir P(z) = (z + 1)(z2 + z + 1/2), calculando las ra´ıces del segundo t´ermino tenemos,
+z = −1 ± √1 −2
+2
+= −1 ± i
+2
+.
+Ahora si realizamos la suma de estas ´ultimas dos, nos da −1+i
+2
++ −1−i
+2
+= −1, por lo que (I) es verdadera.
+Es claro que
+ −1+i
+2
+−−1−i
+2
+ = 1
+2, mientras que
+ −1+i
+2
+−(−1)
+ =
+ 1+i
+2
+ =
+p
+1/2. Por lo tanto (II) es falsa.
+Para ver la tercera aﬁrmaci´on veamos si la suma de las ra´ıces por el producto de las mismas da 1.
+
+−1 + −1 + i
+2
++ −1 −i
+2
+
+(−1)(−1 + i)
+2
+(−1 −i)
+2
+= (−2)(−1)(−1)2 −i2
+4
+= 2
+2 = 1
+Entonces (III) es verdadera.
+En conclusi´on, solo (I) y (III) son verdaderas.
+Respuesta: D.
+Ejercicio 2
+Sea y(x) la soluci´on a la ecuaci´on diferencial y′′ + 2y′ + 2y = 5ex que cumple y(0) = 1, y′(0) = 2.
+Calcule y(π/2):
+A) y(π/2) = e−π/2 −eπ/2
+B) y(π/2) = e−π/2 + eπ/2
+C) y(π/2) = e−π/2
+
+===== PAGE 2 =====
+2
+D) y(π/2) = eπ/2
+E) y(π/2) = π
+2 eπ/2
+Soluci´on:
+Las ra´ıces del polinomio caracter´ıstico λ2 +2λ +2 son −1+ i y −1 −i, por lo tanto la soluci´on general
+de la ecuaci´on homog´enea es yH(x) = e−x(c1 cos(x) + c2 sen(x)).
+Observar que ex veriﬁca la condici´on (ex)′′+2(ex)′+2ex = 5ex, por lo tanto es una soluci´on particular,
+es decir yP (x) = ex.
+Juntando todo tenemos que la soluci´on general de la ecuaci´on es y(x) = e−x(c1 cos(x)+c2 sen(x))+ex.
+Aplicando condiciones iniciales, tenemos que y(0) = c1 + 1 = 1 y y′(0) = 1 −c1 + c2 = 2, de donde se
+sigue c1 = 0 y c2 = 1. Es decir y = e−xsen(x) + ex.
+Si evaluamos en π/2 obtenemos y(π/2) = e−π/2 + eπ/2.
+Respuesta: B.
+Ejercicio 3
+Se consideran las siguientes aﬁrmaciones:
+(I) Si A es un conjunto cerrado y p /∈A, entonces no existe ninguna sucesi´on con elementos de A
+que converja a p.
+(II) Sea an = (−1)n + 1
+n. Entonces existen inﬁnitas subsucesiones de an que convergen a −1.
+(III) Si an es no acotada, entonces toda subsucesi´on de an tambi´en es no acotada.
+Entonces:
+A) Solo las aﬁrmaciones (I) y (II) son correctas.
+B) Todas las aﬁrmaciones son correctas.
+C) Solo las aﬁrmaciones (II) y (III) son correctas.
+D) Ninguna aﬁrmaci´on es correcta.
+E) Solo la aﬁrmaci´on (I) es correcta.
+Soluci´on:
+Si A es cerrado y p /∈A, entonces p ∈Ac que es abierto, por lo tanto p es un punto interior de Ac.
+Por lo tanto, cualquier sucesi´on que converja a p a partir de un momento tiene que estar incluida en
+Ac. Es decir, (I) es verdadera.
+Dado r ∈N consideremos el subconjunto de los naturales Kr = {1, · · · , r} ∪{2n + 1 : n ∈N}. Es
+claro que la subsucesi´on ak tal que k ∈Kr converge a −1. Dado que r es cualquier natural, tenemos
+inﬁnitas subsucesiones que convergen a −1. Es decir, (II) es verdadera.
+Considerar la sucesi´on que toma valor n en los pares y 1 es los impares. Es claro que an es no acotada,
+pero a2n+1 si lo es. Es decir, (III) es falsa.
+En conclusi´on solo (I) y (II) son verdaderas.
+Respuesta: A.
+Ejercicio 4
+Sea an una sucesi´on de t´erminos positivos tal que P an es convergente. Considere las siguientes series
+∞
+X
+n=1
+ea2
+n −1
+y
+∞
+X
+n=1
+cos(an) sin(an).
+Entonces:
+A) Ambas series son divergentes.
+B) Ambas series son convergentes.
+C) Solo la primera serie es convergente.
+
+===== PAGE 3 =====
+3
+D) Solo la segunda serie es convergente.
+E) La segunda serie no se puede clasiﬁcar a priori, por no ser de signo constante.
+Soluci´on:
+Al ser P an convergente, tenemos que an
+n→+∞
+−−−−−→0 y por lo tanto,
+l´ım
+n→+∞
+ea2
+n −1
+an
+=
+l´ım
+n→+∞
+a2
+n
+an
+= 0,
+por lo que a partir de un momento tenemos ea2
+n −1 < an. Por comparaci´on, al ser ambas de t´erminos
+positivos, tenemos que
+∞
+X
+n=1
+ea2
+n −1 es convergente.
+Como an
+n→+∞
+−−−−−→0, a partir de un momento vamos a tener an ∈[0, π/2], es decir 0 ≤cos(an) ≤1.
+Por lo tanto, a partir de un momento cos(an) sen(an) ≤sen(an) y sen(an) ∼an, por lo que P sen(an)
+y P an se comportan de la misma manera. Entonces, P sen(an) converge y por comparaci´on tambi´en
+lo hace
+∞
+X
+n=1
+cos(an) sin(an).
+En conclusi´on, ambas son convergentes.
+Respuesta: B.
+Ejercicio 5
+Sean α, β, γ tres reales positivos. Considere la integral impropia
+Z 1
+0
+dx
+(sen(x))α(ex −1)β(cos(x))γ .
+Entonces para que la integral sea convergente debe cumplirse:
+A) α + β < 1.
+B) α + β + γ < 1.
+C) α < 1, y β + γ > 1
+2
+D) α + β + γ > 1.
+E) α + β < 1
+2.
+Soluci´on:
+Observar que esta integral es de segunda especie, y el ´unico problema que sen(x) y ex −1 se anulan
+en 0.
+Si f(x) =
+1
+(sen(x))α(ex−1)β(cos(x))γ , tenemos que cuando x tiende a 0, f(x) es equivalente a
+1
+xα+β , por lo
+que la integral se comporta del mismo modo que
+Z 1
+0
+dx
+xα+β que es convergente si y s´olo si α + β < 1.
+Respuesta: A.
+Ejercicio 6
+Sea A = {( 1
+n, (−1)n) : n ∈N} ⊂R2.
+Seleccione la opci´on correcta (recuerde que A′ es el conjunto de puntos de acumulaci´on de A):
+A) A′ = ∅.
+B) A es compacto.
+C) A′ = A.
+D) A es cerrado.
+E) A ⊂∂A.
+Soluci´on:
+Observar que tanto (0, 1) como (0, −1) pertenecen a A′ y no al conjunto A. Por lo que, A′̸ = ∅y
+A′̸ = A. Adem´as, como A′̸ ⊂A, entonces A no puede ser cerrado y tampoco compacto.
+Por lo tanto A ⊂∂A.
+Respuesta: E.
+
+===== PAGE 4 =====
+4
+(II) Desarrollo. Total: 10 puntos
+1. Sea (an)n∈N una sucesi´on de n´umeros reales. Completar las siguientes deﬁniciones:
+a) (an) es convergente a p ∈R si dado ϵ > 0 existe n0 ∈N tal que an ∈B(p, ϵ) para todo
+n ≥n0.
+b) (an) es mon´onona creciente si an+1 ≥an para todo n ∈N.
+c) (an) es acotada si existe un k ∈R tal que {an} ⊂B(0, k).
+2. Dar ejemplos de:
+a) Una sucesi´on convergente que no es mon´otona.
+b) Una sucesi´on acotada que no es convergente.
+Soluci´on:
+La sucesi´on an = (−1)n
+n
+es convergente pero no mon´otona.
+La sucesi´on an = (−1)n es acotada pero no convergente.
+3. Consideremos la sucesi´on de t´ermino general an = 1 + log(n)
+n3
+.
+Probar que es mon´otona (decreciente), acotada y convergente.
+Soluci´on:
+Consideremos la funci´on f(x) = 1 + log(x)
+x3
+, tenemos entonces que la derivada es
+f′(x) = x2(−2 −3 log(x))
+x6
+.
+Por lo tanto, la derivada es negativa si x ≥1, esto implica que f(x) es mon´otona decreciente
+si x ≥1, y por tanto nuestra sucesi´on es mon´otona decreciente.
+Adem´as, como 1 + log(n) > 0 y n3 > 0 para todo n ∈N, tenemos que an > 0 y al ser
+mon´otona decreciente tenemos que 1 = a1 ≥an > 0 para todo n ∈N. Es decir, an est´a
+acotada.
+Al ser mon´otona y acotada, tiene que ser convergente (Teorema 2.9).

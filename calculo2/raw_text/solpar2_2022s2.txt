@@ -1,0 +1,255 @@
+
+===== PAGE 1 =====
+C´alculo Diferencial e Integral en Varias Variables
+Segundo semestre de 2022
+Soluci´on Segundo parcial
+26 de noviembre de 2022
+M ´ULTIPLE OPCI´ON
+Las vesiones del parcial se identiﬁcan por el primer ejercicio de m´ultiple opci´on.
+Versi´on 1: El primer ejercicio es “Sea f : R2 →R deﬁnida como f(x, y) = sin(y2). . . ”
+Versi´on 2: El primer ejercicio es “El polinomio de Taylor de orden 2 de . . . ”
+Las respuestas correctas en cada versi´on son:
+Versi´on
+1
+2
+3
+4
+5
+1
+C
+D
+B
+C
+D
+2
+A
+B
+E
+B
+E
+Resoluci´on de ejercicios
+1. Sea f : R2 →R deﬁnida como f(x, y) = sin(y2), y D el dominio triangular con v´ertices (0, 0),
+(−1, √π) y (1, √π). Entonces la integral de f en D vale:
+El dominio es el tri´angulo en el semiplano superior (y ≥0), donde los lados son las rectas
+y = √πx, y = −√πx, e y = √π. Con un orden de integraci´on, la operatoria resulta complicada.
+Sin embargo en el otro sentido:
+Z √π
+0
+Z
+1
+√π y
+−1
+√π y
+sin(y2)dxdy =
+Z √π
+0
+sin(y2) 2y
+√πdy.
+Ahora, con el cambio de variable u = y2 resulta:
+=
+1
+√π
+Z π
+0
+sin(u)du =
+2
+√π.
+2. Sea f : R2 →R3 una funci´on tal que f(2, 1) = (0, −1, π/4) y
+Jf(2, 1) =
+
+
+1
+1
+0
+−1
+−1
+3
+
+
+y sea g : R3 →R deﬁnida como g(u, v, w) = euv −cos(2w). Si h : R2 →R est´a deﬁnida como
+h(x, y) = g(f(x, y)), indicar cu´anto vale ∂h
+∂y (2, 1):
+Calcularemos el gradiente de h como el producto del gradiente de g en f(2, 1) y la Jacobiana
+de f en (2, 1). Derivando, obtenemos que el gradiente de g es ∇g(u, v, w) = (veuv, ueuv, 2 sin(2w)).
+Evaluando en f(2, 1) = (0, −1, π/4) resulta ∇g(0, −1, π/4) = (−1, 0, 2). Ahora, el producto es
+∇g(0, −1, π/4) · Jf(2, 1) = (−1, 0, 2)
+
+
+1
+1
+0
+−1
+−1
+3
+
+= (−3, 5),
+1
+
+===== PAGE 2 =====
+de donde ∂h
+∂y (2, 1) = 5.
+3. El polinomio de Taylor de orden 2 de f(x, y) = log(x2 + y) en el punto (1, 0) es:
+Observemos que f(1, 0) = 0 y que las derivadas parciales hasta segundo orden de f son:
+∂f
+∂x =
+2x
+x2 + y ⇒∂f
+∂x(1, 0) = 2
+∂f
+∂y =
+1
+x2 + y ⇒∂f
+∂y (1, 0) = 1
+∂2f
+∂x2 = −2(x2 −y)
+(x2 + y)2 ⇒∂2f
+∂x2 (1, 0) = −2
+∂2f
+∂y2 = −
+1
+(x2 + y)2 ⇒∂2f
+∂y2 (1, 0) = −1
+∂2f
+∂x∂y = −
+2x
+(x2 + y)2 ⇒∂2f
+∂xy(1, 0) = −2
+Entonces el polinomio de Taylor de orden 2 de f en (1, 0) es:
+p2(x, y) = 2(x −1) + y −2(x −1)2
+2
+−y2
+2 −2(x −1)y = −3 + 4x + 3y −x2 −y2
+2 −2xy
+4. Hallar el valor del par´ametro α ∈R para el cual f : R2 →R deﬁnida como:
+f(x, y) =
+
+
+
+x4
+y(x2 + y2)
+si y̸ = 0
+α
+si y = 0
+es continua en (0, 0).
+Para que f sea continua en (0, 0) debe cumplirse que
+lim
+(x,y)→(0,0) f(x, y) = f(0, 0) = α.
+Estudiemos entonces el l´ımite de f cuando (x, y) →(0, 0). Observemos que f(0, y) = 0, por lo
+que lim
+y→0 f(0, y) = 0. Si en cambio nos aceramos al (0, 0) por la curva y = x2 tenemos que:
+lim
+x→0 f(x, x2) =
+x4
+x2(x2 + x4) =
+1
+1 + x2 = 1
+Entonces no existe el l´ımite de f cuando (x, y) →(0, 0), por lo que f es discontinua en (0, 0)
+para todo α ∈R.
+Vale la pena aclarar que en este caso no podemos usar polares, puesto que con ese cambio
+de variable la funci´on resulta:
+f(ρ, θ) = ρcos4(θ)
+sin(θ)
+y cos4(θ)
+sin(θ) no est´a acotada en ning´un entorno del (0, 0).
+2
+
+===== PAGE 3 =====
+5. Sea f : R2 →R la funci´on dada por f(x, y) = m´ax{x2 + y2, 2x}. Entonces, la ﬁgura que m´as
+se asemeja a las curvas de nivel de f es:
+(A)
+(B)
+(C)
+(D)
+(E)
+Observar que la funci´on es un m´aximo entre dos expresiones. Por lo tanto, las curvas de
+nivel tendr´an la forma de las curvas correspondientes a una u otra expresi´on, dependiendo de
+cu´al sea donde se alcanza el m´aximo en cada zona. Las curvas de nivel de la primera expresi´on
+son claramente circunferencias, y de la expresi´on 2x son rectas verticales. Por otro lado, la
+igualdad entre las expresiones se da cuando x2 + y2 = 2x, que podemos re-escribir completando
+cuadrados como x2 −2x + 1 −1 + y2 = 0, o lo que es lo mismo (x −1)2 + y2 = 1. Es decir, una
+circunferencia de radio 1 centrada en el (1, 0). Es f´acil ver que en el interior de la cirunferencia
+la expresi´on m´as grande es 2x, y en el exterior x2 + y2, por lo que la ﬁgura (D) es la que se
+corresponde con la funci´on estudiada.
+DESARROLLO
+1. Sea f : R2 →R una funci´on.
+a) Deﬁnir diferenciabilidad de f en un punto a = (x0, y0) ∈R2. (Decimos que f es diferen-
+ciable en a = (x0, y0) ∈R2 sii . . . )
+Ver deﬁnici´on 6.11 o 6.12 en las notas del curso.
+b) Demostrar que si f es diferenciable en un punto a, y v es un vector en R2, entonces existe
+la derivada direccional de f respecto a v en el punto a. Calcular dicha derivada en t´erminos
+de los elementos que aparecen en la deﬁnici´on del ´ıtem anterior.
+Ver punto 3. en la demostraci´on del Teorema 6.13 en las notas del curso.
+3
+
+===== PAGE 4 =====
+c) Si se sabe que f es diferenciable y que ∂f
+∂v1
+(2, 3) = 6, y ∂f
+∂v2
+(2, 3) = −3, donde v1 = (2, 1)
+y v2 = (1, −1), calcular ∇f(2, 3).
+Como f es diferenciable, de la parte anterior sabemos que ∂f
+∂v1
+(2, 3) = ⟨∇f(2, 3), v1⟩, y lo
+mismo para v2. Por lo tanto tenemos:
+
+
+
+
+
+6
+= ∂f
+∂x(2, 3) · 2 + ∂f
+∂y (2, 3) · 1
+−3
+= ∂f
+∂x(2, 3) −∂f
+∂y (2, 3)
+Sumando ambas ecuaciones obtenemos que 3 = 3 ∂f
+∂x(2, 3), de donde ∂f
+∂x(2, 3) = 1. Luego
+sustityendo en cualquiera de las ecuaciones llegamos a que
+∂f
+∂y (2, 3) = 4, por lo que
+∇f(2, 3) = (1, 4).
+2. Calcular la integral de la funci´on f(x, y, z) = zex2+y2 en el dominio:
+D = {(x, y, z) ∈R3 :
+p
+x2 + y2 ≤z ≤2}.
+El dominio es el conjunto que queda entre el cono z =
+p
+x2 + y2 y el plano z = 2, por lo que
+una forma conveniente de escribir la integral es utilizando coordenadas cil´ındricas. La funci´on
+resulta zeρ2, y la integral es entonces
+Z 2
+0
+Z 2π
+0
+Z z
+0
+zeρ2ρ dρdθdz = 2π
+Z 2
+0
+z eρ2
+2
+
+z
+0
+dz = π
+Z 2
+0
+z(ez2 −1)dz
+= π
+2
+ 
+ez2
+2
+0
+−z2
+
+2
+0
+!
+= π(e4 −5)
+2
+4

@@ -1,0 +1,74 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo Diferencial e Integral en Varias Variables
+Facultad de Ingenier´ıa - IMERL
+Noviembre 2019
+Segundo Parcial – Viernes 22 de noviembre de 2019
+Nro de Parcial
+C´edula
+Apellido y nombre
+Escribir nombre y c´edula en todas las hojas que se entreguen.
+Ejercicio 1.(5 pts.) Sea f : {(x, y) ∈R2 : x > 0, y > 0} →R tal que:
+f(x, y) =
+(
+πx2y−ex
+(log(x/y))2+1
+si (x, y)̸ = (1, 1)
+a
+en otro caso
+Si f es continua, entonces:
+a =
+Ejercicio 2.Versi´on 1.(10 pts.) Se considera f : R2 →R, f(x, y) = 1
+3 sin(x) + 2
+3 sin(y). La ecuaci´on
+del plano tangente al gr´aﬁco de f en el punto (π/2, π/2, 1) es:
+z = 1
+Ejercicio 3.(5 pts.) Sea f : {(x, y) ∈R2 : x > 0, y > 0} →R tal que f(x, y) =
+1
+xy. El polinomio de
+Taylor de grado 3 de la funci´on f en el punto (1, 1) es:
+P(x, y) =
+Ejercicio 4.(10 pts.) Sea D = {(x, y) ∈R2 : x2 + y2 ≤7
+8}. El valor de
+RR
+D
+p
+7/8 −x2 −y2dxdy es:
+1
+
+===== PAGE 2 =====
+2
+Ejercicios de desarrollo
+Ejercicio 1.(10 pts.) Consideremos f : R2 →R tal que:
+f(x, y) =
+(
+1
+si 0 < y < x2
+0
+en otro caso
+Probar que existen todas las derivadas direccionales de f en (0, 0), pero sin embargo f no es continua
+en (0, 0).
+Ejercicio 2.(10 pts.)
+(1) Sea f : Rn →R una funci´on, a ∈Rn y v ∈Rn.
+(a) Deﬁnir diferenciabilidad de f en el punto a.
+(b) Deﬁnir ∂f
+∂v (a).
+(c) Demostrar que si f es diferenciable en el punto a, entonces para todo v ∈Rn existe ∂f
+∂v (a)
+y adem´as ∂f
+∂v (a) = Daf(v) (Aqu´ı Daf : Rn →R denota el diferencial de f en el punto a).
+(2) Se considera ahora f : R3 →R2 diferenciable en el punto (1, 1, 1). Se sabe que ∂f
+∂x(1, 1, 1) =
+(3, 0), ∂f
+∂y (1, 1, 1) = (π, 5), ∂f
+∂z (1, 1, 1) = (2, 1), y que f(1, 1, 1) = (
+√
+5, 2). Calcular:
+L = lim
+h→0
+f(1 + hπ, 1 + eh, 1 −πh) −(
+√
+5, 2)
+h
+Ejercicio 3.(10 pts.) Sea D = {(x, y, z) : −1 ≤z ≤x2 + y2; x2 + y2 ≤4}. Calcular el volumen de D.

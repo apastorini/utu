@@ -1,0 +1,119 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo diferencial e integral en varias variables
+Facultad de Ingenier´ıa - IMERL
+Primer Semestre 2018
+Primer parcial – Viernes 4 de mayo de 2018
+Nro de Parcial
+C´edula
+Apellido y nombre
+(I) M´ultiple opci´on. Total: 30 puntos
+Puntajes: 5 puntos si la respuesta es correcta, 0 punto por no contestar y -1 si la respuesta es incorrecta.
+Indique sus respuestas en los casilleros correspondientes, con letras may´usculas imprenta: A, B, C, D o E.
+Ejercicio 1
+Ejercicio 2
+Ejercicio 3
+Ejercicio 4
+Ejercicio 5
+Ejercicio 6
+Ejercicio 1
+Sea x(t) la soluci´on a la ecuaci´on diferencial x′′(t) −6x′(t) + 25x(t) = 0 que cumple x(0) = 0 y
+x′(0) = 4.
+Indicar la opci´on correcta:
+(A) x(π) = 0
+(B) x(π) = e3π
+(C) x(π) = 1
+(D) x(π) = e4π cos(3π)
+(E) x(π) = e4π
+Ejercicio 2
+Sea x(t) la soluci´on a la ecuaci´on diferencial x′(t) = −2tx(t) que cumple x(0) = 1.
+Indicar la opci´on correcta:
+(A) x′′(0) = −2
+(B) x′′(0) = −1
+(C) x′′(0) = 0
+(D) x′′(0) = 1
+(E) x′′(0) = 2
+1
+
+===== PAGE 2 =====
+2
+Ejercicio 3
+Considere la serie inﬁnita
++∞
+X
+n=1
+
+log
+
+6 + 6
+n
+
+−log
+
+6 +
+6
+n + 2
+
+.
+Indicar la opci´on correcta:
+(A) La serie no converge.
+(B) La serie converge al valor log(6).
+(C) La serie converge al valor log(12).
+(D) La serie converge al valor log(12) + log(9) −2 log(6).
+(E) La serie converge al valor log(12) + log(9) −log(6).
+Ejercicio 4
+Considere la serie inﬁnita
++∞
+P
+n=1
+log(n)
+√n
+y la integral impropia
++∞
+R
+1
+log(x)
+√x dx.
+Indicar la opci´on correcta.
+(A) La serie converge y la integral impropia tambi´en.
+(B) La serie converge pero la integral impropia no converge.
+(C) La serie no converge y la integral impropia tampoco.
+(D) La serie no converge pero la integral impropia converge.
+(E) La serie y la integral impropia convergen al mismo valor.
+Ejercicio 5
+Una pelota de goma se deja caer desde una altura de 2 metros. Cada vez que toca el piso rebota y se
+eleva hasta una altura de 2/3 de la distancia desde la que cae.
+Interpretando la distancia que recorre la pelota luego de inﬁnitos rebotes como suma de una serie
+inﬁnita indicar la opci´on correcta.
+(A) Luego de inﬁnitos rebotes la pelota recorre 4 metros.
+(B) Luego de inﬁnitos rebotes la pelota recorre 6 metros.
+(C) Luego de inﬁnitos rebotes la pelota recorre 8 metros.
+(D) Luego de inﬁnitos rebotes la pelota recorre 10 metros.
+(E) Para rebotar inﬁnitas veces la pelota debe recorrer una distancia inﬁnita (i.e. la serie no
+converge).
+
+===== PAGE 3 =====
+3
+Ejercicio 6
+Considere la integral impropia
+1R
+0
+
+x
+(x−1)2
+s
+dx donde s es un n´umero real.
+Indicar la opci´on correcta:
+(A) La integral converge para todo valor de s.
+(B) La integral converge s´olamente si −1 < s < 1.
+(C) La integral converge s´olamente si s < 1/2.
+(D) La integral converge s´olamente si −1 < s < 1/2.
+(E) La integral no converge para ning´un valor de s.
+Problema (10 puntos)
+a) Deﬁnir la norma de la suma |x|1, la norma Eucl´ıdea |x|2, y la norma del m´aximo |x|∞de un
+punto x = (x1, . . . , xd) en IRd.
+b) Representar gr´aﬁcamente la bola de radio 1 centrada en el punto (0, 0) de IR2 para cada una
+de las tres normas deﬁnidas en la parte anterior.
+c) Demostrar que la norma Eucl´ıdea de todo punto (x, y) en IR2 es menor o igual a su norma de
+la suma. Indicar en qu´e puntos de IR2 las dos normas coinciden.

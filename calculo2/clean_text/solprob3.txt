@@ -1,0 +1,252 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo diferencial e integral en varias variables
+Facultad de Ingenier´ıa - IMERL
+Primer Semestre 2020
+1
+Soluci´on ejercicios de desarrollo 3
+Regla de la cadena y coordenadas polares
+Consideremos la funci´on z = f (x,y) diferenciable con respecto a las variables x e y que se compone de la
+funci´ones x = x(u,v), y = y(u,v), tambi´en diferenciables con respecto a las variables u y v. Ya sabemos por la
+regla de la cadena que las derivadas respecto de u y v de la funci´on compuesta se pueden calcular y obtenemos:
+∂f
+∂u = ∂f
+∂x
+∂x
+∂u + ∂f
+∂y
+∂y
+∂u
+∂f
+∂v = ∂f
+∂x
+∂x
+∂v + ∂f
+∂y
+∂y
+∂v
+Aplicaci´on: Uno de los cambios de variable m´as usando en el c´alculo es el cambio de coordenadas carte-
+sianas a coordenadas polares. Consideremos el caso de una funci´on diferenciable z = f (x,y) y las funciones
+usuales del cambio de varaible dadas por
+x = x(r,φ) = rcosφ
+y = y(r,φ) = rsenφ
+1. Determine las expresiones de ∂f
+∂r y ∂f
+∂φ.
+∂f
+∂r = ∂f
+∂x
+∂x
+∂r + ∂f
+∂y
+∂y
+∂r
+∂f
+∂r = ∂f
+∂x cosφ + ∂f
+∂y senφ
+∂f
+∂r =
+*
+(∂f
+∂x , ∂f
+∂y ),(cosφ,senφ)
++
+Observaci´on: Notemos que la derivada parcial de la funci´on respecto a la variable r es el producto punto
+del gradiente de la funci´on f (En el caso de que la funci´on f sea diferenciable) por el vector unitario
+(cosφ,senφ).
+∂f
+∂φ = ∂f
+∂x
+∂x
+∂φ + ∂f
+∂y
+∂y
+∂φ
+∂f
+∂φ = −rsenφ∂f
+∂x + rcosφ∂f
+∂y
+2. Una de las ecuaciones m´as importantes en la ingenier´ıa es la ecuaci´on de Laplace:
+∂2z
+∂x2 + ∂2z
+∂y2 = 0
+Supongamos que z = f (x,y) es una funci´on de dos variables que satisface la ecuaci´on de Laplace. De-
+mostrar que z = f (x −2y,2x + y) tambi´en la satisface.
+1
+
+===== PAGE 2 =====
+Deﬁnimos las funciones de dos variables
+u = u(x,y) = x −2y
+v = v(x,y) = 2x + y
+Notamos que las funciones u y v como funciones de las variables x y y son funciones diferenciables. Por
+el teorema de la regla de la cadena
+∂z
+∂x = ∂z
+∂u
+∂u
+∂x + ∂z
+∂v
+∂v
+∂x
+∂z
+∂x = ∂z
+∂u + 2 ∂z
+∂v
+Calculemos ahora las derivadas de segundo orden
+∂2z
+∂x2 = ∂
+∂x
+ ∂z
+∂x
+!
+= ∂
+∂x
+ ∂z
+∂u + 2 ∂z
+∂v
+!
+= ∂
+∂x
+ ∂z
+∂u
+!
++ 2 ∂
+∂x
+ ∂z
+∂v
+!
+Observaci´on: z depende de las variables u y v. Y estas a su vez de las variables x e y. Por lo tanto esa
+relaci´on de dependencia tambi´en se hace presente en ∂z
+∂u y ∂z
+∂v . Es decir, las funciones ∂z
+∂u y ∂z
+∂v tambi´en
+dependen de las variables x e y. En consecuencia:
+∂
+∂x
+ ∂z
+∂u
+!
+= ∂
+∂u
+ ∂z
+∂u
+! ∂u
+∂x + ∂
+∂v
+ ∂z
+∂u
+! ∂v
+∂x = ∂2z
+∂u2
+∂u
+∂x + ∂2z
+∂v∂u
+∂v
+∂x
+∂
+∂x
+ ∂z
+∂v
+!
+= ∂
+∂u
+ ∂z
+∂v
+! ∂u
+∂x + ∂
+∂v
+ ∂z
+∂v
+! ∂v
+∂x = ∂2z
+∂u∂v
+∂u
+∂x + ∂2z
+∂v2
+∂v
+∂x
+Por lo tanto
+∂2z
+∂x2 = ∂2z
+∂u2 + 4 ∂2z
+∂u∂v + 4 ∂2z
+∂v2
+Razonando de manera an´aloga obtenemos que:
+∂2z
+∂y2 = 4 ∂2z
+∂u2 −4 ∂2z
+∂u∂v + ∂2z
+∂v2
+Entonces
+∂2z
+∂x2 + ∂2z
+∂y2 = 5 ∂2z
+∂u2 + 5 ∂2z
+∂v2 = 5
+ ∂2z
+∂u2 + ∂2z
+∂v2
+!
+= 0
+pues, por hip´otesis la funci´on original satisface la ecuaci´on de Laplace.
+3. Dada una funci´on f : U ⊆R2 →R (suﬁcientemente diferenciable), se le asocia a ella su laplaciano,
+denotado por ∇2f y deﬁnido por
+∇2f = ∂2z
+∂x2 + ∂2z
+∂y2
+(Obs´ervese que la Ecuaci´on de Laplace del ejemplo anterior es ∇2f = 0 )
+¿C´ual es la expresi´on del laplaciano en coordenadas polares?
+2
+
+===== PAGE 3 =====
+Si z = f (x,y) y las funciones usuales del cambio de variable dadas por
+x = x(r,φ) = rcosφ
+y = y(r,φ) = rsenφ
+por el item [1]
+∂f
+∂r = ∂f
+∂x cosφ + ∂f
+∂y senφ
+∂f
+∂φ = −rsenφ∂f
+∂x + rcosφ∂f
+∂y
+Aplicando el mismo razonamiento de tener en cuenta la depedencia de las variables para calcular las
+derivadas parciales de segundo orden que se us´o en el item [2] tenemos:
+∂2f
+∂r2 = ∂
+∂r
+ ∂f
+∂r
+!
+= cos2φ∂2f
+∂x2 + 2senφcosφ ∂2f
+∂x∂y + sen2φ∂2f
+∂y2
+∂2f
+∂φ2 = ∂
+∂φ
+ ∂f
+∂φ
+!
+= r2sen2φ∂2f
+∂x2 −2r2senφcosφ ∂2f
+∂x∂y + r2cos2φ∂2f
+∂y2 −rcosφ∂f
+∂x −rsenφ∂f
+∂y
+Entonces
+∇2f = ∂2f
+∂x2 + ∂2f
+∂y2 = 1
+r2
+∂2f
+∂φ2 + ∂2f
+∂r2 + 1
+r
+∂f
+∂r
+3

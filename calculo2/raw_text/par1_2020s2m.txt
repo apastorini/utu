@@ -1,0 +1,110 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo diferencial e integral en varias variables
+Facultad de Ingenier´ıa - IMERL
+Segundo Semestre 2020
+Primer parcial – S´abado 17 de octubre de 2020
+Nro de Parcial
+C´edula
+Apellido y nombre
+(I) M´ultiple opci´on. Total: 30 puntos
+Puntajes: 5 puntos si la respuesta es correcta, 0 punto por no contestar y -1 si la respuesta es incorrecta.
+Indique sus respuestas en los casilleros correspondientes, con letras may´usculas imprenta: A, B, C, D o E.
+Ejercicio 1
+Ejercicio 2
+Ejercicio 3
+Ejercicio 4
+Ejercicio 5
+Ejercicio 6
+Ejercicio 1
+Se considera el polinomio complejo P(z) = z3 + 2z2 + 3
+2z + 1
+2, y las siguientes aﬁrmaciones:
+(I) Existen dos ra´ıces tales que su suma es igual a la ra´ız restante.
+(II) La distancia entre dos ra´ıces distintas siempre es constante.
+(III) El producto de todas las ra´ıces es igual al inverso de la suma de todas sus ra´ıces.
+Entonces:
+A) Todas las aﬁrmaciones son correctas.
+B) Ninguna aﬁrmaci´on es correcta.
+C) Solo las aﬁrmaciones (II) y (III) son correctas.
+D) Solo las aﬁrmaciones (I) y (III) son correctas.
+E) Solo la aﬁrmaci´on (I) es correcta.
+Ejercicio 2
+Sea y(x) la soluci´on a la ecuaci´on diferencial y′′ + 2y′ + 2y = 5ex que cumple y(0) = 1, y′(0) = 2.
+Calcule y(π/2):
+A) y(π/2) = e−π/2 −eπ/2
+B) y(π/2) = e−π/2 + eπ/2
+C) y(π/2) = e−π/2
+D) y(π/2) = eπ/2
+E) y(π/2) = π
+2 eπ/2
+Ejercicio 3
+Se consideran las siguientes aﬁrmaciones:
+(I) Si A es un conjunto cerrado y p /∈A, entonces no existe ninguna sucesi´on con elementos de A
+que converja a p.
+(II) Sea an = (−1)n + 1
+n. Entonces existen inﬁnitas subsucesiones de an que convergen a −1.
+(III) Si an es no acotada, entonces toda subsucesi´on de an tambi´en es no acotada.
+Entonces:
+
+===== PAGE 2 =====
+2
+A) Solo las aﬁrmaciones (I) y (II) son correctas.
+B) Todas las aﬁrmaciones son correctas.
+C) Solo las aﬁrmaciones (II) y (III) son correctas.
+D) Ninguna aﬁrmaci´on es correcta.
+E) Solo la aﬁrmaci´on (I) es correcta.
+Ejercicio 4
+Sea an una sucesi´on de t´erminos positivos tal que P an es convergente. Considere las siguientes series
+∞
+X
+n=1
+ea2
+n −1
+y
+∞
+X
+n=1
+cos(an) sin(an).
+Entonces:
+A) Ambas series son divergentes.
+B) Ambas series son convergentes.
+C) Solo la primera serie es convergente.
+D) Solo la segunda serie es convergente.
+E) La segunda serie no se puede clasiﬁcar a priori, por no ser de signo constante.
+Ejercicio 5
+Sean α, β, γ tres reales positivos. Considere la integral impropia
+Z 1
+0
+dx
+(sin(x))α(ex −1)β(cos(x))γ .
+Entonces para que la integral sea convergente debe cumplirse:
+A) α + β < 1.
+B) α + β + γ < 1.
+C) α < 1, y β + γ > 1
+2
+D) α + β + γ > 1.
+E) α + β < 1
+2.
+Ejercicio 6
+Sea A = {( 1
+n, (−1)n) : n ∈N} ⊂R2.
+Seleccione la opci´on correcta (recuerde que A′ es el conjunto de puntos de acumulaci´on de A):
+A) A′ = ∅.
+B) A es compacto.
+C) A′ = A.
+D) A es cerrado.
+E) A ⊂∂A.
+(II) Desarrollo. Total: 10 puntos
+1. Sea (an)n∈N una sucesi´on de n´umeros reales. Completar las siguientes deﬁniciones:
+a) (an) es convergente si...
+b) (an) es mon´onona creciente si...
+c) (an) es acotada si...
+2. Dar ejemplos de:
+a) Una sucesi´on convergente que no es mon´otona.
+b) Una sucesi´on acotada que no es convergente.
+3. Consideremos la sucesi´on de t´ermino general an = 1 + log(n)
+n3
+.
+Probar que es mon´otona (decreciente), acotada y convergente.

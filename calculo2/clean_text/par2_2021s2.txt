@@ -1,0 +1,203 @@
+
+===== PAGE 1 =====
+v 01
+C´alculo Diferencial e Integral en Varias Variables
+Segundo semestre de 2021
+Segundo parcial
+26 de noviembre de 2021
+No Lista
+Apellido, Nombre
+C´edula
+Firma
+La duraci´on del parcial es de tres horas, y no se permite usar ni calculadora
+ni material de consulta. La comprensi´on de las preguntas es parte de la prueba.
+Tenga cuidado al pasar las respuestas
+Lo completado aqu´ı ser´a lo ´unico tenido en cuenta a la hora de corregir.
+VERDADERO O FALSO (Total: 12 puntos)
+Llenar cada casilla con las respuestas V o F, seg´un corresponda.
+1
+2
+3
+4
+Correctas: 3 puntos. Incorrectas: −3 puntos. Sin responder: 0 puntos.
+M ´ULTIPLE OPCI´ON (Total: 48 puntos)
+Llenar cada casilla con las respuestas A, B, C, D o E, seg´un corresponda.
+1
+2
+3
+4
+5
+6
+7
+8
+Correctas: 6 puntos. Incorrectas: −1 punto. Sin responder: 0 puntos.
+SOLO PARA USO DOCENTE
+V/F
+MO
+Total
+1
+
+===== PAGE 2 =====
+Ejercicios del tipo VERDADERO/FALSO
+Indicar si las siguientes afirmaciones son necesariamente verdaderas.
+1. Las circunferencias centradas en el origen en R2 son conjuntos de nivel de la funci´on
+f(x, y) = e−x2−y2.
+2. Si f : R2 →R tiene derivadas parciales en un punto a ∈R2, entonces es continua en a.
+3. El gradiente de la funci´on f : R2 →R dada por f(x, y) = 2x + y + 1 en el punto (3, −2)
+es (2, 1).
+4. Sea f : R2 →R. La funci´on f es continua en un punto a si y s´olo si para toda sucesi´on
+(an)n∈N en R2 tal que limn→∞an = a se cumple que limn→∞f(an) = f(a).
+Ejercicios de M ´ULTIPLE OPCI´ON
+Ejercicio 1
+Indicar cu´anto vale
+lim
+(x,y)→(0,0)
+sen(x2 + y2)
+ex2+y2 −1
+.
+(A)
+1
+e
+(B)
+1
+2
+(C) 1
+(D) 0
+(E) El l´ımite no existe.
+Ejercicio 2
+Hallar el valor del par´ametro a para el cual f : R2 →R dada por
+f(x, y) =
+{
+xy
+ax2+y2
+si (x, y)̸ = (0, 0)
+1
+si (x, y) = (0, 0)
+es continua.
+(A) a = 1
+2
+(B) a = 2
+(C) a = 1
+(D) a = −1
+(E) No hay ning´un valor de a
+para el cual f sea continua.
+2
+
+===== PAGE 3 =====
+Ejercicio 3
+Sean f : R2 →R diferenciable, v = (1, 1) y w = (1, −1). Sabiendo que ∂f
+∂x(0, 0) = 2 y que
+∂f
+∂v (0, 0) = 5, calcular ∂f
+∂w(0, 0).
+(A)
+∂f
+∂w(0, 0) = 1
+(B)
+∂f
+∂w(0, 0) = −1
+(C)
+∂f
+∂w(0, 0) = 3
+(D)
+∂f
+∂w(0, 0) = −3
+(E)
+∂f
+∂w(0, 0) = 0
+Ejercicio 4
+Sea f : R2 →R dada por f(x, y) = exy2(2x + x3y). Sea π el plano tangente a la gr´afica de
+f en el punto (1, 0, f(1, 0)). Indicar cu´al de los siguientes puntos pertenece a π.
+(A) (0, 0, 0)
+(B) (1, 0, 0)
+(C) (0, 1, 0)
+(D) (0, 0, 1)
+(E) (1, −1, 0)
+Ejercicio 5
+Sea g : R2 →R2 una funci´on tal que g(1, 1) = (1, 0) y
+Jg(1, 1) =
+( 2
+1
+1
+1
+)
+.
+Si f : R2 →R est´a dada por f(x, y) = x2−y
+y2+1, indicar cu´anto vale ∂(f◦g)
+∂x
+(1, 1).
+(A)
+∂(f◦g)
+∂x
+(1, 1) = 0
+(B)
+∂(f◦g)
+∂x
+(1, 1) = 1
+(C)
+∂(f◦g)
+∂x
+(1, 1) = −1
+(D)
+∂(f◦g)
+∂x
+(1, 1) = −2
+(E)
+∂(f◦g)
+∂x
+(1, 1) = 3
+Ejercicio 6
+Sean a, b, c, d, e y f tales que
+lim
+(x,y)→(1,0)
+(x −1)ey2 −a −bx −cy −dx2 −exy −fy2
+(x −1)2 + y2
+= 0.
+Entonces la suma a + b + c + d + e + f es igual a:
+(A) 0
+(B) 1
+(C) 2
+(D) 3
+(E) 4
+3
+
+===== PAGE 4 =====
+Ejercicio 7
+Sea D el tri´angulo de v´ertices (0, 1), (2, 3) y (4, 1). Calcular
+Z
+D
+(xy2) dxdy.
+(A) 12
+(B) 15
+(C) 20
+(D) 24
+(E) 38
+Ejercicio 8
+Sea D la regi´on rayada en el dibujo. Calcular
+Z
+D
+x
+p
+x2 + y2 ex2+y2 dxdy.
+(A)
+√
+2(e3 −1)
+(B) 2e(e3 −1)
+(C)
+√
+2
+2 (e2 −1)
+(D)
+√
+2
+2 e(e3 −1)
+(E) e
+Nota: sen
+( π
+4
+)
+=
+1
+√
+2.
+4

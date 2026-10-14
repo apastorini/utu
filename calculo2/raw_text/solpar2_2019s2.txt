@@ -1,0 +1,442 @@
+
+===== PAGE 1 =====
+Universidad de la República
+Cálculo Diferencial e Integral en Varias Variables
+Facultad de Ingeniería - IMERL
+Noviembre 2019
+Segundo Parcial – SOLUCIÓN
+Ejercicio 1. Versión 1.(5 pts.) Sea f : {(x, y) ∈R2 : x > 0, y > 0} →R tal que:
+f(x, y) =
+(
+πx2y−ex
+(log(x/y))2+1
+si (x, y)̸ = (1, 1)
+a
+en otro caso
+Si f es continua, entonces:
+a = π −e
+La función es continua si
+a =
+lim
+(x,y)→(1,1) f(x, y) = π −e
+Ejercicio 1. Versión 2.(5 pts.) Sea f : {(x, y) ∈R2 : x > 0, y > 0} →R tal que:
+f(x, y) =
+(
+√
+17x2y−ex
+(log(x/y))2+1
+si (x, y)̸ = (1, 1)
+a
+en otro caso
+Si f es continua, entonces:
+a =
+√
+17 −e
+La función es continua si
+a =
+lim
+(x,y)→(1,1) f(x, y) =
+√
+17 −e
+Ejercicio 2. Versón 1.(10 pts.) Se considera f : R2 →R, f(x, y) = 1
+3 sin(x) + 2
+3 sin(y). La ecuación
+del plano tangente al gráﬁco de f en el punto (π/2, π/2, 1) es:
+z = 1
+1
+
+===== PAGE 2 =====
+2
+La ecuación del plano es
+z = f(π
+2 , π
+2 ) + fx(π
+2 , π
+2 )(x −π
+2 ) + fy(π
+2 , π
+2 )(y −π
+2 ) = 1 + 1
+3 cos(π
+2 )(x −π
+2 ) + 2
+3 cos(π
+2 )(y −π
+2 ) = 1
+Ejercicio 2. Versión 2.(10 pts.) Se considera f : R2 →R, f(x, y) = 2
+3 sin(x) + 4
+3 sin(y). La ecuación
+del plano tangente al gráﬁco de f en el punto (π/2, π/2, 2) es:
+z = 2
+z = f(π
+2 , π
+2 ) + fx(π
+2 , π
+2 )(x −π
+2 ) + fy(π
+2 , π
+2 )(y −π
+2 ) = 2 + 2
+3 cos(π
+2 )(x −π
+2 ) + 4
+3 cos(π
+2 )(y −π
+2 ) = 2
+Ejercicio 3. Versión 1.(5 pts.) Sea f : {(x, y) ∈R2 : x > 0, y > 0} →R tal que f(x, y) =
+1
+xy. El
+polinomio de Taylor de grado 3 de la función f en el punto (1, 1) es:
+P(x, y) =
+Tenemos f(x, y) = x−1y−1, entonces la derivada de orden k de f, α veces respecto a x y β veces
+respecto a y (α + β = k) es
+∂kf
+∂xα∂yβ (x, y) = (−1)αα!x−1−α(−1)ββ!x−1−β = (−1)kα!β!x−1−αy−1−β.
+Evaluando en (1, 1) tenemos
+∂kf
+∂xα∂yβ (1, 1) = (−1)kα!β!, entonces los diferenciales primero, segundo y
+tercero son:
+df(1,1)(∆x, ∆y) = −(∆x + ∆y)
+d2f(1,1)(∆x, ∆y) = 2(∆x2 + ∆x∆y + ∆y2)
+d3f(1,1)(∆x, ∆y) = −6(∆x3 + ∆x2∆y + ∆x∆y2 + ∆y3)
+Observando que f(1, 1) = 1, tenemos ﬁnalmente que el polinomio buscado en coordenadas x, y es:
+P(x, y) = 1 −
+
+(x −1) + (y −1)
+
++
+
+(x −1)2 + (x −1)(y −1) + (y −1)2
+−
+
+(x −1)3 + (x −1)2(y −1) + (x −1)(y −1)2 + (y −1)3
+Ejercicio 3.Versión 2.(5 pts.) Sea f : {(x, y) ∈R2 : y > 0} →R tal que f(x, y) = x
+y. El polinomio
+de Taylor de grado 3 de la función f en el punto (1, 1) es:
+
+===== PAGE 3 =====
+3
+P(x, y) =
+Tenemos f(x, y) = xy−1, entonces la derivada de orden k de f, α veces respecto a x y β veces respecto
+a y (α + β = k) es
+∂kf
+∂xα∂yβ (x, y) =
+
+
+
+
+
+x(−1)ββ!y−1−β
+si α = 0
+(−1)ββ!y−1−β
+si α = 1
+0
+si α ≥2
+=
+
+
+
+
+
+x(−1)kk!y−1−k
+si α = 0
+(−1)k−1(k −1)!y−1−(k−1)
+si α = 1
+0
+si α ≥2
+Evaluando en (1, 1) tenemos
+∂kf
+∂xα∂yβ (1, 1) =
+
+
+
+
+
+(−1)kk!
+si α = 0
+(−1)k−1(k −1)!
+si α = 1
+0
+si α ≥2,
+entonces los diferenciales primero, segundo y tercero son:
+df(1,1)(∆x, ∆y) = ∆x −∆y
+d2f(1,1)(∆x, ∆y) = 2(−∆x∆y + ∆y2)
+d3f(1,1)(∆x, ∆y) = 6(∆x∆y2 −∆y3)
+Observando que f(1, 1) = 1, tenemos ﬁnalmente que el polinomio buscado en coordenadas x, y es:
+P(x, y) = 1 +
+
+(x −1) −(y −1)
+
++
+
+−(x −1)(y −1) + (y −1)2
++
+
+(x −1)(y −1)2 −(y −1)3
+Ejercicio 4.Versión 1.(10 pts.) Sea D = {(x, y) ∈R2 : x2+y2 ≤7
+8}. El valor de
+RR
+D
+p
+7/8 −x2 −y2dxdy
+es:
+(2π/3)(7/8)3/2
+Observar que se trata del volumen de media esfera, por lo tanto podemos aplicar (si la conocemos) la
+fórmula para el volumen V de la esfera de radio r, V = 4
+3πr3. De todas maneras incluímos los cálculos
+más abajo.
+
+===== PAGE 4 =====
+4
+Haciendo un cambio de coordenadas a polares y aplicando iteradas nos queda:
+ZZ
+D
+r
+7
+8 −x2 −y2dxdy =
+Z 2π
+0
+(
+Z √
+7/8
+0
+r
+7
+8 −ρ2 ρdρ)dθ =
+Z 2π
+0
+((−1/2)
+Z √
+7/8
+0
+r
+7
+8 −ρ2 (−2ρ)dρ)dθ =
+hacemos el cambio u = 7
+8 −ρ2
+Z 2π
+0
+(−1/2)(
+Z 0
+7/8
+√udu)dθ =
+Z 2π
+0
+(−1/2)((2/3)u3/2 |0
+7/8)dθ = (2π/3)(7/8)3/2
+Ejercicio 4. Versión 2(10 pts.) Sea D = {(x, y) ∈R2 : x2+y2 ≤9π2}. El valor de
+RR
+D
+p
+9π2 −x2 −y2dxdy
+es:
+(2π/3)(3π)3/2
+Haciendo un cambio de coordenadas a polares y aplicando iteradas nos queda:
+ZZ
+D
+p
+9π2 −x2 −y2dxdy =
+Z 2π
+0
+(
+Z 3π
+0
+p
+9π2 −ρ2 ρdρ)dθ =
+Z 2π
+0
+((−1/2)
+Z 3π
+0
+p
+9π2 −ρ2 (−2ρ)dρ)dθ =
+hacemos el cambio u = 9π2 −ρ2
+Z 2π
+0
+(−1/2)(
+Z 0
+9π2
+√udu)dθ =
+Z 2π
+0
+(−1/2)((2/3)u3/2 |0
+9π2)dθ = (2π/3)(9π2)3/2 = (2π/3)(3π)3/2
+
+===== PAGE 5 =====
+5
+Ejercicios de desarrollo
+Ejercicio 1.(10 pts.) Consideremos f : R2 →R tal que:
+f(x, y) =
+(
+1
+si 0 < y < x2
+0
+en otro caso
+Probar que existen todas las derivadas direccionales de f en (0, 0), pero sin embargo f no es continua
+en (0, 0).
+Solución: Primero veamos que f no es continua en (0, 0) y para ello hagamos trayectorias basándonos
+en la forma en que está dividido el dominio.
+Para y = x, lim
+x→0 f(x, x) = 0.
+Para y = x4, lim
+x→0 f(x, x4) = 1.
+A continuación analicemos la existencia de las derivadas direccionales.
+Sea w = (u, v) ∈R2, por
+deﬁnición
+∂f
+∂w(0, 0) = lim
+h→0
+f(hu, hv)
+h
+.
+Hay varias formas de analizar este límite y una de ellas es a través de los límites laterales. Tomemos
+primero el caso h →0+:
+• Si v ≤0, entonces hv ≤0 y f(hu, hv) = 0.
+• Si v > 0, entonces existe δ(u, v) > 0 tal que si 0 < h < δ(u, v) se cumple que v > hu2 ⇒hv >
+h2u2. Para estos valores de h tenemos entonces que f(hu, hv) = 0.
+En conclusión, sea ε > 0, existe δ > 0 (no es otro que el δ(u, v) que está más arriba) tal que si
+0 < h < δ, entonces | f(hu, hv)
+h
+|< ε (en particular ese cociente es igual a cero), luego
+lim
+h→0+
+f(hu, hv)
+h
+= 0.
+De forma análoga se muestra que el límite por la izquierda es también cero, luego ∂f
+∂w(0, 0) = 0, para
+cualquier dirección w ∈R2.
+Ejercicio 2.(10 pts.)
+(1) Sea f : Rn →R una función, a ∈Rn y v ∈Rn.
+(a) Deﬁnir diferenciabilidad de f en el punto a.
+(b) Deﬁnir ∂f
+∂v (a).
+(c) Demostrar que si f es diferenciable en el punto a, entonces para todo v ∈Rn existe ∂f
+∂v (a)
+y además ∂f
+∂v (a) = Daf(v) (Aquí Daf : Rn →R denota el diferencial de f en el punto a).
+
+===== PAGE 6 =====
+6
+(2) Se considera ahora f : R3 →R2 diferenciable en el punto (1, 1, 1). Se sabe que ∂f
+∂x(1, 1, 1) =
+(3, 0), ∂f
+∂y (1, 1, 1) = (π, 5), ∂f
+∂z (1, 1, 1) = (2, 1), y que f(1, 1, 1) = (
+√
+5, 2). Calcular:
+L = lim
+h→0
+f(1 + hπ, 1 + eh, 1 −πh) −(
+√
+5, 2)
+h
+(1)
+a) Ver teórico
+b) Ver teórico
+c) Ver teórico
+(2) Observar que
+L = lim
+h→0
+f(1 + hπ, 1 + eh, 1 + πh) −(
+√
+5, 2)
+h
+= ∂f
+∂v (1, 1, 1)
+donde v = (π, e, −π). Por lo tanto L = D(1,1,1)f(v). Utilizando los datos, la matriz asociada
+a D(1,1,1)f es
+ 
+3
+π
+2
+0
+5
+1
+!
+, y por lo tanto L = (π + eπ, 5e −π)
+Ejercicio 3.(10 pts.) Sea D = {(x, y, z) : −1 ≤z ≤x2 + y2; x2 + y2 ≤4}. Calcular el volumen de D.
+Para calcular el volumen del conjunto D utilizaremos la siguiente ﬁgura como referencia.
+z = x2 + y2
+x
+y
+z
+x2 + y2 = 4
+Realicemos un cambio de coordenadas a coordenadas cilíndricas:
+
+
+
+
+
+
+
+x = ρ cos(θ)
+y = ρ sin(θ)
+z = z
+Utilizando que ρ2 cos2(θ) + ρ2 sin(θ) = ρ2, las condiciones
+
+
+
+−1 ≤z ≤x2 + y2
+x2 + y2 ≤4
+
+===== PAGE 7 =====
+7
+se transforman en las condiciones
+
+
+
+−1 ≤z ≤ρ2
+ρ2 ≤4
+Como en coordenadas cilíndricas ﬁjamos ρ > 0, las condiciones que determinan el conjunto D son
+θ ∈[0, 2π),
+0 < ρ ≤2
+y
+−1 ≤z ≤ρ2.
+Luego, el volumen podemos calcularlo mediante la integral:
+ZZZ
+D
+dxdydz =
+Z 2π
+0
+Z 2
+0
+Z ρ2
+−1
+ρ dzdρdθ
+=
+Z 2π
+0
+Z 2
+0
+ρ(ρ2 + 1) dρ
+
+dθ
+=
+2π
+Z 2
+0
+ρ3 + ρ dρ
+=
+2π
+ 
+ρ4
+4 + ρ2
+2
+
+ρ=2
+ρ=0
+!
+=
+2π
+16
+4 + 4
+2
+
+= 12π
+Otra posibilidad: El mismo volumen se puede calcular como la integral doble
+ZZ
+D′ x2 + y2 + 1,
+donde D′ = {(x, y) ∈R2 : x2 + y2 ≤4}.
+Haciendo el cambio a coordenadas polares se obtiene
+exactamente el mismo resultado.

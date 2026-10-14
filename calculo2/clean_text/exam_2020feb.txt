@@ -1,0 +1,274 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo Diferencial e Integral en Varias Variables
+Facultad de Ingenier´ıa - IMERL
+Febrero 2020
+EXAMEN – Viernes 28 de febrero de 2020
+SOLUCI´ON
+Ejercicio 1.(10 pts.) Los z ∈IC que veriﬁcan la ecuaci´on ez = i son:
+{(π/2 + 2kπ)i : k ∈ZZ}
+Si z = a + bi, entonces la ecuaci´on es eaebi = ei π
+2 que se veriﬁca sii a = 0, b = π/2 + 2kπ
+Ejercicio 2.(10 pts.) Sea k ∈R, k > 0. La soluci´on general de la ecuaci´on diferencial
+y′′ = −ky
+es:
+y(x) = c1 sin(
+√
+kx) + c2 cos(
+√
+kx)
+Ejercicio 3.(10 pts.) Clasiﬁcar, justiﬁcando:
+Z +∞
+1
+1
+x2 −1dx
+La integral DIVERGE. Para ver esto, basta observar que por deﬁnici´on se tiene que:
+Z +∞
+1
+1
+x2 −1dx =
+Z 2
+1
+1
+x2 −1dx +
+Z +∞
+2
+1
+x2 −1dx,
+y que la integral a la izquierda de la igualdad converge si y solamente si ambos sumandos a la derecha
+de la igualdad convergen. Adem´as,
+Z 2
+1
+1
+x2 −1dx = lim
+a→1
+Z 2
+a
+1
+x2 −1dx
+y
+1
+x2−1 =
+−1
+2(x+1) +
+1
+2(x−1) por lo cual basta estudiar
+lim
+a→1
+Z 2
+a
+−1
+2(x + 1) +
+1
+2(x −1) = lim
+a→1 −1/2L(3) + 1/2L|a + 1| −1/2L|a −1| = +∞
+Como este sumando diverge, alcanza para decir que la integral inicial
+R +∞
+1
+1
+x2−1dx diverge.
+1
+
+===== PAGE 2 =====
+2
+Ejercicio 4.(20 pts.)
+(1) Sea X ⊂Rn un conjunto no vac´ıo. Probar que X es cerrado si y s´olo si para toda sucesi´on
+(xn)n∈IN ⊂X tal que xn →x se tiene x ∈X. Ver te´orico
+(2) Sea f : R →R una funci´on continua. Probar que el gr´aﬁco de f es un conjunto cerrado en
+R2. (Recordar que el gr´aﬁco de f es el conjunto {(x, f(x)) ∈R2 : x ∈R}).
+Utilizando el item anterior, tomamos una sucesi´on (xn, f(xn))n∈IN ⊂Graf(f) tal que
+(xn, f(xn)) →(x, y) y queremos probar (x, y) ∈Graf(f). Primero observar que (xn, f(xn)) →
+(x, y) si y solamente si xn →x y f(xn) →y. Por otro lado, como f es continua, se tiene que
+xn →x implica f(xn) →f(x). Por unicidad del l´ımite tenemos entonces y = f(x), y por lo
+tanto el l´ımite de la sucesi´on (xn, f(xn)) es (x, f(x)) ∈Graf(f), como se quer´ıa probar.
+Ejercicio 5.(15 pts.) Consideremos f : R2 →R tal que:
+f(x, y) =
+(
+xy
+x2+y2
+si (x, y)̸ = (0, 0)
+0
+si (x, y) = (0, 0)
+Estudiar la continuidad de f.
+En todo punto (x, y)̸ = (0, 0), la funci´on f es continua por ser cociente de funciones continuas con
+el denominador que no se anula.
+Para estudiar la continuidad en el punto (0, 0), estudiamos el
+l´ımite lim(x,y)→(0,0)
+xy
+x2+y2 .
+Considerando las rectas por el origen de la forma y = mx, vemos que
+limx→0
+mx2
+x2+m2x2 =
+m
+1+m2 . Como este resultado depende del valor de m, podemos asegurar que no
+existe lim(x,y)→(0,0)
+xy
+x2+y2 y por lo tanto que f no es continua en (0, 0).
+Ejercicio 6.(30 pts.) Se considera f : R2 →R, f(x, y) = sin(x) + sin(y).
+(1) Demostrar que el plano z = 2 es tangente al gr´aﬁco de f en el punto (π/2, π/2, 2).
+(2) Hallar todos los puntos de tangencia del plano z = 2 con el gr´aﬁco de f.
+(3) Sea g(x, y) = (h(x, y), f(x, y)), donde h : R2 →R es de clase C∞. Demostrar que si h(0, π) =
+π/2, entonces
+▽(0,π)(f ◦g) = (1, −1)
+Nota: ▽(0,π)(f ◦g) denota el gradiente de la funci´on f ◦g en el punto (0, π).
+(1) El plano tangente al gr´aﬁco de f en un punto (x0, y0, f(x0, y0)) tiene ecuaci´on z = f(x0, y0)+
+∂f
+∂x(x0, y0)(x−x0)+∂f
+∂y (x0, y0)(y−y0). En este caso: ∂f
+∂x(π/2, π/2) = cos(π/2) = 0, ∂f
+∂y (π/2, π/2) =
+cos(π/2) = 0 y f(π/2, π/2) = 2. Por lo tanto z = 2 es tangente al gr´aﬁco de f en el punto
+(π/2, π/2, 2).
+
+===== PAGE 3 =====
+3
+(2) Utilizando la ecuaci´on del plano tangente como en el item anterior, debemos hallar los puntos
+(x, y) tales que ∂f
+∂x(x, y) = ∂f
+∂y (x, y) = 0 y tales que f(x, y) = 2. Como ∂f
+∂x(x, y) = cos(x) y
+∂f
+∂y (x, y) = cos(y), obtenemos x = π/2 + 2kπ, k ∈ZZ, y = π/2 + 2kπ, k ∈ZZ.
+(3) Sea g(x, y) = (h(x, y), f(x, y)), donde h : R2 →R es de clase C∞. Demostrar que si h(0, π) =
+π/2, entonces
+▽(0,π)(f ◦g) = (1, −1).
+Aplicando la regla de la cadena, sabemos que
+▽(0,π)(f ◦g) = ▽g(0,π)fD(0,π)g.
+Como g(0, π) = (h(0, π), f(0, π)) = (π/2, 0), ▽g(0,π)(f) = ▽(π/2,0)(f) = (0, 1). Por otro lado
+D(0,π)g =
+ ∂h
+∂x(0, π)
+∂h
+∂y (0, π)
+∂f
+∂x(0, π)
+∂f
+∂y (0, π)
+!
+As´ı que, ▽g(0,π)fD(0,π)g = (0, 1)
+ 
+∂h
+∂x(0, π)
+∂h
+∂y (0, π)
+1
+−1
+!
+= (1, −1)
+Ejercicio 7.(10 pts.) Calcular, justiﬁcando:
+lim
+(x,y)→(0,0)
+xy −sin(x) sin(y)
+x2 + y2
+Usando el desarrollo de Taylor de orden 2 de la funci´on f(x, y) = sin(x) sin(y) en el punto (0, 0)
+tenemos la igualdad f(x, y) = xy + R2(x, y) con lim(x,y)→(0,0)
+R2(x,y)
+x2+y2
+= 0 v´alida en un entorno de
+(0, 0). Por lo tanto
+lim
+(x,y)→(0,0)
+xy −sin(x) sin(y)
+x2 + y2
+=
+lim
+(x,y)→(0,0)
+xy −xy −R2(x, y)
+x2 + y2
+==
+lim
+(x,y)→(0,0)
+−R2(x, y)
+x2 + y2
+= 0
+Ejercicio 8.(20 pts.)
+(1) Sea f : R2 →R una funci´on continua. Se sabe que:
+Z 1
+0
+(Z x
+x2 f(x, y)dy
+)
+dx = 1/2,
+Z 1
+0
+(Z 1
+y
+f(x, y)dx
+)
+dy = 1
+Calcular, justiﬁcando:
+Z 1
+0
+"Z 1
+√y
+f(x, y)dx
+#
+dy
+Bosquejando las regiones de integraci´on podemos observar que:
+Z 1
+0
+(Z 1
+y
+f(x, y)dx
+)
+dy =
+Z 1
+0
+(Z x
+x2 f(x, y)dy
+)
+dx +
+Z 1
+0
+"Z 1
+√y
+f(x, y)dx
+#
+dy
+y por lo tanto despejando, obtenemos:
+Z 1
+0
+"Z 1
+√y
+f(x, y)dx
+#
+dy = 1/2
+
+===== PAGE 4 =====
+4
+(2) Sea R la regi´on acotada entre los gr´aﬁcos de y = sin(x) y el eje x en el intervalo [0, 3π/2].
+Calcular
+ZZ
+R
+2y dxdy
+La integral doble a calcular es:
+Z π
+0
+Z sin(x)
+0
+2y dydx +
+Z 3π/2
+π
+Z 0
+sin(x)
+2y dydx
+Observar que
+R sin(x)
+0
+2y dy = (sin(x))2 y que una primitiva de (sin(x))2 es
+1
+2(−cos(x) sin(x) + x). Por lo tanto
+R π
+0
+R sin(x)
+0
+2y dydx = π/2. De la misma forma se obtiene
+R 3π/2
+π
+R 0
+sin(x) 2y dydx = −π/4. Y en consecuencia
+ZZ
+R
+2y dxdy = π/4

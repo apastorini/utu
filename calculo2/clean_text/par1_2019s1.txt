@@ -1,0 +1,84 @@
+
+===== PAGE 1 =====
+Universidad de la Rep´ublica
+C´alculo Diferencial e Integral en Varias Variables
+Facultad de Ingenier´ıa - IMERL
+Primer Semestre 2019
+Primer parcial.
+Duraci´on: 3 horas.
+No. Parcial
+Apellido y nombre
+Firma
+C´edula
+Asiste a te´orico
+Indique sus respuestas en los casilleros correspondientes, con letras may´usculas
+imprenta: A, B, C o D.
+MO 1
+MO 2
+MO 3
+MO 4
+Ejercicios de M´ultiple Opci´on.
+Total: 20 puntos. 5 puntos si la respuesta es correcta, 0 punto por no contestar y -1.25 si la
+respuesta es incorrecta.
+1. Sean z1, z2 y z3 las tres ra´ıces de la ecuaci´on z3 = 1. Indicar la opci´on correcta:
+(A) z1z2z3 = 1.
+(B) z1z2z3 = i.
+(C) z1z2z3 = −1.
+(D) z1z2z3 = −i.
+2. Sea x(t) la soluci´on a la ecuaci´on diferencial x′′ + 2x′ + x = et que cumple x(1) = e
+4 + 1
+e;
+x′(1) = e
+4 −1
+e. Indicar la opci´on correcta:
+(A) x(0) = 5
+4.
+(B) x(0) = 3
+4.
+(C) x(0) = e
+2.
+(D) x(0) = 2
+e.
+1
+
+===== PAGE 2 =====
+3. Considere la serie
++∞
+X
+n=2
+(−1)n
+n log(n). Indicar la opci´on correcta:
+(A) La serie converge pero no converge absolutamente.
+(B) La serie diverge.
+(C) La serie oscila.
+(D) La serie converge absolutamente.
+4. Considerar la integral impropia
++∞
+Z
+0
+1
+(x2 + 1)s dx donde s es un n´umero real. Indicar la opci´on
+correcta:
+(A) La integral converge solamente si s < 1/2.
+(B) La integral converge solamente si s > 1/2.
+(C) La integral converge para todo valor de s.
+(D) La integral no converge para todo valor de s.
+Ejercicios de Desarrollo
+Total: 20 puntos.
+5. Problema 1 (10 puntos) Sea an : N →R una sucesi´on de n´umeros
+(a) Deﬁnir sucesi´on acotada y sucesi´on convergente.
+(b) Demostrar que toda sucesi´on an convergente es una sucesi´on acotada.
+(c) ¿Vale el rec´ıproco de la aﬁrmaci´on anterior? Probar o dar un contraejemplo.
+6. Problema 2 (10 puntos) Sea A un conjunto de Rn
+(a) Deﬁnir el interior de un conjunto A ⊆Rn.
+(b) Deﬁnir punto de acumulaci´on de un conjunto A ⊆Rn.
+(c) Considerar el conjunto A del plano deﬁnido por:
+A =
+{
+(x, y) ∈R2 : x2
+4 + y2
+9 < 1
+} \
+(N × N)c .
+Representar gr´aﬁcamente los puntos de acumulaci´on de A que no son interiores. Justiﬁcar.
+2
