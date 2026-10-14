@@ -1,0 +1,97 @@
+{
+  "spritesheet_path": "hoja.png",
+  "animations": {
+    "idle": [
+      {
+        "name": "idle_0",
+        "x": 0,
+        "y": 0,
+        "width": 120,
+        "height": 160
+      },
+      {
+        "name": "idle_1",
+        "x": 120,
+        "y": 0,
+        "width": 120,
+        "height": 160
+      }
+    ],
+    "walk": [
+      {
+        "name": "walk_0",
+        "x": 0,
+        "y": 160,
+        "width": 120,
+        "height": 160
+      },
+      {
+        "name": "walk_1",
+        "x": 120,
+        "y": 160,
+        "width": 120,
+        "height": 160
+      },
+      {
+        "name": "walk_2",
+        "x": 240,
+        "y": 160,
+        "width": 120,
+        "height": 160
+      },
+      {
+        "name": "walk_3",
+        "x": 360,
+        "y": 160,
+        "width": 120,
+        "height": 160
+      }
+    ],
+    "jump": [
+      {
+        "name": "jump_0",
+        "x": 0,
+        "y": 320,
+        "width": 120,
+        "height": 160
+      },
+      {
+        "name": "jump_1",
+        "x": 120,
+        "y": 320,
+        "width": 120,
+        "height": 160
+      },
+      {
+        "name": "jump_2",
+        "x": 240,
+        "y": 320,
+        "width": 120,
+        "height": 160
+      }
+    ],
+    "punch": [
+      {
+        "name": "punch_0",
+        "x": 0,
+        "y": 480,
+        "width": 120,
+        "height": 160
+      },
+      {
+        "name": "punch_1",
+        "x": 120,
+        "y": 480,
+        "width": 120,
+        "height": 160
+      },
+      {
+        "name": "punch_2",
+        "x": 240,
+        "y": 480,
+        "width": 120,
+        "height": 160
+      }
+    ]
+  }
+}

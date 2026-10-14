@@ -1,0 +1,8 @@
+pygame>=2.5
+pymunk>=6.6
+numpy>=1.24
+Pillow>=10.0
+
+# Opcional: fondo de vídeo en tiempo real (engine/background.py, VideoBackground).
+# Si no se instala, el juego funciona igual (la clase se desactiva sola).
+# opencv-python>=4.8

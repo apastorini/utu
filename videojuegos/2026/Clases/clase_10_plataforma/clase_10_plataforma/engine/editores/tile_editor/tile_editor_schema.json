@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Esquema de Mapa de Tiles v11.0",
+  "type": "object",
+  "properties": {
+    "properties": {
+      "type": "object",
+      "properties": {
+        "width_pixels": { "type": "integer" },
+        "height_pixels": { "type": "integer" }
+      }
+    },
+    "tileset": {
+      "type": "object",
+      "properties": {
+        "path": { "type": "string" },
+        "tile_size": { "type": "integer" }
+      }
+    },
+    "layers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "enum": ["tilelayer", "imagelayer", "objectgroup"] },
+          "visible": { "type": "boolean" },
+          "blocking": { "type": "boolean" },
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "gid": { "type": "integer" },
+                  "blocking": { "type": "boolean" }
+                },
+                "required": ["gid", "blocking"]
+              }
+            }
+          }
+        },
+        "required": ["name", "type", "visible"]
+      }
+    }
+  },
+  "required": ["properties", "tileset", "layers"]
+}

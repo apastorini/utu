@@ -1,0 +1,252 @@
+{
+    "project_name": "arkanoid",
+    "spritesheet_path": "C:/TVJ/clase_8/arkanoid/assets/sprites/blocks_bricks.png",
+    "character_name": "bloque",
+    "animations": {
+        "default": [
+            {
+                "x": 79,
+                "y": 1,
+                "width": 24,
+                "height": 10,
+                "name": "sprite_11",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 79,
+                "y": 13,
+                "width": 24,
+                "height": 10,
+                "name": "sprite_12",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 79,
+                "y": 25,
+                "width": 24,
+                "height": 10,
+                "name": "sprite_13",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 79,
+                "y": 37,
+                "width": 24,
+                "height": 10,
+                "name": "sprite_14",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 105,
+                "y": 1,
+                "width": 24,
+                "height": 10,
+                "name": "sprite_15",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 105,
+                "y": 13,
+                "width": 24,
+                "height": 10,
+                "name": "sprite_16",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 105,
+                "y": 25,
+                "width": 24,
+                "height": 10,
+                "name": "sprite_17",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 105,
+                "y": 37,
+                "width": 24,
+                "height": 10,
+                "name": "sprite_18",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 105,
+                "y": 49,
+                "width": 24,
+                "height": 10,
+                "name": "sprite_19",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 131,
+                "y": 1,
+                "width": 32,
+                "height": 10,
+                "name": "sprite_20",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 131,
+                "y": 15,
+                "width": 28,
+                "height": 12,
+                "name": "sprite_21",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 131,
+                "y": 30,
+                "width": 50,
+                "height": 12,
+                "name": "sprite_22",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 131,
+                "y": 44,
+                "width": 50,
+                "height": 12,
+                "name": "sprite_23",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 166,
+                "y": 15,
+                "width": 14,
+                "height": 12,
+                "name": "sprite_24",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 167,
+                "y": 1,
+                "width": 12,
+                "height": 12,
+                "name": "sprite_25",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 183,
+                "y": 1,
+                "width": 12,
+                "height": 50,
+                "name": "sprite_26",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 1,
+                "y": 1,
+                "width": 24,
+                "height": 10,
+                "name": "bloque_gris",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 3,
+                "y": 44,
+                "width": 24,
+                "height": 8,
+                "name": "paleta",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 27,
+                "y": 1,
+                "width": 24,
+                "height": 10,
+                "name": "bloque_marron",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 27,
+                "y": 13,
+                "width": 24,
+                "height": 10,
+                "name": "bloque_marron_roto_!",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 30,
+                "y": 36,
+                "width": 10,
+                "height": 9,
+                "name": "pelota_rugby",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 30,
+                "y": 48,
+                "width": 10,
+                "height": 10,
+                "name": "pelota_basquet",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 44,
+                "y": 36,
+                "width": 10,
+                "height": 9,
+                "name": "pelota_futbol",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 44,
+                "y": 48,
+                "width": 10,
+                "height": 10,
+                "name": "pelota_bocha",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 53,
+                "y": 1,
+                "width": 24,
+                "height": 10,
+                "name": "bloque_azul",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 53,
+                "y": 13,
+                "width": 24,
+                "height": 10,
+                "name": "bloque_azul_roto_1",
+                "description": "Sugerido",
+                "animation": "default"
+            },
+            {
+                "x": 53,
+                "y": 25,
+                "width": 24,
+                "height": 10,
+                "name": "bloque_azul_roto_2",
+                "description": "Sugerido",
+                "animation": "default"
+            }
+        ]
+    }
+}

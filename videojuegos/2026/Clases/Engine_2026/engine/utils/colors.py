@@ -1,0 +1,5 @@
+# engine/utils/colors
+ROJO = (255, 0, 0)
+AZUL_OSCURO = (30, 30, 40)
+BLANCO = (255, 255, 255)
+NEGRO = (0,0,0)
