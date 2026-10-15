@@ -159,7 +159,7 @@ Si hay un humano detrás o un alcance que varía: OAuth. Si es identificación d
 
 ## Incidentes y análisis (fuentes primarias)
 - [Meta / Facebook "View As" — actualización oficial (2018)](https://about.fb.com/news/2018/09/security-update/) · [KrebsOnSecurity](https://krebsonsecurity.com/2018/09/facebook-security-bug-affects-90m-users/)
-- [Cloudflare — sesión de Okta comprometida (2022)](https://blog.cloudflare.com/how-cloudflare-mitigated-yet-another-okta-compromise/)
+- [Cloudflare — sesión de Okta comprometida (2023)](https://blog.cloudflare.com/how-cloudflare-mitigated-yet-another-okta-compromise/) · [relacionado: Cloudflare y el incidente de Okta de enero de 2022](https://blog.cloudflare.com/cloudflare-investigation-of-the-january-2022-okta-compromise/)
 - [Codecov — actualización oficial del incidente (2021)](https://about.codecov.io/security-update/) · [Rapid7](https://www.rapid7.com/blog/post/2021/04/16/codecov-discloses-supply-chain-compromise/)
 - [NYT — Uber (2022)](https://www.nytimes.com/2022/09/15/technology/uber-hacking-breach.html) · [UpGuard — análisis](https://www.upguard.com/blog/what-caused-the-uber-data-breach)
 - [GitGuardian — State of Secrets Sprawl 2026](https://www.gitguardian.com/state-of-secrets-sprawl-report-2026) · [resumen en blog](https://blog.gitguardian.com/the-state-of-secrets-sprawl-2026/)
@@ -219,3 +219,27 @@ Si algún día querés mostrar *reutilización* sin tocar ningún sistema de ter
 | Cierre | 4 min | 2 min | — |
 | Preguntas | — | 2 min | — |
 | **Total** | **~75 min** | **~30 min** | |
+
+---
+
+# ANEXO C — Preguntas frecuentes del público (respuestas breves)
+
+*Preparación para el turno de preguntas. La versión extendida, con fuentes, está en la sección 11 de la clase completa (`clase_completa.docx`, "Preguntas frecuentes").*
+
+- **¿Base64 es cifrado?** No: es una **codificación** sin clave. El cifrado real de JOSE es **JWE**. Un **JWT común es JWS: firmado, no sellado** (se lee).
+- **¿Todos los bearer usan base64url?** No. Base64url es propio de **JWT/JOSE**; un **token opaco** son bytes aleatorios.
+- **¿Qué es HMAC-SHA1?** Un **MAC simétrico** (clave + hash) del RFC 2104. Lo usaba **OAuth 1.0** para firmar cada request en el `nonce`. Deprecado a favor de SHA-256 (**HS256**).
+- **¿Qué son `amr` y `acr`?** `amr` (RFC 8176) = **con qué métodos** se autenticó; `acr` = **con qué nivel/garantía**. La API solo sabe que hubo MFA si el emisor los pone y el validador los revisa.
+- **¿Qué es JOSE?** La familia: **JWS** (firma), **JWE** (cifrado), **JWK** (claves), **JWA** (algoritmos), **JWT** (token).
+- **¿Qué fue primero: la cookie o Digest?** **La cookie** (Netscape, 1994/1996). **Digest** se estandarizó después (RFC 2069 en 1997; RFC 2617 en 1999).
+- **¿Bearer es exclusivo de OAuth?** No. El esquema `Bearer` es del **marco HTTP** y lo usa cualquier API. RFC 6749 y RFC 6750 son compañeros pero distintos; y OAuth puede emitir tokens **sender-constrained** (no bearer puro).
+- **¿Todos los flujos de OAuth 2 usan token?** Sí, todos emiten **access token**. Implicit y Password (ROPC) están **retirados** por RFC 9700 (2025).
+- **¿Qué es un token opaco?** Un string sin claims legibles; se valida por **introspección** (RFC 7662) contra el servidor de autorización.
+- **¿Qué es `aud`?** La **audiencia**: para quién es el token. Validarla estricta es lo que responde al §10.3 de RFC 6749.
+- **¿Qué es prueba de posesión (PoP)?** Demostrar que se tiene la **clave privada** por request: **mTLS** atado al certificado (RFC 8705) o **DPoP** (RFC 9449). Robar el token no alcanza.
+- **¿mTLS o DPoP?** mTLS da identidad fuerte de cliente pero requiere **PKI**; DPoP no necesita PKI y firma cada request con `jti`/`htm`/`htu`.
+- **¿Por qué una passkey resiste el phishing?** El `origin` va **atado criptográficamente** a la firma; el autenticador no firma para el sitio falso. El OTP sí se phishea en vivo (AiTM); SMS es el más débil.
+- **¿Qué es "JWT mal validado"?** El token es correcto, el validador no: `alg:none`, confusión HS/RS, inyección de `kid`, no validar `iss`/`aud`/`exp`. La política sale de la **config**, no del mensaje (RFC 8725).
+- **¿Qué son BOLA, BFLA y BOPLA?** A nivel **objeto**, **función** y **propiedad**, respectivamente (OWASP API1, API5, API3). Autenticar ≠ autorizar.
+- **¿Y las versiones de HTTP?** No crean el problema del bearer, pero cambian la superficie: compresión de cabeceras (HPACK/QPACK), inspección de binario, smuggling, terminación TLS. El token en **query** lo prohíbe RFC 9700.
+- **El caso de Okta, ¿fue 2022?** El del *session token* de un ticket de soporte fue **octubre de 2023**. El de **enero de 2022** (proveedor de soporte) **no** impactó a Cloudflare, que usaba llaves de hardware.

@@ -62,6 +62,7 @@ sec_biblio = block(cls_lines[i8:])
 # ---- secciones nuevas ----
 sec3 = demote(read("sec3_historia.md").strip())
 sec4 = demote(read("sec4_protocolos.md").strip())
+sec11 = read("sec11_faq.md").strip()
 
 # ---- laboratorio ----
 lab_lines = lines_of(read("laboratorio_paso_a_paso.md"))
@@ -113,14 +114,15 @@ index = """## Índice
 - 7. Laboratorio paso a paso (con ejemplos)
 - 8. Glosario de atajos
 - 9. Plantilla de reporte responsable
-- 10. Bibliografía"""
+- 10. Bibliografía
+- 11. Preguntas frecuentes (FAQ)"""
 
 # ---- ensamblado ----
 parts = [
     doc_head, index, sec0, sec1, sec2, sec3, sec4,
     sec_modules, sec_domains,
     "## 7. Laboratorio paso a paso (con ejemplos)\n\n" + lab_intro + "\n\n" + sec_lab_env + "\n\n" + lab_body,
-    sec_glossary, sec_template, sec_biblio,
+    sec_glossary, sec_template, sec_biblio, sec11,
 ]
 master = "\n\n".join(x.strip() for x in parts) + "\n"
 

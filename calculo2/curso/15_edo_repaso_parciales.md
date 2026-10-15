@@ -292,4 +292,4 @@ $$
 
 ---
 
-**⬅️ Anterior:** [Clase 14 — EDOs de 2.º orden no homogéneas](14_edo_2do_orden_no_homogeneas.md) · **➡️ Siguiente:** [Clase 16 — Sucesiones](16_sucesiones.md) (Bloque 3)
+**⬅️ Anterior:** [Clase 14 — EDOs de 2.º orden no homogéneas](14_edo_2do_orden_no_homogeneas.md) · **➡️ Siguiente:** [Clase 16 — Sucesiones: definición y límite](16_sucesiones_definicion.md) (Bloque 3)

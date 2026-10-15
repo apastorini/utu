@@ -104,7 +104,7 @@ No existe **una** forma de mirar la seguridad de una API. Existen muchas, y cada
 
 **1.7 Enfoque por estilo de API.**
 - *Pregunta central:* ¿cómo cambian los riesgos según el paradigma (REST, GraphQL, gRPC, SOAP, WebSocket, webhooks)?
-- *Qué mira:* cada estilo tiene su clase de falla: sobre-fetch y query depth en GraphQL; métodos y enums por defecto en gRPC; XML y firma en SOAP; canales persistentes y autorización por mensaje en WebSocket; SSRF y firmas de webhook.
+- *Qué mira:* cada estilo tiene su clase de riesgo: sobre-fetch y query depth en GraphQL; métodos y enums por defecto en gRPC; XML y firma en SOAP; canales persistentes y autorización por mensaje en WebSocket; SSRF y firmas de webhook.
 - *Cuándo usarlo:* cuando la organización usa más de un estilo (casi siempre).
 - *Si lo omito:* aplico recetas de REST a GraphQL o a eventos y dejo huecos.
 - *Ver detalle:* Sección 2, "Taxonomía de las APIs".
@@ -306,7 +306,7 @@ Esa mezcla es, exactamente, la estructura del resto de este documento: los enfoq
 
 ## 2. Taxonomía de las APIs: qué estamos protegiendo exactamente
 
-Antes de los tokens conviene saber **de qué estamos hablando** cuando decimos "API". No todas se parecen, y cada familia trae su propia clase de falla. Esta sección clasifica las APIs por cinco ejes: estilo, consumidor, despliegue, contrato y tipo de dato. Sirve como índice mental para elegir qué mirar en cada caso.
+Antes de los tokens conviene saber **de qué estamos hablando** cuando decimos "API". No todas se parecen, y cada familia trae su propia clase de riesgo. Esta sección clasifica las APIs por cinco ejes: estilo, consumidor, despliegue, contrato y tipo de dato. Sirve como índice mental para elegir qué mirar en cada caso.
 
 ### 2.1 Por estilo o paradigma
 
@@ -1142,6 +1142,6 @@ En Uruguay, canal oficial: **CERTuy (AGESIC)** — https://www.gub.uy/centro-nac
 
 **OWASP y labs:** [API Security Top 10 2023](https://owasp.org/API-Security/editions/2023/en/0x11-t10/) · [JWT Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html) · [WSTG](https://owasp.org/www-project-web-security-testing-guide/) · [crAPI](https://owasp.org/projects/crapi) · [Juice Shop](https://owasp.org/www-project-juice-shop/) · [PortSwigger Academy](https://portswigger.net/web-security)
 
-**Casos reales:** [Meta "View As" 2018](https://about.fb.com/news/2018/09/security-update/) · [Cloudflare/Okta 2022](https://blog.cloudflare.com/how-cloudflare-mitigated-yet-another-okta-compromise/) · [Codecov 2021](https://about.codecov.io/security-update/) · [GitGuardian Secrets Sprawl 2026](https://blog.gitguardian.com/the-state-of-secrets-sprawl-2026/) · [Uber 2022 (UpGuard)](https://www.upguard.com/blog/what-caused-the-uber-data-breach)
+**Casos reales:** [Meta "View As" 2018](https://about.fb.com/news/2018/09/security-update/) · [Cloudflare/Okta 2023](https://blog.cloudflare.com/how-cloudflare-mitigated-yet-another-okta-compromise/) · [Okta 2022 (sin impacto en Cloudflare)](https://blog.cloudflare.com/cloudflare-investigation-of-the-january-2022-okta-compromise/) · [Codecov 2021](https://about.codecov.io/security-update/) · [GitGuardian Secrets Sprawl 2026](https://blog.gitguardian.com/the-state-of-secrets-sprawl-2026/) · [Uber 2022 (UpGuard)](https://www.upguard.com/blog/what-caused-the-uber-data-breach)
 
 **Uruguay / ID Uruguay:** [Documentación técnica ID Uruguay (gub.uy)](https://www.gub.uy/agencia-gobierno-electronico-sociedad-informacion-conocimiento/comunicacion/publicaciones/documentacion-tecnica-id-uruguay/documentacion-tecnica-id-uruguay/id-0) · [Desarrollo seguro (AGESIC, PDF)](https://www.gub.uy/agencia-gobierno-electronico-sociedad-informacion-conocimiento/sites/agencia-gobierno-electronico-sociedad-informacion-conocimiento/files/Desarrollo%20seguro.pdf) · [CERTuy](https://www.gub.uy/centro-nacional-respuesta-incidentes-seguridad-informatica/)

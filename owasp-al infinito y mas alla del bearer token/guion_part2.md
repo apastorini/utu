@@ -173,10 +173,10 @@ Cuando el invocador es un microservicio, un job de CI, un dispositivo IoT o una 
 **Fuente:** [actualización oficial de Meta](https://about.fb.com/news/2018/09/security-update/) · [análisis de KrebsOnSecurity](https://krebsonsecurity.com/2018/09/facebook-security-bug-affects-90m-users/).
 **Lección académica:** el token era perfectamente válido, estaba perfectamente firmado, y **no debía existir para ese usuario**. La validación criptográfica no cubre errores de emisión.
 
-## 5.2 Token robado y no revocado — Okta / Cloudflare, octubre de 2022
+## 5.2 Token robado y no revocado — Okta / Cloudflare, octubre de 2023
 
-**Qué pasó:** en la brecha del sistema de soporte de Okta, un *session token* que un empleado de Cloudflare había incluido en un ticket de soporte fue extraído. Cloudflare confirmó después que **el atacante usó esa sesión** —con privilegios administrativos— para acceder a sus sistemas el 18 de octubre, y que la cadena se debió a que esos tokens no se rotaron ni revocaron tras el incidente inicial.
-**Fuente:** [blog de Cloudflare](https://blog.cloudflare.com/how-cloudflare-mitigated-yet-another-okta-compromise/).
+**Qué pasó:** en la brecha del sistema de soporte de Okta, un *session token* que un empleado de Cloudflare había incluido en un ticket de soporte fue extraído. Cloudflare confirmó después que **el atacante usó esa sesión** —con privilegios administrativos— para acceder a sus sistemas el 18 de octubre de 2023, y que la cadena se debió a que esos tokens no se rotaron ni revocaron tras el incidente inicial. **No es la primera vez:** en enero de 2022 Okta ya había sufrido un incidente en el que quedó comprometido un proveedor de soporte; en ese caso Cloudflare **no fue impactado** porque usaba **llaves de hardware** para MFA.
+**Fuente:** [blog de Cloudflare (2023)](https://blog.cloudflare.com/how-cloudflare-mitigated-yet-another-okta-compromise/) · [blog de Cloudflare sobre el incidente de 2022](https://blog.cloudflare.com/cloudflare-investigation-of-the-january-2022-okta-compromise/).
 **Lección académica:** un bearer robado tiene la vida que ustedes le hayan dado. **La revocación y la rotación son parte de la seguridad del token, no un "nice to have"** ([RFC 7009, octubre de 2013](https://www.rfc-editor.org/rfc/rfc7009)).
 
 ## 5.3 El bearer que vive en la cadena de suministro — Codecov, 2021

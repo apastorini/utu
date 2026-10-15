@@ -115,13 +115,15 @@ ESTRUCTURA EXACTA DE LOS 25 SLIDES (con el guion de cada uno)
    mejora el hash, no el modelo; la cookie guarda estado en el servidor.
    Visual: timeline horizontal, primeros dos hitos.
    GUION: "Todo empieza con HTTP sin estado. La primera solución fue mandar
-   usuario y contraseña en cada petición: RFC 2617, junio de 1999. Basic
-   codifica en Base64 —que no es cifrado— y Digest manda un hash. Pero las
-   credenciales siguen viajando en cada request. El segundo intento fue no
-   mandar credenciales, sino un identificador de sesión: la cookie, de
-   Netscape 1996, estandarizada en RFC 6265 en abril de 2011. El estado queda
-   en el servidor: seguro para la web tradicional, incómodo para APIs que
-   tienen que delegar."
+   usuario y contraseña en cada petición: Basic, dentro del marco de
+   autenticación de HTTP estandarizado en el RFC 2617, de junio de 1999.
+   Basic codifica en Base64 —que no es cifrado— y Digest manda un hash con un
+   nonce. Pero las credenciales siguen viajando en cada request. El segundo
+   intento fue no mandar credenciales, sino un identificador de sesión: la
+   cookie, de Netscape (1996), que de hecho es anterior a la estandarización
+   de Digest, y que recién se estandarizó en el RFC 6265, en abril de 2011.
+   El estado queda en el servidor: seguro para la web tradicional, incómodo
+   para APIs que tienen que delegar."
    Fuente al pie: RFC 2617 (1999) / RFC 7616 (2015); RFC 6265 (2011).
 
 6. HISTORIA (2/3) — SAML Y OAUTH 1.0
@@ -327,19 +329,22 @@ ESTRUCTURA EXACTA DE LOS 25 SLIDES (con el guion de cada uno)
 19. ATAQUES REALES (1/2): SE EMITIÓ MAL, NO SE REVOCÓ, SE FILTRÓ
     Título: "El token funcionó exactamente como estaba diseñado".
     Bullets: Facebook "View As" (2018): token emitido al usuario equivocado;
-    Okta/Cloudflare (2022): sesión robada y no revocada; Codecov (2021):
+    Okta/Cloudflare (2023): sesión robada y no revocada; Codecov (2021):
     tokens de CI filtrados.
     Visual: tres tarjetas con caso, fuente y lección en una línea.
     GUION: "Los casos que siguen son divulgaciones públicas y responsables; no
     vamos a señalar a nadie, vamos a observar el modelo. Facebook, 2018: la
     función 'View As' generó un access token del usuario consultado, no del
     espectador, y lo dejó embebido en el HTML; se resetearon unos 90 millones
-    de cuentas. Okta y Cloudflare, 2022: un session token de un ticket de
-    soporte se extrajo y no se rotó ni revocó, así que siguió sirviendo.
+    de cuentas. Okta y Cloudflare, 2023: en el ataque al sistema de soporte
+    de Okta, un session token de un ticket se extrajo y siguió sirviendo,
+    porque no se rotó ni se revocó a tiempo. (En enero de 2022 Okta ya había
+    sufrido otro incidente; en aquel caso Cloudflare no fue impactado gracias
+    a sus llaves de hardware.)
     Codecov, 2021: un script modificado exportó las variables de entorno del
     CI y con ellas los tokens y claves. En los tres, el token no falló:
     funcionó como fue diseñado."
-    Fuente al pie: Meta (2018); Cloudflare (2022); Codecov (2021).
+    Fuente al pie: Meta (2018); Cloudflare (2023); Codecov (2021).
 
 20. ATAQUES REALES (2/2): SE REUTILIZÓ, SE AUTORIZÓ MAL, SE VALIDÓ MAL
     Título: "Después de aceptarlo, todavía queda trabajo".

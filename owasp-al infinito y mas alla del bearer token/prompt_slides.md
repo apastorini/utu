@@ -66,7 +66,7 @@ ESTRUCTURA EXACTA DE LOS 15 SLIDES
     secretos filtrados son credenciales de máquinas, no de personas
     (GitGuardian, State of Secrets Sprawl 2026).
 14. Ataques reales en tarjetas (6): Facebook "View As" 2018 (token mal
-    emitido), Okta/Cloudflare 2022 (token no revocado), Codecov 2021 (tokens
+    emitido), Okta/Cloudflare 2023 (token no revocado), Codecov 2021 (tokens
     en CI), Uber 2022 (MFA no sobrevive al robo de sesión), BOLA (token
     válido + objeto ajeno, Api1 OWASP 2023), JWT mal validado. Cada tarjeta:
     caso, link de la fuente oficial, lección en una línea.

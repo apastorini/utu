@@ -222,7 +222,7 @@ def render_slide(pdf, s, show_guion):
         ax.text(0.5, y - 0.01, "RFC 6749, §10.3 — octubre 2012", ha="center",
                 va="top", fontsize=13, color=ACCENT, fontweight="bold", zorder=3)
     elif num == 5:
-        # taxonomia: seis cuadros estilo -> falla
+        # taxonomia: seis cuadros estilo -> riesgo
         items = [("REST", "recursos", "BOLA / IDOR"), ("GraphQL", "consultas", "query depth / sobre-exposición"),
                  ("gRPC", "binario", "WAF no inspecciona"), ("SOAP", "XML", "XXE"),
                  ("WebSocket", "canal", "auth solo al inicio"), ("Webhooks", "push", "SSRF / replay")]

@@ -14,8 +14,9 @@ mecanismo, entendés **dónde** va a fallar.
 ## 3.1 Era 1 — La credencial viaja en cada request (1993–1999)
 
 Cuando la web empezó a necesitar "áreas privadas", la solución más simple fue **mandar usuario y
-contraseña en cada petición**. Eso es lo que hicieron **HTTP Basic** (RFC 2617, 1999) y su primo
-**Digest**, que al menos no mandaba la contraseña en claro sino un hash con un *nonce*.
+contraseña en cada petición**. Eso es lo que hicieron **HTTP Basic** (concepto de 1993; RFC 1945 en
+1996) y su primo **Digest**, que al menos no mandaba la contraseña en claro sino un hash con un
+*nonce* (estandarizado en el RFC 2069, 1997, y luego en el RFC 2617, 1999).
 
 - **Qué resolvía:** autenticación mínima, sin estado, sin base de sesiones.
 - **Qué no resolvía:** la credencial **viaja una y otra vez**. Si la línea no está cifrada, se lee;
@@ -24,7 +25,8 @@ contraseña en cada petición**. Eso es lo que hicieron **HTTP Basic** (RFC 2617
 - **Qué queda hoy:** Basic sobrevive dentro de sistemas internos y como **autenticación de cliente**
   en OAuth (`client_secret_basic`). Digest quedó prácticamente en desuso.
 
-Casi al mismo tiempo, en 1996, Netscape inventó la **cookie**: un pedacito de estado que el navegador
+Casi al mismo tiempo —de hecho **antes** de que Digest se estandarizara en 1997—, Netscape inventó la
+**cookie** (idea de 1994; especificación pública hacia 1996): un pedacito de estado que el navegador
 guarda y reenvía. Con eso nació la **sesión**. La cookie resolvió el problema de "recordar quién sos"
 sin repetir la contraseña… y creó dos problemas nuevos para siempre: **CSRF** y **robo de sesión**
 (XSS, sniffing). Recién en 2011 se estandarizó (RFC 6265) con los atributos `HttpOnly`, `Secure` y,

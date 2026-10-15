@@ -102,11 +102,11 @@ flowchart TB
 
 | # | Clase | Práctico / prueba asociada |
 |---|---|---|
-| 16 | Límite y convergencia, definición ε–N | Práctico 2, ej. 2 |
-| 17 | Monotonía, acotación y PSMC | Práctico 2, ej. 1 y complementarios |
-| 18 | Cálculo de límites, subsucesiones y puntos de aglomeración | Práctico 2, ej. 3–5 |
-| 19 | Bolzano–Weierstrass, Cauchy y sucesiones en Rⁿ | Práctico 2 y 5 |
-| 20 | Repaso de sucesiones y pruebas | Parciales 2020–2022 |
+| 16 | Definición, límite ε–N y acotación | Práctico 2, ej. 2 y evaluaciones 2022/2020 |
+| 17 | Sucesiones monótonas, recurrencias y PSMC | Práctico 2, ej. 1 y complementarios |
+| 18 | Cálculo de límites, subsucesiones y puntos de aglomeración | Práctico 2, ej. 3–5 y parcial 2024 |
+| 19 | Bolzano–Weierstrass, Cauchy y sucesiones en Rⁿ | Práctico 2, ej. 6–7 y 9–10 |
+| 20 | Repaso de sucesiones y problemas de parcial/examen | Evaluaciones del Práctico 2 y exámenes 2018–2022 |
 
 ### Bloque 4 — Series (clases 21 a 25)
 
@@ -228,9 +228,14 @@ Los enunciados de ejercicios y exámenes se reproducen con **fines de estudio**.
 - `13_edo_2do_orden_homogeneas.md`
 - `14_edo_2do_orden_no_homogeneas.md`
 - `15_edo_repaso_parciales.md`
+- `16_sucesiones_definicion.md`
+- `17_sucesiones_monotonas.md`
+- `18_limites_subsucesiones.md`
+- `19_bw_cauchy_rn.md`
+- `20_sucesiones_repaso.md`
 - (y así hasta `48_...md`)
 
-> Las imágenes están en `img/`. Los scripts que las generan están en `figuras/` (`_bloque0.py`, `_bloque1.py`, `_bloque2.py`, …).
+> Las imágenes están en `img/`. Los scripts que las generan están en `figuras/` (`_bloque0.py`, `_bloque1.py`, `_bloque2.py`, `_bloque3.py`, …) y el verificador de calidad del curso es `figuras/_qa.py`.
 
 ---
 
@@ -241,7 +246,7 @@ Los enunciados de ejercicios y exámenes se reproducen con **fines de estudio**.
 | Bloque 0 — Prerrequisitos | 1–4 | ✅ completo |
 | Bloque 1 — Números complejos | 5–8 | ✅ completo |
 | Bloque 2 — Ecuaciones diferenciales | 9–15 | ✅ completo |
-| Bloque 3 — Sucesiones | 16–20 | ⏳ pendiente |
+| Bloque 3 — Sucesiones | 16–20 | ✅ completo |
 | Bloque 4 — Series | 21–25 | ⏳ pendiente |
 | Bloque 5 — Integrales impropias | 26–29 | ⏳ pendiente |
 | Bloque 6 — Topología en Rⁿ | 30–33 | ⏳ pendiente |
