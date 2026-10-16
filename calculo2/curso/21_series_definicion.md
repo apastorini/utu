@@ -328,4 +328,4 @@ $$d=2+\sum_{k=1}^{\infty}2h_k=2+4\sum_{k=1}^{\infty}\left(\frac23\right)^{k}=2+4
 
 ---
 
-**⬅️ Anterior:** [Clase 20 — Repaso de sucesiones](20_sucesiones_repaso.md) · **➡️ Siguiente:** [Clase 22 — Términos positivos: comparación y equivalentes](22_series_positivos.md)
+**⬅️ Anterior:** [Clase 20 — Repaso de sucesiones](20_sucesiones_repaso.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 22 — Términos positivos: comparación y equivalentes](22_series_positivos.md)

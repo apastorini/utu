@@ -327,4 +327,4 @@ $$
 
 ---
 
-**⬅️ Anterior:** [Clase 6 — Forma polar y De Moivre](06_polar_demoivre.md) · **➡️ Siguiente:** [Clase 8 — Exponencial compleja y Euler](08_exponencial_euler.md)
+**⬅️ Anterior:** [Clase 6 — Forma polar y De Moivre](06_polar_demoivre.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 8 — Exponencial compleja y Euler](08_exponencial_euler.md)

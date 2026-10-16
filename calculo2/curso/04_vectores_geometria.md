@@ -285,4 +285,4 @@ $$
 
 Ya tenés las herramientas base: límites y continuidad (clase 1), derivación e integración (clase 2), sucesiones y lógica (clase 3) y geometría (clase 4). A partir de la **clase 5** empezamos con el contenido del curso, arrancando por los **números complejos**, que es el tema del primer tramo del programa.
 
-**⬅️ Anterior:** [Clase 3](03_sucesiones_logica.md) · **➡️ Siguiente bloque:** Clase 5 — Números complejos (forma binómica)
+**⬅️ Anterior:** [Clase 3](03_sucesiones_logica.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente bloque:** Clase 5 — Números complejos (forma binómica)

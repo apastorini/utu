@@ -30,6 +30,8 @@ flowchart TB
     H2 -->|No| NH2["y_H (clase 13) + y_P<br/>selección (clase 14)"]
 ```
 
+![Mapa del Bloque 2: cada tipo de EDO y el método que le corresponde](img/b2_mapa2.png)
+
 ---
 
 ## 📋 2. Hoja de ruta: todo el Bloque 2 en una tabla
@@ -292,4 +294,4 @@ $$
 
 ---
 
-**⬅️ Anterior:** [Clase 14 — EDOs de 2.º orden no homogéneas](14_edo_2do_orden_no_homogeneas.md) · **➡️ Siguiente:** [Clase 16 — Sucesiones: definición y límite](16_sucesiones_definicion.md) (Bloque 3)
+**⬅️ Anterior:** [Clase 14 — EDOs de 2.º orden no homogéneas](14_edo_2do_orden_no_homogeneas.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 16 — Sucesiones: definición y límite](16_sucesiones_definicion.md) (Bloque 3)

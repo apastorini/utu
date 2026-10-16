@@ -314,4 +314,4 @@ una **circunferencia** de centro $(1,0)$ y radio $1$.
 
 ---
 
-**⬅️ Anterior:** [Clase 42 — Extremos relativos y criterio de la Hessiana](42_extremos_relativos_hessiana.md) · **➡️ Siguiente:** [Clase 44 — Función implícita, inversa y multiplicadores de Lagrange](44_implicita_inversa_lagrange.md)
+**⬅️ Anterior:** [Clase 42 — Extremos relativos y criterio de la Hessiana](42_extremos_relativos_hessiana.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 44 — Función implícita, inversa y multiplicadores de Lagrange](44_implicita_inversa_lagrange.md)

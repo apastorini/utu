@@ -77,7 +77,7 @@ lo que recupera el criterio p-álgébrico de la clase 22 por un camino distinto.
 
 $$\int_0^1 \log x\,dx = \lim_{\varepsilon\to 0^+}\Big[x\log x - x\Big]_\varepsilon^1 = -1.$$
 
-Aunque $\log x\to-\infty$ en $0$, la integral **converge**: la singularidad es débil. (De hecho $\int_0^1(\log x)^p dx$ converge para todo $p\in\mathbb{R}$… en particular para $p=-1$: $\int_0^1\frac{dx}{\log x}=-\infty$ no, ojo: para $p<0$ hay que revisar; la de $p=1$ es la que usamos abajo.)
+Aunque $\log x\to-\infty$ en $x=0$, la integral **converge**: la singularidad es débil, porque $\lim_{\varepsilon\to0^+}\varepsilon\log\varepsilon=0$. Es un buen contraejemplo a la intuición de que "$\log$ que explota no se puede integrar". (Ojo: no vale lo mismo para *cualquier* potencia del logaritmo ni para otras singularidades; lo que decide siempre es el límite de la primitiva.)
 
 ### La función Gamma
 
@@ -251,47 +251,65 @@ $$\Gamma(n)=(n-1)\Gamma(n-1)=(n-1)(n-2)\cdots 1\cdot\Gamma(1)=(n-1)!. \ \blacksq
 
 ## 🏛️ Ejercicios de parcial/examen
 
-**E1. (Simulacro de parcial 2018, ej. 5)** La suma $\sum_{n=1}^\infty \frac{1}{n^2+1}$ es:
+**E1. (Simulacro de parcial 2018, ej. 5)** Considere la serie y la integral $\displaystyle\sum_{n=1}^\infty\left(\tfrac23\right)^{n}$ y $\displaystyle\int_1^\infty \left(\tfrac23\right)^{x}dx$. Entonces:
 
-(A) una serie divergente porque su término general no tiende a cero.
-(B) una serie convergente porque $\frac{1}{n^2+1}\le\frac{1}{n^2}$.
-(C) una serie convergente cuyo criterio de convergencia es la serie-integral.
-(D) ninguna de las anteriores.
+(A) ambas convergen a $2$ por el criterio serie-integral.
+(B) la serie converge, pero no se puede aplicar el criterio serie-integral en este caso.
+(C) la serie converge a $2$; la integral también converge por el criterio serie-integral, pero no necesariamente a $2$.
+(D) la serie diverge porque el término general no tiende a cero.
+(E) la serie converge a $3$, pero la integral impropia diverge.
 
-> **Resolución.** $\frac{1}{n^2+1}\le\frac1{n^2}$ probaría convergencia por comparación con $p$-álgébrica (eso sería (B), con un argumento distinto al "criterio serie-integral"). El término general $\to0$, así que (A) es falsa. Aplicando el Teorema 4.11 a $f(x)=\frac{1}{x^2+1}$ (positiva, decreciente): $\int_1^\infty\frac{dx}{x^2+1}=\frac\pi2-\frac\pi4<\infty$, converge la integral, luego converge la serie **por la serie-integral**: esa es la opción que nombra el criterio usado en el enunciado.
+> **Resolución.** Geométrica: $\sum_{n\ge1}(2/3)^n=\frac{2/3}{1-2/3}=2$. El término general $(2/3)^n\to0$, luego (D) es falsa. La función $f(x)=(2/3)^x$ es positiva y decreciente, así que el **Teorema 4.11** es aplicable: la integral converge. Pero la serie-integral **solo garantiza mismo comportamiento, no mismo valor**:
+> $$\int_1^\infty\left(\tfrac23\right)^{x}dx=\left[\frac{(2/3)^x}{\log(2/3)}\right]_1^\infty=0-\frac{2/3}{\log(2/3)}=\frac{2}{3\log(3/2)}\ne2.$$
 >
-> **Respuesta: (C).**
+> **Respuesta: (C).** ✔ *(respuesta oficial del simulacro)*
 
-**E2. (Examen diciembre 2022, ej. 2)** ¿Para qué valores de $\alpha\in\mathbb{R}$ converge $\sum_{n=1}^\infty\left(\frac{n}{n+1}\right)^{n^2\,\alpha}$?
+**E2. (Examen diciembre 2022, ej. 2)** Considere la integral impropia y la serie $\displaystyle\int_0^\infty \frac{e^{-x^2}}{x^2}\,dx$ y $\displaystyle\sum_{n=0}^\infty \sin\!\left(\frac{1}{2^{n}}\right)$. Entonces:
 
-(A) para ningún $\alpha$; (B) para todo $\alpha$; (C) $\alpha\ge1$; (D) para $\alpha<0$; (E) ninguna de las anteriores.
+(A) ambas son divergentes.
+(B) la serie es divergente y la integral es convergente.
+(C) ambas son convergentes.
+(D) la integral es divergente y la serie es absolutamente convergente.
+(E) la integral es divergente, la serie es condicionalmente convergente.
 
-> **Resolución.** $n$-ésimo término general: $a_n=\left(1-\frac{1}{n+1}\right)^{n^2\alpha}=\left[\left(1-\frac1{n+1}\right)^{n+1}\right]^{\frac{n^2}{n+1}\alpha}$. Como $\left(1-\frac1{n+1}\right)^{n+1}\to e^{-1}$, para $n$ grande $a_n\approx e^{-\frac{n^2}{n+1}\alpha}\approx e^{-n\alpha}$.
-> - Si $\alpha>0$: $a_n\to e^{-\infty}=0$ y $a_n\approx e^{-n\alpha}$: **converge** (razón o comparación exponencial).
-> - Si $\alpha=0$: $a_n=1\not\to0$: **diverge**.
-> - Si $\alpha<0$: $a_n\approx e^{|n\alpha|}\to\infty$: **diverge**.
+> **Resolución.** La integral es impropia en $0$ y en $\infty$: se corta en $1$. En $0$: $e^{-x^2}\to1$, así que $\frac{e^{-x^2}}{x^2}\sim\frac{1}{x^2}$ y $\int_0^1\frac{dx}{x^2}$ **diverge** ($p=2\ge1$ en 2.ª especie). Por lo tanto toda la integral diverge (basta con que una mitad diverja). Para la serie: como $\sin u\sim u$ cuando $u\to0$, $\left|\sin\frac{1}{2^n}\right|\sim\frac{1}{2^n}$, y $\sum\frac{1}{2^n}$ es geométrica convergente; por comparación, la serie **converge absolutamente**.
 >
-> **Respuesta: (D)** (converge $\iff\alpha<0$).
+> **Respuesta: (D).** ✔ *(respuesta oficial, versión del examen cuyo ej. 1 es el de EDO)*
 
-**E3. (Parcial 1.ª fecha 2023, 1.º cuatrimestre, desarrollo)** Usando el Teorema de la serie-integral, probar que $\sum_{n=2}^\infty\frac{1}{n(\log n)^\alpha}$ converge $\iff\alpha>1$.
+**E3. (Examen julio 2021, Desarrollo 1)** Sea $f(t)=\dfrac{1}{t\,\log^{2}(t-3)}$.
 
-> **Resolución.** $f(x)=\frac{1}{x(\log x)^\alpha}$ es positiva en $[2,\infty)$; $f'(x)=-\frac{1}{x^2(\log x)^\alpha}-\frac{\alpha}{x^2(\log x)^{\alpha+1}}<0$ para $x\ge2$: decreciente. Por el Teorema 4.11, basta con la integral. Con $u=\log x$, $du=dx/x$:
-> $$\int_2^b\frac{dx}{x(\log x)^\alpha}=\int_{\log2}^{\log b}\frac{du}{u^\alpha}=\begin{cases}\frac{(\log b)^{1-\alpha}-(\log 2)^{1-\alpha}}{1-\alpha}, & \alpha\ne1,\\[4pt] \log(\log b)-\log(\log 2), & \alpha=1.\end{cases}$$
-> - $\alpha>1$: $(\log b)^{1-\alpha}\to0$: **converge**.
-> - $\alpha=1$: $\log(\log b)\to\infty$: **diverge**.
-> - $\alpha<1$: $(\log b)^{1-\alpha}\to\infty$: **diverge**.
+(a) Determinar la convergencia de $\int_4^{2021} f(t)\,dt$ y de $\int_{2021}^{\infty} f(t)\,dt$; clasificar $\int_4^\infty f$. (b) Enunciar el criterio serie-integral. (c) Demostrar que $\sum_{n=2021}^\infty \frac{\sin n}{n\log^2(n-3)}$ converge absolutamente.
+
+> **Resolución.**
+> - **En $t=4^+$** (singularidad): $\log(t-3)\to0^+$, luego $f(t)\to\infty$. Comparación por límite con $g(t)=\frac{1}{(t-4)^2}$:
+> $$\lim_{t\to4^+}\frac{f(t)}{g(t)}=\lim_{t\to4^+}\frac{(t-4)^2}{t\big(\log(t-3)\big)^2}=\frac14\left(\lim_{t\to4^+}\frac{t-4}{\log(t-3)}\right)^{2}=\frac14\cdot 1=\frac14\in(0,\infty),$$
+> donde se usó $\log(t-3)\sim t-4$ (L'Hôpital). Como $\int_4^{2021}\frac{dt}{(t-4)^2}=\int_0^{2017}\frac{du}{u^2}=\infty$, entonces **$\int_4^{2021}f$ diverge**.
+> - **En $\infty$:** comparar con $\frac{1}{t\log^2 t}$: $\lim_{t\to\infty}\frac{t\log^2 t}{t\log^2(t-3)}=1$. Y $\int_{2021}^\infty\frac{dt}{t\log^2t}=\left[-\frac{1}{\log t}\right]_{2021}^{\infty}=\frac{1}{\log 2021}<\infty$. Luego **$\int_{2021}^\infty f$ converge**.
+> - **Integral mixta:** al fallar el trozo $[4,2021]$, $\int_4^\infty f(t)\,dt$ **diverge**.
+> - **(c)** $|\sin n|\le1$, así que $\left|\frac{\sin n}{n\log^2(n-3)}\right|\le\frac{1}{n\log^2(n-3)}$; la función $t\mapsto\frac{1}{t\log^2(t-3)}$ es positiva y decreciente en $[2021,\infty)$ y su integral converge (ítem b), por lo que por **criterio serie-integral** la serie $\sum\frac{1}{n\log^2(n-3)}$ converge; por comparación, la serie original **converge absolutamente**. $\blacksquare$
+
+**E4. (Parcial 1.ª fecha 2019, ej. 4)** La integral impropia $\displaystyle\int_0^\infty \frac{dx}{(x^2+1)^{s}}$, con $s\in\mathbb{R}$, converge:
+
+(A) solamente si $s<\tfrac12$. (B) solamente si $s>\tfrac12$. (C) para todo $s$. (D) no converge para ningún $s$.
+
+> **Resolución.** Es de 1.ª especie: $\int_0^\infty=\int_0^1+\int_1^\infty$; en $[0,1]$ el integrando está acotado, todo depende de $\infty$. Con $f(x)=(x^2+1)^{-s}$ y $g(x)=x^{-2s}$:
+> $$\lim_{x\to\infty}\frac{f(x)}{g(x)}=\lim_{x\to\infty}\left(\frac{x^2}{x^2+1}\right)^{s}=1.$$
+> Criterio de comparación por límite (Teo. 4.6): misma clase que $\int_1^\infty x^{-2s}dx$, que converge $\iff 2s>1$. Luego converge $\iff s>\tfrac12$.
 >
-> Por lo tanto la serie converge $\iff\alpha>1$. $\blacksquare$
+> **Respuesta: (B).** ✔ *(respuesta oficial)*
 
-**E4. (Examen diciembre 2021, Verdadero/Falso 2)** Toda integral impropia $\int_1^\infty \frac{dx}{x^\alpha}$ con $\alpha>1$ converge.
+**E5. (Examen diciembre 2018, ej. 5)** Considere las siguientes integrales impropias:
+(I) $\displaystyle\int_0^\infty \frac{\sin x}{x^2(1+e^{x})}\,dx$, (II) $\displaystyle\int_{-\infty}^\infty \frac{dx}{(1+|x|)(1+\sqrt{|x|})}$.
 
-> **Respuesta: VERDADERO.** $\int_1^\infty x^{-\alpha}dx=\lim_{b\to\infty}\frac{b^{1-\alpha}-1}{1-\alpha}$; si $\alpha>1$, $b^{1-\alpha}\to0$ y el límite es $\frac{1}{\alpha-1}$. (El caso límite $\alpha=1$ da $\log b\to\infty$: diverge.)
+(A) (I) converge y (II) diverge. (B) (II) converge y (I) diverge. (C) ambas convergen. (D) ambas divergen.
 
-**E5.** Calcular $\int_0^\infty e^{-\sqrt{x}}\,dx$.
-
-> **Resolución.** Sustitución $t=\sqrt x$, $x=t^2$, $dx=2t\,dt$ (legítima: $\varphi(t)=t^2$ es $C^1$ creciente en $[0,\infty)$; las impropias se trasladan sin problema):
-> $$\int_0^\infty e^{-\sqrt x}dx = 2\int_0^\infty t\,e^{-t}dt = 2\Gamma(2)=2\cdot 1!=2.$$
-> (La integral por partes da lo mismo: $2\big[-te^{-t}-e^{-t}\big]_0^\infty=2$.) **Respuesta: 2.**
+> **Resolución.**
+> - **(I):** en $x=0$ hay singularidad. Como $\sin x\sim x$: $\frac{\sin x}{x^2(1+e^x)}\sim\frac{x}{x^2\cdot2}=\frac{1}{2x}$, con $p=1$: **$\int_0^1$ diverge** y con ella (I). (En $\infty$ no hay problema: $e^x$ en el denominador hace caer el integrando.)
+> - **(II):** el integrando es par; $2\int_0^\infty\frac{dx}{(1+x)(1+\sqrt x)}$. Sustitución $u=\sqrt x$, $dx=2u\,du$:
+> $$2\int_0^\infty\frac{2u\,du}{(1+u^2)(1+u)}.$$
+> En $\infty$: $\frac{2u}{(1+u^2)(1+u)}\sim\frac{2}{u^2}$, integrable; en $0$ no hay singularidad. **(II) converge.**
+>
+> **Respuesta: (B).**
 
 ## ⚠️ Errores comunes
 

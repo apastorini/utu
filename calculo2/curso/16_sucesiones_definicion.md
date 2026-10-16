@@ -263,4 +263,4 @@ Por lo tanto $a_nb_n\to0$. ✔
 
 ---
 
-**⬅️ Anterior:** [Clase 15 — Repaso de EDOs y parciales](15_edo_repaso_parciales.md) · **➡️ Siguiente:** [Clase 17 — Sucesiones monótonas y recurrencias](17_sucesiones_monotonas.md)
+**⬅️ Anterior:** [Clase 15 — Repaso de EDOs y parciales](15_edo_repaso_parciales.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 17 — Sucesiones monótonas y recurrencias](17_sucesiones_monotonas.md)

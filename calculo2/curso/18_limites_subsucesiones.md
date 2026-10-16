@@ -240,4 +240,4 @@ Puntos de aglomeración: $\big\{\tfrac12,-\tfrac12,0\big\}$: **tres**. Como hay 
 
 ---
 
-**⬅️ Anterior:** [Clase 17 — Sucesiones monótonas y recurrencias](17_sucesiones_monotonas.md) · **➡️ Siguiente:** [Clase 19 — Bolzano–Weierstrass, Cauchy y sucesiones en Rⁿ](19_bw_cauchy_rn.md)
+**⬅️ Anterior:** [Clase 17 — Sucesiones monótonas y recurrencias](17_sucesiones_monotonas.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 19 — Bolzano–Weierstrass, Cauchy y sucesiones en Rⁿ](19_bw_cauchy_rn.md)

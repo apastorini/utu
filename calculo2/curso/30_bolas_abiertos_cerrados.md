@@ -291,4 +291,4 @@ que no es cerrado (el $2$ es punto de acumulación y no está). En ℝⁿ vale e
 
 ---
 
-**⬅️ Anterior:** [Clase 29 — Repaso de impropias y pruebas](29_impropias_repaso.md) · **➡️ Siguiente:** [Clase 31 — Interior, frontera, clausura y puntos de acumulación](31_interior_frontera_clausura.md)
+**⬅️ Anterior:** [Clase 29 — Repaso de impropias y pruebas](29_impropias_repaso.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 31 — Interior, frontera, clausura y puntos de acumulación](31_interior_frontera_clausura.md)

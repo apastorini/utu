@@ -340,4 +340,4 @@ $$H_f(0,0)=\begin{pmatrix}2&a\\ a&0\end{pmatrix},\qquad \det H=2\cdot0-a^2=-a^2.
 
 ---
 
-**⬅️ Anterior:** [Clase 41 — Taylor de orden 2 y formas cuadráticas](41_taylor_formas_cuadraticas.md) · **➡️ Siguiente:** [Clase 43 — Extremos absolutos y convexidad](43_extremos_absolutos_convexidad.md)
+**⬅️ Anterior:** [Clase 41 — Taylor de orden 2 y formas cuadráticas](41_taylor_formas_cuadraticas.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 43 — Extremos absolutos y convexidad](43_extremos_absolutos_convexidad.md)

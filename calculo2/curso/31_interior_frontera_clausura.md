@@ -331,4 +331,4 @@ Sean $A\subset\mathbb{R}^n$ cualquiera. Analicemos:
 
 ---
 
-**⬅️ Anterior:** [Clase 30 — Bolas, conjuntos abiertos y cerrados](30_bolas_abiertos_cerrados.md) · **➡️ Siguiente:** [Clase 32 — Compactos, conexos y sucesiones en ℝⁿ](32_compactos_conexos.md)
+**⬅️ Anterior:** [Clase 30 — Bolas, conjuntos abiertos y cerrados](30_bolas_abiertos_cerrados.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 32 — Compactos, conexos y sucesiones en ℝⁿ](32_compactos_conexos.md)

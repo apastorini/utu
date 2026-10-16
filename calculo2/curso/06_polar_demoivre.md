@@ -341,4 +341,4 @@ $$
 
 ---
 
-**⬅️ Anterior:** [Clase 5 — Forma binómica](05_complejos_binomica.md) · **➡️ Siguiente:** [Clase 7 — Raíces n-ésimas](07_raices_n_esimas.md)
+**⬅️ Anterior:** [Clase 5 — Forma binómica](05_complejos_binomica.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 7 — Raíces n-ésimas](07_raices_n_esimas.md)

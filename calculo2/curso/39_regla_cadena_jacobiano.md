@@ -277,4 +277,4 @@ $$L=\begin{pmatrix} 3 & \pi & 2\\ 0 & 5 & 1\end{pmatrix}\begin{pmatrix}\pi\\ e\\
 
 ---
 
-**⬅️ Anterior:** [Clase 38 — Diferenciabilidad, plano tangente y condición suficiente](38_diferenciabilidad_plano_tangente.md) · **➡️ Siguiente:** [Clase 40 — Derivadas de orden superior, Clairaut y Hessiana](40_orden_superior_clairaut_hessiana.md)
+**⬅️ Anterior:** [Clase 38 — Diferenciabilidad, plano tangente y condición suficiente](38_diferenciabilidad_plano_tangente.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 40 — Derivadas de orden superior, Clairaut y Hessiana](40_orden_superior_clairaut_hessiana.md)

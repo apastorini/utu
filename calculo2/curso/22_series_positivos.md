@@ -232,4 +232,4 @@ $$0<e^{\,1-n^{2}}\leq e^{\,1-n}=e\cdot\left(\frac1e\right)^{n}.$$
 
 ---
 
-**⬅️ Anterior:** [Clase 21 — Series: definición, geométrica y telescópica](21_series_definicion.md) · **➡️ Siguiente:** [Clase 23 — Cociente, raíz y criterio serie-integral](23_series_cociente_raiz.md)
+**⬅️ Anterior:** [Clase 21 — Series: definición, geométrica y telescópica](21_series_definicion.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 23 — Cociente, raíz y criterio serie-integral](23_series_cociente_raiz.md)

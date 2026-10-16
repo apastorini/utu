@@ -335,7 +335,7 @@ $$
 
 ---
 
-**⬅️ Anterior:** [Clase 7 — Raíces n-ésimas](07_raices_n_esimas.md) · **➡️ Siguiente:** [Clase 9 — EDOs: variables separables](09_edo_separables.md)
+**⬅️ Anterior:** [Clase 7 — Raíces n-ésimas](07_raices_n_esimas.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 9 — EDOs: variables separables](09_edo_separables.md)
 
 ---
 

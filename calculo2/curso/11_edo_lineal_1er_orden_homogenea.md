@@ -84,6 +84,8 @@ $$
 
 > 💡 Por eso todas las soluciones son $k\cdot e^{-\int a}$: es un espacio de **dimensión 1**, con base $\{e^{-\int a}\}$.
 
+![Familia $y=ke^{\sin x}$: todas las soluciones son múltiplos de una misma base](img/b2_factor_integrante.png)
+
 ---
 
 ## 📘 4. Factor integrante (y la fórmula general de una vez)
@@ -248,4 +250,4 @@ $$
 
 ---
 
-**⬅️ Anterior:** [Clase 10 — Aplicaciones de las EDOs](10_edo_aplicaciones.md) · **➡️ Siguiente:** [Clase 12 — No homogénea y cambio u=y/x](12_edo_no_homogenea_u_yx.md)
+**⬅️ Anterior:** [Clase 10 — Aplicaciones de las EDOs](10_edo_aplicaciones.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 12 — No homogénea y cambio u=y/x](12_edo_no_homogenea_u_yx.md)

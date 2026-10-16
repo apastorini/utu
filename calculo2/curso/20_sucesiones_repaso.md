@@ -234,4 +234,4 @@ $$
 
 ---
 
-**⬅️ Anterior:** [Clase 19 — BW, Cauchy y Rⁿ](19_bw_cauchy_rn.md) · **➡️ Siguiente:** [Clase 21 — Series: definición y primeras propiedades](21_series_definicion.md) (Bloque 4)
+**⬅️ Anterior:** [Clase 19 — BW, Cauchy y Rⁿ](19_bw_cauchy_rn.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 21 — Series: definición y primeras propiedades](21_series_definicion.md) (Bloque 4)

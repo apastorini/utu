@@ -233,9 +233,36 @@ Los enunciados de ejercicios y exámenes se reproducen con **fines de estudio**.
 - `18_limites_subsucesiones.md`
 - `19_bw_cauchy_rn.md`
 - `20_sucesiones_repaso.md`
-- (y así hasta `48_...md`)
+- `21_series_definicion.md`
+- `22_series_positivos.md`
+- `23_series_cociente_raiz.md`
+- `24_series_alternadas.md`
+- `25_series_repaso.md`
+- `26_impropias_primera_especie.md`
+- `27_impropias_segunda_especie.md`
+- `28_serie_integral_gamma.md`
+- `29_impropias_repaso.md`
+- `30_bolas_abiertos_cerrados.md`
+- `31_interior_frontera_clausura.md`
+- `32_compactos_conexos.md`
+- `33_topologia_repaso.md`
+- `34_dominio_nivel_graficas.md`
+- `35_limites_direccionales_polares.md`
+- `36_continuidad_weierstrass.md`
+- `37_derivadas_parciales_direccionales.md`
+- `38_diferenciabilidad_plano_tangente.md`
+- `39_regla_cadena_jacobiano.md`
+- `40_orden_superior_clairaut_hessiana.md`
+- `41_taylor_formas_cuadraticas.md`
+- `42_extremos_relativos_hessiana.md`
+- `43_extremos_absolutos_convexidad.md`
+- `44_implicita_inversa_lagrange.md`
+- `45_integrales_dobles_fubini.md`
+- `46_cambio_variable_polares.md`
+- `47_integrales_triples_cilindricas_esfericas.md`
+- `48_impropias_multiples_simulacro.md`
 
-> Las imágenes están en `img/`. Los scripts que las generan están en `figuras/` (`_bloque0.py`, `_bloque1.py`, `_bloque2.py`, `_bloque3.py`, …) y el verificador de calidad del curso es `figuras/_qa.py`.
+> Las imágenes están en `img/`. Los scripts que las generan están en `figuras/` (`_bloque0.py` … `_bloque10.py`, más `_bloque2b.py` con figuras extra del Bloque 2) y el verificador de calidad del curso es `figuras/_qa.py`.
 
 ---
 
@@ -247,7 +274,12 @@ Los enunciados de ejercicios y exámenes se reproducen con **fines de estudio**.
 | Bloque 1 — Números complejos | 5–8 | ✅ completo |
 | Bloque 2 — Ecuaciones diferenciales | 9–15 | ✅ completo |
 | Bloque 3 — Sucesiones | 16–20 | ✅ completo |
-| Bloque 4 — Series | 21–25 | ⏳ pendiente |
-| Bloque 5 — Integrales impropias | 26–29 | ⏳ pendiente |
-| Bloque 6 — Topología en Rⁿ | 30–33 | ⏳ pendiente |
-| Bloques 7–10 | 34–48 | ⏳ pendiente |
+| Bloque 4 — Series | 21–25 | ✅ completo |
+| Bloque 5 — Integrales impropias | 26–29 | ✅ completo |
+| Bloque 6 — Topología en Rⁿ | 30–33 | ✅ completo |
+| Bloque 7 — Funciones y continuidad | 34–36 | ✅ completo |
+| Bloque 8 — Diferenciabilidad | 37–41 | ✅ completo |
+| Bloque 9 — Extremos e implícitas | 42–44 | ✅ completo |
+| Bloque 10 — Integrales múltiples | 45–48 | ✅ completo |
+
+🎉 **Los 48 cursos están escritos.** Cada clase es un archivo Markdown autocontenido con teoría, figuras, ejercicios del práctico y de parcial/examen resueltos paso a paso, y autoevaluación con respuestas.

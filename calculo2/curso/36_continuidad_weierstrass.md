@@ -335,4 +335,4 @@ $$\lim_{x\to0}f(x,0)=0.$$
 
 ---
 
-**⬅️ Anterior:** [Clase 35 — Límites: direccionales, iterados y coordenadas polares](35_limites_direccionales_polares.md) · **➡️ Siguiente:** [Clase 37 — Derivadas parciales y direccionales; gradiente](37_derivadas_parciales_direccionales.md)
+**⬅️ Anterior:** [Clase 35 — Límites: direccionales, iterados y coordenadas polares](35_limites_direccionales_polares.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 37 — Derivadas parciales y direccionales; gradiente](37_derivadas_parciales_direccionales.md)

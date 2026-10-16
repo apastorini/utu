@@ -263,4 +263,4 @@ $$
 
 ---
 
-**⬅️ Anterior:** [Clase 8 — Exponencial compleja y Euler](08_exponencial_euler.md) · **➡️ Siguiente:** [Clase 10 — Aplicaciones de las EDOs](10_edo_aplicaciones.md)
+**⬅️ Anterior:** [Clase 8 — Exponencial compleja y Euler](08_exponencial_euler.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 10 — Aplicaciones de las EDOs](10_edo_aplicaciones.md)

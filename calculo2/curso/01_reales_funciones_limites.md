@@ -333,4 +333,4 @@ Fijate que es **exactamente** la misma estructura ε–δ que acabás de usar, p
 
 ---
 
-**➡️ Siguiente clase:** [Clase 2 — Derivadas e integrales de una variable](02_derivadas_integrales_1var.md)
+🏠 [Índice](00_indice.md) · **➡️ Siguiente clase:** [Clase 2 — Derivadas e integrales de una variable](02_derivadas_integrales_1var.md)

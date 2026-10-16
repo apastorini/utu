@@ -259,4 +259,4 @@ $$
 
 ---
 
-**⬅️ Anterior:** [Clase 18 — Límites y subsucesiones](18_limites_subsucesiones.md) · **➡️ Siguiente:** [Clase 20 — Repaso de sucesiones y parciales](20_sucesiones_repaso.md)
+**⬅️ Anterior:** [Clase 18 — Límites y subsucesiones](18_limites_subsucesiones.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 20 — Repaso de sucesiones y parciales](20_sucesiones_repaso.md)

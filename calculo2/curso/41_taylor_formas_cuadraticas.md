@@ -344,4 +344,4 @@ $$a+b+c+d+e+f=0.$$
 
 ---
 
-**⬅️ Anterior:** [Clase 40 — Derivadas de orden superior, Clairaut y Hessiana](40_orden_superior_clairaut_hessiana.md) · **➡️ Siguiente:** [Clase 42 — Extremos relativos y criterio de la Hessiana](42_extremos_relativos_hessiana.md)
+**⬅️ Anterior:** [Clase 40 — Derivadas de orden superior, Clairaut y Hessiana](40_orden_superior_clairaut_hessiana.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 42 — Extremos relativos y criterio de la Hessiana](42_extremos_relativos_hessiana.md)

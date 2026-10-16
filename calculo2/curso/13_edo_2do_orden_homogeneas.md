@@ -307,4 +307,4 @@ El conjunto de soluciones es un **espacio vectorial de dimensión 2**; de ahí q
 
 ---
 
-**⬅️ Anterior:** [Clase 12 — No homogénea de 1.er orden y cambio u=y/x](12_edo_no_homogenea_u_yx.md) · **➡️ Siguiente:** [Clase 14 — EDOs de 2.º orden no homogéneas](14_edo_2do_orden_no_homogeneas.md)
+**⬅️ Anterior:** [Clase 12 — No homogénea de 1.er orden y cambio u=y/x](12_edo_no_homogenea_u_yx.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 14 — EDOs de 2.º orden no homogéneas](14_edo_2do_orden_no_homogeneas.md)

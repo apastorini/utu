@@ -317,4 +317,4 @@ $$
 
 ---
 
-**⬅️ Anterior:** [Clase 1](01_reales_funciones_limites.md) · **➡️ Siguiente:** [Clase 3 — Sucesiones y lógica](03_sucesiones_logica.md)
+**⬅️ Anterior:** [Clase 1](01_reales_funciones_limites.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 3 — Sucesiones y lógica](03_sucesiones_logica.md)

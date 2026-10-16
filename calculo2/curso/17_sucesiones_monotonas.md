@@ -258,4 +258,4 @@ La sucesión **sube y baja**: no es monótona. En cambio, **todas** las $x_n$ es
 
 ---
 
-**⬅️ Anterior:** [Clase 16 — Sucesiones: definición y límite](16_sucesiones_definicion.md) · **➡️ Siguiente:** [Clase 18 — Cálculo de límites y subsucesiones](18_limites_subsucesiones.md)
+**⬅️ Anterior:** [Clase 16 — Sucesiones: definición y límite](16_sucesiones_definicion.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 18 — Cálculo de límites y subsucesiones](18_limites_subsucesiones.md)

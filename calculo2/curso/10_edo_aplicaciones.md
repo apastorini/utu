@@ -278,4 +278,4 @@ $u(t)\to u_0$ (no se vacía): la cota cerrada. Con $\lambda$ chico el vaciado es
 
 ---
 
-**⬅️ Anterior:** [Clase 9 — Variables separables](09_edo_separables.md) · **➡️ Siguiente:** [Clase 11 — Lineales de 1er orden: homogénea](11_edo_lineal_1er_orden_homogenea.md)
+**⬅️ Anterior:** [Clase 9 — Variables separables](09_edo_separables.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 11 — Lineales de 1er orden: homogénea](11_edo_lineal_1er_orden_homogenea.md)

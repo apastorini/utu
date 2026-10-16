@@ -30,8 +30,11 @@ for name in files:
     # 3. balance de matematicas
     if t.count("$$") % 2:
         problems.append(f"{name}: $$ impar ({t.count('$$')})")
-    if len(re.findall(r"\\left", t)) != len(re.findall(r"\\right", t)):
-        problems.append(f"{name}: \\left/\\right desbalanceado")
+    # contar solo \left / \right de delimitadores, no \leftrightarrow / \leftarrow / \rightarrow
+    n_left = len(re.findall(r"\\left(?![a-zA-Z])", t))
+    n_right = len(re.findall(r"\\right(?![a-zA-Z])", t))
+    if n_left != n_right:
+        problems.append(f"{name}: \\left/\\right desbalanceado ({n_left}/{n_right})")
     if len(re.findall(r"\\begin\{", t)) != len(re.findall(r"\\end\{", t)):
         problems.append(f"{name}: \\begin/\\end desbalanceado")
 
@@ -46,13 +49,19 @@ orphans = sorted(have - used)
 print("PNG usados:", len(used), "| PNG totales:", len(have))
 print("PNG sin usar en .md:", orphans if orphans else "ninguno")
 
-# 6. bloque 3
-print("\n--- Bloque 3 ---")
+# 6. inventario por clase
+print("\n--- Inventario de clases (figuras / ejercicios) ---")
+sin_fig = []
 for name in files:
-    if name[:2] in ("16", "17", "18", "19", "20"):
-        t = open(os.path.join(d, name), encoding="utf-8").read()
-        fig = len(re.findall(r"!\[[^\]]*\]\((img/[^)]+)\)", t))
-        ej = len(re.findall(r"^### Ejercicio", t, flags=re.M))
-        print(f"{name:34s} figuras={fig} ejercicios={ej}")
+    if not name[:2].isdigit() or name[:2] == "00":
+        continue
+    t = open(os.path.join(d, name), encoding="utf-8").read()
+    fig = len(re.findall(r"!\[[^\]]*\]\((img/[^)]+)\)", t))
+    ej = len(re.findall(r"^### Ejercicio", t, flags=re.M))
+    if fig == 0:
+        sin_fig.append(name)
+    print(f"{name:50s} figuras={fig} ejercicios={ej}")
+if sin_fig:
+    print("CLASES SIN FIGURAS:", sin_fig)
 
 print("\nPROBLEMAS:", "\n".join(problems) if problems else "ninguno")

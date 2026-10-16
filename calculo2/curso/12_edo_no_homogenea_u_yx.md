@@ -167,6 +167,8 @@ Hay ecuaciones de primer orden que **no** son lineales ni separables en la forma
 
 > ⚠️ **Cómo reconocer $f(y/x)$:** todos los términos de $y'$ tienen $x$ e $y$ con el **mismo grado total**. Ej: $y'=\dfrac{xy-y^2}{x^2}$ (grado 2 arriba y abajo), o $y'=\dfrac{x-y}{x+y}$ (grado 1).
 
+![Campo de pendientes de $y'=f(y/x)$: es el mismo a lo largo de cada rayo $y=mx$](img/b2_rayos.png)
+
 ---
 
 ### Ejercicio 4 (Práctico 1, ej. 3a). Resolver $x^2y'+y(y-x)=0$
@@ -303,4 +305,4 @@ $$
 
 ---
 
-**⬅️ Anterior:** [Clase 11 — Lineales de 1er orden homogénea](11_edo_lineal_1er_orden_homogenea.md) · **➡️ Siguiente:** [Clase 13 — EDOs de 2.º orden homogéneas](13_edo_2do_orden_homogeneas.md)
+**⬅️ Anterior:** [Clase 11 — Lineales de 1er orden homogénea](11_edo_lineal_1er_orden_homogenea.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 13 — EDOs de 2.º orden homogéneas](13_edo_2do_orden_homogeneas.md)

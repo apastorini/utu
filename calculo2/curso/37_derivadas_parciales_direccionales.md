@@ -279,4 +279,4 @@ $$\frac{\partial f}{\partial w}(0,0)=\langle(2,3),(1,-1)\rangle=2-3=-1.$$
 
 ---
 
-**⬅️ Anterior:** [Clase 36 — Continuidad y teorema de Weierstrass](36_continuidad_weierstrass.md) · **➡️ Siguiente:** [Clase 38 — Diferenciabilidad y plano tangente](38_diferenciabilidad_plano_tangente.md)
+**⬅️ Anterior:** [Clase 36 — Continuidad y teorema de Weierstrass](36_continuidad_weierstrass.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 38 — Diferenciabilidad y plano tangente](38_diferenciabilidad_plano_tangente.md)

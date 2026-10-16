@@ -96,6 +96,8 @@ $$
 
 La **resta** es igual que la suma con signos cambiados. El **neutro** para la suma es $0$ y para el producto es $1$.
 
+![La suma de complejos es la suma de vectores (regla del paralelogramo)](img/b1_suma.png)
+
 ### 2.4 Potencias de $i$
 
 Como $i^2=-1$, las potencias se **repiten cada 4**:
@@ -419,4 +421,4 @@ $$
 
 ---
 
-**⬅️ Anterior:** [Clase 4 — Vectores y geometría](04_vectores_geometria.md) · **➡️ Siguiente:** [Clase 6 — Forma polar y De Moivre](06_polar_demoivre.md)
+**⬅️ Anterior:** [Clase 4 — Vectores y geometría](04_vectores_geometria.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 6 — Forma polar y De Moivre](06_polar_demoivre.md)

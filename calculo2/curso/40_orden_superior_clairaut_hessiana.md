@@ -290,4 +290,4 @@ Eligiendo $x_n$ con $\cos\frac{1}{x_n^2}=1$ y $x_n\to0$, el segundo término val
 
 ---
 
-**⬅️ Anterior:** [Clase 39 — Regla de la cadena y matriz jacobiana](39_regla_cadena_jacobiano.md) · **➡️ Siguiente:** [Clase 41 — Polinomio de Taylor y formas cuadráticas](41_taylor_formas_cuadraticas.md)
+**⬅️ Anterior:** [Clase 39 — Regla de la cadena y matriz jacobiana](39_regla_cadena_jacobiano.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 41 — Polinomio de Taylor y formas cuadráticas](41_taylor_formas_cuadraticas.md)

@@ -324,4 +324,4 @@ Por lo tanto $a_nb_n\to0$. $\blacksquare$
 
 ---
 
-**⬅️ Anterior:** [Clase 2](02_derivadas_integrales_1var.md) · **➡️ Siguiente:** [Clase 4 — Vectores y geometría](04_vectores_geometria.md)
+**⬅️ Anterior:** [Clase 2](02_derivadas_integrales_1var.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 4 — Vectores y geometría](04_vectores_geometria.md)

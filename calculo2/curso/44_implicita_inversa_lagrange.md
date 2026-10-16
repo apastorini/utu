@@ -340,4 +340,4 @@ $$\boxed{\text{Mínimo }=2\text{ en }(1,1)\text{ y }(-1,-1);\quad \text{no hay m
 
 ---
 
-**⬅️ Anterior:** [Clase 43 — Extremos absolutos y convexidad](43_extremos_absolutos_convexidad.md) · **➡️ Siguiente:** [Clase 45 — Integrales dobles, Teorema de Fubini e inversión del orden](45_integrales_dobles_fubini.md)
+**⬅️ Anterior:** [Clase 43 — Extremos absolutos y convexidad](43_extremos_absolutos_convexidad.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 45 — Integrales dobles, Teorema de Fubini e inversión del orden](45_integrales_dobles_fubini.md)

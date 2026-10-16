@@ -311,4 +311,4 @@ $$e^{-r^2}=a.$$
 
 ---
 
-**⬅️ Anterior:** [Clase 33 — Repaso de topología y pruebas](33_topologia_repaso.md) · **➡️ Siguiente:** [Clase 35 — Límites: direccionales, iterados y coordenadas polares](35_limites_direccionales_polares.md)
+**⬅️ Anterior:** [Clase 33 — Repaso de topología y pruebas](33_topologia_repaso.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 35 — Límites: direccionales, iterados y coordenadas polares](35_limites_direccionales_polares.md)

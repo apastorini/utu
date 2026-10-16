@@ -66,6 +66,8 @@ $$
 y=Ae^{2x}+Be^{3x}+x^2+x+1.
 $$
 
+![La solución es la particular (parábola) más la homogénea (oscilante)](img/b2_seleccion.png)
+
 ---
 
 ## 📊 2. La tabla del método de selección
@@ -357,4 +359,4 @@ Porque el operador $L[y]=y''-y'-2y$ es lineal: si $y$ es otra solución, entonce
 
 ---
 
-**⬅️ Anterior:** [Clase 13 — EDOs de 2.º orden homogéneas](13_edo_2do_orden_homogeneas.md) · **➡️ Siguiente:** [Clase 15 — Repaso de EDOs y parciales](15_edo_repaso_parciales.md)
+**⬅️ Anterior:** [Clase 13 — EDOs de 2.º orden homogéneas](13_edo_2do_orden_homogeneas.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 15 — Repaso de EDOs y parciales](15_edo_repaso_parciales.md)

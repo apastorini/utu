@@ -292,4 +292,4 @@ $$r(x,y)=f(x,y)-1-y=\begin{cases} y^2 & x=0,\\ x^2\sin\frac1x & x\neq0.\end{case
 
 ---
 
-**⬅️ Anterior:** [Clase 37 — Derivadas parciales y direccionales; gradiente](37_derivadas_parciales_direccionales.md) · **➡️ Siguiente:** [Clase 39 — Regla de la cadena y matriz jacobiana](39_regla_cadena_jacobiano.md)
+**⬅️ Anterior:** [Clase 37 — Derivadas parciales y direccionales; gradiente](37_derivadas_parciales_direccionales.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 39 — Regla de la cadena y matriz jacobiana](39_regla_cadena_jacobiano.md)

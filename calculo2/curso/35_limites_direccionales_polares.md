@@ -334,4 +334,4 @@ coinciden; sin embargo los **direccionales** dan $\frac{m}{1+m^2}$, que dependen
 
 ---
 
-**⬅️ Anterior:** [Clase 34 — Dominio, gráfica y conjuntos de nivel](34_dominio_nivel_graficas.md) · **➡️ Siguiente:** [Clase 36 — Continuidad, teorema de Weierstrass y extensiones](36_continuidad_weierstrass.md)
+**⬅️ Anterior:** [Clase 34 — Dominio, gráfica y conjuntos de nivel](34_dominio_nivel_graficas.md) · 🏠 [Índice](00_indice.md) · **➡️ Siguiente:** [Clase 36 — Continuidad, teorema de Weierstrass y extensiones](36_continuidad_weierstrass.md)

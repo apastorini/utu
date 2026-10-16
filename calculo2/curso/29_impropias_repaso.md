@@ -240,4 +240,4 @@ Converge (cada trozo con $\alpha=2/3<1$). **Error típico:** aplicar el $p$-álg
 7. $\left[-\frac{1}{2x^2}\right]_1^\infty=\frac12$; como $\frac{1}{n^3}\le\int_{n-1}^{n}\frac{dx}{x^3}$… o directamente $\sum_{n=2}^\infty n^{-3}\le 1+\int_1^\infty x^{-3}dx=\frac32$ (la serie $\le f(2)+\int_1^\infty$, caminos válidos).
 8. $\alpha>1$ (criterio de Bertrand; serie-integral con $u=\log x$).
 
-> ⬅️ [Clase anterior](28_serie_integral_gamma.md) · 🏠 [Índice](00_indice.md) · [Clase siguiente](30_topologia_bolas_abiertas.md) ➡️
+> ⬅️ [Clase anterior](28_serie_integral_gamma.md) · 🏠 [Índice](00_indice.md) · [Clase siguiente](30_bolas_abiertos_cerrados.md) ➡️
